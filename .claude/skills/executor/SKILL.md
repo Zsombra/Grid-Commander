@@ -129,6 +129,20 @@ Implementation regularly reveals that a requirement was wrong. When it does:
 Updating a spec mid-flight is normal and expected. Diverging from it quietly
 is not.
 
+#### Record What You Leave Behind
+
+While you are in the code and remember why, file a backlog item
+(`.claude/references/tracking.md`) for:
+
+- Debt you took on deliberately to keep this change scoped
+- A bug you noticed in adjacent code and did not fix
+- Any `TODO`/`FIXME` you left — the auditor will find it anyway, and an item
+  with your reasoning beats a marker without it
+- A blocker you routed around
+
+Do it as it happens, not at the end. The reasoning is the valuable part, and it
+is gone by the time you are writing the summary.
+
 #### Rollback Guidance
 
 If a code change breaks something during execution:
@@ -368,6 +382,7 @@ All tracks:
 - [ ] Delta specs updated wherever implementation changed the agreed behavior.
 - [ ] `openspec.py validate <change-id>` reports zero errors.
 - [ ] All quality gate commands PASS.
+- [ ] Debt, adjacent bugs, and TODOs left behind are filed in the backlog.
 
 Track `full` additionally, before ending with `EXECUTION READY FOR PRODUCTION GATE`:
 

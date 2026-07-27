@@ -354,6 +354,19 @@ Every auditor response must include this summary before the completion marker:
 - Gate tracker: openspec/changes/<change-id>/plan/production-gate.md
 ```
 
+## Backlog Handoff
+
+Two categories leave the gate without being fixed, and both must be filed as
+backlog items (`.claude/references/tracking.md`) before you set the decision:
+
+- **Every MINOR violation.** Non-blocking is not the same as forgotten.
+- **Every waived MAJOR**, with the waiver rationale, the approver, and the
+  expiry copied into the item body.
+
+Record the item IDs in the violation tracker's Verification column. A gate that
+passes work by waving findings past with no record is not a gate — it is
+paperwork, and the debt it lets through becomes invisible.
+
 ## Handoff
 
 - `BLOCKED` → back to the **executor** (see its Post-Audit Remediation Flow).

@@ -1,7 +1,10 @@
 ---
-description: Show the state of the spec layer — active changes, artifacts, tasks, validation
+description: Detailed state of one change — artifacts, tasks, validation
 argument-hint: [change-id]
 ---
+
+> For the whole picture — changes, backlog, journal, next action — use `/board`.
+> This command drills into a single change.
 
 ## Context
 

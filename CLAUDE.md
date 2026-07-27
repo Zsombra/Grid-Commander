@@ -21,10 +21,15 @@ This project uses the SKILLMOREL pipeline (v3.0), bundled in `./.claude/`.
 
 ### Available Commands (type / to use)
 ```
+Session
+/board     — Everything at a glance: changes, backlog, journal, next action
+/handoff   — Close out: file what was deferred, write the journal entry
+/backlog   — View, file, or triage work that is not a change yet
+
 Spec layer
 /explore   — Think through a problem before committing (no artifacts)
 /propose   — Create a change: proposal + delta specs + tasks
-/status    — State of the spec layer and the next action
+/status    — Detailed state of a single change
 /verify    — Does the implementation match the change?
 /archive   — Merge deltas into the source of truth and archive
 
@@ -49,6 +54,7 @@ executor            — Implements the change, runs quality gates
 verifier            — Advisory: completeness, correctness, coherence
 auditor             — [full track] Production gate: PASS / BLOCKED
 archiver            — Merges deltas into openspec/specs, archives
+tracker             — Owns the backlog and the session journal
 ```
 
 ### Tracks
@@ -63,6 +69,7 @@ Every change declares one in `.openspec.yaml`. Right-size the ceremony.
 
 ### Pipeline Flow
 ```
+Every session: /board → ... work ... → /handoff
 Not sure yet:  /explore → /propose → ...
 New feature:   /propose → [planner] → executor → /verify → [auditor] → /archive
 Greenfield:    /idea → /spec → /logic → checklist-generator → /propose → ...
@@ -73,6 +80,9 @@ Document:      /document
 
 ### The tool
 ```bash
+python3 .claude/tools/openspec.py board
+python3 .claude/tools/openspec.py backlog list
+python3 .claude/tools/openspec.py journal --limit 5
 python3 .claude/tools/openspec.py list
 python3 .claude/tools/openspec.py status <change>
 python3 .claude/tools/openspec.py validate <change>
@@ -85,6 +95,8 @@ python3 .claude/tools/openspec.py archive <change> --apply
 [project root]/
 ├── openspec/                   — the spec layer (behavior)
 │   ├── config.yaml             — project context + per-artifact rules
+│   ├── JOURNAL.md              — session handoff log (newest first)
+│   ├── backlog/<item-id>.md    — work that is not a change yet
 │   ├── specs/<capability>/spec.md   — SOURCE OF TRUTH
 │   └── changes/
 │       ├── <change-id>/
@@ -129,6 +141,10 @@ python3 .claude/tools/openspec.py archive <change> --apply
 - Do not edit `openspec/specs/` directly — it is written by the archiver on merge
 - Do not diverge from a requirement silently — update the delta spec and say so
 - Do not archive a change that fails validation
+- Do not leave a deferral unfiled — if you decide not to do something, file a
+  backlog item before moving on
+- Do not end a session that changed anything without a JOURNAL.md entry
+- Do not duplicate a change's tasks in a backlog item — link and stop
 - All architecture decisions must be documented in decision logs
 - Follow the project's review checklists for every change
 
@@ -143,5 +159,6 @@ New project with no checklists yet:
 6. Run `executor` to build, then `/verify`, then `/archive`
 
 Checklists already exist in `docs/specs/`:
-1. `/explore` if the problem is fuzzy, otherwise `/propose` directly
-2. `/status` any time to see where things stand and what's next
+1. `/board` to see where things stand
+2. `/explore` if the problem is fuzzy, otherwise `/propose` directly
+3. `/handoff` before you stop

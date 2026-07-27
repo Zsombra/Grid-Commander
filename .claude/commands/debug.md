@@ -131,6 +131,11 @@ For a one-line fix, fix it and note the spec gap. For anything that changes
 agreed behavior, run `/propose` — a bug fix that quietly redefines the contract
 is how a spec layer goes stale.
 
+File a backlog item (`.claude/references/tracking.md`) for the spec gap, and for
+any related bug you found while tracing but did not fix. You are the person with
+the most context on it that anyone will ever have; spend two minutes writing it
+down.
+
 ## Success Criteria
 
 - Referenced file read first

@@ -160,6 +160,15 @@ Always report what was skipped and why.
 4. **Do NOT report a clean bill** on dimensions you could not check — say they
    were skipped.
 
+## File What You Are Not Fixing
+
+Every WARNING and SUGGESTION that will not be acted on this round becomes a
+backlog item — `openspec/backlog/<id>.md`, see `.claude/references/tracking.md`.
+Set `capability:` and name the change it came from in the body.
+
+A finding raised, waved past, and never recorded is worse than a finding never
+raised: it cost attention and bought nothing. List the item IDs you filed.
+
 ## Handoff
 
 - Critical issues → back to **executor**.

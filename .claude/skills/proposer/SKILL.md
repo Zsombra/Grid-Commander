@@ -179,6 +179,18 @@ Rules:
   verifier's job mechanical instead of interpretive.
 - No task called "implement the feature". That hides every real decision.
 
+### Step 7b: File the Scope You Cut
+
+Everything in **Out of Scope** that is genuinely worth doing later becomes a
+backlog item — `openspec/backlog/<id>.md`, per `.claude/references/tracking.md`.
+
+This is what makes cutting scope safe. "We'll get to it" is not a record;
+a p2 item with evidence is. Skip only the things you cut because they should
+never happen — and say that in the proposal instead.
+
+If this change came from an existing backlog item, update it now:
+`status: in-progress`, `change: <change-id>`, `updated: today`.
+
 ### Step 8: Validate
 
 ```bash
@@ -229,6 +241,8 @@ Next skill:
       `skip_specs: true` is set and justified.
 - [ ] Every requirement has at least one scenario.
 - [ ] `tasks.md` exists and every requirement is covered by a task.
+- [ ] Out-of-scope work worth doing later is filed in the backlog.
+- [ ] A source backlog item, if any, is linked to this change.
 - [ ] `openspec.py validate` reports zero errors.
 
 End response with: `CHANGE PROPOSED — READY FOR REVIEW`

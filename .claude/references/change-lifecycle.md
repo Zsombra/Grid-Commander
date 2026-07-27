@@ -10,13 +10,21 @@ from idea to archived truth. Every pipeline skill reads this file.
 ```
 openspec/
 ├── config.yaml                        project context + per-artifact rules
+├── JOURNAL.md                         what happened, session by session
 ├── specs/                             SOURCE OF TRUTH — how the system behaves today
 │   └── <capability>/spec.md
+├── backlog/                           work that is NOT a change yet
+│   └── <item-id>.md
 └── changes/                           PROPOSED MODIFICATIONS — one folder each
     ├── <change-id>/
     └── archive/
         └── YYYY-MM-DD-<change-id>/    completed work, full context preserved
 ```
+
+`backlog/` and `JOURNAL.md` are the tracking layer — see
+`.claude/references/tracking.md`. Exactly one place owns each piece of work at
+a time: an idea lives in the backlog, becomes a change folder, then becomes an
+archive entry.
 
 `specs/` is what is true. `changes/` is what is proposed. A change stays
 isolated in its own folder until it is archived, at which point its deltas
@@ -151,6 +159,9 @@ good — that is what review, verify, and audit are for.
 ## 5. The loop
 
 ```
+  /board            read state — start every session here
+      │
+      ▼
   /explore          think — no artifacts, no code, no commitment
       │
       ▼
@@ -170,9 +181,16 @@ good — that is what review, verify, and audit are for.
       │
       ▼
   /archive          merge deltas into openspec/specs, move to archive
+      │
+      ▼
+  /handoff          write state — file deferrals, write the journal entry
 ```
 
 Daily tools sit outside the loop: `/analyze`, `/debug`, `/document`.
+
+`/board` and `/handoff` bracket every session. Read state before you plan, write
+state before you stop — that is what lets a different agent, or you in three
+weeks, pick up without losing anything. See `.claude/references/tracking.md`.
 
 ### The review that pays for itself
 
@@ -220,8 +238,10 @@ specs never landed.
 ## 7. Bootstrapping a project
 
 ```bash
-mkdir -p openspec/specs openspec/changes/archive
+mkdir -p openspec/specs openspec/changes/archive openspec/backlog
 cp .claude/references/templates/config.yaml openspec/config.yaml
+cp .claude/references/templates/JOURNAL.md openspec/JOURNAL.md
+cp .claude/references/templates/backlog-item.md openspec/backlog/TEMPLATE.md
 ```
 
 Then fill in `openspec/config.yaml` — the `context` and `rules` blocks are

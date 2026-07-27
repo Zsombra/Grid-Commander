@@ -27,11 +27,13 @@ cp -r /path/to/skillmorel/.claude/. ./.claude/
 This adds `references/`, `tools/`, the three new skills, and the five new
 commands, and updates the three existing skills.
 
-### 2. Create the spec layer
+### 2. Create the spec and tracking layers
 
 ```bash
-mkdir -p openspec/specs openspec/changes/archive
-cp .claude/references/templates/config.yaml openspec/config.yaml
+mkdir -p openspec/specs openspec/changes/archive openspec/backlog
+cp .claude/references/templates/config.yaml     openspec/config.yaml
+cp .claude/references/templates/JOURNAL.md      openspec/JOURNAL.md
+cp .claude/references/templates/backlog-item.md openspec/backlog/TEMPLATE.md
 ```
 
 Fill in `openspec/config.yaml`. The `context` and `rules` blocks are injected
@@ -75,14 +77,31 @@ historical record, or move each completed `<slug>` into
 `openspec/changes/archive/YYYY-MM-DD-<slug>/` using the same layout as step 3.
 Neither choice affects the pipeline.
 
-### 5. Verify
+### 5. Seed the backlog and the journal
+
+You almost certainly have deferred work living in someone's head, a scratch
+file, or a `TODO` comment. Move it in — this is a one-time pass, and it is what
+makes the backlog trustworthy from day one:
 
 ```bash
-python3 .claude/tools/openspec.py list
+grep -rn "TODO\|FIXME\|HACK" --include="*.*" . | head -50
+```
+
+File an item for anything still real. Skip anything already fixed. Do not file
+vague unease — an item without a symptom is noise.
+
+Then write the first journal entry describing where the project actually stands.
+It costs five minutes and is the entry every future session starts from.
+
+### 6. Verify
+
+```bash
+python3 .claude/tools/openspec.py board
 python3 .claude/tools/openspec.py validate --all
 ```
 
-Then `/status` for a narrative view and the recommended next action.
+`board` is the narrative view — active changes, backlog by priority, recent
+journal, and the recommended next action. `/board` runs it and interprets it.
 
 ## Adopting the spec layer
 

@@ -83,6 +83,14 @@ Suggest a track (`lite` / `standard` / `full`) with a one-line reason. The
 exploration you just did becomes the foundation of the proposal, not throwaway
 chat.
 
+**Before you finish, file what you found but are not acting on** — rejected
+options worth revisiting, problems discovered along the way that are out of
+scope, questions that need an answer. One backlog item each
+(`.claude/references/tracking.md`).
+
+This is where exploration stops being throwaway. Three dead ends explored is a
+good outcome only if the next person does not have to walk them again.
+
 ## Rules
 
 - **Bring findings, not guesses.** Read the code.

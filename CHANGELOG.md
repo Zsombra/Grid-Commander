@@ -1,6 +1,6 @@
 # Development Notes — dev-skills
 
-## Status: v3.0 — Spec Layer Merged (2026-07-27)
+## Status: v3.0 — Spec Layer + Tracking (2026-07-27)
 
 Merged the best of [OpenSpec](https://github.com/Fission-AI/OpenSpec) (MIT) into
 the v2.1 pipeline. v2.1 produced good plans that went nowhere; v3.0 adds the
@@ -79,6 +79,46 @@ is optional rather than a migration.
 `checklist-generator` and everything under `docs/specs/`. The review checklists
 work exactly as before and remain binding — they are now one of two standards
 the auditor checks, alongside the behavior contract.
+
+### Tracking layer
+
+The spec layer records what the system does and what shipped. It had no place
+for work that is not a change yet, and no way for a new session or a different
+agent to learn what the last one did. Both added:
+
+- **`openspec/backlog/<item-id>.md`** — one file per item, YAML frontmatter
+  (`type`, `status`, `priority`, `change`, `capability`, `blocked_by`, `tags`)
+  plus What / Why it matters / Evidence / Notes. One file per item means
+  parallel agents never conflict on a shared index, and the index is computed
+  rather than maintained.
+- **`openspec/JOURNAL.md`** — newest-first session log. Four fields: Did,
+  State, Next, Watch out.
+- **`board`** — one command showing capabilities, active changes with their
+  computed next action, open backlog by priority, recent journal entries, and
+  health. The session-start view.
+- **`backlog list|show`** and **`journal`** commands; backlog validation folded
+  into `validate --all`.
+- **`tracker` skill** with five modes: session start, file, triage, promote to
+  a change, session handoff.
+- **`/board`**, **`/backlog`**, **`/handoff`** commands. `/status` narrowed to
+  drilling into a single change.
+
+**One rule holds it together:** exactly one place owns each piece of work at a
+time. `idea → backlog item → change folder → archive`. A backlog item never
+restates a change's tasks; it links and stops. Two systems tracking one thing
+means both go stale.
+
+**The backlog stays alive because the skills feed it.** The proposer files cut
+scope, the executor files debt it took on and TODOs it left, the verifier files
+warnings it did not fix, the auditor files MINORs and waivers with rationale,
+the archiver files what a change did not finish, `/explore` files rejected
+options, `/debug` files spec gaps. A deferral nobody records is
+indistinguishable from an oversight three weeks later.
+
+Ten new validation codes catch the specific way this dies — work finishes and
+nobody updates the record: `backlog_change_archived`,
+`backlog_status_behind_change`, `backlog_in_progress_without_change`,
+`backlog_blocked_without_cause`, and the frontmatter/link integrity checks.
 
 ### Migration
 

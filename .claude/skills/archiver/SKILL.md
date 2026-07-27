@@ -109,6 +109,20 @@ python3 .claude/tools/openspec.py validate --all
 A `main_spec_purpose_tbd` warning means a new capability shipped without a
 Purpose — fix it now by editing the main spec directly. Nobody comes back for it.
 
+### Step 4b: Close the Loop on Tracking
+
+The change is now history — make sure nothing rode out with it:
+
+1. **Close the linked backlog item**: `status: done`, `updated: today`.
+   Find it with `backlog list --status all --change <change-id>`.
+2. **File anything the change did not finish.** Tasks left unchecked, scenarios
+   left uncovered, follow-ups the work surfaced. Once the folder moves to
+   `archive/`, nobody is looking in it again — an unfinished task archived
+   silently is an unfinished task lost.
+3. `python3 .claude/tools/openspec.py validate --all` — the drift warnings
+   (`backlog_change_archived`) exist to catch exactly the step above being
+   skipped.
+
 ### Step 5: Report
 
 ```markdown
@@ -151,6 +165,7 @@ Say explicitly that the merge was done by hand.
 - [ ] Every delta merged into `openspec/specs/`.
 - [ ] Merge verified by re-reading the main specs.
 - [ ] Change folder in `openspec/changes/archive/YYYY-MM-DD-<change-id>/`.
+- [ ] Linked backlog item closed; anything unfinished filed as a new item.
 - [ ] `openspec.py validate --all` reports no new errors.
 
 End response with: `CHANGE ARCHIVED`

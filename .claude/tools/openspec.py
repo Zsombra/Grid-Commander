@@ -5,9 +5,12 @@ Gives the skills a machine-readable view of the spec layer so that
 "is this change ready?" is a computation, not a judgment call.
 
 Commands
+    board                     Everything at a glance — start every session here
     list                      Active changes with task progress
     status [<change>]         Artifact graph + task progress for a change
-    validate [<change>]       Structural validation of deltas and main specs
+    backlog list|show         Work that is not a change yet
+    journal                   Recent session handoff entries
+    validate [<change>]       Structural validation of deltas, specs, and backlog
     archive <change>          Merge delta specs into the source of truth
 
 Every command accepts --json. Exit code 1 means "errors found", 0 means clean.
@@ -68,6 +71,40 @@ def read_meta(path: Path) -> dict:
         elif value:
             meta[key.strip()] = value
     return meta
+
+
+def parse_frontmatter(path: Path) -> tuple:
+    """Split a `---`-delimited YAML frontmatter block from its body.
+
+    Supports scalars, booleans, and inline lists (`tags: [a, b]`) — the shapes
+    backlog items actually use. Returns ({}, full_text) when there is no block.
+    """
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, text
+    try:
+        end = next(i for i in range(1, len(lines)) if lines[i].strip() == "---")
+    except StopIteration:
+        return {}, text
+
+    meta: dict = {}
+    for raw in lines[1:end]:
+        line = raw.rstrip()
+        if not line.strip() or line.lstrip().startswith("#") or ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        key, value = key.strip(), value.strip()
+        if value.startswith("[") and value.endswith("]"):
+            inner = value[1:-1].strip()
+            meta[key] = [v.strip().strip('"').strip("'") for v in inner.split(",") if v.strip()]
+        else:
+            value = value.strip('"').strip("'")
+            if value.lower() in ("true", "false"):
+                meta[key] = value.lower() == "true"
+            else:
+                meta[key] = value
+    return meta, "\n".join(lines[end + 1:]).strip()
 
 
 # --------------------------------------------------------------------------
@@ -274,6 +311,183 @@ class Change:
         return sum(1 for t in tasks if t["done"]), len(tasks)
 
 
+# --------------------------------------------------------------------------
+# Backlog
+# --------------------------------------------------------------------------
+
+ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
+ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
+ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
+OPEN_STATUSES = ("open", "in-progress", "blocked")
+PRIORITY_ORDER = {p: i for i, p in enumerate(ITEM_PRIORITIES)}
+
+
+class BacklogItem:
+    def __init__(self, path: Path, root: Path):
+        self.path = path
+        self.root = root
+        self.slug = path.stem
+        meta, body = parse_frontmatter(path)
+        self.meta = meta
+        self.body = body
+        self.id = str(meta.get("id", self.slug))
+        self.title = str(meta.get("title", "")).strip() or self._title_from_body(body) or self.slug
+        self.type = str(meta.get("type", "")).lower()
+        self.status = str(meta.get("status", "")).lower()
+        self.priority = str(meta.get("priority", "")).lower()
+        self.change = str(meta.get("change", "")).strip()
+        self.capability = str(meta.get("capability", "")).strip()
+        self.created = str(meta.get("created", "")).strip()
+        self.updated = str(meta.get("updated", "")).strip()
+        blocked = meta.get("blocked_by", [])
+        self.blocked_by = blocked if isinstance(blocked, list) else [blocked]
+        tags = meta.get("tags", [])
+        self.tags = tags if isinstance(tags, list) else [tags]
+
+    @staticmethod
+    def _title_from_body(body: str) -> str:
+        for line in body.splitlines():
+            if line.startswith("# "):
+                return line[2:].strip()
+        return ""
+
+    @property
+    def is_open(self) -> bool:
+        return self.status in OPEN_STATUSES
+
+    def sort_key(self) -> tuple:
+        return (PRIORITY_ORDER.get(self.priority, 9), self.status != "in-progress", self.id)
+
+    def as_dict(self) -> dict:
+        return {
+            "id": self.id, "title": self.title, "type": self.type, "status": self.status,
+            "priority": self.priority, "change": self.change or None,
+            "capability": self.capability or None, "blockedBy": self.blocked_by,
+            "tags": self.tags, "created": self.created, "updated": self.updated,
+            "path": str(self.path.relative_to(self.root)),
+        }
+
+
+def load_backlog(root: Path) -> list:
+    base = root / "openspec" / "backlog"
+    if not base.is_dir():
+        return []
+    items = [BacklogItem(p, root) for p in sorted(base.glob("*.md"))
+             if p.name.upper() not in ("README.MD", "TEMPLATE.MD")]
+    return sorted(items, key=lambda i: i.sort_key())
+
+
+def archived_names(root: Path) -> list:
+    base = root / "openspec" / "changes" / "archive"
+    return sorted(d.name for d in base.iterdir() if d.is_dir()) if base.is_dir() else []
+
+
+def find_archived(root: Path, change: str):
+    suffix = re.sub(r"^\d{4}-\d{2}-\d{2}-", "", change)
+    return next((n for n in archived_names(root)
+                 if n == change or re.sub(r"^\d{4}-\d{2}-\d{2}-", "", n) == suffix), None)
+
+
+def validate_backlog(root: Path, strict: bool) -> list:
+    found = []
+    items = load_backlog(root)
+    ids = {i.id for i in items}
+    active = set(list_changes(root))
+
+    for item in items:
+        rel = str(item.path.relative_to(root))
+        if not item.meta:
+            found.append(diag("error", "backlog_missing_frontmatter",
+                              f"{item.slug}: no `---` frontmatter block", rel,
+                              "copy openspec/backlog/TEMPLATE.md"))
+            continue
+        if item.id != item.slug:
+            found.append(diag("error", "backlog_id_mismatch",
+                              f"{item.slug}: frontmatter id '{item.id}' does not match the filename",
+                              rel, f"set `id: {item.slug}` or rename the file"))
+        for field, value, allowed in (("type", item.type, ITEM_TYPES),
+                                      ("status", item.status, ITEM_STATUSES),
+                                      ("priority", item.priority, ITEM_PRIORITIES)):
+            if value not in allowed:
+                found.append(diag("error", f"backlog_invalid_{field}",
+                                  f"{item.id}: {field} '{value or '(missing)'}' is not one of "
+                                  f"{', '.join(allowed)}", rel))
+
+        for dep in item.blocked_by:
+            if dep and dep not in ids:
+                found.append(diag("warning", "backlog_blocked_by_unknown",
+                                  f"{item.id}: blocked_by '{dep}' is not a backlog item", rel))
+        if item.status == "blocked" and not item.blocked_by:
+            found.append(diag("warning", "backlog_blocked_without_cause",
+                              f"{item.id}: status is blocked but blocked_by is empty", rel,
+                              "name the blocker, or explain it in the body and set status: open"))
+
+        if item.change:
+            arch = find_archived(root, item.change)
+            if item.change not in active and not arch:
+                found.append(diag("error", "backlog_change_not_found",
+                                  f"{item.id}: linked change '{item.change}' does not exist",
+                                  rel, "fix the link or clear the `change:` field"))
+            elif arch and item.is_open:
+                found.append(diag("warning", "backlog_change_archived",
+                                  f"{item.id}: linked change '{item.change}' is archived but the "
+                                  f"item is still {item.status}", rel,
+                                  "set status: done, or explain what is left"))
+            elif item.change in active and item.status == "open":
+                found.append(diag("warning", "backlog_status_behind_change",
+                                  f"{item.id}: linked change '{item.change}' is active but the item "
+                                  f"is still open", rel, "set status: in-progress"))
+        elif item.status == "in-progress":
+            found.append(diag("warning", "backlog_in_progress_without_change",
+                              f"{item.id}: in-progress with no linked change", rel,
+                              "link the change with `change: <id>`, or set status back to open"))
+
+        if item.capability and not main_spec_path(root, item.capability).is_file():
+            found.append(diag("warning", "backlog_capability_not_found",
+                              f"{item.id}: capability '{item.capability}' has no spec yet", rel))
+        if strict and item.is_open and not item.updated:
+            found.append(diag("warning", "backlog_never_updated",
+                              f"{item.id}: no `updated` date", rel))
+
+    # Only nudge about linkage in projects that actually use the backlog.
+    if items:
+        for name in active:
+            if not any(i.change == name for i in items):
+                found.append(diag("info", "change_without_backlog_item",
+                                  f"active change '{name}' has no backlog item",
+                                  f"openspec/changes/{name}/",
+                                  f"optional — link one with `change: {name}` for a single view"))
+    return found
+
+
+# --------------------------------------------------------------------------
+# Journal
+# --------------------------------------------------------------------------
+
+def journal_path(root: Path) -> Path:
+    return root / "openspec" / "JOURNAL.md"
+
+
+def read_journal(root: Path, limit: int) -> list:
+    """Entries are `## YYYY-MM-DD — <summary>` blocks, newest first."""
+    path = journal_path(root)
+    if not path.is_file():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    heads = [i for i, l in enumerate(lines) if re.match(r"^##\s+\d{4}-\d{2}-\d{2}", l)]
+    out = []
+    for n, start in enumerate(heads[:limit] if limit else heads):
+        end = heads[n + 1] if n + 1 < len(heads) else len(lines)
+        head = lines[start][2:].strip()
+        date, _, summary = head.partition("—")
+        out.append({
+            "date": date.strip(),
+            "summary": summary.strip() or "(no summary)",
+            "body": "\n".join(lines[start + 1:end]).strip(),
+        })
+    return out
+
+
 def main_spec_path(root: Path, capability: str) -> Path:
     return root / "openspec" / "specs" / capability / "spec.md"
 
@@ -308,6 +522,13 @@ def resolve_change(root: Path, name, as_json: bool) -> Change:
 # --------------------------------------------------------------------------
 # Diagnostics
 # --------------------------------------------------------------------------
+
+def tally(found: list) -> tuple:
+    """(errors, warnings, infos) — info is advisory and never affects exit code."""
+    errors = sum(1 for d in found if d["severity"] == "error")
+    infos = sum(1 for d in found if d["severity"] == "info")
+    return errors, len(found) - errors - infos, infos
+
 
 def diag(severity: str, code: str, message: str, target: str = "", fix: str = "") -> dict:
     d = {"severity": severity, "code": code, "message": message}
@@ -614,6 +835,88 @@ def render_status(change: Change, artifacts: list, done: int, total: int) -> str
     return "\n".join(out)
 
 
+def next_action(change: Change) -> str:
+    """The single most useful next step for a change."""
+    artifacts = change.artifact_status()
+    blocked = [a["id"] for a in artifacts if a["status"] == "ready"]
+    if blocked:
+        return f"write `{blocked[0]}`"
+    done, total = change.progress()
+    if total and done < total:
+        return "executor — implement remaining tasks"
+    if not total:
+        return "write tasks"
+    if change.track == "full":
+        gate = change.dir / "plan" / "production-gate.md"
+        if not gate.is_file():
+            return "/verify, then auditor"
+        text = gate.read_text(encoding="utf-8")
+        if "BLOCKED" in text and "Decision: `PASS`" not in text:
+            return "executor — remediate gate violations"
+        return "/archive"
+    return "/verify, then /archive"
+
+
+def render_board(root: Path, changes: list, items: list, entries: list, diagnostics: list) -> str:
+    caps = [d.name for d in sorted((root / "openspec" / "specs").glob("*"))
+            if d.is_dir()] if (root / "openspec" / "specs").is_dir() else []
+    open_items = [i for i in items if i.is_open]
+    blocked = [i for i in open_items if i.status == "blocked"]
+    errors, warnings, _ = tally(diagnostics)
+
+    out = ["BOARD   {} capabilit{} · {} active change{} · {} open backlog item{}".format(
+        len(caps), "y" if len(caps) == 1 else "ies",
+        len(changes), "" if len(changes) == 1 else "s",
+        len(open_items), "" if len(open_items) == 1 else "s")]
+
+    out.append("")
+    out.append("ACTIVE CHANGES")
+    if not changes:
+        out.append("  (none — /propose to start one)")
+    for change in changes:
+        done, total = change.progress()
+        tasks = f"{done}/{total}" if total else "—"
+        out.append(f"  {change.name:<32} {change.track:<9} tasks {tasks:>7}   {next_action(change)}")
+
+    out.append("")
+    out.append(f"BACKLOG   {len(open_items)} open" + (f" · {len(blocked)} blocked" if blocked else ""))
+    if not open_items:
+        out.append("  (empty)")
+    for item in open_items:
+        link = f"→ {item.change}" if item.change else ""
+        if item.status == "blocked" and item.blocked_by:
+            link = f"⊘ blocked by {', '.join(item.blocked_by)}"
+        out.append(f"  {item.priority.upper():<3} {item.type:<8} {item.id:<34} "
+                   f"{item.status:<12} {link}")
+    closed = [i for i in items if not i.is_open]
+    if closed:
+        out.append(f"  ({len(closed)} closed — `backlog list --status done`)")
+
+    out.append("")
+    out.append("RECENT")
+    if not entries:
+        out.append("  (no journal entries — write one with /handoff)")
+    for e in entries:
+        out.append(f"  {e['date']}  {e['summary']}")
+
+    out.append("")
+    out.append(f"HEALTH   {errors} error(s), {warnings} warning(s)"
+               + ("   — run `validate --all`" if errors or warnings else ""))
+
+    out.append("")
+    if errors:
+        out.append("NEXT: fix validation errors — `validate --all`")
+    elif changes:
+        first = min(changes, key=lambda c: (c.track != "full", c.name))
+        out.append(f"NEXT: {first.name} — {next_action(first)}")
+    elif open_items:
+        top = open_items[0]
+        out.append(f"NEXT: {top.priority.upper()} {top.id} — /propose it")
+    else:
+        out.append("NEXT: nothing queued. /explore or /propose.")
+    return "\n".join(out)
+
+
 def render_diagnostics(found: list) -> str:
     if not found:
         return "clean — no issues found."
@@ -625,10 +928,12 @@ def render_diagnostics(found: list) -> str:
             lines.append(f"        at {d['target']}")
         if d.get("fix"):
             lines.append(f"        fix: {d['fix']}")
-    errors = sum(1 for d in found if d["severity"] == "error")
-    warnings = len(found) - errors
+    errors, warnings, infos = tally(found)
     lines.append("")
-    lines.append(f"{errors} error(s), {warnings} warning(s)")
+    summary = f"{errors} error(s), {warnings} warning(s)"
+    if infos:
+        summary += f", {infos} info"
+    lines.append(summary)
     return "\n".join(lines)
 
 
@@ -653,6 +958,25 @@ def main(argv: list) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="list active changes", parents=[common])
+
+    p_board = sub.add_parser("board", help="everything at a glance — the session-start view",
+                             parents=[common])
+    p_board.add_argument("--journal-limit", type=int, default=5,
+                         help="recent journal entries to show (default 5)")
+
+    p_backlog = sub.add_parser("backlog", help="backlog items", parents=[common])
+    bsub = p_backlog.add_subparsers(dest="backlog_command")
+    p_bl = bsub.add_parser("list", help="list items", parents=[common])
+    p_bl.add_argument("--status", help="filter: " + " | ".join(ITEM_STATUSES) + " | all")
+    p_bl.add_argument("--type", help="filter: " + " | ".join(ITEM_TYPES))
+    p_bl.add_argument("--priority", help="filter: " + " | ".join(ITEM_PRIORITIES))
+    p_bl.add_argument("--tag", help="filter by tag")
+    p_bl.add_argument("--change", help="filter by linked change")
+    p_bs = bsub.add_parser("show", help="show one item", parents=[common])
+    p_bs.add_argument("item")
+
+    p_journal = sub.add_parser("journal", help="recent session entries", parents=[common])
+    p_journal.add_argument("--limit", type=int, default=10)
 
     p_status = sub.add_parser("status", help="artifact graph for a change", parents=[common])
     p_status.add_argument("change", nargs="?")
@@ -690,6 +1014,89 @@ def main(argv: list) -> int:
                 print(f"  {r['name']:<34} {r['track']:<9} tasks {bar:>7}  {r['state']}")
         return 0
 
+    if args.command == "board":
+        changes = [Change(root, n) for n in list_changes(root)]
+        items = load_backlog(root)
+        entries = read_journal(root, args.journal_limit)
+        found = []
+        for change in changes:
+            found.extend(validate_change(root, change, False))
+        found.extend(validate_main_specs(root, False))
+        found.extend(validate_backlog(root, False))
+        if args.json:
+            print(json.dumps({
+                "capabilities": [d.name for d in sorted((root / "openspec" / "specs").glob("*"))
+                                 if d.is_dir()],
+                "changes": [{"name": c.name, "track": c.track,
+                             "progress": dict(zip(("complete", "total"), c.progress())),
+                             "nextAction": next_action(c)} for c in changes],
+                "backlog": [i.as_dict() for i in items],
+                "journal": entries,
+                "status": found,
+                "root": str(root),
+            }, indent=2))
+        else:
+            print(render_board(root, changes, items, entries, found))
+        return 0
+
+    if args.command == "backlog":
+        items = load_backlog(root)
+        command = getattr(args, "backlog_command", None) or "list"
+
+        if command == "show":
+            match = next((i for i in items if i.id == args.item or i.slug == args.item), None)
+            if not match:
+                die(f"backlog item '{args.item}' not found", args.json)
+            if args.json:
+                print(json.dumps({**match.as_dict(), "body": match.body}, indent=2))
+            else:
+                print(f"{match.id}  [{match.priority.upper()} {match.type} {match.status}]")
+                if match.change:
+                    print(f"change: {match.change}")
+                if match.capability:
+                    print(f"capability: {match.capability}")
+                if match.blocked_by:
+                    print(f"blocked by: {', '.join(match.blocked_by)}")
+                print(f"\n{match.body}")
+            return 0
+
+        wanted = (getattr(args, "status", None) or "open").lower()
+        if wanted == "open":
+            items = [i for i in items if i.is_open]
+        elif wanted != "all":
+            items = [i for i in items if i.status == wanted]
+        for attr in ("type", "priority", "change"):
+            value = getattr(args, attr, None)
+            if value:
+                items = [i for i in items if getattr(i, attr) == value.lower()]
+        if getattr(args, "tag", None):
+            items = [i for i in items if args.tag in i.tags]
+
+        if args.json:
+            print(json.dumps({"items": [i.as_dict() for i in items], "root": str(root)}, indent=2))
+        elif not items:
+            print("no matching backlog items.")
+        else:
+            for i in items:
+                link = f"→ {i.change}" if i.change else ""
+                print(f"  {i.priority.upper():<3} {i.type:<8} {i.id:<34} {i.status:<12} {link}")
+        return 0
+
+    if args.command == "journal":
+        entries = read_journal(root, args.limit)
+        if args.json:
+            print(json.dumps({"entries": entries, "root": str(root)}, indent=2))
+        elif not entries:
+            print(f"no journal entries. Create {journal_path(root).relative_to(root)} "
+                  f"and add one — see .claude/references/tracking.md")
+        else:
+            for e in entries:
+                print(f"## {e['date']} — {e['summary']}")
+                if e["body"]:
+                    print(e["body"])
+                print()
+        return 0
+
     if args.command == "status":
         change = resolve_change(root, args.change, args.json)
         artifacts = change.artifact_status()
@@ -714,10 +1121,12 @@ def main(argv: list) -> int:
         for change in targets:
             found.extend(validate_change(root, change, args.strict))
         found.extend(validate_main_specs(root, args.strict))
-        errors = sum(1 for d in found if d["severity"] == "error")
+        if args.all or not args.change:
+            found.extend(validate_backlog(root, args.strict))
+        errors, warnings, infos = tally(found)
         if args.json:
             print(json.dumps({"status": found,
-                              "summary": {"errors": errors, "warnings": len(found) - errors},
+                              "summary": {"errors": errors, "warnings": warnings, "info": infos},
                               "root": str(root)}, indent=2))
         else:
             print(render_diagnostics(found))

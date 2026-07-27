@@ -17,7 +17,8 @@ a description of the system. Feature #2 started from zero. There was no way to
 run two changes at once, no way to finish one, and a typo fix cost five
 documents and a production gate.
 
-3.0 adds the missing half, adapted from OpenSpec:
+3.0 adds the missing half — a spec layer adapted from OpenSpec, plus a tracking
+layer so nothing is lost between sessions or agents:
 
 | | v2.1 | v3.0 |
 |---|---|---|
@@ -28,6 +29,8 @@ documents and a production gate.
 | **Ceremony** | one size (heavy) | `lite` / `standard` / `full` tracks |
 | **Parallel work** | collides | one folder per change |
 | **Definition of done** | prose | testable Requirement + Scenario |
+| **Deferred work** | lost | `openspec/backlog/` — one file per item |
+| **Session handoff** | none | `openspec/JOURNAL.md` + `/board` / `/handoff` |
 | **Validation** | none | `openspec.py validate` |
 
 What v2.1 already did well — lane separation, evidence-based review, the
@@ -45,7 +48,9 @@ Upgrading an existing project: `docs/MIGRATION_v3.md`.
 ```
 openspec/
 ├── config.yaml                     project context + per-artifact rules
+├── JOURNAL.md                      what happened, session by session
 ├── specs/<capability>/spec.md      SOURCE OF TRUTH — how the system behaves today
+├── backlog/<item-id>.md            work that is not a change yet
 └── changes/
     ├── <change-id>/                one folder per proposed change
     └── archive/YYYY-MM-DD-<id>/    completed work, full context preserved
@@ -61,7 +66,34 @@ them real → archive merges them → specs describe the new behavior → repeat
 
 That loop is why the harness compounds instead of producing paperwork.
 
-### Skills (7)
+### The tracking layer
+
+Four places, one rule each — **exactly one owns each piece of work at a time**:
+
+```
+idea/bug ──► backlog item ──► change folder ──► archive
+             (owns it)        (owns it)         (owns it)
+                                  │
+             item links to it ────┘  and says nothing more
+```
+
+| Where | Tracks |
+|---|---|
+| `openspec/backlog/<id>.md` | Bugs, debt, ideas, deferred findings — one file per item, so parallel agents never conflict |
+| `openspec/changes/<id>/tasks.md` | Steps inside an in-flight change |
+| `openspec/changes/archive/` | What shipped, with full context |
+| `openspec/JOURNAL.md` | What happened each session, and what to do next |
+
+Every session **starts with `/board`** (read state) and **ends with `/handoff`**
+(write state). That bracket is what lets a different agent — or you in three
+weeks — pick up without losing anything.
+
+The backlog stays alive because the skills feed it: the proposer files cut
+scope, the executor files debt it took on, the verifier files warnings it did
+not fix, the auditor files MINORs and waivers, the archiver files what a change
+did not finish. A deferral nobody records is indistinguishable from an oversight.
+
+### Skills (8)
 
 | Skill | Purpose |
 |---|---|
@@ -72,14 +104,18 @@ That loop is why the harness compounds instead of producing paperwork.
 | `verifier` | Advisory check: completeness · correctness · coherence. Non-blocking. |
 | `auditor` | **[full]** Production gate. Spec parity + checklist parity + tech debt. PASS / BLOCKED. |
 | `archiver` | Merges deltas into the source of truth and archives the change. |
+| `tracker` | Owns the backlog and the session journal. Files, triages, and writes handoffs. |
 
-### Slash commands (12)
+### Slash commands (15)
 
 | Command | Purpose |
 |---|---|
+| `/board` | **Start here.** Everything at a glance: changes, backlog, journal, next action |
+| `/handoff` | **End here.** File what was deferred, write the session journal entry |
+| `/backlog` | View, file, or triage work that is not a change yet |
 | `/explore` | Think before committing — investigate, weigh options, sharpen scope. No artifacts. |
 | `/propose` | Create a change: proposal, delta specs, tasks |
-| `/status` | State of the spec layer — changes, artifacts, tasks, validation, next action |
+| `/status` | Detailed state of a single change |
 | `/verify` | Does the implementation match the change? |
 | `/archive` | Merge deltas into the source of truth and archive |
 | `/idea` | Greenfield concept exploration — product, market, MVP scope, tech stack |
@@ -95,9 +131,12 @@ That loop is why the harness compounds instead of producing paperwork.
 `.claude/tools/openspec.py` — zero-dependency Python 3, no install:
 
 ```bash
-python3 .claude/tools/openspec.py list                     # active changes
-python3 .claude/tools/openspec.py status <change>          # artifact graph + progress
-python3 .claude/tools/openspec.py validate <change>        # structural validation
+python3 .claude/tools/openspec.py board                     # everything at a glance
+python3 .claude/tools/openspec.py list                      # active changes
+python3 .claude/tools/openspec.py status <change>           # artifact graph + progress
+python3 .claude/tools/openspec.py backlog list              # open items
+python3 .claude/tools/openspec.py journal --limit 5         # recent sessions
+python3 .claude/tools/openspec.py validate --all            # specs + backlog
 python3 .claude/tools/openspec.py archive <change> --apply  # merge deltas + archive
 ```
 
@@ -124,6 +163,9 @@ Escalating is free: edit `track:` and write the artifacts the new track wants.
 ## Pipeline flow
 
 ```
+  /board            read state — changes, backlog, journal, next action
+      │
+      ▼
   /explore          think — no artifacts, no code, no commitment
       │
       ▼
@@ -143,6 +185,9 @@ Escalating is free: edit `track:` and write the artifacts the new track wants.
       │
       ▼
   /archive          deltas merge into openspec/specs
+      │
+      ▼
+  /handoff          write state — file deferrals, journal the session
 ```
 
 Greenfield still starts at `/idea → /spec → /logic`, then joins at `/propose`.
@@ -161,17 +206,20 @@ your-project/
 ├── .claude/                       ← the portable bundle
 │   ├── skills/
 │   │   ├── proposer/  planner/  executor/  verifier/  auditor/  archiver/
-│   │   └── checklist-generator/
+│   │   └── tracker/  checklist-generator/
 │   ├── commands/                  ← 12 slash commands
 │   ├── references/                ← shared, read by every skill
 │   │   ├── spec-format.md         the requirement/scenario/delta format
 │   │   ├── change-lifecycle.md    folder layout, tracks, artifact graph
-│   │   └── templates/config.yaml
+│   │   ├── tracking.md            backlog + journal conventions
+│   │   └── templates/
 │   └── tools/openspec.py          ← zero-dep validator, status, archiver
 │
 ├── openspec/                      ← the spec layer (behavior)
 │   ├── config.yaml
 │   ├── specs/                     source of truth
+│   ├── backlog/                   work that is not a change yet
+│   ├── JOURNAL.md                 session handoff log
 │   └── changes/                   active + archive
 │
 ├── docs/specs/                    ← review checklists (engineering standards)
@@ -237,6 +285,9 @@ work instead of ahead of it.
 - **Dependencies are enablers, not gates.** The artifact graph says what is
   possible to write next, not what you are forbidden from writing.
 - **Right-size everything.** Three tracks, so a typo fix costs a typo fix.
+- **Nothing is lost between sessions.** Read state at the start, write state at
+  the end, and file every deferral when you make it — not later, when the
+  reasoning is gone.
 - **Format compatibility is a feature.** `openspec/` matches the OpenSpec CLI's
   on-disk layout, so `npx openspec@latest` is an optional upgrade, not a rewrite.
 
