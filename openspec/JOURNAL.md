@@ -6,6 +6,62 @@ Every session that changes anything ends with an entry here. This is what a
 fresh agent — or you in three weeks — reads to know where things stand and what
 the last session learned the hard way.
 
+Format:
+
+```markdown
+## YYYY-MM-DD — one-line summary of the session
+
+**Did**: what actually changed. Name changes, items, files.
+**State**: what is in flight right now and how far along.
+**Next**: the single next action, named as a command or skill.
+**Watch out**: gotchas, dead ends, decisions that are not obvious from the diff.
+```
+
+Only `## YYYY-MM-DD — summary` headings are parsed; everything else is free text.
+Write `**Watch out**: none` rather than dropping the line — an empty field is a
+signal, a missing one is ambiguous.
+
+Read it with `python3 .claude/tools/openspec.py journal --limit 5`, or see it
+folded into `board`.
+
+**Merge conflicts** are expected here when two sessions run in parallel, and the
+resolution is always the same: keep both entries, newest first.
+
+---
+
+## 2026-07-27 — Fixed the rename bug the tests found; container reset mid-session
+
+**Did**: `fix-renamed-on-new-capability` (`lite`) — a `RENAMED` delta against a
+capability with no main spec is now an error (`renamed_no_main_spec`) instead of
+being silently discarded. Fixed in both places: validation reports it at
+`/propose` time, and the merge guard now checks `delta.renames` as well as
+`delta.sections`, because rename pairs never land in `sections["RENAMED"]` and
+that gap is exactly what let the bug through. Archived into `spec-validation`
+(now 4 requirements). Suite is 113, no expected failures left.
+
+**State**: PR #3 on `claude/work-review-next-steps-clb36a`, three commits.
+`validate --all` is 0 errors, 1 warning (the placeholder design system).
+Backlog is 5 open — 1×P2, 4×P3. Two capabilities in the source of truth.
+
+**Next**: Unchanged and still the only blocker: **decide what Grid-Commander
+is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`. What is left in
+the backlog is all P3 harness polish; none of it needs the project concept, and
+none of it substitutes for having one.
+
+**Watch out**:
+- **The container was reclaimed mid-session and the working tree reset to
+  `main`.** Everything uncommitted was gone; everything pushed survived.
+  `git checkout -B <branch> origin/<branch>` restored it. Push early — a commit
+  that exists only in the container is not saved.
+- **Both test guards earned their keep on this fix.** Adding the new code made
+  the coverage meta-test fail by name, and fixing the tool flipped the
+  `@unittest.expectedFailure` marker to UNEXPECTED SUCCESS, which also fails.
+  Neither could be forgotten. Keep pinning known bugs that way.
+- The `merge_conflict` backstop is still unreachable (`merge-conflict-unreachable`)
+  and still worth keeping — this fix added a second check in front of it rather
+  than relying on it.
+- `full` track remains unexercised and blocked on `docs/specs/`.
+
 ## 2026-07-27 — The harness has tests; two real bugs found writing them
 
 **Did**: Took `add-harness-regression-tests` (P1) through the `standard`
@@ -53,29 +109,6 @@ project with no defined stack.
   lines, trailing newline) was added to every merge test. A test that passes
   against a broken tool is a liability, so break the tool on purpose and check.
 - `full` track is **still** unexercised and still blocked on `docs/specs/`.
-
-Format:
-
-```markdown
-## YYYY-MM-DD — one-line summary of the session
-
-**Did**: what actually changed. Name changes, items, files.
-**State**: what is in flight right now and how far along.
-**Next**: the single next action, named as a command or skill.
-**Watch out**: gotchas, dead ends, decisions that are not obvious from the diff.
-```
-
-Only `## YYYY-MM-DD — summary` headings are parsed; everything else is free text.
-Write `**Watch out**: none` rather than dropping the line — an empty field is a
-signal, a missing one is ambiguous.
-
-Read it with `python3 .claude/tools/openspec.py journal --limit 5`, or see it
-folded into `board`.
-
-**Merge conflicts** are expected here when two sessions run in parallel, and the
-resolution is always the same: keep both entries, newest first.
-
----
 
 ## 2026-07-27 — Harness proven on its first real change; CI is live
 

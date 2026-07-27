@@ -2,11 +2,11 @@
 id: renamed-dropped-on-new-capability
 title: A RENAMED delta against a new capability is silently discarded
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: fix-renamed-on-new-capability
 capability: harness-integrity
 blocked_by: []
 tags: [harness, spec-layer, archive]

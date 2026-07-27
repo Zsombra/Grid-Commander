@@ -6,8 +6,6 @@ ever becomes write-as-you-go, a change touching two capabilities could half-land
 truth in a state no change folder describes.
 """
 
-import unittest
-
 from support import MAIN_SPEC, ProjectTestCase, added_delta, dedent, openspec
 
 SPEC = "openspec/specs/widgets/spec.md"
@@ -103,17 +101,14 @@ class ArchiveAbortTest(ProjectTestCase):
         self.assertFalse(self.project.exists("openspec/specs/zeta-cap/spec.md"))
         self.assertTrue(self.project.exists("openspec/changes/a-change/proposal.md"))
 
-    @unittest.expectedFailure
-    def test_a_rename_in_a_new_capability_is_not_silently_dropped(self):
-        """Known bug — `renamed-dropped-on-new-capability` in the backlog.
+    def test_a_rename_in_a_new_capability_is_refused(self):
+        """Was `renamed-dropped-on-new-capability`.
 
         `RENAMED` puts its pairs in `doc.renames`, not `doc.sections["RENAMED"]`,
-        so the new-capability guard sees an empty list and lets the merge
-        through. Validation skips the rename checks too, because there is no
-        main spec to check against. The rename vanishes with no diagnostic.
-
-        Marked expectedFailure so the suite passes today and fails loudly the
-        moment someone fixes the tool without removing this marker.
+        so the new-capability merge guard saw an empty list and let the merge
+        through, and validation skipped its rename checks because there was no
+        main spec to check against. The rename vanished with no diagnostic and
+        the change archived clean.
         """
         self.project.change()
         self.project.delta("a-change", "gadgets", added_delta(
@@ -129,6 +124,32 @@ class ArchiveAbortTest(ProjectTestCase):
         result = self.project.run("archive", "a-change", "--apply", "--json")
 
         self.assertEqual(result.code, 1, "the rename was applied to nothing, silently")
+        self.assertIn("renamed_no_main_spec", result.codes())
+        self.assertFalse(self.project.exists("openspec/specs/gadgets/spec.md"),
+                         "the ADDED requirements merged despite the refused rename")
+        self.assertTrue(self.project.exists("openspec/changes/a-change/proposal.md"))
+
+    def test_the_merge_guard_refuses_a_rename_without_a_main_spec(self):
+        """The backstop behind the validation error above. Validation should
+        catch this first; if the two ever diverge, the merge must still refuse
+        rather than drop the rename."""
+        delta = openspec.SpecDoc(self.project.write("scratch/rename.md", dedent("""
+            ## Purpose
+
+            A capability that does not exist yet.
+
+            ## RENAMED Requirements
+
+            - FROM: `### Requirement: Nothing`
+            - TO: `### Requirement: Something`
+        """)))
+
+        self.assertEqual(delta.renames, [("Nothing", "Something")])
+        self.assertEqual(delta.sections.get("RENAMED"), [],
+                         "renames live in .renames — that gap is what caused the bug")
+        with self.assertRaises(ValueError) as caught:
+            openspec.build_merged_spec(self.project.root, "gadgets", delta)
+        self.assertIn("RENAMED requires an existing main spec", str(caught.exception))
 
     # -- recovery ----------------------------------------------------------
 

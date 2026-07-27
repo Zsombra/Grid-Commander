@@ -1057,10 +1057,23 @@ def validate_change(root: Path, change: Change, strict: bool) -> list:
                     ))
 
         for old, new in doc.renames:
-            if main_exists and not main.find(old):
+            # A rename needs something to rename. Without this the checks below
+            # are all skipped, the merge guard misses too (rename pairs live in
+            # doc.renames, not doc.sections["RENAMED"]), and the rename is
+            # silently dropped at archive.
+            if not main_exists:
+                found.append(diag(
+                    "error", "renamed_no_main_spec",
+                    f"{cap}: RENAMED '{old}' in a capability that has no main spec",
+                    rel(delta),
+                    "a capability's first change can only ADD — drop the rename and "
+                    "name the requirement correctly in the ADDED section",
+                ))
+                continue
+            if not main.find(old):
                 found.append(diag("error", "renamed_not_found",
                                   f"{cap}: RENAMED source '{old}' not found in the main spec", rel(delta)))
-            if main_exists and main.find(new):
+            if main.find(new):
                 found.append(diag("error", "renamed_target_exists",
                                   f"{cap}: RENAMED target '{new}' already exists in the main spec", rel(delta)))
 
@@ -1115,6 +1128,11 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
         for op in ("MODIFIED", "REMOVED", "RENAMED"):
             if delta.sections.get(op):
                 raise ValueError(f"{cap}: {op} requires an existing main spec")
+        # Checked separately: a RENAMED section parses its pairs into
+        # delta.renames and leaves sections["RENAMED"] empty, so the loop above
+        # never sees it.
+        if delta.renames:
+            raise ValueError(f"{cap}: RENAMED requires an existing main spec")
         return "\n".join(body).rstrip() + "\n", ops
 
     main = SpecDoc(path)

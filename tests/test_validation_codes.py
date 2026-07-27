@@ -194,6 +194,20 @@ def _(p, t):
     """))
 
 
+@case("renamed_no_main_spec")
+def _(p, t):
+    p.change()
+    p.delta("a-change", "widgets", added_delta(
+        "Delta", purpose="A capability whose first change tries to rename something."
+    ) + dedent("""
+
+        ## RENAMED Requirements
+
+        - FROM: `### Requirement: Nothing`
+        - TO: `### Requirement: Something`
+    """))
+
+
 @case("renamed_not_found")
 def _(p, t):
     p.main_spec()
