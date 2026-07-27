@@ -124,18 +124,36 @@ Reach here = "how often *I* need it." Score = (R×I×C)/E.
 
 ### 2.3 MVP definition
 
-```
-MVP SCOPE:
-- Typed read-only MCP client (the 94 read tools; the 16 wager tools are not
-  reachable from it)
-- Config & connection health (key from env, endpoint, a "connected as X" check)
-- Regime Radar — the sharpest expression of your "identify regimes" ask
-- Performance tracker — grounds every later optimization decision
-- Thin local persistence — cache + capture history the API paginates away
+**DECISIONS (resolved with the user):** headless-first (no UI until a later
+Tier-1 surface); the first product on top of the client is **agent creation +
+strategy creation**, not the read dashboards. Both are `mcp:read`-scoped, so
+they mutate the account (slots, credits, persistent agents) but move **no
+money** — they live in the **manage** tier, below the wager boundary.
 
-MVP EXIT CRITERIA: "I can open Grid Commander, see it's connected to my account,
-  read current regimes across the coin universe, and see my agents' realized
-  performance — without any code path capable of placing a wager."
+This means the two-client (read | wager) model from the architecture review is
+refined into **three capability tiers** — observe / manage / wager — and the
+client (Tier 0) must expose `manage` so agent/strategy creation can ride on it,
+while `wager` stays walled off.
+
+```
+MVP SCOPE (revised):
+- Typed MCP client with the three-tier capability boundary (observe + manage
+  exposed; the 16 wager tools not reachable without an explicit wager client)
+- Config & connection health (key from env, endpoint, a "connected as X" check)
+- Agent creation — create/update/configure Intelligence Agents: pick an
+  approved LLM model, bind a strategy, set budget/behavior characteristics
+- Strategy creation — author a strategy via the platform's compile → review →
+  apply flow (and fork/adapt existing ones)
+- Thin local persistence — cache reads, keep history the API paginates away
+
+MVP EXIT CRITERIA: "Headless, I can create and configure a trading agent end to
+  end — model, strategy, budget — and author or fork a strategy through
+  compile→apply, all against my live account, with no code path able to place a
+  wager."
+
+DEFERRED FROM MVP (were the earlier recommendation): Regime Radar, performance
+  tracker, market dashboard — still valuable Tier-1 read products, now sequenced
+  after agent/strategy creation.
 
 EXPLICITLY DEFERRED:
 - Every mcp:wager tool — deferred until Tiers 0–3 are solid AND the safety
@@ -239,13 +257,14 @@ grid-commander/
 ### 4.3 Open questions
 
 ```
-1. Headless-first or UI-first? — MVP could be a CLI/daemon that proves the
-   client and read products before any Next.js work. (Recommendation: yes,
-   headless MVP; UI as the first Tier-1 surface once shapes are known.)
-2. Which read product leads Tier 1? — Regime Radar vs performance tracker vs
-   market dashboard. All pure-read; pick when the client lands.
-3. How much history to persist locally, and when to prune? — affects the DB
-   from the first read feature.
+1. [RESOLVED] Headless-first. No UI until a later Tier-1 surface.
+2. [RESOLVED] First product = agent creation + strategy creation (manage tier),
+   not the read dashboards. Those follow.
+3. How much history to persist locally, and when to prune? — affects the DB;
+   less urgent now that the first product is authoring, not analytics.
+4. [NEW] Exact agent + strategy "characteristics" to expose — the full config
+   surface (models, strategy binding, budget, behavior, signal rules). This is
+   the /spec conversation for the agent-strategy-creation change.
 ```
 
 ---

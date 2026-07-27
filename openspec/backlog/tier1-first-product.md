@@ -2,7 +2,7 @@
 id: tier1-first-product
 title: Choose and build the first Tier-1 read-only product
 type: feature
-status: open
+status: wontfix
 priority: p2
 created: 2026-07-27
 updated: 2026-07-27
@@ -33,3 +33,11 @@ the platform's data shapes before committing to the autonomous-trading tiers.
 
 Blocked on `build-mcp-client`. The choice is a product call for the user —
 flagged as the open scoping question in the architecture review.
+
+
+## Resolution (2026-07-27)
+
+Superseded. The user chose agent + strategy creation as the first product on
+the client, not a read-only dashboard — tracked as `build-agent-strategy-creation`.
+Regime Radar / performance tracker / market dashboard remain valid later Tier-1
+read products but are no longer 'the first one'.

@@ -3,17 +3,33 @@
 
 ## Project
 
-- **Name**: [project name]
-- **Description**: [one-liner describing what this project does]
-- **Status**: [new / in-development / production]
+- **Name**: Grid Commander
+- **Description**: A headless cockpit over BattleGrid's MCP control plane — observe markets and agents, and author/run trading agents and strategies, with a structural safety boundary around real-money actions.
+- **Status**: new (greenfield; harness proven, first feature not yet built)
 
 ## Architecture
 
-- **Pattern**: [Clean Architecture / Provider Pattern / MVC / other — filled by /idea or manually]
-- **Language**: [TypeScript / Python / Go / etc.]
-- **Framework**: [Next.js / FastAPI / Express / etc.]
-- **Database**: [PostgreSQL / MongoDB / none / etc.]
-- **ORM**: [Drizzle / Prisma / SQLAlchemy / none / etc.]
+- **Pattern**: Ports & Adapters (light) — the one seam that matters is the capability boundary (observe / manage / wager), enforced structurally
+- **Language**: TypeScript (Node ≥ 20, ESM) — reference MCP SDK, matches BattleGrid's own stack, shared types through the eventual cockpit
+- **Framework**: none for the headless core; Next.js later for the UI cockpit
+- **Database**: SQLite (better-sqlite3) for MVP — zero-ops, single-user; upgradeable to Postgres if productized
+- **ORM**: none for MVP (thin SQL); revisit at cockpit stage
+- **Integration**: BattleGrid MCP — `mcp.battlegrid.trade/mcp`, streamable-HTTP, static Bearer key from env
+
+### Capability tiers (the money-safety boundary)
+
+BattleGrid scopes tools `mcp:read` vs `mcp:wager`, but that split is about
+*trading authority*, not read-vs-write — several `mcp:read` tools still mutate
+the account (create an agent, apply a strategy, rebind — destructive). We model
+three tiers and enforce them structurally:
+
+| Tier | Side effects | Examples | Client |
+|---|---|---|---|
+| **observe** | none | market data, regimes, performance | read-safe, always available |
+| **manage** | account state, no money | create/update agents, author/apply strategies | gated, no wager scope needed |
+| **wager** | real money / standing trading authority | the 16 `mcp:wager` tools | separate client, explicit authorization, `full` track only |
+
+Details: `_IDEA/battlegrid-mcp-architecture.md`, `_IDEA/Grid-Commander_Idea_Brief.md`.
 
 ## Pipeline
 

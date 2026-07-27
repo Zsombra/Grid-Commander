@@ -10,18 +10,30 @@
 default_track: standard
 
 context: |
-  Tech stack: [language, runtime, framework]
-  Package manager: [npm / pnpm / uv / poetry / go mod]
-  Architecture: [Clean Architecture / Provider Pattern / MVC]
+  Project: Grid Commander — a headless TypeScript cockpit over BattleGrid's MCP
+  control plane (mcp.battlegrid.trade/mcp, streamable-HTTP, static Bearer key).
+
+  Tech stack: TypeScript, Node >= 20, ESM. Official @modelcontextprotocol/sdk.
+  Package manager: pnpm
+  Architecture: light Ports & Adapters
+  Persistence: SQLite (better-sqlite3) for MVP
+  Secrets: BG_API_KEY from env only, never in the repo (.env is git-ignored)
 
   Product language:
   - Write proposals and specs in user-facing behavior language
   - Requirements describe observable outcomes and the product contract
   - Internal mechanisms belong in design.md or tasks.md, not spec.md
 
-  Platform constraints:
-  - [e.g. runs on macOS, Linux, and Windows — always use path joins]
-  - [e.g. must degrade gracefully offline]
+  THE CAPABILITY BOUNDARY (money safety — the most important constraint):
+  - Tools fall in three tiers: observe (pure read), manage (writes with no money
+    — create/author agents & strategies), wager (the 16 mcp:wager tools that
+    commit real money or standing trading authority).
+  - The tiers are a structural boundary, not a convention: code with observe
+    access must not be able to construct a wager call.
+  - Every wager tool is a full-track change with explicit confirmation. Never
+    incidental. See _IDEA/battlegrid-mcp-architecture.md section 6.
+  - Respect platform limits as invariants: 10 signed wagers/day, $500/day,
+    agent-slot caps — read them, never assume.
 
 # Per-artifact rules. Each list is appended to the instructions for that
 # artifact type. Delete any section you have nothing specific to say about.
@@ -32,15 +44,17 @@ rules:
 
   specs:
     - Prefer observable product behavior over internal mechanics
-    - [e.g. requirements involving file paths must specify cross-platform behavior]
+    - A capability that touches a wager tool must state the confirmation and limit checks as requirements
+    - Name which capability tier (observe/manage/wager) each requirement sits in
 
   design:
     - Record decisions as "Decision: X because Y", with the alternatives rejected
-    - [e.g. prefer explicit lookups over pattern matching]
+    - The tool surface drifts on BattleGrid deploys — prefer runtime tool-name checks over hardcoded assumptions
+    - Static Bearer auth only; do not build the OAuth/DCR flow (that was only for claude.ai's connector)
 
   tasks:
     - Every task traces to a requirement or is explicitly infrastructure
-    - [e.g. add a Windows CI verification task when file paths change]
+    - Never call a wager tool from a test or a task without an explicit, isolated, confirmed path
 
 # Design layer. "none" keeps tickets local to the repo; "github" lets the
 # design-director mirror them to issues (files remain the source of truth).
@@ -49,6 +63,6 @@ design_sync: none
 # Commands the executor and auditor must run and pass. Leave empty to fall back
 # to the Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md.
 quality_gates:
-  - [e.g. npm run type-check]
-  - [e.g. npm run lint]
-  - [e.g. npm test]
+  - pnpm type-check
+  - pnpm lint
+  - pnpm test
