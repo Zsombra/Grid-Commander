@@ -66,21 +66,37 @@ export interface WagerClient extends BaseClient {
   ): Promise<ToolResult>;
 }
 
+type Conn = Awaited<ReturnType<typeof connect>>;
+
 class CoreClient implements BaseClient {
+  readonly grant: Tier;
   identity!: AccountIdentity;
 
-  constructor(
-    readonly grant: Tier,
-    private readonly conn: Awaited<ReturnType<typeof connect>>,
-  ) {}
+  /**
+   * The raw SDK connection is a TRUE ECMAScript private field. It is never an
+   * own-property of the returned instance, so a consumer cannot reach the
+   * unguarded SDK client via `(client as any).conn`, `Object.keys`, or a
+   * prototype walk. This is what makes the boundary structural rather than
+   * merely typed — TypeScript `private` is erased at runtime; `#` is not.
+   */
+  #conn: Conn;
 
-  /** The guard. Runs on every call, before any request reaches the network. */
+  constructor(grant: Tier, conn: Conn) {
+    this.grant = grant;
+    this.#conn = conn;
+  }
+
+  /**
+   * The ONE dispatch path. The guard runs before any request reaches the
+   * network, and this is the only method in the class that touches the raw
+   * client — so every call, including internal ones, is guarded.
+   */
   async call(
     name: string,
     args: Record<string, unknown> = {},
   ): Promise<ToolResult> {
     assertAllowed(name, this.grant); // throws before any network call
-    return this.conn.client.callTool({ name, arguments: args });
+    return this.#conn.client.callTool({ name, arguments: args });
   }
 
   availableTools(): string[] {
@@ -95,17 +111,26 @@ class CoreClient implements BaseClient {
     return { reachable: true, account };
   }
 
+  /** Routed through the guarded `call` — get_account_state is observe-tier, so
+   *  it passes at every grant, and there is no unguarded dispatch site. */
   async fetchIdentity(): Promise<AccountIdentity> {
-    const result = await this.conn.client.callTool({
-      name: "get_account_state",
-      arguments: {},
-    });
+    const result = await this.call("get_account_state");
     return parseIdentity(result);
   }
 
   async close(): Promise<void> {
-    await this.conn.close();
+    await this.#conn.close();
   }
+}
+
+/**
+ * Test-only builder: construct a client over a stub connection, with no network
+ * and no identity fetch. Not re-exported from index.ts, and the package
+ * `exports` map blocks deep imports, so consumers cannot reach it; and it is
+ * inert without a Connection, which only `connect()` (also unexported) produces.
+ */
+export function _buildForTest(grant: Tier, conn: unknown): BaseClient {
+  return new CoreClient(grant, conn as Conn);
 }
 
 function parseIdentity(result: ToolResult): AccountIdentity {
@@ -123,10 +148,7 @@ function parseIdentity(result: ToolResult): AccountIdentity {
   };
 }
 
-async function build(
-  grant: Tier,
-  opts: ConnectOptions,
-): Promise<CoreClient> {
+async function build(grant: Tier, opts: ConnectOptions): Promise<CoreClient> {
   const conn = await connect(opts);
   const core = new CoreClient(grant, conn);
   // Fetch identity on connect so the client can report "connected as X".

@@ -3,8 +3,9 @@
  * client cannot dispatch a tool above its granted tier. If this passes, an
  * observe- or manage-tier consumer physically cannot place a wager.
  *
- * assertAllowed is the exact precondition the live client runs before every
- * callTool, so a pass here is a pass for the real dispatch path.
+ * assertAllowed is the exact precondition CoreClient.call runs before its ONE
+ * callTool site. This proves the guard's LOGIC; reachability.test.ts proves the
+ * guard cannot be bypassed (the raw client is not reachable off the instance).
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";

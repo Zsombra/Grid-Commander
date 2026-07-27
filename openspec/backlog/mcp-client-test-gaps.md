@@ -49,3 +49,11 @@ Both fall out of the same mock-transport fixture as the two above.
 Cleanest fix: a tiny mock transport (an object with connect/callTool) injected
 into the client, so both paths can be asserted offline without a live bad key.
 That mock also unlocks client-level tests that currently only run live.
+
+
+## Update (2026-07-27)
+
+The `_buildForTest` stub-connection seam added while fixing the reachability
+CRITICAL also unlocks the offline path for the remaining gaps (rejected-key,
+tool-error, explicit-construction, observe-lists-only-observe). Still worth
+adding those assertions; the fixture now exists.
