@@ -42,6 +42,10 @@ rules:
     - Every task traces to a requirement or is explicitly infrastructure
     - [e.g. add a Windows CI verification task when file paths change]
 
+# Design layer. "none" keeps tickets local to the repo; "github" lets the
+# design-director mirror them to issues (files remain the source of truth).
+design_sync: none
+
 # Commands the executor and auditor must run and pass. Leave empty to fall back
 # to the Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md.
 quality_gates:

@@ -160,6 +160,54 @@ If a code change breaks something during execution:
    - Document the blocker in the decision log.
    - Hand back to the user for replanning.
 
+### Step 4c: Implementing Design Tickets
+
+When the work is a design ticket rather than a spec task, read
+`.claude/references/design-contract.md` first, then:
+
+```bash
+python3 .claude/tools/openspec.py design tickets
+python3 .claude/tools/openspec.py design show DT-NNNN
+```
+
+Work tickets in priority order. For each one:
+
+1. Read the ticket, its surface manifest, and `openspec/design/system.json`.
+2. Set `status: in-progress`.
+3. Implement **presentation only**, using the named tokens. If the codebase has
+   no token layer yet, create one from `system.json` — do not inline the values
+   and do not invent your own names.
+4. Implement **every state** in `design.states`, including `loading`, `empty`,
+   and `error`. Those are where users judge quality.
+5. Check each `acceptance` line yourself. They were written to be checkable.
+6. Set `status: implemented`.
+
+#### Refuse tickets that cross the lane
+
+**A `behavior_impact: none` ticket whose implementation would require touching
+behavior must be refused.** Say which requirement or state it would change, set
+`status: blocked`, and tell the user it needs `/propose`.
+
+That refusal is the safety mechanism working. The design agent cannot see
+`openspec/specs/`; you can. If you implement it quietly, the specs stop
+describing the product and every later audit measures against fiction.
+
+Equally: a ticket marked `requires-spec-change` with no landed `spec_change`
+does not get implemented. Validation already errors on it.
+
+#### Respect the constraints
+
+The surface manifest's `constraints` array is your own veto, recorded earlier.
+If a ticket breaks one — keyboard navigation, masked data, a contrast floor —
+reject it with the specific constraint quoted. Do not quietly drop the
+constraint to make the design fit.
+
+#### Keep the surface honest
+
+Restyling rarely changes structure, but when it does — a component split, a new
+child, a state that now exists — re-run the **ui-surveyor** so the manifest
+matches. A stale manifest sends the next design round at the wrong target.
+
 ### Step 5: Enforce Implementation Rules
 
 Read from the architecture checklist's Quick Reference Card (already in master plan constraints):

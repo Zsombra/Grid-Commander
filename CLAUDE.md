@@ -33,6 +33,10 @@ Spec layer
 /verify    — Does the implementation match the change?
 /archive   — Merge deltas into the source of truth and archive
 
+UI design (two-agent handoff)
+/surface   — Survey a built UI into a manifest for the design agent
+/design    — Design agent: read surfaces, own tokens, write design tickets
+
 Product & architecture
 /idea      — Explore a new project idea (greenfield only)
 /spec      — Deep feature specification → delta specs
@@ -55,6 +59,8 @@ verifier            — Advisory: completeness, correctness, coherence
 auditor             — [full track] Production gate: PASS / BLOCKED
 archiver            — Merges deltas into openspec/specs, archives
 tracker             — Owns the backlog and the session journal
+ui-surveyor         — [UI] Surveys built UI into a surface manifest
+design-director     — [UI] Design agent: owns tokens, writes design tickets
 ```
 
 ### Tracks
@@ -74,6 +80,7 @@ Not sure yet:  /explore → /propose → ...
 New feature:   /propose → [planner] → executor → /verify → [auditor] → /archive
 Greenfield:    /idea → /spec → /logic → checklist-generator → /propose → ...
 Bug fix:       /debug → /propose (lite) → executor → /archive
+UI work:       executor (plain UI) → /surface → /design → executor → /verify
 Understand:    /analyze
 Document:      /document
 ```
@@ -82,6 +89,7 @@ Document:      /document
 ```bash
 python3 .claude/tools/openspec.py board
 python3 .claude/tools/openspec.py backlog list
+python3 .claude/tools/openspec.py design
 python3 .claude/tools/openspec.py journal --limit 5
 python3 .claude/tools/openspec.py list
 python3 .claude/tools/openspec.py status <change>
@@ -97,6 +105,10 @@ python3 .claude/tools/openspec.py archive <change> --apply
 │   ├── config.yaml             — project context + per-artifact rules
 │   ├── JOURNAL.md              — session handoff log (newest first)
 │   ├── backlog/<item-id>.md    — work that is not a change yet
+│   ├── design/                 — UI contract between dev and design agents
+│   │   ├── system.json         — tokens, primitives, principles
+│   │   ├── surfaces/           — dev → design: what exists
+│   │   └── tickets/            — design → dev: how it should look
 │   ├── specs/<capability>/spec.md   — SOURCE OF TRUTH
 │   └── changes/
 │       ├── <change-id>/
@@ -145,6 +157,9 @@ python3 .claude/tools/openspec.py archive <change> --apply
   backlog item before moving on
 - Do not end a session that changed anything without a JOURNAL.md entry
 - Do not duplicate a change's tasks in a backlog item — link and stop
+- Do not let a design ticket change behavior — mark it requires-spec-change
+  and block until a /propose change lands
+- Do not put raw color/spacing values in a design ticket — reference tokens
 - All architecture decisions must be documented in decision logs
 - Follow the project's review checklists for every change
 

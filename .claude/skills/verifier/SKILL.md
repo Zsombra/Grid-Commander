@@ -96,6 +96,30 @@ change touches. Read the diff.
   error handling, existing idioms.
 - Deviation → SUGGESTION with a pointer to the pattern being broken.
 
+### Step 3b: Design Tickets (when the change touched UI)
+
+```bash
+python3 .claude/tools/openspec.py design tickets --status all
+```
+
+For every ticket marked `implemented` by this change:
+
+- Check each `acceptance` line against the code. They were written to be
+  checkable — an unmet one is a CRITICAL, not a matter of taste.
+- Confirm every state in `design.states` is actually implemented. A missing
+  `loading` or `empty` state is a WARNING at minimum; on a list that can be
+  empty it is CRITICAL.
+- Confirm tokens were used rather than inlined values. Hardcoded colors where
+  `system.json` has a token → WARNING.
+- Confirm the surface's `constraints` still hold. A restyle that broke keyboard
+  navigation is CRITICAL regardless of how it looks.
+- **Confirm no behavior changed.** A `behavior_impact: none` ticket whose
+  implementation altered a state, action, or flow → CRITICAL. That is the lane
+  rule failing, and it means the specs no longer describe the product.
+
+If the surface manifest is stale after the work, say so — the next design round
+will aim at the wrong target.
+
 ### Step 4: Report
 
 ```markdown

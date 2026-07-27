@@ -461,6 +461,263 @@ def validate_backlog(root: Path, strict: bool) -> list:
 
 
 # --------------------------------------------------------------------------
+# Design layer (see .claude/references/design-contract.md)
+# --------------------------------------------------------------------------
+
+SURFACE_STATUSES = ("functional", "in-design", "designed", "needs-redesign")
+COMPONENT_ROLES = ("container", "input", "display", "action", "navigation",
+                   "feedback", "media", "layout")
+TICKET_TYPES = ("restyle", "relayout", "new-component", "interaction", "motion",
+                "tokens", "responsive", "a11y", "content")
+TICKET_STATUSES = ("open", "in-progress", "implemented", "blocked", "rejected")
+TICKET_OPEN = ("open", "in-progress", "blocked")
+BEHAVIOR_IMPACTS = ("none", "requires-spec-change")
+RAW_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\s*\(")
+
+
+def design_dir(root: Path) -> Path:
+    return root / "openspec" / "design"
+
+
+def load_json(path: Path):
+    """Return (data, error_message)."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8")), None
+    except json.JSONDecodeError as exc:
+        return None, f"line {exc.lineno}: {exc.msg}"
+
+
+def load_design(root: Path, kind: str) -> list:
+    """kind: 'surfaces' | 'tickets'. Returns [(path, data_or_None, error)]."""
+    base = design_dir(root) / kind
+    if not base.is_dir():
+        return []
+    out = []
+    for path in sorted(base.glob("*.json")):
+        data, err = load_json(path)
+        out.append((path, data, err))
+    return out
+
+
+def surface_components(surface: dict) -> dict:
+    return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
+
+
+def git_changed_since(root: Path, commit: str, files: list) -> list:
+    """Which of `files` changed since `commit`. Empty list when git can't answer."""
+    if not commit or not files:
+        return []
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", f"{commit}..HEAD", "--", *files],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if result.returncode != 0:
+        return []
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
+def _walk_strings(node, path="") -> list:
+    """Yield (dotted_path, string) for every string in a nested structure."""
+    out = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            out.extend(_walk_strings(value, f"{path}.{key}" if path else str(key)))
+    elif isinstance(node, list):
+        for i, value in enumerate(node):
+            out.extend(_walk_strings(value, f"{path}[{i}]"))
+    elif isinstance(node, str):
+        out.append((path, node))
+    return out
+
+
+def validate_design(root: Path, strict: bool) -> list:
+    found = []
+    base = design_dir(root)
+    if not base.is_dir():
+        return found
+    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+
+    # -- design system -----------------------------------------------------
+    system_path = base / "system.json"
+    if system_path.is_file():
+        system, err = load_json(system_path)
+        if err:
+            found.append(diag("error", "design_invalid_json",
+                              f"system.json will not parse — {err}", rel(system_path)))
+        elif system.get("status") != "designed":
+            groups = ", ".join(system.get("placeholder_groups", [])) or "unspecified"
+            found.append(diag("warning", "design_system_placeholder",
+                              f"design system is '{system.get('status', 'unset')}' — "
+                              f"placeholder groups: {groups}", rel(system_path),
+                              "have the design agent replace them, then set status: designed"))
+
+    # -- surfaces ----------------------------------------------------------
+    surfaces = {}
+    for path, data, err in load_design(root, "surfaces"):
+        if err:
+            found.append(diag("error", "design_invalid_json",
+                              f"{path.stem} will not parse — {err}", rel(path)))
+            continue
+        surfaces[data.get("id", path.stem)] = data
+
+        for field in ("id", "title", "capability", "status", "source_files", "components"):
+            if not data.get(field):
+                found.append(diag("error", "design_missing_field",
+                                  f"{path.stem}: surface is missing `{field}`", rel(path)))
+        if data.get("id") and data["id"] != path.stem:
+            found.append(diag("error", "design_id_mismatch",
+                              f"{path.stem}: id '{data['id']}' does not match the filename",
+                              rel(path)))
+        if data.get("status") and data["status"] not in SURFACE_STATUSES:
+            found.append(diag("error", "design_invalid_enum",
+                              f"{path.stem}: status '{data['status']}' is not one of "
+                              f"{', '.join(SURFACE_STATUSES)}", rel(path)))
+        cap = data.get("capability")
+        if cap and not main_spec_path(root, cap).is_file():
+            found.append(diag("warning", "design_surface_unknown_capability",
+                              f"{path.stem}: capability '{cap}' has no spec yet", rel(path)))
+
+        for comp in data.get("components", []):
+            if not isinstance(comp, dict):
+                found.append(diag("error", "design_missing_field",
+                                  f"{path.stem}: a component entry is not an object", rel(path)))
+                continue
+            cid = comp.get("id", "(unnamed)")
+            for field in ("id", "role", "purpose", "states"):
+                if not comp.get(field):
+                    found.append(diag("error", "design_missing_field",
+                                      f"{path.stem} / {cid}: component is missing `{field}`",
+                                      rel(path)))
+            if comp.get("role") and comp["role"] not in COMPONENT_ROLES:
+                found.append(diag("error", "design_invalid_enum",
+                                  f"{path.stem} / {cid}: role '{comp['role']}' is not one of "
+                                  f"{', '.join(COMPONENT_ROLES)}", rel(path)))
+
+        changed = git_changed_since(root, data.get("generated_at_commit", ""),
+                                    data.get("source_files", []))
+        if changed:
+            found.append(diag("warning", "design_surface_stale",
+                              f"{path.stem}: {len(changed)} source file(s) changed since "
+                              f"{data.get('generated_at_commit', '')[:7]} — "
+                              f"{', '.join(changed[:3])}", rel(path),
+                              "re-run the ui-surveyor skill before designing against it"))
+
+    # -- tickets -----------------------------------------------------------
+    ticketed_surfaces = set()
+    active = set(list_changes(root))
+    for path, data, err in load_design(root, "tickets"):
+        if err:
+            found.append(diag("error", "design_invalid_json",
+                              f"{path.stem} will not parse — {err}", rel(path)))
+            continue
+
+        for field in ("id", "surface", "targets", "type", "priority", "status",
+                      "behavior_impact", "intent", "design", "acceptance"):
+            if not data.get(field):
+                found.append(diag("error", "design_missing_field",
+                                  f"{path.stem}: ticket is missing `{field}`", rel(path)))
+        if data.get("id") and data["id"] != path.stem:
+            found.append(diag("error", "design_id_mismatch",
+                              f"{path.stem}: id '{data['id']}' does not match the filename",
+                              rel(path)))
+        for field, allowed in (("type", TICKET_TYPES), ("status", TICKET_STATUSES),
+                               ("priority", ITEM_PRIORITIES),
+                               ("behavior_impact", BEHAVIOR_IMPACTS)):
+            value = data.get(field)
+            if value and value not in allowed:
+                found.append(diag("error", "design_invalid_enum",
+                                  f"{path.stem}: {field} '{value}' is not one of "
+                                  f"{', '.join(allowed)}", rel(path)))
+        if not data.get("acceptance"):
+            found.append(diag("error", "design_no_acceptance",
+                              f"{path.stem}: no acceptance criteria — nothing to verify against",
+                              rel(path),
+                              "add checkable statements a reader who did not write this could test"))
+
+        sid = data.get("surface")
+        ticketed_surfaces.add(sid)
+        surface = surfaces.get(sid)
+        if sid and surface is None:
+            found.append(diag("error", "design_ticket_unknown_surface",
+                              f"{path.stem}: surface '{sid}' has no manifest", rel(path),
+                              "run /surface for it first"))
+        elif surface:
+            known = surface_components(surface)
+            for target in data.get("targets", []):
+                if target not in known:
+                    found.append(diag("error", "design_ticket_unknown_target",
+                                      f"{path.stem}: target '{target}' is not a component of "
+                                      f"'{sid}'", rel(path)))
+            styled = set((data.get("design") or {}).get("states", {}))
+            for target in data.get("targets", []):
+                for state in known.get(target, {}).get("states", []):
+                    if state not in styled:
+                        found.append(diag(
+                            "warning", "design_state_not_covered",
+                            f"{path.stem}: '{target}' declares state '{state}' but the ticket "
+                            f"does not style it", rel(path),
+                            "a design that skips loading/empty/error looks broken exactly when "
+                            "users notice"))
+
+        impact = data.get("behavior_impact")
+        change = str(data.get("spec_change") or "").strip()
+        if impact == "requires-spec-change":
+            if not change:
+                found.append(diag("error", "design_blocked_without_spec_change",
+                                  f"{path.stem}: behavior_impact is 'requires-spec-change' but "
+                                  f"spec_change is empty", rel(path),
+                                  "run /propose for the behavior change and link its change-id"))
+            elif change not in active and not find_archived(root, change):
+                found.append(diag("error", "design_spec_change_not_found",
+                                  f"{path.stem}: spec_change '{change}' is not a real change",
+                                  rel(path)))
+
+        for dotted, value in _walk_strings(data.get("design") or {}, "design"):
+            if RAW_COLOR_RE.search(value):
+                found.append(diag("warning", "design_raw_color_value",
+                                  f"{path.stem}: raw color literal at {dotted} — "
+                                  f"'{value[:48]}'", rel(path),
+                                  "reference a token from system.json, or file a type:tokens "
+                                  "ticket to add one"))
+
+    for sid, surface in surfaces.items():
+        if sid not in ticketed_surfaces and surface.get("status") == "functional":
+            found.append(diag("info", "design_orphan_surface",
+                              f"surface '{sid}' is functional with no design tickets",
+                              f"openspec/design/surfaces/{sid}.json",
+                              "run /design when it is ready for visual work"))
+    return found
+
+
+def design_summary(root: Path) -> dict:
+    surfaces, tickets = [], []
+    for path, data, err in load_design(root, "surfaces"):
+        surfaces.append({"id": path.stem, "status": (data or {}).get("status", "?"),
+                         "components": len((data or {}).get("components", [])),
+                         "broken": bool(err)})
+    for path, data, err in load_design(root, "tickets"):
+        d = data or {}
+        tickets.append({"id": path.stem, "surface": d.get("surface", "?"),
+                        "type": d.get("type", "?"), "priority": d.get("priority", "?"),
+                        "status": d.get("status", "?"),
+                        "targets": d.get("targets", []),
+                        "intent": d.get("intent", ""),
+                        "behavior_impact": d.get("behavior_impact", "?"),
+                        "spec_change": d.get("spec_change", ""),
+                        "broken": bool(err)})
+    tickets.sort(key=lambda t: (PRIORITY_ORDER.get(t["priority"], 9), t["id"]))
+    system_path = design_dir(root) / "system.json"
+    system, _ = load_json(system_path) if system_path.is_file() else (None, None)
+    return {"surfaces": surfaces, "tickets": tickets,
+            "system": {"status": (system or {}).get("status", "missing"),
+                       "placeholderGroups": (system or {}).get("placeholder_groups", [])}}
+
+
+# --------------------------------------------------------------------------
 # Journal
 # --------------------------------------------------------------------------
 
@@ -857,7 +1114,8 @@ def next_action(change: Change) -> str:
     return "/verify, then /archive"
 
 
-def render_board(root: Path, changes: list, items: list, entries: list, diagnostics: list) -> str:
+def render_board(root: Path, changes: list, items: list, entries: list,
+                 diagnostics: list, design: dict) -> str:
     caps = [d.name for d in sorted((root / "openspec" / "specs").glob("*"))
             if d.is_dir()] if (root / "openspec" / "specs").is_dir() else []
     open_items = [i for i in items if i.is_open]
@@ -891,6 +1149,21 @@ def render_board(root: Path, changes: list, items: list, entries: list, diagnost
     closed = [i for i in items if not i.is_open]
     if closed:
         out.append(f"  ({len(closed)} closed — `backlog list --status done`)")
+
+    open_tickets = [t for t in design["tickets"] if t["status"] in TICKET_OPEN]
+    if design["surfaces"] or open_tickets:
+        blocked_t = [t for t in open_tickets if t["behavior_impact"] != "none"]
+        out.append("")
+        out.append(f"DESIGN   {len(design['surfaces'])} surface(s) · "
+                   f"{len(open_tickets)} open ticket(s) · "
+                   f"system: {design['system']['status']}"
+                   + (f" · {len(blocked_t)} need a spec change" if blocked_t else ""))
+        for t in open_tickets[:6]:
+            flag = " ⊘" if t["behavior_impact"] != "none" else ""
+            out.append(f"  {t['priority'].upper():<3} {t['id']:<9} {t['type']:<13} "
+                       f"{t['surface']}{flag}")
+        if len(open_tickets) > 6:
+            out.append(f"  (+{len(open_tickets) - 6} more — `design tickets`)")
 
     out.append("")
     out.append("RECENT")
@@ -978,6 +1251,16 @@ def main(argv: list) -> int:
     p_journal = sub.add_parser("journal", help="recent session entries", parents=[common])
     p_journal.add_argument("--limit", type=int, default=10)
 
+    p_design = sub.add_parser("design", help="UI surfaces and design tickets", parents=[common])
+    dsub = p_design.add_subparsers(dest="design_command")
+    dsub.add_parser("surfaces", help="list UI surfaces", parents=[common])
+    p_dt = dsub.add_parser("tickets", help="list design tickets", parents=[common])
+    p_dt.add_argument("--status", help="filter: " + " | ".join(TICKET_STATUSES) + " | open | all")
+    p_dt.add_argument("--surface")
+    p_dt.add_argument("--type")
+    p_ds = dsub.add_parser("show", help="show one ticket or surface", parents=[common])
+    p_ds.add_argument("item")
+
     p_status = sub.add_parser("status", help="artifact graph for a change", parents=[common])
     p_status.add_argument("change", nargs="?")
 
@@ -1023,6 +1306,8 @@ def main(argv: list) -> int:
             found.extend(validate_change(root, change, False))
         found.extend(validate_main_specs(root, False))
         found.extend(validate_backlog(root, False))
+        found.extend(validate_design(root, False))
+        design = design_summary(root)
         if args.json:
             print(json.dumps({
                 "capabilities": [d.name for d in sorted((root / "openspec" / "specs").glob("*"))
@@ -1031,12 +1316,13 @@ def main(argv: list) -> int:
                              "progress": dict(zip(("complete", "total"), c.progress())),
                              "nextAction": next_action(c)} for c in changes],
                 "backlog": [i.as_dict() for i in items],
+                "design": design,
                 "journal": entries,
                 "status": found,
                 "root": str(root),
             }, indent=2))
         else:
-            print(render_board(root, changes, items, entries, found))
+            print(render_board(root, changes, items, entries, found, design))
         return 0
 
     if args.command == "backlog":
@@ -1082,6 +1368,71 @@ def main(argv: list) -> int:
                 print(f"  {i.priority.upper():<3} {i.type:<8} {i.id:<34} {i.status:<12} {link}")
         return 0
 
+    if args.command == "design":
+        summary = design_summary(root)
+        command = getattr(args, "design_command", None)
+
+        if command == "show":
+            for kind in ("tickets", "surfaces"):
+                path = design_dir(root) / kind / f"{args.item}.json"
+                if path.is_file():
+                    data, err = load_json(path)
+                    if err:
+                        die(f"{args.item} will not parse — {err}", args.json)
+                    print(json.dumps(data, indent=2))
+                    return 0
+            die(f"no surface or ticket named '{args.item}'", args.json)
+
+        if command == "surfaces":
+            rows = summary["surfaces"]
+            if args.json:
+                print(json.dumps({"surfaces": rows, "root": str(root)}, indent=2))
+            elif not rows:
+                print("no surfaces yet — run /surface after building a UI.")
+            else:
+                for s in rows:
+                    flag = "  !! will not parse" if s["broken"] else ""
+                    print(f"  {s['id']:<32} {s['status']:<15} "
+                          f"{s['components']:>2} component(s){flag}")
+            return 0
+
+        tickets = summary["tickets"]
+        if command == "tickets":
+            wanted = (getattr(args, "status", None) or "open").lower()
+            if wanted == "open":
+                tickets = [t for t in tickets if t["status"] in TICKET_OPEN]
+            elif wanted != "all":
+                tickets = [t for t in tickets if t["status"] == wanted]
+            for attr in ("surface", "type"):
+                value = getattr(args, attr, None)
+                if value:
+                    tickets = [t for t in tickets if t[attr] == value]
+
+        if args.json:
+            print(json.dumps({**summary, "tickets": tickets, "root": str(root)}, indent=2))
+            return 0
+
+        if command != "tickets":
+            sysinfo = summary["system"]
+            note = ("  ← still placeholder" if sysinfo["status"] != "designed" else "")
+            print(f"DESIGN SYSTEM   {sysinfo['status']}{note}")
+            print("")
+            print(f"SURFACES   {len(summary['surfaces'])}")
+            for s in summary["surfaces"]:
+                print(f"  {s['id']:<32} {s['status']:<15} {s['components']:>2} component(s)")
+            if not summary["surfaces"]:
+                print("  (none — run /surface after building a UI)")
+            print("")
+        print(f"TICKETS   {len(tickets)}")
+        if not tickets:
+            print("  (none)")
+        for t in tickets:
+            blocked = " ⊘ needs spec change" if t["behavior_impact"] != "none" else ""
+            targets = ", ".join(t["targets"][:2]) or "—"
+            print(f"  {t['priority'].upper():<3} {t['id']:<9} {t['type']:<13} "
+                  f"{t['status']:<12} {t['surface']}/{targets}{blocked}")
+        return 0
+
     if args.command == "journal":
         entries = read_journal(root, args.limit)
         if args.json:
@@ -1123,6 +1474,7 @@ def main(argv: list) -> int:
         found.extend(validate_main_specs(root, args.strict))
         if args.all or not args.change:
             found.extend(validate_backlog(root, args.strict))
+            found.extend(validate_design(root, args.strict))
         errors, warnings, infos = tally(found)
         if args.json:
             print(json.dumps({"status": found,

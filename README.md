@@ -31,6 +31,7 @@ layer so nothing is lost between sessions or agents:
 | **Definition of done** | prose | testable Requirement + Scenario |
 | **Deferred work** | lost | `openspec/backlog/` — one file per item |
 | **Session handoff** | none | `openspec/JOURNAL.md` + `/board` / `/handoff` |
+| **UI design handoff** | ad hoc prose | typed `UISurface` / `DesignTicket` DTO |
 | **Validation** | none | `openspec.py validate` |
 
 What v2.1 already did well — lane separation, evidence-based review, the
@@ -51,6 +52,7 @@ openspec/
 ├── JOURNAL.md                      what happened, session by session
 ├── specs/<capability>/spec.md      SOURCE OF TRUTH — how the system behaves today
 ├── backlog/<item-id>.md            work that is not a change yet
+├── design/                         UI contract between the dev and design agents
 └── changes/
     ├── <change-id>/                one folder per proposed change
     └── archive/YYYY-MM-DD-<id>/    completed work, full context preserved
@@ -93,7 +95,35 @@ scope, the executor files debt it took on, the verifier files warnings it did
 not fix, the auditor files MINORs and waivers, the archiver files what a change
 did not finish. A deferral nobody records is indistinguishable from an oversight.
 
-### Skills (8)
+### The design layer
+
+A typed contract between the **developer agent** (builds behavior) and the
+**design agent** (decides how it looks):
+
+```
+developer agent                          design agent
+───────────────                          ────────────
+builds working UI, plain                 reads the surface manifest
+     ├── UISurface ─────────────────────►│ decides how it should look
+     │   what exists, every state,        │
+     │   what design must not break       │
+     │◄──────────────────── DesignTicket ─┤
+     ▼   tokens, states, acceptance
+implements presentation only
+```
+
+**The rule that makes it safe: design tickets may change presentation, never
+behavior.** A design agent with ticket-creation power can quietly redefine your
+product — "drop the confirmation step" is a design opinion with a behavioral
+consequence. Every ticket declares `behavior_impact`, and anything touching
+behavior **blocks** until a `/propose` change lands and is linked. The developer
+agent refuses tickets that cross the lane, and that refusal is the mechanism
+working.
+
+Files are the source of truth; GitHub issues are an optional mirror
+(`design_sync: github`). Contract: `.claude/references/design-contract.md`.
+
+### Skills (10)
 
 | Skill | Purpose |
 |---|---|
@@ -105,8 +135,10 @@ did not finish. A deferral nobody records is indistinguishable from an oversight
 | `auditor` | **[full]** Production gate. Spec parity + checklist parity + tech debt. PASS / BLOCKED. |
 | `archiver` | Merges deltas into the source of truth and archives the change. |
 | `tracker` | Owns the backlog and the session journal. Files, triages, and writes handoffs. |
+| `ui-surveyor` | **[UI]** Surveys built UI into a surface manifest — what exists, every state, what design must not break. |
+| `design-director` | **[UI]** The design agent. Reads surfaces, owns the design system, writes design tickets. |
 
-### Slash commands (15)
+### Slash commands (17)
 
 | Command | Purpose |
 |---|---|
@@ -118,6 +150,8 @@ did not finish. A deferral nobody records is indistinguishable from an oversight
 | `/status` | Detailed state of a single change |
 | `/verify` | Does the implementation match the change? |
 | `/archive` | Merge deltas into the source of truth and archive |
+| `/surface` | Survey a built UI into a manifest for the design agent |
+| `/design` | Design agent: read surfaces, own the tokens, write design tickets |
 | `/idea` | Greenfield concept exploration — product, market, MVP scope, tech stack |
 | `/spec` | Deep product specification — user stories, state machines, business rules → deltas |
 | `/logic` | Validate product logic — gap analysis, state extraction, concerns (P0/P1/P2) |
@@ -135,6 +169,7 @@ python3 .claude/tools/openspec.py board                     # everything at a gl
 python3 .claude/tools/openspec.py list                      # active changes
 python3 .claude/tools/openspec.py status <change>           # artifact graph + progress
 python3 .claude/tools/openspec.py backlog list              # open items
+python3 .claude/tools/openspec.py design                     # surfaces + tickets
 python3 .claude/tools/openspec.py journal --limit 5         # recent sessions
 python3 .claude/tools/openspec.py validate --all            # specs + backlog
 python3 .claude/tools/openspec.py archive <change> --apply  # merge deltas + archive
@@ -206,12 +241,14 @@ your-project/
 ├── .claude/                       ← the portable bundle
 │   ├── skills/
 │   │   ├── proposer/  planner/  executor/  verifier/  auditor/  archiver/
-│   │   └── tracker/  checklist-generator/
+│   │   ├── tracker/  ui-surveyor/  design-director/
+│   │   └── checklist-generator/
 │   ├── commands/                  ← 12 slash commands
 │   ├── references/                ← shared, read by every skill
 │   │   ├── spec-format.md         the requirement/scenario/delta format
 │   │   ├── change-lifecycle.md    folder layout, tracks, artifact graph
 │   │   ├── tracking.md            backlog + journal conventions
+│   │   ├── design-contract.md     the dev ↔ design agent DTO
 │   │   └── templates/
 │   └── tools/openspec.py          ← zero-dep validator, status, archiver
 │
@@ -219,6 +256,7 @@ your-project/
 │   ├── config.yaml
 │   ├── specs/                     source of truth
 │   ├── backlog/                   work that is not a change yet
+│   ├── design/                    UI contract: system, surfaces, tickets
 │   ├── JOURNAL.md                 session handoff log
 │   └── changes/                   active + archive
 │

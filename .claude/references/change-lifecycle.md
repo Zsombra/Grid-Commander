@@ -15,6 +15,10 @@ openspec/
 │   └── <capability>/spec.md
 ├── backlog/                           work that is NOT a change yet
 │   └── <item-id>.md
+├── design/                            the UI contract between dev and design agents
+│   ├── system.json                    tokens, primitives, principles
+│   ├── surfaces/<surface-id>.json     dev → design: what exists
+│   └── tickets/<DT-id>.json           design → dev: how it should look
 └── changes/                           PROPOSED MODIFICATIONS — one folder each
     ├── <change-id>/
     └── archive/
@@ -22,7 +26,8 @@ openspec/
 ```
 
 `backlog/` and `JOURNAL.md` are the tracking layer — see
-`.claude/references/tracking.md`. Exactly one place owns each piece of work at
+`.claude/references/tracking.md`. `design/` is the UI contract — see
+`.claude/references/design-contract.md`. Exactly one place owns each piece of work at
 a time: an idea lives in the backlog, becomes a change folder, then becomes an
 archive entry.
 
@@ -172,6 +177,12 @@ good — that is what review, verify, and audit are for.
       │
       ▼
   executor          implement tasks, keep artifacts truthful
+      │
+      ▼
+  /surface          [UI] survey the built UI into a manifest
+      │
+      ▼
+  /design           [UI] design agent writes tickets → executor implements
       │
       ▼
   /verify           completeness · correctness · coherence   (advisory)

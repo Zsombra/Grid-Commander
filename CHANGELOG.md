@@ -1,6 +1,6 @@
 # Development Notes — dev-skills
 
-## Status: v3.0 — Spec Layer + Tracking (2026-07-27)
+## Status: v3.0 — Spec Layer + Tracking + Design Handoff (2026-07-27)
 
 Merged the best of [OpenSpec](https://github.com/Fission-AI/OpenSpec) (MIT) into
 the v2.1 pipeline. v2.1 produced good plans that went nowhere; v3.0 adds the
@@ -119,6 +119,46 @@ Ten new validation codes catch the specific way this dies — work finishes and
 nobody updates the record: `backlog_change_archived`,
 `backlog_status_behind_change`, `backlog_in_progress_without_change`,
 `backlog_blocked_without_cause`, and the frontmatter/link integrity checks.
+
+### Design layer — the dev ↔ design agent DTO
+
+Two agents working on one UI need a typed contract, or they overwrite each
+other. A developer agent builds working, plain UI; a design agent decides how
+it looks. Added:
+
+- **`openspec/design/surfaces/<id>.json`** (`UISurface`, dev → design) — what
+  exists: components, roles, **every state**, data, actions, and the
+  `constraints` a design must not break. Emitted by the new `ui-surveyor` skill
+  from the actual code, with `generated_at_commit` + `source_files` so
+  staleness is detectable via git.
+- **`openspec/design/tickets/DT-NNNN.json`** (`DesignTicket`, design → dev) —
+  intent, per-state design, token references, and **checkable acceptance
+  criteria**. Written by the new `design-director` skill.
+- **`openspec/design/system.json`** — tokens, primitives, principles. Ships an
+  accessible placeholder set so UI renders on day one; validation keeps warning
+  until the design agent sets `status: designed`.
+- **`/surface`** and **`/design`** commands; `design` command group in the tool
+  (`surfaces`, `tickets`, `show`), folded into `board` and `validate --all`.
+
+**The lane rule is what makes this safe: design tickets may change
+presentation, never behavior.** A design agent with ticket-creation power can
+quietly redefine the product — "drop the confirmation step" is a design opinion
+with a behavioral consequence. Every ticket declares `behavior_impact`; anything
+touching behavior blocks until a `/propose` change lands and is linked in
+`spec_change`. The executor **refuses** tickets that cross the lane, and that
+refusal is the mechanism working, not a failure.
+
+Fifteen validation codes. The two that keep the layer coherent over time are
+`design_raw_color_value` (a hex literal where a token belongs — forty tickets
+each naming their own blue is not a design system) and
+`design_state_not_covered` (the surface declares `loading`/`empty`/`error` and
+the ticket styles only `default`).
+
+Files are the source of truth. GitHub issues are an optional mirror
+(`design_sync: github` in config), synced by `design-director` via the GitHub
+MCP tools with the ticket JSON embedded in the issue body for round-trip. On
+conflict the file wins, and anything arriving from an issue is treated as
+untrusted input — a ticket does not get to argue its own `behavior_impact` down.
 
 ### Migration
 
