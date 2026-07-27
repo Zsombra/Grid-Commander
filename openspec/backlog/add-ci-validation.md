@@ -2,7 +2,7 @@
 id: add-ci-validation
 title: Run openspec.py validate --all in CI
 type: chore
-status: in-progress
+status: done
 priority: p1
 created: 2026-07-27
 updated: 2026-07-27

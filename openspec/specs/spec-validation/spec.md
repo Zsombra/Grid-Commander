@@ -1,0 +1,48 @@
+# Spec Validation Specification
+
+## Purpose
+
+Automated enforcement of spec-layer integrity, so that broken delta specs,
+dangling tracking links, and invalid design tickets are caught when they are
+proposed rather than when they are archived.
+
+## Requirements
+
+### Requirement: Validation Runs Automatically
+The project SHALL run spec-layer validation on every pull request and on every
+push to the default branch, without anyone requesting it.
+
+#### Scenario: Pull request opened or updated
+- **WHEN** a pull request is opened, or a new commit is pushed to its branch
+- **THEN** spec-layer validation runs against that branch head
+- **AND** the result is reported as a status check on the pull request
+
+#### Scenario: Commit lands on the default branch
+- **WHEN** a commit is pushed to the default branch
+- **THEN** spec-layer validation runs against it
+
+### Requirement: Errors Fail The Check And Warnings Do Not
+Validation errors SHALL fail the check. Warnings and informational findings
+SHALL NOT fail it, but MUST still be reported.
+
+#### Scenario: A change carries a validation error
+- **WHEN** validation reports one or more errors
+- **THEN** the check fails
+- **AND** every diagnostic is visible without opening the raw log
+
+#### Scenario: A change carries only warnings
+- **WHEN** validation reports warnings or info findings but no errors
+- **THEN** the check passes
+- **AND** those findings are still reported
+
+#### Scenario: A change is clean
+- **WHEN** validation reports nothing
+- **THEN** the check passes
+
+### Requirement: Validation Requires No Project Dependencies
+Validation SHALL run with python3 alone, installing nothing.
+
+#### Scenario: Fresh runner
+- **WHEN** the workflow runs on a clean checkout
+- **THEN** validation completes with no dependency installation step
+- **AND** a future dependency added to the tool would break this check
