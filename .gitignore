@@ -18,3 +18,10 @@ desktop.ini
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.key
+*.pem
