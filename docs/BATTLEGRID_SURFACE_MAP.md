@@ -35,9 +35,13 @@ the split precisely: 27 of 110 tools have `readOnlyHint: false`, but only 16 nee
 flagged `destructiveHint: true`**: `create_intelligence_agent`,
 `update_intelligence_agent`, `rebind_intelligence_agent`, `archive_intelligence_agent`,
 `activate_intelligence_agent`, `apply_strategy_plan`, `update_strategy_signal_rule`,
-`fork_strategy`, `archive_strategy`, `restore_strategy`, `generate_agent_grid`. Only money and autonomous-authority operations need
-`mcp:wager`. This is the single most important thing to get right when scoping a
-credential.
+`fork_strategy`, `archive_strategy`, `restore_strategy`, `generate_agent_grid`.
+
+A credential issued as "read-only" can therefore create agents, rebind them to a
+different strategy — replacing their configuration wholesale — archive them, and
+apply strategy plans that reach every bound agent immediately. It simply cannot
+move money. Scope `mcp:read` as configuration authority, not view access; this is
+the single most important thing to get right when issuing a credential.
 
 The web app's own `/api/*` routes are session-authenticated (Privy wallet) and do
 **not** accept this key — they are not the integration surface.
