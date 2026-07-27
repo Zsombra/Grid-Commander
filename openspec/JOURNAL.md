@@ -29,6 +29,43 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — First feature shipped: the BattleGrid MCP client (money boundary proven)
+
+**Did**: Explored the BattleGrid data source (110-tool MCP control plane;
+`_IDEA/battlegrid-mcp-architecture.md` + `docs/reference/battlegrid-mcp-tools.json`).
+Ran /idea + /solutions → TypeScript, three capability tiers. Filled CLAUDE.md +
+openspec/config.yaml with the real stack. Then took `build-mcp-client` through the
+full pipeline: propose → execute → verify → adversarial review → fix → archive.
+`packages/battlegrid-mcp/` is real, tested, archived. Two capabilities now in the
+source of truth: `mcp-connection`, `capability-tiers`.
+
+**State**: 3 capabilities specified, `build-mcp-client` archived, no active
+changes. All work on branch `claude/harness-openspec-merge-smkspq` — **NOT yet
+PR'd to main** (user hasn't decided; ask before opening). 8 backlog items open.
+Live key rotated 3× this session; current key in `.env` (git-ignored) works
+(user: Fibonacci, ~$76). Node 22 / pnpm 10.33 / npm all reachable in the sandbox.
+
+**Next**: `build-agent-strategy-creation` (p1) — the agent + strategy creation
+product, the user's actual goal, now has a proven client to build on. Needs a
+/spec pass first for the full config surface. Run /board to start.
+
+**Watch out**:
+- **The money boundary CRITICAL.** TS `private` is ERASED at runtime — it is not
+  a security boundary. The wager client is walled off via a native `#conn`
+  private field (client.ts). An adversarial subagent found the original
+  `private conn` hole (a real-wager bypass) that green tests + the verifier both
+  missed. Lesson: for the wager tier, "tests pass" ≠ "unbypassable" — run the
+  adversarial reachability check. reachability.test.ts guards it now.
+- **No wager code exists yet, by design.** The 16 wager tools are unreachable
+  from observe/manage. `wager-safety-envelope` (p1) is the standing precondition
+  for ever building the wager client — a `full`-track change.
+- **`full` track is still blocked** — checklist-generator has not run, so
+  `docs/specs/` checklists don't exist. Only lite/standard are usable.
+- Tool surface drifts on BattleGrid deploys; `pnpm gen:tools` reports drift,
+  unknown tools fail safe as wager. Currently in sync (110).
+- Quality gates: `pnpm type-check`, `pnpm lint`, `pnpm test`. 18/18 pass; live
+  integration tests auto-skip without BG_API_KEY.
+
 ## 2026-07-27 — Harness proven on its first real change; CI is live
 
 **Did**: Took `add-ci-validation` through the whole `standard` pipeline —
