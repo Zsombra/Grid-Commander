@@ -1,13 +1,18 @@
 ---
 name: checklist-generator
-description: Generates project-specific review checklists for any architecture pattern. Supports Clean Architecture, Provider/Plugin Pattern, and is extensible to MVC and others. Creates ARCHITECTURE_REVIEW_CHECKLIST.md, DATA_PIPELINE_REVIEW_CHECKLIST.md, and UI_COMPONENT_REVIEW_CHECKLIST.md in docs/specs/. Auto-detects CREATE mode (no checklists) or UPDATE mode (checklists exist). Feeds the planner → executor → auditor pipeline.
+description: Generates project-specific review checklists for any architecture pattern. Supports Clean Architecture, Provider/Plugin Pattern, and is extensible to MVC and others. Creates ARCHITECTURE_REVIEW_CHECKLIST.md, DATA_PIPELINE_REVIEW_CHECKLIST.md, and UI_COMPONENT_REVIEW_CHECKLIST.md in docs/specs/. Auto-detects CREATE mode (no checklists) or UPDATE mode (checklists exist). Feeds the proposer → planner → executor → verifier → auditor pipeline. Produces engineering standards in docs/specs/, distinct from the behavior contract in openspec/specs/.
 ---
 
 # Checklist Generator
 
 ## Purpose
 
-This skill creates the review checklists that the planner, executor, and auditor pipeline depends on. Without checklists, the pipeline cannot start. It adapts to different architecture patterns — not just Clean Architecture.
+This skill creates the review checklists that the planner, executor, and auditor depend on. Without checklists, the full track cannot start. It adapts to different architecture patterns — not just Clean Architecture.
+
+**Scope note.** Checklists in `docs/specs/` are *engineering standards* — how code
+must be built. They are not the behavior contract; that lives in
+`openspec/specs/` and is written by the archiver. Both are binding and the
+auditor checks both. See `.claude/references/change-lifecycle.md` §1.
 
 ## Lane
 
@@ -24,6 +29,7 @@ It does not:
 - Create implementation plans (that's the planner)
 - Write production code (that's the executor)
 - Audit code quality (that's the auditor)
+- Write or edit anything under `openspec/` (that's the proposer and archiver)
 
 ---
 

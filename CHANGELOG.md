@@ -1,5 +1,176 @@
 # Development Notes — dev-skills
 
+## Status: v3.0 — Spec Layer + Tracking + Design Handoff (2026-07-27)
+
+Merged the best of [OpenSpec](https://github.com/Fission-AI/OpenSpec) (MIT) into
+the v2.1 pipeline. v2.1 produced good plans that went nowhere; v3.0 adds the
+half that makes them compound.
+
+### The problem v2.1 had
+
+- No source of truth. Every feature wrote `docs/plan/<slug>-*.md` files that
+  piled up forever and never accumulated into a description of the system.
+  Feature #2 started from zero.
+- No lifecycle. Plans were never finished, only abandoned.
+- No brownfield model. Changing existing behavior meant rewriting a plan.
+- One size of ceremony: a typo fix cost five documents and a production gate.
+- Changes collided — artifacts were distinguished by filename prefix, so two
+  in-flight features shared one directory.
+- "Done" was prose, so the auditor had nothing objective to hold code against.
+
+### What was taken from OpenSpec
+
+| Feature | Why |
+|---|---|
+| `openspec/specs/` as living source of truth | The thing v2.1 was missing entirely |
+| Delta specs (ADDED/MODIFIED/REMOVED/RENAMED) | Makes brownfield work first-class |
+| Change as a self-contained folder | Parallel work, clean review, real archive |
+| Archive-merge cycle | Closes the loop; specs evolve with the system |
+| Requirement + Scenario format (RFC 2119) | Objective, testable definition of done |
+| Artifact dependency graph, enablers not gates | Order without waterfall |
+| Progressive rigor (`lite`/`standard`/`full`, `skip_specs`) | Ceremony matched to stakes |
+| Three verification dimensions | Completeness · correctness · coherence |
+| Explore-before-propose | Catches wrong turns at the cheapest moment |
+| `config.yaml` context + per-artifact rules | Project constraints injected everywhere |
+
+Not taken: the TypeScript CLI, stores/multi-repo, telemetry. The on-disk format
+is deliberately byte-compatible with the `openspec` CLI, so adopting it later
+is optional rather than a migration.
+
+### New
+
+- **`.claude/tools/openspec.py`** — zero-dependency Python 3 tool implementing
+  `list`, `status`, `validate`, `archive`. Turns "is this change ready?" into a
+  computation. 15 validation codes; archive enforces validate → write specs →
+  move folder, so a failure leaves the change intact and re-runnable.
+- **`.claude/references/spec-format.md`** — normative requirement/scenario/delta
+  format, validation codes, progressive rigor, right-sizing.
+- **`.claude/references/change-lifecycle.md`** — folder layout, tracks, artifact
+  graph, the loop, archiving rules, bootstrapping.
+- **Skills**: `proposer` (entry point), `verifier` (advisory 3-dimension check),
+  `archiver` (delta merge + archive).
+- **Commands**: `/explore`, `/propose`, `/status`, `/verify`, `/archive`.
+- **`openspec/`** scaffold with `config.yaml` template.
+
+### Changed
+
+- `planner` — now full-track only; reads delta specs; produces a **Requirement
+  Coverage Matrix** mapping every requirement to implementing files and
+  scenario verifications. Cannot edit deltas or plan out-of-scope work.
+- `executor` — track-aware (steps marked `[full]` are skipped on lite/standard);
+  reads the deltas as the definition of done; must update a delta rather than
+  diverge from it silently; cannot touch `openspec/specs/`.
+- `auditor` — new **Spec Parity** coverage section (§0), run first: every
+  ADDED/MODIFIED/REMOVED requirement gets a delivered/not-delivered verdict with
+  evidence. Also checks unspecified behavior, scope adherence against the
+  proposal, regressions against existing specs, and task honesty. New categories
+  `SPEC_PARITY`, `SCOPE`, `HANDOFF`. Cannot edit specs or archive.
+- `/spec` — new Phase 4 converts the `_PM/` narrative into delta specs, with an
+  explicit mapping table for what does and does not cross over.
+- `/analyze` — reports spec coverage per component and flags drift.
+- `/debug` — spec check before closing: bug in the code, or bug in the spec.
+- All plan artifacts moved from `docs/plan/<slug>-*.md` into
+  `openspec/changes/<change-id>/plan/*.md`.
+- Templates updated: master plan gains the coverage matrix and out-of-scope
+  list; production gate gains the spec parity table.
+
+### Unchanged
+
+`checklist-generator` and everything under `docs/specs/`. The review checklists
+work exactly as before and remain binding — they are now one of two standards
+the auditor checks, alongside the behavior contract.
+
+### Tracking layer
+
+The spec layer records what the system does and what shipped. It had no place
+for work that is not a change yet, and no way for a new session or a different
+agent to learn what the last one did. Both added:
+
+- **`openspec/backlog/<item-id>.md`** — one file per item, YAML frontmatter
+  (`type`, `status`, `priority`, `change`, `capability`, `blocked_by`, `tags`)
+  plus What / Why it matters / Evidence / Notes. One file per item means
+  parallel agents never conflict on a shared index, and the index is computed
+  rather than maintained.
+- **`openspec/JOURNAL.md`** — newest-first session log. Four fields: Did,
+  State, Next, Watch out.
+- **`board`** — one command showing capabilities, active changes with their
+  computed next action, open backlog by priority, recent journal entries, and
+  health. The session-start view.
+- **`backlog list|show`** and **`journal`** commands; backlog validation folded
+  into `validate --all`.
+- **`tracker` skill** with five modes: session start, file, triage, promote to
+  a change, session handoff.
+- **`/board`**, **`/backlog`**, **`/handoff`** commands. `/status` narrowed to
+  drilling into a single change.
+
+**One rule holds it together:** exactly one place owns each piece of work at a
+time. `idea → backlog item → change folder → archive`. A backlog item never
+restates a change's tasks; it links and stops. Two systems tracking one thing
+means both go stale.
+
+**The backlog stays alive because the skills feed it.** The proposer files cut
+scope, the executor files debt it took on and TODOs it left, the verifier files
+warnings it did not fix, the auditor files MINORs and waivers with rationale,
+the archiver files what a change did not finish, `/explore` files rejected
+options, `/debug` files spec gaps. A deferral nobody records is
+indistinguishable from an oversight three weeks later.
+
+Ten new validation codes catch the specific way this dies — work finishes and
+nobody updates the record: `backlog_change_archived`,
+`backlog_status_behind_change`, `backlog_in_progress_without_change`,
+`backlog_blocked_without_cause`, and the frontmatter/link integrity checks.
+
+### Design layer — the dev ↔ design agent DTO
+
+Two agents working on one UI need a typed contract, or they overwrite each
+other. A developer agent builds working, plain UI; a design agent decides how
+it looks. Added:
+
+- **`openspec/design/surfaces/<id>.json`** (`UISurface`, dev → design) — what
+  exists: components, roles, **every state**, data, actions, and the
+  `constraints` a design must not break. Emitted by the new `ui-surveyor` skill
+  from the actual code, with `generated_at_commit` + `source_files` so
+  staleness is detectable via git.
+- **`openspec/design/tickets/DT-NNNN.json`** (`DesignTicket`, design → dev) —
+  intent, per-state design, token references, and **checkable acceptance
+  criteria**. Written by the new `design-director` skill.
+- **`openspec/design/system.json`** — tokens, primitives, principles. Ships an
+  accessible placeholder set so UI renders on day one; validation keeps warning
+  until the design agent sets `status: designed`.
+- **`/surface`** and **`/design`** commands; `design` command group in the tool
+  (`surfaces`, `tickets`, `show`), folded into `board` and `validate --all`.
+
+**The lane rule is what makes this safe: design tickets may change
+presentation, never behavior.** A design agent with ticket-creation power can
+quietly redefine the product — "drop the confirmation step" is a design opinion
+with a behavioral consequence. Every ticket declares `behavior_impact`; anything
+touching behavior blocks until a `/propose` change lands and is linked in
+`spec_change`. The executor **refuses** tickets that cross the lane, and that
+refusal is the mechanism working, not a failure.
+
+Eighteen validation codes. Three of them close the gap the commit-based
+staleness check cannot see — a `source_files` list that was incomplete from the
+start, which leaves the manifest looking fresh while describing only part of the
+surface: `design_source_file_missing`, `design_surface_incomplete_sources` (the
+import graph cross-check, one layer per pass), and `design_component_not_found`. The two that keep the layer coherent over time are
+`design_raw_color_value` (a hex literal where a token belongs — forty tickets
+each naming their own blue is not a design system) and
+`design_state_not_covered` (the surface declares `loading`/`empty`/`error` and
+the ticket styles only `default`).
+
+Files are the source of truth. GitHub issues are an optional mirror
+(`design_sync: github` in config), synced by `design-director` via the GitHub
+MCP tools with the ticket JSON embedded in the issue body for round-trip. On
+conflict the file wins, and anything arriving from an issue is treated as
+untrusted input — a ticket does not get to argue its own `behavior_impact` down.
+
+### Migration
+
+`docs/MIGRATION_v3.md`. Mechanical; roughly ten minutes for a project with a
+handful of plan docs. Existing checklists are untouched.
+
+---
+
 ## Status: v2.1 — Full Pipeline Complete and Tested (2026-04-07)
 
 ---

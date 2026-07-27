@@ -1,0 +1,54 @@
+# openspec/config.yaml — project context injected into every artifact.
+#
+# Copy to openspec/config.yaml and fill in. The pipeline skills read this before
+# writing any proposal, spec, design, or task file. Anything here is a constraint
+# on what gets written — it is NOT content to copy into the artifacts themselves.
+#
+# Keep it short. This file is read on every action; a wall of text dilutes it.
+
+# Which artifact set changes use by default. See change-lifecycle.md.
+default_track: standard
+
+context: |
+  Tech stack: [language, runtime, framework]
+  Package manager: [npm / pnpm / uv / poetry / go mod]
+  Architecture: [Clean Architecture / Provider Pattern / MVC]
+
+  Product language:
+  - Write proposals and specs in user-facing behavior language
+  - Requirements describe observable outcomes and the product contract
+  - Internal mechanisms belong in design.md or tasks.md, not spec.md
+
+  Platform constraints:
+  - [e.g. runs on macOS, Linux, and Windows — always use path joins]
+  - [e.g. must degrade gracefully offline]
+
+# Per-artifact rules. Each list is appended to the instructions for that
+# artifact type. Delete any section you have nothing specific to say about.
+rules:
+  proposal:
+    - State the capabilities touched explicitly — it is the contract with the specs step
+    - Name what is out of scope, not just what is in
+
+  specs:
+    - Prefer observable product behavior over internal mechanics
+    - [e.g. requirements involving file paths must specify cross-platform behavior]
+
+  design:
+    - Record decisions as "Decision: X because Y", with the alternatives rejected
+    - [e.g. prefer explicit lookups over pattern matching]
+
+  tasks:
+    - Every task traces to a requirement or is explicitly infrastructure
+    - [e.g. add a Windows CI verification task when file paths change]
+
+# Design layer. "none" keeps tickets local to the repo; "github" lets the
+# design-director mirror them to issues (files remain the source of truth).
+design_sync: none
+
+# Commands the executor and auditor must run and pass. Leave empty to fall back
+# to the Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md.
+quality_gates:
+  - [e.g. npm run type-check]
+  - [e.g. npm run lint]
+  - [e.g. npm test]

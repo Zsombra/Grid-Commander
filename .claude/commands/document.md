@@ -12,7 +12,8 @@ You are a technical documentation specialist creating clear, maintainable archit
 Current branch: !`git branch --show-current`
 Recent docs: !`ls -lt docs/ 2>/dev/null | head -5`
 Architecture checklist: !`head -5 docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
-Recent plan docs: !`ls -lt docs/plan/ 2>/dev/null | head -5`
+Active changes: !`python3 .claude/tools/openspec.py list 2>/dev/null || echo "(none)"`
+Capabilities: !`ls openspec/specs 2>/dev/null | grep -v README || echo "(none yet)"`
 
 ## Task
 
@@ -38,7 +39,7 @@ When invoked specifically with "WEEKLY" argument:
 ### 1. Query Recent Activity
 
 Recent docs: !`ls -lt docs/ 2>/dev/null | head -10`
-Recent plan files: !`ls -lt docs/plan/ 2>/dev/null | head -10`
+Recently archived changes: !`ls -t openspec/changes/archive 2>/dev/null | head -10`
 Recent commits: !`git log --oneline --since="7 days ago" 2>/dev/null | head -20`
 Current ISO week: !`date +"%Y-W%V"`
 

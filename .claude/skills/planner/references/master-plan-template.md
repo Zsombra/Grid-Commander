@@ -2,14 +2,29 @@
 
 ## Status
 
-- Slug: `<slug>`
+- Change ID: `<change-id>`
+- Change folder: `openspec/changes/<change-id>/`
+- Track: `full`
 - Current phase: `Planning | Execution | Ready for Production Gate | Production Gate Audit`
 - Base ref for diffs: `origin/main`
 - Last updated: `<YYYY-MM-DD>`
 
 ## Objective
 
-<1-2 sentences describing what will change and why>
+<1-2 sentences describing what will change and why — from the proposal's Why>
+
+## Requirement Coverage Matrix
+
+<!-- INSTRUCTION: One row per requirement in the change's delta specs. This is
+     the contract between the plan and the behavior that was agreed. Every
+     ADDED/MODIFIED/REMOVED requirement must appear. The auditor checks it. -->
+
+| Requirement | Capability | Delta op | Implementing file(s) | Scenario → verification |
+|---|---|---|---|---|
+| `<name>` | `<capability>` | ADDED/MODIFIED/REMOVED/RENAMED | `<path>` (create/modify/delete) | `<scenario>` → `<test file or manual check>` |
+
+Out of scope (from the proposal — do not implement):
+- `<item>`
 
 ## Non-Negotiable Constraints
 
@@ -104,7 +119,7 @@
 
 ### Decision Log Requirements
 
-- Decision log file: `docs/plan/<slug>-decision-log.md`
+- Decision log file: `openspec/changes/<change-id>/plan/decision-log.md`
 - Required entry fields: `Timestamp`, `Phase`, `Type`, `Decision`, `Impacted files`, `Reason`, `Approved by`, `Next action`
 - Phase 1 minimum entries:
   - scope boundaries
@@ -176,17 +191,17 @@ Phase 2: <phase name>
 - [ ] UI parity verified against live code (or N/A evidence).
 - [ ] Technical debt scan clean (no stale/redundant/deprecated/fallback code).
 - [ ] Contract consistency verified across touched layers.
-- [ ] Production gate tracker updated: `docs/plan/<slug>-production-gate.md`.
+- [ ] Production gate tracker updated: `openspec/changes/<change-id>/plan/production-gate.md`.
 - [ ] Decision log reviewed and updated with gate rationale/waivers.
 - [ ] Gate decision is `PASS` only when zero open violations remain.
 
 ## Artifacts
 
-- Master plan: `docs/plan/<slug>-master-plan.md`
-- Data review: `docs/plan/<slug>-data-review.md`
-- Architecture review: `docs/plan/<slug>-architecture-review.md`
-- UI/UX review: `docs/plan/<slug>-uiux-review.md`
-- Decision log: `docs/plan/<slug>-decision-log.md`
-- Production gate tracker: `docs/plan/<slug>-production-gate.md`
+- Master plan: `openspec/changes/<change-id>/plan/master-plan.md`
+- Data review: `openspec/changes/<change-id>/plan/data-review.md`
+- Architecture review: `openspec/changes/<change-id>/plan/architecture-review.md`
+- UI/UX review: `openspec/changes/<change-id>/plan/uiux-review.md`
+- Decision log: `openspec/changes/<change-id>/plan/decision-log.md`
+- Production gate tracker: `openspec/changes/<change-id>/plan/production-gate.md`
 
 PLAN READY FOR REVIEW

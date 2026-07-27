@@ -117,6 +117,25 @@ Source → Transform1 → Transform2 → Destination
 - [ ] Integration test coverage
 - [ ] Checklist rule addition needed (if this bug type isn't covered)
 
+### Spec Check
+
+Before closing, check the behavior against `openspec/specs/`:
+
+| Finding | Meaning | Action |
+|---|---|---|
+| A requirement covers this and the code violated it | Straight bug | Fix the code |
+| A requirement covers this and the code matches it | The **spec** is wrong | Propose a change — do not silently "fix" agreed behavior |
+| No requirement covers this | Behavior nobody agreed to | Worth specifying if the capability matters |
+
+For a one-line fix, fix it and note the spec gap. For anything that changes
+agreed behavior, run `/propose` — a bug fix that quietly redefines the contract
+is how a spec layer goes stale.
+
+File a backlog item (`.claude/references/tracking.md`) for the spec gap, and for
+any related bug you found while tracing but did not fix. You are the person with
+the most context on it that anyone will ever have; spend two minutes writing it
+down.
+
 ## Success Criteria
 
 - Referenced file read first
