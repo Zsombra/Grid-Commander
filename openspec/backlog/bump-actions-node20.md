@@ -2,7 +2,7 @@
 id: bump-actions-node20
 title: CI actions still target the deprecated Node 20 runtime
 type: chore
-status: in-progress
+status: done
 priority: p3
 created: 2026-07-27
 updated: 2026-07-27

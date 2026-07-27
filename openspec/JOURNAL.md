@@ -39,9 +39,14 @@ being silently discarded. Fixed in both places: validation reports it at
 that gap is exactly what let the bug through. Archived into `spec-validation`
 (now 4 requirements). Suite is 113, no expected failures left.
 
-**State**: PR #3 on `claude/work-review-next-steps-clb36a`, three commits.
-`validate --all` is 0 errors, 1 warning (the placeholder design system).
-Backlog is 5 open — 1×P2, 4×P3. Two capabilities in the source of truth.
+Also cleared `bump-actions-node20` (`lite`, `skip_specs`) — `checkout@v5` and
+`setup-python@v6`. Verified by the run itself: an unresolvable action version
+fails the job immediately, and the deprecation warning is gone from the log.
+
+**State**: PR #3 on `claude/work-review-next-steps-clb36a`, four commits, all
+checks green. `validate --all` is 0 errors, 1 warning (the placeholder design
+system). Backlog is 4 open, all P3. Two capabilities in the source of truth,
+four changes archived.
 
 **Next**: Unchanged and still the only blocker: **decide what Grid-Commander
 is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`. What is left in
