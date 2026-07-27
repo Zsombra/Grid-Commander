@@ -111,6 +111,23 @@ cards; the roving tabindex must survive" constrains something.
 An incomplete list means the tool reports a stale surface as fresh, and the
 design agent designs against fiction.
 
+Do not assemble it from memory. Validation cross-checks it against the actual
+import graph:
+
+```bash
+python3 .claude/tools/openspec.py validate --all
+```
+
+`design_surface_incomplete_sources` lists UI files the surface imports that you
+did not record. It reports one layer at a time, so add what it names and run it
+again until it is quiet — each pass walks a level deeper into the component
+tree. Leave a file out only when it has no bearing on what renders, and know
+that you are making that call.
+
+`design_component_not_found` means a component id you wrote appears in none of
+the source files. Either it was renamed, or you described something that does
+not exist and the design agent would write tickets against nothing.
+
 ### Step 6: Set status and validate
 
 `functional` (works, unstyled) · `in-design` (tickets open) · `designed` ·
@@ -147,7 +164,7 @@ against it:
 3. **Never guess at states.** Read the branches. An invented state is worse
    than a missing one — it produces design work for a case that cannot happen.
 4. **Never leave `source_files` incomplete.** It breaks staleness detection
-   silently.
+   silently. Run validation until the import cross-check is quiet.
 5. **Never describe a UI that does not exist yet.** Build it plain first, then
    survey it. Surveying a plan produces a design for a plan.
 
@@ -163,7 +180,9 @@ an existing gap. Then:
 - [ ] Manifest at `openspec/design/surfaces/<surface-id>.json`.
 - [ ] Every component has `id`, `role`, `purpose`, and exhaustive `states`.
 - [ ] Constraints written for anything a design could break.
-- [ ] `source_files` complete; `generated_at_commit` set to current HEAD.
+- [ ] `source_files` complete — import cross-check quiet, or exclusions deliberate.
+- [ ] Every component id traceable in the source files.
+- [ ] `generated_at_commit` set to current HEAD.
 - [ ] Gaps found in the code are filed as backlog items.
 - [ ] `openspec.py validate --all` reports no new errors.
 

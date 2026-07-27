@@ -148,7 +148,11 @@ touching behavior blocks until a `/propose` change lands and is linked in
 `spec_change`. The executor **refuses** tickets that cross the lane, and that
 refusal is the mechanism working, not a failure.
 
-Fifteen validation codes. The two that keep the layer coherent over time are
+Eighteen validation codes. Three of them close the gap the commit-based
+staleness check cannot see — a `source_files` list that was incomplete from the
+start, which leaves the manifest looking fresh while describing only part of the
+surface: `design_source_file_missing`, `design_surface_incomplete_sources` (the
+import graph cross-check, one layer per pass), and `design_component_not_found`. The two that keep the layer coherent over time are
 `design_raw_color_value` (a hex literal where a token belongs — forty tickets
 each naming their own blue is not a design system) and
 `design_state_not_covered` (the surface declares `loading`/`empty`/`error` and

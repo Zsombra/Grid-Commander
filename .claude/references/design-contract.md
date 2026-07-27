@@ -189,6 +189,26 @@ python3 .claude/tools/openspec.py validate --all
 If those files changed since that commit, the surface is stale and the design
 agent is reading fiction. Re-run the `ui-surveyor` skill before designing.
 
+**An incomplete `source_files` is the drift the commit check cannot see** — the
+manifest looks fresh while describing only part of the surface. Three checks
+close that gap:
+
+| Check | Catches |
+|---|---|
+| `design_source_file_missing` (error) | A listed file no longer exists |
+| `design_surface_incomplete_sources` (warning) | A UI file the surface imports that is not listed |
+| `design_component_not_found` (warning) | A component id that appears in none of the source files — renamed, or never existed |
+
+The import check walks **one layer at a time**: it reports direct local imports
+of the listed files, so adding them makes them roots on the next run and the
+tree converges a layer per pass. It counts components always, and `.ts`/`.js`
+only when the name suggests view logic (`useCheckout.ts` shapes what renders,
+`money.ts` does not). It degrades silently on stacks without JS-style relative
+imports.
+
+A file with genuinely no bearing on what renders can stay out of the list —
+but that is now a decision someone made, not an omission nobody saw.
+
 ---
 
 ## 5. `DesignTicket` — design → dev

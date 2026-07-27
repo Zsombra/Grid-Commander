@@ -520,6 +520,119 @@ def git_changed_since(root: Path, commit: str, files: list) -> list:
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
+# A surface's `source_files` is hand-assembled by an agent reading code, so an
+# incomplete list is the one drift the commit check cannot see: the manifest
+# looks fresh while describing only part of the surface. These close that gap.
+
+COMPONENT_EXTS = (".tsx", ".jsx", ".vue", ".svelte", ".astro")
+LOGIC_EXTS = (".ts", ".js", ".mjs")
+UI_EXTS = COMPONENT_EXTS + LOGIC_EXTS
+RESOLVE_EXTS = UI_EXTS + (".css", ".scss")
+NON_UI_MARKERS = (".test.", ".spec.", ".stories.", ".d.ts", "__tests__", "__mocks__")
+
+# A .ts/.js file is part of a surface when it drives what renders — a hook, a
+# view model, a store. A pure formatter or api client is not, and flagging
+# those is the noise that teaches people to ignore the warning.
+VIEW_LOGIC_RE = re.compile(
+    r"^use[A-Z]|view|model|store|context|state|hook|provider|reducer|controller",
+    re.IGNORECASE,
+)
+IMPORT_RE = re.compile(
+    r"""(?:^|\s)(?:import|export)\s[^;\n]*?from\s*['"](\.{1,2}/[^'"]+)['"]"""
+    r"""|(?:^|\s)import\s*['"](\.{1,2}/[^'"]+)['"]"""
+    r"""|require\(\s*['"](\.{1,2}/[^'"]+)['"]\s*\)""",
+    re.MULTILINE,
+)
+TYPE_IMPORT_RE = re.compile(r"^\s*(?:import|export)\s+type\s")
+
+
+def _is_ui_file(path: Path) -> bool:
+    """Does this file plausibly belong to a UI surface?
+
+    Components always. Logic files only when the name suggests view logic —
+    `useCheckout.ts` shapes what renders, `money.ts` does not.
+    """
+    if any(m in str(path) for m in NON_UI_MARKERS):
+        return False
+    if path.suffix in COMPONENT_EXTS:
+        return True
+    return path.suffix in LOGIC_EXTS and bool(VIEW_LOGIC_RE.search(path.stem))
+
+
+def _resolve_import(importer: Path, spec: str):
+    """Resolve a relative import to a file on disk, or None."""
+    base = (importer.parent / spec).resolve()
+    if base.is_file():
+        return base
+    for ext in RESOLVE_EXTS:
+        candidate = base.with_name(base.name + ext)
+        if candidate.is_file():
+            return candidate
+    for ext in UI_EXTS:
+        candidate = base / ("index" + ext)
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def local_ui_imports(root: Path, source_files: list) -> set:
+    """Local UI files directly imported by `source_files` — one layer, not the
+    transitive closure. Adding a missing file makes it a root on the next run,
+    so the tree is walked a layer at a time instead of dragging in every util.
+
+    Silently returns nothing for stacks without JS-style relative imports.
+    """
+    found = set()
+    for rel in source_files:
+        path = (root / rel)
+        if not path.is_file() or path.suffix not in UI_EXTS:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            if TYPE_IMPORT_RE.match(line):
+                continue          # type-only imports are not part of the surface
+            for match in IMPORT_RE.finditer(line):
+                spec = next((g for g in match.groups() if g), None)
+                if not spec:
+                    continue
+                target = _resolve_import(path, spec)
+                if target and _is_ui_file(target):
+                    try:
+                        found.add(str(target.relative_to(root)))
+                    except ValueError:
+                        pass       # import escaped the repo
+    return found
+
+
+def _pascal(kebab: str) -> str:
+    return "".join(part[:1].upper() + part[1:] for part in kebab.split("-") if part)
+
+
+def component_is_traceable(root: Path, component_id: str, source_files: list) -> bool:
+    """Does this component id appear in any listed source file, in any casing?
+
+    Heuristic on purpose — it catches invented or renamed components without
+    needing a parser per framework.
+    """
+    needles = {component_id, _pascal(component_id), component_id.replace("-", "_"),
+               component_id.replace("-", "")}
+    for rel in source_files:
+        path = root / rel
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        lowered = text.lower()
+        if any(n.lower() in lowered for n in needles):
+            return True
+    return False
+
+
 def _walk_strings(node, path="") -> list:
     """Yield (dotted_path, string) for every string in a nested structure."""
     out = []
@@ -597,8 +710,36 @@ def validate_design(root: Path, strict: bool) -> list:
                                   f"{path.stem} / {cid}: role '{comp['role']}' is not one of "
                                   f"{', '.join(COMPONENT_ROLES)}", rel(path)))
 
-        changed = git_changed_since(root, data.get("generated_at_commit", ""),
-                                    data.get("source_files", []))
+        sources = data.get("source_files", []) or []
+
+        gone = [s for s in sources if not (root / s).is_file()]
+        if gone:
+            found.append(diag("error", "design_source_file_missing",
+                              f"{path.stem}: source file(s) do not exist — "
+                              f"{', '.join(gone[:3])}", rel(path),
+                              "re-run the ui-surveyor skill; the surface has moved or been deleted"))
+
+        missing_imports = sorted(local_ui_imports(root, sources) - set(sources))
+        if missing_imports:
+            found.append(diag(
+                "warning", "design_surface_incomplete_sources",
+                f"{path.stem}: {len(missing_imports)} UI file(s) imported by this surface are "
+                f"not in source_files — {', '.join(missing_imports[:3])}", rel(path),
+                "add them and re-survey — an incomplete list makes staleness detection "
+                "silently miss changes. Leave one out only if it has no bearing on what "
+                "renders."))
+
+        for comp in data.get("components", []):
+            cid = isinstance(comp, dict) and comp.get("id")
+            if cid and sources and not component_is_traceable(root, cid, sources):
+                found.append(diag(
+                    "warning", "design_component_not_found",
+                    f"{path.stem} / {cid}: component id appears in none of the source files",
+                    rel(path),
+                    "the component was renamed or never existed — the design agent will "
+                    "write tickets against nothing"))
+
+        changed = git_changed_since(root, data.get("generated_at_commit", ""), sources)
         if changed:
             found.append(diag("warning", "design_surface_stale",
                               f"{path.stem}: {len(changed)} source file(s) changed since "
