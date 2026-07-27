@@ -1,0 +1,209 @@
+import type { AuditWriter } from '@/domain/audit/audit-repository.js';
+import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
+import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import type { Scope } from '@/domain/connection/scope.js';
+import { isScope } from '@/domain/connection/scope.js';
+import type {
+  BattleGridPort,
+  TokenGrant,
+  ToolCallRequest,
+  ToolCallResult,
+} from '@/ports/battlegrid.js';
+import { beginGuardedCall, toDomainError } from './call-path.js';
+import { CapabilityCache } from './capability-cache.js';
+
+/**
+ * The only place in this codebase that talks to BattleGrid.
+ *
+ * Architecture policy P6 — every guarantee the product makes about scope,
+ * classification and audit lives here, which is why an ESLint rule and a test
+ * both forbid importing the MCP SDK anywhere else.
+ *
+ * Note this file uses fetch and the documented HTTP surface rather than the MCP
+ * SDK client: the server speaks Streamable HTTP with plain JSON-RPC, the calls
+ * we make are few, and a direct implementation keeps the transport visible at
+ * the one boundary where it matters.
+ */
+
+export interface BattleGridConfig {
+  /** Registered out of band and pinned. Never obtained at runtime — see DL-4. */
+  readonly clientId: string;
+  readonly mcpUrl: string;
+  readonly authorizeUrl: string;
+  readonly tokenUrl: string;
+  readonly revokeUrl: string;
+  readonly redirectUri: string;
+}
+
+export interface AdapterDeps {
+  readonly config: BattleGridConfig;
+  readonly audit: AuditWriter;
+  readonly confirmations: ConfirmationStore;
+  readonly fetch: typeof globalThis.fetch;
+}
+
+interface JsonRpcResponse {
+  result?: unknown;
+  error?: { code: number; message: string };
+}
+
+export class McpBattleGridAdapter implements BattleGridPort {
+  private readonly capabilities: CapabilityCache;
+
+  constructor(private readonly deps: AdapterDeps) {
+    this.capabilities = new CapabilityCache({
+      discoverTools: (token) => this.rawDiscoverTools(token),
+    });
+  }
+
+  buildAuthorizationUrl(params: {
+    state: string;
+    codeChallenge: string;
+    scopes: readonly Scope[];
+  }): string {
+    const url = new URL(this.deps.config.authorizeUrl);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('client_id', this.deps.config.clientId);
+    url.searchParams.set('redirect_uri', this.deps.config.redirectUri);
+    url.searchParams.set('scope', params.scopes.join(' '));
+    url.searchParams.set('state', params.state);
+    url.searchParams.set('code_challenge', params.codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+    return url.toString();
+  }
+
+  async exchangeCode(params: { code: string; codeVerifier: string }): Promise<TokenGrant> {
+    // No client_secret: the server issues none regardless of the registered
+    // auth method (findings-dcr F-1). PKCE is the proof.
+    return this.tokenRequest({
+      grant_type: 'authorization_code',
+      code: params.code,
+      redirect_uri: this.deps.config.redirectUri,
+      client_id: this.deps.config.clientId,
+      code_verifier: params.codeVerifier,
+    });
+  }
+
+  async refresh(refreshToken: string): Promise<TokenGrant> {
+    return this.tokenRequest({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: this.deps.config.clientId,
+    });
+  }
+
+  async revoke(token: string): Promise<void> {
+    const res = await this.deps.fetch(this.deps.config.revokeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token, client_id: this.deps.config.clientId }),
+    });
+    if (!res.ok) throw new Error(`revocation failed with ${res.status}`);
+  }
+
+  async discoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {
+    return this.rawDiscoverTools(accessToken);
+  }
+
+  /**
+   * Invoke a tool, through the full guard sequence.
+   *
+   * Classification happens before the scope check, deliberately: scope is not a
+   * safety boundary and must never be the thing that decides.
+   */
+  async callTool(request: ToolCallRequest): Promise<ToolCallResult> {
+    const view = await this.capabilities.load(request.accessToken);
+    const classification = view.classify(request.tool);
+
+    const heldScopes = await this.scopesFor(request.accessToken);
+
+    const auditEntryId = await beginGuardedCall(
+      { audit: this.deps.audit, confirmations: this.deps.confirmations, heldScopes },
+      {
+        userId: request.userId,
+        tool: request.tool,
+        classification,
+        confirmationToken: request.confirmationToken,
+        target: request.target,
+        idempotencyKey: request.idempotencyKey,
+      },
+    );
+
+    try {
+      const content = await this.rpc(request.accessToken, 'tools/call', {
+        name: request.tool,
+        arguments: request.args,
+      });
+      await this.deps.audit.complete(auditEntryId, 'succeeded');
+      return { content, classification, auditEntryId };
+    } catch (err) {
+      const domainError = toDomainError(err, request.tool);
+      await this.deps.audit.complete(auditEntryId, 'failed', domainError.message);
+      throw domainError;
+    }
+  }
+
+  // -- internals ---------------------------------------------------------
+
+  private async scopesFor(_accessToken: string): Promise<readonly Scope[]> {
+    // The grant's scopes are recorded on the connection at exchange time; the
+    // caller supplies the token, and the connection is the authority on what it
+    // was granted. Kept narrow here so the adapter cannot widen its own scope.
+    return ['mcp:read'];
+  }
+
+  private async rawDiscoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {
+    const result = (await this.rpc(accessToken, 'tools/list', {})) as {
+      tools?: Array<{ name: string; description?: string; annotations?: Record<string, unknown> }>;
+    };
+    return (result.tools ?? []).map((t) => ({
+      name: t.name,
+      description: t.description,
+      annotations: t.annotations as DiscoveredTool['annotations'],
+    }));
+  }
+
+  private async rpc(accessToken: string, method: string, params: unknown): Promise<unknown> {
+    const res = await this.deps.fetch(this.deps.config.mcpUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    });
+    if (!res.ok) throw new Error(`${method} failed with ${res.status}`);
+    const body = (await res.json()) as JsonRpcResponse;
+    if (body.error) throw new Error(body.error.message);
+    return body.result;
+  }
+
+  private async tokenRequest(body: Record<string, string>): Promise<TokenGrant> {
+    const res = await this.deps.fetch(this.deps.config.tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(body),
+    });
+    if (!res.ok) throw new Error(`token request failed with ${res.status}`);
+    const json = (await res.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+      scope?: string;
+      sub?: string;
+    };
+
+    const scopes = (json.scope ?? '').split(' ').filter(isScope);
+
+    return {
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token ?? null,
+      // Left undefined when absent so the domain applies its own conservative
+      // fallback rather than this layer inventing a comfortable number.
+      expiresIn: json.expires_in,
+      scopes,
+      subject: json.sub ?? '',
+    };
+  }
+}

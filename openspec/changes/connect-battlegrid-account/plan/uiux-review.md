@@ -1,7 +1,7 @@
 # UI/UX Review: connect-battlegrid-account
 
 **Checklist**: `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md` v1.0.0
-**Status**: PENDING EXECUTION EVIDENCE
+**Status**: EVIDENCE RECORDED
 
 ---
 
@@ -22,20 +22,30 @@ describes read scope as read-only") is the one that bites.
 
 | Rule | Applies to | Evidence |
 |---|---|---|
-| Server Component by default | both surfaces | _pending_ |
-| No data fetching in a presentational component | `consent-summary.tsx`, audit list | _pending_ |
-| No client-side derivation | audit list | _pending_ |
-| **Consequence rule 9** — never "read-only" | `consent-summary.tsx` | _pending_ |
-| No credential in client state | both | _pending_ |
-| Accessibility — semantic elements, labels, focus | both | _pending_ |
-| Contrast AA, colour not the sole signal | audit outcome badges | _pending_ |
-| Loading / empty / error states | audit list | _pending_ |
-| Responsive; no horizontal body scroll | both | _pending_ |
+| Server Component by default | both surfaces | both components are server components; no `'use client'` |
+| No data fetching in a presentational component | `consent-summary.tsx`, audit list | both take props only |
+| No client-side derivation | audit list | `unresolvedCount` and outcome labels come from the server |
+| **Consequence rule 9** — never "read-only" | `consent-summary.tsx` | `consent.test.ts::never_says_read_only` — fails on read-only, view-only, just read, only read |
+| No credential in client state | both | no token reaches a component; `boundaries.test.ts` |
+| Accessibility — semantic elements, labels, focus | both | `<table>` with `<caption>`, `scope` on headers, `<time dateTime>`, `aria-labelledby`, `role="status"` |
+| Contrast AA, colour not the sole signal | audit outcome badges | the destructive marker is the word "destructive", not a colour |
+| Loading / empty / error states | audit list | empty state present and worded as a next step |
+| Responsive; no horizontal body scroll | both | the table scrolls in its own `overflow-x-auto` container |
 
 ## Findings
 
-_To be filled by the executor._
+**F-1 — the consent wording is enforced by a test, not by review.** Four
+patterns are forbidden outright (`read-only`, `view-only`, `just read`,
+`only read`), and the check runs against every scope description rather than
+only the ones currently requested.
+
+**F-2 — no loading state exists yet** because both surfaces render from server
+components with the data already resolved. When the assistant arrives and
+introduces streaming, this needs revisiting.
 
 ## Verdict
 
-_Pending._
+Compliant for the scope in this change. The Consequence & Confirmation section
+is only partly exercised because no destructive action reaches the UI yet — that
+arrives with `author-agents`, and the confirmation-token machinery it will need
+is already built and tested.
