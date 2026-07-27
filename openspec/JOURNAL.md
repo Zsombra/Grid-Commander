@@ -29,6 +29,57 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — The full track is unblocked; first change promoted to it
+
+**Did**: Ran `checklist-generator` in CREATE mode. `docs/specs/` now exists with
+three checklists, which is what the planner, executor and auditor hard-require —
+the `full` track had been blocked since the repo's first commit.
+
+Promoted `connect-battlegrid-account` from `standard` to `full`. It handles
+delegated OAuth authority over other people's trading agents; that is the
+profile the full track exists for, and shipping it on `standard` would skip the
+production gate on the riskiest change in the project.
+
+The checklists are project-specific rather than generic:
+
+- **Architecture** carries six binding project policies (P1–P6) drawn from
+  `openspec/config.yaml`: scope is not a safety boundary, capabilities are
+  discovered at runtime and unknown tools fail closed, audit is written before
+  the attempt, concurrency conflicts are surfaced not retried, compile is free
+  of effect while apply is not, and every BattleGrid call goes through one port.
+- **Data pipeline** was adapted rather than filled in. The generic template
+  assumes the database is the source of truth; here **BattleGrid is**, for
+  everything about agents and strategies, and our Postgres owns only
+  connections, audit and compiled plans. The Iron Rule was rewritten around two
+  sources of truth, plus a corollary: a cached value must be displayed as a
+  snapshot with its age.
+- **UI** has a section the template does not: *Consequence & Confirmation*.
+  Blast radius before the apply control, confirmations that name what is lost
+  rather than which tool is called, no optimistic UI on any mutation, and
+  compile/apply never styled as equal-weight siblings.
+
+**State**: PR #3 open and green. One active change on `full`, 0/26 tasks, board
+routing to `write design`. `validate --all` is 0 errors, 1 warning, 1 info.
+
+**Next**: `planner` — the full track needs `design.md`, `plan/master-plan.md`,
+`plan/architecture-review.md` and `plan/decision-log.md` before the executor may
+start. After that, task 0.1 (prove DCR against the live server) still gates all
+implementation.
+
+**Watch out**:
+- **The owner declined the optional rule sets** (security, testing, background
+  jobs, observability), so those sections are deliberately absent. The domain
+  constraints were still included as *core* architecture policies, because they
+  come from `config.yaml` and are binding project context, not an optional
+  add-on. That was a judgement call and was flagged as one — if it should come
+  out, it is section "Project-Specific Policies".
+- **P6 ("One way in") is the load-bearing rule.** If any feature reaches the MCP
+  SDK without going through `BattleGridPort`, every other guarantee in P1–P5
+  becomes advisory. Worth auditing specifically rather than trusting.
+- The `full` track has still never actually been *run* — planner and auditor
+  remain unexercised. Expect friction on this first pass and fix the
+  instructions rather than working around them.
+
 ## 2026-07-27 — MVP specified; the first change is proposed and unblocked
 
 **Did**: Ran `/spec` on the MVP. Two artifacts:
