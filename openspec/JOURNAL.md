@@ -23,15 +23,18 @@ pipeline. `tests/` is 111 tests on plain `unittest`, no dependencies, plus a
   new code with no fixture fails the suite by name.
 - CLI contract, and the design import cross-check converging one layer per pass.
 
-**State**: `main` plus the harness suite on
-`claude/work-review-next-steps-clb36a`. `validate --all` is 0 errors, 4
-warnings — three are `backlog_capability_not_found` for `harness-integrity`,
-which clear when this change archives, and the fourth is the placeholder design
-system. Backlog is 7 open — 1×P1 in-progress, 2×P2 (one new), 4×P3 (one new).
+**State**: PR #3 open on `claude/work-review-next-steps-clb36a`, both checks
+green — the `tests` job ran all 111 on a runner with no `pip install`. Archived
+once CI had proven the spec, so `harness-integrity` is now the second capability
+in `openspec/specs/` (5 requirements, 13 scenarios). `validate --all` is back to
+0 errors and 1 warning, the pre-existing placeholder design system. Backlog is
+6 open — 2×P2 (one new), 4×P3 (one new).
 
-**Next**: Let CI go green, then `/archive` this change. After that the blocker
-is unchanged and now the only thing in the way: **decide what Grid-Commander
-is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`.
+**Next**: The blocker is unchanged, and now the only thing in the way:
+**decide what Grid-Commander is**, fill `CLAUDE.md` + `openspec/config.yaml`
+from that, then `/idea`. Every skill reads config and gets nothing from
+placeholders, so feature work before that produces specs written against a
+project with no defined stack.
 
 **Watch out**:
 - **Two real bugs, filed not fixed.** `renamed-dropped-on-new-capability` (P2,
