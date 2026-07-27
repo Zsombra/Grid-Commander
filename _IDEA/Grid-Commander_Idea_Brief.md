@@ -371,7 +371,32 @@ grid-commander/
 
 ```
 1. Does BattleGrid permit third-party clients?  — gates the entire product.
-   Ask before writing application code.
+   **Partially retired 2026-07-27.** No terms of service are published at any
+   conventional path on either battlegrid.trade or docs.battlegrid.trade, and
+   the docs never discuss programmatic access. So there is no written permission
+   *or* prohibition.
+
+   The architecture, however, is unambiguous. BattleGrid's MCP server deploys a
+   full delegated-authorization stack that is meaningless for a first-party app:
+
+   - `/register` — RFC 7591 Dynamic Client Registration. You do not need DCR for
+     your own client; you already know its id. DCR exists so *other people's*
+     software can self-register.
+   - `token_endpoint_auth_methods_supported` includes `"none"` — public clients,
+     i.e. software that cannot hold a secret.
+   - PKCE S256 required — the public-client standard.
+   - Two granular scopes with a consent boundary between reading and spending.
+     You do not build scoped consent for yourself.
+   - `/revoke` — you revoke grants you gave to someone else.
+   - Per-account caps published as `mcpSignedWagerDailyCountLimit` and
+     `mcpSignedWagerDailyVolumeLimitUsd` — a delegated channel being rate-limited.
+   - The server's own `instructions` address an arbitrary MCP client, not a
+     specific app.
+
+   **Technically: yes, and evidently by design.** Commercially: unconfirmed, and
+   absence of a ToS is not permission. Confirm with BattleGrid directly before
+   launching anything public — this is a conversation, not a code change, and it
+   is still the cheapest risk on this list to retire.
 2. What is the revenue model?  — shapes billing, tenancy, and cost controls.
    Deferrable while exploring; not deferrable before launch.
 3. Does DCR issue durable client credentials, and what is the token lifetime?
