@@ -2,12 +2,12 @@
 id: add-harness-regression-tests
 title: Capture the openspec.py test fixtures as a real test suite
 type: debt
-status: open
+status: in-progress
 priority: p1
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
-capability: ""
+change: add-harness-regression-tests
+capability: harness-integrity
 blocked_by: []
 tags: [harness, testing]
 ---

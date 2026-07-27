@@ -6,6 +6,51 @@ Every session that changes anything ends with an entry here. This is what a
 fresh agent — or you in three weeks — reads to know where things stand and what
 the last session learned the hard way.
 
+## 2026-07-27 — The harness has tests; two real bugs found writing them
+
+**Did**: Took `add-harness-regression-tests` (P1) through the `standard`
+pipeline. `tests/` is 111 tests on plain `unittest`, no dependencies, plus a
+`tests` job in `.github/workflows/validate.yml`.
+
+- **Archive merge** pinned on written file content, not exit codes — ADDED
+  appends, MODIFIED replaces the whole block, REMOVED deletes, RENAMED rewrites
+  only the header, new capability seeded from Purpose, and multiple operations
+  in one delta without disturbing each other's line ranges.
+- **Archive abort** — validation failure and merge failure both leave every
+  spec and the change folder untouched, and a re-run after the fix works.
+- **All 55 validation codes** have a fixture, each asserting severity as well as
+  the code. A meta-test reads the codes out of `openspec.py` with `ast`, so a
+  new code with no fixture fails the suite by name.
+- CLI contract, and the design import cross-check converging one layer per pass.
+
+**State**: `main` plus the harness suite on
+`claude/work-review-next-steps-clb36a`. `validate --all` is 0 errors, 4
+warnings — three are `backlog_capability_not_found` for `harness-integrity`,
+which clear when this change archives, and the fourth is the placeholder design
+system. Backlog is 7 open — 1×P1 in-progress, 2×P2 (one new), 4×P3 (one new).
+
+**Next**: Let CI go green, then `/archive` this change. After that the blocker
+is unchanged and now the only thing in the way: **decide what Grid-Commander
+is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`.
+
+**Watch out**:
+- **Two real bugs, filed not fixed.** `renamed-dropped-on-new-capability` (P2,
+  a `RENAMED` delta against a capability with no main spec vanishes with no
+  diagnostic — pinned with `@unittest.expectedFailure`, so fixing the tool
+  without removing the marker fails the suite) and `merge-conflict-unreachable`
+  (P3, dead but correct backstop). Tests describe the tool as it is; a test that
+  is edited to match a regression is worse than no test.
+- **`dedent()` flattens when you interpolate a multi-line value into it.** The
+  common indent becomes empty and the whole block stays indented, so
+  `## ADDED Requirements` silently stops being a heading. Build the block first,
+  concatenate after.
+- **Mutation-check new assertions.** Four deliberate regressions were injected
+  into `openspec.py`; the first pass caught three. The fourth — REMOVED cutting
+  one line short — was invisible until a formatting invariant (no run of blank
+  lines, trailing newline) was added to every merge test. A test that passes
+  against a broken tool is a liability, so break the tool on purpose and check.
+- `full` track is **still** unexercised and still blocked on `docs/specs/`.
+
 Format:
 
 ```markdown

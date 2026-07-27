@@ -9,6 +9,38 @@ permissions:
   contents: read
 
 jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Same deliberate omission as below: no dependency install. The suite
+      # asserts the tool imports only the standard library, and this job is
+      # what makes that assertion mean something.
+      - name: Run the harness regression suite
+        shell: bash
+        run: |
+          set +e
+          output=$(python3 -m unittest discover -s tests -v 2>&1)
+          status=$?
+          set -e
+
+          {
+            echo '### Harness regression tests'
+            echo ''
+            echo '```'
+            echo "$output" | tail -n 40
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "$output"
+          exit $status
+
   validate:
     name: validate
     runs-on: ubuntu-latest
