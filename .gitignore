@@ -25,3 +25,8 @@ __pycache__/
 !.env.example
 *.key
 *.pem
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
