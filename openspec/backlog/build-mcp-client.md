@@ -2,7 +2,7 @@
 id: build-mcp-client
 title: Typed read-only BattleGrid MCP client (Tier 0 foundation)
 type: feature
-status: in-progress
+status: done
 priority: p1
 created: 2026-07-27
 updated: 2026-07-27
