@@ -1,0 +1,142 @@
+# SKILLMOREL
+
+A universal development pipeline for [Claude Code](https://docs.claude.com/en/docs/claude-code) — a portable bundle of **skills** and **slash commands** that gives any project a structured workflow from idea to audited production code.
+
+**Version**: 2.1
+**Scope**: multi-architecture (Clean Architecture + Provider / Plugin Pattern, extensible to others)
+**Distribution**: per-repo, self-contained
+
+---
+
+## What's in the box
+
+### Skills (4)
+
+| Skill | Purpose |
+|---|---|
+| `checklist-generator` | Creates project-specific review checklists (architecture, data pipeline, UI) from templates. Detects architecture pattern and adapts. |
+| `planner` | Reads checklists, produces an implementation plan, decision log, and review scaffolds. Never touches production code. |
+| `executor` | Implements an approved plan, self-reviews against the checklists, and maintains the decision log for hand-off. |
+| `auditor` | Independent production-gate verification against the checklists. PASS / BLOCKED outcome with violation tracking. |
+
+### Slash commands (7)
+
+| Command | Purpose |
+|---|---|
+| `/idea` | Greenfield concept exploration — product, market, MVP scope, tech stack |
+| `/spec` | Feature specification — user stories, state machines, business rules |
+| `/logic` | Validate product logic — gap analysis, state extraction, concerns (P0/P1/P2) |
+| `/solutions` | Architecture exploration — 3 ranked options with SOLID analysis |
+| `/analyze` | Map the architecture of existing code — dependencies, data flow, layers |
+| `/debug` | Systematic root-cause debugging across the stack |
+| `/document` | Create or update architecture documentation from code |
+
+---
+
+## Folder layout
+
+```
+SKILLMOREL/
+├── .claude/                           ← the portable tool bundle
+│   ├── skills/
+│   │   ├── checklist-generator/
+│   │   │   ├── SKILL.md
+│   │   │   └── references/
+│   │   │       ├── clean-architecture/
+│   │   │       └── provider-pattern/
+│   │   ├── planner/
+│   │   │   ├── SKILL.md
+│   │   │   └── references/
+│   │   ├── executor/
+│   │   │   └── SKILL.md
+│   │   └── auditor/
+│   │       ├── SKILL.md
+│   │       └── references/
+│   └── commands/
+│       ├── analyze.md  debug.md  document.md
+│       ├── idea.md     logic.md  solutions.md  spec.md
+│
+├── CLAUDE.md                          ← project-config template (fill in per project)
+├── README.md                          ← this file
+├── CHANGELOG.md                       ← version history
+└── docs/                              ← human-facing docs (Claude Code ignores)
+    └── CLOUD_ENVIRONMENT_SETUP.md
+```
+
+Claude Code automatically loads everything under `.claude/skills/` and `.claude/commands/` when you open a project. That's why the bundle lives at `./.claude/` — self-contained, per-repo, no global install required.
+
+---
+
+## How to use this repo
+
+There are two ways. Both work, pick whichever fits your situation.
+
+### Workflow A — As a template for a brand-new project
+
+1. On GitHub, click **"Use this template"** → **"Create a new repository"**.
+2. Clone the new repo locally.
+3. Open it in Claude Code.
+4. Fill in the project-specific fields at the top of `CLAUDE.md` (name, description, architecture, language, framework, etc.).
+5. Start running the pipeline:
+   - `/idea "your project concept"` (for a greenfield project)
+   - or `/spec "feature name"` (if you already know what you're building)
+
+You're done — all skills and commands are already available.
+
+### Workflow B — Copy into an existing project
+
+1. Clone SKILLMOREL somewhere temporary:
+   ```bash
+   git clone https://github.com/<you>/SKILLMOREL /tmp/skillmorel
+   ```
+2. Copy the bundle and the CLAUDE.md template into your existing project:
+   ```bash
+   cp -r /tmp/skillmorel/.claude /path/to/your/project/
+   cp /tmp/skillmorel/CLAUDE.md /path/to/your/project/
+   ```
+3. Open your project in Claude Code.
+4. Fill in the project-specific fields in `CLAUDE.md`.
+5. Commit the new files to your project's git.
+
+Every clone of your project from this point forward ships with the pipeline.
+
+---
+
+## Pipeline flow
+
+```
+Greenfield project
+  /idea → /spec → /logic → checklist-generator → planner → executor → auditor
+
+Existing codebase
+  /solutions → /spec → /logic → checklist-generator → planner → executor → auditor
+
+Daily work
+  /analyze  → understand code before changing it
+  /debug    → systematic root-cause analysis
+  /document → create or update architecture docs
+```
+
+The generated artifacts land in:
+- `docs/specs/` — review checklists (from `checklist-generator`)
+- `docs/plan/` — master plan, decision log, review scaffolds (from `planner`)
+- `_IDEA/` — idea briefs (from `/idea`)
+- `_PM/` — feature specs (from `/spec`)
+
+---
+
+## Design principles
+
+- **Per-repo self-contained**: the pipeline travels with the project in git. No global install, no "did you remember to set it up?" step.
+- **Checklists as the source of truth**: project rules live in `docs/specs/*.md` generated by `checklist-generator`. The planner, executor, and auditor all read from these — no hardcoded rules.
+- **Lanes don't cross**: the planner never touches production code, the executor never edits checklists, the auditor runs independently. Each skill has a narrow, clear responsibility.
+- **Multi-architecture**: Clean Architecture and Provider/Plugin Pattern are first-class. Other patterns can be added by dropping a new template set under `.claude/skills/checklist-generator/references/`.
+
+---
+
+## Conventions
+
+- **Commits**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`)
+- **Branches**: `feature/<name>`, `fix/<name>`, `docs/<name>`
+
+See `CHANGELOG.md` for version history.

@@ -1,0 +1,174 @@
+# Development Notes — dev-skills
+
+## Status: v2.1 — Full Pipeline Complete and Tested (2026-04-07)
+
+---
+
+## What's Finished and Working
+
+### Universal Commands (7 commands — all tested)
+
+| Command | Purpose | Tested On | Status |
+|---------|---------|-----------|--------|
+| `/idea` | Greenfield concept exploration: product definition, market context, business model, MVP prioritization (RICE), tech stack, risks | Chess Platform | ✅ |
+| `/spec` | Feature specification: user stories, state machines, business logic flows, failure scenarios | AI Chatbot SaaS + Chess Platform | ✅ |
+| `/logic` | Product logic validation: gap analysis, state machine extraction, concern prioritization (P0/P1/P2) | AI Chatbot SaaS + Chess Platform | ✅ |
+| `/solutions` | Architecture exploration: 3 ranked options with comparison matrix, SOLID analysis, integration maps | Chess Platform | ✅ |
+| `/analyze` | Architecture mapping: dependency matrix, data flow, layer identification (reads from checklist or discovers from code) | OpenBB | ✅ |
+| `/debug` | Systematic debugging: read file first, trace call chain, isolate root cause, fix (works on any language/stack) | OpenBB (IMF swallowed error) | ✅ |
+| `/document` | Architecture documentation: creates docs from code, weekly review mode, adapts to project structure | OpenBB | ✅ |
+
+### Universal Pipeline Skills (4 skills — all tested)
+
+| Skill | Purpose | Tested On | Gaps Found → Fixed |
+|-------|---------|-----------|-------------------|
+| checklist-generator | Creates 3 project-specific checklists from templates. Multi-architecture (Clean Architecture + Provider Pattern). Code scanning for existing codebases. | OpenBB (3 tests) + Chess Platform | Template redesign after OpenBB test |
+| planner | Creates implementation plans by reading rules from checklists. 8-step workflow. | Chess Platform | 1 gap: added artifact verification step |
+| executor | Implements plans, reads constraints from master plan. 11-step workflow. | Chess Platform (simulated) | 4 gaps: verification step, evidence format, rollback guidance, multi-command quality gates |
+| auditor | Production gate: independent verification, violation tracking, PASS/BLOCKED. | Chess Platform (simulated) | 4 gaps: tracker verification, cannot-run handling, summary format, re-audit verification |
+
+### Checklist Templates (2 architecture patterns)
+
+| Pattern | Tested On | Status |
+|---------|-----------|--------|
+| Clean Architecture | Chess Platform | ✅ Generated 1,054 lines of project-specific checklists |
+| Provider / Plugin Pattern | OpenBB | ✅ Generated 847 lines with 38 real code violations found |
+
+---
+
+## Complete Pipeline Flows
+
+### Greenfield (no code)
+```
+/idea → /spec → /logic → /solutions (optional) → checklist-generator → planner → executor → auditor
+```
+
+### Existing Project (code exists)
+```
+/solutions → /spec → /logic → checklist-generator (update or create) → planner → executor → auditor
+```
+
+### Daily Development Tools
+```
+/analyze  → understand code before changing it
+/debug    → systematic root cause analysis
+/document → create/update architecture docs
+```
+
+---
+
+## Testing History
+
+| Test | Target | Result | What We Learned |
+|------|--------|--------|-----------------|
+| 1 | OpenBB (Clean Arch templates) | FAIL — 40% didn't fit | Need multi-architecture support |
+| 2 | OpenBB (Provider Pattern templates) | PASS — all sections matched | Provider Pattern templates work |
+| 3 | OpenBB (with code scanning) | PASS — found 38 violations | Code scanning makes v1 immediately actionable |
+| 4 | AI Chatbot SaaS (/spec → /logic, no /idea) | PASS with gaps | /spec missed failure paths without /idea context |
+| 5 | Chess Platform (/idea → /spec → /logic → /solutions → checklists) | PASS | Full greenfield pipeline works end-to-end |
+| 6 | Chess Platform (planner test 1) | PASS with 1 gap | Missing artifact verification — fixed |
+| 7 | Chess Platform (planner test 2 — after fix) | PASS | Verification step catches missing files |
+| 8 | Chess Platform (executor test) | PASS with 4 gaps | Verification, evidence format, rollback, multi-command — all fixed |
+| 9 | Chess Platform (executor retest — after fix) | PASS | All 4 fixes verified |
+| 10 | Chess Platform (auditor test) | PASS with 4 gaps | Tracker verification, cannot-run, summary, re-audit — all fixed |
+| 11 | OpenBB (/analyze test) | PASS | Discovers layers from code when no checklist exists |
+| 12 | OpenBB (/debug test — IMF error) | PASS | Works on Python, no TypeScript assumptions |
+| 13 | OpenBB (/document test) | PASS | Adapts to project structure, no hardcoded categories |
+
+---
+
+## Architecture Decisions Log
+
+### Why /idea is separate from /solutions
+- /idea = greenfield (no code, ONE stack recommendation)
+- /solutions = existing code (THREE options compared)
+- Different inputs, different outputs, different use cases
+
+### Why template-per-architecture instead of one flexible template
+- Tested one-size-fits-all against OpenBB — 40% didn't apply
+- Adding new patterns = new folder with 3 files
+
+### Why pipeline skills read rules from checklists (never hardcode)
+- Planner, executor, auditor all read from docs/specs/ checklists
+- Checklist-generator produces project-specific rules
+- Pipeline skills automatically work for any project with checklists
+- Trade-off: if checklists are weak, pipeline is weak. Mitigated by checklist-generator quality + auditor as safety net.
+
+### Why every skill has a verification step before completion
+- Found in planner test: artifacts could be forgotten without verification
+- Applied same pattern to executor (Step 10a-d) and auditor (Gate Verification Checklist)
+- Pattern: mandatory check (ls, grep, count) before status marker is set
+
+### Why /solutions is optional for greenfield
+- /idea already recommends tech stack and architecture
+- /solutions after /idea re-does what /idea already did
+- Only needed if user wants to explore alternatives
+
+### Why commands are separate (not orchestrated)
+- Manual handoff keeps user in control
+- Each command does one job well
+
+---
+
+## What's Designed but UNTESTED
+
+### UPDATE Mode (Checklist Generator)
+- Designed in SKILL.md but never run
+- Handles: bug reports → new rules, new patterns → new sections, code analysis → missing rules
+- **Action needed**: Test on a project that already has checklists
+
+### /document WEEKLY Mode
+- Designed and built but not tested (no project with weekly doc history)
+- **Action needed**: Test on a project with docs/LATEST.md
+
+---
+
+## What's Identified but NOT Built
+
+### Auditor → Checklist Feedback Loop
+- Auditor finds violations not in checklists → should update checklists
+- **Decision**: Defer to v3.0. Build after real usage generates findings.
+
+---
+
+## Repo Structure
+
+```
+dev-skills/
+├── SKILL.md                          ← Checklist generator (v2.1)
+├── DEVELOPMENT_NOTES.md              ← This file
+├── commands/                         ← Universal commands (7)
+│   ├── idea.md                       ← Stage 0: Greenfield concept
+│   ├── spec.md                       ← Stage 1: Feature specification
+│   ├── logic.md                      ← Stage 1: Logic validation
+│   ├── solutions.md                  ← Stage 2: Architecture options
+│   ├── analyze.md                    ← Daily: Architecture mapping
+│   ├── debug.md                      ← Daily: Systematic debugging
+│   └── document.md                   ← Daily: Architecture documentation
+├── skills/                           ← Universal pipeline skills (3)
+│   ├── planner/
+│   │   ├── SKILL.md                  ← 8-step planning with artifact verification
+│   │   └── references/
+│   │       ├── master-plan-template.md
+│   │       └── decision-log-template.md
+│   ├── executor/
+│   │   └── SKILL.md                  ← 11-step execution with hard verification
+│   └── auditor/
+│       ├── SKILL.md                  ← Production gate with evidence resolution
+│       └── references/
+│           └── production-gate-template.md
+├── references/                       ← Checklist templates (2 patterns)
+│   ├── clean-architecture/
+│   │   ├── architecture-checklist-template.md
+│   │   ├── data-pipeline-checklist-template.md
+│   │   └── ui-checklist-template.md
+│   └── provider-pattern/
+│       ├── architecture-checklist-template.md
+│       ├── data-pipeline-checklist-template.md
+│       └── ui-checklist-template.md
+└── reference-originals/              ← BattleGrid original files (30 files)
+    ├── README.md
+    ├── commands/                     ← All 6 original commands
+    ├── checklists/                   ← All 3 hand-written checklists
+    └── skills/                       ← All 5 original pipeline skills
+```

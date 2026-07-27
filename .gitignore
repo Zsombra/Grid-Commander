@@ -1,0 +1,16 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code per-user state (if it leaks into a project)
+.claude/settings.local.json
+.claude/projects/
+.claude/todos/
