@@ -29,6 +29,53 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — The product is reachable, and a defect appeared for the third time
+
+**Did**: Built, gated and archived `wire-the-app` — the P1 the previous gate
+found. `openspec/specs/` now holds `app-access` (6 requirements) alongside
+`battlegrid-connection`, `agent-authoring`, `harness-integrity` and
+`spec-validation`. 267 tests.
+
+Session, authority resolution, composition root, ten routes — and the four
+Drizzle repositories, because `src/infrastructure/db/repositories/` turned out to
+be empty as well. **The backlog item understated the gap**: it said routes and a
+session were missing; the truth was that nothing had ever written a row, and
+every test in both prior changes ran against in-memory doubles.
+
+`tests/access/end-to-end.test.ts` is the one that matters. Session → authority →
+guard sequence → adapter → BattleGrid, doubled only at `fetch`. It proves through
+the real path that a destructive call without a confirmation is refused before it
+is attempted and writes no audit row. Three changes had been resting on that.
+
+**State**: no active changes, five capabilities in `openspec/specs/`. 9 open
+backlog items. Two MVP changes remain: `author-strategies`, `assistant-readonly`.
+
+**Next**: `generate-initial-migration` (P1) the moment there is a database — see
+below. Then `/propose author-strategies`.
+
+**Watch out**: three things.
+
+1. **The same defect has now appeared three times.** `expectedRevision ?? -1`
+   (PG-003), `slotUsage.limit ?? 0` (PG-101), `Number(formData.get(...))`
+   (PG-201) — different layers, different fields, one shape: a fabricated number
+   standing in for one that was never supplied. Each was invisible to a green
+   suite. I wrote the lesson into this journal twice and it recurred anyway,
+   which is the argument that a written lesson is not a control. It is a test
+   now: `concurrency.test.ts::no identifier is coerced into existence` fails the
+   build on a fourth.
+2. **`DrizzleConfirmationStore.consume` would have been replayable**, and it was
+   caught by reading rather than by a test. The single-use check read from
+   `.returning()`, which is the post-update row, so it could never fail. Both
+   prior changes prove the *domain* enforces single use — against a fake that
+   got it right. Which leads to:
+3. **No repository has ever executed a statement.** Four of them, written and
+   typechecked against the schema, and no migration has been generated because
+   there is no database here. Filed as `generate-initial-migration` (P1). Expect
+   the `text[]` column, the unique index on `(user_id, idempotency_key)`, and the
+   `onConflictDoUpdate` target to disagree with something on first contact.
+
+---
+
 ## 2026-07-27 — Agent authoring shipped; the product is complete and unreachable
 
 **Did**: Built, gated and archived `author-agents`. `openspec/specs/` now holds
