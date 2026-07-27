@@ -29,6 +29,37 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — Harness proven on its first real change; CI is live
+
+**Did**: Took `add-ci-validation` through the whole `standard` pipeline —
+proposal → delta spec → tasks → verify → archive. `.github/workflows/validate.yml`
+now runs `validate --all` on every PR and push to `main`. First capability landed
+in the source of truth: `openspec/specs/spec-validation/` (3 requirements,
+6 scenarios). Closed `add-ci-validation` and `dogfood-harness-end-to-end`; filed
+`bump-actions-node20`.
+
+**State**: `main` has the harness plus CI. One capability specified, one change
+archived, 5 backlog items open (1×P1, 1×P2, 3×P3). PR #2 open and green.
+`CLAUDE.md` and `openspec/config.yaml` are **still unfilled templates** — that is
+the next blocker and it needs the project concept.
+
+**Next**: Decide what Grid-Commander actually is, fill `CLAUDE.md` +
+`openspec/config.yaml` from that, then `/idea`. Do not start feature work before
+config is real — every skill reads it and placeholders give them nothing.
+
+**Watch out**:
+- **The `full` track is still unexercised.** Planner, auditor, and the production
+  gate have never run and stay blocked until `checklist-generator` produces
+  `docs/specs/`. Only `standard` and `lite` are proven.
+- **A self-verifying change must let CI prove its spec before archiving.**
+  Archiving first would have merged "validation runs on every pull request" into
+  the source of truth on the strength of a local test. New habit, worth keeping.
+- **`| tee` in a CI step swallows the exit code** and makes the check pass on
+  every failure. Capture with `$(...)` and `exit $status`. This nearly shipped.
+- PR #1 was squash-merged, so the old branch commits look unmerged to git
+  (different SHAs) while the content is identical. Check with
+  `git diff origin/<branch> origin/main` before force-pushing, not the log.
+
 ## 2026-07-27 — v3.0 complete and merged; harness ready, unproven
 
 **Did**: Finished and merged the v3.0 harness (PR #1, branch

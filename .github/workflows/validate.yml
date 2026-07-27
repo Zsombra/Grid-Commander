@@ -1,0 +1,42 @@
+name: Spec Layer
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # No dependency install step, deliberately. openspec.py is zero-dependency
+      # and this job is what keeps that true — adding a `pip install` here should
+      # be treated as a regression, not a fix.
+      - name: Validate spec, backlog, and design layers
+        shell: bash
+        run: |
+          set +e
+          output=$(python3 .claude/tools/openspec.py validate --all 2>&1)
+          status=$?
+          set -e
+
+          {
+            echo '### Spec layer validation'
+            echo ''
+            echo '```'
+            echo "$output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "$output"
+          exit $status
