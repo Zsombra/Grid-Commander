@@ -2,11 +2,11 @@
 id: no-composition-root
 title: Nothing wires the use cases to a request — there are no routes and no session
 type: debt
-status: open
+status: done
 priority: p1
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: wire-the-app
 capability: battlegrid-connection
 blocked_by: []
 tags: [architecture, presentation, blocking]
@@ -69,3 +69,14 @@ A change of its own — call it `wire-the-app`:
 
 Token refresh (`needsRefresh` exists and is tested; nothing calls it) belongs
 here too — it is the same missing seam.
+
+
+## Resolved
+
+Closed in `wire-the-app`. Session, composition root, ten routes, and an
+end-to-end test through the real path.
+
+**This item understated the gap.** It described missing routes and a missing
+session. `src/infrastructure/db/repositories/` was also empty — nothing had ever
+written a row, and every test in both prior changes ran against in-memory
+doubles. The four Drizzle repositories were written here too. Recorded as WL-2.

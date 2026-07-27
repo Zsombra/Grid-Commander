@@ -92,6 +92,51 @@ describe('D-3 — no path can reach a wager-scoped operation', () => {
   });
 });
 
+describe('W-D — routes are thin, and W-E — one way in', () => {
+  const routeFiles = () => [...filesUnder('app', '.tsx'), ...filesUnder('app', '.ts')];
+
+  /**
+   * Everything a route might be tempted to do is already implemented and tested
+   * one layer down. A route that re-checks capacity, or re-validates a bound,
+   * creates a second answer that will drift from the first — and the first is
+   * the one with the tests.
+   */
+  it('no file under app/ imports infrastructure or the domain', () => {
+    const offenders: Array<[string, string]> = [];
+    for (const file of routeFiles()) {
+      for (const i of imports(file)) {
+        // `@/domain/errors.js` is the one exception: a route must be able to
+        // recognise a domain error to decide what to render, and importing the
+        // error type is not reaching past the layer.
+        if (i === '@/domain/errors.js') continue;
+        if (i.startsWith('@/infrastructure') || i.startsWith('@/domain')) offenders.push([file, i]);
+      }
+    }
+    expect(offenders, 'routes call use cases; they do not reach past them').toEqual([]);
+  });
+
+  it('no route constructs an adapter of its own', () => {
+    const offenders: string[] = [];
+    for (const file of routeFiles()) {
+      const code = stripComments(readFileSync(file, 'utf8'));
+      if (/new\s+Mcp\w*Adapter|new\s+Drizzle\w+/.test(code)) offenders.push(file);
+    }
+    expect(offenders, 'the composition root is the only place adapters are built').toEqual([]);
+  });
+
+  it('only resolve-authority reads a stored token', () => {
+    // The single decryption point. Scattering it would scatter the refresh with
+    // it, and one caller would forget. See design W-B.
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('src'), ...routeFiles()]) {
+      if (file.includes('resolve-authority')) continue;
+      if (file.includes('drizzle-connection-repository')) continue;
+      if (/\.decrypt\s*\(/.test(stripComments(readFileSync(file, 'utf8')))) offenders.push(file);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('AL-2 — canDelete does not exist in this product', () => {
   /**
    * The live agent payload sets `capabilities.canDelete: true`, and the MCP

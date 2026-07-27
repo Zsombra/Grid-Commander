@@ -12,6 +12,10 @@ export interface AppConfig {
   readonly battlegrid: BattleGridConfig;
   readonly databaseUrl: string;
   readonly tokenEncryptionKey: string;
+  /** Signs the session cookie. Distinct from the token key: different job, different blast radius. */
+  readonly sessionSecret: string;
+  /** False only in local development, where there is no TLS to require. */
+  readonly secureCookies: boolean;
 }
 
 function required(name: string): string {
@@ -34,5 +38,9 @@ export function loadConfig(): AppConfig {
     },
     databaseUrl: required('DATABASE_URL'),
     tokenEncryptionKey: required('TOKEN_ENCRYPTION_KEY'),
+    sessionSecret: required('SESSION_SECRET'),
+    // Opt *out* of secure cookies explicitly. A missing variable must not
+    // silently produce a session that travels in the clear.
+    secureCookies: process.env['ALLOW_INSECURE_COOKIES'] !== 'true',
   };
 }

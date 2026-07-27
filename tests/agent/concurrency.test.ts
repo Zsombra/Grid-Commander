@@ -103,12 +103,55 @@ describe('structurally_impossible', () => {
   });
 });
 
-function filesUnder(dir: string): string[] {
+/**
+ * The mechanical guard for a defect that has now appeared three times.
+ *
+ * `expectedRevision ?? -1` (PG-003), `slotUsage.limit ?? 0` (PG-101), and
+ * `Number(formData.get('expectedRevision'))` (PG-201). Different layers,
+ * different fields, one shape: a fabricated number standing in for one that was
+ * never supplied. Each was invisible to a green suite. The lesson was written
+ * into the journal twice and recurred anyway, so it is a test now.
+ */
+describe('no identifier is coerced into existence', () => {
+  const IDENTIFIERS = ['expectedRevision', 'revision', 'agentId', 'strategyId', 'confirmationToken'];
+
+  it('never wraps a form read in Number() or String()', () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('app', '.tsx'), ...filesUnder('app', '.ts')]) {
+      const text = readFileSync(file, 'utf8');
+      for (const [match] of text.matchAll(/(?:Number|String)\s*\(\s*(?:form|formData)\.get\([^)]*\)/g)) {
+        offenders.push(`${file}: ${match}`);
+      }
+    }
+    expect(
+      offenders,
+      'read it with src/presentation/form.ts — Number(null) is 0 and Number("x") is NaN',
+    ).toEqual([]);
+  });
+
+  it('never defaults an identifier with ?? outside the domain’s own guards', () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('src'), ...filesUnder('app', '.tsx'), ...filesUnder('app', '.ts')]) {
+      const text = readFileSync(file, 'utf8');
+      for (const name of IDENTIFIERS) {
+        for (const [, fallback] of text.matchAll(
+          new RegExp(`${name}\\s*\\?\\?\\s*([^,;)\\n]+)`, 'g'),
+        )) {
+          // `?? null` is how absence is represented, not how it is papered over.
+          if (fallback?.trim() !== 'null') offenders.push(`${file}: ${name} ?? ${fallback?.trim()}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+function filesUnder(dir: string, ext = '.ts'): string[] {
   let out: string[] = [];
   for (const e of readdirSync(dir)) {
     const full = join(dir, e);
-    if (statSync(full).isDirectory()) out = out.concat(filesUnder(full));
-    else if (full.endsWith('.ts')) out.push(full);
+    if (statSync(full).isDirectory()) out = out.concat(filesUnder(full, ext));
+    else if (full.endsWith(ext)) out.push(full);
   }
   return out;
 }
