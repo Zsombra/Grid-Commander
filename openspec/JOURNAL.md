@@ -29,6 +29,58 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — MVP specified; the first change is proposed and unblocked
+
+**Did**: Ran `/spec` on the MVP. Two artifacts:
+`_PM/Grid-Commander-MVP_Feature_Specification.md` (journeys, business logic,
+metrics, risk, decision log) and the first change,
+`connect-battlegrid-account` — `standard` track, capability
+`battlegrid-connection`, 10 requirements / 30 scenarios, 26 tasks, validating
+clean.
+
+Also narrowed open question 1. No terms of service are published anywhere on
+battlegrid.trade or its docs, so there is no written permission or prohibition.
+But the OAuth deployment settles the technical half: DCR, public-client auth,
+PKCE, scoped consent, revocation, and published per-account wager caps are all
+apparatus that does nothing for a first-party app. **Technically intended;
+commercially unconfirmed.**
+
+Five decisions worth carrying (full rationale in the `_PM/` decision log):
+- **D-1** BattleGrid OAuth is the *only* identity. No separate password. This
+  deletes a whole feature from the MVP rather than building it.
+- **D-2** The MVP ships as **four sequenced changes**, not one — greenfield
+  makes everything ADDED, and 13 features in one change folder is unreviewable.
+  Only change 1 has delta specs so far; 2–4 get written when proposed.
+- **D-3** `mcp:wager` is never requested in MVP. Nothing in scope spends, and
+  requesting authority you do not exercise undermines the whole trust position.
+- **D-4** Unknown tools **fail closed** — treated as destructive until the
+  server's annotations say otherwise.
+- **D-5** Audit is written *before* the attempt, updated with the outcome. A log
+  of successes cannot answer "what happened when it broke".
+
+**State**: PR #3 open and green. 1 active change, 0/26 tasks. `validate --all`
+is 0 errors, 1 warning, 1 info. Still no application code — this is the contract,
+not the build.
+
+**Next**: **Task 0.1 — prove Dynamic Client Registration against the live server
+before building anything on it.** It is the one assumption in this change that
+reading cannot confirm, and the token model depends on the answer. Then executor
+on the rest.
+
+**Watch out**:
+- **Do not let a caller reach BattleGrid except through the classification
+  layer.** The whole safety model in this change collapses if some later feature
+  calls a tool directly. Task 3.7 exists for this and is easy to quietly skip.
+- **The consent copy is a product surface, not boilerplate.** Requirement
+  "Configuration Authority Is Described Honestly" forbids calling read scope
+  read-only, because it can rebind agents. If a future change softens that
+  wording to sound friendlier, it is a spec violation.
+- The `_PM/` document is narrative; `openspec/changes/*/specs/` is the contract.
+  Metrics, risks and decisions deliberately did **not** cross over.
+- `checklist-generator` still has not run, so `docs/specs/` does not exist and
+  the `full` track remains blocked. Worth running before change 1 is executed —
+  this change touches credentials and would benefit from the full track.
+
 ## 2026-07-27 — The blocker is gone: Grid-Commander is defined and configured
 
 **Did**: The owner defined the product, so `/idea` finally had something to run
