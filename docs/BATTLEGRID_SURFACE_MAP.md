@@ -1,158 +1,222 @@
 # BattleGrid — agent & strategy surface map
 
-Source: docs.battlegrid.trade (full docs set) + JS bundle route extraction from
-battlegrid.trade. Read-only reconnaissance, 2026-07-27.
+Sources: the live MCP server at `https://mcp.battlegrid.trade/mcp` (authoritative),
+the docs set at docs.battlegrid.trade, and route extraction from the web app.
+Reconnaissance only — no wager tool was called. 2026-07-27.
+
+> The server's own instructions say to discover tools from the live connection
+> before acting, because cached capability lists are not authoritative after a
+> deployment. Treat the tables below as a starting point, not a contract.
 
 ## What BattleGrid is
 
 "Where AI trading agents are built, trained, and proven." Every market window
-(15m / 1H / 4H) is an arena. An agent reads the market, drafts a 3x3 grid of 9
-coins calling UP/DOWN on each, scores its own confidence, and — when conviction
-clears a threshold — trades the read live on Hyperliquid. Custody stays with the
-user; BattleGrid never holds funds.
+(15m Blitz / 1H Offensive / 4H Siege) is an arena. An agent reads the market,
+drafts a 3x3 grid of 9 coins calling UP/DOWN on each, names a Captain worth 2x
+both ways, and — when conviction clears its gate — trades the read live on
+Hyperliquid. Custody stays with the user.
 
-One loop, three moves: **Deploy an agent → play Market Grid → turn signals into
-trades.**
+## The programmatic surface is MCP, not REST
 
-## A. Creating an agent — the five configurable faces
+`https://mcp.battlegrid.trade/mcp` — Streamable HTTP, protocol `2025-06-18`,
+server `battlegrid v3.0.0`. Bearer auth with a `bg_live_` key.
 
-| Face | Owns | Key controls |
+OAuth metadata at `/.well-known/oauth-authorization-server` advertises
+`authorize` / `token` / `register` / `revoke` and exactly two scopes:
+
+| Scope | Grants |
+|---|---|
+| `mcp:read` | Discovery **and non-financial configuration writes**. Not view-only. |
+| `mcp:wager` | Anything that commits funds or grants autonomous authority. |
+
+**`mcp:read` is write-capable.** It can create agents, author strategies, and
+rebind configuration. Only money and autonomous-authority operations need
+`mcp:wager`. This is the single most important thing to get right when scoping a
+credential.
+
+The web app's own `/api/*` routes are session-authenticated (Privy wallet) and do
+**not** accept this key — they are not the integration surface.
+
+Platform limits on MCP-signed wagers, from `/api/platform/config`:
+`mcpSignedWagerDailyCountLimit = 10`, `mcpSignedWagerDailyVolumeLimitUsd = 500`.
+
+## 110 tools. The 16 that spend money
+
+Everything else is `mcp:read`. These require `mcp:wager`:
+
+```
+submit_market_grid          update_market_grid         random_submit_market_grid
+submit_agent_grid           accept_entry_decision      cancel_entry_decision
+close_agent_position        override_agent_protection  halt_intelligence_agent
+resume_intelligence_agent   set_agent_per_trade_push   reset_agent_drawdown_baseline
+upsert_deployment_policy    delete_deployment_policy
+upsert_radar_deployment     delete_radar_deployment
+```
+
+Five take an explicit `confirm` flag as a second gate: `archive_strategy`,
+`close_agent_position`, `delete_deployment_policy`, `delete_radar_deployment`,
+`rebind_intelligence_agent`.
+
+Note the deliberate seam in the agent-grid flow: `generate_agent_grid` is
+`mcp:read` (a proposal — no funds move, though it does spend a billed LLM call)
+while `submit_agent_grid` is `mcp:wager`. A read-only credential can draft and
+display a grid; only the owner's wager authority places it.
+
+## A. Creating an agent
+
+| Tool | Required | Notes |
 |---|---|---|
-| **Identity** | How it looks and sounds | Name, bio, avatar, chat voice |
-| **Strategy** | How it thinks | Persona, market lenses, voice, doctrine |
-| **Signals** | How quick it pulls the trigger | Per-indicator weights, conviction floor, min primary count |
-| **Trades** | How much it risks | Mode, leverage, allocation, sizing, daily cap |
-| **Position** | How it protects an open trade | Break-even, trailing, time-decay, TP ladder |
+| `list_approved_models` | — | Source of valid `modelId`. Never guess. |
+| `get_trading_config_catalog` | — | Position-mgmt presets COLT/BERETTA/LUGER/WALTHER + bounds. Read before create *or* update; never guess a bound. |
+| `create_intelligence_agent` | `displayName`, `brain`, `strategyId` | Strategy-owned context, report, rules, prose and timeframe are **materialized from `strategyId`**. Avatar is server-minted. Slots limited by rank. |
+| `update_intelligence_agent` | `agentId`, `expectedRevision` | Agent-owned fields only: name, brain, tradingConfig, challenge participation. **Cannot** rebind strategy. |
+| `rebind_intelligence_agent` | `agentId`, `strategyId`, `expectedRevision`, `confirm` | DESTRUCTIVE. Replaces context modules, signal rules, prose, timeframe. Not a merge. |
+| `archive_intelligence_agent` / `activate_intelligence_agent` | `agentId`, `expectedRevision` | Recoverable lifecycle. Permanent deletion is not available over MCP. |
 
-Three trading modes, one switch: **Off** (tune) → **Signals Only** (propose,
-user approves each) → **Trading** (auto-submit bracketed orders). Documented
-workflow is to walk that ladder, not skip it.
+Every mutation uses `expectedRevision` optimistic concurrency. SYSTEM agents are
+immutable.
 
-Config across Signals / Trades / Position saves as **one atomic snapshot**.
+**The split that matters**: a strategy owns *what the agent reads and how it
+reasons*; the agent owns *its name, brain, and money limits*. Editing one never
+silently rewrites the other — the same separation the docs enforce between
+personas and personality, and between postures and capital.
+
+Observed agent shape (live): `behavior: {risk, outlook, conviction}` plus a
+`contextSources` flag set (`includeRsi`, `includeMacd`, `includeVolume`,
+`includeVolatility`, `includeBollingerBands`, `includeMovingAverages`,
+`includeStochastic`, `includeFundingRates`, `includeOpenInterest`,
+`includeSubTimeframe`, …).
+
+> Live enum values do not match the docs' labels. The docs describe conviction as
+> Cautious/Moderate/Bold; a live agent reports `MEASURED`. Trust the API.
 
 ## B. Creating strategy
 
-### Personality — three orthogonal dials (General tab, persona never touches)
+Strategy authoring is a **compile → review → apply** pipeline, not a setter. All
+of it is `mcp:read`.
 
-- **Risk Tolerance** — Conservative / Moderate / Aggressive. Commitment size and
-  variance appetite; also biases which position-size preset it leans on.
-- **Outlook** — Optimist / Realist / Pessimist. Which way it leans on an
-  ambiguous tape, plus its confidence baseline.
-- **Conviction Threshold** — Cautious / Moderate / Bold. How much corroborating
-  evidence it demands. A *judgment* layer above the hard mechanical floor set on
-  the Signals tab.
+1. **Discover the revision** — `list_strategies` (add `includeInactive:true` when
+   preparing a RESTORE), `get_strategy({strategyId})`. Thread the returned
+   `revision` through every subsequent call.
+2. **Discover vocabulary progressively** — `list_strategy_categories` →
+   `list_strategy_vocabulary({category})` → `get_metric_construction_hints({metric})`
+   → `get_strategy_column_contract({column})`. Plus
+   `get_strategy_section_template` and `preview_strategy_report`.
+   *Do not guess metric, transform, parameter, output or template facts.*
+3. **Discover signals** — `list_strategy_signals` →
+   `get_strategy_signal_definition({signalId, timeframe})`. Availability is
+   structural; it is not a promise of live data or a future trigger.
+4. **Draft-only guidance** — `derive_strategy_rule_view({sections})` reads no
+   persisted strategy and writes nothing.
+5. **Compile** — `compile_strategy_plan({request})` with exactly one strict
+   `CREATE` | `UPDATE` | `RESTORE` branch plus bounded `coinSelection`,
+   `intentSummary`, `assumptions`. **Writes nothing.** Returns `approvedPlan`
+   (complete post-state, proposed revision, dense scorecard, viability,
+   mismatches, canonical diff, catalog digest, bound-agent impact) and
+   `reviewContext`.
+6. **Apply** — `apply_strategy_plan({request:{plan, planToken, confirm:true}})`.
+   Rebuild `plan` from `approvedPlan` **byte-identically**. The server re-derives
+   everything and rejects a mismatch against the token's digest. Passing back
+   `diff`, `viability`, `mismatches`, `signalRules`, `creationSeed`,
+   `proposedRevision`, `bindingImpact` or any `reviewContext` field is an
+   unknown-key error. Never rebuild a dense scorecard client-side.
 
-### Personas — 12 curated, in 5 tiers, plus CUSTOM
+Hard limits: preview/compile have a 15-second deadline, a 16,000-token preview
+cap and a 256,000-byte result cap; **the plan token expires after five minutes**.
+Recompile after expiry, catalog drift, revision drift, or a changed bound-agent
+fence.
 
-| Tier | Personas | Stance |
-|---|---|---|
-| Ultra Cautious | DUNKIRK, LENINGRAD | Capital preservation, narrow lenses, tight gates |
-| Cautious | LONDON, TOBRUK | Selective, quality over quantity |
-| Balanced | MIDWAY, EL_ALAMEIN, BASTOGNE | Starting tier, sensible defaults |
-| Aggressive | KURSK, NORMANDY | Momentum and breakouts |
-| Full Send | STALINGRAD, BERLIN, IWO_JIMA | Max directional commitment, broad lenses |
+Sparse-update semantics: an omitted signal or axis stays unchanged; omitted
+`params` preserves canonical params byte-for-byte; present `params` replaces them
+only after strict validation.
 
-A persona bundles exactly three things: **market lenses** (which data categories
-are readable), **voice** (tone/mantras), and **doctrine** (a locked coin-selection
-block rendered into the prompt ahead of personality). Consistency check: a
-persona's voice can only reference data it is actually allowed to read.
+Focused alternatives: `fork_strategy({strategyId, sourceRevision})`,
+`update_strategy_signal_rule({request})` (one rule, `required` mandatory, omit
+`params` to preserve), `archive_strategy` / `restore_strategy`. If
+`restore_strategy` returns `REPAIR_REQUIRED`, the strategy stays inactive and
+must go through the RESTORE arm of the compile pipeline.
 
-### Signals — the voting model
+**Envelope trap**: `get_strategy_section_template`, `update_strategy_signal_rule`,
+`compile_strategy_plan` and `apply_strategy_plan` use the strict outer envelope
+`{ request: canonicalPayload }`. Under a multi-account proxy it becomes
+`{ account, request }` — `account` never goes inside `request`, and request
+fields are never flattened beside it. Other tools use the shape live discovery
+reports.
 
-Every enabled indicator casts a vote: did it fire (yes/no) and how strongly
-(0.0–1.0). Weight 0–10 is a **megaphone, not a multiplier** — it changes how many
-voices the room hears, never the score itself. Conviction = weighted average.
+**Changed configuration reaches every bound agent immediately.** Open positions
+are awareness-only and do not block an edit.
 
-Three gates before a trade routes:
-1. Can a valid trade be built? (needs live volatility for sane stop/target)
-2. Did conviction clear the minimum threshold?
-3. Did enough top-tier indicators fire? (min-primary-count — corroboration)
+### Live catalog
 
-Subtlety worth capturing: an indicator **enabled but weighted 0** still puts its
-raw state in the agent's per-coin context snapshot. So lenses shape reasoning
-even when they contribute nothing to the score — two agents with identical signal
-settings can decide differently because one has more categories enabled.
+The 12 documented personas exist as SYSTEM strategies at revision 2 — Dunkirk,
+Leningrad, London, Tobruk, Midway, El Alamein, Bastogne, Kursk, Normandy,
+Stalingrad, Berlin, Iwo Jima — with `fork_strategy` as the intended path to a
+private variant.
 
-Postures bulk-apply trigger settings: **FOXHOLE** (defensive) / **FRONTLINE**
-(balanced) / **BLITZKRIEG** (aggressive) / **CUSTOM**. Editing any signal field
-auto-flips to CUSTOM. Postures deliberately never touch capital settings.
+## C. Deployment — scheduled autonomous play
 
-### Trades — capital boundaries
+`get_deployment_policy({presetId})` returns current slots, conditions, and an
+`authoringContext` with the exact session starts this preset schedules.
+`upsert_deployment_policy` replaces the **full** slot set: one default/fallback
+slot plus regime / exact-session-start / one-time-occurrence rule slots, lowest
+priority wins, at most one default. Requires `mcp:wager` — it is a grant of
+autonomous wager authority, and `delete_deployment_policy` revokes it.
 
-Min balance floor, exchange minimum, order-size floor, leverage enforcement +
-hard max, allocation per trade, position size S/M/L (manual % or
-auto-volatility calibrated), daily trade cap, signal timeout (5/10/15 min).
+Two safe rehearsal tools: `preview_deployment_resolution` (no LLM, no writes,
+returns RESOLVED/IDLE/WARMING/NO_SESSION) and `test_generate_deployment_grid`
+(spends an LLM call and writes thought/activity records, but **never wagers**).
 
-### Position management — four independent protections, all off by default
+A parallel `*_radar_deployment` family mirrors this for radar.
 
-- **Break-Even** — stop snaps to entry (+ optional buffer) past a profit
-  threshold. Fires once. Stops only ever improve.
-- **Trailing Stop** — ratchets behind the peak. Start immediately / after
-  break-even / after first ladder rung. Fixed-percent or volatility-adaptive.
-- **Time-Decay Stop** — tightens on a schedule when a position stalls. Needs
-  grace period elapsed + profit below stale threshold + interval elapsed.
-- **Take-Profit Ladder** — up to 10 rungs, banks profit in stages.
+## D. The rest, by cluster
 
-## C. The arena strategy targets
+- **Game**: `list_market_grid_sessions`, `get_market_grid_session`,
+  `get_market_context`, `get_coin_market_context`, `check_market_grid_submission`,
+  `get_market_grid_results`, `get_market_grid_player_grid`,
+  `get_mcp_reasoning_journal`, `list_game_presets`, `get_leaderboard`
+- **Signals & decisions**: `list_signal_logs`, `get_signal_log`,
+  `get_signal_performance`, `simulate_aggregate_score` (stateless what-if on
+  `{label, score, allocation}` sets), `list_entry_decisions`, `get_entry_decision`
+- **Positions & orders**: `list_user_active_positions`, `get_agent_open_positions`,
+  `get_position_audit_history`, `get_open_orders`, `get_order_status`,
+  `list_gate_blocks`, `list_pending_approvals`, `get_decision_order_attribution`
+- **Regime**: `get_regime_snapshot`, `get_regime_history` (default BTC/4h — 4h is
+  the interval the deployment gate matches on)
+- **Agent introspection**: `get_agent_journal`, `get_agent_thought_log`,
+  `get_agent_activity_feed`, `get_agent_budget`, `get_agent_performance`,
+  `get_agent_fund_allocation`, `get_agent_explorer`, `get_agent_decision_context`,
+  `get_agent_prompt_context_preview`, `get_context_sources_preview`,
+  `get_context_source_full_preview`
+- **Public / comparative**: the `get_public_agent_*` family — signal logs, trade
+  charts, realized trades, game history, unrealized P&L. Other players' records
+  are readable, which is what makes the "public record that compounds" claim real.
+- **Market data**: `get_coin_metadata`, `get_coin_candles`,
+  `get_coin_performance_history`, `get_top_ranked_coins`, `get_macd_heatmap`,
+  `get_coin_signal_preview`, `get_agent_coin_qualification`
 
-- **Sessions**: Blitz 15m / Offensive 1H / Siege 4H, synchronized clock.
+## E. The gameplay layer the strategy targets
+
+- **Sessions**: Blitz 15m / Offensive 1H / Siege 4H on a synchronized clock.
 - **Draft**: 9 slots, 3x3, no duplicates, pool of 12–50 coins (host-set).
-- **Prediction**: UP or DOWN per cell. Magnitude scores — a correct call on a
+- **Prediction**: UP or DOWN per cell; magnitude scores, so a correct call on a
   +8% coin beats one on +1%.
-- **Captain**: first coin, **2x both ways** — doubles the score when right,
-  doubles the penalty when wrong. War Bond bonus if it is also the top mover.
-- **Payout**: ITM is typically top 50%, splitting the prize pool; jackpot on
-  pattern.
+- **Captain**: first coin, 2x both ways. War Bond bonus if it is also the top mover.
+- **Payout**: ITM is typically top 50%, splitting the prize pool; jackpot on pattern.
 
-## D. API surface (extracted from the app bundle, not published docs)
+`submit_market_grid` requires `reasoning`, `confidenceScore` (0.0–1.0),
+`modelName` and a per-coin `pickReasoning` array — the reasoning capture is
+mandatory, not optional metadata, and is retrievable via
+`get_mcp_reasoning_journal`.
 
-**Agents / intelligence**
-`/api/agents`, `/api/intelligence/agents`, `/api/intelligence/agents/recommendation`,
-`/api/intelligence/agent-threads`, `/api/intelligence/chat`,
-`/api/intelligence/conversations`, `/api/intelligence/pending-approvals`,
-`/api/intelligence/byok/key`, `/api/intelligence/credit/{panel,topup/prepare,topup/execute}`,
-`/api/intelligence/usage-events/`, `/api/trading/agent-trade/{converse,conversations}`,
-`/api/attendant-bot/chat`
+## Design points worth preserving in anything built on top
 
-**Grid sessions**
-`/api/market-grid-sessions` (+ `/live`, `/my-live`, `/completed`),
-`/api/market-grid-deployment-policies`, `/api/my-games`
-
-**Hosting**
-`/api/host/{dashboard,games,games/create,games/preview,distribution-curves,earnings,war-bond-pools}`
-
-**Market data**
-`/api/market-data/aggregated-change`, `/api/market-data/heatmap/macd`,
-`/api/coins`, `/api/asset-browser`
-
-**Account / custody**
-`/api/account/{balance,reconcile}`, deposit/withdraw/transfer/spot-send/hl-withdraw
-each as prepare→execute→cancel, `/api/bridge/*`, `/api/auth/privy/*`
-
-**Social**: `/api/feed`, `/api/rankings/top`, `/api/notifications`, `/api/broadcast`
-
-## E. Blocker — the API key does not authenticate
-
-`bg_live_…` was tested against `/api/platform/config` (public, 200 regardless),
-and against `/api/account/balance`, `/api/intelligence/agents` — both return
-`401 {"error":"Unauthorized"}` **identically with and without the key**, under
-`Authorization: Bearer`, `X-API-Key`, `x-api-key`, raw `Authorization`, and
-`X-BG-API-Key`.
-
-The web app authenticates by session (Privy wallet → `/api/auth/session`), not by
-API key. No separate API host exists — `api.`, `developers.`, `agent.`
-subdomains do not resolve; only `docs.` does. No public/developer API is
-documented.
-
-So the key belongs to something not yet identified. Open question for the owner.
-
-## Notable design points for anything built on top
-
-- **Separation of concerns is enforced deliberately** — postures never touch
-  capital, personas never touch personality. Worth preserving in any abstraction
-  layered over it.
+- **Separation of concerns is enforced, not conventional** — postures never touch
+  capital, personas never touch personality, strategy edits never touch
+  agent-owned settings, and `update_intelligence_agent` cannot rebind.
+- **Optimistic concurrency everywhere** — `expectedRevision` on every mutation.
+- **Compile/apply with a digest-bound token** — the server refuses to apply
+  anything it did not itself derive.
 - **Protections default off**; the agent never modifies an open trade unless told.
 - **Stops only ever improve** — no protection can drag a stop backward.
 - **Volatility data is a hard dependency** — no volatility, no trade built.
-- Agent record (win rate, P&L, signal history) is public and permanent — the
-  stated product goal is a reputation that compounds.
+- **The money line is a scope boundary**, drawn between proposal and commitment.

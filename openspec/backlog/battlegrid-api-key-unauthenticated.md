@@ -2,8 +2,8 @@
 id: battlegrid-api-key-unauthenticated
 title: The BattleGrid API key does not authenticate any known endpoint
 type: question
-status: open
-priority: p1
+status: done
+priority: p3
 created: 2026-07-27
 updated: 2026-07-27
 change: ""
@@ -14,7 +14,22 @@ tags: [battlegrid, api, access]
 
 # The BattleGrid API key does not authenticate any known endpoint
 
-## What
+## Resolution
+
+Not a defect — wrong premise. The key is an **MCP credential**, not a REST key.
+It authenticates `https://mcp.battlegrid.trade/mcp` (Streamable HTTP, Bearer),
+which is the actual programmatic surface. The web app's `/api/*` routes are
+session-authenticated and were never meant to accept it.
+
+Kept as a record because the negative result is worth not repeating: probing the
+REST API with an MCP credential produces indistinguishable anonymous responses,
+not an auth error that points anywhere useful. The tell was
+`mcp.battlegrid.trade` answering `404` rather than failing DNS, and
+`mcpSignedWagerDailyCountLimit` sitting in the public platform config.
+
+See `docs/BATTLEGRID_SURFACE_MAP.md`.
+
+## What (as originally filed)
 
 A `bg_live_`-prefixed key was issued for programmatic access to
 battlegrid.trade. It does not authenticate. Every protected endpoint returns
