@@ -45,13 +45,13 @@ fails the job immediately, and the deprecation warning is gone from the log.
 
 **State**: PR #3 on `claude/work-review-next-steps-clb36a`, four commits, all
 checks green. `validate --all` is 0 errors, 1 warning (the placeholder design
-system). Backlog is 4 open, all P3. Two capabilities in the source of truth,
-four changes archived.
+system). Backlog is 4 open — 1×P2 (`enforce-journal-entry`), 3×P3. Two
+capabilities in the source of truth, four changes archived.
 
 **Next**: Unchanged and still the only blocker: **decide what Grid-Commander
 is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`. What is left in
-the backlog is all P3 harness polish; none of it needs the project concept, and
-none of it substitutes for having one.
+the backlog is harness polish — one P2 and three P3 — and none of it needs the
+project concept, nor substitutes for having one.
 
 **Watch out**:
 - **The container was reclaimed mid-session and the working tree reset to
