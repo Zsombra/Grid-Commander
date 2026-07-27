@@ -86,7 +86,7 @@ implementation.
 `_PM/Grid-Commander-MVP_Feature_Specification.md` (journeys, business logic,
 metrics, risk, decision log) and the first change,
 `connect-battlegrid-account` — `standard` track, capability
-`battlegrid-connection`, 10 requirements / 30 scenarios, 26 tasks, validating
+`battlegrid-connection`, 10 requirements / 22 scenarios, 26 tasks, validating
 clean.
 
 Also narrowed open question 1. No terms of service are published anywhere on
