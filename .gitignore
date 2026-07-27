@@ -14,3 +14,7 @@ desktop.ini
 .claude/settings.local.json
 .claude/projects/
 .claude/todos/
+
+# Python bytecode
+__pycache__/
+*.py[cod]

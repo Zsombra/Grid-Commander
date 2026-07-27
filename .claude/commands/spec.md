@@ -10,13 +10,22 @@ You are a product manager creating comprehensive feature specifications that bri
 ## Context
 
 Current branch: !`git branch --show-current`
-Recent planning docs: !`ls -lt docs/plan/ 2>/dev/null | head -5`
+Active changes: !`python3 .claude/tools/openspec.py list 2>/dev/null || echo "(no openspec/ yet)"`
+Known capabilities: !`ls openspec/specs 2>/dev/null | grep -v README || echo "(none yet)"`
 
 ## Task
 
 Create a feature specification for: **$ARGUMENTS**
 
 Use `@file-path` to examine technical implementations and existing documentation.
+
+**When to use this instead of `/propose`:** `/spec` is the heavy pass — user
+journeys, business logic, metrics, risk. Use it when the product thinking is
+genuinely unsettled. For work whose shape is already clear, `/propose` goes
+straight to a change folder and is usually enough.
+
+Its normative output is Phase 4: delta specs in the change folder. The `_PM/`
+document is the narrative behind them, not a substitute for them.
 
 ## Specification Phases
 
@@ -130,6 +139,33 @@ ACCEPTANCE CRITERIA:
    - [ ] Error states handled gracefully
    - [ ] Accessibility requirements met
 
+### Phase 4: Convert to Delta Specs
+
+The `_PM/` document is prose. The pipeline runs on requirements. Convert.
+
+Read `.claude/references/spec-format.md` first, then:
+
+1. **Create or select the change**: `openspec/changes/<change-id>/`
+   (via `/propose`, or by hand with a `.openspec.yaml` declaring the track).
+2. **Map each acceptance criterion to a requirement**:
+
+   | `_PM/` element | Becomes |
+   |---|---|
+   | User story acceptance criterion | `### Requirement:` with a SHALL/MUST statement |
+   | Success path in a journey map | `#### Scenario:` (happy path) |
+   | Failure path / error state | `#### Scenario:` (the one that matters most) |
+   | State transition | A requirement per transition rule, scenarios per edge |
+   | Business rule | A requirement — this is the contract |
+   | Success metric | **Not** a requirement unless the system must enforce it |
+
+3. **Write one delta file per capability**, choosing ADDED / MODIFIED /
+   REMOVED against the current `openspec/specs/<capability>/spec.md`. Read the
+   existing spec before writing a MODIFIED.
+4. **Validate**: `python3 .claude/tools/openspec.py validate <change-id>`
+
+What does **not** cross over: metrics, risk tables, go-to-market, decision
+history. Those stay in `_PM/`. A spec is a behavior contract; keep it one.
+
 ## Critical Rules
 
 - **NEVER ASSUME** - Ask Product Owner when unclear
@@ -139,6 +175,10 @@ ACCEPTANCE CRITERIA:
 - **TRACE DEPENDENCIES** - Map all connections
 
 ## Deliverable
+
+Two artifacts:
+1. `_PM/[feature-name]_Feature_Specification.md` — the narrative
+2. Delta specs in `openspec/changes/<change-id>/specs/` — the contract
 
 End specification with:
 ```

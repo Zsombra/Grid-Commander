@@ -1,12 +1,14 @@
-# <Slug> Production Gate
+# <change-id> Production Gate
 
 ## Metadata
 
-- Master plan: `docs/plan/<slug>-master-plan.md`
-- Data review: `docs/plan/<slug>-data-review.md`
-- Architecture review: `docs/plan/<slug>-architecture-review.md`
-- UI/UX review: `docs/plan/<slug>-uiux-review.md` (or N/A evidence)
-- Decision log: `docs/plan/<slug>-decision-log.md`
+- Change folder: `openspec/changes/<change-id>/`
+- Delta specs: `openspec/changes/<change-id>/specs/`
+- Master plan: `openspec/changes/<change-id>/plan/master-plan.md`
+- Data review: `openspec/changes/<change-id>/plan/data-review.md`
+- Architecture review: `openspec/changes/<change-id>/plan/architecture-review.md`
+- UI/UX review: `openspec/changes/<change-id>/plan/uiux-review.md` (or N/A evidence)
+- Decision log: `openspec/changes/<change-id>/plan/decision-log.md`
 - Audit date: `<YYYY-MM-DD>`
 - Evidence base: `<commit/ref>`
 - Evidence head: `<commit/ref>`
@@ -22,6 +24,23 @@
 - Evidence window resolved deterministically: `PASS | FAIL`
 - Inventory vs diff alignment: `MATCH | DRIFT (see PG-xxx)`
 - Handoff integrity verdict: `VALID | SUSPECT`
+
+## Spec Parity
+
+<!-- One row per requirement in the change's delta specs. An absent requirement
+     means the audit was incomplete, not that it passed. -->
+
+| Requirement | Capability | Delta op | Delivered | Evidence (path:line) | Scenarios covered | Finding |
+|---|---|---|---|---|---|---|
+| `<name>` | `<capability>` | ADDED | `YES \| NO` | `<path:line>` | `<n>/<n>` | `— \| PG-xxx` |
+
+- Requirements delivered: `<n>/<n>`
+- Scenarios covered: `<n>/<n>`
+- Unspecified behavior in the diff: `NONE | <list>`
+- Out-of-scope work in the diff: `NONE | <list>`
+- Existing requirements regressed: `NONE | <list>`
+- Task honesty (`[x]` with no code): `PASS | FAIL`
+- Spec validation (`openspec.py validate <change-id> --strict`): `PASS | FAIL`
 
 ## Production Gate Summary
 
@@ -40,8 +59,9 @@
 ## Mandatory Recheck Evidence
 
 ### Quality gate commands
-<!-- Read from docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality section -->
-- `<command from checklist>`: `PASS | FAIL`
+<!-- Read from openspec/config.yaml quality_gates, the master plan's Phase 2
+     checklist, or docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality -->
+- `<command>`: `PASS | FAIL`
 
 ### Repo-wide scans
 - Conflict markers (`rg "^(<<<<<<<|=======|>>>>>>>)" -n`): `PASS | FAIL`

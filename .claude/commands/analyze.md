@@ -12,6 +12,7 @@ You are an expert software architect with deep mastery of SOLID principles and a
 Current branch: !`git branch --show-current`
 Repository structure: !`ls -la`
 Architecture checklist: !`head -5 docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
+Specified capabilities: !`ls openspec/specs 2>/dev/null | grep -v README || echo "(none — behavior is not yet specified)"`
 
 ## Task
 
@@ -21,8 +22,26 @@ Perform a deep architectural inspection of the specified components. For each co
 2. Direct dependencies (incoming and outgoing) and rationale
 3. Position in overall data and control flow
 4. Notable architectural patterns or anti-patterns
+5. Which capability in `openspec/specs/` describes its behavior — or **UNSPECIFIED**
 
 **Components to analyze:** $ARGUMENTS
+
+### Spec Coverage
+
+Alongside the architecture map, report coverage:
+
+| Component | Capability spec | Coverage |
+|---|---|---|
+| `src/auth/session.ts` | `auth` | specified |
+| `src/orders/dedup.ts` | — | **unspecified** |
+
+Where a spec exists, flag drift: behavior in the code that contradicts a
+requirement is a bug in one of the two, and worth naming even though this
+command does not fix it.
+
+Do not propose writing specs for the whole codebase — that is how spec layers
+die. Recommend specifying a capability when it is about to be changed, and say
+which ones look most urgent.
 
 Use `@file-path` to examine relevant source files. Start by exploring the codebase structure before diving into specific implementations.
 

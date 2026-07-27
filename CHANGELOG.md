@@ -1,5 +1,92 @@
 # Development Notes — dev-skills
 
+## Status: v3.0 — Spec Layer Merged (2026-07-27)
+
+Merged the best of [OpenSpec](https://github.com/Fission-AI/OpenSpec) (MIT) into
+the v2.1 pipeline. v2.1 produced good plans that went nowhere; v3.0 adds the
+half that makes them compound.
+
+### The problem v2.1 had
+
+- No source of truth. Every feature wrote `docs/plan/<slug>-*.md` files that
+  piled up forever and never accumulated into a description of the system.
+  Feature #2 started from zero.
+- No lifecycle. Plans were never finished, only abandoned.
+- No brownfield model. Changing existing behavior meant rewriting a plan.
+- One size of ceremony: a typo fix cost five documents and a production gate.
+- Changes collided — artifacts were distinguished by filename prefix, so two
+  in-flight features shared one directory.
+- "Done" was prose, so the auditor had nothing objective to hold code against.
+
+### What was taken from OpenSpec
+
+| Feature | Why |
+|---|---|
+| `openspec/specs/` as living source of truth | The thing v2.1 was missing entirely |
+| Delta specs (ADDED/MODIFIED/REMOVED/RENAMED) | Makes brownfield work first-class |
+| Change as a self-contained folder | Parallel work, clean review, real archive |
+| Archive-merge cycle | Closes the loop; specs evolve with the system |
+| Requirement + Scenario format (RFC 2119) | Objective, testable definition of done |
+| Artifact dependency graph, enablers not gates | Order without waterfall |
+| Progressive rigor (`lite`/`standard`/`full`, `skip_specs`) | Ceremony matched to stakes |
+| Three verification dimensions | Completeness · correctness · coherence |
+| Explore-before-propose | Catches wrong turns at the cheapest moment |
+| `config.yaml` context + per-artifact rules | Project constraints injected everywhere |
+
+Not taken: the TypeScript CLI, stores/multi-repo, telemetry. The on-disk format
+is deliberately byte-compatible with the `openspec` CLI, so adopting it later
+is optional rather than a migration.
+
+### New
+
+- **`.claude/tools/openspec.py`** — zero-dependency Python 3 tool implementing
+  `list`, `status`, `validate`, `archive`. Turns "is this change ready?" into a
+  computation. 15 validation codes; archive enforces validate → write specs →
+  move folder, so a failure leaves the change intact and re-runnable.
+- **`.claude/references/spec-format.md`** — normative requirement/scenario/delta
+  format, validation codes, progressive rigor, right-sizing.
+- **`.claude/references/change-lifecycle.md`** — folder layout, tracks, artifact
+  graph, the loop, archiving rules, bootstrapping.
+- **Skills**: `proposer` (entry point), `verifier` (advisory 3-dimension check),
+  `archiver` (delta merge + archive).
+- **Commands**: `/explore`, `/propose`, `/status`, `/verify`, `/archive`.
+- **`openspec/`** scaffold with `config.yaml` template.
+
+### Changed
+
+- `planner` — now full-track only; reads delta specs; produces a **Requirement
+  Coverage Matrix** mapping every requirement to implementing files and
+  scenario verifications. Cannot edit deltas or plan out-of-scope work.
+- `executor` — track-aware (steps marked `[full]` are skipped on lite/standard);
+  reads the deltas as the definition of done; must update a delta rather than
+  diverge from it silently; cannot touch `openspec/specs/`.
+- `auditor` — new **Spec Parity** coverage section (§0), run first: every
+  ADDED/MODIFIED/REMOVED requirement gets a delivered/not-delivered verdict with
+  evidence. Also checks unspecified behavior, scope adherence against the
+  proposal, regressions against existing specs, and task honesty. New categories
+  `SPEC_PARITY`, `SCOPE`, `HANDOFF`. Cannot edit specs or archive.
+- `/spec` — new Phase 4 converts the `_PM/` narrative into delta specs, with an
+  explicit mapping table for what does and does not cross over.
+- `/analyze` — reports spec coverage per component and flags drift.
+- `/debug` — spec check before closing: bug in the code, or bug in the spec.
+- All plan artifacts moved from `docs/plan/<slug>-*.md` into
+  `openspec/changes/<change-id>/plan/*.md`.
+- Templates updated: master plan gains the coverage matrix and out-of-scope
+  list; production gate gains the spec parity table.
+
+### Unchanged
+
+`checklist-generator` and everything under `docs/specs/`. The review checklists
+work exactly as before and remain binding — they are now one of two standards
+the auditor checks, alongside the behavior contract.
+
+### Migration
+
+`docs/MIGRATION_v3.md`. Mechanical; roughly ten minutes for a project with a
+handful of plan docs. Existing checklists are untouched.
+
+---
+
 ## Status: v2.1 — Full Pipeline Complete and Tested (2026-04-07)
 
 ---
