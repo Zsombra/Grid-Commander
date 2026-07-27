@@ -886,6 +886,63 @@ def read_journal(root: Path, limit: int) -> list:
     return out
 
 
+def _git(root: Path, *args: str):
+    """Run a git command, or None when git cannot answer."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result
+
+
+def last_commit(root: Path, paths: list) -> tuple:
+    """(sha, subject) of the newest commit touching `paths`.
+
+    Returns ("", "") whenever git cannot answer — not a repo, no commits, no
+    git binary. Silence beats guessing: an unreadable history is not evidence
+    that anything is stale.
+    """
+    result = _git(root, "log", "-1", "--format=%H%x00%s", "--", *paths)
+    if result is None or result.returncode != 0 or not result.stdout.strip():
+        return "", ""
+    sha, _, subject = result.stdout.strip().partition("\x00")
+    return sha.strip(), subject.strip()
+
+
+def validate_journal(root: Path, strict: bool) -> list:
+    """Warn when the spec layer has moved on without the journal.
+
+    The journal is the only continuity mechanism between sessions, and the only
+    layer nothing else checks. Advisory by design — a gate people route around
+    protects nothing.
+
+    Ancestry decides this, not timestamps: two commits a second apart carry the
+    same `%ct`, and that is exactly the shape of "commit the work, forget the
+    journal" this is meant to catch.
+    """
+    if not journal_path(root).is_file():
+        return []
+    work, subject = last_commit(root, ["openspec/", ":!openspec/JOURNAL.md"])
+    journal, _ = last_commit(root, ["openspec/JOURNAL.md"])
+    if not work or not journal or work == journal:
+        return []
+    # The journal is behind when its newest commit is a strict ancestor of the
+    # newest commit that touched everything else.
+    behind = _git(root, "merge-base", "--is-ancestor", journal, work)
+    if behind is None or behind.returncode != 0:
+        return []
+    return [diag(
+        "warning", "journal_stale",
+        f"openspec/ changed after the last journal entry — newest is '{subject[:60]}'",
+        "openspec/JOURNAL.md",
+        "add an entry with /handoff before ending the session",
+    )]
+
+
 def main_spec_path(root: Path, capability: str) -> Path:
     return root / "openspec" / "specs" / capability / "spec.md"
 
@@ -1466,6 +1523,7 @@ def main(argv: list) -> int:
         found.extend(validate_main_specs(root, False))
         found.extend(validate_backlog(root, False))
         found.extend(validate_design(root, False))
+        found.extend(validate_journal(root, False))
         design = design_summary(root)
         if args.json:
             print(json.dumps({
@@ -1634,6 +1692,7 @@ def main(argv: list) -> int:
         if args.all or not args.change:
             found.extend(validate_backlog(root, args.strict))
             found.extend(validate_design(root, args.strict))
+            found.extend(validate_journal(root, args.strict))
         errors, warnings, infos = tally(found)
         if args.json:
             print(json.dumps({"status": found,

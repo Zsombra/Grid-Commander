@@ -2,11 +2,11 @@
 id: enforce-journal-entry
 title: Nothing enforces that a session writes a journal entry
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: enforce-journal-entry
 capability: ""
 blocked_by: []
 tags: [harness, tracking]

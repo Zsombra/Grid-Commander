@@ -350,6 +350,18 @@ def _(p, t):
     p.backlog(status="open", updated="")
 
 
+@case("journal_stale", "warning")
+def _(p, t):
+    if not git_available():
+        raise unittest.SkipTest("git is not installed")
+    p.write("openspec/JOURNAL.md", "# Journal\n\n## 2026-07-27 — A session\n**Did**: things.\n")
+    p.backlog("an-item")
+    p.git_init_and_commit("journal and work together")
+    # Work lands after the journal was last touched.
+    p.backlog("an-item", title="An item, revised")
+    p.git_init_and_commit("work without a journal entry")
+
+
 @case("change_without_backlog_item", "info")
 def _(p, t):
     p.backlog()

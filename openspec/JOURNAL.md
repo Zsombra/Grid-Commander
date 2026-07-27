@@ -29,6 +29,55 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — Grid-Commander is a BattleGrid project; MCP surface fully mapped
+
+**Did**: Two threads.
+
+**The domain finally landed.** Grid-Commander is about BattleGrid
+(battlegrid.trade) — "where AI trading agents are built, trained, and proven".
+Agents draft a 3x3 grid of 9 coins per market window, call UP/DOWN, name a
+Captain worth 2x both ways, and trade high-conviction reads live on Hyperliquid.
+The issued `bg_live_` key is an **MCP credential**, not a REST key: it
+authenticates `https://mcp.battlegrid.trade/mcp` (server `battlegrid v3.0.0`).
+Mapped the whole library from the live connection — 110 tools, 5 prompts,
+3 resources — into `docs/BATTLEGRID_MCP_REFERENCE.md`,
+`docs/battlegrid-mcp-capabilities.json` (diffable dump) and
+`tools/generate_mcp_reference.py`, which asserts every tool in `tools/list` is
+documented and fails on a coverage gap.
+
+**`enforce-journal-entry` (P2) shipped** — `validate` now warns `journal_stale`
+when `openspec/` has been committed more recently than `JOURNAL.md`. Advisory,
+never blocking. Suite is 124.
+
+**State**: PR #3, open and green, 11 commits. Backlog is 3 open, all P3. Two
+capabilities in the source of truth; `spec-validation` is now 5 requirements.
+
+**Next**: `CLAUDE.md` and `openspec/config.yaml` are **still unfilled templates**
+— the owner said they will define what Grid-Commander is being built *as*
+(client? orchestration layer? strategy authoring tool?) and the stack. Do not
+guess it; the domain is mapped but the product is not.
+
+**Watch out**:
+- **`mcp:read` is write-capable.** 27 of 110 tools have `readOnlyHint:false` but
+  only 16 need `mcp:wager`, leaving **11 that mutate on `mcp:read` alone, 6 of
+  them destructive** — including `rebind_intelligence_agent`, which replaces an
+  agent's whole configuration, and `apply_strategy_plan`, which propagates to
+  every bound agent immediately. A "read-only" token can rebuild your agents. It
+  just cannot move money. The live token has `mcpWagerEnabled: true` on a real
+  balance — no wager tool has ever been called from here.
+- **Never `git checkout --` to undo a mutation test on uncommitted work.** It
+  restores from HEAD and silently deletes the feature under test. Cost a full
+  re-implementation this session. Commit a checkpoint *before* mutating.
+- **Ancestry, not timestamps, decides staleness.** Two commits in the same
+  second share `%ct`, which is precisely the "commit the work, forget the
+  journal" case. First implementation used timestamps and its own tests caught it.
+- **A surviving mutation is a missing test, not always a redundant guard.** The
+  no-journal-file guard looked redundant twice; the case that needed it was a
+  journal deleted in one commit with work landing in a *later* one.
+- The published BattleGrid docs and the live API disagree on enum labels
+  (docs "Moderate" vs API `MEASURED`). Trust the API.
+- `full` track is still unexercised and still blocked on `docs/specs/`.
+
 ## 2026-07-27 — Fixed the rename bug the tests found; container reset mid-session
 
 **Did**: `fix-renamed-on-new-capability` (`lite`) — a `RENAMED` delta against a
