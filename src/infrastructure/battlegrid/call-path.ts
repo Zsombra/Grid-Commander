@@ -102,7 +102,10 @@ export function toDomainError(err: unknown, resource: string, expectedRevision?:
   const message = err instanceof Error ? err.message : String(err);
   const lowered = message.toLowerCase();
   if (CONFLICT_MARKERS.some((m) => lowered.includes(m))) {
-    return new RevisionConflictError(resource, expectedRevision ?? -1, null);
+    // Null, not a sentinel. The production call path carries no revision, and a
+    // fabricated one would put a number the system never expected in front of
+    // the user. See PG-003.
+    return new RevisionConflictError(resource, expectedRevision ?? null, null);
   }
   return err instanceof Error ? err : new Error(message);
 }

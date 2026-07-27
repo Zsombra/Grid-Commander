@@ -209,13 +209,13 @@ Task-level detail lives in `../tasks.md` (26 tasks). Phases:
 
 ## Phase 2 Review Checklist (Executor)
 
-- [ ] All inventory files created
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm lint` passes, including the boundary rule
-- [ ] `pnpm test` passes with a test per scenario
-- [ ] `python3 .claude/tools/openspec.py validate --all` reports 0 errors
-- [ ] Review docs filled with evidence, status moved off PENDING
-- [ ] Decision log updated with any deviation
+- [x] All inventory files created (with the consolidations noted above)
+- [x] `npm run typecheck` passes
+- [x] `npm run lint` passes, including the boundary rule
+- [x] `npm test` passes — 94 tests, a test per scenario
+- [x] `python3 .claude/tools/openspec.py validate --all` reports 0 errors
+- [x] Review docs filled with evidence, status moved off PENDING
+- [x] Decision log updated with deviations (DL-10 through DL-13)
 
 ## Phase 3 Review Checklist (Auditor — production gate)
 
@@ -245,4 +245,4 @@ Task-level detail lives in `../tasks.md` (26 tasks). Phases:
 
 ---
 
-PLAN READY FOR REVIEW
+EXECUTION READY FOR PRODUCTION GATE

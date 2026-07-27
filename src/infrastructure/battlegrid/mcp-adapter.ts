@@ -204,6 +204,14 @@ export class McpBattleGridAdapter implements BattleGridPort {
 
     const scopes = (json.scope ?? '').split(' ').filter(isScope);
 
+    // A grant with no subject cannot establish an identity. Defaulting it to ''
+    // would make every such grant collide on the same key, and the second user
+    // to connect would be recognised as the first — landing in a stranger's
+    // workspace with a stranger's BattleGrid connection. Refuse instead.
+    if (!json.sub) {
+      throw new Error('BattleGrid returned a grant with no subject; cannot establish identity');
+    }
+
     return {
       accessToken: json.access_token,
       refreshToken: json.refresh_token ?? null,
@@ -211,7 +219,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       // fallback rather than this layer inventing a comfortable number.
       expiresIn: json.expires_in,
       scopes,
-      subject: json.sub ?? '',
+      subject: json.sub,
     };
   }
 }

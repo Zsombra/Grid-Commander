@@ -17,14 +17,30 @@ export class DomainError extends Error {
 export class RevisionConflictError extends DomainError {
   constructor(
     readonly resource: string,
-    readonly expectedRevision: number,
+    /** Null when the caller did not carry one. Never substituted with a sentinel. */
+    readonly expectedRevision: number | null,
     readonly actualRevision: number | null,
   ) {
     super(
-      `${resource} changed since you loaded it (expected revision ${expectedRevision}` +
-        `${actualRevision === null ? '' : `, now ${actualRevision}`}). Your change was not applied.`,
+      `${resource} changed since you loaded it${revisionClause(expectedRevision, actualRevision)}.` +
+        ' Your change was not applied.',
     );
   }
+}
+
+/**
+ * Name the revisions only when they are known.
+ *
+ * An unknown expected revision used to render as `-1`, which told the user a
+ * specific expectation the system never held. Saying less is honest; saying a
+ * number that was invented is not.
+ */
+function revisionClause(expected: number | null, actual: number | null): string {
+  if (expected === null && actual === null) return '';
+  const parts: string[] = [];
+  if (expected !== null) parts.push(`expected revision ${expected}`);
+  if (actual !== null) parts.push(`now ${actual}`);
+  return ` (${parts.join(', ')})`;
 }
 
 /** The connection does not hold the authority an operation needs. */

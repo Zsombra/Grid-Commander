@@ -27,6 +27,27 @@ describe('surfaces_and_does_not_retry', () => {
     expect(err.message).toContain('not applied');
   });
 
+  /**
+   * Found by the production gate (PG-003). Every test above supplies a
+   * revision; the one production call site does not, and that branch used to
+   * render `-1` — a number the system never expected, shown to the user as
+   * though it had.
+   */
+  it('renders_without_inventing_a_revision when the caller carries none', () => {
+    const err = toDomainError(new Error('revision mismatch'), 'agent') as RevisionConflictError;
+    expect(err.expectedRevision).toBeNull();
+    expect(err.message).not.toContain('-1');
+    expect(err.message).not.toContain('expected revision');
+    // It must still say the two things the user needs.
+    expect(err.message).toContain('agent');
+    expect(err.message).toContain('not applied');
+  });
+
+  it('still names the revision when one is known', () => {
+    const err = toDomainError(new Error('revision mismatch'), 'agent', 7);
+    expect(err.message).toContain('expected revision 7');
+  });
+
   it('carries no retry affordance on the error itself', () => {
     const err = toDomainError(new Error('conflict'), 'agent', 1);
     // A retry() method here would be an invitation to apply an intent formed

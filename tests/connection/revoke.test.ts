@@ -133,3 +133,52 @@ describe('R2 — a connection is removed', () => {
     expect(connections.secrets.has('u1')).toBe(false);
   });
 });
+
+describe('R2 — a grant with no subject cannot establish an identity', () => {
+  /**
+   * Found by the production gate. Defaulting an absent `sub` to '' made every
+   * such grant collide on the same key: the second user to connect would be
+   * recognised as the first and land in a stranger's workspace, holding a
+   * stranger's BattleGrid connection.
+   */
+  const tokenFetch = (body: Record<string, unknown>): typeof globalThis.fetch =>
+    (async () =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })) as typeof globalThis.fetch;
+
+  const adapterWith = (fetch: typeof globalThis.fetch) => {
+    const clock = new FakeClock();
+    return new McpBattleGridAdapter({
+      config,
+      audit: new FakeAuditStore(clock),
+      confirmations: new FakeConfirmationStore(clock),
+      fetch,
+    });
+  };
+
+  it('refuses a token response with no subject', async () => {
+    const adapter = adapterWith(
+      tokenFetch({ access_token: 'at', scope: 'mcp:read' }), // no `sub`
+    );
+    await expect(
+      adapter.exchangeCode({ code: 'c', codeVerifier: 'v' }),
+    ).rejects.toThrow(/no subject/i);
+  });
+
+  it('refuses an empty-string subject just as firmly', async () => {
+    const adapter = adapterWith(tokenFetch({ access_token: 'at', scope: 'mcp:read', sub: '' }));
+    await expect(
+      adapter.exchangeCode({ code: 'c', codeVerifier: 'v' }),
+    ).rejects.toThrow(/no subject/i);
+  });
+
+  it('accepts a grant that carries one', async () => {
+    const adapter = adapterWith(
+      tokenFetch({ access_token: 'at', scope: 'mcp:read', sub: 'bg-user-1', expires_in: 3600 }),
+    );
+    const grant = await adapter.exchangeCode({ code: 'c', codeVerifier: 'v' });
+    expect(grant.subject).toBe('bg-user-1');
+  });
+});

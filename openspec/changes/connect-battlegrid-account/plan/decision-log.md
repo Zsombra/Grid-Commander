@@ -169,3 +169,110 @@ covering planning, implementation, verification and archive.
 - Write the test per scenario as each requirement lands, not in a final sweep.
 
 **Next action**: executor.
+
+---
+
+## Phase 2 — Execution
+
+### 2026-07-27 · DL-10 · Deviation · npm instead of pnpm
+
+**Decision**: Use npm. **Reason**: pnpm 11 refuses to run any script while a
+dependency's build script is unapproved; neither `onlyBuiltDependencies` nor
+disabling the pre-run check cleared it. The package manager is a preference, a
+working quality gate is not. **Impacted**: `package.json`, CI, checklist quality
+gate line. **Approved by**: owner (full autonomy).
+
+### 2026-07-27 · DL-11 · Deviation · Files consolidated during execution
+
+**Decision**: Three connection use cases became `connect.commands.ts`; the OAuth
+client merged into `mcp-adapter.ts`; the guard sequence was extracted to
+`call-path.ts`. **Reason**: the three commands share the transaction shape, the
+client and adapter are the same boundary, and extracting the guards made them
+testable without an HTTP client. **Impacted**: master plan inventory, since
+reconciled. **Approved by**: owner.
+
+### 2026-07-27 · DL-12 · Deviation · MCP SDK dropped as a dependency
+
+**Decision**: The adapter uses `fetch` against the documented Streamable HTTP
+surface; `@modelcontextprotocol/sdk` was uninstalled. **Reason**: the calls are
+few, the transport stays visible at the one boundary that matters, and an unused
+dependency is supply-chain surface for nothing. The lint rule and boundary test
+remain so reintroduction outside `src/infrastructure/battlegrid/` still fails.
+**Approved by**: owner.
+
+### 2026-07-27 · DL-13 · Finding · R10 scenario 2 was not implemented
+
+**Decision**: Fixed during verification. A 401/403 from BattleGrid now raises
+`ConnectionRevokedError` rather than a generic error. **Reason**: the spec
+requires "fails cleanly, shown as disconnected, invited to reconnect"; the
+original implementation produced "failed with 401", which a user cannot act on.
+**Verification**: reverting the fix fails 3 tests. **Impacted**:
+`mcp-adapter.ts`, `tests/connection/revoke.test.ts`.
+
+### 2026-07-27 · DL-14 · Known debt · `scopesFor()` is a stub
+
+**Decision**: Ship it. **Reason**: it returns `['mcp:read']` rather than reading
+the grant's recorded scopes. Correct today because the registration cannot
+obtain more, and the next change must replace it. **Filed as**: F-3 in the
+architecture review. **Next action**: replace in `author-agents`.
+
+---
+
+## Phase 3 — Production Gate
+
+### 2026-07-27 · DL-15 · AUDIT · Two findings that only a scan would have caught
+
+**Decision**: Both fixed before the gate; neither waived.
+
+**Findings**:
+
+- **PG-001 (CRITICAL)** — `subject: json.sub ?? ''`. A grant with no subject
+  defaulted to the empty string, so `findUserIdBySubject('')` matched the first
+  such user and the second person to connect would land in a stranger's
+  workspace holding a stranger's BattleGrid connection. Fixed by refusing the
+  grant outright: an identity that cannot be established must not be defaulted
+  into one.
+- **PG-003 (MAJOR)** — `RevisionConflictError(resource, expectedRevision ?? -1, null)`.
+  The only production call site passes no revision, so every conflict a user
+  would actually see read *"expected revision -1"*. Fixed by making the field
+  nullable and omitting the clause when unknown.
+
+**Impacted files**: `mcp-adapter.ts`, `errors.ts`, `call-path.ts`,
+`tests/connection/revoke.test.ts`, `tests/concurrency/conflict.test.ts`.
+
+**What this says about the process**: both came from the same mandated scan —
+`rg "\?\?"` over touched paths — and neither was visible to the test suite,
+because in both cases the tests supplied the value that the production path
+omits. A suite can be green and still never execute the branch users hit. The
+scan is not ceremony; it found the two most serious defects in the change.
+
+**Approved by**: owner (full autonomy).
+
+---
+
+### 2026-07-27 · DL-16 · AUDIT · Gate rationale and deferrals
+
+**Decision**: **PASS**. Zero open violations.
+
+**Reason**: 10/10 requirements delivered with all 22 scenarios covered by tests;
+handoff integrity valid; every quality gate re-run in full after remediation
+(typecheck, lint, 99 vitest tests, 124 harness tests, strict validation) rather
+than only the ones that had failed; no new violations introduced by the fixes.
+Each remediation was mutation-checked — reverting it fails a named test.
+
+**DL-7 discharged**: the gate was asked to confirm the degraded-mode allowlist
+can only deny. `capability-cache.ts:53` returns destructive/wager for anything
+absent from the map and a read-only classification for anything present; there
+is no branch where membership grants write authority. The exception holds.
+
+**Deferred, with owners** — neither is fixed here and both are filed rather than
+forgotten:
+
+- PG-004 → backlog `scopes-from-connection`, owner `author-agents`.
+- PG-005 → backlog `prove-token-lifetimes`, owner: first live connection.
+
+**Task 0.2 stays unchecked.** It cannot be proven headlessly, and marking it done
+would be a lie in the one artifact that later audits measure against.
+
+**Next action**: archiver. A PASS that is not archived leaves `openspec/specs/`
+empty while ten requirements are live in code.
