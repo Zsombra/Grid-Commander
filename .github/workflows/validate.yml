@@ -41,6 +41,32 @@ jobs:
           echo "$output"
           exit $status
 
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Three gates, run separately so a failure names which one broke.
+      # typecheck is not redundant with the tests: several safety guards are
+      # enforced by the type system, and a mutation removing one fails here
+      # rather than in vitest.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
   validate:
     name: validate
     runs-on: ubuntu-latest

@@ -1,0 +1,92 @@
+import type { Scope } from '../connection/scope.js';
+import type { DiscoveredTool, ToolClass } from './tool-class.js';
+import { UNKNOWN_TOOL } from './tool-class.js';
+
+/**
+ * The small set of BattleGrid tools we are willing to call when discovery has
+ * failed and we cannot ask the server what anything does.
+ *
+ * Architecture policy P2 forbids hard-coded tool lists, and this is the single
+ * declared exception — permitted because it can only ever **deny**. It never
+ * grants anything the live list would not have granted; it is a floor beneath
+ * which we refuse, not a source of authority. Every entry is an unambiguous
+ * getter whose name has been stable since the surface was first mapped.
+ *
+ * If a future change uses this list to permit a write, that is a violation.
+ */
+const DEGRADED_READ_ALLOWLIST: ReadonlySet<string> = new Set([
+  'get_account_state',
+  'get_leaderboard',
+  'list_intelligence_agents',
+  'list_strategies',
+  'list_market_grid_sessions',
+]);
+
+/**
+ * Classify a tool from what the server said about it.
+ *
+ * Pure, and deliberately so: every dangerous decision in this system funnels
+ * through here, which is why it can be tested exhaustively without a network,
+ * a database, or an account.
+ */
+export function classifyTool(tool: DiscoveredTool | undefined): ToolClass {
+  if (!tool) return UNKNOWN_TOOL;
+
+  const a = tool.annotations;
+
+  // No annotations at all means the server told us nothing. That is not the
+  // same as telling us it is safe.
+  if (!a || a.readOnlyHint === undefined) return UNKNOWN_TOOL;
+
+  const mutating = a.readOnlyHint === false;
+
+  // destructiveHint is only meaningful for something that mutates. Where it is
+  // absent on a mutating tool, assume the worst rather than the convenient.
+  const destructive = mutating && (a.destructiveHint ?? true);
+
+  return {
+    mutating,
+    destructive,
+    requiredScope: tool.declaredScope ?? inferScope(mutating),
+    basis: 'annotations',
+  };
+}
+
+/**
+ * When a tool does not declare its scope, infer the least surprising one.
+ *
+ * Note this never infers `mcp:wager` for a mutating tool: most mutating tools
+ * on BattleGrid run on read scope, and guessing wager here would make the
+ * product refuse operations it is entitled to perform. Tools that genuinely
+ * need wager authority say so, and are caught by `declaredScope`.
+ */
+function inferScope(_mutating: boolean): Scope {
+  return 'mcp:read';
+}
+
+/** Build a lookup from a discovered tool list. */
+export function buildClassificationMap(
+  tools: readonly DiscoveredTool[],
+): ReadonlyMap<string, ToolClass> {
+  const map = new Map<string, ToolClass>();
+  for (const tool of tools) map.set(tool.name, classifyTool(tool));
+  return map;
+}
+
+/**
+ * Classify when discovery has failed.
+ *
+ * Anything on the allowlist is treated as a plain read. Everything else — which
+ * is to say everything that could possibly change something — is refused.
+ */
+export function classifyDegraded(name: string): ToolClass {
+  if (DEGRADED_READ_ALLOWLIST.has(name)) {
+    return { mutating: false, destructive: false, requiredScope: 'mcp:read', basis: 'degraded-allowlist' };
+  }
+  return UNKNOWN_TOOL;
+}
+
+/** Exposed for the audit: the allowlist must be inspectable, not folklore. */
+export function degradedAllowlist(): readonly string[] {
+  return [...DEGRADED_READ_ALLOWLIST].sort();
+}
