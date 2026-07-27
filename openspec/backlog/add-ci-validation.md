@@ -2,11 +2,11 @@
 id: add-ci-validation
 title: Run openspec.py validate --all in CI
 type: chore
-status: open
+status: in-progress
 priority: p1
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: add-ci-validation
 capability: ""
 blocked_by: []
 tags: [harness, ci]
