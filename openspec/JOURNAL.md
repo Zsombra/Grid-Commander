@@ -29,6 +29,50 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — v3.0 complete and merged; harness ready, unproven
+
+**Did**: Finished and merged the v3.0 harness (PR #1, branch
+`claude/harness-openspec-merge-smkspq`). Three layers on top of v2.1:
+
+- **Spec layer** (adapted from OpenSpec, MIT) — `openspec/specs/` as living
+  source of truth, delta specs, change folders, archive-merge, lite/standard/full
+  tracks. Format is byte-compatible with the `openspec` CLI.
+- **Tracking layer** — `openspec/backlog/`, this journal, `board`, `tracker`
+  skill, `/board` `/backlog` `/handoff`.
+- **Design layer** — `UISurface` / `DesignTicket` DTO between a developer agent
+  and a design agent, with `openspec/design/`, `ui-surveyor` +
+  `design-director` skills, `/surface` `/design`.
+
+10 skills, 17 commands, `.claude/tools/openspec.py` (zero-dependency, 25+
+validation codes). Filed 6 backlog items for what this session deferred.
+
+**State**: Merged to `main`. No application code exists — this repo is the
+harness. `openspec/specs/` is empty, no changes have ever run, `docs/specs/`
+checklists have not been generated, and `CLAUDE.md` + `openspec/config.yaml`
+are still unfilled templates.
+
+**Next**: Fill `CLAUDE.md` and `openspec/config.yaml` before anything else —
+every skill reads config and gets nothing from placeholders. Then `/idea` for
+the application concept, then a deliberately small `standard`-track change to
+shake the pipeline out (`dogfood-harness-end-to-end`).
+
+**Watch out**:
+- **The harness is unproven.** The tool was tested against fixtures; the skills
+  have never been executed. Expect friction on the first change and fix the
+  instructions rather than working around them.
+- **`full` track is blocked** until `checklist-generator` has run — planner,
+  executor, and auditor hard-require `docs/specs/`. Stay on `standard` until
+  then.
+- **Greenfield inverts the delta model.** Everything is ADDED at first, which is
+  a lot of requirements per change. That is a reason to keep changes small, not
+  a reason to skip specs.
+- The delta merge replaces a MODIFIED requirement's **entire block** — a partial
+  MODIFIED silently drops the scenarios you left out. Copy the whole requirement
+  from the main spec, then edit.
+- Two directories named "spec": `openspec/specs/` is behavior, `docs/specs/` is
+  review checklists. Filed as `rename-docs-specs-to-checklists`.
+- No CI exists. Nothing runs `validate --all` automatically yet.
+
 ## 2026-07-27 — Spec layer merged; tracking system added (v3.0)
 
 **Did**: Merged OpenSpec's data model into the pipeline — `openspec/specs/` as
