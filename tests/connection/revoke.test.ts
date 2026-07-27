@@ -32,6 +32,20 @@ function fetchWith(callStatus: number): typeof globalThis.fetch {
   }) as typeof globalThis.fetch;
 }
 
+/** A store holding one active `mcp:read` connection for `u1`. */
+function connected(clock: FakeClock): FakeConnectionStore {
+  const store = new FakeConnectionStore(clock);
+  void store.upsert({
+    userId: 'u1',
+    battlegridSubject: 'sub-u1',
+    scopes: ['mcp:read'],
+    accessToken: 'at',
+    refreshToken: null,
+    accessTokenExpiresAt: null,
+  });
+  return store;
+}
+
 describe('R10 — authority withdrawn at BattleGrid rather than through us', () => {
   let clock: FakeClock;
   let audit: FakeAuditStore;
@@ -44,7 +58,13 @@ describe('R10 — authority withdrawn at BattleGrid rather than through us', () 
   });
 
   const adapter = (status: number) =>
-    new McpBattleGridAdapter({ config, audit, confirmations, fetch: fetchWith(status) });
+    new McpBattleGridAdapter({
+      config,
+      audit,
+      confirmations,
+      connections: connected(clock),
+      fetch: fetchWith(status),
+    });
 
   it('fails_cleanly_and_offers_reconnect on a 401', async () => {
     const err: unknown = await adapter(401)
@@ -154,6 +174,7 @@ describe('R2 — a grant with no subject cannot establish an identity', () => {
       config,
       audit: new FakeAuditStore(clock),
       confirmations: new FakeConfirmationStore(clock),
+      connections: new FakeConnectionStore(clock),
       fetch,
     });
   };

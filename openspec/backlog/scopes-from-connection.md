@@ -2,11 +2,11 @@
 id: scopes-from-connection
 title: The adapter reports a constant scope set instead of the grant's
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: author-agents
 capability: battlegrid-connection
 blocked_by: []
 tags: [security, scope, battlegrid]
@@ -47,7 +47,10 @@ into the guard. The connection is already the authority on what was granted —
 Naturally belongs to whichever change first needs a scope other than
 `mcp:read` — currently expected to be `author-agents`.
 
-## Not blocking
+## Resolved
 
-The failure mode cannot be reached under the current deployment without a
-deliberate re-registration, which is itself a reviewed act (DL-4).
+Closed in `author-agents`, phase 1, before any agent write landed — see AL-7.
+`scopesFor(userId)` now reads the connection and returns nothing when there is
+no connection or the connection is revoked. Covered by
+`tests/connection/scope.test.ts`; restoring the constant fails four of its five
+tests.

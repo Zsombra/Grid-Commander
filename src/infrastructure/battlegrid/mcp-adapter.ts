@@ -1,6 +1,8 @@
 import type { AuditWriter } from '@/domain/audit/audit-repository.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import { isUsable } from '@/domain/connection/connection.js';
+import type { ConnectionReader } from '@/domain/connection/connection-repository.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
 import { ConnectionRevokedError } from '@/domain/errors.js';
@@ -40,6 +42,8 @@ export interface AdapterDeps {
   readonly config: BattleGridConfig;
   readonly audit: AuditWriter;
   readonly confirmations: ConfirmationStore;
+  /** The authority on what each user's grant carries. Never assumed — see PG-004. */
+  readonly connections: ConnectionReader;
   readonly fetch: typeof globalThis.fetch;
 }
 
@@ -116,7 +120,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
     const view = await this.capabilities.load(request.accessToken);
     const classification = view.classify(request.tool);
 
-    const heldScopes = await this.scopesFor(request.accessToken);
+    const heldScopes = await this.scopesFor(request.userId);
 
     const auditEntryId = await beginGuardedCall(
       { audit: this.deps.audit, confirmations: this.deps.confirmations, heldScopes },
@@ -149,11 +153,22 @@ export class McpBattleGridAdapter implements BattleGridPort {
 
   // -- internals ---------------------------------------------------------
 
-  private async scopesFor(_accessToken: string): Promise<readonly Scope[]> {
-    // The grant's scopes are recorded on the connection at exchange time; the
-    // caller supplies the token, and the connection is the authority on what it
-    // was granted. Kept narrow here so the adapter cannot widen its own scope.
-    return ['mcp:read'];
+  /**
+   * What this user's grant actually carries.
+   *
+   * The connection is the record of what BattleGrid granted, written at exchange
+   * time, and it is the only thing entitled to answer this. An earlier version
+   * returned the constant `['mcp:read']`, which happened to be true under the
+   * pinned registration and would have failed *open* the moment it stopped being
+   * true — reporting authority the connection does not hold. See PG-004.
+   *
+   * No connection, or a revoked one, holds nothing. Refusing everything is the
+   * correct answer to "what may this absent grant do".
+   */
+  private async scopesFor(userId: string): Promise<readonly Scope[]> {
+    const connection = await this.deps.connections.findByUserId(userId);
+    if (!connection || !isUsable(connection)) return [];
+    return connection.scopes;
   }
 
   private async rawDiscoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {

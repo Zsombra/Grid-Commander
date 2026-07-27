@@ -11,11 +11,11 @@
 
 ## 1. Close the scope debt (MODIFIED requirement)
 
-- [ ] 1.1 Replace `scopesFor()` with a read of the connection's recorded scopes
-- [ ] 1.2 Thread the connection through `callTool` so the guard measures against
+- [x] 1.1 Replace `scopesFor()` with a read of the connection's recorded scopes
+- [x] 1.2 Thread the connection through `callTool` so the guard measures against
       the grant rather than a constant
-- [ ] 1.3 Test: a grant narrower than requested refuses an uncovered operation
-- [ ] 1.4 Close backlog item `scopes-from-connection`
+- [x] 1.3 Test: a grant narrower than requested refuses an uncovered operation
+- [x] 1.4 Close backlog item `scopes-from-connection`
 
 ## 2. Domain — the agent model and its rules
 
