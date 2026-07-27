@@ -10,18 +10,33 @@
 default_track: standard
 
 context: |
-  Tech stack: [language, runtime, framework]
-  Package manager: [npm / pnpm / uv / poetry / go mod]
-  Architecture: [Clean Architecture / Provider Pattern / MVC]
+  Grid-Commander is a third-party multi-tenant web client for BattleGrid
+  (battlegrid.trade), driven over MCP at https://mcp.battlegrid.trade/mcp.
+  Users connect their own BattleGrid account by OAuth and author agents and
+  strategies through it.
+
+  Tech stack: TypeScript, Node, Next.js (App Router), PostgreSQL, Drizzle
+  Package manager: pnpm
+  Architecture: Clean Architecture, lightly applied — the domain must not
+  import the MCP client; BattleGrid sits behind a port
 
   Product language:
   - Write proposals and specs in user-facing behavior language
   - Requirements describe observable outcomes and the product contract
   - Internal mechanisms belong in design.md or tasks.md, not spec.md
 
-  Platform constraints:
-  - [e.g. runs on macOS, Linux, and Windows — always use path joins]
-  - [e.g. must degrade gracefully offline]
+  Domain constraints — these are load-bearing, not background:
+  - mcp:read is WRITE-CAPABLE. 11 of 110 BattleGrid tools mutate on mcp:read
+    alone, 6 of them destructive. Scope is not a safety boundary.
+  - Only 16 tools require mcp:wager. Wager scope is a deliberate step-up,
+    never requested by default.
+  - The BattleGrid tool list is not authoritative after a deployment —
+    rediscover at runtime, never hard-code it.
+  - Every mutation carries expectedRevision optimistic concurrency.
+  - Strategy authoring is compile -> review -> apply with a digest-bound token
+    that expires in 5 minutes. Expiry is a normal path, not an error.
+  - Platform caps: 10 MCP-signed wagers/day, $500/day.
+  - Every write this product makes on a user's behalf must be auditable.
 
 # Per-artifact rules. Each list is appended to the instructions for that
 # artifact type. Delete any section you have nothing specific to say about.
@@ -32,11 +47,16 @@ rules:
 
   specs:
     - Prefer observable product behavior over internal mechanics
-    - [e.g. requirements involving file paths must specify cross-platform behavior]
+    - A requirement that triggers a BattleGrid write must say which scope it
+      needs and whether the underlying tool is destructive
+    - Requirements touching money or autonomous authority must state the
+      confirmation the user sees before it happens
 
   design:
     - Record decisions as "Decision: X because Y", with the alternatives rejected
-    - [e.g. prefer explicit lookups over pattern matching]
+    - The domain layer must not import the MCP client — state how a change keeps
+      that true
+    - Prefer runtime capability discovery over compiled-in tool knowledge
 
   tasks:
     - Every task traces to a requirement or is explicitly infrastructure

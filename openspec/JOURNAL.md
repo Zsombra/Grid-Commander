@@ -29,6 +29,51 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — The blocker is gone: Grid-Commander is defined and configured
+
+**Did**: The owner defined the product, so `/idea` finally had something to run
+on. Grid-Commander is a **third-party multi-tenant web workbench** for building
+and tuning BattleGrid agents and strategies over MCP, with backtesting and
+optimization as the eventual point.
+
+Wrote `_IDEA/Grid-Commander_Idea_Brief.md` — product definition, market context,
+22 features RICE-scored into a 13-item MVP, technical requirements, one
+recommended stack, folder structure, risks, and seven open questions. Filled
+`CLAUDE.md` and `openspec/config.yaml` from it. Both had been unfilled templates
+since the repo's first commit; every skill reads config and had been getting
+placeholders.
+
+**Stack**: TypeScript / Next.js / PostgreSQL / Drizzle, Clean Architecture
+lightly applied. The owner leaned toward Python + TS and asked for a
+recommendation instead — the argument for one language is that nothing in the
+MVP is computational, and the Python case is entirely about deferred backtesting.
+Recommendation is TS now with a **job-queue seam** (`src/ports/jobs.ts`) that a
+Python worker consumes later, so the capability stays reachable without paying
+for two languages from day one.
+
+**State**: PR #3 still open and green. `validate --all` is 0 errors, 1 warning
+(placeholder design system). Backlog 3 open, all P3. No application code exists
+yet — this session produced the foundation, not the product.
+
+**Next**: **Retire open question 1 before writing any application code — does
+BattleGrid permit third-party clients?** Everything else in the brief is
+recoverable; that one is not. After that, `/spec` on the MVP scope, then
+`checklist-generator` (which also unblocks the `full` track).
+
+**Watch out**:
+- **BattleGrid supports OAuth Dynamic Client Registration** — `/register`,
+  PKCE S256, refresh tokens, `/revoke`, and `mcp:read`/`mcp:wager` as separable
+  scopes. So this product must **never** ask users to paste a `bg_live_` key.
+  That discovery is what made a multi-tenant product tractable at all.
+- **`mcp:read` is write-capable and that is now a config-level constraint.**
+  Eleven tools mutate on it alone, six destructive. Do not let a future change
+  treat scope as the safety boundary.
+- The revenue model is genuinely undecided and is marked as such in the brief
+  rather than invented. Fine while exploring; urgent before launch.
+- `generate_agent_grid` spends a billed LLM call on BattleGrid's side while
+  wagering nothing — a "free preview" is not free, and that shapes UI generosity.
+- `full` track is still blocked on `docs/specs/` until checklist-generator runs.
+
 ## 2026-07-27 — Grid-Commander is a BattleGrid project; MCP surface fully mapped
 
 **Did**: Two threads.
