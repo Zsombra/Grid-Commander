@@ -35,6 +35,15 @@ but it is honest debt, not covered.
 `openspec/changes/archive/*-build-mcp-client/specs/mcp-connection/spec.md`.
 Self-check during execution flagged both as gaps.
 
+## Also untested (code-evident, lower priority)
+
+- capability-tiers "wager-capable client requires explicit construction" — enforced
+  by createWagerClient requiring WagerAuthorization (client.ts), no direct test.
+- capability-tiers "observe access exposes only observe tools" — availableTools()
+  filters by tier (client.ts), no direct assertion.
+
+Both fall out of the same mock-transport fixture as the two above.
+
 ## Notes
 
 Cleanest fix: a tiny mock transport (an object with connect/callTool) injected
