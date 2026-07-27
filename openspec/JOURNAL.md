@@ -29,6 +29,45 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — The first capability is real: gate passed, deltas archived
+
+**Did**: Ran the production gate on `connect-battlegrid-account` and archived it.
+`openspec/specs/battlegrid-connection/` now exists with 10 requirements — the
+first behavior contract this project has that describes running code rather than
+an intention.
+
+The gate found two defects, both from the same mandated scan (`rg "??"` over
+touched paths), and both fixed before the decision:
+
+- **PG-001, critical.** `subject: json.sub ?? ''`. Every grant without a subject
+  collided on the empty key, so the second person to connect would be recognised
+  as the first — a stranger's workspace, a stranger's connection, a stranger's
+  audit history. The grant is now refused.
+- **PG-003, major.** `RevisionConflictError(..., expectedRevision ?? -1, ...)`.
+  The one production call site passes no revision, so every conflict a user
+  would actually see read *"expected revision -1"*. Nullable now, clause omitted
+  when unknown.
+
+Gate: **PASS**, zero open violations. 99 TypeScript tests, 124 harness tests,
+typecheck/lint/validate green.
+
+**State**: no active changes. Three MVP changes remain: `author-agents`,
+`author-strategies`, `assistant-readonly`. Five open backlog items, two of them
+filed by the gate as named deferrals rather than waived findings.
+
+**Next**: `/propose author-agents`.
+
+**Watch out**: both gate findings were invisible to a green test suite, and for
+the same reason — the tests supplied the value the production path omits. A
+suite can be fully green and never once execute the branch users hit. When a
+default has a call site that never provides the value, the default *is* the
+behaviour; test it as such. Also: `scopesFor()` still returns a constant
+(`scopes-from-connection`, P2) and must be replaced by whichever change first
+needs a scope other than `mcp:read` — it fails open, reporting authority the
+connection may not hold.
+
+---
+
 ## 2026-07-27 — Grid-Commander has application code; verification found a real gap
 
 **Did**: Built `connect-battlegrid-account` end to end on the `full` track.
