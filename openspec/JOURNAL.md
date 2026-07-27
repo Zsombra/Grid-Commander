@@ -29,6 +29,54 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — Agent authoring shipped; the product is complete and unreachable
+
+**Did**: Built, gated and archived `author-agents`. `openspec/specs/` now holds
+`agent-authoring` (10 requirements) alongside `battlegrid-connection`, whose
+scope requirement was MODIFIED to say the authority an operation is measured
+against is the one recorded on the connection. 223 TypeScript tests, up from 97
+this morning.
+
+Read the live server before designing the form — tasks 0.1–0.3 — and four of the
+nine design decisions changed as a result:
+
+- `capabilities.canDelete` is `true` on a live agent and **no delete tool exists
+  over MCP**. The flag describes what BattleGrid's own app can do. Dropped at the
+  mapper; a comment-stripped scan keeps it out of code.
+- `tradingConfig` is all-or-nothing, so editing one limit is a read-modify-write.
+  A partial send does not error — it *resets* the omitted fields.
+- Five position-management presets live, four in our own docs, written a week
+  ago.
+- The bounds registry covers sixteen limits and is silent on three constrained
+  fields. Silence is reported as `unvalidatable`, never as permission.
+
+Closed the fail-open `scopesFor()` stub first, before any agent write landed.
+
+**State**: no active changes. `openspec/specs/` has four capabilities. 8 open
+backlog items, three filed by this gate.
+
+**Next**: `/propose wire-the-app` — see the warning below. Then
+`author-strategies`, then `assistant-readonly`.
+
+**Watch out**: two things, and the second is the important one.
+
+1. The `rg "??"` fallback scan has now found the most serious defect in *both*
+   changes it has run on, and both were the same shape: a fabricated number
+   presented to a user as fact (`expectedRevision ?? -1`, then
+   `slotUsage.limit ?? 0` rendering as "you are using all 0 of your agent
+   slots"). Both were invisible to a green suite for the same reason — the tests
+   supplied the value the production path omits. Writing the lesson down after
+   change 1 did not prevent change 2. Make the guard mechanical.
+2. **Nothing renders any of this.** Two changes, 223 tests, every requirement
+   delivered, and no user can reach a line of it: there is no session, no
+   composition root, no route. Both delta specs are fully satisfied by
+   unreachable code, because neither ever says *reachable*. Filed as
+   `no-composition-root` (P1) and it should be built before the next feature,
+   not after. A requirement set that never says reachable can be completed and
+   still not be a product.
+
+---
+
 ## 2026-07-27 — The first capability is real: gate passed, deltas archived
 
 **Did**: Ran the production gate on `connect-battlegrid-account` and archived it.

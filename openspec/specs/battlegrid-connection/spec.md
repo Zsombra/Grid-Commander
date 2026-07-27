@@ -51,7 +51,9 @@ system MUST NOT maintain a separate password for a Grid-Commander account.
 
 ### Requirement: Read Scope Is Requested And Wager Scope Is Not
 Grid-Commander SHALL request only the scope required to read and configure. It
-MUST NOT request authority to commit funds.
+MUST NOT request authority to commit funds. The authority an operation is
+measured against SHALL be the authority recorded on the user's connection, never
+an assumption about what was granted.
 
 #### Scenario: Connecting
 - **WHEN** a user authorizes Grid-Commander
@@ -63,6 +65,12 @@ MUST NOT request authority to commit funds.
 - **THEN** the operation is refused before it is attempted
 - **AND** the user is told which authority would be needed and that
   Grid-Commander does not currently request it
+
+#### Scenario: The grant is narrower than what was asked for
+- **WHEN** BattleGrid returns a grant carrying less authority than was requested
+- **THEN** operations are measured against what was actually granted
+- **AND** an operation the grant does not cover is refused before it is
+  attempted, in the same way as one requiring wager authority
 
 ### Requirement: Configuration Authority Is Described Honestly
 Where Grid-Commander describes the access a user is granting, it SHALL state
