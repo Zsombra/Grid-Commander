@@ -47,13 +47,22 @@ export class CreateAgentCommand {
       // could not read, which is the thing the roster requirement forbids.
       return { kind: 'no-catalog', reason: roster.reason };
     }
+    if (roster.slots === null) {
+      // The roster read succeeded but carried no capacity block. Attempting a
+      // create here would be composing against a limit we did not learn — and
+      // inventing one to check against would be worse.
+      return {
+        kind: 'no-catalog',
+        reason: 'BattleGrid did not report how many agent slots this account has.',
+      };
+    }
     if (roster.slots.remaining <= 0) {
+      const { limit, rankName } = roster.slots;
       return {
         kind: 'at-capacity',
         explanation:
-          `You are using all ${roster.slots.limit} of your agent slots. ` +
-          `${roster.slots.rankName} allows ${roster.slots.limit}. ` +
-          `Archive an agent to free one.`,
+          `You are using all ${limit} of your agent slots. ` +
+          `${rankName} allows ${limit}. Archive an agent to free one.`,
       };
     }
 

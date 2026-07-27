@@ -229,3 +229,62 @@ strict validation green.
 - `expectedRevision ?? -1` restored → 1 failure
 
 **Next action**: verifier, then the production gate.
+
+---
+
+## Phase 3 — Production Gate
+
+### 2026-07-27 · AL-13 · AUDIT · The scan found the worst defect again
+
+**Decision**: PG-101 fixed before the gate; PG-102, PG-103, PG-104 deferred with
+owners.
+
+**PG-101 (MAJOR)** — `mapSlotUsage` defaulted `limit` and `used` to 0, so a
+roster response with no capacity block produced a coherent-looking capacity of
+zero. The copy built from it read *"You are using all 0 of your agent slots.
+your rank allows 0"* — a specific claim about the user's account that nobody
+made, and a create action refused on the strength of it. Fixed by returning null
+and treating unknown as unknown.
+
+**The fix found more than the finding did.** Making `SlotUsage` nullable made the
+type checker flag `create-agent.command.ts`, a second call site that would have
+kept using the zeroes. The finding named one; the type named two.
+
+**Pattern worth naming**: this is the second consecutive change whose most
+serious defect came from the `rg "??"` fallback scan, and the second whose defect
+was a fabricated number presented to a user as fact (PG-003 was
+`expectedRevision ?? -1`). Both were invisible to a green suite for the same
+reason: the tests supplied the value the production path omits. The lesson from
+change 1 was written down and it happened again anyway — which suggests the
+guard should be mechanical, not remembered.
+
+**Approved by**: owner (full autonomy).
+
+---
+
+### 2026-07-27 · AL-14 · AUDIT · Gate rationale, and why a MAJOR did not block
+
+**Decision**: **PASS**. Zero open violations. 11/11 requirements delivered,
+24/24 scenarios covered, 223 tests.
+
+**PG-103 is a MAJOR that does not block, and the reasoning belongs on the
+record.** Nothing renders any of this: there is no session, no composition root,
+no route. Both changes so far are fully implemented and fully unreachable.
+
+The gate measures a change against its delta spec, and `author-agents` delivers
+every requirement in its spec. What the finding indicts is the *spec* — two
+changes' worth of requirements can be satisfied completely by code no user can
+reach, because neither spec ever says *reachable*. Blocking this change would
+punish it for a gap it inherited and would not close the gap.
+
+Filed as `no-composition-root` at **P1**, to be built as `wire-the-app` ahead of
+`author-strategies`. Sequencing it before the next feature is the action the
+finding actually calls for.
+
+**Deferred with owners**: PG-102 → `confirm-agent-write-response-shape`;
+PG-104 → `brain-with-no-model`.
+
+**AL-11 discharged**: the brain-preset exemption is exactly one directory wide
+and `boundaries.test.ts::AL-1` fails if the list moves inward.
+
+**Next action**: archiver, then `wire-the-app`.

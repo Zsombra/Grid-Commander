@@ -48,6 +48,28 @@ describe('refuses_before_the_form', () => {
     expect(port.calls).toEqual([]);
   });
 
+  /**
+   * Unknown capacity is not at-capacity, and must not render as one. Before the
+   * fix, an absent `slotUsage` block became `{limit: 0, used: 0, remaining: 0}`
+   * and the copy read "You are using all 0 of your agent slots" — a specific
+   * claim about the account that nobody made.
+   */
+  it('says nothing rather than inventing a limit when the platform did not report one', async () => {
+    const port = new FakeAgentsPort([anAgent()]);
+    port.slots = null;
+    const res = await new ListAgentsQuery(port).execute(who);
+    expect(res.creation.kind).toBe('unknown');
+    expect(res.creation.kind).not.toBe('at-capacity');
+  });
+
+  it('refuses a create against a capacity it never learned', async () => {
+    const port = new FakeAgentsPort([anAgent()]);
+    port.slots = null;
+    const res = await new CreateAgentCommand(port).execute(validCreate);
+    expect(res.kind).toBe('no-catalog');
+    expect(port.calls).toEqual([]);
+  });
+
   it('permits creation when a slot remains', async () => {
     const port = new FakeAgentsPort([anAgent()]);
     const res = await new CreateAgentCommand(port).execute(validCreate);

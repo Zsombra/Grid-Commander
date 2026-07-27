@@ -37,6 +37,9 @@ function availability(roster: RosterResult): CreationAvailability {
   // A roster we could not read tells us nothing about capacity. Offering
   // creation would be a guess; refusing it would be a different guess. Say so.
   if (roster.kind === 'unreadable') return { kind: 'unknown' };
+  // Same for a roster that came back without a capacity block. Unknown is not
+  // at-capacity, and must not be rendered as one.
+  if (roster.slots === null) return { kind: 'unknown' };
   return fromSlots(roster.slots);
 }
 

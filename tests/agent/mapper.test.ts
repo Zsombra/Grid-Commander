@@ -110,15 +110,27 @@ describe('mapping slot usage', () => {
   };
 
   it('carries the rank, which is the part worth telling the user', () => {
-    expect(mapSlotUsage(raw).rankName).toBe('Recruit III');
+    expect(mapSlotUsage(raw)?.rankName).toBe('Recruit III');
   });
 
   it('takes the platform’s remaining count rather than deriving a second opinion', () => {
-    expect(mapSlotUsage({ ...raw, remaining: 0 }).remaining).toBe(0);
+    expect(mapSlotUsage({ ...raw, remaining: 0 })?.remaining).toBe(0);
   });
 
   it('derives one only when the platform did not say', () => {
-    expect(mapSlotUsage({ ...raw, remaining: undefined }).remaining).toBe(1);
+    expect(mapSlotUsage({ ...raw, remaining: undefined })?.remaining).toBe(1);
+  });
+
+  /**
+   * Found by the fallback-masking scan. Defaulting `limit` to 0 produced a
+   * coherent-looking capacity of zero, and the copy built from it read "You are
+   * using all 0 of your agent slots" — a specific claim about the user's
+   * account that nobody made. Same shape as PG-003, different field.
+   */
+  it('reports unknown rather than zero when the platform said nothing', () => {
+    expect(mapSlotUsage(undefined)).toBeNull();
+    expect(mapSlotUsage({})).toBeNull();
+    expect(mapSlotUsage({ used: 2, remaining: 1 })).toBeNull();
   });
 });
 

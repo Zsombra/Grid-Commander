@@ -26,11 +26,13 @@ export class FakeAgentsPort implements AgentsPort {
   catalogReadable = true;
   rosterReadable = true;
   journalEntries: JournalResult = { kind: 'empty' };
-  slots: SlotUsage = { limit: 3, used: 0, remaining: 3, rankName: 'Recruit III' };
+  slots: SlotUsage | null = { limit: 3, used: 0, remaining: 3, rankName: 'Recruit III' };
 
   constructor(seed: readonly Agent[] = []) {
     for (const a of seed) this.agents.set(a.id, a);
-    this.slots = { ...this.slots, used: seed.length, remaining: this.slots.limit - seed.length };
+    if (this.slots) {
+      this.slots = { ...this.slots, used: seed.length, remaining: this.slots.limit - seed.length };
+    }
   }
 
   async listAgents(): Promise<RosterResult> {

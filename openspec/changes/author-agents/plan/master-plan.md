@@ -192,15 +192,15 @@ may not hold is the wrong order (D-I).
 
 ## Phase 2 Review Checklist (Executor)
 
-- [ ] Phase 1 (scope debt) landed before any agent write
-- [ ] All 24 scenarios have passing tests
-- [ ] `npm run typecheck` PASS
-- [ ] `npm run lint` PASS
-- [ ] `npm test` PASS
-- [ ] `python3 .claude/tools/openspec.py validate author-agents --strict` clean
-- [ ] Review artifacts filled with path-level evidence
-- [ ] Deviations logged in the decision log
-- [ ] Backlog item `scopes-from-connection` closed
+- [x] Phase 1 (scope debt) landed before any agent write
+- [x] All 24 scenarios have passing tests
+- [x] `npm run typecheck` PASS
+- [x] `npm run lint` PASS
+- [x] `npm test` PASS
+- [x] `python3 .claude/tools/openspec.py validate author-agents --strict` clean
+- [x] Review artifacts filled with path-level evidence
+- [x] Deviations logged in the decision log
+- [x] Backlog item `scopes-from-connection` closed
 
 ## Phase 3 Review Checklist (Auditor — production gate)
 
@@ -235,4 +235,7 @@ may not hold is the wrong order (D-I).
 
 ---
 
-PLAN READY FOR REVIEW
+
+---
+
+EXECUTION READY FOR PRODUCTION GATE

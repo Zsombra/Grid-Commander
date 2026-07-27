@@ -81,8 +81,8 @@ export interface AgentsPort {
  * what keeps the distinction alive at every call site.
  */
 export type RosterResult =
-  | { readonly kind: 'agents'; readonly agents: readonly Agent[]; readonly slots: SlotUsage }
-  | { readonly kind: 'empty'; readonly slots: SlotUsage }
+  | { readonly kind: 'agents'; readonly agents: readonly Agent[]; readonly slots: SlotUsage | null }
+  | { readonly kind: 'empty'; readonly slots: SlotUsage | null }
   | { readonly kind: 'unreadable'; readonly reason: string };
 
 export interface JournalEntry {

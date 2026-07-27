@@ -114,17 +114,35 @@ function mapTradingConfig(raw: unknown): TradingConfig | null {
   return { fields: raw as Record<string, unknown> };
 }
 
-export function mapSlotUsage(raw: unknown): SlotUsage {
-  const s = (raw ?? {}) as Record<string, unknown>;
+/**
+ * Capacity, or null when the platform did not report it.
+ *
+ * Null rather than zeroes. Defaulting `limit` and `used` to 0 would produce a
+ * coherent-looking `SlotUsage` that says the user has no slots — and the copy
+ * built from it reads "You are using all 0 of your agent slots", a specific
+ * claim about their account that nobody made. That is the defect the production
+ * gate found in change 1 (PG-003), in a different field.
+ *
+ * Callers must treat null as *unknown*, which is not the same as at-capacity.
+ */
+export function mapSlotUsage(raw: unknown): SlotUsage | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const s = raw as Record<string, unknown>;
   const rank = (s['rank'] ?? {}) as Record<string, unknown>;
-  const limit = num(s['limit']) ?? 0;
-  const used = num(s['used']) ?? 0;
+  const limit = num(s['limit']);
+  const used = num(s['used']);
+  const remaining = num(s['remaining']);
+
+  // Without a limit there is no capacity to report. `remaining` alone cannot
+  // stand in: it says how many more, not what governs the number.
+  if (limit === undefined) return null;
+
   return {
     limit,
-    used,
-    // The server reports `remaining`; deriving it would be a second opinion on
-    // a number the platform already owns.
-    remaining: num(s['remaining']) ?? Math.max(0, limit - used),
+    used: used ?? 0,
+    // The server reports `remaining`; deriving it is a second opinion on a
+    // number the platform owns, and only worth taking when it stayed silent.
+    remaining: remaining ?? Math.max(0, limit - (used ?? 0)),
     rankName: str(rank['displayName']) ?? str(rank['name']) ?? 'your rank',
   };
 }
