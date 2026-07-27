@@ -29,6 +29,52 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-27 — Grid-Commander has application code; verification found a real gap
+
+**Did**: Built `connect-battlegrid-account` end to end on the `full` track.
+94 TypeScript tests alongside the 124 Python harness tests, all three gates
+(typecheck, lint, test) green and running in CI as separate steps.
+
+Proved DCR against the live server first (task 0.1), because the token model
+depended on facts reading could not settle. Two findings changed the design and
+are recorded in `findings-dcr.md`: every client is public regardless of the auth
+method requested, and registration-time scope is a usable hard ceiling — so the
+production client registers `mcp:read` only, making wager authority
+*unrequestable* rather than merely unrequested.
+
+**Verification earned its keep.** Checking scenario-by-scenario against the
+delta spec found that R10's second scenario — authority withdrawn at BattleGrid
+rather than through us — was **not implemented at all**. A 401 became a generic
+"failed with 401" the user could not act on, instead of "disconnected,
+reconnect". Fixed, and the fix now fails 3 tests when reverted. R2's
+"history survives disconnection" had no test either. Both closed.
+
+**State**: PR #3 open. Change is 25/26 tasks, 10 requirements / 22 scenarios all
+covered. `validate --all` clean apart from the placeholder design system.
+
+**Next**: auditor (production gate), then `/archive`. Then changes 2–4 of the
+MVP: `author-agents`, `author-strategies`, `assistant-readonly`.
+
+**Watch out**:
+- **Task 0.2 is deliberately left unchecked at 25/26.** Whether scope can be
+  stepped up without re-consenting needs a human in a browser. Ticking it would
+  have made the board lie. The tool's checkbox regex ignores `[~]` entirely, so
+  a "partial" marker silently drops the task from both numerator and
+  denominator — `[ ]` is the honest marker.
+- **`scopesFor()` in the adapter is a stub** returning `['mcp:read']` rather
+  than reading the grant's recorded scopes. Correct today because the
+  registration cannot obtain more; the next change must replace it. Filed as F-3
+  in the architecture review rather than hidden.
+- **The MCP SDK is not a dependency.** The adapter uses `fetch` against the
+  documented Streamable HTTP surface. The lint rule and boundary test remain, so
+  reintroducing it outside `src/infrastructure/battlegrid/` still fails.
+- **npm, not pnpm.** pnpm 11 refuses to run any script while a dependency's
+  build script is unapproved and no configuration cleared it. Deviation from the
+  brief, logged in the master plan.
+- A mutation that does not compile is not a surviving mutation. One guard here
+  is enforced by the type system, which is why `typecheck` is a separate CI step
+  rather than folded into the tests.
+
 ## 2026-07-27 — The full track is unblocked; first change promoted to it
 
 **Did**: Ran `checklist-generator` in CREATE mode. `docs/specs/` now exists with

@@ -3,6 +3,7 @@ import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
+import { ConnectionRevokedError } from '@/domain/errors.js';
 import type {
   BattleGridPort,
   TokenGrant,
@@ -137,7 +138,10 @@ export class McpBattleGridAdapter implements BattleGridPort {
       await this.deps.audit.complete(auditEntryId, 'succeeded');
       return { content, classification, auditEntryId };
     } catch (err) {
-      const domainError = toDomainError(err, request.tool);
+      // A revoked connection is already a domain error and must not be reshaped
+      // into something that looks retryable.
+      const domainError =
+        err instanceof ConnectionRevokedError ? err : toDomainError(err, request.tool);
       await this.deps.audit.complete(auditEntryId, 'failed', domainError.message);
       throw domainError;
     }
@@ -173,6 +177,10 @@ export class McpBattleGridAdapter implements BattleGridPort {
       },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
+    // Authority withdrawn at BattleGrid rather than through us. The next
+    // operation must fail as "disconnected, reconnect" rather than as a generic
+    // error the user cannot act on. See R10's second scenario.
+    if (res.status === 401 || res.status === 403) throw new ConnectionRevokedError();
     if (!res.ok) throw new Error(`${method} failed with ${res.status}`);
     const body = (await res.json()) as JsonRpcResponse;
     if (body.error) throw new Error(body.error.message);

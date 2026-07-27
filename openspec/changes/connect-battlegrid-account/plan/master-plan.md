@@ -2,7 +2,7 @@
 
 **Change ID**: `connect-battlegrid-account`
 **Track**: full
-**Phase**: 1 — Planning complete
+**Phase**: 3 — Executed and verified
 **Base ref**: `origin/main`
 **Last updated**: 2026-07-27
 
@@ -24,16 +24,30 @@ verification. 10 requirements, 22 scenarios.
 
 | # | Requirement | Op | Implementing file(s) | Scenario → verification |
 |---|---|---|---|---|
-| R1 | Users Connect By Authorization, Never By Credential | ADDED | `src/application/use-cases/start-connection.command.ts` (create), `complete-connection.command.ts` (create), `src/infrastructure/battlegrid/oauth-client.ts` (create), `app/api/auth/battlegrid/callback/route.ts` (create) | Connecting an account → `tests/connection/connect.test.ts::connects_by_authorization`<br>The user declines → `::declined_stores_nothing`<br>Response cannot be trusted → `::state_mismatch_refused`<br>Unreachable mid-flow → `::no_partial_connection` |
-| R2 | The Connection Is The Identity | ADDED | `src/domain/connection/connection.ts` (create), `complete-connection.command.ts` (create), `src/infrastructure/db/schema/users.ts` (create) | Returning user → `tests/connection/identity.test.ts::returning_user_same_workspace`<br>Connection removed → `::history_survives_disconnect` |
-| R3 | Read Scope Is Requested And Wager Scope Is Not | ADDED | `src/infrastructure/battlegrid/oauth-client.ts` (create), `src/infrastructure/battlegrid/mcp-adapter.ts` (create), `src/domain/connection/scope.ts` (create) | Connecting → `tests/connection/scope.test.ts::requests_read_only`<br>Wager tool reached → `::refuses_before_attempting` |
+| R1 | Users Connect By Authorization, Never By Credential | ADDED | `src/application/use-cases/connect.commands.ts`, `src/infrastructure/battlegrid/mcp-adapter.ts` | Connecting an account → `tests/connection/connect.test.ts::connects_by_authorization`<br>The user declines → `::declined_stores_nothing`<br>Response cannot be trusted → `::state_mismatch_refused`<br>Unreachable mid-flow → `::no_partial_connection` |
+| R2 | The Connection Is The Identity | ADDED | `src/domain/connection/connection.ts`, `connect.commands.ts`, `src/infrastructure/db/schema/index.ts` | Returning user → `tests/connection/connect.test.ts::returning_user_same_workspace`<br>Connection removed → `::history_survives_disconnect (tests/connection/revoke.test.ts)` |
+| R3 | Read Scope Is Requested And Wager Scope Is Not | ADDED | `src/infrastructure/battlegrid/mcp-adapter.ts`, `call-path.ts`, `src/domain/connection/scope.ts` | Connecting → `tests/connection/connect.test.ts::requests_read_only`<br>Wager tool reached → `::refuses_before_attempting (tests/capability/call-path.test.ts)` |
 | R4 | Configuration Authority Is Described Honestly | ADDED | `src/application/use-cases/describe-grant.query.ts` (create), `src/presentation/components/consent-summary.tsx` (create) | Presenting the grant → `tests/connection/consent.test.ts::names_configuration_authority` + `::never_says_read_only` |
 | R5 | Capabilities Are Discovered From The Live Connection | ADDED | `src/infrastructure/battlegrid/capability-cache.ts` (create), `src/domain/capability/classify.ts` (create) | Session start → `tests/capability/discovery.test.ts::discovers_at_session_start`<br>Platform changed → `::new_set_governs`<br>Discovery fails → `::degrades_to_readonly` |
 | R6 | Unrecognised Operations Are Treated As Dangerous | ADDED | `src/domain/capability/classify.ts` (create) | Unknown classification → `tests/capability/classify.test.ts::unknown_is_destructive` |
-| R7 | Destructive Operations Require Confirmation Naming The Consequence | ADDED | `src/domain/capability/confirmation.ts` (create), `src/infrastructure/battlegrid/mcp-adapter.ts` (create), `src/infrastructure/db/schema/confirmation-tokens.ts` (create) | Destructive requested → `tests/capability/confirmation.test.ts::requires_token_naming_consequence`<br>Confirmation withheld → `::nothing_changes` |
-| R8 | Every Modifying Operation Is Recorded | ADDED | `src/domain/audit/audit-repository.ts` (create), `src/application/use-cases/record-audit.command.ts` (create), `src/infrastructure/db/repositories/drizzle-audit-repository.ts` (create), `list-audit.query.ts` (create) | Successful change → `tests/audit/audit.test.ts::records_success`<br>Failed change → `::records_failure`<br>Stops mid-operation → `::interrupted_reads_as_attempted`<br>Reading the record → `::user_reads_own_history_newest_first` |
-| R9 | Conflicting Changes Are Surfaced, Never Silently Retried | ADDED | `src/domain/errors.ts` (create), `src/infrastructure/battlegrid/mcp-adapter.ts` (create) | State changed underneath → `tests/concurrency/conflict.test.ts::surfaces_and_does_not_retry` |
-| R10 | A User Can Revoke Access | ADDED | `src/application/use-cases/disconnect.command.ts` (create), `src/infrastructure/battlegrid/oauth-client.ts` (create) | Disconnecting → `tests/connection/revoke.test.ts::revokes_at_battlegrid`<br>Revoked at BattleGrid → `::fails_cleanly_and_offers_reconnect` |
+| R7 | Destructive Operations Require Confirmation Naming The Consequence | ADDED | `src/domain/capability/confirmation.ts`, `src/infrastructure/battlegrid/call-path.ts`, `src/infrastructure/db/schema/index.ts` | Destructive requested → `tests/capability/call-path.test.ts::requires_token_naming_consequence`<br>Confirmation withheld → `::nothing_changes` |
+| R8 | Every Modifying Operation Is Recorded | ADDED | `src/domain/audit/audit-repository.ts`, `record-audit.command.ts`, `list-audit.query.ts`, `src/infrastructure/db/schema/index.ts` | Successful change → `tests/audit/audit.test.ts::records_success`<br>Failed change → `::records_failure`<br>Stops mid-operation → `::interrupted_reads_as_attempted`<br>Reading the record → `::user_reads_own_history_newest_first` |
+| R9 | Conflicting Changes Are Surfaced, Never Silently Retried | ADDED | `src/domain/errors.ts`, `src/infrastructure/battlegrid/call-path.ts` | State changed underneath → `tests/concurrency/conflict.test.ts::surfaces_and_does_not_retry` |
+| R10 | A User Can Revoke Access | ADDED | `src/application/use-cases/connect.commands.ts`, `src/infrastructure/battlegrid/mcp-adapter.ts` | Disconnecting → `tests/connection/connect.test.ts::revokes_at_battlegrid`<br>Revoked at BattleGrid → `::fails_cleanly_and_offers_reconnect (tests/connection/revoke.test.ts)` |
+
+**Executor note — deviations from the plan, all deliberate:**
+- The three connection use cases were written as one file, `connect.commands.ts`,
+  rather than three. They share the OAuth transaction shape and splitting them
+  would have meant a shared module anyway.
+- `oauth-client.ts` and `mcp-adapter.ts` were merged. Both are the same boundary,
+  and two files would have meant two places importing the transport.
+- The guard sequence was extracted to `call-path.ts` so it is testable without
+  an HTTP client — an addition to the plan, not a departure from it.
+- The MCP SDK was dropped as a dependency; the adapter uses `fetch`. See the
+  architecture review, finding F-1.
+- **npm, not pnpm.** pnpm 11 refuses to run any script while a dependency's
+  build script is unapproved, and no configuration cleared it. The package
+  manager is a preference; a working quality gate is not.
 
 **Infrastructure files serving no single requirement** (declared, not scope creep):
 `src/composition-root.ts`, `src/infrastructure/db/client.ts`, `src/ports/clock.ts`,
@@ -55,7 +69,7 @@ From `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` Quick Reference Card:
 | `expectedRevision` always; surface conflicts, never retry | `RevisionConflictError` propagates; no retry path exists |
 | Structured logging, never a token | Logger redaction list covers `accessToken`, `refreshToken`, `authorization` |
 | Drizzle builder only, scoped by `userId` | Repositories take `userId` as a required first argument |
-| Quality gate | `pnpm typecheck && pnpm lint && pnpm test` |
+| Quality gate | `npm run typecheck && npm run lint && npm test` (npm, not pnpm — see the executor note below) |
 
 ---
 
