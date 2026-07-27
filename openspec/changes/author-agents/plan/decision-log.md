@@ -151,3 +151,81 @@ on a scope check that over-reports authority is the wrong order.
 - Write the test per scenario as each requirement lands.
 
 **Next action**: executor.
+
+---
+
+## Phase 2 — Execution
+
+### 2026-07-27 · AL-9 · Deviation · Routes were not wired, and the reason predates this change
+
+**Decision**: Ship the presentational components; add no `page.tsx`.
+
+**Impacted files**: `app/` (unchanged), master plan inventory items #19–#21.
+
+**Reason**: nothing can construct them. Every use case takes
+`{ userId, accessToken }`, and the product has no session — no request can
+answer which user or which token. `connect-battlegrid-account` has exactly the
+same gap, which is why it also shipped components and no routes.
+
+Building a session inside this change would mean designing identity persistence
+against no requirement, in a change whose delta spec is about agents.
+
+**Filed as**: backlog `no-composition-root`, **P1** — it blocks the MVP rather
+than this change, and it is now named rather than left to be discovered.
+
+**Worth recording**: both delta specs are fully satisfied by code no user can
+reach. A requirement set that never says *reachable* can be delivered completely
+and still not be a product. The next spec should say it.
+
+**Approved by**: owner (full autonomy).
+
+---
+
+### 2026-07-27 · AL-10 · Deviation · `TradingConfig` is an opaque field map
+
+**Decision**: Model the trading config as `{ fields: Record<string, unknown> }`
+rather than a twenty-five field interface.
+
+**Reason**: BattleGrid requires every field whenever the object is present
+(F-6), the set grows, and no rule in the domain reasons about any individual
+limit — the rules are "validate against the registry" and "never send a partial
+one". A typed struct would be a second schema to keep in sync with the server's,
+bought with nothing.
+
+**Accepted cost**: a typo in a field name is not a compile error. Mitigated by
+the fact that the fields come from a read of the agent, not from a literal.
+
+**Approved by**: owner.
+
+---
+
+### 2026-07-27 · AL-11 · Planned exception · One hard-coded list, at the boundary
+
+**Decision**: The ten brain presets are listed in `agent-adapter.ts`.
+
+**Reason**: constraint "no value is offered that the platform did not confirm"
+would otherwise forbid it. They are a closed enum in the create tool's schema
+and there is no endpoint that lists them — there is nothing to read at runtime.
+Kept at the adapter boundary, beside the tool names, so a schema surprise lands
+in one place.
+
+**Auditor note**: the AL-1 scan in `boundaries.test.ts` exempts
+`infrastructure/battlegrid/` and would fail if this list moved inward. Verify
+the exemption is still that narrow.
+
+**Approved by**: owner.
+
+---
+
+### 2026-07-27 · AL-12 · Executor handoff
+
+**Decision**: Execution complete. 220 tests (up from 104), typecheck, lint and
+strict validation green.
+
+**Mutation-checked**, each reverting to a named failure:
+- ownership split permitting strategy-owned fields → 4 failures
+- read-modify-write sending only the changed trading-config field → 1 failure
+- `scopesFor` restored to the constant → 4 failures
+- `expectedRevision ?? -1` restored → 1 failure
+
+**Next action**: verifier, then the production gate.

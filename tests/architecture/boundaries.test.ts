@@ -20,6 +20,18 @@ function filesUnder(dir: string, ext = '.ts'): string[] {
   return out;
 }
 
+/**
+ * Drop comments so a scan can forbid a *use* of something while permitting the
+ * explanation of why it is forbidden.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('//'))
+    .join('\n');
+}
+
 const imports = (file: string): string[] =>
   [...readFileSync(file, 'utf8').matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!);
 
@@ -77,5 +89,52 @@ describe('D-3 — no path can reach a wager-scoped operation', () => {
     const requested = /REQUESTED_SCOPES[^=]*=\s*\[([^\]]*)\]/.exec(scope)?.[1] ?? '';
     expect(requested).toContain('mcp:read');
     expect(requested).not.toContain('mcp:wager');
+  });
+});
+
+describe('AL-2 — canDelete does not exist in this product', () => {
+  /**
+   * The live agent payload sets `capabilities.canDelete: true`, and the MCP
+   * surface has no delete tool: the flag describes what BattleGrid's own app
+   * can do. Mapping it — even to assert on it — puts a delete affordance one
+   * careless `Object.entries(permissions)` away from existing.
+   *
+   * The mapper's own test asserts the field is dropped. This asserts nobody
+   * reintroduces it anywhere else.
+   */
+  it('appears in no code, only in the comments explaining why', () => {
+    // Comments recording *why* the flag is ignored are the point — deleting
+    // them is how the reasoning gets lost and the field gets mapped back in.
+    // Code that reads it is the violation.
+    const offenders = [...filesUnder('src'), ...filesUnder('src', '.tsx'), ...filesUnder('app', '.tsx')].filter(
+      (f) => stripComments(readFileSync(f, 'utf8')).includes('canDelete'),
+    );
+    expect(offenders, 'BattleGrid offers no delete over MCP — see findings-agents F-1').toEqual([]);
+  });
+});
+
+describe('AL-1 — platform vocabulary is read, not written down', () => {
+  /**
+   * The repo's own surface map listed four position-management presets one week
+   * before the live server returned five (findings-agents F-3). A literal list
+   * anywhere outside the adapter boundary would offer a stale set and reject a
+   * valid value.
+   *
+   * `agent-adapter.ts` is the single declared exception: the brain presets are a
+   * closed enum in the create tool's schema with no endpoint that lists them, so
+   * they live at the boundary where a schema surprise lands.
+   */
+  const PLATFORM_VALUES = ['WEBLEY', 'BERETTA', 'WALTHER', 'anthropic/claude'];
+
+  it('names no model id or position-management preset outside the adapter', () => {
+    const offenders: Array<[string, string]> = [];
+    for (const file of [...filesUnder('src'), ...filesUnder('src', '.tsx')]) {
+      if (file.includes('infrastructure/battlegrid')) continue;
+      const text = readFileSync(file, 'utf8');
+      for (const value of PLATFORM_VALUES) {
+        if (text.includes(value)) offenders.push([file, value]);
+      }
+    }
+    expect(offenders, 'read the catalog at runtime — the documented list was already stale').toEqual([]);
   });
 });
