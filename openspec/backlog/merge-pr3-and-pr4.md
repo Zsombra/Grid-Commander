@@ -122,3 +122,36 @@ strictly newer than PR #3's placeholder.
 
 Implementation order once merged: **DT-0001 before DT-0002.** Nothing in
 DT-0002 can be verified until the tokens actually render.
+
+## DT-0001 is implemented, and the product renders
+
+`docs/merge/dt-0001-implementation.patch` (7 files, +260/-7). Apply on the
+merged tree, then `pnpm install && pnpm build`.
+
+What it adds:
+
+- `tools/generate-theme.mjs` — reads `system.json`, writes `app/tokens.css`
+  (CSS custom properties, light plus a `prefers-color-scheme: dark` block) and
+  `tailwind.theme.json`. **Errors and exits non-zero if any colour role lacks a
+  dark counterpart**, because inheriting a light value into dark is how contrast
+  failures ship.
+- `tailwind.config.mjs` — consumes the generated theme. Uses `extend`, never a
+  replacement: the 28 existing components use stock utilities (`p-3`, `text-sm`,
+  `max-w-2xl`) and replacing the theme would break every one.
+- `app/globals.css` — the only hand-written stylesheet. Imports the generated
+  tokens, declares the focus ring once so it cannot be forgotten on the next
+  control someone adds.
+- `app/layout.tsx` — one import line, and the DL-007 comment updated: that
+  deferral has now resolved rather than being quietly contradicted.
+- `package.json` — `prebuild`/`predev` run the generator, so the theme cannot
+  drift from the design system.
+
+**Verified**: `pnpm build` green across all 16 routes; `/connect` served and
+screenshotted in both colour schemes — `docs/merge/proof/`. Token custom
+properties confirmed present in the served CSS bundle, dark override included.
+
+This is the first time this product has rendered as anything other than browser
+defaults.
+
+Closes `tailwind-classes-with-no-tailwind` (P2, on PR #3's branch) — mark it
+done when the merge lands.

@@ -29,6 +29,42 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — The product renders
+
+**Did**: Implemented **DT-0001** on the merged tree and verified it end to end.
+`tools/generate-theme.mjs` turns `system.json` into `app/tokens.css` and
+`tailwind.theme.json`; Tailwind installed and wired; `app/globals.css` written;
+`layout.tsx` imports it. `pnpm build` green across all 16 routes, and `/connect`
+served and screenshotted in **both colour schemes**. Patch and screenshots in
+`docs/merge/`. DT-0001 marked `implemented`.
+
+**State**: The product has rendered as something other than browser defaults for
+the first time. Patch is not applied to any branch — it touches `app/` and
+`package.json`, which live on PR #3.
+
+**Next**: land the merge, apply `docs/merge/dt-0001-implementation.patch`, then
+**executor** on DT-0002.
+
+**Watch out**:
+- **Tailwind `extend`, never a replacement theme.** The 28 components use stock
+  utilities — `p-3`, `text-sm`, `max-w-2xl`. Replacing the theme breaks every
+  one of them. The placeholder token scale already matched Tailwind's defaults
+  (space.4 = 16px = `p-4`, type.size.sm = 14px = `text-sm`), which is what makes
+  extending safe.
+- **The generator refuses to emit a partial dark theme.** If any colour role
+  lacks a dark counterpart it exits non-zero rather than letting the light value
+  inherit. Verified by construction — all 37 roles have one.
+- **Colours are CSS custom properties, not literals in the Tailwind theme.**
+  That makes light and dark one declaration each instead of a `dark:` variant on
+  every element, and it is why dark mode worked on the first try.
+- **`layout.tsx` carried a comment saying it deliberately holds no visual
+  design, deferring to the design agent (DL-007).** That deferral has now
+  resolved, so the comment was updated rather than left to contradict the import
+  sitting above it.
+- The screenshots are `/connect`, which is not one of the two surveyed surfaces
+  — it is static and needs no database, so it is the only route that renders
+  without Postgres. It proves the tokens ship; it does not verify DT-0002.
+
 ## 2026-07-28 — Design system settled, first two tickets written
 
 **Did**: `/design`. `openspec/design/system.json` is now `status: designed` —

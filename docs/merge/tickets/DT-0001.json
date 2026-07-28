@@ -6,7 +6,7 @@
   ],
   "type": "tokens",
   "priority": "p0",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "Make system.json render, and give every branch of this page the same shell so the seven outcomes read as one product rather than seven pages.",
@@ -86,6 +86,10 @@
     {
       "kind": "note",
       "value": "Blocks DT-0002. Nothing else can be verified until tokens render."
+    },
+    {
+      "kind": "note",
+      "value": "Implemented and verified on the merged tree. `pnpm build` green across all 16 routes; /connect served and screenshotted in both colour schemes (docs/merge/proof/). Patch: docs/merge/dt-0001-implementation.patch. Not yet applied to any branch \u2014 it touches app/ and package.json, which live on PR #3."
     }
   ],
   "created": "2026-07-28",
