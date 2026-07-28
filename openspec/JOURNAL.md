@@ -29,6 +29,56 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Strategy authoring shipped; the guard I built last change missed the thing it was for
+
+**Did**: Built, gated and archived `author-strategies` — the hardest of the four
+MVP changes. `openspec/specs/` now holds six capabilities. 351 tests, up from
+267 this morning.
+
+Read the live server first. `compile_strategy_plan` is annotated `readOnlyHint:
+true` by the server itself, so I ran a real one against a private strategy with
+zero bound agents. **Seven of nine design decisions came from what came back**:
+
+- **The plan token is a readable envelope** — `bgsp1.<claims>.<sig>`, and the
+  claims carry expiry, owner, strategy and revision. So an expired plan is
+  refused locally with a real reason rather than submitted and rejected. Used
+  only to refuse; the signature can't be verified here.
+- **`approvedPlan` is not the plan.** Apply takes a projection — two renames, one
+  unwrap, eight omissions, each an unknown-key error. Handing back what compile
+  returned fails every time.
+- **`mismatches` are advisory.** A one-word tagline edit came back with two while
+  `viable: true`. Blocking on them would refuse routine edits with no way around
+  it, and an empty array *feels* like the success condition.
+- **The server writes the confirmation copy.** `confirmationSummary` names the
+  operation, revision, axes and blast radius. Ours would be a second description
+  of one act.
+- **The vocabulary genuinely can't be guessed** — two of my first three live calls
+  were rejected for facts only the server holds.
+
+**State**: no active changes, six capabilities, 10 open backlog items. One MVP
+change remains: `assistant-readonly`.
+
+**Next**: `generate-initial-migration` (P1) whenever there's a database, then
+`/propose assistant-readonly`.
+
+**Watch out** — one thing, and it is about me rather than the code.
+
+The same defect appeared a **fourth** time: `mapStrategy` defaulted `id` to `''`
+and `revision` to `0`, both of which flow into a destructive apply. Last change I
+added `concurrency.test.ts::no identifier is coerced into existence` *precisely*
+so a fourth occurrence would fail the build. It scans form coercions and
+`<identifier> ?? <value>`. `String(s['id'] ?? '')` matches neither. **The fourth
+occurred and the build stayed green** — a human reading scan output caught it,
+which is the work the guard was supposed to replace.
+
+A guard that misses the next instance is worse than none, because it creates a
+belief the class is covered. `extend-coercion-guard-to-mappers` (P2) has the
+concrete rule: inside a mapper or adapter, an `id` or `revision` assignment must
+be preceded by a `throw`, as both mappers now are. Do that before the next
+mapper is written, not after.
+
+---
+
 ## 2026-07-27 — The product is reachable, and a defect appeared for the third time
 
 **Did**: Built, gated and archived `wire-the-app` — the P1 the previous gate
