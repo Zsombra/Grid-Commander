@@ -44,9 +44,42 @@ existing way.
 ### Task 1.3 — the guard against the unfixed tree
 
 ```
-[ expected: 5 unresolved links + 4 unbound forms, named ]
-PENDING
+ × renders no link to a route the application does not serve
++   "/agents/x/edit           (rendered by src/presentation/components/agent-actions.tsx)"
++   "/agents/x/reactivate     (rendered by src/presentation/components/agent-actions.tsx)"
++   "/strategies/x/fork       (rendered by src/presentation/components/strategy-list.tsx)"
++   "/strategies/x/archive    (rendered by src/presentation/components/strategy-list.tsx)"
++   "/strategies/x/restore    (rendered by src/presentation/components/strategy-list.tsx)"
+
+ × binds every form to a function rather than a URL
++   "agent-form.tsx:    submits to a URL — <form method=\"post\" action=\"/agents/new\">"
++   "plan-review.tsx:   has no action    — <form method=\"post\">"
++   "rebind-confirm.tsx: submits to a URL — <form method=\"post\" action={`/agents/${rebind.agentId}/rebind`}>"
+
+ × leaves no server action that nothing submits to
++   "app/(app)/agents/[id]/page.tsx: rename"
++   "app/(app)/agents/[id]/rebind/page.tsx: performRebind"
++   "app/(app)/agents/new/page.tsx: create"
+
+ Tests  3 failed | 1 passed (4)
 ```
+
+All nine defects named, across three distinct assertions. `rename` appears only
+as an orphaned action because it has no form at all; apply appears only as an
+unbound form because it has no action at all. The two halves catch different
+ends of the same break, which is why both are needed.
+
+**The guard's own first version missed two of the five.** It matched `href=` as
+a JSX attribute and not `href:` as an object property, so the two links
+`agent-actions.tsx` builds into an array were invisible to it. That is precisely
+the failure this file exists to prevent, occurring inside the file itself — and
+it was caught only because the defects were still present to compare the count
+against. Had the guard been written after the fix, it would have passed at three
+of five and nobody would have known.
+
+It also flagged two `method="get"` forms in `assistant/page.tsx` and
+`strategies/[id]/edit/page.tsx`. Those are correct as they stand: a GET form
+navigates, reaching no operation by design. The rule now skips them.
 
 ### Task 4.2 — three re-injections after the fix
 
