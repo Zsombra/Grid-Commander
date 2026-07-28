@@ -29,6 +29,55 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — The MVP is complete, and a "redundant" guard turned out to be a live defect
+
+**Did**: Two changes. First `extend-coercion-guard` — the P2 the last journal
+entry said to do *before* the next mapper, done before the next mapper. Then
+`assistant-readonly`, the last of the four MVP changes. **Seven capabilities in
+`openspec/specs/`, 390 tests.**
+
+The MVP exit criteria in the idea brief are met: a user can connect without
+handling a credential, fork a system strategy, change it through the review
+pipeline while seeing which agents the change will reach, bind an agent to it,
+and read back a complete record of every write made on their behalf.
+
+**The assistant's read-only guarantee is structural.** A model told not to write
+will not write until something in its context suggests otherwise — a user asking
+firmly, or text it just read out of a strategy field a user typed into. So it is
+never handed a mutating tool: the set is filtered through the same `classifyTool`
+the guard sequence uses. The port receives a question, a toolset and a
+`callTool`, and nothing else — no adapter, no token, no `fetch`.
+
+**Watch out** — one thing, and it is the most useful thing I have learned in this
+project.
+
+Mutation testing removed a `ConnectionRevokedError` re-throw from the assistant's
+call path and **nothing failed**. The obvious reading is "redundant defensive
+code" — precisely what a production gate exists to strip, and deleting it would
+have been the confident move.
+
+I wrote a test to prove the mutation mattered. **It failed against the unmutated
+code.** The re-throw only reaches the use case if the assistant lets it
+propagate, and a model harness that catches its own tool errors and carries on is
+entirely ordinary — in which case the answer completed, grounded, about an
+account the product had just lost access to. The guard was not redundant. It
+simply was not what carried the requirement.
+
+That is the second time in this project a surviving mutation was a missing test
+rather than dead code, and the second time following it found something real.
+**When a mutation survives, write the test that proves it mattered before
+concluding the code is dead.** The test is cheap and it is the only way to tell
+the two cases apart.
+
+**State**: no active changes, seven capabilities, 11 open backlog items.
+
+**Next**: `generate-initial-migration` (P1) the moment there is a database — four
+repositories have still never executed a statement. Then
+`wire-an-assistant-model` (P2): the assistant is complete and has no model behind
+it, and every guarantee it makes is independent of which one.
+
+---
+
 ## 2026-07-28 — Strategy authoring shipped; the guard I built last change missed the thing it was for
 
 **Did**: Built, gated and archived `author-strategies` — the hardest of the four
