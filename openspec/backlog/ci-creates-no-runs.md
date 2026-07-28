@@ -131,3 +131,35 @@ which was watched failing with the fallback disabled.
 
 That is the third time on this branch that writing the guard was not the same
 as knowing it worked.
+
+## Resolved diagnosis (2026-07-28, after the repository went public)
+
+Going public changed the symptom and isolated the cause.
+
+**Runs are now created.** That confirms the earlier state — zero runs between
+07:54Z and going public — was the private-repository minutes quota.
+
+**But every job fails in 2-9 seconds and uploads no logs.** Runs 38, 39 and 40,
+six jobs each, all conclusions `failure`. The job-logs API returns 404 and the
+check-run `output` is empty, so nothing can be read remotely.
+
+**The decisive test.** Run 40 added a `probe` job with no actions, no checkout,
+and a single `run: echo` step. **It failed too.** A job that cannot execute
+`echo` is not failing because of anything in this repository — no workflow
+change can fix it. The probe has been removed now that it has answered.
+
+Taken with the owner's report of an unpaid bill, the consistent reading is an
+**account-level payment block**: run scheduling is restored by public
+visibility, but job execution is refused account-wide regardless of repository
+visibility. Public repositories get free minutes; they do not bypass a
+delinquent account.
+
+**Consequence: GitHub Actions is not available for this project until the
+account is settled, and no change to this repository will alter that.**
+`scripts/check.sh` is not a stopgap, it is the verification story — 59 tests and
+`validate --all` green on Python 3.10, 3.11, 3.12 and 3.13 from a clean
+checkout.
+
+Remaining options are unchanged and all need account or admin access: settle the
+account, or register a self-hosted runner (job execution on your own machine is
+not billed, so it is unaffected by the block).
