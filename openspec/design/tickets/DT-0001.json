@@ -1,0 +1,98 @@
+{
+  "id": "DT-0001",
+  "surface": "strategy-editor",
+  "targets": [
+    "edit-strategy-page"
+  ],
+  "type": "tokens",
+  "priority": "p0",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "Make system.json render, and give every branch of this page the same shell so the seven outcomes read as one product rather than seven pages.",
+  "rationale": "28 components are written in Tailwind utility classes and Tailwind is not installed \u2014 no dependency, no config, no stylesheet. The product renders in browser defaults today, which is why a workbench whose value proposition is legibility cannot currently be judged.\n\nThe decision this ticket makes, because it was explicitly deferred to the design agent: **keep Tailwind, and generate its theme from system.json.** The backlog item was right that installing it blindly would pre-commit the design agent to a vocabulary it did not choose \u2014 but the vocabulary is already written into every component, rejecting it means rewriting 28 files for no visual gain, and generating the theme keeps system.json authoritative rather than becoming a second source of truth beside tailwind.config. If the generated theme and system.json can drift, this ticket is not done.\n\nThe three semantic roles added to the system are the ones this product cannot be honest without: `quiet` (nothing has happened yet), `notice` (advisory, not failure), `consequence` (this reaches live agents).",
+  "design": {
+    "layout": "Each branch is a full-page <main>: max-width 720px, centred, space.5 page padding, space.5 between blocks. Page heading at type.size.xl / type.weight.medium. Identical shell in every state \u2014 only the contents differ.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "surface_base": "color.bg.base",
+      "surface_raised": "color.bg.raised",
+      "text_default": "color.text.primary",
+      "focus_ring": "color.focus"
+    },
+    "states": {
+      "compose": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. The form is the only block. Blast-radius line sits above the field at type.size.base, color.text.primary when agents are bound and color.text.secondary when none are.",
+        "background": "color.bg.base"
+      },
+      "review-applicable": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Hands off to DT-0002 for everything inside the review panel.",
+        "background": "color.bg.base"
+      },
+      "review-apply-refused": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Same as review-applicable; the refusal treatment is DT-0002's.",
+        "background": "color.bg.base"
+      },
+      "compile-rejected": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Reason paragraph in a notice block, then 'Nothing was changed.' at type.size.base in color.text.primary \u2014 the reassurance is not a caption and must not be demoted to secondary text.",
+        "background": "color.notice.subtle",
+        "border": "color.notice.border"
+      },
+      "vocabulary-unavailable": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Full-page refusal in a notice block. No form is rendered beneath it and no dismiss control is offered.",
+        "background": "color.notice.subtle",
+        "border": "color.notice.border"
+      },
+      "strategy-not-found": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Heading plus a single link back to /strategies, styled as button/secondary so the way out is a target rather than a sentence.",
+        "background": "color.bg.base"
+      },
+      "not-connected": {
+        "content": "Standard page shell: 720px centred, space.5 padding, heading at type.size.xl. Rendered by the shared not-connected component; this ticket only guarantees it inherits the same shell, so being turned away does not look like a different application.",
+        "background": "color.bg.base"
+      }
+    },
+    "responsive": {
+      "mobile": "breakpoint.mobile is the base; styles are mobile-first with no min-width query needed at the smallest size",
+      "desktop": "breakpoint.tablet and breakpoint.desktop are available as named queries"
+    },
+    "motion": {
+      "reduced": "A prefers-reduced-motion block sets all motion.duration values to instant. Motion is decoration and must never gate feedback."
+    },
+    "color_scheme": {
+      "dark": "tokens.color.dark applies under prefers-color-scheme: dark. Every role in the light set has a dark counterpart; none may be left to inherit."
+    },
+    "content": {}
+  },
+  "acceptance": [
+    "A page served by the app renders with color.bg.base as its background and color.text.primary as its body colour \u2014 verifiable by loading any route and reading the computed style",
+    "Every top-level token group in system.json (color, space, radius, type, shadow, motion, breakpoint) is reachable from component markup; a token added to system.json and not reflected in the generated theme is a failure of this ticket",
+    "tailwind.config (or equivalent) is generated from system.json rather than hand-authored \u2014 editing a hex value in the config by hand must not be possible without it being overwritten on the next generation",
+    "The existing utility class names already present in the 28 components resolve; no component file is edited by this ticket",
+    "Under prefers-color-scheme: dark, body text and background come from tokens.color.dark, and no element falls back to a light-theme value",
+    "Under prefers-reduced-motion: reduce, every transition duration resolves to motion.duration.instant",
+    "Body text on color.bg.base meets 4.5:1; large text meets 3:1 \u2014 measured, not assumed",
+    "color.notice.default, color.consequence.default and color.quiet.default are each distinguishable from color.danger.default without relying on hue alone (verify in greyscale)",
+    "All seven branches render the same page shell \u2014 720px max width, centred, space.5 padding \u2014 verifiable by screenshotting each and comparing the content box",
+    "In compile-rejected, 'Nothing was changed.' is set at type.size.base in color.text.primary, not as a secondary caption",
+    "vocabulary-unavailable renders no form element and no dismiss control",
+    "strategy-not-found's back link is at least 44px tall on mobile"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Supersedes the deferral in backlog item tailwind-classes-with-no-tailwind \u2014 that item asked for /surface then /design first, which has now happened."
+    },
+    {
+      "kind": "note",
+      "value": "Blocks DT-0002. Nothing else can be verified until tokens render."
+    },
+    {
+      "kind": "note",
+      "value": "Implemented and verified on the merged tree. `pnpm build` green across all 16 routes; /connect served and screenshotted in both colour schemes (docs/merge/proof/). Patch: docs/merge/dt-0001-implementation.patch. Not yet applied to any branch \u2014 it touches app/ and package.json, which live on PR #3."
+    }
+  ],
+  "created": "2026-07-28",
+  "updated": "2026-07-28",
+  "github_issue": null
+}

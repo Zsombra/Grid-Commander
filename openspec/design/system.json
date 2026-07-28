@@ -1,41 +1,127 @@
 {
   "version": 1,
-  "status": "placeholder",
-  "placeholder_groups": ["color", "type", "shadow", "motion", "space", "radius"],
-  "note": "Deliberately boring, accessible defaults so the UI renders on day one. The design agent replaces these and sets status to 'designed'. Validation warns until it does.",
-
+  "status": "designed",
+  "placeholder_groups": [],
+  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance.",
   "tokens": {
     "color": {
-      "bg": { "base": "#ffffff", "sunken": "#f6f7f9", "raised": "#ffffff" },
+      "bg": {
+        "base": "#ffffff",
+        "sunken": "#f6f7f9",
+        "raised": "#ffffff"
+      },
       "text": {
         "primary": "#16191d",
         "secondary": "#5b6472",
         "disabled": "#9aa3b0",
         "inverse": "#ffffff"
       },
-      "border": { "subtle": "#e3e6ea", "default": "#c8cdd4", "strong": "#9aa3b0" },
-      "accent": { "default": "#2563eb", "hover": "#1d4ed8", "text": "#ffffff", "subtle": "#eff4ff" },
-      "danger": { "default": "#c2321f", "hover": "#a12817", "text": "#ffffff", "subtle": "#fdeeeb" },
-      "success": { "default": "#116b3f", "text": "#ffffff", "subtle": "#e9f6ef" },
-      "warning": { "default": "#8a5a00", "text": "#ffffff", "subtle": "#fdf3e0" },
+      "border": {
+        "subtle": "#e3e6ea",
+        "default": "#c8cdd4",
+        "strong": "#9aa3b0"
+      },
+      "accent": {
+        "default": "#2563eb",
+        "hover": "#1d4ed8",
+        "text": "#ffffff",
+        "subtle": "#eff4ff"
+      },
+      "danger": {
+        "default": "#c2321f",
+        "hover": "#a12817",
+        "text": "#ffffff",
+        "subtle": "#fdeeeb"
+      },
+      "success": {
+        "default": "#116b3f",
+        "text": "#ffffff",
+        "subtle": "#e9f6ef"
+      },
+      "warning": {
+        "default": "#8a5a00",
+        "text": "#ffffff",
+        "subtle": "#fdf3e0"
+      },
       "focus": "#2563eb",
       "dark": {
-        "bg": { "base": "#101317", "sunken": "#0b0d10", "raised": "#181c22" },
+        "bg": {
+          "base": "#101317",
+          "sunken": "#0b0d10",
+          "raised": "#181c22"
+        },
         "text": {
           "primary": "#f2f4f7",
           "secondary": "#a3adbb",
           "disabled": "#68717f",
           "inverse": "#101317"
         },
-        "border": { "subtle": "#262b33", "default": "#39404a", "strong": "#5b6472" },
-        "accent": { "default": "#6a9bff", "hover": "#8ab0ff", "text": "#101317", "subtle": "#16233d" },
-        "danger": { "default": "#ff8a75", "hover": "#ffa694", "text": "#101317", "subtle": "#331a15" },
-        "success": { "default": "#5fce97", "text": "#101317", "subtle": "#12291f" },
-        "warning": { "default": "#e0aa4e", "text": "#101317", "subtle": "#2e2412" },
-        "focus": "#6a9bff"
+        "border": {
+          "subtle": "#262b33",
+          "default": "#39404a",
+          "strong": "#5b6472"
+        },
+        "accent": {
+          "default": "#6a9bff",
+          "hover": "#8ab0ff",
+          "text": "#101317",
+          "subtle": "#16233d"
+        },
+        "danger": {
+          "default": "#ff8a75",
+          "hover": "#ffa694",
+          "text": "#101317",
+          "subtle": "#331a15"
+        },
+        "success": {
+          "default": "#5fce97",
+          "text": "#101317",
+          "subtle": "#12291f"
+        },
+        "warning": {
+          "default": "#e0aa4e",
+          "text": "#101317",
+          "subtle": "#2e2412"
+        },
+        "focus": "#6a9bff",
+        "notice": {
+          "default": "#9fb4c9",
+          "text": "#101317",
+          "subtle": "#1a222b",
+          "border": "#38455473"
+        },
+        "consequence": {
+          "default": "#e0aa4e",
+          "text": "#101317",
+          "subtle": "#2e2412",
+          "border": "#5c4a22"
+        },
+        "quiet": {
+          "default": "#a3adbb",
+          "text": "#101317",
+          "subtle": "#161a1f",
+          "border": "#262b33"
+        }
+      },
+      "notice": {
+        "default": "#3a4a5c",
+        "text": "#ffffff",
+        "subtle": "#eef2f6",
+        "border": "#c3cedb"
+      },
+      "consequence": {
+        "default": "#7a4a00",
+        "text": "#ffffff",
+        "subtle": "#fff4e0",
+        "border": "#e0b978"
+      },
+      "quiet": {
+        "default": "#5b6472",
+        "text": "#ffffff",
+        "subtle": "#f6f7f9",
+        "border": "#e3e6ea"
       }
     },
-
     "space": {
       "0": "0",
       "1": "4px",
@@ -47,9 +133,13 @@
       "7": "48px",
       "8": "64px"
     },
-
-    "radius": { "0": "0", "1": "4px", "2": "8px", "3": "12px", "full": "9999px" },
-
+    "radius": {
+      "0": "0",
+      "1": "4px",
+      "2": "8px",
+      "3": "12px",
+      "full": "9999px"
+    },
     "type": {
       "family": {
         "sans": "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
@@ -64,57 +154,130 @@
         "2xl": "28px",
         "3xl": "36px"
       },
-      "weight": { "regular": "400", "medium": "500", "semibold": "600", "bold": "700" },
-      "leading": { "tight": "1.2", "normal": "1.5", "loose": "1.7" }
+      "weight": {
+        "regular": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
+      },
+      "leading": {
+        "tight": "1.2",
+        "normal": "1.5",
+        "loose": "1.7"
+      }
     },
-
     "shadow": {
       "0": "none",
       "1": "0 1px 2px rgba(16, 19, 23, 0.06)",
       "2": "0 2px 8px rgba(16, 19, 23, 0.08)",
       "3": "0 8px 24px rgba(16, 19, 23, 0.12)"
     },
-
     "motion": {
-      "duration": { "instant": "80ms", "fast": "140ms", "normal": "220ms", "slow": "360ms" },
+      "duration": {
+        "instant": "80ms",
+        "fast": "140ms",
+        "normal": "220ms",
+        "slow": "360ms"
+      },
       "easing": {
         "standard": "cubic-bezier(0.2, 0, 0, 1)",
         "enter": "cubic-bezier(0, 0, 0, 1)",
         "exit": "cubic-bezier(0.4, 0, 1, 1)"
       }
     },
-
-    "breakpoint": { "mobile": "0", "tablet": "768px", "desktop": "1024px", "wide": "1440px" }
+    "breakpoint": {
+      "mobile": "0",
+      "tablet": "768px",
+      "desktop": "1024px",
+      "wide": "1440px"
+    }
   },
-
   "primitives": [
     {
       "id": "button",
-      "variants": ["primary", "secondary", "ghost", "danger"],
-      "states": ["default", "hover", "active", "focused", "disabled", "loading"]
+      "variants": [
+        "primary",
+        "secondary",
+        "ghost",
+        "danger"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "active",
+        "focused",
+        "disabled",
+        "loading"
+      ]
     },
     {
       "id": "input",
-      "variants": ["text", "select", "textarea"],
-      "states": ["default", "focused", "filled", "error", "disabled", "readonly"]
+      "variants": [
+        "text",
+        "select",
+        "textarea"
+      ],
+      "states": [
+        "default",
+        "focused",
+        "filled",
+        "error",
+        "disabled",
+        "readonly"
+      ]
     },
     {
       "id": "surface",
-      "variants": ["flat", "raised", "sunken", "overlay"],
-      "states": ["default", "interactive", "selected"]
+      "variants": [
+        "flat",
+        "raised",
+        "sunken",
+        "overlay"
+      ],
+      "states": [
+        "default",
+        "interactive",
+        "selected"
+      ]
     },
     {
       "id": "feedback",
-      "variants": ["inline", "banner", "toast"],
-      "states": ["info", "success", "warning", "danger"]
+      "variants": [
+        "inline",
+        "banner",
+        "toast"
+      ],
+      "states": [
+        "info",
+        "success",
+        "warning",
+        "danger"
+      ]
+    },
+    {
+      "id": "consequence-callout",
+      "variants": [
+        "quiet",
+        "notice",
+        "consequence",
+        "danger"
+      ],
+      "states": [
+        "default",
+        "unknown"
+      ]
     }
   ],
-
   "principles": [
-    "Never signal state by color alone — pair it with shape, icon, or text.",
+    "Never signal state by color alone \u2014 pair it with shape, icon, or text.",
     "Every interactive element has a visible focus state at 2px offset.",
     "Text on its background meets WCAG AA (4.5:1 body, 3:1 large).",
     "Tap targets are at least 44x44px on touch viewports.",
-    "Motion is decoration: respect prefers-reduced-motion, never gate feedback on it."
+    "Motion is decoration: respect prefers-reduced-motion, never gate feedback on it.",
+    "Consequence outranks everything on a screen. When an action reaches live agents, the count of what it reaches is the heaviest element present \u2014 never a clause inside a sentence.",
+    "Advisory is not failure. `notice` never borrows danger's colour, icon, or weight; a user who learns to fear advisories learns to abandon valid work.",
+    "Absence of effect is stated, not implied. 'Nothing has changed yet' gets the same visual commitment as a warning would \u2014 silence reads as a broken page, not as safety.",
+    "Unknown is not zero. Where the platform declined to tell us a number, that renders differently from the number nought.",
+    "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at."
   ]
 }

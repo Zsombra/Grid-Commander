@@ -1,0 +1,263 @@
+{
+  "id": "strategy-editor",
+  "title": "Edit a strategy \u2014 compose, compile, review, apply",
+  "route": "/strategies/[id]/edit",
+  "capability": "strategy-authoring",
+  "status": "functional",
+  "generated_at_commit": "52ea2b5",
+  "source_files": [
+    "app/(app)/strategies/[id]/edit/page.tsx",
+    "src/presentation/components/plan-review.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "vocabulary",
+      "shape": "{ composable: boolean }",
+      "source": "app.readVocabulary.execute() \u2192 BattleGrid MCP"
+    },
+    {
+      "name": "strategy",
+      "shape": "Strategy \u2014 { id, name, tagline, revision, boundAgentCount }",
+      "source": "app.listStrategies.execute(), found by route id"
+    },
+    {
+      "name": "compiled",
+      "shape": "{ kind: 'review' | 'rejected', review?: PlanReview, reason?: string }",
+      "source": "app.compilePlan.execute() \u2014 effect-free by platform design"
+    },
+    {
+      "name": "proposal",
+      "shape": "{ kind: 'proposal' | 'refused', proposal?: { confirmationToken, consequence }, reason?: string }",
+      "source": "app.describeApply.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "edit-strategy-page",
+      "role": "container",
+      "purpose": "Compose a change to a strategy, ask BattleGrid what it would do, and decide from the answer.",
+      "states": [
+        "not-connected",
+        "vocabulary-unavailable",
+        "strategy-not-found",
+        "compose",
+        "compile-rejected",
+        "review-applicable",
+        "review-apply-refused"
+      ],
+      "data": [
+        "vocabulary",
+        "strategy",
+        "compiled",
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "compile",
+          "effect": "GET ?tagline=\u2026 \u2014 compiles and replaces the compose form with the review. Writes nothing."
+        },
+        {
+          "id": "apply",
+          "effect": "Server action: applies the reviewed plan, reconfigures bound agents, redirects to /strategies"
+        }
+      ],
+      "current_implementation": "Server component with five mutually exclusive render branches, each a full-page <main>. The compose branch is a method=get form with a single tagline input \u2014 only the tagline is editable today (backlog `strategy-section-editor`). Blast radius is stated above the field. Tailwind class names present throughout but Tailwind is not installed, so every branch renders as unstyled HTML.",
+      "constraints": [
+        "The compile control must keep saying what it does and does not do \u2014 'Compile \u2014 see what this would do, without doing it'. Compiling is effect-free by platform design precisely so a human can look first; a label that reads like a save button gives that back",
+        "The bound-agent count must appear above the field on the compose branch, before the user edits \u2014 not only on the review",
+        "Compiling is a GET and must stay one: shareable, re-runnable by URL, and never a POST that implies commitment",
+        "vocabulary-unavailable must remain a full-page refusal, not a dismissible banner over a usable form \u2014 composing without the vocabulary means guessing at values the platform will reject",
+        "compile-rejected must keep the sentence 'Nothing was changed.' \u2014 after a failure the user's first question is whether it was partial. BattleGrid's reason is shown verbatim and usually names what to fix",
+        "review-apply-refused still renders the full review; the refusal reason usually names what to change, and hiding the review would strand the user"
+      ],
+      "children": [
+        "plan-review-panel",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "plan-review-panel",
+      "role": "container",
+      "purpose": "Show exactly what applying would do, and let the user apply from inside that review rather than beside it.",
+      "states": [
+        "viable-and-applicable",
+        "viable-but-apply-refused",
+        "not-viable",
+        "no-changes",
+        "with-concerns",
+        "without-concerns",
+        "with-summary",
+        "without-summary",
+        "concerns-panel:visible",
+        "concerns-panel:hidden",
+        "concerns-panel:single-concern",
+        "concerns-panel:multiple-concerns",
+        "apply-confirmation:available",
+        "apply-confirmation:blocked-with-reason",
+        "apply-confirmation:not-viable"
+      ],
+      "data": [
+        "review.viable",
+        "review.concerns",
+        "review.changedAxes",
+        "review.boundAgentCount",
+        "review.proposedRevision",
+        "review.summary",
+        "confirmation.consequence"
+      ],
+      "actions": [
+        {
+          "id": "apply",
+          "effect": "POSTs the reviewed plan and its confirmation token. Reconfigures every bound agent immediately, then redirects to /strategies."
+        },
+        {
+          "id": "goBack",
+          "effect": "Returns to the compose form to change the intent"
+        },
+        {
+          "id": "submit",
+          "effect": "Applies the reviewed plan; reconfigures bound agents immediately; redirects to /strategies"
+        },
+        {
+          "id": "goBack",
+          "effect": "Link back to the compose form"
+        }
+      ],
+      "current_implementation": "Unstyled section, `space-y-6`. Opens with the heading 'Nothing has changed yet'. Tailwind class names present but Tailwind is not installed. | concerns-panel: Bordered block, heading counts the concerns with correct pluralisation, followed by an explicit disclaimer and a disc list. | apply-confirmation: form with three hidden inputs (strategyId, confirmationToken, plan-as-JSON) and a submit button beside a plain 'Go back and change it' link.",
+      "constraints": [
+        "There must be no control on this surface that applies without a review having been rendered first. Applying is an act performed *from* a review, never a button beside a compile button \u2014 two similar controls side by side make the mistake one click wide with a fleet-sized consequence (design S-G)",
+        "'Nothing has changed yet' must remain the first thing read. It is the sentence that makes an effect-free compile legible as effect-free",
+        "The apply button's label carries the consequence ('reconfigures N agents now') and must not be shortened to a bare verb",
+        "Concerns are advisory and must never be presented as blockers \u2014 they describe the strategy's existing configuration, the user cannot fix them from here, and treating them as blockers would refuse ordinary edits with no way around it",
+        "The BattleGrid-authored `consequence` string is stored with the token so the audit can prove what was shown; it must be displayed verbatim and must not be paraphrased, truncated, or collapsed behind a disclosure",
+        "The review must still render when apply is refused \u2014 the reason usually names what to change",
+        "[concerns-panel] The disclaimer sentence ('These do not prevent the change. They describe how the strategy is set up.') must not be dropped or demoted \u2014 without it the panel reads as a blocker",
+        "[concerns-panel] Must not adopt error styling. A one-word tagline edit can return two concerns while viable is true; styling them as failures would train users to abandon valid edits",
+        "[concerns-panel] Count in the heading must stay, so the user knows the list is complete",
+        "[apply-confirmation] The hidden `plan` field carries the reviewed plan rather than recompiling \u2014 'what is applied is what was reviewed' is a requirement, not an aspiration. A design must not move, defer, or re-derive this value",
+        "[apply-confirmation] The blocked and not-viable states are role=alert paragraphs that replace the button entirely; there must be no disabled-looking apply control that suggests retrying will help",
+        "[apply-confirmation] 'Go back and change it' must remain a visible peer of Apply, not a hidden or tertiary escape \u2014 it is the expected outcome of a review that surprised the user"
+      ],
+      "children": [
+        "blast-radius",
+        "changed-axes"
+      ]
+    },
+    {
+      "id": "blast-radius",
+      "role": "feedback",
+      "purpose": "State how many agents this change reaches, as its own claim rather than a clause in a sentence.",
+      "states": [
+        "reaches-agents",
+        "reaches-none",
+        "unknown"
+      ],
+      "data": [
+        "review.boundAgentCount"
+      ],
+      "actions": [],
+      "current_implementation": "Own block, role=alert when the count is non-zero or unknown. Singular and plural phrasings differ.",
+      "constraints": [
+        "Must stay its own block. Five bound agents is a different act from zero and must not have to be read for \u2014 folding it into a sentence is the specific failure this component exists to prevent",
+        "`null` (BattleGrid did not report) must remain visibly distinct from `0` (nothing is bound). Rendering the unknown case as zero would understate the risk",
+        "The note that open positions are reported for awareness and do not block must stay with the count"
+      ],
+      "children": []
+    },
+    {
+      "id": "changed-axes",
+      "role": "display",
+      "purpose": "List what would actually differ, and say plainly when nothing would.",
+      "states": [
+        "has-changes",
+        "no-changes",
+        "with-proposed-revision",
+        "without-proposed-revision"
+      ],
+      "data": [
+        "review.changedAxes",
+        "review.proposedRevision"
+      ],
+      "actions": [],
+      "current_implementation": "Heading plus a disc list; a single sentence when the list is empty.",
+      "constraints": [
+        "The empty case must keep its own sentence ('Nothing \u2014 this plan leaves the strategy as it is') rather than rendering an empty list; a compile that changes nothing is a real and useful outcome",
+        "The proposed revision number is what the user will see on the roster afterwards and must stay legible next to the changes"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request that has no authority, and say how to fix it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body.",
+      "constraints": [
+        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Change a tagline and apply it",
+      "steps": [
+        "open editor, read blast radius above the field",
+        "edit tagline",
+        "Compile \u2014 writes nothing",
+        "read 'Nothing has changed yet', blast radius, changed axes, concerns",
+        "read BattleGrid's consequence sentence",
+        "Apply \u2014 reconfigures bound agents immediately",
+        "redirect to /strategies"
+      ]
+    },
+    {
+      "name": "Compile, then think better of it",
+      "steps": [
+        "compile",
+        "read review",
+        "Go back and change it",
+        "compose form again"
+      ]
+    },
+    {
+      "name": "Compile something the platform refuses",
+      "steps": [
+        "compile",
+        "compile-rejected page",
+        "'Nothing was changed.'"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "page heading",
+      "tagline input",
+      "compile button",
+      "(after compile) review heading",
+      "apply button",
+      "go back link"
+    ],
+    "notes": "Review section is labelled by `review-heading`. Blast radius, the consequence sentence, and both refusal states are role=alert; the plan summary is role=status. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
+  }
+}

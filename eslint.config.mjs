@@ -75,11 +75,29 @@ export default tseslint.config(
     },
   },
 
+
   {
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
       'no-console': 'error',
+    },
+  },
+
+  /**
+   * Build tooling and root config files are Node programs, not application
+   * code. `console` is its
+   * only output channel and `process.exit` is how it fails a build, so the two
+   * rules that exist to keep those out of the app would only be silenced with
+   * inline disables here — which hides them from the app as well.
+   */
+  {
+    files: ['tools/**/*.mjs', '*.config.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+    rules: {
+      'no-console': 'off',
     },
   },
 );

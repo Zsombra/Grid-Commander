@@ -2,6 +2,7 @@ name: Spec Layer
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -9,13 +10,34 @@ permissions:
   contents: read
 
 jobs:
+  # Runs the same entry point contributors run, across the interpreter range
+  # the tool claims to support. The jobs below restate their commands inline;
+  # this one calls scripts/check.sh, so the script cannot rot while looking
+  # maintained — a script nothing exercises is not a fallback.
+  matrix:
+    name: checks (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Run every gate
+        run: ./scripts/check.sh
+
   tests:
     name: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -65,7 +87,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -136,9 +158,9 @@ jobs:
     name: validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 

@@ -154,7 +154,7 @@ class Project:
         return self.write(f"openspec/specs/{capability}/spec.md", text)
 
     def change(self, name: str = "a-change", track: str = "standard",
-               skip_specs: bool = False, tasks: str = "- [ ] 1.1 do the thing") -> Path:
+               skip_specs: bool = False, tasks: str = "- [x] 1.1 do the thing") -> Path:
         self.write(f"openspec/changes/{name}/.openspec.yaml",
                    f"track: {track}\ncreated: 2026-07-27\n"
                    f"skip_specs: {'true' if skip_specs else 'false'}\n")

@@ -517,6 +517,117 @@ def _(p, t):
 # The tests
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# Codes added by the openspec.py review (PR #4)
+# --------------------------------------------------------------------------
+
+@case("requirement_multiple_operations")
+def _(p, t):
+    p.main_spec()
+    p.change()
+    p.delta("a-change", "widgets", dedent("""
+        ## REMOVED Requirements
+
+        ### Requirement: Alpha
+
+        **Reason**: superseded.
+
+        ## MODIFIED Requirements
+
+        ### Requirement: Alpha
+        The system SHALL alpha with more care.
+
+        #### Scenario: carefully
+        - **WHEN** asked
+        - **THEN** it does
+    """))
+
+
+@case("duplicate_requirement_in_delta")
+def _(p, t):
+    p.main_spec()
+    p.change()
+    p.delta("a-change", "widgets", dedent("""
+        ## ADDED Requirements
+
+        ### Requirement: Twice
+        The system SHALL twice.
+
+        #### Scenario: a
+        - **WHEN** asked
+        - **THEN** it does
+
+        ### Requirement: Twice
+        The system SHALL twice again.
+
+        #### Scenario: b
+        - **WHEN** asked
+        - **THEN** it does
+    """))
+
+
+@case("duplicate_requirement_in_spec")
+def _(p, t):
+    p.main_spec("widgets", dedent("""
+        # Widgets Specification
+
+        ## Purpose
+
+        Widgets, described well enough to be a capability.
+
+        ## Requirements
+
+        ### Requirement: Same
+        The system SHALL same.
+
+        #### Scenario: a
+        - **WHEN** asked
+        - **THEN** it does
+
+        ### Requirement: Same
+        The system SHALL same differently.
+
+        #### Scenario: b
+        - **WHEN** asked
+        - **THEN** it does
+    """))
+    p.change()
+    p.delta("a-change", "widgets", added_delta())
+
+
+@case("invalid_track")
+def _(p, t):
+    p.change(track="ful")
+    p.delta("a-change", "widgets", added_delta())
+
+
+@case("track_not_declared", "warning")
+def _(p, t):
+    p.change()
+    p.write("openspec/changes/a-change/.openspec.yaml", "created: 2026-07-27\n")
+    p.delta("a-change", "widgets", added_delta())
+
+
+@case("change_meta_missing", "warning")
+def _(p, t):
+    p.change()
+    (p.root / "openspec" / "changes" / "a-change" / ".openspec.yaml").unlink()
+    p.delta("a-change", "widgets", added_delta())
+
+
+@case("delta_without_capability")
+def _(p, t):
+    p.change()
+    p.write("openspec/changes/a-change/specs/spec.md", added_delta())
+
+
+@case("tasks_incomplete", "error", ARCHIVE)
+def _(p, t):
+    p.main_spec()
+    p.change(tasks="- [ ] 1.1 not done")
+    p.delta("a-change", "widgets", added_delta())
+
+
 class ValidationCodeTest(ProjectTestCase):
     """One generated test per case — see the bottom of this file."""
 

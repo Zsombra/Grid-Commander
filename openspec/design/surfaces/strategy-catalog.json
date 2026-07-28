@@ -1,0 +1,131 @@
+{
+  "id": "strategy-catalog",
+  "title": "Strategies \u2014 the roster and what each one governs",
+  "route": "/strategies",
+  "capability": "strategy-authoring",
+  "status": "functional",
+  "generated_at_commit": "52ea2b5",
+  "source_files": [
+    "app/(app)/strategies/page.tsx",
+    "src/presentation/components/strategy-list.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "StrategyListResult ('strategies' | 'unreadable')",
+      "source": "app.listStrategies.execute() \u2192 BattleGrid MCP"
+    },
+    {
+      "name": "listings",
+      "shape": "StrategyListing[] \u2014 { strategy, governs, editable, forkToEdit }",
+      "source": "app.listStrategies.execute()"
+    },
+    {
+      "name": "forking",
+      "shape": "ForkAvailability ('available' | 'at-capacity' with explanation)",
+      "source": "app.listStrategies.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "strategy-list",
+      "role": "container",
+      "purpose": "Show every strategy the user can reach and, for each, how many agents it currently governs.",
+      "states": [
+        "default",
+        "unreadable",
+        "at-capacity-notice",
+        "empty",
+        "strategy-row:default",
+        "strategy-row:system-scope",
+        "strategy-row:user-scope",
+        "strategy-row:with-tagline",
+        "strategy-row:without-tagline",
+        "strategy-row:governing-agents",
+        "strategy-row:governing-none",
+        "strategy-row:inactive",
+        "strategy-row:overflow-long-name",
+        "fork-capacity-notice:visible",
+        "fork-capacity-notice:hidden"
+      ],
+      "data": [
+        "result",
+        "listings",
+        "forking"
+      ],
+      "actions": [],
+      "current_implementation": "Unstyled ul of bordered li. Tailwind class names are present but Tailwind is not installed, so nothing renders styled. NOTE: there is no `empty` branch \u2014 when `listings` is [] the component renders an empty <ul> and the page shows only its heading and intro paragraph. Listed as a state because it plainly exists; filed as `strategy-list-has-no-empty-state`. | strategy-row: Bordered li; name and a scope/revision caption on one baseline row, optional tagline, then the governs line. No truncation handling for long names or taglines. | fork-capacity-notice: role=status bordered paragraph above the list.",
+      "constraints": [
+        "The bound-agent count ('governs') must stay visible on the roster row itself, not behind a hover or a detail click \u2014 a strategy is never an isolated object here, and the count belongs where the user first meets it rather than only in the confirmation, by which point they have already decided",
+        "`unreadable` must keep saying that the strategies are not gone, only unreachable \u2014 the distinction between 'you have none' and 'we could not ask' must survive any redesign",
+        "Rows with boundAgentCount > 0 are currently emphasised relative to zero-bound rows; that difference must remain perceivable without relying on font-weight alone",
+        "[strategy-row] 'BattleGrid' vs 'Yours' (scope) must remain distinguishable at a glance \u2014 it decides whether the row offers Edit or Fork, and a user who misreads it will try an action the platform refuses",
+        "[strategy-row] Revision number must stay attached to the strategy it belongs to; it is the identity users track across edits",
+        "[strategy-row] Long names and taglines must not push the actions out of reach \u2014 currently untested and unhandled",
+        "[fork-capacity-notice] Must stay non-blocking \u2014 it explains a limit, it does not stop the user browsing or editing what they already have",
+        "[fork-capacity-notice] Announced via role=status; it appears without a user action and must not steal focus"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request that has no authority, and say how to fix it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "result.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body.",
+      "constraints": [
+        "Every cause \u2014 no session, forged cookie, unknown user, revoked connection, unrefreshable token, 401 from BattleGrid \u2014 arrives here and must keep producing one page. They differ in cause and not in remedy, and splitting them visually would imply actions the user does not have (design W-C)",
+        "Must not imply the user's data is lost"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Fork a platform strategy to edit it",
+      "steps": [
+        "see BattleGrid-scoped row",
+        "no Edit offered",
+        "Make my own copy to edit",
+        "/strategies/<id>/fork"
+      ]
+    },
+    {
+      "name": "Edit one of your own",
+      "steps": [
+        "see Yours-scoped row",
+        "read what it governs",
+        "Edit",
+        "/strategies/<id>/edit"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "nav"
+    ],
+    "focus_order": [
+      "page heading",
+      "fork-capacity-notice",
+      "strategy-row actions in list order"
+    ],
+    "notes": "Per-row nav is labelled `Actions for <strategy name>`. Load failure is role=alert; fork capacity is role=status. No live region for the list itself \u2014 it is server-rendered and does not update in place."
+  }
+}

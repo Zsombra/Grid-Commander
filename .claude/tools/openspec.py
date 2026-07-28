@@ -73,11 +73,28 @@ def read_meta(path: Path) -> dict:
     return meta
 
 
+def _scalar(value: str):
+    value = value.strip().strip('"').strip("'")
+    if value.lower() in ("true", "false"):
+        return value.lower() == "true"
+    return value
+
+
 def parse_frontmatter(path: Path) -> tuple:
     """Split a `---`-delimited YAML frontmatter block from its body.
 
-    Supports scalars, booleans, and inline lists (`tags: [a, b]`) — the shapes
-    backlog items actually use. Returns ({}, full_text) when there is no block.
+    Supports scalars, booleans, and both list spellings — inline
+    (`tags: [a, b]`) and block:
+
+        blocked_by:
+          - some-other-item
+
+    Block style is the more common spelling and nothing in the tool rejects it,
+    so parsing it as the empty string produced `[""]` — truthy, and therefore
+    invisible to `backlog_blocked_without_cause`, the check written for exactly
+    the case of an item that names no blocker.
+
+    Returns ({}, full_text) when there is no block.
     """
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -89,21 +106,40 @@ def parse_frontmatter(path: Path) -> tuple:
         return {}, text
 
     meta: dict = {}
-    for raw in lines[1:end]:
-        line = raw.rstrip()
+    i = 1
+    while i < end:
+        line = lines[i].rstrip()
+        i += 1
         if not line.strip() or line.lstrip().startswith("#") or ":" not in line:
             continue
         key, _, value = line.partition(":")
         key, value = key.strip(), value.strip()
+
         if value.startswith("[") and value.endswith("]"):
             inner = value[1:-1].strip()
-            meta[key] = [v.strip().strip('"').strip("'") for v in inner.split(",") if v.strip()]
-        else:
-            value = value.strip('"').strip("'")
-            if value.lower() in ("true", "false"):
-                meta[key] = value.lower() == "true"
-            else:
-                meta[key] = value
+            meta[key] = [_scalar(v) for v in inner.split(",") if v.strip()]
+            continue
+
+        if not value:
+            # A bare `key:` opens a block list when `- item` lines follow. An
+            # empty value with nothing under it stays the empty string, which is
+            # what `blocked_by: ""` in an unblocked item means.
+            items = []
+            while i < end:
+                nxt = lines[i].rstrip()
+                if not nxt.strip() or nxt.lstrip().startswith("#"):
+                    i += 1
+                    continue
+                m = re.match(r"^\s+-\s*(.*)$", nxt)
+                if not m:
+                    break
+                items.append(_scalar(m.group(1)))
+                i += 1
+            if items:
+                meta[key] = items
+                continue
+
+        meta[key] = _scalar(value)
     return meta, "\n".join(lines[end + 1:]).strip()
 
 
@@ -134,24 +170,72 @@ def _norm(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip().lower()
 
 
-def parse_requirements(lines: list, start: int, end: int) -> list:
-    """Collect `### Requirement:` blocks inside lines[start:end]."""
+_FENCE_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
+
+
+def fenced_lines(lines: list) -> set:
+    """Line indices sitting inside a fenced code block, delimiters included.
+
+    Markdown headings are this tool's entire structural vocabulary, so a
+    document that *shows* the format — which is exactly what a spec about the
+    spec format does — has its examples read as live structure unless every
+    scanner agrees on which lines are prose. Computing that agreement once,
+    here, is what keeps them from drifting apart.
+
+    CommonMark: a fence opens on 3+ backticks or tildes indented at most 3
+    spaces, and closes on the same character, at least as long, carrying no
+    info string. Length is tracked so a ````-fence can contain ```; an
+    unterminated fence runs to end of file, matching how the text renders.
+    """
+    inside: set = set()
+    want = None  # (char, length) of the closer we are looking for
+    for i, line in enumerate(lines):
+        m = _FENCE_RE.match(line)
+        if want is None:
+            if not m:
+                continue
+            fence, info = m.group("fence"), m.group("info")
+            # A backtick fence's info string may not contain a backtick, which
+            # is what separates ```python from inline ``code`` in a sentence.
+            if fence[0] == "`" and "`" in info:
+                continue
+            want = (fence[0], len(fence))
+            inside.add(i)
+            continue
+        inside.add(i)
+        if m:
+            fence = m.group("fence")
+            if fence[0] == want[0] and len(fence) >= want[1] and not m.group("info").strip():
+                want = None
+    return inside
+
+
+def parse_requirements(lines: list, start: int, end: int, skip: set = None) -> list:
+    """Collect `### Requirement:` blocks inside lines[start:end].
+
+    `skip` is the fenced-line set from fenced_lines(); it is computed here when
+    not supplied so that no caller can opt out of fence awareness by accident.
+    """
+    if skip is None:
+        skip = fenced_lines(lines)
     heads = [
         i for i in range(start, end)
-        if lines[i].startswith("### Requirement:")
+        if lines[i].startswith("### Requirement:") and i not in skip
     ]
     out = []
     for pos, head in enumerate(heads):
         stop = heads[pos + 1] if pos + 1 < len(heads) else end
         # A `## ` heading also terminates the block.
         for i in range(head + 1, stop):
-            if lines[i].startswith("## ") and not lines[i].startswith("###"):
+            if lines[i].startswith("## ") and not lines[i].startswith("###") and i not in skip:
                 stop = i
                 break
         name = lines[head][len("### Requirement:"):].strip()
         req = Requirement(name, head, stop, lines[head:stop])
         for i in range(head + 1, stop):
             line = lines[i]
+            if i in skip:
+                continue
             if line.startswith("#### Scenario:"):
                 req.scenarios.append(line[len("#### Scenario:"):].strip())
             elif re.match(r"^(#{1,3}|#{5,6})\s*Scenario:", line):
@@ -174,7 +258,9 @@ class SpecDoc:
 
     def _parse(self) -> None:
         lines = self.lines
-        heads = [i for i, l in enumerate(lines) if l.startswith("## ") and not l.startswith("###")]
+        skip = fenced_lines(lines)
+        heads = [i for i, l in enumerate(lines)
+                 if l.startswith("## ") and not l.startswith("###") and i not in skip]
         bounds = [(h, heads[n + 1] if n + 1 < len(heads) else len(lines))
                   for n, h in enumerate(heads)]
 
@@ -188,22 +274,26 @@ class SpecDoc:
 
             op = next((o for o in OPERATIONS if upper.startswith(o + " ")), None)
             if op:
-                reqs = parse_requirements(lines, start, end)
+                reqs = parse_requirements(lines, start, end, skip)
                 self.sections.setdefault(op, []).extend(reqs)
                 if op == "RENAMED":
-                    self.renames.extend(self._parse_renames(lines, start, end))
+                    self.renames.extend(self._parse_renames(lines, start, end, skip))
                 continue
 
-            self.requirements.extend(parse_requirements(lines, start, end))
+            self.requirements.extend(parse_requirements(lines, start, end, skip))
 
         # Requirements before any `## ` heading (root-level delta form).
         first = bounds[0][0] if bounds else len(lines)
-        self.requirements.extend(parse_requirements(lines, 0, first))
+        self.requirements.extend(parse_requirements(lines, 0, first, skip))
 
     @staticmethod
-    def _parse_renames(lines: list, start: int, end: int) -> list:
+    def _parse_renames(lines: list, start: int, end: int, skip: set = None) -> list:
+        if skip is None:
+            skip = fenced_lines(lines)
         pairs, pending = [], None
         for i in range(start, end):
+            if i in skip:
+                continue
             m = re.match(r"^\s*-?\s*(FROM|TO):\s*`?#*\s*(?:Requirement:)?\s*(.+?)`?\s*$",
                          lines[i], re.IGNORECASE)
             if not m:
@@ -252,9 +342,13 @@ class Change:
         self.root = root
         self.name = name
         self.dir = root / "openspec" / "changes" / name
-        self.meta = read_meta(self.dir / ".openspec.yaml")
-        track = str(self.meta.get("track", "standard")).lower()
-        self.track = track if track in TRACKS else "standard"
+        self.meta_path = self.dir / ".openspec.yaml"
+        self.meta = read_meta(self.meta_path)
+        # The declared value is kept so validation can tell "not stated" from
+        # "stated wrong". Coercing both to `standard` is what let `track: ful`
+        # drop the planner, the auditor, and the production gate in silence.
+        self.track_declared = str(self.meta.get("track", "")).strip().lower()
+        self.track = self.track_declared if self.track_declared in TRACKS else "standard"
         self.skip_specs = bool(self.meta.get("skip_specs", False))
 
     # -- artifacts ---------------------------------------------------------
@@ -315,6 +409,18 @@ class Change:
 # Backlog
 # --------------------------------------------------------------------------
 
+def _as_list(value) -> list:
+    """Normalise a frontmatter field that may be a list, a scalar, or absent.
+
+    Wrapping unconditionally turned an empty `blocked_by:` into `[""]` — a
+    one-element list that is truthy, and so satisfies the very check written to
+    catch an item that names no blocker. Empty means empty.
+    """
+    if isinstance(value, list):
+        return [v for v in value if str(v).strip()]
+    return [value] if str(value).strip() else []
+
+
 ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
 ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
 ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
@@ -339,15 +445,15 @@ class BacklogItem:
         self.capability = str(meta.get("capability", "")).strip()
         self.created = str(meta.get("created", "")).strip()
         self.updated = str(meta.get("updated", "")).strip()
-        blocked = meta.get("blocked_by", [])
-        self.blocked_by = blocked if isinstance(blocked, list) else [blocked]
-        tags = meta.get("tags", [])
-        self.tags = tags if isinstance(tags, list) else [tags]
+        self.blocked_by = _as_list(meta.get("blocked_by", []))
+        self.tags = _as_list(meta.get("tags", []))
 
     @staticmethod
     def _title_from_body(body: str) -> str:
-        for line in body.splitlines():
-            if line.startswith("# "):
+        lines = body.splitlines()
+        skip = fenced_lines(lines)
+        for i, line in enumerate(lines):
+            if line.startswith("# ") and i not in skip:
                 return line[2:].strip()
         return ""
 
@@ -872,7 +978,11 @@ def read_journal(root: Path, limit: int) -> list:
     if not path.is_file():
         return []
     lines = path.read_text(encoding="utf-8").splitlines()
-    heads = [i for i, l in enumerate(lines) if re.match(r"^##\s+\d{4}-\d{2}-\d{2}", l)]
+    # The journal documents its own format in a fenced block at the top, and
+    # entries quote spec headings routinely — same pre-pass, same reason.
+    skip = fenced_lines(lines)
+    heads = [i for i, l in enumerate(lines)
+             if re.match(r"^##\s+\d{4}-\d{2}-\d{2}", l) and i not in skip]
     out = []
     for n, start in enumerate(heads[:limit] if limit else heads):
         end = heads[n + 1] if n + 1 < len(heads) else len(lines)
@@ -1003,6 +1113,41 @@ def validate_change(root: Path, change: Change, strict: bool) -> list:
     deltas = change.delta_paths()
     rel = lambda p: str(p.relative_to(root))  # noqa: E731
 
+    meta_rel = f"openspec/changes/{change.name}/.openspec.yaml"
+    if not change.meta_path.is_file():
+        found.append(diag(
+            "warning", "change_meta_missing",
+            f"change '{change.name}' has no .openspec.yaml — running as 'standard'",
+            meta_rel,
+            "add `track: lite|standard|full` so the ceremony is declared, not inferred",
+        ))
+    elif change.track_declared and change.track_declared not in TRACKS:
+        found.append(diag(
+            "error", "invalid_track",
+            f"change '{change.name}': track '{change.track_declared}' is not one of "
+            f"{', '.join(TRACKS)}",
+            meta_rel,
+            "the track is the whole ceremony decision — an unrecognized value "
+            "silently runs as 'standard', skipping planner, auditor, and the "
+            "production gate",
+        ))
+    elif not change.track_declared:
+        found.append(diag(
+            "warning", "track_not_declared",
+            f"change '{change.name}': .openspec.yaml does not set a track — running as 'standard'",
+            meta_rel,
+        ))
+
+    for delta in deltas:
+        if capability_of(change, delta) in (".", ""):
+            found.append(diag(
+                "error", "delta_without_capability",
+                f"change '{change.name}': delta sits directly in specs/ with no capability directory",
+                rel(delta),
+                "move it to specs/<capability>/spec.md — archive would otherwise write "
+                "openspec/specs/spec.md, which is not a capability and is never read back",
+            ))
+
     if not deltas and not change.skip_specs:
         found.append(diag(
             "error", "no_deltas",
@@ -1113,6 +1258,45 @@ def validate_change(root: Path, change: Change, strict: bool) -> list:
                         where,
                     ))
 
+        # One requirement, one operation. The archive merge turns each operation
+        # into a line range against the pre-merge spec; two operations on one
+        # requirement produce two ranges with the same start, and applying the
+        # first invalidates the second, which then overwrites an untouched
+        # neighbour. Refusing the ambiguity is the fix — there is no ordering
+        # that makes "remove it and also change it" mean something.
+        targets: dict = {}
+        for op in ("ADDED", "MODIFIED", "REMOVED"):
+            for req in doc.sections.get(op, []):
+                targets.setdefault(_norm(req.name), []).append((op, req.name, req.start + 1))
+        for old, _new in doc.renames:
+            targets.setdefault(_norm(old), []).append(("RENAMED", old, None))
+
+        for hits in targets.values():
+            if len(hits) < 2:
+                continue
+            op_names = sorted({op for op, _, _ in hits})
+            name = hits[0][1]
+            lineno = next((n for _, _, n in hits if n), None)
+            where = f"{rel(delta)}:{lineno}" if lineno else rel(delta)
+            if len(op_names) == 1:
+                found.append(diag(
+                    "error", "duplicate_requirement_in_delta",
+                    f"{cap} / {name}: appears {len(hits)} times under "
+                    f"`## {op_names[0]} Requirements`",
+                    where,
+                    "merge them into one requirement — duplicate names make every "
+                    "later MODIFIED and REMOVED ambiguous",
+                ))
+            else:
+                found.append(diag(
+                    "error", "requirement_multiple_operations",
+                    f"{cap} / {name}: targeted by {len(hits)} operations "
+                    f"({', '.join(op_names)}) in one delta",
+                    where,
+                    "pick one — MODIFIED already replaces the whole requirement, "
+                    "so REMOVED plus MODIFIED is never what you want",
+                ))
+
         for old, new in doc.renames:
             # A rename needs something to rename. Without this the checks below
             # are all skipped, the merge guard misses too (rename pairs live in
@@ -1157,6 +1341,26 @@ def validate_main_specs(root: Path, strict: bool) -> list:
             found.append(diag("warning", "main_spec_purpose_tbd", f"{cap}: Purpose is still a TBD placeholder", rel))
         if not doc.requirements:
             found.append(diag("warning", "main_spec_no_requirements", f"{cap}: main spec has no requirements", rel))
+
+        # Requirements are addressed by name — `find()` returns the first match,
+        # so a duplicate makes every future MODIFIED, REMOVED, and RENAMED
+        # silently pick one of them. Report it here because a spec that already
+        # holds duplicates is otherwise inert: nothing complains until a later
+        # delta quietly edits the wrong one.
+        by_name: dict = {}
+        for req in doc.requirements:
+            by_name.setdefault(_norm(req.name), []).append(req)
+        for dupes in by_name.values():
+            if len(dupes) > 1:
+                found.append(diag(
+                    "error", "duplicate_requirement_in_spec",
+                    f"{cap} / {dupes[0].name}: {len(dupes)} requirements share this name "
+                    f"(lines {', '.join(str(d.start + 1) for d in dupes)})",
+                    f"{rel}:{dupes[0].start + 1}",
+                    "rename or merge them — until then every delta targeting this "
+                    "name edits whichever comes first",
+                ))
+
         for req in doc.requirements:
             if not req.scenarios:
                 found.append(diag("error" if strict else "warning", "requirement_without_scenario",
@@ -1178,7 +1382,11 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
         title = cap.replace("-", " ").replace("/", " / ").title()
         purpose = delta.purpose or "TBD — Update Purpose after archive."
         body = [f"# {title} Specification", "", "## Purpose", "", purpose, "", "## Requirements", ""]
+        seeded: set = set()
         for req in delta.sections.get("ADDED", []):
+            if _norm(req.name) in seeded:
+                raise ValueError(f"{cap}: ADDED '{req.name}' appears twice in the delta")
+            seeded.add(_norm(req.name))
             body.append(req.text)
             body.append("")
             ops.append(f"create {cap}: + {req.name}")
@@ -1217,13 +1425,34 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
         edits.append((target.start, target.start + 1, [f"### Requirement: {new}"]))
         ops.append(f"{cap}: {old} -> {new}")
 
+    # Every range above was computed against the pre-merge spec, so the splice
+    # loop below is only correct while the ranges are disjoint. Two operations
+    # on one requirement produce two ranges with the same start: the first
+    # splice lands, and the second then writes into a window that now holds
+    # whatever moved up behind it — destroying a requirement the delta never
+    # mentioned. Bottom-up ordering handles disjoint ranges and cannot help
+    # here. validate_change refuses this first; this is the guard that holds
+    # when a delta is edited after being validated.
+    ordered = sorted(edits, key=lambda e: (e[0], e[1]))
+    for (start, end, _), (next_start, _, _) in zip(ordered, ordered[1:]):
+        if end > next_start:
+            raise ValueError(
+                f"{cap}: two operations target overlapping requirement blocks "
+                f"(lines {start + 1}-{end} and {next_start + 1}-) — a requirement "
+                f"may be targeted only once per delta"
+            )
+
     for start, end, replacement in sorted(edits, key=lambda e: e[0], reverse=True):
         lines[start:end] = replacement
 
-    additions = []
+    additions: list = []
+    added: set = set()
     for req in delta.sections.get("ADDED", []):
         if main.find(req.name):
             raise ValueError(f"{cap}: ADDED '{req.name}' already exists")
+        if _norm(req.name) in added:
+            raise ValueError(f"{cap}: ADDED '{req.name}' appears twice in the delta")
+        added.add(_norm(req.name))
         additions.extend(req.text.splitlines() + [""])
         ops.append(f"{cap}: + {req.name}")
 
@@ -1235,10 +1464,32 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
     return "\n".join(lines).rstrip() + "\n", ops
 
 
-def archive_change(root: Path, change: Change, apply: bool, strict: bool) -> dict:
+def archive_change(root: Path, change: Change, apply: bool, strict: bool,
+                   allow_incomplete: bool = False) -> dict:
     problems = [d for d in validate_change(root, change, strict) if d["severity"] == "error"]
     if problems:
         return {"archived": False, "specs_updated": [], "operations": [], "status": problems}
+
+    # Checked here rather than in validate_change: a change under active
+    # development is *expected* to have unfinished tasks, and turning that into
+    # a validation error would make `board` and CI red for the normal case.
+    # Archiving is the moment the delta becomes the behavior contract, so this
+    # is the one point where the checklist has to be finished.
+    #
+    # Collected rather than returned immediately, so it never *hides* a
+    # structural finding below. An unfinished checklist is a policy stop; an
+    # overlapping merge or an occupied archive slot is a defect, and learning
+    # about the second only after clearing the first wastes a round.
+    gate: list = []
+    done, total = change.progress()
+    if total and done < total and not allow_incomplete:
+        gate.append(diag(
+            "error", "tasks_incomplete",
+            f"change '{change.name}': {done}/{total} tasks complete",
+            f"openspec/changes/{change.name}/tasks.md",
+            "finish the tasks, or re-run with --allow-incomplete if the "
+            "remaining ones do not apply",
+        ))
 
     planned, operations = [], []
     for delta in change.delta_paths():
@@ -1247,7 +1498,8 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool) -> dic
             text, ops = build_merged_spec(root, cap, SpecDoc(delta))
         except ValueError as exc:
             return {"archived": False, "specs_updated": [], "operations": [],
-                    "status": [diag("error", "merge_conflict", str(exc), str(delta.relative_to(root)))]}
+                    "status": gate + [diag("error", "merge_conflict", str(exc),
+                                           str(delta.relative_to(root)))]}
         planned.append((main_spec_path(root, cap), text))
         operations.extend(ops)
 
@@ -1258,8 +1510,11 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool) -> dic
 
     if target.exists():
         return {"archived": False, "specs_updated": [], "operations": operations,
-                "status": [diag("error", "archive_target_exists",
-                                f"{target.relative_to(root)} already exists")]}
+                "status": gate + [diag("error", "archive_target_exists",
+                                       f"{target.relative_to(root)} already exists")]}
+
+    if gate:
+        return {"archived": False, "specs_updated": [], "operations": operations, "status": gate}
 
     result = {
         "change": change.name,
@@ -1490,6 +1745,8 @@ def main(argv: list) -> int:
     p_archive.add_argument("change", nargs="?")
     p_archive.add_argument("--apply", action="store_true", help="write changes (default: dry run)")
     p_archive.add_argument("--strict", action="store_true")
+    p_archive.add_argument("--allow-incomplete", action="store_true",
+                           help="archive even though tasks.md has unchecked boxes")
 
     args = parser.parse_args(argv)
     root = Path(args.root).resolve() if args.root else find_root(Path.cwd().resolve())
@@ -1684,8 +1941,14 @@ def main(argv: list) -> int:
 
     if args.command == "validate":
         found = []
-        targets = ([Change(root, n) for n in list_changes(root)] if args.all
-                   else [resolve_change(root, args.change, args.json)])
+        # A repo with no active change is a healthy state — everything is
+        # archived. Bare `validate` used to die there with exit 1, so the
+        # obvious command reported failure on a clean repo and `--all` was the
+        # only spelling that worked.
+        if args.all or (not args.change and not list_changes(root)):
+            targets = [Change(root, n) for n in list_changes(root)]
+        else:
+            targets = [resolve_change(root, args.change, args.json)]
         for change in targets:
             found.extend(validate_change(root, change, args.strict))
         found.extend(validate_main_specs(root, args.strict))
@@ -1704,7 +1967,7 @@ def main(argv: list) -> int:
 
     if args.command == "archive":
         change = resolve_change(root, args.change, args.json)
-        result = archive_change(root, change, args.apply, args.strict)
+        result = archive_change(root, change, args.apply, args.strict, args.allow_incomplete)
         if args.json:
             print(json.dumps(result, indent=2))
         else:

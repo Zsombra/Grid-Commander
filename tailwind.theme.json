@@ -1,0 +1,87 @@
+{
+  "extend": {
+    "colors": {
+      "bg-base": "var(--gc-bg-base)",
+      "bg-sunken": "var(--gc-bg-sunken)",
+      "bg-raised": "var(--gc-bg-raised)",
+      "text-primary": "var(--gc-text-primary)",
+      "text-secondary": "var(--gc-text-secondary)",
+      "text-disabled": "var(--gc-text-disabled)",
+      "text-inverse": "var(--gc-text-inverse)",
+      "border-subtle": "var(--gc-border-subtle)",
+      "border-default": "var(--gc-border-default)",
+      "border-strong": "var(--gc-border-strong)",
+      "accent-default": "var(--gc-accent-default)",
+      "accent-hover": "var(--gc-accent-hover)",
+      "accent-text": "var(--gc-accent-text)",
+      "accent-subtle": "var(--gc-accent-subtle)",
+      "danger-default": "var(--gc-danger-default)",
+      "danger-hover": "var(--gc-danger-hover)",
+      "danger-text": "var(--gc-danger-text)",
+      "danger-subtle": "var(--gc-danger-subtle)",
+      "success-default": "var(--gc-success-default)",
+      "success-text": "var(--gc-success-text)",
+      "success-subtle": "var(--gc-success-subtle)",
+      "warning-default": "var(--gc-warning-default)",
+      "warning-text": "var(--gc-warning-text)",
+      "warning-subtle": "var(--gc-warning-subtle)",
+      "focus": "var(--gc-focus)",
+      "notice-default": "var(--gc-notice-default)",
+      "notice-text": "var(--gc-notice-text)",
+      "notice-subtle": "var(--gc-notice-subtle)",
+      "notice-border": "var(--gc-notice-border)",
+      "consequence-default": "var(--gc-consequence-default)",
+      "consequence-text": "var(--gc-consequence-text)",
+      "consequence-subtle": "var(--gc-consequence-subtle)",
+      "consequence-border": "var(--gc-consequence-border)",
+      "quiet-default": "var(--gc-quiet-default)",
+      "quiet-text": "var(--gc-quiet-text)",
+      "quiet-subtle": "var(--gc-quiet-subtle)",
+      "quiet-border": "var(--gc-quiet-border)"
+    },
+    "fontFamily": {
+      "sans": [
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Roboto",
+        "sans-serif"
+      ],
+      "mono": [
+        "ui-monospace",
+        "SFMono-Regular",
+        "Menlo",
+        "monospace"
+      ]
+    },
+    "borderRadius": {
+      "gc-0": "0",
+      "gc-1": "4px",
+      "gc-2": "8px",
+      "gc-3": "12px",
+      "gc-full": "9999px"
+    },
+    "boxShadow": {
+      "gc-0": "none",
+      "gc-1": "0 1px 2px rgba(16, 19, 23, 0.06)",
+      "gc-2": "0 2px 8px rgba(16, 19, 23, 0.08)",
+      "gc-3": "0 8px 24px rgba(16, 19, 23, 0.12)"
+    },
+    "transitionDuration": {
+      "instant": "80ms",
+      "fast": "140ms",
+      "normal": "220ms",
+      "slow": "360ms"
+    },
+    "transitionTimingFunction": {
+      "standard": "cubic-bezier(0.2, 0, 0, 1)",
+      "enter": "cubic-bezier(0, 0, 0, 1)",
+      "exit": "cubic-bezier(0.4, 0, 1, 1)"
+    },
+    "screens": {
+      "tablet": "768px",
+      "desktop": "1024px",
+      "wide": "1440px"
+    }
+  }
+}

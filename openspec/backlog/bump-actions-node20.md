@@ -43,3 +43,21 @@ have meant changing the very workflow whose first green run was proving the
 `spec-validation` spec, and I could not verify the newer majors from here.
 
 Pure presentation of the CI config — no spec change, `lite` track.
+
+## Attempt and revert (2026-07-28)
+
+Bumped all three jobs to `actions/checkout@v5` / `actions/setup-python@v6` and
+**every job in the run failed within 2-9 seconds**, before any step produced a
+log (run 30362637624, six of six). Reverted to `@v4` / `@v5`, the pins proven
+green by run 30241139011.
+
+Those `@v5` / `@v6` pins were copied from PR #3's `tests` job. That job had
+never executed — it was added during the window when the repository created no
+workflow runs at all — so it looked reviewed and merged-ready while being
+entirely unverified. Propagating it, and then "closing" this item by moving the
+one job that *did* work onto the same pins, turned a green `validate` job red.
+
+**Whoever picks this up next: confirm the major version exists before pinning
+it.** The deprecation this item is about is a warning, not a failure; the
+working state is worth more than the clean log until the replacement is
+verified against a real run.

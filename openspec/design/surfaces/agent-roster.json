@@ -1,0 +1,165 @@
+{
+  "id": "agent-roster",
+  "title": "Agents \u2014 the roster and what each is bound to",
+  "route": "/agents",
+  "capability": "agent-authoring",
+  "status": "functional",
+  "generated_at_commit": "52ea2b5",
+  "source_files": [
+    "app/(app)/agents/page.tsx",
+    "src/presentation/components/agent-roster.tsx",
+    "src/presentation/components/agent-actions.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "roster",
+      "shape": "RosterResult ('agents' | 'empty' | 'unreadable')",
+      "source": "app.listAgents.execute()"
+    },
+    {
+      "name": "creation",
+      "shape": "CreationAvailability ('available' with remaining | 'at-capacity' | 'unknown')",
+      "source": "app.listAgents.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "agent-roster",
+      "role": "container",
+      "purpose": "Show every agent on the account, what strategy each reads, and whether another can be created.",
+      "states": [
+        "default",
+        "empty",
+        "unreadable",
+        "create-available",
+        "create-at-capacity",
+        "create-unknown",
+        "agent-row:active",
+        "agent-row:archived",
+        "agent-row:overflow-long-name"
+      ],
+      "data": [
+        "roster",
+        "creation"
+      ],
+      "actions": [],
+      "current_implementation": "Unstyled ul of bordered li. Three top-level branches rendered separately \u2014 agents, empty, unreadable. Tailwind class names present but Tailwind is not installed. | agent-row: Bordered li; name and status on one baseline row, then the binding sentence. No truncation handling.",
+      "constraints": [
+        "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own \u2014 or concludes something deleted it",
+        "`unreadable` must keep saying nothing can be created or changed until BattleGrid is reachable \u2014 it is a capability statement, not only an error",
+        "`create-unknown` renders nothing at all. An affordance whose availability we do not know must not be guessed into existence",
+        "The capacity notice appears before the form, not after submission",
+        "[agent-row] The bound strategy *and its revision* must stay together \u2014 the revision is what tells a user whether this agent has picked up a recent edit",
+        "[agent-row] Status must not be signalled by colour alone",
+        "[agent-row] Long display names must not push the status out of view"
+      ],
+      "children": [
+        "agent-actions"
+      ]
+    },
+    {
+      "id": "agent-actions",
+      "role": "navigation",
+      "purpose": "Offer only the actions BattleGrid permits on this particular agent.",
+      "states": [
+        "editable",
+        "rebindable",
+        "archivable",
+        "reactivatable",
+        "journal-only",
+        "not-permitted-notice"
+      ],
+      "data": [
+        "agent.status",
+        "agent.displayName"
+      ],
+      "actions": [
+        {
+          "id": "edit",
+          "effect": "Opens /agents/<id>/edit"
+        },
+        {
+          "id": "rebind",
+          "effect": "Opens /agents/<id>/rebind"
+        },
+        {
+          "id": "archive",
+          "effect": "Opens /agents/<id>/archive"
+        },
+        {
+          "id": "reactivate",
+          "effect": "Opens /agents/<id>/reactivate"
+        },
+        {
+          "id": "journal",
+          "effect": "Opens /agents/<id>/journal \u2014 always present"
+        }
+      ],
+      "current_implementation": "nav > ul of underlined anchors, labelled `Actions for <name>`. A trailing note when an active agent is not editable.",
+      "constraints": [
+        "There is no delete action and there must never be one. The live payload sets `capabilities.canDelete: true` while the MCP surface offers no delete tool \u2014 the flag describes what BattleGrid's own app can do. A delete button would ship an action that cannot work (findings-agents F-1)",
+        "Journal is always offered, including on agents nothing else can be done to; it is the one affordance that never depends on permission",
+        "The 'BattleGrid does not permit Grid-Commander to change this agent' note must stay attached to the action list \u2014 it explains an absence, and an absence with no explanation reads as a missing feature",
+        "All actions are GET links to a page that asks first; none mutates on click"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request with no authority.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body.",
+      "constraints": [
+        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Create an agent",
+      "steps": [
+        "read remaining slots",
+        "Create an agent",
+        "/agents/new"
+      ]
+    },
+    {
+      "name": "Retune a bound agent",
+      "steps": [
+        "find agent",
+        "read its strategy and revision",
+        "Edit or Rebind"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "nav"
+    ],
+    "focus_order": [
+      "page heading",
+      "create affordance",
+      "agent-row actions in list order"
+    ],
+    "notes": "Per-row nav labelled `Actions for <agent name>`. Roster failure is role=alert; capacity is role=status."
+  }
+}
