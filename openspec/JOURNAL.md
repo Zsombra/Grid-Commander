@@ -70,6 +70,14 @@ a real key, recorded here with what came back.
   this change's one CRITICAL. It was referenced by the composition root and by a
   grep, and nothing asserted what it returns — while being the state this
   product ships in by default. Four tests now.
+- **CI has a one-field diagnosis now.** Runs are created again and every job
+  still dies in 2-9 seconds, but the API says why directly: `runner_id: 0` and
+  `runner_name: ""` on all seven jobs, so no runner was ever assigned and the
+  job never reached its own contents. It reproduces on `main` at `27fcd16`.
+  Recorded in `ci-creates-no-runs`, because the probe job proved the same thing
+  for the cost of a commit and a workflow edit and this costs one API call.
+  Anyone finding a red board here should check `runner_id` before reading a
+  diff.
 - Nothing bounds how many questions a user asks. One answer is capped;
   a thousand are not, and every tenant's questions bill one key. Filed
   `assistant-has-no-spend-ceiling` (P2), which argues for recording token usage
