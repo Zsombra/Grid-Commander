@@ -163,3 +163,24 @@ checkout.
 Remaining options are unchanged and all need account or admin access: settle the
 account, or register a self-hosted runner (job execution on your own machine is
 not billed, so it is unaffected by the block).
+
+## Still true at run 58, with a cleaner signature (2026-07-28)
+
+Eighteen runs later the state is unchanged, and the API now gives a more direct
+piece of evidence than the probe job did:
+
+**No runner is ever assigned.** Every job in runs 49-58 reports
+`runner_id: 0`, `runner_name: ""`, and `runner_group_id: 0`. A job that was
+never handed to a runner cannot have failed on its contents — it did not reach
+them. Lifetimes are 2-9 seconds, the logs API returns 404, and the check-run
+`output` is empty on all three fields.
+
+**It reproduces on `main`.** Run 51, head `27fcd16` — the merged state, already
+verified — fails identically across all seven jobs. Whatever is failing predates
+every commit on the open branch.
+
+This is worth recording because it is the cheapest possible check for anyone who
+finds a red board here later: query any job and look at `runner_id`. Zero means
+the answer is not in the repository, and no amount of reading a diff will find
+it. The probe job proved the same thing and cost a commit and a workflow edit;
+this costs one API call.
