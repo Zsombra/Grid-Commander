@@ -67,8 +67,40 @@ new run. The file is provably unchanged since the last green run, so any edit
 would be a fabricated fix for a problem outside the diff, and it would land in
 the history as though it were the cause.
 
+## Refinement — 10:34 UTC
+
+Filtering runs by `validate.yml` specifically changes the picture:
+
+```
+4890081  success  "Spec Layer"  07:54   <- most recent run of validate.yml
+841218f  success  "Spec Layer"  06:53
+837d9f4  success  "Spec Layer"  06:35
+```
+
+**`validate.yml` has not been triggered since `4890081`.** It is not failing —
+it is not running. The `startup_failure` runs belong to a *different*
+`workflow_id` (322017131) whose `path` is the literal string `BuildFailed`,
+which is not a file in this repository.
+
+So the earlier framing ("the workflow fails to start") was wrong in a way worth
+correcting: the repository's own workflow is simply never invoked, and something
+else is producing two dead runs per push. That points at the trigger or the
+account, not at YAML — and rules out anything in the diff even more firmly than
+the byte-identical check did.
+
+Two API calls now return `403 Resource not accessible by integration`:
+`POST .../runs/{id}/rerun` and `GET .../commits/{sha}/status`. `get_check_runs`
+is permitted and returns zero. Whether the session token's permissions narrowed
+around 08:31 is **not established** — `get_check_runs` still answering argues
+against it — but it is the first thing to check, because if the token lost
+visibility then "zero check runs" means "I cannot see them", not "they do not
+exist". Those are different problems and only one of them is GitHub's.
+
 ## Fix
 
+0. **Look at the Actions tab in the UI first.** That answers in one glance what
+   this session could not: whether "Spec Layer" runs exist and are invisible to
+   the token, or genuinely never started.
 1. Re-run from the UI: <https://github.com/Zsombra/Grid-Commander/actions/runs/30344722550>,
    or push any commit to retrigger.
 2. If it recurs, look outside the code. The transition is sharp — green at
