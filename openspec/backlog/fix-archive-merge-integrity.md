@@ -2,7 +2,7 @@
 id: fix-archive-merge-integrity
 title: Archive merge silently corrupts the source of truth on name collisions
 type: bug
-status: open
+status: done
 priority: p0
 created: 2026-07-28
 updated: 2026-07-28
@@ -122,3 +122,42 @@ codes out of the source with `ast` and fails on any code no fixture triggers:
 that guarantees every code that *exists* is exercised, and by construction can
 never surface a code that was never written. Coverage of the codes is not
 coverage of the failure modes.
+
+## Outcome (2026-07-28)
+
+Fixed at both layers, with `tests/test_merge_integrity.py` — 10 tests, plain
+`unittest`, no dependencies.
+
+**Validation refuses the ambiguity before archive.** Two new error codes:
+`requirement_multiple_operations` when one name is targeted by more than one
+operation (rename pairs included — they live in `doc.renames`, not
+`doc.sections`, which is how they get missed), and
+`duplicate_requirement_in_delta` when a name appears twice under one section.
+`validate_main_specs` gained `duplicate_requirement_in_spec` so a spec that
+already holds duplicates says so instead of sitting inert.
+
+**The merge refuses it again.** `build_merged_spec` asserts the edit ranges
+are disjoint before splicing and raises `ValueError`, which `archive_change`
+already turns into a clean abort with nothing written and nothing moved. The
+seeding path for a new capability got its own duplicate check — it never
+consults an existing spec, so `main.find()` could not cover it.
+
+No auto-resolution. Two operations on one requirement is an ambiguous delta,
+not a merge order problem; the tool names the requirement and stops.
+
+Each test was run against the unfixed tool first: 7 of the 9 merge tests fail
+without the fix. The 2 that pass are the regression guards —
+`test_operations_on_different_requirements_still_merge` (PR #3's exact
+scenario, three disjoint ranges) and
+`test_adjacent_requirement_ranges_are_not_treated_as_overlapping`, which
+catches an off-by-one that would refuse every delta touching two neighbours.
+Those two must pass before and after, and do.
+
+CI runs the suite in a `tests` job, deliberately with no dependency install —
+`test_the_tool_imports_only_the_standard_library` parses the tool with `ast`
+and asserts every import is stdlib, which is what makes that omission mean
+something.
+
+**Not fixed here** and still open: `spec-parser-ignores-code-fences`,
+`archive-allows-incomplete-tasks`, `frontmatter-drops-block-lists`,
+`validate-change-metadata`.

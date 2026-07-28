@@ -29,6 +29,48 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — P0 fixed: the archive merge now refuses ambiguous deltas
+
+**Did**: Fixed `fix-archive-merge-integrity` at both layers and added
+`tests/test_merge_integrity.py` (10 tests, plain `unittest`, no dependencies).
+Validation refuses a requirement targeted more than once
+(`requirement_multiple_operations`, `duplicate_requirement_in_delta`) and
+reports duplicates already sitting in a main spec
+(`duplicate_requirement_in_spec`). `build_merged_spec` asserts its edit ranges
+are disjoint before splicing and raises `ValueError`, which `archive_change`
+already turns into a clean abort. CI gained a `tests` job.
+
+**State**: `validate --all` clean on the repo, 1 warning (design system
+placeholder). Suite green: 10/10. Backlog 9 open (0×P0, 3×P1, 3×P2, 3×P3) —
+`fix-archive-merge-integrity` is done, the other four review findings are not.
+
+**Next**: `spec-parser-ignores-code-fences` (P1) — the remaining corruption
+path into the source of truth, and the one most likely to bite this repo,
+since `spec-validation` is a capability about the spec format.
+
+**Watch out**:
+- **Every test was run against the unfixed tool before being trusted.** 7 of
+  the 9 merge tests fail without the fix. The 2 that pass are the regression
+  guards and must pass in both states — `test_operations_on_different_
+  requirements_still_merge` (PR #3's exact three-disjoint-ranges scenario) and
+  `test_adjacent_requirement_ranges_are_not_treated_as_overlapping`, which
+  catches the off-by-one that would refuse every delta touching two
+  neighbours. A guard nobody watched fail is not known to work.
+- **Rename pairs are not in `doc.sections`.** They parse into `doc.renames`
+  and `sections["RENAMED"]` is left empty, so any code collecting "what does
+  this delta target" from sections alone silently misses renames. That is how
+  the original overlap went unnoticed, and PR #3 hit the same edge from a
+  different direction.
+- **The fix refuses rather than resolves.** REMOVED plus MODIFIED on one
+  requirement has no correct interpretation; picking one would be guessing at
+  intent. The tool names the requirement and stops.
+- **The CI job is deliberately dependency-free**, and
+  `test_the_tool_imports_only_the_standard_library` is what makes that
+  meaningful — without it, no install step just means nothing checks.
+- `.github/workflows/validate.yml` will conflict with PR #3, which adds its
+  own `tests` job. Mine is byte-identical to theirs on purpose; resolve by
+  keeping one. `openspec/JOURNAL.md` conflicts too — keep both, newest first.
+
 ## 2026-07-28 — Tool review: archive merge can corrupt the source of truth
 
 **Did**: Read `.claude/tools/openspec.py` end to end (1,651 lines) and

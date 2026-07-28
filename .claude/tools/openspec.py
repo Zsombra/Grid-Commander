@@ -1056,6 +1056,45 @@ def validate_change(root: Path, change: Change, strict: bool) -> list:
                         where,
                     ))
 
+        # One requirement, one operation. The archive merge turns each operation
+        # into a line range against the pre-merge spec; two operations on one
+        # requirement produce two ranges with the same start, and applying the
+        # first invalidates the second, which then overwrites an untouched
+        # neighbour. Refusing the ambiguity is the fix — there is no ordering
+        # that makes "remove it and also change it" mean something.
+        targets: dict = {}
+        for op in ("ADDED", "MODIFIED", "REMOVED"):
+            for req in doc.sections.get(op, []):
+                targets.setdefault(_norm(req.name), []).append((op, req.name, req.start + 1))
+        for old, _new in doc.renames:
+            targets.setdefault(_norm(old), []).append(("RENAMED", old, None))
+
+        for hits in targets.values():
+            if len(hits) < 2:
+                continue
+            op_names = sorted({op for op, _, _ in hits})
+            name = hits[0][1]
+            lineno = next((n for _, _, n in hits if n), None)
+            where = f"{rel(delta)}:{lineno}" if lineno else rel(delta)
+            if len(op_names) == 1:
+                found.append(diag(
+                    "error", "duplicate_requirement_in_delta",
+                    f"{cap} / {name}: appears {len(hits)} times under "
+                    f"`## {op_names[0]} Requirements`",
+                    where,
+                    "merge them into one requirement — duplicate names make every "
+                    "later MODIFIED and REMOVED ambiguous",
+                ))
+            else:
+                found.append(diag(
+                    "error", "requirement_multiple_operations",
+                    f"{cap} / {name}: targeted by {len(hits)} operations "
+                    f"({', '.join(op_names)}) in one delta",
+                    where,
+                    "pick one — MODIFIED already replaces the whole requirement, "
+                    "so REMOVED plus MODIFIED is never what you want",
+                ))
+
         for old, new in doc.renames:
             if main_exists and not main.find(old):
                 found.append(diag("error", "renamed_not_found",
@@ -1087,6 +1126,26 @@ def validate_main_specs(root: Path, strict: bool) -> list:
             found.append(diag("warning", "main_spec_purpose_tbd", f"{cap}: Purpose is still a TBD placeholder", rel))
         if not doc.requirements:
             found.append(diag("warning", "main_spec_no_requirements", f"{cap}: main spec has no requirements", rel))
+
+        # Requirements are addressed by name — `find()` returns the first match,
+        # so a duplicate makes every future MODIFIED, REMOVED, and RENAMED
+        # silently pick one of them. Report it here because a spec that already
+        # holds duplicates is otherwise inert: nothing complains until a later
+        # delta quietly edits the wrong one.
+        by_name: dict = {}
+        for req in doc.requirements:
+            by_name.setdefault(_norm(req.name), []).append(req)
+        for dupes in by_name.values():
+            if len(dupes) > 1:
+                found.append(diag(
+                    "error", "duplicate_requirement_in_spec",
+                    f"{cap} / {dupes[0].name}: {len(dupes)} requirements share this name "
+                    f"(lines {', '.join(str(d.start + 1) for d in dupes)})",
+                    f"{rel}:{dupes[0].start + 1}",
+                    "rename or merge them — until then every delta targeting this "
+                    "name edits whichever comes first",
+                ))
+
         for req in doc.requirements:
             if not req.scenarios:
                 found.append(diag("error" if strict else "warning", "requirement_without_scenario",
@@ -1108,7 +1167,11 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
         title = cap.replace("-", " ").replace("/", " / ").title()
         purpose = delta.purpose or "TBD — Update Purpose after archive."
         body = [f"# {title} Specification", "", "## Purpose", "", purpose, "", "## Requirements", ""]
+        seeded: set = set()
         for req in delta.sections.get("ADDED", []):
+            if _norm(req.name) in seeded:
+                raise ValueError(f"{cap}: ADDED '{req.name}' appears twice in the delta")
+            seeded.add(_norm(req.name))
             body.append(req.text)
             body.append("")
             ops.append(f"create {cap}: + {req.name}")
@@ -1142,13 +1205,34 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
         edits.append((target.start, target.start + 1, [f"### Requirement: {new}"]))
         ops.append(f"{cap}: {old} -> {new}")
 
+    # Every range above was computed against the pre-merge spec, so the splice
+    # loop below is only correct while the ranges are disjoint. Two operations
+    # on one requirement produce two ranges with the same start: the first
+    # splice lands, and the second then writes into a window that now holds
+    # whatever moved up behind it — destroying a requirement the delta never
+    # mentioned. Bottom-up ordering handles disjoint ranges and cannot help
+    # here. validate_change refuses this first; this is the guard that holds
+    # when a delta is edited after being validated.
+    ordered = sorted(edits, key=lambda e: (e[0], e[1]))
+    for (start, end, _), (next_start, _, _) in zip(ordered, ordered[1:]):
+        if end > next_start:
+            raise ValueError(
+                f"{cap}: two operations target overlapping requirement blocks "
+                f"(lines {start + 1}-{end} and {next_start + 1}-) — a requirement "
+                f"may be targeted only once per delta"
+            )
+
     for start, end, replacement in sorted(edits, key=lambda e: e[0], reverse=True):
         lines[start:end] = replacement
 
-    additions = []
+    additions: list = []
+    added: set = set()
     for req in delta.sections.get("ADDED", []):
         if main.find(req.name):
             raise ValueError(f"{cap}: ADDED '{req.name}' already exists")
+        if _norm(req.name) in added:
+            raise ValueError(f"{cap}: ADDED '{req.name}' appears twice in the delta")
+        added.add(_norm(req.name))
         additions.extend(req.text.splitlines() + [""])
         ops.append(f"{cap}: + {req.name}")
 
