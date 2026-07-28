@@ -1,5 +1,81 @@
 # Journal
 
+## 2026-07-28 — The authoring surface never worked, and CI stopped starting
+
+**Did**: Proposed, planned and executed `close-the-reachability-gap` (full
+track, 24/24 tasks, `EXECUTION READY FOR PRODUCTION GATE`). **It is not
+verified, not audited and not archived** — see State.
+
+The session started as the design track: `/surface` → `/design` → implement,
+because the product renders in browser defaults. Surveying the UI found
+something first, and then something worse.
+
+**Five links the interface renders returned 404** — agent edit and reactivate,
+strategy fork, archive and restore. Each rendered by a deliberate permission
+check (`isEditable`, `isReactivatable`, the strategy listing's own flags). Filed
+`five-dead-links`.
+
+**Four of six write paths could not be submitted.** Create, rename, rebind and
+apply used `method="post"` with a string action or none, which does not invoke a
+Server Action. Three actions — `create`, `rename`, `performRebind` — appeared
+*exactly once* in the repository, at their own definition. The strategy edit
+page had no `'use server'` at all. Filed `four-dead-write-paths`.
+
+So the product could connect an account and archive an agent. Nothing else.
+Every use case behind the dead paths was written, tested, audited and wired.
+
+Both are fixed. All 16 rendered paths now serve; all four forms are bound; the
+apply action was written from scratch, carrying the reviewed plan rather than
+recompiling.
+
+**Next**: `/verify` then the **auditor** on `close-the-reachability-gap`, then
+`/archive`. Do not archive before the gate — the change modifies an archived
+requirement.
+
+**Watch out**:
+
+- **CI has been broken since `7f1cb28` and it is not the diff.** Every run is a
+  `startup_failure` with `name:""` and `path: BuildFailed`; the "Spec Layer"
+  workflow does not run at all. `git diff 4890081..HEAD -- .github/` is empty.
+  Three commits are unverified by CI. Filed `ci-startup-failure` (p1) with the
+  evidence and the two things deliberately not tried. **Do not "fix" it by
+  editing the workflow** — the file is provably unchanged, and an edit would put
+  a fabricated cause in the history.
+
+- **The reachability guard's own first version missed two of the five dead
+  links.** It matched `href=` as a JSX attribute and not `href:` as an object
+  property. Caught only because the defects were still present to count against
+  — which is the whole argument for DL-101, writing the guard before the fix.
+  Written afterwards it would have passed at 3-of-5 forever.
+
+- **The guard has a stated blind spot (DL-106).** It checks that a *form* is
+  bound, not that every *control inside* it reaches the payload.
+  `agent-form.tsx` still renders a position-management select while the create
+  action sends `tradingConfig: null`. Filed as
+  `a-preset-does-not-constrain-its-config`. This was written down before the
+  guard was built, on purpose.
+
+- **This is the fifth instance of one pattern**, and it is worth stating as a
+  rule rather than an anecdote: *every check this project built measured what
+  the code contains, never what the interface offers.* Routes exist, the build
+  succeeds, pages return 200 — all true while nothing could be submitted.
+
+- **`agent-edit-form` cannot be built as specified.** Two live-server findings:
+  three `tradingConfig` keys come back on read and are rejected on write
+  (`trading-config-read-shape-is-not-write-shape`), and a position-management
+  preset is a label supplied *alongside* fourteen independent values rather than
+  a shorthand for them (`a-preset-does-not-constrain-its-config`). A preset
+  dropdown cannot be the edit surface.
+
+- **The ceiling is unchanged and stated in the proposal**: this proves the
+  wiring is correct and the guard catches regressions. It does **not** prove a
+  BattleGrid round trip, which needs an OAuth consent in a browser
+  (`prove-token-lifetimes`). No agent was created — the MCP create call was
+  blocked by the harness permission classifier and was not retried.
+
+- PostgreSQL stops on its own in this container. `pg_ctlcluster 16 main start`.
+  A `no response` in a log is that, not a defect.
+
 ## 2026-07-28 — It had never been built, and three predictions about the schema were all wrong
 
 **Did**: Shipped `prove-it-runs` (full track, gate PASS, archived). `app-access`

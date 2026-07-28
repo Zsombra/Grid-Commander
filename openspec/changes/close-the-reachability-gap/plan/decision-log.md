@@ -114,3 +114,36 @@ Log only what affects scope, risk, validation, waivers, or handoff clarity.
 - Approved by: planner
 - Next action: auditor verifies the diff touches only `app/`,
   `src/presentation/`, and `tests/`
+
+### DL-108
+
+- Timestamp: `2026-07-28 09:05 UTC`
+- Phase: `EXECUTION`
+- Type: `risk`
+- Decision: The change is handed to the gate with **CI unverified**, and the
+  gate must record it that way rather than reading the local gates as CI.
+- Impacted files: none — this is a statement about the evidence
+- Reason: Every workflow run since `7f1cb28` is a `startup_failure` that never
+  reaches a job, and the workflow file is byte-identical to the last green run.
+  All local gates pass (typecheck, lint, 394 tests, build, 51 database tests,
+  `validate --all`) and the served probe returned 200 on all 16 routes — but a
+  local green and a CI green are different claims. Filed `ci-startup-failure`
+  (p1).
+- Approved by: executor
+- Next action: auditor records CANNOT RUN for CI rather than PASS; re-check once
+  `ci-startup-failure` clears
+
+### DL-109
+
+- Timestamp: `2026-07-28 09:05 UTC`
+- Phase: `EXECUTION`
+- Type: `waiver`
+- Decision: The workflow file was **not** edited to force a new run.
+- Impacted files: `.github/workflows/validate.yml` (deliberately untouched)
+- Reason: A trivial edit would retrigger CI and turn the board green. It would
+  also place a change to the workflow in the history of a failure the workflow
+  did not cause, and the next person debugging this would start from a false
+  lead. The file is provably unchanged since the last green run; that fact is
+  worth more than a green check.
+- Approved by: executor
+- Next action: re-run from the UI, or push unrelated work
