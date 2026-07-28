@@ -29,6 +29,59 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Tool review: archive merge can corrupt the source of truth
+
+**Did**: Read `.claude/tools/openspec.py` end to end (1,651 lines) and
+exercised the write path against scratch fixtures. Filed 5 new backlog items,
+one of them the first P0 this repo has had. Also costed the harness in tokens
+— see below. No code changed; this session is a review.
+
+**State**: `main` + CI unchanged and green. 10 open backlog items (1×P0, 3×P1,
+3×P2, 3×P3). `validate --all` still clean, 1 warning (design system
+placeholder). `CLAUDE.md` and `openspec/config.yaml` are **still unfilled
+templates** — unchanged blocker from the last session.
+
+**Next**: `/propose` `fix-archive-merge-integrity` together with
+`add-harness-regression-tests` — the fix needs the tests in the same change,
+because the two reproductions below are precisely the fixtures that item asks
+for.
+
+**Watch out**:
+- **The archive merge can silently delete a requirement nobody mentioned.**
+  A delta that both REMOVEs and MODIFIEs one requirement produces two line-range
+  edits with the same start offset, computed against the pre-edit spec. The
+  first splice invalidates the second. Reproduced: main spec with `Login` and
+  `Logout`, delta touching only `Login`, result was a modified `Login` and no
+  `Logout`. `validate` said clean, `archive` exited 0, the dry run showed the
+  same wrong plan the apply executed. Nothing in the output distinguishes this
+  from a correct merge.
+- **Duplicate requirement names merge in unflagged**, after which every
+  MODIFIED and REMOVED hits only the first. `find()` returns the first match
+  and no uniqueness check exists at any layer.
+- **Fenced code blocks are parsed as live structure.** No scanner in the file
+  is fence-aware. A spec containing a markdown example of the spec format gets
+  a phantom requirement archived into the source of truth, plus a false
+  `requirement_without_scenario` on the real one. Relevant here specifically:
+  `spec-validation` is a capability *about* the spec format.
+- **Several checks fail silently, and silence reads as a pass.** Block-style
+  YAML lists parse to `[""]`, which is truthy and defeats the
+  `blocked_without_cause` check written for exactly that case. A typo'd
+  `track:` coerces to `standard`, dropping planner, auditor, and the
+  production gate with no diagnostic. The git staleness check and the JS-only
+  import check already had this shape (`import-check-js-only`). Worth treating
+  as a class, not four separate bugs.
+- **`validate` with no active change exits 1** on a healthy repo —
+  `resolve_change` dies before anything is checked. CI is unaffected only
+  because it spells it `validate --all`.
+- **Budget** (rough, chars/4): baseline ~3.1k tokens per session before any
+  work. Instruction load per full chain — `lite` ~30k, `standard` ~34k,
+  `full` ~50k, and that is with `docs/specs/` **absent**. Executor alone is
+  ~11.3k. The tool's own output is negligible (`board` ~250 tokens), so the
+  spend is prose, not tooling. When `checklist-generator` runs it lands three
+  more mandatory reads into the executor, planner, and auditor chains — the
+  largest uncosted item in the budget, and worth sizing deliberately at
+  generation time rather than discovering after.
+
 ## 2026-07-27 — Harness proven on its first real change; CI is live
 
 **Did**: Took `add-ci-validation` through the whole `standard` pipeline —
