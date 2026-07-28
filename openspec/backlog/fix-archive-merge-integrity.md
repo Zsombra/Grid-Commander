@@ -85,9 +85,40 @@ rather than during it:
    with nothing moved. Belt and braces: validation can be bypassed by editing
    a delta after the check, the merge itself cannot.
 
-Do this together with `add-harness-regression-tests` — these two cases are
-exactly the fixtures that item asks for, and fixing the merge without a test
-that pins the behaviour just resets the clock.
-
 Do not "fix" this by making the second edit win. Ambiguity about which
 operation the author meant is the bug; the tool should refuse, not guess.
+
+## Still open on the test suite branch
+
+Verified 2026-07-28 against `claude/work-review-next-steps-clb36a` (PR #3),
+which closes `add-harness-regression-tests` with 124 harness tests including
+`tests/test_archive_merge.py` and `tests/test_archive_abort.py`. **Both
+reproductions above still fail there, byte for byte.** So this is not a
+main-only defect that the test branch has already fixed, and it should not be
+closed by merging PR #3.
+
+The near-miss is worth understanding before writing the fix, because it is
+what a reasonable test suite already got wrong once:
+
+```python
+def test_multiple_operations_do_not_disturb_each_others_line_ranges(self):
+    """Edits are applied bottom-up. Applied top-down instead, every range
+    after the first would be off by the length of the edit before it."""
+```
+
+That test names exactly the property this item violates, and it passes. It
+uses MODIFIED `Gamma` + REMOVED `Alpha` + ADDED `Delta` — **three different
+requirements**, so the three line ranges are disjoint and bottom-up ordering
+is sufficient. The defect lives in the case the test does not construct: two
+operations on the *same* requirement, where the ranges are identical rather
+than disjoint and application order cannot save either one.
+
+Add the fixture as `test_two_operations_on_one_requirement_are_refused`
+directly alongside it, so the pair reads as the general case and its
+exception.
+
+Same lesson for the meta-test PR #3 describes, which reads the diagnostic
+codes out of the source with `ast` and fails on any code no fixture triggers:
+that guarantees every code that *exists* is exercised, and by construction can
+never surface a code that was never written. Coverage of the codes is not
+coverage of the failure modes.

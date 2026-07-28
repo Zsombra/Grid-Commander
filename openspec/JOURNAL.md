@@ -36,10 +36,18 @@ exercised the write path against scratch fixtures. Filed 5 new backlog items,
 one of them the first P0 this repo has had. Also costed the harness in tokens
 — see below. No code changed; this session is a review.
 
-**State**: `main` + CI unchanged and green. 10 open backlog items (1×P0, 3×P1,
-3×P2, 3×P3). `validate --all` still clean, 1 warning (design system
-placeholder). `CLAUDE.md` and `openspec/config.yaml` are **still unfilled
-templates** — unchanged blocker from the last session.
+**State**: `main` unchanged. 10 open backlog items (1×P0, 3×P1, 3×P2, 3×P3)
+against `main`; two of them — `add-harness-regression-tests` and
+`enforce-journal-entry` — are already closed on PR #3 and should be reconciled
+rather than worked. `validate --all` clean, 1 warning (design system
+placeholder). `CLAUDE.md` and `openspec/config.yaml` are still unfilled
+templates **on `main`**; PR #3 fills them.
+
+**CI is red on this PR and it is not the diff.** Every run since `7f1cb28` is a
+`startup_failure` with `path: BuildFailed` — the workflow never starts, on
+`main` and on both open branches, including commits that touch only markdown.
+Already filed by the parallel session as `ci-startup-failure` (P1); nothing to
+fix here.
 
 **Next**: `/propose` `fix-archive-merge-integrity` together with
 `add-harness-regression-tests` — the fix needs the tests in the same change,
@@ -47,6 +55,13 @@ because the two reproductions below are precisely the fixtures that item asks
 for.
 
 **Watch out**:
+- **All five findings reproduce against PR #3's tool as well**, which ships 124
+  harness tests and closes `add-harness-regression-tests`. Do not assume
+  merging PR #3 closes any of them. `tests/test_archive_merge.py` even carries
+  `test_multiple_operations_do_not_disturb_each_others_line_ranges`, which
+  names the exact property the P0 violates and passes — it uses three
+  *different* requirements, so the ranges are disjoint. The defect is two
+  operations on the *same* requirement.
 - **The archive merge can silently delete a requirement nobody mentioned.**
   A delta that both REMOVEs and MODIFIEs one requirement produces two line-range
   edits with the same start offset, computed against the pre-edit spec. The
