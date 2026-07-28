@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Lets a run be started by hand. Added while diagnosing a period where the
+  # repository created no runs at all — with only event-driven triggers there
+  # is no way to ask for one, so "did it not run, or did it not start?" cannot
+  # be answered from the outside.
+  workflow_dispatch:
 
 permissions:
   contents: read
