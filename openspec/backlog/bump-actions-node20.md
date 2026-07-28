@@ -2,7 +2,7 @@
 id: bump-actions-node20
 title: CI actions still target the deprecated Node 20 runtime
 type: chore
-status: done
+status: open
 priority: p3
 created: 2026-07-27
 updated: 2026-07-27
@@ -44,13 +44,20 @@ have meant changing the very workflow whose first green run was proving the
 
 Pure presentation of the CI config — no spec change, `lite` track.
 
-## Outcome (2026-07-28)
+## Attempt and revert (2026-07-28)
 
-Bumped the `validate` job to `actions/checkout@v5` and `actions/setup-python@v6`,
-matching the `tests` and `matrix` jobs. All three now target the same runtime and
-no job declares Node 20.
+Bumped all three jobs to `actions/checkout@v5` / `actions/setup-python@v6` and
+**every job in the run failed within 2-9 seconds**, before any step produced a
+log (run 30362637624, six of six). Reverted to `@v4` / `@v5`, the pins proven
+green by run 30241139011.
 
-The warning this item is about cannot be confirmed gone until a run executes —
-the repository created no runs between 2026-07-28T07:54Z and going public. This
-change is the first push after that, so the run it triggers is where the log
-gets read.
+Those `@v5` / `@v6` pins were copied from PR #3's `tests` job. That job had
+never executed — it was added during the window when the repository created no
+workflow runs at all — so it looked reviewed and merged-ready while being
+entirely unverified. Propagating it, and then "closing" this item by moving the
+one job that *did* work onto the same pins, turned a green `validate` job red.
+
+**Whoever picks this up next: confirm the major version exists before pinning
+it.** The deprecation this item is about is a warning, not a failure; the
+working state is worth more than the clean log until the replacement is
+verified against a real run.
