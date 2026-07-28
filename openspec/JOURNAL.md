@@ -29,6 +29,43 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — CI diagnosed properly: no runs are being created, and it is not a startup failure
+
+**Did**: Stopped repeating the inherited diagnosis and actually queried the
+Actions API. `ci-startup-failure` is wrong: there are **no `startup_failure`
+runs in this repository at all** — 37 runs total, the 30 most recent all
+`success`. Runs simply stopped being *created* at `2026-07-28T07:54:54Z`, on
+every branch. Filed `ci-creates-no-runs` (P1) with the evidence, superseding the
+misdiagnosis. Added `workflow_dispatch` to the workflow so a run can be
+requested by hand.
+
+**State**: Branch carries all five review fixes and 58 tests; `validate --all`
+clean, 1 warning. Backlog 6 open. Nothing on this branch has ever been executed
+by CI.
+
+**Next**: The fix is not a commit — it needs repository settings. Billing
+spending limit first (exhausted minutes stop run creation while leaving the
+workflow `state: active`, which matches exactly what the API reports), then
+Settings → Actions → General.
+
+**Watch out**:
+- **I repeated a wrong diagnosis for a day because it arrived pre-packaged.**
+  `startup_failure` / `path: BuildFailed` came from a parallel session's backlog
+  item, and I passed it into three PR comments without once checking it against
+  the API. The check took one query. A borrowed diagnosis is a hypothesis, not
+  evidence, and it deserves the same scepticism as one of my own.
+- **The distinction is not pedantic — it changes who can fix it.** A
+  `startup_failure` is a run that exists with a workflow GitHub could not start,
+  and a commit can fix it. Zero runs created is Actions not dispatching, and no
+  commit can. A day was spent believing the fix was on the wrong side of that
+  line.
+- **The decisive evidence was PR #3's own head, not mine.** Its `52ea2b5` also
+  has zero check runs, which is what separates "repo-wide" from "something
+  about my branch or my PR". Checking only my own branch would have left that
+  ambiguous.
+- The session token cannot dispatch a run (`403`, no `actions: write`) or read
+  settings/billing, so this is where automated diagnosis ends.
+
 ## 2026-07-28 — The silent-check pass: last three review findings closed
 
 **Did**: Fixed `archive-allows-incomplete-tasks` (P1),
