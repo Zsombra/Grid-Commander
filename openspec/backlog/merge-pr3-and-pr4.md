@@ -1,0 +1,91 @@
+---
+id: merge-pr3-and-pr4
+title: Land PR #3 then PR #4 — merge verified, test-side patch ready
+type: chore
+status: open
+priority: p1
+created: 2026-07-28
+updated: 2026-07-28
+change: ""
+capability: ""
+blocked_by: []
+tags: [merge, harness]
+---
+
+# Land PR #3 then PR #4 — merge verified, test-side patch ready
+
+## What
+
+Nothing has shipped. `main` holds 74 files of pipeline scaffolding; the entire
+product (PR #3, 310 files, 40,589 insertions) and the harness fixes (PR #4, 14
+files, 2,613) both sit unmerged on the same base. Every day that persists, the
+merge cost grows and the verified state gets staler.
+
+The merge has now been performed and verified in a scratch worktree. This item
+carries the result so nobody has to rediscover it.
+
+## Why the verification was needed
+
+`.claude/tools/openspec.py` is edited by both branches and **auto-merges with
+zero conflict hunks**. That is exactly the situation where a clean merge reads
+as a safe one. It was not: the merged tree failed **16 of PR #3's 124 harness
+tests**.
+
+Textually clean is not semantically correct, and this repository has been
+bitten by that shape three times already (the `??` coercion scan,
+`drizzle-kit check`, the `next build` gap).
+
+## Result
+
+Merged tree: **192 tests, all passing.** `validate --all` exits 0 (2 warnings:
+the design-system placeholder and a journal-staleness note).
+`./scripts/check.sh --matrix` green on 3.10, 3.11, 3.12 and 3.13.
+
+Getting there took three things.
+
+**1. A real defect in PR #4, fixed on that branch (`e23ca0d`).**
+`archive_change` returned as soon as `tasks_incomplete` fired, so
+`merge_conflict` and `archive_target_exists` — detected further down — never
+surfaced while a checklist was unfinished. Two stacked problems took two rounds
+to learn about, and the second is the more serious one. The gate is now
+collected and returned alongside the plan-building findings. Fixed 4 of the 16.
+
+**2. One line in PR #3's fixture helper.** `tests/support.py` defaults to
+`tasks: str = "- [ ] 1.1 do the thing"`. Those tests exercise merge mechanics,
+not task policy, and the unchecked box now trips the new archive gate. Changing
+the default to `- [x]` fixes 11 of the remaining 12.
+
+**3. Fixtures for eight new codes.** PR #3's `test_every_emitted_code_has_a_
+fixture` reads the codes out of the tool with `ast` and fails on any without a
+fixture. PR #4 adds eight: `requirement_multiple_operations`,
+`duplicate_requirement_in_delta`, `duplicate_requirement_in_spec`,
+`invalid_track`, `track_not_declared`, `change_meta_missing`,
+`delta_without_capability`, `tasks_incomplete`. That meta-test doing its job is
+the reason this was caught rather than shipped.
+
+Both test-side changes are saved as `docs/merge/pr3-test-side.patch`
+(`git apply` it on the merged tree).
+
+## Conflicts, and how they resolve
+
+Only two files conflict. `openspec.py` does not.
+
+| file | resolution |
+|---|---|
+| `.github/workflows/validate.yml` | keep PR #3's file (it has the `app` job), add PR #4's `matrix` job, keep `workflow_dispatch` |
+| `openspec/JOURNAL.md` | keep both sides, newest first — the journal's own rule |
+
+**Use `actions/checkout@v4` and `actions/setup-python@v5` throughout.** PR #3
+pins `@v5`/`@v6` in a job that has never executed; `@v4`/`@v5` is the only pair
+this repository has ever run green (run 30241139011). Do not "fix" this without
+a passing run to point at.
+
+## Order
+
+**PR #3 first.** It is 310 files and rebasing it later is expensive; PR #4 is 14
+files and rebases trivially either way.
+
+## Note
+
+CI cannot verify any of this — see `ci-creates-no-runs`. Everything above is
+from `./scripts/check.sh --matrix` on the merged tree.

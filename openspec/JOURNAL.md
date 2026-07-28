@@ -29,6 +29,40 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Merge verified: clean auto-merge, 16 failing tests
+
+**Did**: Merged this branch into PR #3 in a scratch worktree and ran the
+combined suite. `openspec.py` auto-merges with **zero conflict hunks** and the
+result failed **16 of PR #3's 124 harness tests**. Fixed the one that was mine
+(`e23ca0d`), identified the other two causes, and drove the merged tree to
+**192/192** with `validate --all` clean. Recipe filed as `merge-pr3-and-pr4`
+(P1) with the test-side patch at `docs/merge/pr3-test-side.patch`.
+
+**State**: PR #4 at 60 tests, green on 3.10-3.13. Merged tree 192/192. Backlog
+7 open.
+
+**Next**: Land PR #3, then PR #4. Everything needed is in `merge-pr3-and-pr4`.
+
+**Watch out**:
+- **A clean auto-merge is not a correct one, and this is the proof.** Zero
+  conflict hunks in the one file both branches rewrite, and 16 tests failed
+  anyway. Nobody would have run the combined suite before merging — that is the
+  whole point of having run it.
+- **My own defect was the interesting 4 of the 16.** `archive_change` returned
+  on `tasks_incomplete` before reaching `merge_conflict` and
+  `archive_target_exists`, so a policy stop hid a structural defect. It only
+  showed up because PR #3's fixtures stack both conditions; my own tests never
+  did.
+- **PR #3's `ast` meta-test earned its keep.** I criticised it in the review for
+  being unable to surface codes nobody wrote — true, but it caught all eight
+  codes I added with no fixture. The limitation I named was real and so is the
+  value.
+- **I discarded my own uncommitted fix** with a `git checkout --` while
+  restoring an injected defect, and only noticed because the next check failed.
+  Inject into a copy, not the working tree.
+- Pin CI to `actions/checkout@v4` / `setup-python@v5`. PR #3's `@v5`/`@v6` sits
+  in a job that has never executed.
+
 ## 2026-07-28 — Verification no longer depends on GitHub
 
 **Did**: The owner has no billing access, so Actions minutes are not coming
