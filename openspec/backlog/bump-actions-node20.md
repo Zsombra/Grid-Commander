@@ -2,7 +2,7 @@
 id: bump-actions-node20
 title: CI actions still target the deprecated Node 20 runtime
 type: chore
-status: open
+status: done
 priority: p3
 created: 2026-07-27
 updated: 2026-07-27
@@ -43,3 +43,14 @@ have meant changing the very workflow whose first green run was proving the
 `spec-validation` spec, and I could not verify the newer majors from here.
 
 Pure presentation of the CI config — no spec change, `lite` track.
+
+## Outcome (2026-07-28)
+
+Bumped the `validate` job to `actions/checkout@v5` and `actions/setup-python@v6`,
+matching the `tests` and `matrix` jobs. All three now target the same runtime and
+no job declares Node 20.
+
+The warning this item is about cannot be confirmed gone until a run executes —
+the repository created no runs between 2026-07-28T07:54Z and going public. This
+change is the first push after that, so the run it triggers is where the log
+gets read.
