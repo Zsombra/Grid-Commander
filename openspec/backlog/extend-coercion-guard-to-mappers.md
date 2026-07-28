@@ -2,11 +2,11 @@
 id: extend-coercion-guard-to-mappers
 title: The coercion guard misses identifiers defaulted inside mappers
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-27
 updated: 2026-07-27
-change: ""
+change: extend-coercion-guard
 capability: strategy-authoring
 blocked_by: []
 tags: [testing, guard]
@@ -49,3 +49,15 @@ Extend the scan to cover:
 The cleanest version is probably an allowlist: within `**/\*-mapper.ts` and
 `**/\*-adapter.ts`, an `id` or `revision` assignment must be preceded by a
 `throw` guard, as `mapAgent` and `mapStrategy` now both are.
+
+
+## Resolved
+
+Closed in `extend-coercion-guard`. `tests/architecture/identifiers.test.ts` covers
+both halves of PG-301 — the `?? <literal>` and the `? … : <literal>` — plus a
+positive rule that a mapper reading an identifier off an untyped payload must be
+able to refuse it.
+
+**Verified by re-injecting PG-301 verbatim into `strategy-adapter.ts`**: four of
+the new tests fail, plus two behavioural ones. The guard has now been seen to
+fail on the real defect, which is the only evidence that it works.
