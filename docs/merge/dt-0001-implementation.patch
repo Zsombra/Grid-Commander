@@ -158,6 +158,40 @@ index 0000000..db3c09d
 +    scroll-behavior: auto !important;
 +  }
 +}
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+index fa21717..d12f32d 100644
+--- a/eslint.config.mjs
++++ b/eslint.config.mjs
+@@ -75,6 +75,7 @@ export default tseslint.config(
+     },
+   },
+ 
++
+   {
+     rules: {
+       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+@@ -82,4 +83,21 @@ export default tseslint.config(
+       'no-console': 'error',
+     },
+   },
++
++  /**
++   * Build tooling and root config files are Node programs, not application
++   * code. `console` is its
++   * only output channel and `process.exit` is how it fails a build, so the two
++   * rules that exist to keep those out of the app would only be silenced with
++   * inline disables here — which hides them from the app as well.
++   */
++  {
++    files: ['tools/**/*.mjs', '*.config.mjs'],
++    languageOptions: {
++      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
++    },
++    rules: {
++      'no-console': 'off',
++    },
++  },
+ );
 diff --git a/package.json b/package.json
 index ddf98c9..6c55b01 100644
 --- a/package.json
