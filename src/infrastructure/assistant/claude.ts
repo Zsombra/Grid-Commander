@@ -9,6 +9,7 @@ import type {
   ToolUseBlock,
 } from '@anthropic-ai/sdk/resources/messages';
 import type { Consultation } from '@/domain/assistant/answer.js';
+import type { AssistantDisclosure } from '@/domain/assistant/disclosure.js';
 import { CANNOT_CHANGE_ANYTHING } from '@/domain/assistant/toolset.js';
 import type { ReadOnlyToolset } from '@/domain/assistant/toolset.js';
 import { AssistantUnavailableError, ConnectionRevokedError } from '@/domain/errors.js';
@@ -86,6 +87,17 @@ export interface MessageService {
 
 export class ClaudeAssistant implements AssistantPort {
   constructor(private readonly messages: MessageService) {}
+
+  /**
+   * Answering sends the user's account data to Anthropic.
+   *
+   * The organisation, not `MODEL`. Someone checking on their trading agents
+   * needs to know who receives their strategies; `claude-opus-5` tells them
+   * nothing and would make a model upgrade a change to a user-facing sentence.
+   */
+  describe(): AssistantDisclosure {
+    return { kind: 'sends-outside', recipient: 'Anthropic' };
+  }
 
   async answer(request: AssistantRequest): Promise<AssistantResponse> {
     const consulted: Consultation[] = [];

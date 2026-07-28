@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-07-28 — Telling the user where their question goes
+
+**Did**: Proposed, executed, verified and archived `disclose-the-assistant-model`
+(standard track, 22/22). `/assistant` now names Anthropic as the recipient before
+a question is asked, and says the data leaves the product.
+
+Since this morning, answering sent someone's agents and strategies to a third
+party and the page said nothing about it. Every other outbound path here is
+BattleGrid, granted through an OAuth screen that names BattleGrid. This one was
+not.
+
+**Disclosure is the consent, which is why the change stops there.** Asking is
+opt-in per question and the sentence comes first, so a user who reads it can
+decline by not asking — a real choice, available immediately, needing no
+preference store. The narrower question that remains is
+`assistant-asking-cannot-be-declined` (P3, and likely closes as "already
+answered").
+
+**`AssistantPort.describe()` rather than reading configuration twice.** The port
+exists because *which model answers is a deployment decision*; where a question
+goes is the same fact, read rather than used. A deployment with no key says the
+opposite — nothing typed there leaves — instead of being handed a warning about
+a recipient it does not have. The sentence is composed in the domain, so no
+surface owns a copy that could go stale against the deployment it describes.
+
+**State**: archived. `assistant` 7 → 8 requirements, the six untouched ones
+byte-identical. 448 tests, up from 435. Every gate green, including
+`check-serving.sh`.
+
+**Next**: `assistant-unverified-against-live-api` (P1) — one real request
+against a real key. Then `strategy-catalog`'s design ticket, whose empty state
+is still unwritten.
+
+**Watch out**:
+
+- **A missed mutation found a real hole this time.** Deleting the sentence from
+  the page's JSX left all 75 assistant tests green — the structural guard
+  asserted the query was *called*, not that its result was *shown*. A disclosure
+  computed and never rendered is the exact failure the requirement describes,
+  and worse than none, because the code would look like it discloses. Three
+  tests added, all re-demonstrated failing. Compare yesterday's miss, which was
+  the opposite: a property held better than the comment claimed. **Same symptom,
+  opposite meaning — the only way to tell them apart is to go find the mutation
+  that does fail.**
+- **Rendering it moved it.** Placed after `<label>Your question</label>`, the
+  disclosure put four lines between the label and the box it names. Moved above
+  the label. No assertion in this change would have caught that, and it is the
+  second time a render has corrected a placement the ticket got wrong.
+- **A stale server nearly became the proof.** The second screenshot came back
+  identical to the first because the restarted `npm start` had exited 1 on a
+  held port and curl reached the *old* process. That is the same failure
+  `check-serving.sh` was hardened against, hit again from the other direction —
+  and this time by hand, where no guard was watching. Third run verified the
+  port was free first and that the shot came from the pid it launched.
+- **Text inputs ignore dark mode** — white box on a near-black page, visible
+  directly under the disclosure in the dark proof. Pre-existing and product-wide;
+  the token passes covered surfaces and never touched form controls. Filed as
+  `form-inputs-ignore-dark-mode` (P2), to be fixed as one treatment rather than
+  per page.
+
 ## 2026-07-28 — The assistant answers something
 
 **Did**: Proposed, executed, verified and archived `wire-the-assistant-model`

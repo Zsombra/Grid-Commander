@@ -2,11 +2,11 @@
 id: assistant-does-not-name-its-model
 title: The assistant does not tell the user where their data goes
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: disclose-the-assistant-model
 capability: assistant
 blocked_by: []
 tags: [assistant, disclosure, ui]
@@ -62,3 +62,23 @@ requirement about consent, and it belongs in a `/propose` change of its own.
 
 Filed P1 rather than P2 because it is a disclosure gap that ships the moment a
 key is set, not a defect that waits for a trigger.
+
+## Resolved (2026-07-28)
+
+Closed by `disclose-the-assistant-model`. `/assistant` now names Anthropic as
+the recipient, says the data leaves the product, and distinguishes this path
+from the BattleGrid connection the user granted deliberately. A deployment with
+no model configured says the opposite — that nothing typed there leaves — rather
+than being given a warning about a recipient it does not have.
+
+Two notes on how it differs from the fix proposed above:
+
+**It is a spec change, not a design ticket.** "Tell the user where their data
+goes" is a requirement about what the product must say, and the sentence has to
+change with the deployment. Both are behaviour, and a design ticket may not
+carry behaviour.
+
+**Part 2 — whether asking should be declinable — is now
+`assistant-asking-cannot-be-declined`,** not this item. Disclosure turned out to
+close most of it: asking is opt-in per question, so someone told beforehand can
+decline by not asking. What remains is narrower and worth its own record.

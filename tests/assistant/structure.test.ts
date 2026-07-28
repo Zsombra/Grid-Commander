@@ -102,6 +102,54 @@ describe('a deployment with no model still boots', () => {
   });
 });
 
+describe('the disclosure cannot disagree with the deployment', () => {
+  it('the page renders it rather than holding its own copy', () => {
+    const page = stripComments(readFileSync('app/(app)/assistant/page.tsx', 'utf8'));
+
+    // The failure this whole requirement exists to prevent: a sentence typed
+    // into the page, correct on the day it was written, still there after the
+    // deployment stopped matching it.
+    expect(page).toContain('describeAssistant.execute()');
+    expect(page, 'the recipient must not be spelled into the surface').not.toMatch(
+      /Anthropic|claude-opus/,
+    );
+  });
+
+  it('renders the sentence rather than merely computing it', () => {
+    // Found by mutation: deleting the sentence from the JSX left every other
+    // test green. Reading the disclosure and not showing it is the exact
+    // failure this requirement describes — and it would be *more* misleading
+    // than before, because the code would look like it discloses.
+    const note = stripComments(
+      readFileSync('src/presentation/components/assistant-disclosure.tsx', 'utf8'),
+    );
+    expect(note).toMatch(/\{\s*description\.sentence\s*\}/);
+  });
+
+  it('shows it without waiting for a question', () => {
+    // A disclosure that appears only after the first answer is not a
+    // disclosure; it is a receipt.
+    const page = stripComments(readFileSync('app/(app)/assistant/page.tsx', 'utf8'));
+    const line = page.split('\n').find((l) => /AssistantDisclosureNote/.test(l)) ?? '';
+    expect(line, 'nothing about it may be conditional on q or answer').not.toMatch(/\bq\b|answer/);
+
+    // And it is inside the form, with the means of asking.
+    const form = page.slice(page.indexOf('<form'), page.indexOf('</form>'));
+    expect(form, 'the disclosure belongs with the question box').toMatch(/AssistantDisclosureNote/);
+  });
+
+  it('no surface composes its own version of the sentence', () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('app', '.tsx'), ...filesUnder('src/presentation', '.tsx')]) {
+      const code = stripComments(readFileSync(file, 'utf8'));
+      if (/sends what I read|leaves this product|outside this product/i.test(code)) {
+        offenders.push(file);
+      }
+    }
+    expect(offenders, 'describeDisclosure() in the domain is the only author').toEqual([]);
+  });
+});
+
 describe('assistant reads are attributable', () => {
   it('the use case marks its calls as the assistant’s', () => {
     const source = stripComments(

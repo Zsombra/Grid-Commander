@@ -3,6 +3,7 @@ import { AskAssistantCommand, UnreachableToolError } from '@/application/use-cas
 import { CANNOT_ESTABLISH, describeIncompleteness, OUTSIDE_THIS_ACCOUNT } from '@/domain/assistant/answer.js';
 import { AssistantUnavailableError, ConnectionRevokedError } from '@/domain/errors.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import type { AssistantDisclosure } from '@/domain/assistant/disclosure.js';
 import { NotConfiguredAssistant } from '@/infrastructure/assistant/not-configured.js';
 import type { AssistantPort, AssistantRequest, AssistantResponse } from '@/ports/assistant.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
@@ -21,6 +22,11 @@ class ScriptedAssistant implements AssistantPort {
   async answer(request: AssistantRequest): Promise<AssistantResponse> {
     this.seen = request;
     return this.script(request);
+  }
+
+  /** Irrelevant to every test here — these exercise answering, not disclosure. */
+  describe(): AssistantDisclosure {
+    return { kind: 'nothing-answers' };
   }
 }
 

@@ -1,3 +1,4 @@
+import type { AssistantDisclosure } from '@/domain/assistant/disclosure.js';
 import type { AssistantPort, AssistantResponse } from '@/ports/assistant.js';
 
 /**
@@ -22,5 +23,17 @@ export class NotConfiguredAssistant implements AssistantPort {
         'Grid-Commander has done on your behalf.',
       consulted: [],
     };
+  }
+
+  /**
+   * Nothing answers, so nothing is sent.
+   *
+   * This is not a placeholder to be filled in later — it is the true statement
+   * about a deployment with no key, and a user on one should be told their
+   * question stays here rather than warned about a recipient that does not
+   * exist.
+   */
+  describe(): AssistantDisclosure {
+    return { kind: 'nothing-answers' };
   }
 }

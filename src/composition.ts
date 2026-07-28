@@ -16,6 +16,7 @@ import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journa
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
 import { AskAssistantCommand } from './application/use-cases/ask-assistant.command.js';
+import { DescribeAssistantQuery } from './application/use-cases/describe-assistant.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
@@ -188,6 +189,9 @@ export function app(cookies: CookieStore) {
     // The assistant's read-only toolset is derived inside the use case, from
     // the live discovered set. Nothing here can widen it.
     askAssistant: new AskAssistantCommand(i.battlegrid, i.assistant),
+    // Reads from the same instance `askAssistant` will use, so what the user is
+    // told and what actually answers cannot be two different deployments.
+    describeAssistant: new DescribeAssistantQuery(i.assistant),
   };
 }
 

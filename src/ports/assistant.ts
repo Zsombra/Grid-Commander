@@ -1,4 +1,5 @@
 import type { Answer, Consultation } from '@/domain/assistant/answer.js';
+import type { AssistantDisclosure } from '@/domain/assistant/disclosure.js';
 import type { ReadOnlyToolset } from '@/domain/assistant/toolset.js';
 
 /**
@@ -16,6 +17,20 @@ export interface AssistantPort {
    * anything at all.
    */
   answer(request: AssistantRequest): Promise<AssistantResponse>;
+
+  /**
+   * Where a question goes, for telling the user before they ask one.
+   *
+   * On the port rather than beside it: an implementation is the only thing that
+   * knows whether answering leaves this product, and asking it is the only way
+   * the disclosure cannot disagree with the deployment. A value read from
+   * configuration in a second place would be a promise maintained by hand.
+   *
+   * Synchronous and free of the request, deliberately — it describes the
+   * deployment, not an answer, and a page must be able to say it without
+   * asking anything.
+   */
+  describe(): AssistantDisclosure;
 }
 
 export interface AssistantRequest {
