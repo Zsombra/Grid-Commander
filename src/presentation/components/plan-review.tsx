@@ -9,7 +9,31 @@ import type { PlanReview } from '@/application/use-cases/compile-plan.command.js
  * hand that back, and the mistake would be one click wide with a fleet-sized
  * consequence. See design S-G.
  */
-export function PlanReviewPanel({ review }: { review: PlanReview }) {
+export function PlanReviewPanel({
+  review,
+  action,
+  confirmation,
+  applyBlockedBecause,
+}: {
+  review: PlanReview;
+  /**
+   * Applying the reviewed plan. Required: this button reconfigures every agent
+   * bound to the strategy, and it spent the life of the project attached to
+   * nothing at all.
+   */
+  action: (formData: FormData) => Promise<void>;
+  /**
+   * What the apply needs to carry. Absent when the apply was refused before it
+   * could be offered — the review still renders, without a button.
+   */
+  confirmation?: {
+    readonly strategyId: string;
+    readonly confirmationToken: string;
+    readonly consequence: string;
+  };
+  /** Why applying is unavailable, when it is. Always a reason the user can act on. */
+  applyBlockedBecause?: string;
+}) {
   const { viable, concerns, changedAxes, boundAgentCount, proposedRevision, summary } = review;
 
   return (
@@ -63,14 +87,25 @@ export function PlanReviewPanel({ review }: { review: PlanReview }) {
         </div>
       )}
 
-      {viable ? (
+      {viable && confirmation ? (
         <div className="space-y-3">
           {summary && (
             <p role="status" className="rounded border p-3 text-sm">
               {summary}
             </p>
           )}
-          <form method="post" className="flex flex-wrap gap-3">
+          {/* BattleGrid's own words for what this does, stored with the token
+              so the audit can prove what was shown. */}
+          <p role="alert" className="rounded border p-3 text-sm">
+            {confirmation.consequence}
+          </p>
+          <form action={action} className="flex flex-wrap gap-3">
+            <input type="hidden" name="strategyId" value={confirmation.strategyId} />
+            <input type="hidden" name="confirmationToken" value={confirmation.confirmationToken} />
+            {/* The reviewed plan itself, carried rather than recompiled. Altering
+                it changes its digest, the confirmation stops matching, and the
+                write is refused before it reaches BattleGrid. */}
+            <input type="hidden" name="plan" value={JSON.stringify(review.plan)} />
             <button type="submit" className="rounded border px-4 py-2 text-sm">
               Apply this{' '}
               {boundAgentCount !== null && boundAgentCount > 0
@@ -84,8 +119,9 @@ export function PlanReviewPanel({ review }: { review: PlanReview }) {
         </div>
       ) : (
         <p role="alert" className="rounded border p-3 text-sm">
-          BattleGrid reports this plan as not viable, so it cannot be applied as it
-          stands. Adjust the change and compile again.
+          {applyBlockedBecause ??
+            'BattleGrid reports this plan as not viable, so it cannot be applied as it ' +
+              'stands. Adjust the change and compile again.'}
         </p>
       )}
     </section>

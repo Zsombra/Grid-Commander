@@ -42,7 +42,7 @@ export default async function NewAgentPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">New agent</h1>
-      <AgentForm catalog={catalog.catalog} />
+      <AgentForm catalog={catalog.catalog} action={create} />
     </main>
   );
 }

@@ -11,11 +11,18 @@ import type { RebindProposal } from '@/application/use-cases/rebind-agent.comman
  * Note what the confirm control says. "OK" or "Confirm" would be a button that
  * agrees to nothing in particular.
  */
-export function RebindConfirm({ proposal }: { proposal: RebindProposal }) {
+export function RebindConfirm({
+  proposal,
+  action,
+}: {
+  proposal: RebindProposal;
+  /** The rebind itself. Required — a confirmation that confirms nothing is worse than none. */
+  action: (formData: FormData) => Promise<void>;
+}) {
   const { rebind, consequence, confirmationToken } = proposal;
 
   return (
-    <form method="post" action={`/agents/${rebind.agentId}/rebind`} className="space-y-4">
+    <form action={action} className="space-y-4">
       <h2 className="text-lg font-medium">
         Rebind {rebind.agentName} to {rebind.toStrategyName}?
       </h2>

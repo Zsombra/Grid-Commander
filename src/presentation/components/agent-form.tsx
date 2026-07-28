@@ -16,15 +16,22 @@ import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
  */
 export function AgentForm({
   catalog,
+  action,
   issues = [],
 }: {
   catalog: Catalog;
+  /**
+   * The operation this form performs. Required, so that a form which submits
+   * nowhere is a type error rather than a page that renders perfectly and does
+   * nothing — which is what this was for the whole life of the project.
+   */
+  action: (formData: FormData) => Promise<void>;
   issues?: readonly ValidationIssue[];
 }) {
   const issueFor = (field: string) => issues.find((i) => i.field === field)?.reason;
 
   return (
-    <form method="post" action="/agents/new" className="space-y-6">
+    <form action={action} className="space-y-6">
       {issues.length > 0 && (
         <div role="alert" className="rounded border p-3 text-sm">
           <p className="font-medium">

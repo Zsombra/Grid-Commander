@@ -1,4 +1,7 @@
+import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
+import { requiredText } from '@/presentation/form.js';
+import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 
@@ -78,18 +81,19 @@ export default async function EditStrategyPage({
     );
   }
 
-  const compiled = await app.compilePlan.execute({
-    ...user.authority,
-    request: {
-      operation: 'UPDATE',
-      strategyId: id,
-      expectedRevision: strategy.revision,
-      intentSummary: `Change the tagline of ${strategy.name}`,
-      assumptions: ['Only the tagline changes'],
-      coinSelection: { mode: 'ranked', limit: 9 },
-      tagline,
-    },
-  });
+  // Held in one place: it is both what is compiled and what `describeApply`
+  // digests to check the screen still matches the plan.
+  const intent = {
+    operation: 'UPDATE' as const,
+    strategyId: id,
+    expectedRevision: strategy.revision,
+    intentSummary: `Change the tagline of ${strategy.name}`,
+    assumptions: ['Only the tagline changes'],
+    coinSelection: { mode: 'ranked' as const, limit: 9 },
+    tagline,
+  };
+
+  const compiled = await app.compilePlan.execute({ ...user.authority, request: intent });
 
   if (compiled.kind === 'rejected') {
     return (
@@ -101,10 +105,66 @@ export default async function EditStrategyPage({
     );
   }
 
+  const proposal = await app.describeApply.execute({
+    ...user.authority,
+    strategyId: id,
+    plan: compiled.review.plan,
+    currentIntent: intent,
+    currentRevision: strategy.revision,
+  });
+
+  if (proposal.kind === 'refused') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-6 p-6">
+        <h1 className="text-xl font-medium">Review: {strategy.name}</h1>
+        {/* The review still renders — the user should see what was compiled even
+            when it cannot be applied, because the reason usually names what to
+            change. */}
+        <PlanReviewPanel review={compiled.review} action={apply} applyBlockedBecause={proposal.reason} />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">Review: {strategy.name}</h1>
-      <PlanReviewPanel review={compiled.review} />
+      <PlanReviewPanel
+        review={compiled.review}
+        action={apply}
+        confirmation={{
+          strategyId: id,
+          confirmationToken: proposal.proposal.confirmationToken,
+          consequence: proposal.proposal.consequence,
+        }}
+      />
     </main>
   );
+}
+
+/**
+ * Apply the plan that was reviewed — not a freshly compiled one.
+ *
+ * The compiled plan travels through the form rather than being recompiled here.
+ * Recompiling would produce a plan with the same intent digest and possibly
+ * different contents, and "what is applied is what was reviewed" is a
+ * requirement rather than an aspiration.
+ *
+ * Carrying it through the browser is safe because it is not trusted: the
+ * confirmation is bound to `strategy:<id>#<intentDigest>`, so a plan altered in
+ * transit produces a different digest, the confirmation fails to consume, and
+ * the write is refused before it reaches BattleGrid.
+ */
+export async function apply(formData: FormData) {
+  'use server';
+  const { app, user } = await acting();
+  if (user.kind === 'not-connected') redirect('/connect');
+
+  const strategyId = requiredText(formData, 'strategyId');
+  await app.applyPlan.execute({
+    ...user.authority,
+    strategyId,
+    plan: JSON.parse(requiredText(formData, 'plan')) as CompiledPlan,
+    confirmationToken: requiredText(formData, 'confirmationToken'),
+  });
+  redirect('/strategies');
 }

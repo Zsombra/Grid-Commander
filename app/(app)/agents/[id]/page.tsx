@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
+import { isEditable } from '@/domain/agent/agent.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredText } from '@/presentation/form.js';
 
@@ -66,6 +67,33 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
           Money limits: {agent.tradingConfig ? 'configured' : 'not configured'}
         </p>
       </section>
+
+      {/*
+        Renaming is the one agent-owned field editable from this page. The rest
+        live behind /edit. Gated on `isEditable` for the same reason every other
+        affordance is: offering an action BattleGrid will refuse is worse than
+        not offering it.
+      */}
+      {isEditable(agent) && (
+        <form action={rename} className="space-y-2">
+          <input type="hidden" name="agentId" value={agent.id} />
+          <label htmlFor="displayName" className="block text-sm font-medium">
+            Name
+          </label>
+          <input
+            id="displayName"
+            name="displayName"
+            type="text"
+            defaultValue={agent.displayName}
+            maxLength={80}
+            required
+            className="w-full rounded border p-2"
+          />
+          <button type="submit" className="rounded border px-4 py-2 text-sm">
+            Rename
+          </button>
+        </form>
+      )}
 
       <AgentActions agent={agent} />
     </main>

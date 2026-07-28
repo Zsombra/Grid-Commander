@@ -52,7 +52,7 @@ export default async function RebindPage({
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <RebindConfirm proposal={result.proposal} />
+      <RebindConfirm proposal={result.proposal} action={performRebind} />
     </main>
   );
 }
