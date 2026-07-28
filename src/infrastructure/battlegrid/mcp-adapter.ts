@@ -174,12 +174,21 @@ export class McpBattleGridAdapter implements BattleGridPort {
 
   private async rawDiscoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {
     const result = (await this.rpc(accessToken, 'tools/list', {})) as {
-      tools?: Array<{ name: string; description?: string; annotations?: Record<string, unknown> }>;
+      tools?: Array<{
+        name: string;
+        description?: string;
+        annotations?: Record<string, unknown>;
+        inputSchema?: Record<string, unknown>;
+      }>;
     };
     return (result.tools ?? []).map((t) => ({
       name: t.name,
       description: t.description,
       annotations: t.annotations as DiscoveredTool['annotations'],
+      // Kept rather than dropped. Discarding it left the assistant guessing
+      // argument names for 110 tools, and every guess that missed arrived as a
+      // failed read the user was told about.
+      inputSchema: t.inputSchema,
     }));
   }
 

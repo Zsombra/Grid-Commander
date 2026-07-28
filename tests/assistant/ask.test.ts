@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { AskAssistantCommand, UnreachableToolError } from '@/application/use-cases/ask-assistant.command.js';
 import { CANNOT_ESTABLISH, describeIncompleteness, OUTSIDE_THIS_ACCOUNT } from '@/domain/assistant/answer.js';
-import { ConnectionRevokedError } from '@/domain/errors.js';
+import { AssistantUnavailableError, ConnectionRevokedError } from '@/domain/errors.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import { NotConfiguredAssistant } from '@/infrastructure/assistant/not-configured.js';
 import type { AssistantPort, AssistantRequest, AssistantResponse } from '@/ports/assistant.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 import { FakeAuditStore, FakeClock } from '../support/fakes.js';
@@ -239,6 +240,106 @@ describe('losing access', () => {
 
   it('consults nothing when discovery failed', async () => {
     const h = harness({ discovery: 'fails', script: async () => ({ text: 'x', consulted: [] }) });
+    await h.ask.execute(who);
+    expect(h.calls).toEqual([]);
+  });
+});
+
+/**
+ * An assistant that cannot answer at all.
+ *
+ * Two deployments produce this: one with no model configured, and one whose
+ * model could not be reached. Both used to be impossible — `NotConfiguredAssistant`
+ * never fails — and the first real implementation made the second routine.
+ */
+describe('when the assistant cannot answer at all', () => {
+  it('refuses rather than failing the request', async () => {
+    const h = harness({
+      script: async () => {
+        throw new AssistantUnavailableError();
+      },
+    });
+    const { answer } = await h.ask.execute(who);
+    expect(answer.kind, 'an error page over a question that was fine to ask').toBe('refused');
+  });
+
+  it('says what happened and where the same information is', async () => {
+    const h = harness({
+      script: async () => {
+        throw new AssistantUnavailableError();
+      },
+    });
+    const { answer } = await h.ask.execute(who);
+    expect(answer.kind === 'refused' && answer.reason).toMatch(/did not respond/i);
+    expect(answer.kind === 'refused' && answer.reason).toMatch(/agents, strategies and activity/i);
+  });
+
+  it('does not present the reads that already happened as a partial answer', async () => {
+    const h = harness({
+      script: async (req) => {
+        await req.callTool('list_intelligence_agents', {});
+        throw new AssistantUnavailableError();
+      },
+    });
+    const { answer } = await h.ask.execute(who);
+    // `grounded` here would be an answer built from a read and no reasoning.
+    expect(answer.kind).toBe('refused');
+  });
+
+  it('still lets anything that is not an assistant failure through', async () => {
+    const h = harness({
+      script: async () => {
+        throw new TypeError('a real defect');
+      },
+    });
+    // Swallowing this would turn a bug into a polite non-answer, every time.
+    await expect(h.ask.execute(who)).rejects.toBeInstanceOf(TypeError);
+  });
+});
+
+/**
+ * The deployment with no model behind the assistant.
+ *
+ * The state this product has shipped in since the capability was written, and
+ * until now it was asserted nowhere — `NotConfiguredAssistant` was referenced by
+ * the composition root and by a grep, and nothing checked what it returns.
+ *
+ * The third assertion below is the load-bearing one: the answer is `general`
+ * rather than `grounded` because nothing was read. Worth being precise about
+ * what carries that, because the obvious answer is wrong — a port claiming a
+ * `consulted` list it did not earn changes nothing, since the use case builds
+ * the citation from what *it* observed and ignores what the port reports. The
+ * only way this implementation could produce a `grounded` answer is by actually
+ * calling a tool, and re-injecting exactly that is what makes these four fail.
+ */
+describe('a deployment with no model configured', () => {
+  const unconfigured = () => {
+    const h = harness({ script: async () => new NotConfiguredAssistant().answer() });
+    return h;
+  };
+
+  it('says the assistant is unavailable on this deployment', async () => {
+    const { answer } = await unconfigured().ask.execute(who);
+    expect(answer.kind === 'general' && answer.text).toMatch(/no model has been\s+configured/);
+  });
+
+  it('says where the same information can be read directly', async () => {
+    // A dead end here would be the product declining to answer and declining to
+    // say who could — which is the one thing `CANNOT_ESTABLISH` exists to avoid.
+    const { answer } = await unconfigured().ask.execute(who);
+    const text = answer.kind === 'general' ? answer.text : '';
+    expect(text).toMatch(/agents/i);
+    expect(text).toMatch(/strategies/i);
+    expect(text).toMatch(/audit log/i);
+  });
+
+  it('is not presented as a statement about the user’s account', async () => {
+    const { answer } = await unconfigured().ask.execute(who);
+    expect(answer.kind, 'grounded would claim this was read from their setup').toBe('general');
+  });
+
+  it('reaches BattleGrid for nothing beyond finding out what it may read', async () => {
+    const h = unconfigured();
     await h.ask.execute(who);
     expect(h.calls).toEqual([]);
   });

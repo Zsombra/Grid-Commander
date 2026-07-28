@@ -1,5 +1,80 @@
 # Journal
 
+## 2026-07-28 — The assistant answers something
+
+**Did**: Proposed, executed, verified and archived `wire-the-assistant-model`
+(standard track, 29/29). `assistant` is no longer the capability that is fully
+specified, tested, audited and answers nothing.
+
+`ClaudeAssistant` implements `AssistantPort` against `@anthropic-ai/sdk` —
+`claude-opus-5`, adaptive thinking, a manual tool-use loop. The loop is manual
+rather than the SDK's tool runner for three reasons specific to this port, all
+recorded in the file: the toolset is discovered per request, `MAX_ROUNDS` is a
+cost ceiling something has to count, and `ConnectionRevokedError` has to *escape*
+the loop rather than be caught and reported to the model as a bad day. A runner
+that handles its own tool errors is precisely the harness the use case's
+`revoked` flag was written to defend against.
+
+**The discovered toolset was carrying no argument schema.** `rawDiscoverTools`
+kept name, description and annotations and dropped `inputSchema`, which nothing
+had needed until something had to *call* a tool. Threaded through
+`DiscoveredTool` → `ReadOnlyTool` → the model, optional at every step: a tool
+that reports no schema is still offered with an open object schema, because
+withholding it would narrow the toolset on a BattleGrid deployment that changed
+shape, silently and in the direction of answering less. The safety decision is
+made from the annotations and is made elsewhere.
+
+**A model can be unreachable and there was nowhere to put that.** The use case
+rethrew anything that was not a revocation, so an Anthropic outage would have
+been a 500 on `/assistant`. `AssistantUnavailableError` → `refused`, the same
+shape a discovery failure already takes. It carries nothing from the provider's
+error text — that string is written for whoever holds the account, and it is one
+of the few in this system that could contain a key.
+
+**`ANTHROPIC_API_KEY` is optional and commented out in `.env.example`.** Not a
+style choice: `check-serving.sh` exports every *uncommented* variable and fills
+blanks with `openssl rand`, so uncommenting it would boot the served application
+with a garbage key — the gate that exists to catch a broken boot would be the
+thing that broke it. There is now a test asserting the file never sets it.
+
+**State**: archived. `openspec/specs/assistant/spec.md` 6 → 7 requirements, the
+five untouched ones byte-identical (the sixth differs by the blank line the
+append needed). 435 tests, up from 394. Every gate green: typecheck, lint, test,
+build, `check.sh`, and `check-serving.sh` run twice — once with no key, once
+with one, because both are deployments this ships.
+
+**Next**: `assistant-unverified-against-live-api` (P1). One real request against
+a real key, recorded here with what came back.
+
+**Watch out**:
+
+- **The assistant does not tell anyone their data leaves the product.** Filed
+  P1 as `assistant-does-not-name-its-model`. Every other outbound path here is
+  BattleGrid, which the user connected on purpose through a screen that named
+  it. This one is not, and the page says nothing. On the surface whose whole job
+  is answering honestly, that is the wrong gap to leave open — and it ships the
+  moment a key is set.
+- **23 defects injected across three sweeps, 22 caught — and the miss was the
+  interesting one.** Fabricating a `consulted` list inside
+  `NotConfiguredAssistant` left the suite green, and the comment I had written
+  above that test said it would not. It does not, because `AskAssistantCommand`
+  builds the citation from what *it* observed and discards what the port
+  reports. So a lying port cannot reach the answer at all — the property is
+  carried a layer up, and the comment was wrong about the codebase. Replaced
+  with a mutation that can actually break it (the implementation calling a
+  tool); it fails four tests. **The lesson is not "write more guards" — it is
+  that a passing mutation can mean the property is held somewhere better than
+  you thought, and the only way to tell the two apart is to find the mutation
+  that does fail.**
+- **`NotConfiguredAssistant` had never been tested.** Caught by verification as
+  this change's one CRITICAL. It was referenced by the composition root and by a
+  grep, and nothing asserted what it returns — while being the state this
+  product ships in by default. Four tests now.
+- Nothing bounds how many questions a user asks. One answer is capped;
+  a thousand are not, and every tenant's questions bill one key. Filed
+  `assistant-has-no-spend-ceiling` (P2), which argues for recording token usage
+  before picking a limit rather than guessing one.
+
 ## 2026-07-28 — The authoring surface never worked, and CI stopped starting
 
 **Did**: Proposed, planned and executed `close-the-reachability-gap` (full

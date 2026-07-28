@@ -2,7 +2,7 @@ import type { Answer, Consultation } from '@/domain/assistant/answer.js';
 import { ground } from '@/domain/assistant/answer.js';
 import { isReachable, readOnlyToolset } from '@/domain/assistant/toolset.js';
 import { NOT_CONNECTED } from '@/domain/session/session.js';
-import { ConnectionRevokedError } from '@/domain/errors.js';
+import { AssistantUnavailableError, ConnectionRevokedError } from '@/domain/errors.js';
 import type { AssistantPort, Turn } from '@/ports/assistant.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 
@@ -142,6 +142,13 @@ export class AskAssistantCommand {
     } catch (err) {
       if (err instanceof ConnectionRevokedError) {
         return { answer: { kind: 'refused', reason: NOT_CONNECTED } };
+      }
+      // No model configured, or the configured one could not be reached. A
+      // refusal, for the same reason a discovery failure above is one: the
+      // alternative is an error page over a question that was fine to ask, and
+      // the reads that did happen are not an answer waiting to be presented.
+      if (err instanceof AssistantUnavailableError) {
+        return { answer: { kind: 'refused', reason: err.message } };
       }
       throw err;
     }

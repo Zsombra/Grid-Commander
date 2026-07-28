@@ -79,6 +79,38 @@ describe('the assistant is handed only tools that read', () => {
   });
 });
 
+/**
+ * The filter narrows *which* tools survive. It must not narrow what is known
+ * about the ones that do — an implementation that has to call a tool needs the
+ * server's argument schema, and it has no other route to it.
+ */
+describe('what survives the filter about each tool', () => {
+  it('carries the argument schema through', () => {
+    const [tool] = readOnlyToolset([
+      {
+        name: 'get_agent_journal',
+        annotations: { readOnlyHint: true },
+        inputSchema: { type: 'object', properties: { agent_id: { type: 'string' } } },
+      },
+    ]).tools;
+
+    // Dropped, this left the assistant guessing argument names for every tool
+    // on the surface, and every miss arrived as a failed read.
+    expect(tool?.inputSchema).toEqual({
+      type: 'object',
+      properties: { agent_id: { type: 'string' } },
+    });
+  });
+
+  it('keeps a read-only tool that reported no schema', () => {
+    // The safety decision is made from the annotations. A missing schema is a
+    // gap in what we can tell a caller, not a reason to withhold the tool.
+    const { tools } = readOnlyToolset([{ name: 'list_strategies', annotations: { readOnlyHint: true } }]);
+    expect(tools.map((t) => t.name)).toEqual(['list_strategies']);
+    expect(tools[0]?.inputSchema).toBeUndefined();
+  });
+});
+
 describe('what the assistant says when asked to act', () => {
   it('explains that it cannot, and where the change can be made', () => {
     expect(CANNOT_CHANGE_ANYTHING).toMatch(/only read/i);

@@ -42,6 +42,7 @@ import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
+import { claudeAssistant } from './infrastructure/assistant/claude.js';
 import { NotConfiguredAssistant } from './infrastructure/assistant/not-configured.js';
 import type { AssistantPort } from './ports/assistant.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
@@ -111,9 +112,14 @@ function infrastructure(): Infrastructure {
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
-    // Which model answers is a deployment decision (A-D). Until one is chosen,
-    // the assistant says so rather than pretending.
-    assistant: new NotConfiguredAssistant(),
+    // Which model answers is a deployment decision (A-D), and a deployment
+    // where none is configured is a supported one — the assistant says so
+    // rather than pretending. Nothing else in the product changes either way:
+    // the read-only toolset, the citation and the revocation abandon all live
+    // above the port.
+    assistant: config.anthropicApiKey
+      ? claudeAssistant(config.anthropicApiKey)
+      : new NotConfiguredAssistant(),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
   };

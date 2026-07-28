@@ -78,6 +78,30 @@ describe('the assistant reaches BattleGrid one way', () => {
   });
 });
 
+describe('a deployment with no model still boots', () => {
+  it('composition falls back rather than requiring a key', () => {
+    const source = stripComments(readFileSync('src/composition.ts', 'utf8'));
+    // The alternative is that `/assistant` — and, because the composition root
+    // is one module, every authenticated route — needs an Anthropic key to
+    // serve at all.
+    expect(source).toMatch(/config\.anthropicApiKey\s*\?/);
+    expect(source).toContain('new NotConfiguredAssistant()');
+  });
+
+  it('.env.example does not set the key', () => {
+    // scripts/check-serving.sh exports every *uncommented* variable in this
+    // file, filling blanks with a random string. An uncommented
+    // ANTHROPIC_API_KEY would therefore boot the served application with a
+    // garbage key, and the gate that exists to catch a broken boot would be the
+    // thing that broke it.
+    const example = readFileSync('.env.example', 'utf8');
+    expect(example, 'document it commented out, like ALLOW_INSECURE_COOKIES').not.toMatch(
+      /^ANTHROPIC_API_KEY=/m,
+    );
+    expect(example, 'and still document it').toContain('ANTHROPIC_API_KEY');
+  });
+});
+
 describe('assistant reads are attributable', () => {
   it('the use case marks its calls as the assistant’s', () => {
     const source = stripComments(

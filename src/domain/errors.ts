@@ -81,3 +81,25 @@ export class ConnectionRevokedError extends DomainError {
     super('Your BattleGrid connection is no longer valid. Reconnect to continue.');
   }
 }
+
+/**
+ * Whatever answers questions could not produce an answer at all.
+ *
+ * Distinct from an answer that came back incomplete. A failed read degrades an
+ * answer and is named inside it; this is the case where there is no answer to
+ * degrade, and the only honest thing to return is a refusal. Raised by an
+ * `AssistantPort` implementation and converted at the use case, which is where
+ * the refusal shape lives.
+ *
+ * Carries no detail from the failure. Model-provider errors are not written for
+ * this user, and one of the two things that could be in them is a key.
+ */
+export class AssistantUnavailableError extends DomainError {
+  constructor() {
+    super(
+      'I could not answer that just now — the assistant did not respond. ' +
+        'Nothing about your account has changed, and everything I would have ' +
+        'read is on the agents, strategies and activity pages.',
+    );
+  }
+}

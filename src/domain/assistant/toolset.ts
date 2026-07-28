@@ -20,6 +20,15 @@ import type { DiscoveredTool } from '../capability/tool-class.js';
 export interface ReadOnlyTool {
   readonly name: string;
   readonly description: string | undefined;
+  /**
+   * What arguments the tool takes, as the server described them.
+   *
+   * Passed through untouched and never interpreted here. An implementation that
+   * needs to *call* a tool needs this; the filter above needs only the
+   * annotations, and the two must not be confused — a tool with no schema is
+   * still read-only if the server said so.
+   */
+  readonly inputSchema: Record<string, unknown> | undefined;
 }
 
 export interface ReadOnlyToolset {
@@ -58,7 +67,11 @@ export function readOnlyToolset(discovered: readonly DiscoveredTool[]): ReadOnly
       continue;
     }
 
-    tools.push({ name: tool.name, description: tool.description });
+    tools.push({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    });
   }
 
   return { tools, excluded };
