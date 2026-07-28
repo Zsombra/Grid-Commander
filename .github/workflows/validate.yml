@@ -14,6 +14,20 @@ permissions:
   contents: read
 
 jobs:
+  # Temporary. Every job in runs 38 and 39 failed within 2-9 seconds and
+  # produced no downloadable logs, which cannot be diagnosed from the API. This
+  # job uses no actions and no checkout: if it fails, the problem is the runner
+  # or the repository's Actions configuration, not anything in this file.
+  # Remove once the cause is known.
+  probe:
+    name: probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prove a runner can execute a step
+        run: |
+          echo "runner ok: $(uname -a)"
+          echo "python3: $(python3 --version 2>&1 || echo absent)"
+
   # Runs the same entry point contributors run, across the interpreter range
   # the tool claims to support. The two jobs below restate their commands
   # inline; this one calls scripts/check.sh, so the script cannot rot while
