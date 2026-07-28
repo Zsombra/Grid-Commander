@@ -31,7 +31,12 @@ LOG="$(mktemp)"
 
 # Routes that resolve a session. /connect deliberately does not, which is why it
 # kept working through both incidents and is useless as a canary.
-ROUTES=(/agents /strategies /audit /assistant)
+#
+# `/` is here because it reads the session to decide where to send you — and
+# because it is the only address a user is ever given. It returned 404 for the
+# product's whole life with every gate green, which is how it earned a place in
+# the one check that asks what a deployment actually serves.
+ROUTES=(/ /agents /strategies /audit /assistant)
 
 [[ -f "$EXAMPLE" ]] || { echo "no $EXAMPLE"; exit 1; }
 
@@ -69,9 +74,29 @@ if curl -sf -o /dev/null --max-time 2 --noproxy '*' "http://127.0.0.1:$PORT/conn
   exit 1
 fi
 
-PORT="$PORT" npm start >"$LOG" 2>&1 &
-server=$!
-cleanup() { kill "$server" 2>/dev/null; wait "$server" 2>/dev/null; rm -f "$LOG"; }
+# Started in its own process group so the whole tree can be killed as one.
+#
+# `npm start` spawns `next start`, which spawns `next-server`, and by the time
+# this script finishes the server has been reparented to init — so killing npm
+# reaps nothing and `pkill -P` finds no children to reap. The orphan keeps the
+# port, and the *next* run of this check refuses to start against it. The gate
+# could be run exactly once per machine: invisible in CI, where every job is a
+# fresh container, and immediate for anyone running it twice.
+if command -v setsid >/dev/null 2>&1; then
+  PORT="$PORT" setsid npm start >"$LOG" 2>&1 &
+  server=$!
+  stop() { kill -- -"$server" 2>/dev/null; }
+else
+  PORT="$PORT" npm start >"$LOG" 2>&1 &
+  server=$!
+  stop() { pkill -P "$server" 2>/dev/null; kill "$server" 2>/dev/null; }
+fi
+
+cleanup() {
+  stop
+  wait "$server" 2>/dev/null
+  rm -f "$LOG"
+}
 trap cleanup EXIT
 
 up=0

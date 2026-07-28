@@ -1,5 +1,70 @@
 # Journal
 
+## 2026-07-28 — The product had no front door
+
+**Did**: Proposed, executed, verified and archived `build-the-front-door`
+(standard track, 24/24).
+
+`/` returned **404**, and no page linked to any other. Walking the link graph
+from `/connect` — the only entry a user could arrive at — reached exactly one
+route. Five top-level destinations served and unreachable by clicking:
+`/agents`, `/agents/new`, `/assistant`, `/audit`, `/strategies`. Sixteen routes
+of working capability, usable only by typing URLs.
+
+**`app-access` already forbade this** and had passed a production gate four
+times over code that violated it. The reason is worth keeping:
+`close-the-reachability-gap` measured *every link the interface renders resolves
+to a route*, which is green here — every link this product renders does resolve.
+It never asked the other direction. **A destination nothing points at is
+unreachable in exactly the way a link to nothing is**, and no check looked for
+it. The requirement even named the shape of the mistake — *"a route table is not
+the interface"* — and the guard written for it still started from a list instead
+of a walk.
+
+Now: `app/page.tsx` redirects by session, `app/(app)/layout.tsx` carries one
+navigation, and the reachability test walks outward from `/`.
+
+**State**: archived. `app-access` 11 → 12 requirements, the nine untouched ones
+byte-identical. 459 tests, up from 451. Every gate green.
+
+**Next**: `no-deployment-configuration` (P1, filed today). Everything else is
+ready — the product builds, serves, and can now be used by someone who knows
+only its address. The gap to a launch is entirely that item and
+`apply-migrations-on-deploy`, which should be answered together.
+
+**Watch out**:
+
+- **The first version of the new guard reproduced the bug it was written to
+  catch.** It treated every component's links as reachable from every page,
+  reasoning that a nav lives in a shared file — so deleting the layout, dropping
+  a section from the nav, and breaking the root's branch were all invisible: the
+  nav *file* still existed and its links still counted. **A guard that cannot
+  tell rendered from present is measuring the filesystem.** Rewritten to resolve
+  imports transitively through the page and its layouts. Three of ten mutations
+  had passed; all ten now fail.
+- **Two bugs inside the guard, both found by using it.** `routeOf` required a
+  separator before `page.tsx`, so `app/page.tsx` became `/page.tsx` and the
+  front door was reported missing after it had been built. And `/agents/[id]`
+  shadowed `/agents/new` — the pattern matched first, the walk marked the
+  dynamic route seen, and the static page it had just arrived at was called
+  unreachable. Exact match wins now, the way Next resolves a request.
+- **The serving gate could only be run once per machine.** `npm start` spawns
+  `next start` spawns `next-server`, and by cleanup time the server is
+  reparented to init — killing npm reaped nothing, `pkill -P` found no children,
+  and the orphan kept the port so the next run refused against it. Invisible in
+  CI, where every job is a fresh container. Started under `setsid` and killed as
+  a process group; proven with three consecutive clean runs, then proven to fail
+  when `/` throws.
+- **A comment I wrote was wrong and rendering showed it.** The layout claimed
+  someone unconnected does not see the navigation. They do — typing `/agents`
+  directly, or a session expiring mid-read, lands exactly there. The behaviour
+  is fine and now says so; the claim was not.
+- **There is no way to deploy this.** No Dockerfile, no target, nothing. Filed
+  P1 as `no-deployment-configuration`, which also records the two things that
+  make it more than adding a container file: migrations have no owner on deploy,
+  and `BATTLEGRID_REDIRECT_URI` must be registered out of band before a new
+  hostname can complete one connection.
+
 ## 2026-07-28 — Telling the user where their question goes
 
 **Did**: Proposed, executed, verified and archived `disclose-the-assistant-model`

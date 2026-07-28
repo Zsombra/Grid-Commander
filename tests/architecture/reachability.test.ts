@@ -166,3 +166,264 @@ describe('every form the interface renders can be submitted', () => {
     expect(orphans, 'these operations exist and no rendered form reaches them').toEqual([]);
   });
 });
+
+
+/**
+ * The other direction, which nothing measured.
+ *
+ * Everything above asks whether every path *out* of a page leads somewhere. All
+ * of it was green while `/` returned 404 and no page linked to any other — five
+ * top-level destinations served, and a walk from the only entry a user could
+ * arrive at reaching exactly one route.
+ *
+ * A destination nothing points at is unreachable in the same way a link to
+ * nothing is. The requirement said as much — *"a route table is not the
+ * interface"* — and the guard written for it still started from a list rather
+ * than from a walk. So this starts at the root and follows links outward, which
+ * is what a person does.
+ *
+ * **A page's links are resolved through what actually renders it.** The first
+ * version of this treated every component's links as available from every page,
+ * on the reasoning that a nav lives in a shared file. Mutation testing killed
+ * it: deleting the layout that renders the navigation left the suite green,
+ * because the nav *file* still existed and its links still counted. Dropping a
+ * section from the nav was invisible for the same reason. A guard that cannot
+ * tell rendered from present is measuring the filesystem, which is the exact
+ * mistake this section exists to correct.
+ *
+ * So the render set of a page is the page, every layout above it, and the local
+ * modules those import, transitively. A component nothing imports contributes
+ * nothing.
+ */
+
+/**
+ * The URL a `page.tsx` serves, with `(group)` segments removed.
+ *
+ * The separator before `page.tsx` is optional, because `app/page.tsx` — the
+ * root, and the whole point of this section — has nothing before it. Requiring
+ * it turned the front door into `/page.tsx` and reported it missing after it
+ * had been built.
+ */
+function routeOf(file: string): string {
+  const url = relative(APP, file)
+    .replace(/(^|[/\\])page\.tsx$/, '')
+    .split(/[/\\]/)
+    .filter((s) => s !== '' && !/^\(.*\)$/.test(s))
+    .join('/');
+  return '/' + url;
+}
+
+/** Local modules a file imports, as paths on disk. `@/x.js` is `src/x.tsx`. */
+function importsOf(file: string): string[] {
+  const out: string[] = [];
+  for (const m of read(file).matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+    const spec = m[1] as string;
+    if (!spec.startsWith('@/') && !spec.startsWith('.')) continue;
+    const base = spec.startsWith('@/')
+      ? join('src', spec.slice(2))
+      : join(file, '..', spec);
+    for (const candidate of [
+      base.replace(/\.jsx?$/, '.tsx'),
+      base.replace(/\.jsx?$/, '.ts'),
+      `${base}.tsx`,
+      `${base}.ts`,
+    ]) {
+      if (uiFiles.includes(candidate)) {
+        out.push(candidate);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** Every layout that wraps a page, outermost first. */
+function layoutsFor(pageFile: string): string[] {
+  const parts = pageFile.split(/[/\\]/).slice(0, -1);
+  const found: string[] = [];
+  for (let i = 1; i <= parts.length; i++) {
+    const candidate = join(...parts.slice(0, i), 'layout.tsx');
+    if (uiFiles.includes(candidate)) found.push(candidate);
+  }
+  return found;
+}
+
+describe('every capability is reachable by walking from the root', () => {
+  const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+  const served = pageFiles.map(routeOf);
+
+  const linksIn = (file: string): string[] =>
+    [...read(file).matchAll(/\bhref\s*[:=]\s*(?:\{\s*)?(?:["'`])(\/[^"'`#?]*)(?:["'`])/g)].map(
+      (m) => (m[1] as string).replace(/\$\{[^}]*\}/g, 'x').replace(/(.)\/$/, '$1'),
+    );
+
+  /** Page + its layouts + everything those import, transitively. */
+  function renderSet(pageFile: string): string[] {
+    const seen = new Set<string>();
+    const frontier = [pageFile, ...layoutsFor(pageFile)];
+    while (frontier.length > 0) {
+      const file = frontier.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      frontier.push(...importsOf(file));
+    }
+    return [...seen];
+  }
+
+  const linksByRoute = new Map(
+    pageFiles.map((f) => [routeOf(f), renderSet(f).flatMap(linksIn)] as const),
+  );
+
+  function reachedFromRoot(): Set<string> {
+    /**
+     * Exact before dynamic, the way Next resolves a request.
+     *
+     * Without the first lookup, `/agents/[id]` swallowed `/agents/new`: the
+     * pattern matched, the walk marked the *dynamic* route seen, and the static
+     * page it had just arrived at was reported unreachable. A shadowed sibling
+     * is the kind of near-miss this walk exists to notice, so it must not be
+     * one itself.
+     */
+    const matches = (path: string): string | undefined =>
+      served.find((r) => r === path) ??
+      served.find((r) => new RegExp(`^${r.replace(/\[[^\]]+\]/g, '[^/]+')}$`).test(path));
+
+    const rootFile = pageFiles.find((f) => routeOf(f) === '/');
+    const seen = new Set<string>();
+    const frontier = ['/'];
+
+    // The root may redirect rather than render. Both destinations count as
+    // arrived at, and a root that redirects has no links of its own.
+    if (rootFile !== undefined) {
+      for (const m of read(rootFile).matchAll(/redirect\(\s*['"`](\/[^'"`]*)['"`]/g)) {
+        frontier.push(m[1] as string);
+      }
+      for (const m of read(rootFile).matchAll(/\?\s*['"`](\/[^'"`]*)['"`]\s*:\s*['"`](\/[^'"`]*)['"`]/g)) {
+        frontier.push(m[1] as string, m[2] as string);
+      }
+    }
+
+    while (frontier.length > 0) {
+      const route = matches(frontier.pop() as string);
+      if (route === undefined || seen.has(route)) continue;
+      seen.add(route);
+      frontier.push(...(linksByRoute.get(route) ?? []));
+    }
+    return seen;
+  }
+
+  it('answers at the root rather than returning a not-found', () => {
+    // The only URL a user is ever given. Nothing in this capability said it had
+    // to do anything, and for the product's whole life it did not.
+    expect(served, 'app/page.tsx must exist').toContain('/');
+  });
+
+  it('reaches every top-level capability', () => {
+    const reached = reachedFromRoot();
+    const stranded = served
+      // Sub-pages are reached from their own section; this is about the
+      // destinations a user has no other way to find.
+      .filter((r) => !r.includes('['))
+      .filter((r) => !reached.has(r));
+
+    expect(
+      stranded,
+      'the application serves these and nothing the interface renders arrives at them',
+    ).toEqual([]);
+  });
+
+  it('resolves links through what renders a page, not through what exists', () => {
+    // The property that makes the check above mean anything: a component that
+    // no page imports must contribute no links. Asserted directly, because
+    // getting this wrong is silent — the suite stays green and the guard stops
+    // guarding.
+    const nav = join(PRESENTATION, 'components', 'section-nav.tsx');
+    expect(uiFiles, 'the nav this asserts about must exist').toContain(nav);
+
+    const connect = pageFiles.find((f) => routeOf(f) === '/connect') as string;
+    expect(
+      renderSet(connect),
+      '/connect is outside the (app) group and must not inherit its navigation',
+    ).not.toContain(nav);
+
+    const agents = pageFiles.find((f) => routeOf(f) === '/agents') as string;
+    expect(renderSet(agents), '/agents is inside the group and must').toContain(nav);
+  });
+
+  it('is comparing against something', () => {
+    // A walk that found nothing would report nothing stranded — passing
+    // vacuously is the failure mode every check in this file guards against.
+    expect(served.length).toBeGreaterThan(5);
+    expect(reachedFromRoot().size).toBeGreaterThan(4);
+  });
+});
+
+/**
+ * Reachable from *where you are*, not merely reachable somehow.
+ *
+ * The walk above is satisfied by any path, however long. That is the right
+ * question for "is this route stranded" and the wrong one for the requirement's
+ * `Moving between capabilities` scenario, which says every top-level capability
+ * is reachable from wherever the user currently is.
+ *
+ * Mutation found the gap: removing Activity from the navigation left the walk
+ * green, because `/audit` is also linked from `journal-view.tsx`. So it stayed
+ * reachable — via an agent, then that agent's journal. True, and useless to
+ * someone on the strategies page.
+ */
+describe('every capability is reachable from wherever you already are', () => {
+  const TOP_LEVEL = ['/agents', '/strategies', '/assistant', '/audit'];
+
+  const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+
+  /** Pages inside the group that carries the shared navigation. */
+  const inGroup = pageFiles.filter((f) => f.includes('(app)'));
+
+  function linksAvailableOn(pageFile: string): Set<string> {
+    const seen = new Set<string>();
+    const frontier = [pageFile, ...layoutsFor(pageFile)];
+    const links = new Set<string>();
+    while (frontier.length > 0) {
+      const file = frontier.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      for (const m of read(file).matchAll(
+        /\bhref\s*[:=]\s*(?:\{\s*)?(?:["'`])(\/[^"'`#?]*)(?:["'`])/g,
+      )) {
+        links.add(m[1] as string);
+      }
+      frontier.push(...importsOf(file));
+    }
+    return links;
+  }
+
+  it('offers every top-level section on every page inside the product', () => {
+    const missing: string[] = [];
+
+    for (const page of inGroup) {
+      const available = linksAvailableOn(page);
+      for (const section of TOP_LEVEL) {
+        if (!available.has(section)) missing.push(`${routeOf(page)} cannot reach ${section}`);
+      }
+    }
+
+    expect(missing, 'a user here would have to know an address').toEqual([]);
+  });
+
+  it('checks every page rather than a sample', () => {
+    expect(inGroup.length).toBeGreaterThan(9);
+  });
+
+  /**
+   * The connect page is outside the group on purpose, and this states it so the
+   * exclusion is a decision rather than an oversight the next reader has to
+   * rediscover.
+   */
+  it('does not offer them to someone who has not connected', () => {
+    const connect = pageFiles.find((f) => routeOf(f) === '/connect') as string;
+    const available = linksAvailableOn(connect);
+    for (const section of TOP_LEVEL) {
+      expect(available, 'four sections that all refuse is worse than none').not.toContain(section);
+    }
+  });
+});
