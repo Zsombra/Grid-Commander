@@ -1,0 +1,109 @@
+{
+  "id": "audit-log",
+  "title": "Audit \u2014 every write made on your behalf",
+  "route": "/audit",
+  "capability": "app-access",
+  "status": "functional",
+  "generated_at_commit": "52ea2b5",
+  "source_files": [
+    "app/(app)/audit/page.tsx",
+    "src/presentation/components/audit-list.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "entries",
+      "shape": "AuditEntry[] \u2014 { createdAt, tool, destructive, actor, outcome, failureReason }",
+      "source": "app.readAudit.execute()"
+    },
+    {
+      "name": "unresolvedCount",
+      "shape": "number",
+      "source": "app.readAudit.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "audit-list",
+      "role": "display",
+      "purpose": "Show every operation Grid-Commander performed on the account, who caused it, and how it ended.",
+      "states": [
+        "default",
+        "empty",
+        "with-unresolved",
+        "without-unresolved",
+        "entry-succeeded",
+        "entry-failed",
+        "entry-attempted",
+        "entry-destructive",
+        "actor-user",
+        "actor-assistant",
+        "overflow-many-entries"
+      ],
+      "data": [
+        "entries",
+        "unresolvedCount"
+      ],
+      "actions": [],
+      "current_implementation": "Unstyled table in an overflow-x-auto wrapper, sr-only caption, four columns. Empty state is a single sentence. Tailwind class names present but Tailwind is not installed.",
+      "constraints": [
+        "`attempted` must never be styled as a failure. It means an operation started and we never learned how it ended \u2014 which is exactly what an audit log should say, and collapsing it into 'failed' loses the distinction that makes the log trustworthy",
+        "'you' and 'the assistant, answering you' are different levels of intent and must stay distinguishable. Telling them apart is what makes this log useful to someone reading carefully (design A-E)",
+        "`destructive` is marked with a word, not only a colour or icon \u2014 colour is never the only signal",
+        "The unresolved-count banner is role=status and must not block or obscure the table",
+        "The table must remain a real table with its caption and column scopes; it is the one screen users will read down a column",
+        "Timestamps must stay machine-readable in `<time datetime>` regardless of display format",
+        "The empty state must keep promising future entries rather than reading as an error"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request with no authority.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body.",
+      "constraints": [
+        "One page for every cause (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Check what happened",
+      "steps": [
+        "open /audit",
+        "scan newest first",
+        "read outcome column"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "table"
+    ],
+    "focus_order": [
+      "page heading",
+      "unresolved notice",
+      "table"
+    ],
+    "notes": "Table has an sr-only caption and scoped column headers. Unresolved count is role=status. Horizontal scroll is on a wrapper so the table itself is not clipped."
+  }
+}

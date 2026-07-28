@@ -51,3 +51,26 @@ Worth checking the same pattern on the other lists while fixing: `agent-roster`,
 
 **Do not fix by installing Tailwind and styling around it.** The empty state is
 missing markup, not missing style; see `tailwind-classes-with-no-tailwind`.
+
+## Confirmed as an inconsistency, not just an omission (2026-07-28)
+
+Surveying `agent-roster` found the same problem already solved, one capability
+over. `RosterResult` carries a distinct `'empty'` kind and `AgentRoster` renders
+it as its own branch, with a comment saying exactly why:
+
+> An account with no agents and an account whose roster failed to load look
+> identical if you branch on `length === 0`, and telling the second user they
+> have no agents is how someone recreates work they already own — or concludes
+> something deleted it.
+
+`StrategyListResult` has no `'empty'` kind and `StrategyList` branches only on
+`unreadable`. So this is not an oversight in isolation — it is one capability
+having learned something the other has not.
+
+Fixing it properly means adding `'empty'` to the port result rather than a
+`listings.length === 0` check in the component, so the two capabilities model
+the distinction the same way. That may make it a spec change rather than a
+styling fix; check `openspec/specs/strategy-authoring/spec.md` before starting.
+
+`audit-list` handles its own empty case inline and reads fine, so this is
+specifically about the two roster-shaped surfaces.
