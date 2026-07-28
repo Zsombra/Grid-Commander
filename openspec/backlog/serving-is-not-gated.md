@@ -2,7 +2,7 @@
 id: serving-is-not-gated
 title: The build is gated; serving is not
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
@@ -72,3 +72,37 @@ database suite builds its own configuration rather than going through
 `.env.example` provides, request one authenticated route, and require a
 non-5xx. That is a handful of lines and it is the only check that exercises
 `loadConfig()` the way a deployment does.
+
+## Gated (2026-07-28)
+
+`scripts/check-serving.sh`, wired into the `app` job after migrations.
+
+It starts the built application with **only what `.env.example` documents** and
+requests four routes that resolve a session. `/connect` is deliberately not one
+of them — it does not resolve a session, which is exactly why it kept working
+through both incidents and is useless as a canary.
+
+The load-bearing detail: **the variable list is read from `.env.example`, never
+written in the script.** A variable the application requires and the example
+omits is therefore never set, the boot fails, and the check fails with it.
+Hardcoding the list would let the check pass while the documentation is wrong,
+which is the failure it exists to prevent.
+
+Demonstrated in both directions: removing `SESSION_SECRET` from `.env.example`
+made it exit 1 on all four routes and print `⨯ Error: SESSION_SECRET is not
+set`; restoring it returned all four to 200.
+
+### The first version of this check was broken, and passed
+
+Written, run against the injected defect, and it **reported success**. A server
+left over from an earlier run was still listening; the new process bound
+nothing, `curl` reached the stale correctly-configured server, and the check
+called it green.
+
+That is the same shape as every guard failure recorded on this project — it
+looked like coverage and was measuring the wrong thing. Fixed by refusing to
+start when the port already answers, and by aborting the readiness wait if the
+server process dies rather than letting a boot failure look like slow startup.
+
+Worth keeping in mind for any future check that talks to a process it started:
+**verify you are measuring the thing you launched.**

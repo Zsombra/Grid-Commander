@@ -165,6 +165,39 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Serving is gated, and the first version of the gate was broken
+
+**Did**: `scripts/check-serving.sh` — starts the built application with only
+what `.env.example` documents and requests four session-resolving routes. Wired
+into the `app` job after migrations. Closes `serving-is-not-gated`, the gap that
+produced two live defects.
+
+**State**: 0 active changes, `validate --all` clean with zero warnings, 23 open
+backlog items. Seven quality gates in the `app` job now.
+
+**Next**: `wire-an-assistant-model` (P2) — the assistant is complete and has no
+model behind it, which is an MVP scope bullet that does not work.
+
+**Watch out**:
+- **The first version of this check passed against the injected defect.** A
+  server left over from an earlier run was still listening; the new process
+  bound nothing, `curl` reached the stale correctly-configured server, and the
+  check reported green. I nearly shipped a guard that could pass while the
+  application could not boot — the exact failure mode it exists to prevent, one
+  level up. Fixed by refusing to start when the port already answers, and by
+  aborting the readiness wait when the server process dies.
+- **Any check that talks to a process it started must verify it is measuring
+  the thing it launched.** That is the transferable lesson, and it is not
+  specific to this script.
+- **The variable list is read from `.env.example`, never written in the
+  script.** That is the whole design. Hardcoding it would let the check pass
+  while the documentation is wrong.
+- **`/connect` is deliberately excluded** from the probed routes. It does not
+  resolve a session, which is why it stayed green through both incidents and is
+  worthless as a canary.
+- PostgreSQL 16 is in this container: `service postgresql start`, create the
+  role and database, `npm run db:migrate`. The serving check needs it.
+
 ## 2026-07-28 — Archived: app-access now says what the product actually does
 
 **Did**: `/archive close-the-reachability-gap`. Three operations merged into
