@@ -257,3 +257,54 @@ waivers, or handoff clarity.
   and a change of its own rather than a step appended to this one.
 - Approved by: executor
 - Next action: `serving-is-not-gated`
+
+### DL-016
+
+- Timestamp: `2026-07-28 05:45 UTC`
+- Phase: `AUDIT`
+- Type: `handoff`
+- Decision: Gate **PASS**. Zero open CRITICAL or MAJOR violations; one MINOR
+  (PG-003) filed as `unread-connect-response-fields`.
+- Impacted files: `plan/production-gate.md`
+- Reason: All 5 requirements and all 13 scenarios delivered and located at
+  `file:line`. Both MODIFIED requirements verified in both directions — the new
+  behaviour in effect and the old gone (`rg "onConflictDoNothing" src/` returns
+  nothing). No regression against the 14 requirements this change does not
+  modify. Every quality gate PASS, working tree clean afterwards.
+- Approved by: auditor
+- Next action: archiver
+
+### DL-017
+
+- Timestamp: `2026-07-28 05:45 UTC`
+- Phase: `AUDIT`
+- Type: `risk`
+- Decision: PG-001 recorded as a CRITICAL that was FIXED before the gate, not
+  waived away as a verifier note.
+- Impacted files: `.github/workflows/validate.yml`
+- Reason: At `825750f` the second scenario of "The Schema Is Created By A
+  Committed Migration" had no automated check. It is recorded as a CRITICAL
+  because of what the investigation found rather than the gap itself:
+  `drizzle-kit check` returns exit 0 against a drifted schema, so the obvious
+  remedy would have created the appearance of coverage. That is the same shape
+  as the two failures this change was opened by, and the record should show the
+  gate caught it rather than that the change arrived complete.
+- Approved by: auditor
+- Next action: none
+
+### DL-018
+
+- Timestamp: `2026-07-28 05:45 UTC`
+- Phase: `AUDIT`
+- Type: `risk`
+- Decision: The accidental no-skip demonstration is recorded as evidence.
+- Impacted files: `plan/production-gate.md`
+- Reason: The first `test:db` run at this audit reported 51 failures because
+  PostgreSQL had stopped in this environment. That is the fourth scenario of
+  "Stored-Data Behaviour Is Proven Against A Real Database" — a guarantee
+  verified only against a test double is not treated as proven — observed under
+  precisely the conditions it was written for, without anyone arranging it. Had
+  the suite been written with `describe.skipIf`, the audit would have recorded a
+  green run of zero tests.
+- Approved by: auditor
+- Next action: none
