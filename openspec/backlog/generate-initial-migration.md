@@ -2,11 +2,11 @@
 id: generate-initial-migration
 title: No migration has ever been generated, so no schema exists to deploy against
 type: chore
-status: open
+status: in-progress
 priority: p1
 created: 2026-07-27
-updated: 2026-07-27
-change: ""
+updated: 2026-07-28
+change: prove-it-runs
 capability: app-access
 blocked_by: []
 tags: [database, deployment, blocking]
