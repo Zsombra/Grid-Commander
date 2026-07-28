@@ -2,7 +2,7 @@
 id: env-example-missing-session-secret
 title: .env.example omits SESSION_SECRET, so a correctly-followed setup 500s on every page
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -99,3 +99,22 @@ variable closes this instance; only that gate stops the next one.
 Found while verifying `close-the-reachability-gap` — the change is unaffected
 and its five new routes serve correctly. This was in front of them the whole
 time and nothing had ever requested a page to see it.
+
+## Fixed (2026-07-28)
+
+`SESSION_SECRET` added to `.env.example` with the reasoning that makes it
+non-obvious recorded — it is deliberately a different secret from
+`TOKEN_ENCRYPTION_KEY`, and the two have different blast radii.
+
+`ALLOW_INSECURE_COOKIES` documented in the same pass, commented out. It is
+opt-*out*-only by design, and any value other than exactly `"true"` leaves
+cookies secure, so a typo fails safe. Leaving it undocumented sent people
+looking for a bug that is a deliberate default.
+
+Verified: sourcing `.env.example`, filling only the values it asks for, and
+starting a production build returns **200 on all 12 capability routes** where
+every one but `/connect` previously returned 500.
+
+The underlying gap is untouched and stays open: nothing gates this. See
+`serving-is-not-gated` — a check that boots the built app from `.env.example`
+and requests one authenticated route is what stops the third instance.

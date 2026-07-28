@@ -165,6 +165,41 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Verified the reachability change, and serving it found a P1
+
+**Did**: Advisory verification of `close-the-reachability-gap` (full track,
+24/24, never verified). It passes. Then served the built app against real
+PostgreSQL — the first time anything had — and found `.env.example` missing
+`SESSION_SECRET`. Filed, fixed, and recorded as a second instance on
+`serving-is-not-gated`.
+
+**State**: All 12 capability routes return 200 from a `.env.example`-only setup;
+before the fix every one but `/connect` returned 500. `validate --all` clean.
+PR #5 carries it.
+
+**Next**: the **auditor** on `close-the-reachability-gap` — it is a full-track
+change and the production gate has not run.
+
+**Watch out**:
+- **The guard was demonstrated failing on all three things it claims to
+  catch** — a dead link, a string-bound form, an orphaned `'use server'` export
+  — each naming the offending file. This change exists because three earlier
+  checks passed while measuring the wrong thing, so its own guard did not get
+  taken on trust.
+- **The 500s were not this change's fault and looked exactly like they were.**
+  Every capability route failed; only `/connect` worked. The cause was one
+  undocumented environment variable read on every session-resolving request.
+  When a whole product 500s uniformly, suspect configuration before code.
+- **Nothing catches this class of defect.** Build, typecheck, lint, 394 unit
+  tests and 51 database tests were all green throughout — the database suite
+  builds its own config rather than going through `loadConfig()`. Second
+  instance of the same gap; the first was a malformed encryption key during
+  `prove-it-runs`.
+- **PostgreSQL 16 is installed in this container and starts with `service
+  postgresql start`.** Create the role and database, run `npm run db:migrate`,
+  and the full stack runs locally. That is worth knowing — it is what made this
+  finding possible and nothing in the repo says it.
+
 ## 2026-07-28 — DT-0002 implemented: the review panel is designed
 
 **Did**: Restyled `plan-review.tsx` per DT-0002 — every declared state, tokens
