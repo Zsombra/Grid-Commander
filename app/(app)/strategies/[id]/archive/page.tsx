@@ -1,0 +1,102 @@
+import { redirect } from 'next/navigation';
+import { acting } from '@/presentation/session.js';
+import { NotConnected } from '@/presentation/require-connection.js';
+import { requiredText } from '@/presentation/form.js';
+
+/**
+ * Retire a strategy, accounting for what depends on it.
+ *
+ * A confirmation token is issued against BattleGrid's own count of bound
+ * agents, and the wording shown here is the wording stored with the token — so
+ * what the user reads, what they agree to, and what the audit can later prove
+ * are one string rather than three that drift. Follows the agent archive page
+ * rather than inventing a second confirmation shape.
+ */
+export default async function ArchiveStrategyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { app, user } = await acting();
+  if (user.kind === 'not-connected') return <NotConnected result={user} />;
+
+  const { id } = await params;
+  const { result, listings } = await app.listStrategies.execute(user.authority);
+
+  if (result.kind === 'unreadable') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Could not load this strategy</h1>
+        <p role="alert" className="text-sm">{result.reason}</p>
+      </main>
+    );
+  }
+
+  const listing = listings.find((l) => l.strategy.id === id);
+  if (!listing) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">No such strategy</h1>
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
+      </main>
+    );
+  }
+
+  const proposal = await app.describeArchiveStrategy.execute({
+    ...user.authority,
+    strategy: listing.strategy,
+  });
+
+  if (proposal.kind === 'refused') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Cannot archive</h1>
+        <p role="alert" className="text-sm">{proposal.reason}</p>
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-2xl space-y-4 p-6">
+      <h1 className="text-xl font-medium">Archive {listing.strategy.name}?</h1>
+      {/* BattleGrid's count of what depends on this, not ours. */}
+      <p role="alert" className="rounded border p-4 text-sm">
+        {proposal.proposal.consequence}
+      </p>
+      <form action={archiveStrategy} className="flex flex-wrap gap-3">
+        <input type="hidden" name="strategyId" value={proposal.proposal.strategyId} />
+        <input
+          type="hidden"
+          name="confirmationToken"
+          value={proposal.proposal.confirmationToken}
+        />
+        <button type="submit" className="rounded border px-4 py-2 text-sm">
+          Archive {listing.strategy.name}
+        </button>
+        <a href="/strategies" className="px-4 py-2 text-sm underline">
+          Leave it active
+        </a>
+      </form>
+    </main>
+  );
+}
+
+export async function archiveStrategy(formData: FormData) {
+  'use server';
+  const { app, user } = await acting();
+  if (user.kind === 'not-connected') redirect('/connect');
+
+  const strategyId = requiredText(formData, 'strategyId');
+  const { listings } = await app.listStrategies.execute(user.authority);
+  const listing = listings.find((l) => l.strategy.id === strategyId);
+  if (!listing) redirect('/strategies');
+
+  await app.setStrategyActive.execute({
+    ...user.authority,
+    strategy: listing.strategy,
+    active: false,
+    confirmationToken: requiredText(formData, 'confirmationToken'),
+  });
+  redirect('/strategies');
+}

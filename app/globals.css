@@ -1,0 +1,23 @@
+/* The only hand-written stylesheet. Everything it references is generated. */
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: var(--gc-bg-base);
+    color: var(--gc-text-primary);
+    font-family: theme('fontFamily.sans');
+    line-height: theme('lineHeight.normal');
+  }
+
+  /* Principle: every interactive element has a visible focus state at 2px
+     offset. Declared once here rather than per component, so it cannot be
+     forgotten on the next control someone adds. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--gc-focus);
+    outline-offset: 2px;
+  }
+}

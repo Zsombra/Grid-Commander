@@ -1,0 +1,98 @@
+/**
+ * The vocabulary and the limits, as the platform states them.
+ *
+ * Nothing in this file is a literal list of BattleGrid values. Every enum with
+ * an open or growing value set is read at runtime, because the documented list
+ * was already wrong: `docs/BATTLEGRID_SURFACE_MAP.md` names four
+ * position-management presets and the live server returns five
+ * (findings-agents F-3). That is the staleness the server itself warns about,
+ * caught inside a week, on a low-stakes field.
+ */
+
+export interface ApprovedModel {
+  readonly modelId: string;
+  readonly displayName: string;
+  readonly provider: string;
+  readonly isDefault: boolean;
+}
+
+export interface PositionManagementPreset {
+  readonly preset: string;
+  readonly label: string;
+  readonly description: string;
+}
+
+/**
+ * A numeric limit as the registry states it. Either end may be absent — the
+ * registry bounds some fields on one side only.
+ */
+export interface Bound {
+  readonly min?: number;
+  readonly max?: number;
+}
+
+export interface Catalog {
+  readonly models: readonly ApprovedModel[];
+  readonly brainPresets: readonly string[];
+  readonly positionManagementPresets: readonly PositionManagementPreset[];
+  /** Keyed by trading-config field name. Absent means the registry is silent. */
+  readonly bounds: Readonly<Record<string, Bound>>;
+}
+
+/**
+ * Whether a field can be validated at all.
+ *
+ * The registry covers sixteen limits and is silent on several fields the tool
+ * schema constrains — position size percentages, the signal-timeout enum, and
+ * the monotonic ordering of the three size presets, which exists only in prose
+ * (findings-agents F-2).
+ *
+ * A field the registry does not bound is *unvalidatable*, not unbounded. The
+ * distinction matters: treating silence as permission is how a client submits
+ * work the server will reject and then blames the user for it.
+ */
+export function isBounded(catalog: Catalog, field: string): boolean {
+  return field in catalog.bounds;
+}
+
+export type BoundCheck =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: string }
+  | { readonly ok: 'unvalidatable' };
+
+export function checkBound(catalog: Catalog, field: string, value: number): BoundCheck {
+  const bound = catalog.bounds[field];
+  if (!bound) return { ok: 'unvalidatable' };
+  if (bound.min !== undefined && value < bound.min) {
+    return { ok: false, reason: `${field} must be at least ${bound.min}` };
+  }
+  if (bound.max !== undefined && value > bound.max) {
+    return { ok: false, reason: `${field} must be at most ${bound.max}` };
+  }
+  return { ok: true };
+}
+
+export function isApprovedModel(catalog: Catalog, modelId: string): boolean {
+  return catalog.models.some((m) => m.modelId === modelId);
+}
+
+export function isKnownBrainPreset(catalog: Catalog, preset: string): boolean {
+  return catalog.brainPresets.includes(preset);
+}
+
+export function isKnownPositionPreset(catalog: Catalog, preset: string): boolean {
+  // CUSTOM is a schema value meaning "none of the presets", not a preset the
+  // catalog lists. It is valid and will never appear in the catalog response.
+  return preset === 'CUSTOM' || catalog.positionManagementPresets.some((p) => p.preset === preset);
+}
+
+/**
+ * The catalog cannot be read.
+ *
+ * A distinct state rather than an empty catalog: an empty catalog would offer a
+ * form with no choices and reject everything the user typed, which is a worse
+ * experience than saying the platform could not be reached.
+ */
+export type CatalogResult =
+  | { readonly kind: 'catalog'; readonly catalog: Catalog }
+  | { readonly kind: 'unreadable'; readonly reason: string };

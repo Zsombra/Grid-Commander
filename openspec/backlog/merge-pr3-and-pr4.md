@@ -2,7 +2,7 @@
 id: merge-pr3-and-pr4
 title: Land PR #3 then PR #4 — merge verified, test-side patch ready
 type: chore
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -155,3 +155,29 @@ defaults.
 
 Closes `tailwind-classes-with-no-tailwind` (P2, on PR #3's branch) — mark it
 done when the merge lands.
+
+## Landed (2026-07-28)
+
+PR #3 merged to `main` as `15baafc`. PR #4 integrated on top: both conflicts
+resolved as planned (workflow — main's file plus the `matrix` job, pins at
+`@v4`/`@v5`; journal — both entries, newest first), the test-side patch applied,
+surfaces and tickets moved into `openspec/design/`, and DT-0001's implementation
+applied.
+
+**One thing the plan did not anticipate.** `main` carries `package-lock.json`
+and the `app` job runs `npm ci`, but DT-0001 was developed with pnpm. Adding
+tailwind/postcss/autoprefixer to `package.json` without regenerating the npm
+lockfile would have failed `npm ci` on the first real CI run. Regenerated with
+`npm install --package-lock-only`; the stray `pnpm-lock.yaml` was removed.
+
+**A second, also mine.** `pnpm lint` failed on `tools/generate-theme.mjs` —
+a Node program under the app's browser rules, where `no-console` is a
+project-wide error. Fixed with a scoped override for `tools/**/*.mjs` and root
+`*.config.mjs` rather than inline disables, placed last because ESLint flat
+config is order-dependent.
+
+Verified on the integrated branch with `npm ci`, mirroring CI exactly:
+typecheck, lint, 394 TypeScript tests, `next build`, 192 python harness tests,
+and `openspec validate --all` with zero errors.
+
+The applied patches were deleted; `docs/merge/proof/` keeps the screenshots.
