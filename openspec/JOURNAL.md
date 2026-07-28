@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-07-28 — It had never been built, and three predictions about the schema were all wrong
+
+**Did**: Shipped `prove-it-runs` (full track, gate PASS, archived). `app-access`
+gains three requirements and `battlegrid-connection` gains a scenario.
+
+The P1 item said the blocker was the missing migration and predicted three
+disagreements on first contact — `text[]`, the `(user_id, idempotency_key)`
+unique index, the `onConflictDoUpdate` target. **All three were wrong.** The
+migration generates, applies, and 51 repository tests pass against real
+PostgreSQL 16. Reading the code produced three wrong predictions; running it
+produced five real findings.
+
+What was actually broken: **the application had never been built.**
+`app/layout.tsx` did not exist, so App Router refused to assemble anything, and
+once a layout existed webpack could not resolve the `.js` specifiers `tsc`
+resolves happily under `moduleResolution: bundler`. Invisible because CI ran
+typecheck, lint and test and never `next build`.
+
+Also fixed: a duplicated first-time OAuth callback surfaced
+`violates foreign key constraint "connections_user_id_users_id_fk"` to someone
+mid-connect; `confirmation_tokens.actor` was written and read by nobody.
+
+**State**: 7 capabilities, 0 active changes, 18 open backlog items. The product
+builds, serves all thirteen routes against a real database, and every capability
+page shows the not-connected outcome with no BattleGrid call and no row written.
+390 unit + 51 database + 124 harness tests. CI now runs six gates in the `app`
+job against a Postgres 16 service.
+
+**Next**: `/surface` — there is a built UI to survey for the first time, and
+`tailwind-classes-with-no-tailwind` (p2) is waiting on that decision. Otherwise
+`wire-an-assistant-model` (p2) or `serving-is-not-gated` (p2).
+
+**Watch out**:
+
+- **A guard that misses its target, three times now.** The coercion scan matched
+  three patterns and missed the fourth. CI ran three gates and never the build.
+  And this time: `drizzle-kit check` reports `Everything's fine` against a schema
+  with an added column — it validates the journal, not the schema. Adding it
+  would have looked like coverage and provided none. The workflow comment says so
+  explicitly so nobody "improves" it later. What actually detects drift is
+  `db:generate` plus `git status --porcelain drizzle/`.
+- **Fix both halves of a concurrency bug or you make it worse.** The plan said
+  "Contracts impacted: none". Fixing only the storage side would have converted a
+  loud foreign-key error into a silent wrong sign-in: the callback route passes
+  the returned `userId` straight to `sessions.issue`, and the caller was
+  returning its own proposal. `upsert` now returns `ResolvedConnection`.
+- **The fake modelled a weaker rule than the database.**
+  `FakeConnectionRepository.upsert` keyed on the proposed `userId`, so no unit
+  test could ever have caught the identity defect. Corrected; all 390 still pass.
+- **The no-skip rule demonstrated itself.** The first `test:db` run at the audit
+  reported 51 failures because PostgreSQL had stopped in the container. It failed
+  loudly rather than reporting a green run of zero tests. With `describe.skipIf`
+  the audit would have recorded a pass.
+- **PostgreSQL in this container stops.** `pg_ctlcluster 16 main start` before
+  `npm run test:db`. Some of the `pkill` patterns used for the dev server were
+  taking it down.
+- **213 Tailwind class names and no Tailwind.** Every page renders in browser
+  defaults. Do not fix by installing Tailwind — that pre-commits the design agent
+  to a vocabulary it did not choose. `/surface` first.
+
 Session handoff log. **Newest entry at the top**, directly under this header.
 
 Every session that changes anything ends with an entry here. This is what a

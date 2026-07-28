@@ -2,7 +2,7 @@
 id: generate-initial-migration
 title: No migration has ever been generated, so no schema exists to deploy against
 type: chore
-status: in-progress
+status: done
 priority: p1
 created: 2026-07-27
 updated: 2026-07-28

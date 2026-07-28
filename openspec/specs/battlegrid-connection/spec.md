@@ -38,7 +38,9 @@ paste, or upload a BattleGrid credential, and MUST NOT accept one if offered.
 
 ### Requirement: The Connection Is The Identity
 A user's BattleGrid connection SHALL be their Grid-Commander identity. The
-system MUST NOT maintain a separate password for a Grid-Commander account.
+system MUST NOT maintain a separate password for a Grid-Commander account. One
+BattleGrid account MUST resolve to exactly one Grid-Commander identity, however
+many times its authorization is completed.
 
 #### Scenario: Returning user
 - **WHEN** a user who has connected before returns
@@ -48,6 +50,13 @@ system MUST NOT maintain a separate password for a Grid-Commander account.
 - **WHEN** a user disconnects their BattleGrid account
 - **THEN** they can no longer act on that account through Grid-Commander
 - **AND** their recorded history remains readable to them
+
+#### Scenario: One authorization completed twice at once
+- **WHEN** two authorization callbacks for the same BattleGrid account complete
+  at the same time, and that account has never connected before
+- **THEN** one identity exists for it afterwards
+- **AND** both callbacks resolve to that identity
+- **AND** neither reports a storage-level failure to the user
 
 ### Requirement: Read Scope Is Requested And Wager Scope Is Not
 Grid-Commander SHALL request only the scope required to read and configure. It
