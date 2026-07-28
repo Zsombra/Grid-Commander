@@ -84,13 +84,28 @@ navigates, reaching no operation by design. The rule now skips them.
 ### Task 4.2 — three re-injections after the fix
 
 ```
-[ a link to a route that does not exist  — expected FAIL ]
-PENDING
-[ a form with a string action            — expected FAIL ]
-PENDING
-[ an unreferenced 'use server' export    — expected FAIL ]
-PENDING
+### 1. a link to a route that does not exist
+ × renders no link to a route the application does not serve
++   "/agents/x/telemetry  (rendered by src/presentation/components/agent-actions.tsx)"
+      Tests  1 failed | 3 passed (4)
+
+### 2. a form with a string action
+ × binds every form to a function rather than a URL
++   "agent-form.tsx: submits to a URL — <form method=\"post\" action=\"/agents/new\">"
+      Tests  1 failed | 3 passed (4)
+
+### 3. an unreferenced 'use server' export
+ × leaves no server action that nothing submits to
++   "app/(app)/agents/[id]/reactivate/page.tsx: reactivate"
+      Tests  1 failed | 3 passed (4)
+
+### restored
+      Tests  4 passed (4)
 ```
+
+Three defect classes, three distinct assertions, three distinct messages. Each
+names the file and what is wrong with it rather than reporting that something
+failed.
 
 ## Diff Boundary (DL-107)
 
@@ -98,9 +113,36 @@ The change may touch only `app/`, `src/presentation/`, `tests/`, and
 `openspec/`. Any file outside those means the premise was wrong.
 
 ```
-[ git diff --name-only <base>..HEAD ]
-PENDING
+app/(app)/agents/[id]/edit/page.tsx
+app/(app)/agents/[id]/page.tsx
+app/(app)/agents/[id]/reactivate/page.tsx
+app/(app)/agents/[id]/rebind/page.tsx
+app/(app)/agents/new/page.tsx
+app/(app)/strategies/[id]/archive/page.tsx
+app/(app)/strategies/[id]/edit/page.tsx
+app/(app)/strategies/[id]/fork/page.tsx
+app/(app)/strategies/[id]/restore/page.tsx
+src/presentation/components/agent-edit.tsx
+src/presentation/components/agent-form.tsx
+src/presentation/components/plan-review.tsx
+src/presentation/components/rebind-confirm.tsx
+src/presentation/form.ts
+tests/architecture/reachability.test.ts
+openspec/**
 ```
+
+`app/`, `src/presentation/`, `tests/`, `openspec/` — nothing else. DL-107 holds:
+no use case, port, repository or domain file was modified, so the change's
+premise (the behaviour exists; only the connection was missing) is confirmed
+rather than assumed.
+
+**The boundary was tested during execution, twice.** Three routes initially
+imported domain predicates (`isEditable`, `isReactivatable`) and one imported a
+domain type; `tests/architecture/boundaries.test.ts` failed on all four. The
+correct response was to move the domain-dependent code into
+`src/presentation/`, where `agent-actions.tsx` already does exactly that — not
+to relax the rule. The plan-parsing moved to `form.ts` for the same reason, and
+belongs there anyway: it is the same job as every other reader in that file.
 
 ## Quality Gates
 

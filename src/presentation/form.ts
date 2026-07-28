@@ -1,3 +1,4 @@
+import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
 import type { Behavior } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 
@@ -57,4 +58,35 @@ export function behavior(form: FormData): Behavior {
   if (!isConviction(conviction)) throw new FormError('conviction', 'Choose a conviction level.');
 
   return { risk, outlook, conviction };
+}
+
+/**
+ * The compiled plan a review carried back through its form.
+ *
+ * Parsed here rather than in the route, because `app/` may not import the
+ * domain (W-D) and because this belongs beside the other field readers: it is
+ * the same job — take an untyped form value and produce a typed one or refuse.
+ *
+ * It is not trusted. The confirmation issued for an apply is bound to
+ * `strategy:<id>#<intentDigest>`, so a plan altered in transit digests
+ * differently, the confirmation fails to consume, and the write is refused
+ * before it reaches BattleGrid.
+ */
+export function compiledPlan(formData: FormData, name: string): CompiledPlan {
+  const raw = requiredText(formData, name);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`"${name}" is not a compiled plan`);
+  }
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new Error(`"${name}" is not a compiled plan`);
+  }
+  const p = parsed as Record<string, unknown>;
+  // Named rather than cast: the three fields the apply path actually reads.
+  if (typeof p['planToken'] !== 'string' || typeof p['intentDigest'] !== 'string') {
+    throw new Error(`"${name}" is missing the fields an apply needs`);
+  }
+  return parsed as CompiledPlan;
 }

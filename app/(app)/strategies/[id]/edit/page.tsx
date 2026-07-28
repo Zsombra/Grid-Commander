@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
-import { requiredText } from '@/presentation/form.js';
-import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
+import { compiledPlan, requiredText } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 
@@ -163,7 +162,7 @@ export async function apply(formData: FormData) {
   await app.applyPlan.execute({
     ...user.authority,
     strategyId,
-    plan: JSON.parse(requiredText(formData, 'plan')) as CompiledPlan,
+    plan: compiledPlan(formData, 'plan'),
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
   redirect('/strategies');
