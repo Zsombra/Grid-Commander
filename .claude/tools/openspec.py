@@ -1392,24 +1392,29 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
 def archive_change(root: Path, change: Change, apply: bool, strict: bool,
                    allow_incomplete: bool = False) -> dict:
     problems = [d for d in validate_change(root, change, strict) if d["severity"] == "error"]
+    if problems:
+        return {"archived": False, "specs_updated": [], "operations": [], "status": problems}
 
     # Checked here rather than in validate_change: a change under active
     # development is *expected* to have unfinished tasks, and turning that into
     # a validation error would make `board` and CI red for the normal case.
     # Archiving is the moment the delta becomes the behavior contract, so this
     # is the one point where the checklist has to be finished.
+    #
+    # Collected rather than returned immediately, so it never *hides* a
+    # structural finding below. An unfinished checklist is a policy stop; an
+    # overlapping merge or an occupied archive slot is a defect, and learning
+    # about the second only after clearing the first wastes a round.
+    gate: list = []
     done, total = change.progress()
     if total and done < total and not allow_incomplete:
-        problems.append(diag(
+        gate.append(diag(
             "error", "tasks_incomplete",
             f"change '{change.name}': {done}/{total} tasks complete",
             f"openspec/changes/{change.name}/tasks.md",
             "finish the tasks, or re-run with --allow-incomplete if the "
             "remaining ones do not apply",
         ))
-
-    if problems:
-        return {"archived": False, "specs_updated": [], "operations": [], "status": problems}
 
     planned, operations = [], []
     for delta in change.delta_paths():
@@ -1418,7 +1423,8 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
             text, ops = build_merged_spec(root, cap, SpecDoc(delta))
         except ValueError as exc:
             return {"archived": False, "specs_updated": [], "operations": [],
-                    "status": [diag("error", "merge_conflict", str(exc), str(delta.relative_to(root)))]}
+                    "status": gate + [diag("error", "merge_conflict", str(exc),
+                                           str(delta.relative_to(root)))]}
         planned.append((main_spec_path(root, cap), text))
         operations.extend(ops)
 
@@ -1429,8 +1435,11 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
 
     if target.exists():
         return {"archived": False, "specs_updated": [], "operations": operations,
-                "status": [diag("error", "archive_target_exists",
-                                f"{target.relative_to(root)} already exists")]}
+                "status": gate + [diag("error", "archive_target_exists",
+                                       f"{target.relative_to(root)} already exists")]}
+
+    if gate:
+        return {"archived": False, "specs_updated": [], "operations": operations, "status": gate}
 
     result = {
         "change": change.name,

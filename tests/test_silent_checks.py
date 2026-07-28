@@ -259,6 +259,21 @@ class TaskGateTest(Fixture):
 
         self.assertNotIn("tasks_incomplete", self.codes(change))
 
+    def test_an_unfinished_checklist_does_not_hide_a_structural_failure(self):
+        """A policy stop must not mask a defect. archive_target_exists is
+        detected after the gate, so returning early on tasks_incomplete meant
+        the second problem only surfaced after fixing the first — one wasted
+        round per stacked failure."""
+        from datetime import date
+        change = self.change(tasks="- [ ] one\n")
+        occupied = self.root / "openspec" / "changes" / "archive" / f"{date.today().isoformat()}-c"
+        occupied.mkdir(parents=True)
+
+        codes = [d["code"] for d in self.archive(change)["status"]]
+
+        self.assertIn("tasks_incomplete", codes)
+        self.assertIn("archive_target_exists", codes)
+
     # -- regression guards -------------------------------------------------
 
     def test_a_fully_checked_change_still_archives(self):
