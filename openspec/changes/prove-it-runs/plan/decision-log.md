@@ -219,3 +219,41 @@ waivers, or handoff clarity.
   not choose.
 - Approved by: executor
 - Next action: `/surface` when the design handoff is picked up
+
+### DL-014
+
+- Timestamp: `2026-07-28 05:30 UTC`
+- Phase: `EXECUTION`
+- Type: `risk`
+- Decision: A `Schema matches migrations` CI step was added, running
+  `db:generate` with no database and failing if anything under `drizzle/`
+  changes. `drizzle-kit check` was deliberately **not** used.
+- Impacted files: `.github/workflows/validate.yml`
+- Reason: The verifier found that the second scenario of "The Schema Is Created
+  By A Committed Migration" — drift detectable from the repository alone — had
+  no automated check, only a one-time manual task. Worse, the obvious candidate
+  does not work: `drizzle-kit check` reports `Everything's fine` against a schema
+  with an added column, because it validates the journal's internal consistency
+  rather than the schema against it. Adding it would have looked like coverage
+  and provided none, which is the third instance in this project of a guard that
+  misses the thing it is trusted for — in the change written to stop that.
+  Proven both ways: PASS in sync, FAIL with a column added, PASS restored.
+- Approved by: executor, on the verifier's CRITICAL finding
+- Next action: none
+
+### DL-015
+
+- Timestamp: `2026-07-28 05:32 UTC`
+- Phase: `EXECUTION`
+- Type: `handoff`
+- Decision: The served-application probe stays manual; filed as
+  `serving-is-not-gated` (p2).
+- Impacted files: none
+- Reason: The verifier raised it as a WARNING. Building and serving fail in
+  different ways, and this change has a concrete near-miss to prove it — the
+  served application returned 500 on every capability page from a malformed
+  encryption key while the build was green. Automating it means starting the
+  application in CI against the Postgres service, which is a real piece of work
+  and a change of its own rather than a step appended to this one.
+- Approved by: executor
+- Next action: `serving-is-not-gated`

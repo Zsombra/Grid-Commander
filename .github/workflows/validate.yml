@@ -98,9 +98,26 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Detectable from the repository alone, with no database: regenerating
+      # against the committed snapshot produces nothing when they agree, and a
+      # new migration file when they do not.
+      #
+      # `drizzle-kit check` is NOT this check, despite the name — it validates
+      # the journal's internal consistency and reports "Everything's fine" for a
+      # schema that has drifted. Adding it here instead would look like coverage
+      # and provide none.
+      - name: Schema matches migrations
+        run: |
+          npm run db:generate
+          if [ -n "$(git status --porcelain drizzle/)" ]; then
+            echo "::error::The Drizzle schema has changed without a migration. Run 'npm run db:generate' and commit drizzle/."
+            git status --porcelain drizzle/
+            git --no-pager diff -- drizzle/
+            exit 1
+          fi
+
       # Applied from the committed journal, against an empty database, every
-      # run. That is the check: if the schema the code declares drifts from the
-      # migrations, the suite that follows fails here rather than in production.
+      # run — so the migrations are exercised, not merely present.
       - name: Apply migrations
         run: npm run db:migrate
         env:

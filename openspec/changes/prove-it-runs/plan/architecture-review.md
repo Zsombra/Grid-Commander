@@ -110,6 +110,28 @@ application that cannot be assembled. That is the finding this change exists for
 reproduced on demand — and the reason `Build` is a fourth CI step rather than an
 assumption that typecheck covers it.
 
+### Verifier finding — the schema drift guard
+
+```
+########## in sync ##########
+PASS — schema matches migrations                       exit=0
+
+########## schema drifted (a column added, no migration) ##########
+FAIL — schema changed without a migration:
+ M drizzle/migrations/meta/_journal.json
+?? drizzle/migrations/0001_soft_night_thrasher.sql
+?? drizzle/migrations/meta/0001_snapshot.json          exit=1
+
+########## restored ##########
+PASS — schema matches migrations                       exit=0
+```
+
+Against the same drifted schema, `drizzle-kit check` reports
+`Everything's fine 🐶🔥` (exit 0), typecheck exits 0, and all 390 unit tests
+pass. The named check is the only one that sees it — which is why
+`drizzle-kit check` is not in the workflow despite being the obvious candidate.
+DL-014.
+
 ### Task 6.5 — the identity fix
 
 ```
