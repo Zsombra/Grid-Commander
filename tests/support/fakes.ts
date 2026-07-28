@@ -45,6 +45,7 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
     this.entries.push({
       id,
       userId: entry.userId,
+      actor: entry.actor,
       tool: entry.tool,
       destructive: entry.destructive,
       outcome: 'attempted',

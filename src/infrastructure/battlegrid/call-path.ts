@@ -1,3 +1,4 @@
+import type { AuditActor } from '@/domain/audit/audit-entry.js';
 import type { AuditWriter } from '@/domain/audit/audit-repository.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import type { ToolClass } from '@/domain/capability/tool-class.js';
@@ -25,6 +26,8 @@ export interface CallPathDeps {
 
 export interface GuardedCall {
   readonly userId: string;
+  /** Defaults to the user; the assistant marks its own reads. */
+  readonly actor?: AuditActor | undefined;
   readonly tool: string;
   readonly classification: ToolClass;
   readonly confirmationToken?: string | undefined;
@@ -83,6 +86,7 @@ export async function beginGuardedCall(
   // 4. Record the attempt and commit, before anything is tried.
   return deps.audit.begin({
     userId: call.userId,
+    actor: call.actor ?? 'user',
     tool: call.tool,
     destructive: cls.destructive,
     idempotencyKey: call.idempotencyKey ?? null,

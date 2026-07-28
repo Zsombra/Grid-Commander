@@ -40,6 +40,7 @@ export function AuditList({
             <tr>
               <th scope="col" className="text-left">When</th>
               <th scope="col" className="text-left">Operation</th>
+              <th scope="col" className="text-left">Caused by</th>
               <th scope="col" className="text-left">Outcome</th>
             </tr>
           </thead>
@@ -55,6 +56,15 @@ export function AuditList({
                   <code>{e.tool}</code>
                   {/* Colour is never the only signal — the word is there too. */}
                   {e.destructive && <span className="ml-2 rounded border px-1">destructive</span>}
+                </td>
+                <td>
+                  {/*
+                    "I did this" and "the assistant did this while answering me"
+                    are different levels of intent, and telling them apart is
+                    what makes this log useful when someone is reading it
+                    carefully. See design A-E.
+                  */}
+                  {e.actor === 'assistant' ? 'the assistant, answering you' : 'you'}
                 </td>
                 <td>{outcomeLabel(e)}</td>
               </tr>

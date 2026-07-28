@@ -60,6 +60,7 @@ describe('journal_is_not_the_audit_log', () => {
     const record = new RecordAuditCommand(auditStore);
     const id = await record.begin({
       userId: 'u1',
+      actor: 'user',
       tool: 'update_intelligence_agent',
       destructive: false,
       idempotencyKey: null,

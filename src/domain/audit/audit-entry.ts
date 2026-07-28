@@ -7,9 +7,21 @@
  */
 export type AuditOutcome = 'attempted' | 'succeeded' | 'failed';
 
+/**
+ * Who caused the operation.
+ *
+ * `user` is a person acting through a surface; `assistant` is the read-only
+ * assistant reading on their behalf while answering. Distinguished rather than
+ * merged: reviewing a log, "I did this" and "the assistant did this while
+ * answering me" are different levels of intent, and merging them makes the log
+ * hardest to reason about exactly when someone is reasoning hard about it.
+ */
+export type AuditActor = 'user' | 'assistant';
+
 export interface AuditEntry {
   readonly id: string;
   readonly userId: string;
+  readonly actor: AuditActor;
   readonly tool: string;
   readonly outcome: AuditOutcome;
   readonly destructive: boolean;

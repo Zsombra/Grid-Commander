@@ -15,6 +15,7 @@ import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
+import { AskAssistantCommand } from './application/use-cases/ask-assistant.command.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
@@ -41,6 +42,8 @@ import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
+import { NotConfiguredAssistant } from './infrastructure/assistant/not-configured.js';
+import type { AssistantPort } from './ports/assistant.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
 import { CookieSession } from './infrastructure/http/cookie-session.js';
 import { systemClock } from './ports/clock.js';
@@ -76,6 +79,7 @@ interface Infrastructure {
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
+  readonly assistant: AssistantPort;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
 }
@@ -107,6 +111,9 @@ function infrastructure(): Infrastructure {
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
+    // Which model answers is a deployment decision (A-D). Until one is chosen,
+    // the assistant says so rather than pretending.
+    assistant: new NotConfiguredAssistant(),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
   };
@@ -171,6 +178,10 @@ export function app(cookies: CookieStore) {
     forkStrategy: new ForkStrategyCommand(i.strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
+
+    // The assistant's read-only toolset is derived inside the use case, from
+    // the live discovered set. Nothing here can widen it.
+    askAssistant: new AskAssistantCommand(i.battlegrid, i.assistant),
   };
 }
 

@@ -17,6 +17,7 @@ describe('audit', () => {
 
   const entry = (tool: string, destructive = false) => ({
     userId: 'u1',
+    actor: 'user' as const,
     tool,
     destructive,
     idempotencyKey: null,
@@ -85,8 +86,8 @@ describe('audit', () => {
     });
 
     it('never returns another user’s history', async () => {
-      await record.begin({ userId: 'u1', tool: 'mine', destructive: false, idempotencyKey: null });
-      await record.begin({ userId: 'u2', tool: 'theirs', destructive: false, idempotencyKey: null });
+      await record.begin({ userId: 'u1', actor: 'user', tool: 'mine', destructive: false, idempotencyKey: null });
+      await record.begin({ userId: 'u2', actor: 'user', tool: 'theirs', destructive: false, idempotencyKey: null });
 
       const res = await new ListAuditQuery(store).execute({ userId: 'u1' });
       expect(res.entries.map((e) => e.tool)).toEqual(['mine']);

@@ -47,6 +47,9 @@ export const auditEntries = pgTable(
   {
     id: text('id').primaryKey(),
     userId: text('user_id').notNull(),
+    // Who caused it. Defaulted so a row written before this column existed
+    // reads as the user's own, which is what it was.
+    actor: text('actor').notNull().default('user'),
     tool: text('tool').notNull(),
     destructive: boolean('destructive').notNull(),
     // attempted | succeeded | failed. There is no 'unknown': 'attempted' IS
@@ -68,6 +71,9 @@ export const confirmationTokens = pgTable(
   {
     token: text('token').primaryKey(),
     userId: text('user_id').notNull(),
+    // Who caused it. Defaulted so a row written before this column existed
+    // reads as the user's own, which is what it was.
+    actor: text('actor').notNull().default('user'),
     tool: text('tool').notNull(),
     target: text('target').notNull(),
     // Stored so the audit can prove what the user was actually shown.

@@ -1,4 +1,4 @@
-import type { AuditEntry, AuditOutcome } from './audit-entry.js';
+import type { AuditActor, AuditEntry, AuditOutcome } from './audit-entry.js';
 
 export interface AuditReader {
   listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]>;
@@ -7,6 +7,7 @@ export interface AuditReader {
 
 export interface NewAuditEntry {
   readonly userId: string;
+  readonly actor: AuditActor;
   readonly tool: string;
   readonly destructive: boolean;
   readonly idempotencyKey: string | null;

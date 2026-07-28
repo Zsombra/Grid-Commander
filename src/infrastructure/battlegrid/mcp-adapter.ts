@@ -126,6 +126,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       { audit: this.deps.audit, confirmations: this.deps.confirmations, heldScopes },
       {
         userId: request.userId,
+        actor: request.actor,
         tool: request.tool,
         classification,
         confirmationToken: request.confirmationToken,

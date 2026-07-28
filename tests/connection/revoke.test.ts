@@ -123,6 +123,7 @@ describe('R2 — a connection is removed', () => {
     });
     const id = await record.begin({
       userId: 'u1',
+      actor: 'user',
       tool: 'create_intelligence_agent',
       destructive: false,
       idempotencyKey: null,

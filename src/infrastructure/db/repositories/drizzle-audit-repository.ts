@@ -28,6 +28,7 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
     await this.db.insert(auditEntries).values({
       id,
       userId: entry.userId,
+      actor: entry.actor,
       tool: entry.tool,
       destructive: entry.destructive,
       outcome: 'attempted' satisfies AuditOutcome,
@@ -75,6 +76,7 @@ function toDomain(row: typeof auditEntries.$inferSelect): AuditEntry {
   return {
     id: row.id,
     userId: row.userId,
+    actor: row.actor === 'assistant' ? 'assistant' : 'user',
     tool: row.tool,
     // Anything the column holds that is not a known outcome reads as
     // `attempted` — the honest unknown — rather than as a success.

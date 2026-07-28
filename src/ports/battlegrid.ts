@@ -1,3 +1,4 @@
+import type { AuditActor } from '@/domain/audit/audit-entry.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import type { DiscoveredTool, ToolClass } from '@/domain/capability/tool-class.js';
 
@@ -47,6 +48,8 @@ export interface TokenGrant {
 
 export interface ToolCallRequest {
   readonly userId: string;
+  /** Who caused this call. Omitted means the user themselves. */
+  readonly actor?: AuditActor | undefined;
   readonly accessToken: string;
   readonly tool: string;
   readonly args: Record<string, unknown>;
