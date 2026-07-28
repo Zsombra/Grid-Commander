@@ -29,6 +29,42 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Design system settled, first two tickets written
+
+**Did**: `/design`. `openspec/design/system.json` is now `status: designed` —
+three product-specific colour roles (`quiet`, `notice`, `consequence`), a
+`consequence-callout` primitive, and five added principles. Two tickets:
+**DT-0001** (tokens — make system.json render, plus the page shell every branch
+uses) and **DT-0002** (the review panel, blast radius, changed axes). Zero
+errors, every declared state styled, no raw values.
+
+**State**: system.json committed here. Tickets in `docs/merge/tickets/`,
+surfaces in `docs/merge/surfaces/`. 2 of ~14 surfaces designed.
+
+**Next**: land the merge, then run **executor** on DT-0001 before DT-0002.
+
+**Watch out**:
+- **DT-0001 makes the Tailwind call the backlog deferred.** Keep Tailwind,
+  generate its theme from `system.json`. The item was right that installing it
+  blindly pre-commits the design agent to a vocabulary — but that vocabulary is
+  already in 28 components, rejecting it means rewriting all of them for no
+  visual gain, and a generated theme keeps `system.json` the single source. If
+  theme and system can drift, DT-0001 is not done.
+- **The placeholder palette had no way to say "notable but not wrong".** Only
+  `warning` and `danger`, and concerns being misread as errors is the exact
+  failure `plan-review.tsx` guards against in prose. `notice` exists so the
+  ticket does not have to borrow danger's colour.
+- **The apply button is deliberately not danger-styled.** Applying is the
+  legitimate purpose of the page; styling it as a hazard trains people to flinch
+  at the correct action. Weight goes on the consequence, not the control.
+- **A tokens ticket cannot have empty `targets`** — `design_missing_field`.
+  Resolved honestly by having DT-0001 also own the page shell, which it
+  genuinely delivers for all seven branches, rather than listing states it does
+  not style.
+- **Tickets cannot live on this branch** — `design_ticket_unknown_surface`, 2
+  errors, since they name a surface whose manifest is on PR #3. `system.json`
+  can, and does: it references no source files.
+
 ## 2026-07-28 — First UI survey: two surfaces, and the empty state nobody wrote
 
 **Did**: Surveyed the built UI for the first time, in the merged worktree where

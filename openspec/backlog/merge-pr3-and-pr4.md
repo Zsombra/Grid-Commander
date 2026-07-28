@@ -105,3 +105,20 @@ traceable.
 `generated_at_commit` is `52ea2b5` (PR #3's head at survey time). If PR #3 moves
 before the merge lands, `validate` will report `design_surface_stale` and the
 survey needs re-running rather than re-stamping.
+
+## Design tickets, also landing with this merge
+
+`docs/merge/tickets/` holds `DT-0001` and `DT-0002`. Copy into
+`openspec/design/tickets/` alongside the surfaces.
+
+Same reason as the surfaces: a ticket names a `surface`, and with no manifest
+present `validate --all` reports `design_ticket_unknown_surface` — 2 errors.
+
+`openspec/design/system.json` is **already committed on the PR #4 branch**,
+because it references no source files and validates clean there. It is now
+`status: designed` with three product-specific colour roles (`quiet`, `notice`,
+`consequence`) and five added principles. Take PR #4's copy at merge; it is
+strictly newer than PR #3's placeholder.
+
+Implementation order once merged: **DT-0001 before DT-0002.** Nothing in
+DT-0002 can be verified until the tokens actually render.
