@@ -16,9 +16,23 @@ export interface NewConnection {
   readonly accessTokenExpiresAt: Date | null;
 }
 
+/**
+ * Which identity a connection ended up under, and which row holds it.
+ *
+ * `userId` is returned rather than assumed because the caller only *proposes*
+ * one: for a subject that has never connected, it mints a fresh id, and two
+ * callbacks racing on the same new subject both mint. Exactly one can win, and
+ * the loser has to be told which id it lost to — otherwise it signs its user in
+ * under an identity that holds no connection.
+ */
+export interface ResolvedConnection {
+  readonly userId: string;
+  readonly connectionId: string;
+}
+
 /** CQRS: writers return void or an identifier, never an aggregate. */
 export interface ConnectionWriter {
-  upsert(connection: NewConnection): Promise<string>;
+  upsert(connection: NewConnection): Promise<ResolvedConnection>;
   markRevoked(userId: string): Promise<void>;
   updateTokens(
     userId: string,

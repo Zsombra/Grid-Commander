@@ -5,7 +5,7 @@
 - Change ID: `prove-it-runs`
 - Change folder: `openspec/changes/prove-it-runs/`
 - Track: `full`
-- Current phase: `Planning`
+- Current phase: `Ready for Production Gate`
 - Base ref for diffs: `origin/main`
 - Evidence base: `7f4cea3` (the proposal commit; execution starts from here)
 - Last updated: `2026-07-28`
@@ -388,4 +388,18 @@ fail it.
 | `openspec/changes/prove-it-runs/plan/decision-log.md` | planner → executor → auditor | started |
 | `openspec/changes/prove-it-runs/plan/production-gate.md` | auditor | not yet |
 
-PLAN READY FOR REVIEW
+## Execution Note — one plan claim was wrong
+
+The plan states **"Contracts impacted: none"** and that `DrizzleConnectionRepository.upsert`
+keeps its signature. Delivering the third scenario of `The Connection Is The
+Identity` required changing it to return `ResolvedConnection { userId, connectionId }`,
+which is a port change touching four files. Recorded as DL-008 and reflected in
+the data review's contract map. Fixing only the storage side would have turned a
+loud foreign-key error into a silent wrong sign-in.
+
+Three smaller deviations: `db:migrate` was added because CI has to apply the
+migration somehow (DL-010); the CI `Build` step carries no environment because
+the build turned out to need none (DL-011); `next-env.d.ts` was added to the
+ESLint ignore list because the build generates it and lint failed on it (DL-012).
+
+EXECUTION READY FOR PRODUCTION GATE

@@ -44,6 +44,26 @@ jobs:
   app:
     name: app
     runs-on: ubuntu-latest
+
+    # The repositories had never executed a statement. Everything they promise —
+    # single-use confirmations, single-use OAuth state, the uniqueness one
+    # identity per BattleGrid account rests on — is enforced by PostgreSQL, so a
+    # fake could only ever agree with the code. This is where that stops.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gridcommander
+          POSTGRES_PASSWORD: gridcommander
+          POSTGRES_DB: gridcommander
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gridcommander"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v5
 
@@ -54,7 +74,7 @@ jobs:
 
       - run: npm ci
 
-      # Three gates, run separately so a failure names which one broke.
+      # Four gates, run separately so a failure names which one broke.
       # typecheck is not redundant with the tests: several safety guards are
       # enforced by the type system, and a mutation removing one fails here
       # rather than in vitest.
@@ -66,6 +86,34 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # Nor is the build redundant with typecheck, which is what this project
+      # assumed for its whole life. `tsc --noEmit` type-checks every file under
+      # app/ and has no opinion about whether Next.js can assemble them into an
+      # application — so a missing root layout left the build broken through
+      # thirteen routes and six changes, with this job green throughout.
+      #
+      # Deliberately carries no environment. The build needs no configuration,
+      # and a step holding placeholder credentials invites a real one.
+      - name: Build
+        run: npm run build
+
+      # Applied from the committed journal, against an empty database, every
+      # run. That is the check: if the schema the code declares drifts from the
+      # migrations, the suite that follows fails here rather than in production.
+      - name: Apply migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
+
+      # `npm test` above needs no database and does not run these. This step is
+      # the only place they run, and it fails rather than skips when
+      # DATABASE_URL is missing — so there is no configuration under which these
+      # appear to have run and did not.
+      - name: Database tests
+        run: npm run test:db
+        env:
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
 
   validate:
     name: validate

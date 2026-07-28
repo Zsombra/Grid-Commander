@@ -8,6 +8,7 @@ import type {
   NewConnection,
   OAuthTransaction,
   OAuthTransactionStore,
+  ResolvedConnection,
 } from '@/domain/connection/connection-repository.js';
 import type { Clock } from '@/ports/clock.js';
 
@@ -130,19 +131,26 @@ export class FakeConnectionStore implements ConnectionReader, ConnectionWriter {
     return null;
   }
 
-  async upsert(c: NewConnection): Promise<string> {
+  /**
+   * Models the invariant the unique index on `battlegrid_subject` enforces:
+   * one BattleGrid account resolves to one identity, whatever id the caller
+   * proposed. A fake that keyed on the proposed id alone would agree with the
+   * code and disagree with the database.
+   */
+  async upsert(c: NewConnection): Promise<ResolvedConnection> {
+    const userId = (await this.findUserIdBySubject(c.battlegridSubject)) ?? c.userId;
     const id = `conn-${++this.seq}`;
-    this.connections.set(c.userId, {
+    this.connections.set(userId, {
       id,
-      userId: c.userId,
+      userId,
       battlegridSubject: c.battlegridSubject,
       scopes: c.scopes,
       status: 'active',
       accessTokenExpiresAt: c.accessTokenExpiresAt,
       createdAt: this.clock.now(),
     });
-    this.secrets.set(c.userId, { accessToken: c.accessToken, refreshToken: c.refreshToken });
-    return id;
+    this.secrets.set(userId, { accessToken: c.accessToken, refreshToken: c.refreshToken });
+    return { userId, connectionId: id };
   }
 
   async markRevoked(userId: string): Promise<void> {

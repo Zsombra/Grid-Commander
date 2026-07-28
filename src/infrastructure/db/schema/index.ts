@@ -47,8 +47,9 @@ export const auditEntries = pgTable(
   {
     id: text('id').primaryKey(),
     userId: text('user_id').notNull(),
-    // Who caused it. Defaulted so a row written before this column existed
-    // reads as the user's own, which is what it was.
+    // Who caused it — the user, or the assistant reading on their behalf.
+    // Defaulted rather than required so that the column has an answer for a row
+    // written by any path that predates it; nothing writes such a row today.
     actor: text('actor').notNull().default('user'),
     tool: text('tool').notNull(),
     destructive: boolean('destructive').notNull(),
@@ -71,9 +72,9 @@ export const confirmationTokens = pgTable(
   {
     token: text('token').primaryKey(),
     userId: text('user_id').notNull(),
-    // Who caused it. Defaulted so a row written before this column existed
-    // reads as the user's own, which is what it was.
-    actor: text('actor').notNull().default('user'),
+    // No `actor` here, unlike audit_entries. A confirmation is evidence that a
+    // human was shown a consequence, so the only actor it can have is the user;
+    // the assistant cannot issue one because it cannot reach a mutating tool.
     tool: text('tool').notNull(),
     target: text('target').notNull(),
     // Stored so the audit can prove what the user was actually shown.

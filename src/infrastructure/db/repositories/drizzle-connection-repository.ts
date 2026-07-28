@@ -7,6 +7,7 @@ import type {
   NewConnection,
   OAuthTransaction,
   OAuthTransactionStore,
+  ResolvedConnection,
 } from '@/domain/connection/connection-repository.js';
 import { isScope } from '@/domain/connection/scope.js';
 import type { Cipher } from '@/infrastructure/crypto/envelope.js';
@@ -46,19 +47,44 @@ export class DrizzleConnectionRepository
     return row?.id ?? null;
   }
 
-  async upsert(connection: NewConnection): Promise<string> {
+  /**
+   * Resolve the identity for a subject, then store its connection under it.
+   *
+   * The user insert is `ON CONFLICT (battlegrid_subject) DO UPDATE ... RETURNING`
+   * rather than `DO NOTHING`, and the returned id — not the proposed one — is
+   * what the connection is written against. The difference only shows under
+   * concurrency, and it is the whole point: two callbacks for one new subject
+   * both propose a fresh id, one row survives, and the loser has to adopt it.
+   *
+   * With `DO NOTHING` the conflict was swallowed and the connection insert went
+   * on to reference a user that was never created, so the loser saw
+   * `violates foreign key constraint "connections_user_id_users_id_fk"` in the
+   * middle of connecting their account. `DO NOTHING` cannot be repaired by
+   * adding `RETURNING`: it returns no row precisely when there was a conflict,
+   * which is the only case that matters here.
+   */
+  async upsert(connection: NewConnection): Promise<ResolvedConnection> {
     const id = this.newId();
 
-    await this.db
+    const [user] = await this.db
       .insert(users)
       .values({ id: connection.userId, battlegridSubject: connection.battlegridSubject })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: users.battlegridSubject,
+        // A no-op write. The row is not being changed — the update exists so
+        // that PostgreSQL returns the surviving row rather than nothing.
+        set: { battlegridSubject: connection.battlegridSubject },
+      })
+      .returning({ id: users.id });
+
+    if (!user) throw new Error('the users upsert returned no row');
+    const userId = user.id;
 
     await this.db
       .insert(connections)
       .values({
         id,
-        userId: connection.userId,
+        userId,
         battlegridSubject: connection.battlegridSubject,
         accessTokenEncrypted: this.cipher.encrypt(connection.accessToken),
         refreshTokenEncrypted:
@@ -82,7 +108,7 @@ export class DrizzleConnectionRepository
         },
       });
 
-    return id;
+    return { userId, connectionId: id };
   }
 
   /**

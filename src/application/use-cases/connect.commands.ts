@@ -108,10 +108,16 @@ export class CompleteConnectionCommand {
     });
 
     const existingUserId = await this.connections.findUserIdBySubject(grant.subject);
-    const userId = existingUserId ?? this.random.token(16);
 
-    const connectionId = await this.connections.upsert({
-      userId,
+    // A proposal, not a decision. Between this read and the write below, another
+    // callback for the same new subject can create the identity first — so the
+    // store returns which id actually holds the connection, and that is the one
+    // the session is issued for. Signing the user in under the id proposed here
+    // would name a user holding nothing.
+    const proposedUserId = existingUserId ?? this.random.token(16);
+
+    const resolved = await this.connections.upsert({
+      userId: proposedUserId,
       battlegridSubject: grant.subject,
       scopes: grant.scopes,
       accessToken: grant.accessToken,
@@ -119,7 +125,13 @@ export class CompleteConnectionCommand {
       accessTokenExpiresAt: expiryFromResponse(grant.expiresIn, now),
     });
 
-    return { userId, connectionId, isReturningUser: existingUserId !== null };
+    return {
+      userId: resolved.userId,
+      connectionId: resolved.connectionId,
+      // Returning by the only measure that survives the race: the identity that
+      // came back is not the one just minted for it.
+      isReturningUser: existingUserId !== null || resolved.userId !== proposedUserId,
+    };
   }
 }
 

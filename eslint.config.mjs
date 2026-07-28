@@ -8,7 +8,19 @@ import tseslint from 'typescript-eslint';
  * become something CI can fail on rather than something a reviewer must notice.
  */
 export default tseslint.config(
-  { ignores: ['.next/**', 'node_modules/**', 'drizzle/**', 'tests/**/fixtures/**'] },
+  {
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'drizzle/**',
+      'tests/**/fixtures/**',
+      // Written by `next build`, gitignored, and documented as not-to-be-edited.
+      // Without this, lint's result depends on whether a build has run — it
+      // passes on a fresh checkout and fails afterwards, which is a worse
+      // property for a gate than simply failing.
+      'next-env.d.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
