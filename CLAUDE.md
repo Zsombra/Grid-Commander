@@ -3,17 +3,39 @@
 
 ## Project
 
-- **Name**: [project name]
-- **Description**: [one-liner describing what this project does]
-- **Status**: [new / in-development / production]
+- **Name**: Grid-Commander
+- **Description**: A web workbench for building, tuning, and understanding
+  BattleGrid trading agents and the strategies that drive them, over BattleGrid's
+  MCP server.
+- **Status**: new — no application code yet. See `_IDEA/Grid-Commander_Idea_Brief.md`.
 
 ## Architecture
 
-- **Pattern**: [Clean Architecture / Provider Pattern / MVC / other — filled by /idea or manually]
-- **Language**: [TypeScript / Python / Go / etc.]
-- **Framework**: [Next.js / FastAPI / Express / etc.]
-- **Database**: [PostgreSQL / MongoDB / none / etc.]
-- **ORM**: [Drizzle / Prisma / SQLAlchemy / none / etc.]
+- **Pattern**: Clean Architecture, lightly applied — the domain must not import
+  the MCP client; BattleGrid sits behind a port
+- **Language**: TypeScript
+- **Framework**: Next.js (App Router)
+- **Database**: PostgreSQL
+- **ORM**: Drizzle
+
+## Domain
+
+Grid-Commander is a **third-party multi-tenant client** for BattleGrid
+(battlegrid.trade), reached over MCP at `https://mcp.battlegrid.trade/mcp`.
+The surface is fully mapped — 110 tools — in `docs/BATTLEGRID_MCP_REFERENCE.md`,
+with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation and
+`tools/generate_mcp_reference.py` to regenerate both.
+
+Three facts that shape almost every decision:
+
+1. **`mcp:read` is write-capable.** 27 of 110 tools mutate, but only 16 need
+   `mcp:wager`. Eleven mutate on `mcp:read` alone, six of them destructive.
+   Never treat scope alone as a safety boundary.
+2. **The tool list goes stale after a BattleGrid deployment.** The server says
+   so itself. Rediscover at runtime; never hard-code a tool list.
+3. **This product holds credentials that configure other people's agents**, and
+   with wager scope, move their money. Read-only by default, explicit step-up,
+   audit every write.
 
 ## Pipeline
 

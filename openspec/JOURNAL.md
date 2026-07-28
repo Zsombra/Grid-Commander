@@ -1,5 +1,141 @@
 # Journal
 
+## 2026-07-28 — The authoring surface never worked, and CI stopped starting
+
+**Did**: Proposed, planned and executed `close-the-reachability-gap` (full
+track, 24/24 tasks, `EXECUTION READY FOR PRODUCTION GATE`). **It is not
+verified, not audited and not archived** — see State.
+
+The session started as the design track: `/surface` → `/design` → implement,
+because the product renders in browser defaults. Surveying the UI found
+something first, and then something worse.
+
+**Five links the interface renders returned 404** — agent edit and reactivate,
+strategy fork, archive and restore. Each rendered by a deliberate permission
+check (`isEditable`, `isReactivatable`, the strategy listing's own flags). Filed
+`five-dead-links`.
+
+**Four of six write paths could not be submitted.** Create, rename, rebind and
+apply used `method="post"` with a string action or none, which does not invoke a
+Server Action. Three actions — `create`, `rename`, `performRebind` — appeared
+*exactly once* in the repository, at their own definition. The strategy edit
+page had no `'use server'` at all. Filed `four-dead-write-paths`.
+
+So the product could connect an account and archive an agent. Nothing else.
+Every use case behind the dead paths was written, tested, audited and wired.
+
+Both are fixed. All 16 rendered paths now serve; all four forms are bound; the
+apply action was written from scratch, carrying the reviewed plan rather than
+recompiling.
+
+**Next**: `/verify` then the **auditor** on `close-the-reachability-gap`, then
+`/archive`. Do not archive before the gate — the change modifies an archived
+requirement.
+
+**Watch out**:
+
+- **CI has been broken since `7f1cb28` and it is not the diff.** Every run is a
+  `startup_failure` with `name:""` and `path: BuildFailed`; the "Spec Layer"
+  workflow does not run at all. `git diff 4890081..HEAD -- .github/` is empty.
+  Three commits are unverified by CI. Filed `ci-startup-failure` (p1) with the
+  evidence and the two things deliberately not tried. **Do not "fix" it by
+  editing the workflow** — the file is provably unchanged, and an edit would put
+  a fabricated cause in the history.
+
+- **The reachability guard's own first version missed two of the five dead
+  links.** It matched `href=` as a JSX attribute and not `href:` as an object
+  property. Caught only because the defects were still present to count against
+  — which is the whole argument for DL-101, writing the guard before the fix.
+  Written afterwards it would have passed at 3-of-5 forever.
+
+- **The guard has a stated blind spot (DL-106).** It checks that a *form* is
+  bound, not that every *control inside* it reaches the payload.
+  `agent-form.tsx` still renders a position-management select while the create
+  action sends `tradingConfig: null`. Filed as
+  `a-preset-does-not-constrain-its-config`. This was written down before the
+  guard was built, on purpose.
+
+- **This is the fifth instance of one pattern**, and it is worth stating as a
+  rule rather than an anecdote: *every check this project built measured what
+  the code contains, never what the interface offers.* Routes exist, the build
+  succeeds, pages return 200 — all true while nothing could be submitted.
+
+- **`agent-edit-form` cannot be built as specified.** Two live-server findings:
+  three `tradingConfig` keys come back on read and are rejected on write
+  (`trading-config-read-shape-is-not-write-shape`), and a position-management
+  preset is a label supplied *alongside* fourteen independent values rather than
+  a shorthand for them (`a-preset-does-not-constrain-its-config`). A preset
+  dropdown cannot be the edit surface.
+
+- **The ceiling is unchanged and stated in the proposal**: this proves the
+  wiring is correct and the guard catches regressions. It does **not** prove a
+  BattleGrid round trip, which needs an OAuth consent in a browser
+  (`prove-token-lifetimes`). No agent was created — the MCP create call was
+  blocked by the harness permission classifier and was not retried.
+
+- PostgreSQL stops on its own in this container. `pg_ctlcluster 16 main start`.
+  A `no response` in a log is that, not a defect.
+
+## 2026-07-28 — It had never been built, and three predictions about the schema were all wrong
+
+**Did**: Shipped `prove-it-runs` (full track, gate PASS, archived). `app-access`
+gains three requirements and `battlegrid-connection` gains a scenario.
+
+The P1 item said the blocker was the missing migration and predicted three
+disagreements on first contact — `text[]`, the `(user_id, idempotency_key)`
+unique index, the `onConflictDoUpdate` target. **All three were wrong.** The
+migration generates, applies, and 51 repository tests pass against real
+PostgreSQL 16. Reading the code produced three wrong predictions; running it
+produced five real findings.
+
+What was actually broken: **the application had never been built.**
+`app/layout.tsx` did not exist, so App Router refused to assemble anything, and
+once a layout existed webpack could not resolve the `.js` specifiers `tsc`
+resolves happily under `moduleResolution: bundler`. Invisible because CI ran
+typecheck, lint and test and never `next build`.
+
+Also fixed: a duplicated first-time OAuth callback surfaced
+`violates foreign key constraint "connections_user_id_users_id_fk"` to someone
+mid-connect; `confirmation_tokens.actor` was written and read by nobody.
+
+**State**: 7 capabilities, 0 active changes, 18 open backlog items. The product
+builds, serves all thirteen routes against a real database, and every capability
+page shows the not-connected outcome with no BattleGrid call and no row written.
+390 unit + 51 database + 124 harness tests. CI now runs six gates in the `app`
+job against a Postgres 16 service.
+
+**Next**: `/surface` — there is a built UI to survey for the first time, and
+`tailwind-classes-with-no-tailwind` (p2) is waiting on that decision. Otherwise
+`wire-an-assistant-model` (p2) or `serving-is-not-gated` (p2).
+
+**Watch out**:
+
+- **A guard that misses its target, three times now.** The coercion scan matched
+  three patterns and missed the fourth. CI ran three gates and never the build.
+  And this time: `drizzle-kit check` reports `Everything's fine` against a schema
+  with an added column — it validates the journal, not the schema. Adding it
+  would have looked like coverage and provided none. The workflow comment says so
+  explicitly so nobody "improves" it later. What actually detects drift is
+  `db:generate` plus `git status --porcelain drizzle/`.
+- **Fix both halves of a concurrency bug or you make it worse.** The plan said
+  "Contracts impacted: none". Fixing only the storage side would have converted a
+  loud foreign-key error into a silent wrong sign-in: the callback route passes
+  the returned `userId` straight to `sessions.issue`, and the caller was
+  returning its own proposal. `upsert` now returns `ResolvedConnection`.
+- **The fake modelled a weaker rule than the database.**
+  `FakeConnectionRepository.upsert` keyed on the proposed `userId`, so no unit
+  test could ever have caught the identity defect. Corrected; all 390 still pass.
+- **The no-skip rule demonstrated itself.** The first `test:db` run at the audit
+  reported 51 failures because PostgreSQL had stopped in the container. It failed
+  loudly rather than reporting a green run of zero tests. With `describe.skipIf`
+  the audit would have recorded a pass.
+- **PostgreSQL in this container stops.** `pg_ctlcluster 16 main start` before
+  `npm run test:db`. Some of the `pkill` patterns used for the dev server were
+  taking it down.
+- **213 Tailwind class names and no Tailwind.** Every page renders in browser
+  defaults. Do not fix by installing Tailwind — that pre-commits the design agent
+  to a vocabulary it did not choose. `/surface` first.
+
 Session handoff log. **Newest entry at the top**, directly under this header.
 
 Every session that changes anything ends with an entry here. This is what a
@@ -28,6 +164,568 @@ folded into `board`.
 resolution is always the same: keep both entries, newest first.
 
 ---
+
+## 2026-07-28 — The MVP is complete, and a "redundant" guard turned out to be a live defect
+
+**Did**: Two changes. First `extend-coercion-guard` — the P2 the last journal
+entry said to do *before* the next mapper, done before the next mapper. Then
+`assistant-readonly`, the last of the four MVP changes. **Seven capabilities in
+`openspec/specs/`, 390 tests.**
+
+The MVP exit criteria in the idea brief are met: a user can connect without
+handling a credential, fork a system strategy, change it through the review
+pipeline while seeing which agents the change will reach, bind an agent to it,
+and read back a complete record of every write made on their behalf.
+
+**The assistant's read-only guarantee is structural.** A model told not to write
+will not write until something in its context suggests otherwise — a user asking
+firmly, or text it just read out of a strategy field a user typed into. So it is
+never handed a mutating tool: the set is filtered through the same `classifyTool`
+the guard sequence uses. The port receives a question, a toolset and a
+`callTool`, and nothing else — no adapter, no token, no `fetch`.
+
+**Watch out** — one thing, and it is the most useful thing I have learned in this
+project.
+
+Mutation testing removed a `ConnectionRevokedError` re-throw from the assistant's
+call path and **nothing failed**. The obvious reading is "redundant defensive
+code" — precisely what a production gate exists to strip, and deleting it would
+have been the confident move.
+
+I wrote a test to prove the mutation mattered. **It failed against the unmutated
+code.** The re-throw only reaches the use case if the assistant lets it
+propagate, and a model harness that catches its own tool errors and carries on is
+entirely ordinary — in which case the answer completed, grounded, about an
+account the product had just lost access to. The guard was not redundant. It
+simply was not what carried the requirement.
+
+That is the second time in this project a surviving mutation was a missing test
+rather than dead code, and the second time following it found something real.
+**When a mutation survives, write the test that proves it mattered before
+concluding the code is dead.** The test is cheap and it is the only way to tell
+the two cases apart.
+
+**State**: no active changes, seven capabilities, 11 open backlog items.
+
+**Next**: `generate-initial-migration` (P1) the moment there is a database — four
+repositories have still never executed a statement. Then
+`wire-an-assistant-model` (P2): the assistant is complete and has no model behind
+it, and every guarantee it makes is independent of which one.
+
+---
+
+## 2026-07-28 — Strategy authoring shipped; the guard I built last change missed the thing it was for
+
+**Did**: Built, gated and archived `author-strategies` — the hardest of the four
+MVP changes. `openspec/specs/` now holds six capabilities. 351 tests, up from
+267 this morning.
+
+Read the live server first. `compile_strategy_plan` is annotated `readOnlyHint:
+true` by the server itself, so I ran a real one against a private strategy with
+zero bound agents. **Seven of nine design decisions came from what came back**:
+
+- **The plan token is a readable envelope** — `bgsp1.<claims>.<sig>`, and the
+  claims carry expiry, owner, strategy and revision. So an expired plan is
+  refused locally with a real reason rather than submitted and rejected. Used
+  only to refuse; the signature can't be verified here.
+- **`approvedPlan` is not the plan.** Apply takes a projection — two renames, one
+  unwrap, eight omissions, each an unknown-key error. Handing back what compile
+  returned fails every time.
+- **`mismatches` are advisory.** A one-word tagline edit came back with two while
+  `viable: true`. Blocking on them would refuse routine edits with no way around
+  it, and an empty array *feels* like the success condition.
+- **The server writes the confirmation copy.** `confirmationSummary` names the
+  operation, revision, axes and blast radius. Ours would be a second description
+  of one act.
+- **The vocabulary genuinely can't be guessed** — two of my first three live calls
+  were rejected for facts only the server holds.
+
+**State**: no active changes, six capabilities, 10 open backlog items. One MVP
+change remains: `assistant-readonly`.
+
+**Next**: `generate-initial-migration` (P1) whenever there's a database, then
+`/propose assistant-readonly`.
+
+**Watch out** — one thing, and it is about me rather than the code.
+
+The same defect appeared a **fourth** time: `mapStrategy` defaulted `id` to `''`
+and `revision` to `0`, both of which flow into a destructive apply. Last change I
+added `concurrency.test.ts::no identifier is coerced into existence` *precisely*
+so a fourth occurrence would fail the build. It scans form coercions and
+`<identifier> ?? <value>`. `String(s['id'] ?? '')` matches neither. **The fourth
+occurred and the build stayed green** — a human reading scan output caught it,
+which is the work the guard was supposed to replace.
+
+A guard that misses the next instance is worse than none, because it creates a
+belief the class is covered. `extend-coercion-guard-to-mappers` (P2) has the
+concrete rule: inside a mapper or adapter, an `id` or `revision` assignment must
+be preceded by a `throw`, as both mappers now are. Do that before the next
+mapper is written, not after.
+
+---
+
+## 2026-07-27 — The product is reachable, and a defect appeared for the third time
+
+**Did**: Built, gated and archived `wire-the-app` — the P1 the previous gate
+found. `openspec/specs/` now holds `app-access` (6 requirements) alongside
+`battlegrid-connection`, `agent-authoring`, `harness-integrity` and
+`spec-validation`. 267 tests.
+
+Session, authority resolution, composition root, ten routes — and the four
+Drizzle repositories, because `src/infrastructure/db/repositories/` turned out to
+be empty as well. **The backlog item understated the gap**: it said routes and a
+session were missing; the truth was that nothing had ever written a row, and
+every test in both prior changes ran against in-memory doubles.
+
+`tests/access/end-to-end.test.ts` is the one that matters. Session → authority →
+guard sequence → adapter → BattleGrid, doubled only at `fetch`. It proves through
+the real path that a destructive call without a confirmation is refused before it
+is attempted and writes no audit row. Three changes had been resting on that.
+
+**State**: no active changes, five capabilities in `openspec/specs/`. 9 open
+backlog items. Two MVP changes remain: `author-strategies`, `assistant-readonly`.
+
+**Next**: `generate-initial-migration` (P1) the moment there is a database — see
+below. Then `/propose author-strategies`.
+
+**Watch out**: three things.
+
+1. **The same defect has now appeared three times.** `expectedRevision ?? -1`
+   (PG-003), `slotUsage.limit ?? 0` (PG-101), `Number(formData.get(...))`
+   (PG-201) — different layers, different fields, one shape: a fabricated number
+   standing in for one that was never supplied. Each was invisible to a green
+   suite. I wrote the lesson into this journal twice and it recurred anyway,
+   which is the argument that a written lesson is not a control. It is a test
+   now: `concurrency.test.ts::no identifier is coerced into existence` fails the
+   build on a fourth.
+2. **`DrizzleConfirmationStore.consume` would have been replayable**, and it was
+   caught by reading rather than by a test. The single-use check read from
+   `.returning()`, which is the post-update row, so it could never fail. Both
+   prior changes prove the *domain* enforces single use — against a fake that
+   got it right. Which leads to:
+3. **No repository has ever executed a statement.** Four of them, written and
+   typechecked against the schema, and no migration has been generated because
+   there is no database here. Filed as `generate-initial-migration` (P1). Expect
+   the `text[]` column, the unique index on `(user_id, idempotency_key)`, and the
+   `onConflictDoUpdate` target to disagree with something on first contact.
+
+---
+
+## 2026-07-27 — Agent authoring shipped; the product is complete and unreachable
+
+**Did**: Built, gated and archived `author-agents`. `openspec/specs/` now holds
+`agent-authoring` (10 requirements) alongside `battlegrid-connection`, whose
+scope requirement was MODIFIED to say the authority an operation is measured
+against is the one recorded on the connection. 223 TypeScript tests, up from 97
+this morning.
+
+Read the live server before designing the form — tasks 0.1–0.3 — and four of the
+nine design decisions changed as a result:
+
+- `capabilities.canDelete` is `true` on a live agent and **no delete tool exists
+  over MCP**. The flag describes what BattleGrid's own app can do. Dropped at the
+  mapper; a comment-stripped scan keeps it out of code.
+- `tradingConfig` is all-or-nothing, so editing one limit is a read-modify-write.
+  A partial send does not error — it *resets* the omitted fields.
+- Five position-management presets live, four in our own docs, written a week
+  ago.
+- The bounds registry covers sixteen limits and is silent on three constrained
+  fields. Silence is reported as `unvalidatable`, never as permission.
+
+Closed the fail-open `scopesFor()` stub first, before any agent write landed.
+
+**State**: no active changes. `openspec/specs/` has four capabilities. 8 open
+backlog items, three filed by this gate.
+
+**Next**: `/propose wire-the-app` — see the warning below. Then
+`author-strategies`, then `assistant-readonly`.
+
+**Watch out**: two things, and the second is the important one.
+
+1. The `rg "??"` fallback scan has now found the most serious defect in *both*
+   changes it has run on, and both were the same shape: a fabricated number
+   presented to a user as fact (`expectedRevision ?? -1`, then
+   `slotUsage.limit ?? 0` rendering as "you are using all 0 of your agent
+   slots"). Both were invisible to a green suite for the same reason — the tests
+   supplied the value the production path omits. Writing the lesson down after
+   change 1 did not prevent change 2. Make the guard mechanical.
+2. **Nothing renders any of this.** Two changes, 223 tests, every requirement
+   delivered, and no user can reach a line of it: there is no session, no
+   composition root, no route. Both delta specs are fully satisfied by
+   unreachable code, because neither ever says *reachable*. Filed as
+   `no-composition-root` (P1) and it should be built before the next feature,
+   not after. A requirement set that never says reachable can be completed and
+   still not be a product.
+
+---
+
+## 2026-07-27 — The first capability is real: gate passed, deltas archived
+
+**Did**: Ran the production gate on `connect-battlegrid-account` and archived it.
+`openspec/specs/battlegrid-connection/` now exists with 10 requirements — the
+first behavior contract this project has that describes running code rather than
+an intention.
+
+The gate found two defects, both from the same mandated scan (`rg "??"` over
+touched paths), and both fixed before the decision:
+
+- **PG-001, critical.** `subject: json.sub ?? ''`. Every grant without a subject
+  collided on the empty key, so the second person to connect would be recognised
+  as the first — a stranger's workspace, a stranger's connection, a stranger's
+  audit history. The grant is now refused.
+- **PG-003, major.** `RevisionConflictError(..., expectedRevision ?? -1, ...)`.
+  The one production call site passes no revision, so every conflict a user
+  would actually see read *"expected revision -1"*. Nullable now, clause omitted
+  when unknown.
+
+Gate: **PASS**, zero open violations. 99 TypeScript tests, 124 harness tests,
+typecheck/lint/validate green.
+
+**State**: no active changes. Three MVP changes remain: `author-agents`,
+`author-strategies`, `assistant-readonly`. Five open backlog items, two of them
+filed by the gate as named deferrals rather than waived findings.
+
+**Next**: `/propose author-agents`.
+
+**Watch out**: both gate findings were invisible to a green test suite, and for
+the same reason — the tests supplied the value the production path omits. A
+suite can be fully green and never once execute the branch users hit. When a
+default has a call site that never provides the value, the default *is* the
+behaviour; test it as such. Also: `scopesFor()` still returns a constant
+(`scopes-from-connection`, P2) and must be replaced by whichever change first
+needs a scope other than `mcp:read` — it fails open, reporting authority the
+connection may not hold.
+
+---
+
+## 2026-07-27 — Grid-Commander has application code; verification found a real gap
+
+**Did**: Built `connect-battlegrid-account` end to end on the `full` track.
+94 TypeScript tests alongside the 124 Python harness tests, all three gates
+(typecheck, lint, test) green and running in CI as separate steps.
+
+Proved DCR against the live server first (task 0.1), because the token model
+depended on facts reading could not settle. Two findings changed the design and
+are recorded in `findings-dcr.md`: every client is public regardless of the auth
+method requested, and registration-time scope is a usable hard ceiling — so the
+production client registers `mcp:read` only, making wager authority
+*unrequestable* rather than merely unrequested.
+
+**Verification earned its keep.** Checking scenario-by-scenario against the
+delta spec found that R10's second scenario — authority withdrawn at BattleGrid
+rather than through us — was **not implemented at all**. A 401 became a generic
+"failed with 401" the user could not act on, instead of "disconnected,
+reconnect". Fixed, and the fix now fails 3 tests when reverted. R2's
+"history survives disconnection" had no test either. Both closed.
+
+**State**: PR #3 open. Change is 25/26 tasks, 10 requirements / 22 scenarios all
+covered. `validate --all` clean apart from the placeholder design system.
+
+**Next**: auditor (production gate), then `/archive`. Then changes 2–4 of the
+MVP: `author-agents`, `author-strategies`, `assistant-readonly`.
+
+**Watch out**:
+- **Task 0.2 is deliberately left unchecked at 25/26.** Whether scope can be
+  stepped up without re-consenting needs a human in a browser. Ticking it would
+  have made the board lie. The tool's checkbox regex ignores `[~]` entirely, so
+  a "partial" marker silently drops the task from both numerator and
+  denominator — `[ ]` is the honest marker.
+- **`scopesFor()` in the adapter is a stub** returning `['mcp:read']` rather
+  than reading the grant's recorded scopes. Correct today because the
+  registration cannot obtain more; the next change must replace it. Filed as F-3
+  in the architecture review rather than hidden.
+- **The MCP SDK is not a dependency.** The adapter uses `fetch` against the
+  documented Streamable HTTP surface. The lint rule and boundary test remain, so
+  reintroducing it outside `src/infrastructure/battlegrid/` still fails.
+- **npm, not pnpm.** pnpm 11 refuses to run any script while a dependency's
+  build script is unapproved and no configuration cleared it. Deviation from the
+  brief, logged in the master plan.
+- A mutation that does not compile is not a surviving mutation. One guard here
+  is enforced by the type system, which is why `typecheck` is a separate CI step
+  rather than folded into the tests.
+
+## 2026-07-27 — The full track is unblocked; first change promoted to it
+
+**Did**: Ran `checklist-generator` in CREATE mode. `docs/specs/` now exists with
+three checklists, which is what the planner, executor and auditor hard-require —
+the `full` track had been blocked since the repo's first commit.
+
+Promoted `connect-battlegrid-account` from `standard` to `full`. It handles
+delegated OAuth authority over other people's trading agents; that is the
+profile the full track exists for, and shipping it on `standard` would skip the
+production gate on the riskiest change in the project.
+
+The checklists are project-specific rather than generic:
+
+- **Architecture** carries six binding project policies (P1–P6) drawn from
+  `openspec/config.yaml`: scope is not a safety boundary, capabilities are
+  discovered at runtime and unknown tools fail closed, audit is written before
+  the attempt, concurrency conflicts are surfaced not retried, compile is free
+  of effect while apply is not, and every BattleGrid call goes through one port.
+- **Data pipeline** was adapted rather than filled in. The generic template
+  assumes the database is the source of truth; here **BattleGrid is**, for
+  everything about agents and strategies, and our Postgres owns only
+  connections, audit and compiled plans. The Iron Rule was rewritten around two
+  sources of truth, plus a corollary: a cached value must be displayed as a
+  snapshot with its age.
+- **UI** has a section the template does not: *Consequence & Confirmation*.
+  Blast radius before the apply control, confirmations that name what is lost
+  rather than which tool is called, no optimistic UI on any mutation, and
+  compile/apply never styled as equal-weight siblings.
+
+**State**: PR #3 open and green. One active change on `full`, 0/26 tasks, board
+routing to `write design`. `validate --all` is 0 errors, 1 warning, 1 info.
+
+**Next**: `planner` — the full track needs `design.md`, `plan/master-plan.md`,
+`plan/architecture-review.md` and `plan/decision-log.md` before the executor may
+start. After that, task 0.1 (prove DCR against the live server) still gates all
+implementation.
+
+**Watch out**:
+- **The owner declined the optional rule sets** (security, testing, background
+  jobs, observability), so those sections are deliberately absent. The domain
+  constraints were still included as *core* architecture policies, because they
+  come from `config.yaml` and are binding project context, not an optional
+  add-on. That was a judgement call and was flagged as one — if it should come
+  out, it is section "Project-Specific Policies".
+- **P6 ("One way in") is the load-bearing rule.** If any feature reaches the MCP
+  SDK without going through `BattleGridPort`, every other guarantee in P1–P5
+  becomes advisory. Worth auditing specifically rather than trusting.
+- The `full` track has still never actually been *run* — planner and auditor
+  remain unexercised. Expect friction on this first pass and fix the
+  instructions rather than working around them.
+
+## 2026-07-27 — MVP specified; the first change is proposed and unblocked
+
+**Did**: Ran `/spec` on the MVP. Two artifacts:
+`_PM/Grid-Commander-MVP_Feature_Specification.md` (journeys, business logic,
+metrics, risk, decision log) and the first change,
+`connect-battlegrid-account` — `standard` track, capability
+`battlegrid-connection`, 10 requirements / 22 scenarios, 26 tasks, validating
+clean.
+
+Also narrowed open question 1. No terms of service are published anywhere on
+battlegrid.trade or its docs, so there is no written permission or prohibition.
+But the OAuth deployment settles the technical half: DCR, public-client auth,
+PKCE, scoped consent, revocation, and published per-account wager caps are all
+apparatus that does nothing for a first-party app. **Technically intended;
+commercially unconfirmed.**
+
+Five decisions worth carrying (full rationale in the `_PM/` decision log):
+- **D-1** BattleGrid OAuth is the *only* identity. No separate password. This
+  deletes a whole feature from the MVP rather than building it.
+- **D-2** The MVP ships as **four sequenced changes**, not one — greenfield
+  makes everything ADDED, and 13 features in one change folder is unreviewable.
+  Only change 1 has delta specs so far; 2–4 get written when proposed.
+- **D-3** `mcp:wager` is never requested in MVP. Nothing in scope spends, and
+  requesting authority you do not exercise undermines the whole trust position.
+- **D-4** Unknown tools **fail closed** — treated as destructive until the
+  server's annotations say otherwise.
+- **D-5** Audit is written *before* the attempt, updated with the outcome. A log
+  of successes cannot answer "what happened when it broke".
+
+**State**: PR #3 open and green. 1 active change, 0/26 tasks. `validate --all`
+is 0 errors, 1 warning, 1 info. Still no application code — this is the contract,
+not the build.
+
+**Next**: **Task 0.1 — prove Dynamic Client Registration against the live server
+before building anything on it.** It is the one assumption in this change that
+reading cannot confirm, and the token model depends on the answer. Then executor
+on the rest.
+
+**Watch out**:
+- **Do not let a caller reach BattleGrid except through the classification
+  layer.** The whole safety model in this change collapses if some later feature
+  calls a tool directly. Task 3.7 exists for this and is easy to quietly skip.
+- **The consent copy is a product surface, not boilerplate.** Requirement
+  "Configuration Authority Is Described Honestly" forbids calling read scope
+  read-only, because it can rebind agents. If a future change softens that
+  wording to sound friendlier, it is a spec violation.
+- The `_PM/` document is narrative; `openspec/changes/*/specs/` is the contract.
+  Metrics, risks and decisions deliberately did **not** cross over.
+- `checklist-generator` still has not run, so `docs/specs/` does not exist and
+  the `full` track remains blocked. Worth running before change 1 is executed —
+  this change touches credentials and would benefit from the full track.
+
+## 2026-07-27 — The blocker is gone: Grid-Commander is defined and configured
+
+**Did**: The owner defined the product, so `/idea` finally had something to run
+on. Grid-Commander is a **third-party multi-tenant web workbench** for building
+and tuning BattleGrid agents and strategies over MCP, with backtesting and
+optimization as the eventual point.
+
+Wrote `_IDEA/Grid-Commander_Idea_Brief.md` — product definition, market context,
+22 features RICE-scored into a 13-item MVP, technical requirements, one
+recommended stack, folder structure, risks, and seven open questions. Filled
+`CLAUDE.md` and `openspec/config.yaml` from it. Both had been unfilled templates
+since the repo's first commit; every skill reads config and had been getting
+placeholders.
+
+**Stack**: TypeScript / Next.js / PostgreSQL / Drizzle, Clean Architecture
+lightly applied. The owner leaned toward Python + TS and asked for a
+recommendation instead — the argument for one language is that nothing in the
+MVP is computational, and the Python case is entirely about deferred backtesting.
+Recommendation is TS now with a **job-queue seam** (`src/ports/jobs.ts`) that a
+Python worker consumes later, so the capability stays reachable without paying
+for two languages from day one.
+
+**State**: PR #3 still open and green. `validate --all` is 0 errors, 1 warning
+(placeholder design system). Backlog 3 open, all P3. No application code exists
+yet — this session produced the foundation, not the product.
+
+**Next**: **Retire open question 1 before writing any application code — does
+BattleGrid permit third-party clients?** Everything else in the brief is
+recoverable; that one is not. After that, `/spec` on the MVP scope, then
+`checklist-generator` (which also unblocks the `full` track).
+
+**Watch out**:
+- **BattleGrid supports OAuth Dynamic Client Registration** — `/register`,
+  PKCE S256, refresh tokens, `/revoke`, and `mcp:read`/`mcp:wager` as separable
+  scopes. So this product must **never** ask users to paste a `bg_live_` key.
+  That discovery is what made a multi-tenant product tractable at all.
+- **`mcp:read` is write-capable and that is now a config-level constraint.**
+  Eleven tools mutate on it alone, six destructive. Do not let a future change
+  treat scope as the safety boundary.
+- The revenue model is genuinely undecided and is marked as such in the brief
+  rather than invented. Fine while exploring; urgent before launch.
+- `generate_agent_grid` spends a billed LLM call on BattleGrid's side while
+  wagering nothing — a "free preview" is not free, and that shapes UI generosity.
+- `full` track is still blocked on `docs/specs/` until checklist-generator runs.
+
+## 2026-07-27 — Grid-Commander is a BattleGrid project; MCP surface fully mapped
+
+**Did**: Two threads.
+
+**The domain finally landed.** Grid-Commander is about BattleGrid
+(battlegrid.trade) — "where AI trading agents are built, trained, and proven".
+Agents draft a 3x3 grid of 9 coins per market window, call UP/DOWN, name a
+Captain worth 2x both ways, and trade high-conviction reads live on Hyperliquid.
+The issued `bg_live_` key is an **MCP credential**, not a REST key: it
+authenticates `https://mcp.battlegrid.trade/mcp` (server `battlegrid v3.0.0`).
+Mapped the whole library from the live connection — 110 tools, 5 prompts,
+3 resources — into `docs/BATTLEGRID_MCP_REFERENCE.md`,
+`docs/battlegrid-mcp-capabilities.json` (diffable dump) and
+`tools/generate_mcp_reference.py`, which asserts every tool in `tools/list` is
+documented and fails on a coverage gap.
+
+**`enforce-journal-entry` (P2) shipped** — `validate` now warns `journal_stale`
+when `openspec/` has been committed more recently than `JOURNAL.md`. Advisory,
+never blocking. Suite is 124.
+
+**State**: PR #3, open and green, 11 commits. Backlog is 3 open, all P3. Two
+capabilities in the source of truth; `spec-validation` is now 5 requirements.
+
+**Next**: `CLAUDE.md` and `openspec/config.yaml` are **still unfilled templates**
+— the owner said they will define what Grid-Commander is being built *as*
+(client? orchestration layer? strategy authoring tool?) and the stack. Do not
+guess it; the domain is mapped but the product is not.
+
+**Watch out**:
+- **`mcp:read` is write-capable.** 27 of 110 tools have `readOnlyHint:false` but
+  only 16 need `mcp:wager`, leaving **11 that mutate on `mcp:read` alone, 6 of
+  them destructive** — including `rebind_intelligence_agent`, which replaces an
+  agent's whole configuration, and `apply_strategy_plan`, which propagates to
+  every bound agent immediately. A "read-only" token can rebuild your agents. It
+  just cannot move money. The live token has `mcpWagerEnabled: true` on a real
+  balance — no wager tool has ever been called from here.
+- **Never `git checkout --` to undo a mutation test on uncommitted work.** It
+  restores from HEAD and silently deletes the feature under test. Cost a full
+  re-implementation this session. Commit a checkpoint *before* mutating.
+- **Ancestry, not timestamps, decides staleness.** Two commits in the same
+  second share `%ct`, which is precisely the "commit the work, forget the
+  journal" case. First implementation used timestamps and its own tests caught it.
+- **A surviving mutation is a missing test, not always a redundant guard.** The
+  no-journal-file guard looked redundant twice; the case that needed it was a
+  journal deleted in one commit with work landing in a *later* one.
+- The published BattleGrid docs and the live API disagree on enum labels
+  (docs "Moderate" vs API `MEASURED`). Trust the API.
+- `full` track is still unexercised and still blocked on `docs/specs/`.
+
+## 2026-07-27 — Fixed the rename bug the tests found; container reset mid-session
+
+**Did**: `fix-renamed-on-new-capability` (`lite`) — a `RENAMED` delta against a
+capability with no main spec is now an error (`renamed_no_main_spec`) instead of
+being silently discarded. Fixed in both places: validation reports it at
+`/propose` time, and the merge guard now checks `delta.renames` as well as
+`delta.sections`, because rename pairs never land in `sections["RENAMED"]` and
+that gap is exactly what let the bug through. Archived into `spec-validation`
+(now 4 requirements). Suite is 113, no expected failures left.
+
+Also cleared `bump-actions-node20` (`lite`, `skip_specs`) — `checkout@v5` and
+`setup-python@v6`. Verified by the run itself: an unresolvable action version
+fails the job immediately, and the deprecation warning is gone from the log.
+
+**State**: PR #3 on `claude/work-review-next-steps-clb36a`, four commits, all
+checks green. `validate --all` is 0 errors, 1 warning (the placeholder design
+system). Backlog is 4 open — 1×P2 (`enforce-journal-entry`), 3×P3. Two
+capabilities in the source of truth, four changes archived.
+
+**Next**: Unchanged and still the only blocker: **decide what Grid-Commander
+is**, fill `CLAUDE.md` + `openspec/config.yaml`, then `/idea`. What is left in
+the backlog is harness polish — one P2 and three P3 — and none of it needs the
+project concept, nor substitutes for having one.
+
+**Watch out**:
+- **The container was reclaimed mid-session and the working tree reset to
+  `main`.** Everything uncommitted was gone; everything pushed survived.
+  `git checkout -B <branch> origin/<branch>` restored it. Push early — a commit
+  that exists only in the container is not saved.
+- **Both test guards earned their keep on this fix.** Adding the new code made
+  the coverage meta-test fail by name, and fixing the tool flipped the
+  `@unittest.expectedFailure` marker to UNEXPECTED SUCCESS, which also fails.
+  Neither could be forgotten. Keep pinning known bugs that way.
+- The `merge_conflict` backstop is still unreachable (`merge-conflict-unreachable`)
+  and still worth keeping — this fix added a second check in front of it rather
+  than relying on it.
+- `full` track remains unexercised and blocked on `docs/specs/`.
+
+## 2026-07-27 — The harness has tests; two real bugs found writing them
+
+**Did**: Took `add-harness-regression-tests` (P1) through the `standard`
+pipeline. `tests/` is 111 tests on plain `unittest`, no dependencies, plus a
+`tests` job in `.github/workflows/validate.yml`.
+
+- **Archive merge** pinned on written file content, not exit codes — ADDED
+  appends, MODIFIED replaces the whole block, REMOVED deletes, RENAMED rewrites
+  only the header, new capability seeded from Purpose, and multiple operations
+  in one delta without disturbing each other's line ranges.
+- **Archive abort** — validation failure and merge failure both leave every
+  spec and the change folder untouched, and a re-run after the fix works.
+- **All 55 validation codes** have a fixture, each asserting severity as well as
+  the code. A meta-test reads the codes out of `openspec.py` with `ast`, so a
+  new code with no fixture fails the suite by name.
+- CLI contract, and the design import cross-check converging one layer per pass.
+
+**State**: PR #3 open on `claude/work-review-next-steps-clb36a`, both checks
+green — the `tests` job ran all 111 on a runner with no `pip install`. Archived
+once CI had proven the spec, so `harness-integrity` is now the second capability
+in `openspec/specs/` (5 requirements, 13 scenarios). `validate --all` is back to
+0 errors and 1 warning, the pre-existing placeholder design system. Backlog is
+6 open — 2×P2 (one new), 4×P3 (one new).
+
+**Next**: The blocker is unchanged, and now the only thing in the way:
+**decide what Grid-Commander is**, fill `CLAUDE.md` + `openspec/config.yaml`
+from that, then `/idea`. Every skill reads config and gets nothing from
+placeholders, so feature work before that produces specs written against a
+project with no defined stack.
+
+**Watch out**:
+- **Two real bugs, filed not fixed.** `renamed-dropped-on-new-capability` (P2,
+  a `RENAMED` delta against a capability with no main spec vanishes with no
+  diagnostic — pinned with `@unittest.expectedFailure`, so fixing the tool
+  without removing the marker fails the suite) and `merge-conflict-unreachable`
+  (P3, dead but correct backstop). Tests describe the tool as it is; a test that
+  is edited to match a regression is worse than no test.
+- **`dedent()` flattens when you interpolate a multi-line value into it.** The
+  common indent becomes empty and the whole block stays indented, so
+  `## ADDED Requirements` silently stops being a heading. Build the block first,
+  concatenate after.
+- **Mutation-check new assertions.** Four deliberate regressions were injected
+  into `openspec.py`; the first pass caught three. The fourth — REMOVED cutting
+  one line short — was invisible until a formatting invariant (no run of blank
+  lines, trailing newline) was added to every merge test. A test that passes
+  against a broken tool is a liability, so break the tool on purpose and check.
+- `full` track is **still** unexercised and still blocked on `docs/specs/`.
 
 ## 2026-07-27 — Harness proven on its first real change; CI is live
 
