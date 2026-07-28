@@ -2,6 +2,15 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
+  /**
+   * Traced dependencies only, copied into a runtime image with no toolchain.
+   *
+   * Without this a container has to carry the whole `node_modules` tree — build
+   * dependencies, drizzle-kit, vitest and all — to run one server. See the
+   * Dockerfile.
+   */
+  output: 'standalone',
   // Tokens are decrypted server-side only; nothing here is exposed to the client.
   serverExternalPackages: ['postgres'],
 

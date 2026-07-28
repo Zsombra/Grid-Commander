@@ -1,0 +1,33 @@
+# Everything the image must not carry.
+#
+# `.env` first and deliberately: the requirement is that an artifact built from
+# this repository contains no credential, and the builder stage does `COPY . .`.
+# A developer's local .env is the one file that would turn that into a lie.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+node_modules
+.next
+npm-debug.log*
+
+# Not needed to build or run, and each one is weight in a layer.
+tests
+docs
+_IDEA
+_PM
+.claude
+coverage
+*.md
+!README.md
+
+# openspec/ is excluded except for the design system, which `prebuild` reads to
+# regenerate app/tokens.css. Excluding the whole directory made `next build` fail
+# in the image while succeeding everywhere else — the tokens are an input to the
+# build, not documentation.
+openspec/*
+!openspec/design
+openspec/design/*
+!openspec/design/system.json

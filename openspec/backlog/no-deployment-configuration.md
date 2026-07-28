@@ -2,11 +2,11 @@
 id: no-deployment-configuration
 title: There is no way to deploy this
 type: chore
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: ship-a-deployable-image
 capability: ""
 blocked_by: []
 tags: [deployment, launch]

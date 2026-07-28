@@ -2,11 +2,11 @@
 id: apply-migrations-on-deploy
 title: A committed migration is not an applied one — nothing runs migrations
 type: chore
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: ship-a-deployable-image
 capability: app-access
 blocked_by: []
 tags: [database, deployment]

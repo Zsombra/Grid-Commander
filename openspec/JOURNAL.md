@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-07-28 — There is something to deploy
+
+**Did**: Proposed, planned, executed, audited (**PASS**) and archived
+`ship-a-deployable-image` (full track, 26/26). The user chose a Docker image over
+a platform target, so it runs anywhere and commits to nothing.
+
+A three-stage `Dockerfile` producing a runtime image with no toolchain, no
+source and no secret. Two operations: `migrate` applies the committed journal,
+`serve` checks the schema and then serves.
+
+**The gate is the point, not the container.** A deployment missing a migration
+exits non-zero and serves nothing, naming what is absent. Applying migrations was
+already possible; noticing that nobody had was not. A deployment whose migration
+was skipped is otherwise indistinguishable from one whose migration ran, until a
+user touches the feature that needed it — by which point it reads as a defect in
+the product rather than a missing step in the deploy.
+
+Migrating and serving are separate so a release step runs once instead of every
+replica racing on one journal (DL-2). A database *ahead* of the build serves with
+a warning, because refusing there would turn a rollback into an outage (DL-4).
+
+**State**: archived. `app-access` 12 → 14 requirements, the eleven untouched ones
+byte-identical. 472 unit tests (up from 459) and 60 database tests (up from 51).
+All eight gates green.
+
+**Next**: `image-never-built` (P1). Someone with a Docker daemon runs
+`docker build`, once, and records what happened.
+
+**Watch out**:
+
+- **The image has never been built.** No daemon here. What *was* proven: the
+  Dockerfile's runtime `COPY` list assembled by hand and exercised end to end —
+  `serve` refused an unmigrated database and exited 1, `migrate` applied the
+  journal, `serve` then booted Next and answered on all six routes. Plus
+  `next build` from a tree pruned exactly as `.dockerignore` prunes it. What is
+  left is Docker's own mechanics: Alpine compatibility of the traced binaries,
+  `COPY --from` paths, `--chown` readability. Waived at the gate as PG-501 with
+  approver and expiry, and filed as `image-never-built` (P1). **This project
+  exists partly because a type check is not a build and a build is not a boot; a
+  Dockerfile nobody has built is the next instance of that, so it is named rather
+  than left to be discovered.**
+- **The pruned-tree build caught a real defect.** Excluding all of `openspec/`
+  removed `design/system.json`, which `prebuild` reads to regenerate
+  `app/tokens.css`. It would have failed on the first `docker build` and nowhere
+  else — the design tokens are an *input to the build*, not documentation. Now
+  an explicit exception, and guarded.
+- **`drizzle-orm` is not traced into the standalone output.** Webpack bundles it
+  into the server chunks, so it is present in the server and absent as a module —
+  and `tools/migrate.mjs` is a separate process that must import it. Found by
+  looking at `.next/standalone/node_modules` rather than assuming. Dropping that
+  `COPY` breaks `migrate` only, so serving still works and nothing notices until
+  a deploy needs it. That mutation is now caught.
+- **A test helper dropped stderr and reported a real behaviour missing.** The
+  ahead-of-this-build warning goes to stderr; `execFileSync` returns stdout only.
+  The warning had been printed correctly the whole time. `spawnSync` now.
+- **The out-of-band step that will bite someone**: `BATTLEGRID_REDIRECT_URI` must
+  be registered at BattleGrid, exactly, before a new hostname can complete one
+  connection. A deployment can serve every page and connect nothing, with no
+  message that explains why. First section of `docs/DEPLOYING.md` for that
+  reason.
+
 ## 2026-07-28 — The product had no front door
 
 **Did**: Proposed, executed, verified and archived `build-the-front-door`
