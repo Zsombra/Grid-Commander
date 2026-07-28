@@ -147,3 +147,39 @@ Log only what affects scope, risk, validation, waivers, or handoff clarity.
   worth more than a green check.
 - Approved by: executor
 - Next action: re-run from the UI, or push unrelated work
+
+---
+
+## AUDIT — production gate, 2026-07-28
+
+**Decision: PASS.** Zero open violations.
+
+Audited after the change had already merged via PR #3. Evidence window
+`7f1cb28..ed17330`, resolved from the plan commit through the execution
+evidence commit; 20 files, no inventory drift.
+
+**Why this one got an unusual amount of scrutiny.** The change exists because
+three previous checks passed while measuring reachability from the route table
+rather than from the interface. A replacement guard accepted on a green run
+would have repeated exactly that. So the guard was re-demonstrated failing
+during the audit, on all three things it claims to catch — a link to a route
+nothing serves, a form bound to a URL string, and an exported `'use server'`
+function nothing submits to. Each was caught and each named the offending file.
+
+**What the audit added beyond the checklists.** The delta requires that
+requesting a route from the *served* application returns a page, and nothing had
+ever done that. Serving the built app against real PostgreSQL with migrations
+applied returned 200 on all 16 routes — after fixing a P1 the check surfaced:
+`.env.example` was missing `SESSION_SECRET`, so a setup following the example
+500'd on everything but `/connect`. Pre-existing, not caused by this change,
+filed and fixed as `env-example-missing-session-secret`, and recorded as a
+second instance on `serving-is-not-gated`.
+
+**Filed rather than waved past**: `config-quality-gates-are-placeholders` (P2).
+`openspec/config.yaml` still holds the template's example gate commands, so the
+gate commands had to be read from `package.json`. A gate whose own commands are
+undefined is a gate on trust.
+
+**Not archived.** Passing the gate and merging into `openspec/specs/` are
+separate acts. Until the archiver runs, `openspec/specs/app-access/` does not
+contain what this change delivered.

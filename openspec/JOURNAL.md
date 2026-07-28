@@ -165,6 +165,40 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Production gate PASSED on close-the-reachability-gap
+
+**Did**: Ran the auditor. **PASS**, zero open violations. Spec parity 3/3 with
+every requirement located in code, scope clean, no technical debt in touched
+paths, and all six quality gates green — typecheck, lint, 394 tests, build,
+schema-matches-migrations, and 51 database tests against real PostgreSQL. Gate
+tracker at `plan/production-gate.md`. Filed
+`config-quality-gates-are-placeholders` (P2).
+
+**State**: `validate --all` clean. The change is gated but **not archived** —
+`openspec/specs/app-access/` still does not contain what it delivered.
+
+**Next**: `/archive close-the-reachability-gap`.
+
+**Watch out**:
+- **The guard was re-demonstrated failing during the audit, not accepted on a
+  green run.** This change exists because three earlier checks passed while
+  measuring the wrong thing; taking its replacement on trust would have been the
+  same mistake wearing a new name. All three halves caught their defect and
+  named the file.
+- **The audit ran a check no previous audit on this project had**: serving the
+  built application and requesting every route. That is what found the
+  `SESSION_SECRET` P1 — which was pre-existing, invisible to all six gates, and
+  had every capability route returning 500.
+- **`openspec/config.yaml` still holds the template's placeholder
+  `quality_gates`.** The gate commands had to be read out of `package.json`. A
+  gate whose own commands are undefined is a gate on trust; filed as P2 and it
+  pairs with `checklist-says-pnpm`.
+- **Auditing a change that already merged is fine** — the evidence window
+  resolves historically (`7f1cb28..ed17330`) and every check ran against real
+  code. What it does mean is that a BLOCKED verdict would have arrived after the
+  fact, which is an argument for running the gate before the merge, not against
+  running it late.
+
 ## 2026-07-28 — Verified the reachability change, and serving it found a P1
 
 **Did**: Advisory verification of `close-the-reachability-gap` (full track,
