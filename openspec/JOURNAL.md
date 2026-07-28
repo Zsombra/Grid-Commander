@@ -165,6 +165,34 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Archived: app-access now says what the product actually does
+
+**Did**: `/archive close-the-reachability-gap`. Three operations merged into
+`openspec/specs/app-access/spec.md` — one MODIFIED replaced in place, two ADDED
+appended. The capability went 9 → 11 requirements. Closed `five-dead-links` and
+`four-dead-write-paths`, which the tracking layer flagged as still in-progress
+against an archived change.
+
+**State**: **0 active changes**, 24 open backlog items, `validate --all` clean
+with zero warnings. Seven capabilities, and `app-access` finally contains the
+reachability requirements it has been enforcing since PR #3.
+
+**Next**: the launch blockers — `wire-an-assistant-model` (P2, the assistant has
+no model behind it) and `serving-is-not-gated` (P2, now with two recorded
+instances). Then `strategy-catalog`'s design ticket.
+
+**Watch out**:
+- **This archive was the first live exercise of the P0 merge fix.** One MODIFIED
+  and two ADDED against a nine-requirement spec. Verified byte-wise afterwards:
+  all 8 untouched requirements identical, none lost, only the modified block
+  changed. The defect this fixes would have silently deleted a neighbour.
+- **The tracking layer caught its own drift immediately** — two items still
+  `in-progress` pointing at a change that had just archived, reported as
+  `backlog_change_archived` before I thought to look. That check earns its keep.
+- Archiving is not the gate. The production gate passed separately and was
+  recorded in `plan/production-gate.md`; archiving is what makes the delta the
+  source of truth afterwards.
+
 ## 2026-07-28 — Production gate PASSED on close-the-reachability-gap
 
 **Did**: Ran the auditor. **PASS**, zero open violations. Spec parity 3/3 with
