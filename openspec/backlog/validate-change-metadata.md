@@ -2,7 +2,7 @@
 id: validate-change-metadata
 title: Nothing validates .openspec.yaml, so a typo'd track silently drops ceremony
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
@@ -84,3 +84,24 @@ Code: `.claude/tools/openspec.py:250` (`Change.__init__`, the silent coerce),
 
 All four are in `validate_change` / `main()` and need no new parsing. Fold the
 `.openspec.yaml` cases into the same pass that reads `track`.
+
+## Outcome (2026-07-28)
+
+All three gaps closed.
+
+**Track.** `Change` keeps `track_declared` alongside the coerced `track`, so
+validation can tell "not stated" from "stated wrong". An unrecognised value is
+now `invalid_track` (error); a `.openspec.yaml` with no track is
+`track_not_declared` (warning); a missing file is `change_meta_missing`
+(warning). The error is deliberate — the track is the whole ceremony decision,
+and a silent downgrade drops exactly the rigour the author asked for.
+
+**Bare `validate` on a repo with no active change.** Now validates main specs,
+backlog, and design and exits 0 instead of dying in `resolve_change`. Nothing
+is wrong with a repo where everything is archived; the obvious command should
+not report failure on it.
+
+**Delta with no capability directory.** `specs/spec.md` yields capability `"."`
+and archive would write `openspec/specs/spec.md` — not a capability, never read
+back by `main_spec_path`. Now `delta_without_capability` (error), so archive
+refuses.

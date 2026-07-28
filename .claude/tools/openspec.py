@@ -73,11 +73,28 @@ def read_meta(path: Path) -> dict:
     return meta
 
 
+def _scalar(value: str):
+    value = value.strip().strip('"').strip("'")
+    if value.lower() in ("true", "false"):
+        return value.lower() == "true"
+    return value
+
+
 def parse_frontmatter(path: Path) -> tuple:
     """Split a `---`-delimited YAML frontmatter block from its body.
 
-    Supports scalars, booleans, and inline lists (`tags: [a, b]`) — the shapes
-    backlog items actually use. Returns ({}, full_text) when there is no block.
+    Supports scalars, booleans, and both list spellings — inline
+    (`tags: [a, b]`) and block:
+
+        blocked_by:
+          - some-other-item
+
+    Block style is the more common spelling and nothing in the tool rejects it,
+    so parsing it as the empty string produced `[""]` — truthy, and therefore
+    invisible to `backlog_blocked_without_cause`, the check written for exactly
+    the case of an item that names no blocker.
+
+    Returns ({}, full_text) when there is no block.
     """
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -89,21 +106,40 @@ def parse_frontmatter(path: Path) -> tuple:
         return {}, text
 
     meta: dict = {}
-    for raw in lines[1:end]:
-        line = raw.rstrip()
+    i = 1
+    while i < end:
+        line = lines[i].rstrip()
+        i += 1
         if not line.strip() or line.lstrip().startswith("#") or ":" not in line:
             continue
         key, _, value = line.partition(":")
         key, value = key.strip(), value.strip()
+
         if value.startswith("[") and value.endswith("]"):
             inner = value[1:-1].strip()
-            meta[key] = [v.strip().strip('"').strip("'") for v in inner.split(",") if v.strip()]
-        else:
-            value = value.strip('"').strip("'")
-            if value.lower() in ("true", "false"):
-                meta[key] = value.lower() == "true"
-            else:
-                meta[key] = value
+            meta[key] = [_scalar(v) for v in inner.split(",") if v.strip()]
+            continue
+
+        if not value:
+            # A bare `key:` opens a block list when `- item` lines follow. An
+            # empty value with nothing under it stays the empty string, which is
+            # what `blocked_by: ""` in an unblocked item means.
+            items = []
+            while i < end:
+                nxt = lines[i].rstrip()
+                if not nxt.strip() or nxt.lstrip().startswith("#"):
+                    i += 1
+                    continue
+                m = re.match(r"^\s+-\s*(.*)$", nxt)
+                if not m:
+                    break
+                items.append(_scalar(m.group(1)))
+                i += 1
+            if items:
+                meta[key] = items
+                continue
+
+        meta[key] = _scalar(value)
     return meta, "\n".join(lines[end + 1:]).strip()
 
 
@@ -306,9 +342,13 @@ class Change:
         self.root = root
         self.name = name
         self.dir = root / "openspec" / "changes" / name
-        self.meta = read_meta(self.dir / ".openspec.yaml")
-        track = str(self.meta.get("track", "standard")).lower()
-        self.track = track if track in TRACKS else "standard"
+        self.meta_path = self.dir / ".openspec.yaml"
+        self.meta = read_meta(self.meta_path)
+        # The declared value is kept so validation can tell "not stated" from
+        # "stated wrong". Coercing both to `standard` is what let `track: ful`
+        # drop the planner, the auditor, and the production gate in silence.
+        self.track_declared = str(self.meta.get("track", "")).strip().lower()
+        self.track = self.track_declared if self.track_declared in TRACKS else "standard"
         self.skip_specs = bool(self.meta.get("skip_specs", False))
 
     # -- artifacts ---------------------------------------------------------
@@ -369,6 +409,18 @@ class Change:
 # Backlog
 # --------------------------------------------------------------------------
 
+def _as_list(value) -> list:
+    """Normalise a frontmatter field that may be a list, a scalar, or absent.
+
+    Wrapping unconditionally turned an empty `blocked_by:` into `[""]` — a
+    one-element list that is truthy, and so satisfies the very check written to
+    catch an item that names no blocker. Empty means empty.
+    """
+    if isinstance(value, list):
+        return [v for v in value if str(v).strip()]
+    return [value] if str(value).strip() else []
+
+
 ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
 ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
 ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
@@ -393,10 +445,8 @@ class BacklogItem:
         self.capability = str(meta.get("capability", "")).strip()
         self.created = str(meta.get("created", "")).strip()
         self.updated = str(meta.get("updated", "")).strip()
-        blocked = meta.get("blocked_by", [])
-        self.blocked_by = blocked if isinstance(blocked, list) else [blocked]
-        tags = meta.get("tags", [])
-        self.tags = tags if isinstance(tags, list) else [tags]
+        self.blocked_by = _as_list(meta.get("blocked_by", []))
+        self.tags = _as_list(meta.get("tags", []))
 
     @staticmethod
     def _title_from_body(body: str) -> str:
@@ -1006,6 +1056,41 @@ def validate_change(root: Path, change: Change, strict: bool) -> list:
     deltas = change.delta_paths()
     rel = lambda p: str(p.relative_to(root))  # noqa: E731
 
+    meta_rel = f"openspec/changes/{change.name}/.openspec.yaml"
+    if not change.meta_path.is_file():
+        found.append(diag(
+            "warning", "change_meta_missing",
+            f"change '{change.name}' has no .openspec.yaml — running as 'standard'",
+            meta_rel,
+            "add `track: lite|standard|full` so the ceremony is declared, not inferred",
+        ))
+    elif change.track_declared and change.track_declared not in TRACKS:
+        found.append(diag(
+            "error", "invalid_track",
+            f"change '{change.name}': track '{change.track_declared}' is not one of "
+            f"{', '.join(TRACKS)}",
+            meta_rel,
+            "the track is the whole ceremony decision — an unrecognized value "
+            "silently runs as 'standard', skipping planner, auditor, and the "
+            "production gate",
+        ))
+    elif not change.track_declared:
+        found.append(diag(
+            "warning", "track_not_declared",
+            f"change '{change.name}': .openspec.yaml does not set a track — running as 'standard'",
+            meta_rel,
+        ))
+
+    for delta in deltas:
+        if capability_of(change, delta) in (".", ""):
+            found.append(diag(
+                "error", "delta_without_capability",
+                f"change '{change.name}': delta sits directly in specs/ with no capability directory",
+                rel(delta),
+                "move it to specs/<capability>/spec.md — archive would otherwise write "
+                "openspec/specs/spec.md, which is not a capability and is never read back",
+            ))
+
     if not deltas and not change.skip_specs:
         found.append(diag(
             "error", "no_deltas",
@@ -1304,8 +1389,25 @@ def build_merged_spec(root: Path, cap: str, delta: SpecDoc) -> tuple:
     return "\n".join(lines).rstrip() + "\n", ops
 
 
-def archive_change(root: Path, change: Change, apply: bool, strict: bool) -> dict:
+def archive_change(root: Path, change: Change, apply: bool, strict: bool,
+                   allow_incomplete: bool = False) -> dict:
     problems = [d for d in validate_change(root, change, strict) if d["severity"] == "error"]
+
+    # Checked here rather than in validate_change: a change under active
+    # development is *expected* to have unfinished tasks, and turning that into
+    # a validation error would make `board` and CI red for the normal case.
+    # Archiving is the moment the delta becomes the behavior contract, so this
+    # is the one point where the checklist has to be finished.
+    done, total = change.progress()
+    if total and done < total and not allow_incomplete:
+        problems.append(diag(
+            "error", "tasks_incomplete",
+            f"change '{change.name}': {done}/{total} tasks complete",
+            f"openspec/changes/{change.name}/tasks.md",
+            "finish the tasks, or re-run with --allow-incomplete if the "
+            "remaining ones do not apply",
+        ))
+
     if problems:
         return {"archived": False, "specs_updated": [], "operations": [], "status": problems}
 
@@ -1559,6 +1661,8 @@ def main(argv: list) -> int:
     p_archive.add_argument("change", nargs="?")
     p_archive.add_argument("--apply", action="store_true", help="write changes (default: dry run)")
     p_archive.add_argument("--strict", action="store_true")
+    p_archive.add_argument("--allow-incomplete", action="store_true",
+                           help="archive even though tasks.md has unchecked boxes")
 
     args = parser.parse_args(argv)
     root = Path(args.root).resolve() if args.root else find_root(Path.cwd().resolve())
@@ -1752,8 +1856,14 @@ def main(argv: list) -> int:
 
     if args.command == "validate":
         found = []
-        targets = ([Change(root, n) for n in list_changes(root)] if args.all
-                   else [resolve_change(root, args.change, args.json)])
+        # A repo with no active change is a healthy state — everything is
+        # archived. Bare `validate` used to die there with exit 1, so the
+        # obvious command reported failure on a clean repo and `--all` was the
+        # only spelling that worked.
+        if args.all or (not args.change and not list_changes(root)):
+            targets = [Change(root, n) for n in list_changes(root)]
+        else:
+            targets = [resolve_change(root, args.change, args.json)]
         for change in targets:
             found.extend(validate_change(root, change, args.strict))
         found.extend(validate_main_specs(root, args.strict))
@@ -1771,7 +1881,7 @@ def main(argv: list) -> int:
 
     if args.command == "archive":
         change = resolve_change(root, args.change, args.json)
-        result = archive_change(root, change, args.apply, args.strict)
+        result = archive_change(root, change, args.apply, args.strict, args.allow_incomplete)
         if args.json:
             print(json.dumps(result, indent=2))
         else:

@@ -29,6 +29,49 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — The silent-check pass: last three review findings closed
+
+**Did**: Fixed `archive-allows-incomplete-tasks` (P1),
+`frontmatter-drops-block-lists` (P2) and `validate-change-metadata` (P2) in one
+pass, since all three are the same failure mode — the check fails silently and
+silence reads as a pass. `archive` refuses on unfinished tasks with
+`--allow-incomplete` as the override; block-style YAML lists parse; an
+unrecognised `track` is an error rather than a quiet downgrade to `standard`.
+Also: bare `validate` no longer exits 1 on a repo with everything archived, and
+a delta with no capability directory is refused.
+`tests/test_silent_checks.py` adds 23 tests.
+
+**State**: `validate --all` clean, 1 warning (design system placeholder). Suite
+green: 58/58 across three files. Backlog 5 open (0×P0, 1×P1, 1×P2, 3×P3) — all
+five review findings are closed. The P1 left is `add-harness-regression-tests`,
+which PR #3 already marks done; it reconciles at merge.
+
+**Next**: nothing outstanding from the review. The remaining items are PR #3's
+(`ci-startup-failure` is the one that matters — CI has never actually run any
+of this) plus three P3 chores.
+
+**Watch out**:
+- **The task gate is checked at archive, not in `validate_change`.** A change
+  under development is *supposed* to have unfinished tasks; making that a
+  validation error turns `board` and CI red for the normal case. Archiving is
+  the single moment the delta becomes the contract.
+  `test_validate_does_not_report_incomplete_tasks` exists to stop someone
+  tidying the check into the wrong layer.
+- **`[""]` had two sources and the report named one.** Fixing
+  `parse_frontmatter` to read block lists left `BacklogItem` still wrapping an
+  empty scalar into `[""]`, so the empty case — the one
+  `backlog_blocked_without_cause` is *for* — was still broken after the filed
+  fix was complete. Caught by writing the other side of the check as its own
+  test. When a bug is "X is truthy when it should be empty", find every place
+  that constructs X.
+- **`--allow-incomplete` is a flag, not a config key**, so the decision to
+  archive unfinished work is visible in the command someone ran rather than
+  buried in a file.
+- 16 of the 23 new tests fail against the unfixed tool. The 7 that pass are all
+  regression guards — inline lists, scalars, a clean change, each valid track, a
+  fully-checked change, a checkbox-free tasks.md, and the validate/archive
+  layering.
+
 ## 2026-07-28 — P1 fixed: fenced examples are no longer parsed as structure
 
 **Did**: Fixed `spec-parser-ignores-code-fences`. One `fenced_lines()` pre-pass

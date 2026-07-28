@@ -2,7 +2,7 @@
 id: archive-allows-incomplete-tasks
 title: Archive merges a change whose tasks are untouched
 type: debt
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -72,3 +72,23 @@ consumer of existing data, not new parsing.
 
 Check the archiver skill at the same time — it should be reading the count and
 stopping, and if it is not, the instruction needs the same fix as the tool.
+
+## Outcome (2026-07-28)
+
+`archive_change` now refuses when `done < total`, with `--allow-incomplete` as
+an explicit override. Error code `tasks_incomplete`, naming the progress.
+
+**Checked at archive, not in `validate_change`.** A change under active
+development is *expected* to have unfinished tasks; making that a validation
+error would turn `board` and CI red for the normal case. Archiving is the
+single moment the delta becomes the behavior contract, so that is where the
+checklist has to be finished. `test_validate_does_not_report_incomplete_tasks`
+pins the layering so nobody "fixes" it by moving the check.
+
+The override exists so the gate is never a dead end — a remaining task that
+genuinely does not apply should not be a reason to stop using the tool. It is a
+flag rather than a config key so the decision is visible in the command.
+
+`total == 0` is left alone: `no_tasks` already warns, there is no progress to
+read, and inventing a refusal there would block every change whose tasks.md is
+prose.

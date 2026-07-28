@@ -2,7 +2,7 @@
 id: frontmatter-drops-block-lists
 title: Frontmatter parser silently discards block-style YAML lists
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
@@ -74,3 +74,22 @@ The general lesson from this and from `import-check-js-only` is that this tool
 has several checks whose failure mode is silence, and silence reads as a pass.
 
 The design layer is unaffected: surfaces and tickets are JSON.
+
+## Outcome (2026-07-28)
+
+Two halves, and the filed report only named the first.
+
+**The parser.** `parse_frontmatter` now reads block-style lists: a bare `key:`
+opens one when `- item` lines follow, terminated by the next key. Blank lines
+and comments inside the block do not end it, and items are unquoted like
+scalars.
+
+**The wrapper.** `BacklogItem` did `[blocked] if not isinstance(blocked, list)`,
+so an empty `blocked_by:` became `[""]` — truthy — regardless of the parser.
+Fixing only the parser would have left the original symptom intact for the
+empty case, which is precisely the case
+`backlog_blocked_without_cause` exists to catch. Now normalised through
+`_as_list`, which drops blank entries: empty means empty.
+
+Found by `test_an_item_that_names_no_blocker_is_still_reported`, written as the
+other side of the check and failing after the parser fix was already in.
