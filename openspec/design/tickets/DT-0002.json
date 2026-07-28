@@ -1,14 +1,18 @@
 {
   "id": "DT-0002",
   "surface": "strategy-editor",
-  "targets": ["plan-review-panel", "blast-radius", "changed-axes"],
+  "targets": [
+    "plan-review-panel",
+    "blast-radius",
+    "changed-axes"
+  ],
   "type": "restyle",
   "priority": "p0",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "Make the review read in the order the decision is actually made: what this reaches, what changes, what BattleGrid wants you to know, then the commitment.",
-  "rationale": "This panel is the product. Everything else BattleGrid already does; showing the blast radius before the click is the reason Grid-Commander exists.\n\nThe code already got the hard parts right in prose — 'Nothing has changed yet' as the opening line, the blast radius as its own block, concerns explicitly disclaimed as non-blocking. Unstyled, all of that reads as one undifferentiated column of text, which means the most important sentence on the screen has exactly the same weight as the least. This ticket gives the existing hierarchy visual form; it adds no information and removes none.\n\nThe one judgement worth stating: the apply button is deliberately **not** styled as danger. Applying is the legitimate purpose of the page, and a user who has read the review is doing the right thing. Danger styling here would train people to flinch at the correct action, which is how confirmation fatigue starts. Weight goes on the consequence — the count, and the sentence carrying it — not on the control.",
+  "rationale": "This panel is the product. Everything else BattleGrid already does; showing the blast radius before the click is the reason Grid-Commander exists.\n\nThe code already got the hard parts right in prose \u2014 'Nothing has changed yet' as the opening line, the blast radius as its own block, concerns explicitly disclaimed as non-blocking. Unstyled, all of that reads as one undifferentiated column of text, which means the most important sentence on the screen has exactly the same weight as the least. This ticket gives the existing hierarchy visual form; it adds no information and removes none.\n\nThe one judgement worth stating: the apply button is deliberately **not** styled as danger. Applying is the legitimate purpose of the page, and a user who has read the review is doing the right thing. Danger styling here would train people to flinch at the correct action, which is how confirmation fatigue starts. Weight goes on the consequence \u2014 the count, and the sentence carrying it \u2014 not on the control.",
   "design": {
     "layout": "Single column, max-width 720px, centred. Vertical rhythm space.5 between blocks, space.3 within a block. Reading order is fixed and must not be rearranged responsively: heading, blast radius, changed axes, concerns, summary, consequence, actions.",
     "tokens": {
@@ -33,7 +37,7 @@
         "content": "Full review renders; the apply form is replaced by the refusal block.",
         "background": "color.notice.subtle",
         "border": "color.notice.border",
-        "note": "notice, not danger — the plan compiled, something else is in the way, and the reason names it"
+        "note": "notice, not danger \u2014 the plan compiled, something else is in the way, and the reason names it"
       },
       "not-viable": {
         "content": "Full review renders; refusal block explains BattleGrid reported it as not viable.",
@@ -41,14 +45,14 @@
         "border": "color.notice.border"
       },
       "no-changes": {
-        "content": "changed-axes states its sentence; the panel keeps its full structure rather than collapsing. A compile that changes nothing is a real outcome and must not look like an error.",
-        "background": "color.quiet.subtle"
+        "content": "The sentence 'Nothing \u2014 this plan leaves the strategy as it is' in color.text.secondary, in the same block position the list would occupy. Never an empty list.",
+        "text": "color.text.secondary"
       },
       "with-concerns": {
         "content": "Concerns block present between changed axes and the summary."
       },
       "without-concerns": {
-        "content": "Concerns block absent entirely. No empty placeholder, no 'no concerns' badge — silence here is unremarkable and should look it."
+        "content": "Concerns block absent entirely. No empty placeholder, no 'no concerns' badge \u2014 silence here is unremarkable and should look it."
       },
       "with-summary": {
         "content": "BattleGrid's summary renders as a quiet block above the consequence.",
@@ -78,10 +82,10 @@
         "content": "Consequence sentence in a consequence-toned block directly above the actions. Apply and 'Go back and change it' sit on one row at desktop, stacked at mobile with Apply first.",
         "background": "color.consequence.subtle",
         "border": "color.consequence.border",
-        "action": "Apply is button/primary; 'Go back and change it' is button/secondary — a visible peer, never a text link lost beneath the button"
+        "action": "Apply is button/primary; 'Go back and change it' is button/secondary \u2014 a visible peer, never a text link lost beneath the button"
       },
       "apply-confirmation:blocked-with-reason": {
-        "content": "Reason paragraph replaces the form. No control is rendered at all — nothing dimmed, nothing to click at.",
+        "content": "Reason paragraph replaces the form. No control is rendered at all \u2014 nothing dimmed, nothing to click at.",
         "background": "color.notice.subtle",
         "border": "color.notice.border"
       },
@@ -99,7 +103,7 @@
         "padding": "space.4"
       },
       "reaches-none": {
-        "content": "Single quiet line, no block, no border. Zero bound agents is genuinely unremarkable and must look unremarkable — this is the contrast that makes reaches-agents mean something.",
+        "content": "Single quiet line, no block, no border. Zero bound agents is genuinely unremarkable and must look unremarkable \u2014 this is the contrast that makes reaches-agents mean something.",
         "text": "color.text.secondary",
         "size": "type.size.sm"
       },
@@ -116,10 +120,6 @@
         "background": "color.bg.raised",
         "border": "color.border.subtle"
       },
-      "no-changes": {
-        "content": "The sentence 'Nothing — this plan leaves the strategy as it is' in color.text.secondary, in the same block position the list would occupy. Never an empty list.",
-        "text": "color.text.secondary"
-      },
       "with-proposed-revision": {
         "content": "'It would become revision N' as a caption beneath the list at type.size.sm, color.text.secondary. The number is what the user will see on the roster afterwards."
       },
@@ -132,30 +132,43 @@
       "desktop": "720px max width, centred. Apply and Go back on one row, space.3 apart."
     },
     "motion": {
-      "none": "This surface is server-rendered with full page navigation between compose and review. No enter or exit animation — a fade on the review would imply something happened, and nothing has."
+      "none": "This surface is server-rendered with full page navigation between compose and review. No enter or exit animation \u2014 a fade on the review would imply something happened, and nothing has."
     },
     "content": {}
   },
   "acceptance": [
-    "'Nothing has changed yet' is the first text in the reading order and is set at type.size.xl — verifiable by reading the DOM order and computed font size",
+    "'Nothing has changed yet' is the first text in the reading order and is set at type.size.xl \u2014 verifiable by reading the DOM order and computed font size",
     "In reaches-agents, the bound-agent count is set at a larger size and heavier weight than any other text in the panel except the panel heading",
-    "reaches-none renders with no border and no background fill; reaches-agents renders with both — the two are distinguishable in a greyscale screenshot",
+    "reaches-none renders with no border and no background fill; reaches-agents renders with both \u2014 the two are distinguishable in a greyscale screenshot",
     "unknown renders with a block treatment, not the reaches-none single line; a greyscale screenshot distinguishes unknown from reaches-none",
     "The concerns block uses color.notice.subtle and color.notice.border and shares no colour, icon, or border weight with any element using color.danger",
     "The concerns disclaimer sentence is present, directly beneath the count heading, and is not collapsed behind a disclosure",
     "The apply button uses button/primary on color.accent.default and does not use color.danger in any state",
     "'Go back and change it' is rendered as button/secondary, is at least 44px tall on mobile, and is reachable by keyboard immediately after Apply",
-    "In apply-confirmation:blocked-with-reason and :not-viable, no button element exists in the panel — verifiable by querying for buttons and getting none",
+    "In apply-confirmation:blocked-with-reason and :not-viable, no button element exists in the panel \u2014 verifiable by querying for buttons and getting none",
     "BattleGrid's consequence string renders in full, untruncated, with no ellipsis and no expand control",
     "no-changes renders the explanatory sentence, not an empty list element",
-    "without-concerns and without-summary leave no empty block and no residual gap — vertical rhythm between neighbours is space.5 exactly",
+    "without-concerns and without-summary leave no empty block and no residual gap \u2014 vertical rhythm between neighbours is space.5 exactly",
     "Every interactive element shows a focus ring at 2px offset using color.focus",
     "Under prefers-reduced-motion the panel is visually identical, since it declares no motion"
   ],
   "references": [
-    { "kind": "note", "value": "Blocked by DT-0001 — tokens must render before any of this is verifiable." },
-    { "kind": "note", "value": "Constraint honoured: no control on this surface applies without a review rendered first. This ticket adds no control and moves none (design S-G)." },
-    { "kind": "note", "value": "Constraint honoured: apply label keeps its consequence clause; this ticket styles it and does not reword it." }
+    {
+      "kind": "note",
+      "value": "Blocked by DT-0001 \u2014 tokens must render before any of this is verifiable."
+    },
+    {
+      "kind": "note",
+      "value": "Constraint honoured: no control on this surface applies without a review rendered first. This ticket adds no control and moves none (design S-G)."
+    },
+    {
+      "kind": "note",
+      "value": "Constraint honoured: apply label keeps its consequence clause; this ticket styles it and does not reword it."
+    },
+    {
+      "kind": "note",
+      "value": "Implemented and rendered. Verified against a temporary harness route holding three fixtures \u2014 reaches-5-with-concerns, reaches-none-no-changes, unknown-reach-apply-refused \u2014 screenshotted in both colour schemes (docs/merge/proof/review-panel-*.png), then the harness was deleted. Rendering it found a hierarchy collision the ticket had not: the page h1 and the panel h2 were both type.size.xl, so the edit page's six headings were raised to 2xl."
+    }
   ],
   "created": "2026-07-28",
   "updated": "2026-07-28",

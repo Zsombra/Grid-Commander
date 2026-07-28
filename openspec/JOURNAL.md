@@ -165,6 +165,38 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — DT-0002 implemented: the review panel is designed
+
+**Did**: Restyled `plan-review.tsx` per DT-0002 — every declared state, tokens
+only. Verified by building a throwaway harness route with three fixtures
+(reaches-5-with-concerns, reaches-none-no-changes, unknown-reach-apply-refused),
+screenshotting both colour schemes, then deleting it. `strategy-editor` is now
+`status: designed`; both its tickets are `implemented`. Proof in
+`docs/merge/proof/review-panel-*.png`.
+
+**State**: `validate --all` reports **0 errors, 0 warnings**. typecheck, lint,
+394 TS tests, build, 192 python tests all green. Branch restarted from `main`
+after both PRs merged, so this is a fresh change and needs a new PR.
+
+**Next**: `strategy-catalog` is the natural next ticket — same capability, and
+its empty state is still unwritten. Then the remaining ~10 surfaces.
+
+**Watch out**:
+- **Rendering it found a flaw the ticket did not.** The page `<h1>` and the
+  panel `<h2>` were both `type.size.xl`, so the hierarchy was flat. Raised the
+  edit page's six headings to `2xl`. A design ticket can specify each element
+  correctly and still be wrong about how they sit together — which is the
+  argument for rendering before marking anything implemented.
+- **The harness route had to be `dt0002-harness`, not `__dt0002`.** Next treats
+  `_`-prefixed directories as private and excludes them from routing, so the
+  first attempt 404'd and looked like a build problem.
+- **The harness is deleted.** If a future session wants the same check, rebuild
+  it rather than looking for it; a fixture route left in `app/` is a route
+  users can reach.
+- Both colour schemes verified: consequence reads warm, notice cool, and they
+  share no colour with danger in either. `reaches-none` (a quiet line) and
+  `unknown` (a bordered block) are distinguishable without reading them.
+
 ## 2026-07-28 — Both PRs landed; main holds the product, styled
 
 **Did**: Merged PR #3 to `main` (`15baafc`), then integrated PR #4 on top —

@@ -29,7 +29,7 @@ export default async function EditStrategyPage({
   if (!vocabulary.composable) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">Cannot edit this strategy right now</h1>
+        <h1 className="text-2xl font-medium text-text-primary">Cannot edit this strategy right now</h1>
         <p role="alert" className="text-sm">
           The vocabulary a strategy is composed from comes from BattleGrid, and it
           could not be read. Composing a change without it would mean guessing at
@@ -44,7 +44,7 @@ export default async function EditStrategyPage({
   if (!strategy) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">No such strategy</h1>
+        <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
@@ -56,7 +56,7 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
         <div>
-          <h1 className="text-xl font-medium">Edit {strategy.name}</h1>
+          <h1 className="text-2xl font-medium text-text-primary">Edit {strategy.name}</h1>
           <p className="mt-1 text-sm font-medium">
             {strategy.boundAgentCount === 0
               ? 'No agents are bound to this strategy.'
@@ -97,7 +97,7 @@ export default async function EditStrategyPage({
   if (compiled.kind === 'rejected') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">BattleGrid could not compile this</h1>
+        <h1 className="text-2xl font-medium text-text-primary">BattleGrid could not compile this</h1>
         <p role="alert" className="text-sm">{compiled.reason}</p>
         <p className="text-sm">Nothing was changed.</p>
       </main>
@@ -115,7 +115,7 @@ export default async function EditStrategyPage({
   if (proposal.kind === 'refused') {
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
-        <h1 className="text-xl font-medium">Review: {strategy.name}</h1>
+        <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
         {/* The review still renders — the user should see what was compiled even
             when it cannot be applied, because the reason usually names what to
             change. */}
@@ -126,7 +126,7 @@ export default async function EditStrategyPage({
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
-      <h1 className="text-xl font-medium">Review: {strategy.name}</h1>
+      <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
       <PlanReviewPanel
         review={compiled.review}
         action={apply}
