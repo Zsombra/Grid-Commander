@@ -29,6 +29,48 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — P1 fixed: fenced examples are no longer parsed as structure
+
+**Did**: Fixed `spec-parser-ignores-code-fences`. One `fenced_lines()` pre-pass
+returns the line indices inside fenced blocks, and every scanner consults it —
+`parse_requirements`, `SpecDoc._parse`, `_parse_renames`, `read_journal`, and
+`BacklogItem._title_from_body`. Five sites; the item filed three.
+`tests/test_fenced_blocks.py` adds 24 tests.
+
+**State**: `validate --all` clean, 1 warning (design system placeholder). Suite
+green: 34/34 across both files. Backlog 8 open (0×P0, 2×P1, 3×P2, 3×P3).
+
+**Next**: `archive-allows-incomplete-tasks` (P1) — `0/N` tasks archives clean
+and silent. After that the two P2s (`frontmatter-drops-block-lists`,
+`validate-change-metadata`) are one pass, not two: both are the silent-check
+pattern the review named.
+
+**Watch out**:
+- **The archive was rewriting the example, not just adding it.** Splitting the
+  requirement at the phantom heading and rejoining the pieces injected a blank
+  line after the opening fence. So the merge corrupted the block it should
+  never have been reading — a second defect hiding behind the first, and not in
+  the filed report.
+- **My first version of the archive test was wrong in the bug's own shape.** It
+  scanned the merged file for `### Requirement:` lines to prove the phantom was
+  absent — but the file legitimately *contains* that line, inside the fence. A
+  fence-blind assertion cannot tell the two cases apart. It now asserts on the
+  merge plan (`result["operations"]`). Worth remembering when writing any test
+  about this: the naive scan is the bug.
+- **Evidence quality differs across the 24 tests.** 12 of the 13 behavioural
+  ones fail against the unfixed parser. The other 11 unit-test `fenced_lines`
+  directly and merely *error* without it, because the function is new — that is
+  not the same as watching a guard fail, and it should not be counted as if it
+  were.
+- **`parse_requirements` computes the fence set when not handed one.** Deliberate:
+  a caller that forgets the argument gets correct behaviour rather than silently
+  fence-blind parsing. `_parse` computes once and threads it through.
+- Four spaces of indent is an *indented* code block, not a fence opener. Getting
+  that backwards would open a fence that never closes and take the rest of the
+  file dark.
+- Output on this repo is byte-identical before and after, for both `validate
+  --all` and `journal`. The defect was latent here, not active.
+
 ## 2026-07-28 — P0 fixed: the archive merge now refuses ambiguous deltas
 
 **Did**: Fixed `fix-archive-merge-integrity` at both layers and added

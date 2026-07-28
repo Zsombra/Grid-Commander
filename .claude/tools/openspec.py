@@ -134,24 +134,72 @@ def _norm(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip().lower()
 
 
-def parse_requirements(lines: list, start: int, end: int) -> list:
-    """Collect `### Requirement:` blocks inside lines[start:end]."""
+_FENCE_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
+
+
+def fenced_lines(lines: list) -> set:
+    """Line indices sitting inside a fenced code block, delimiters included.
+
+    Markdown headings are this tool's entire structural vocabulary, so a
+    document that *shows* the format — which is exactly what a spec about the
+    spec format does — has its examples read as live structure unless every
+    scanner agrees on which lines are prose. Computing that agreement once,
+    here, is what keeps them from drifting apart.
+
+    CommonMark: a fence opens on 3+ backticks or tildes indented at most 3
+    spaces, and closes on the same character, at least as long, carrying no
+    info string. Length is tracked so a ````-fence can contain ```; an
+    unterminated fence runs to end of file, matching how the text renders.
+    """
+    inside: set = set()
+    want = None  # (char, length) of the closer we are looking for
+    for i, line in enumerate(lines):
+        m = _FENCE_RE.match(line)
+        if want is None:
+            if not m:
+                continue
+            fence, info = m.group("fence"), m.group("info")
+            # A backtick fence's info string may not contain a backtick, which
+            # is what separates ```python from inline ``code`` in a sentence.
+            if fence[0] == "`" and "`" in info:
+                continue
+            want = (fence[0], len(fence))
+            inside.add(i)
+            continue
+        inside.add(i)
+        if m:
+            fence = m.group("fence")
+            if fence[0] == want[0] and len(fence) >= want[1] and not m.group("info").strip():
+                want = None
+    return inside
+
+
+def parse_requirements(lines: list, start: int, end: int, skip: set = None) -> list:
+    """Collect `### Requirement:` blocks inside lines[start:end].
+
+    `skip` is the fenced-line set from fenced_lines(); it is computed here when
+    not supplied so that no caller can opt out of fence awareness by accident.
+    """
+    if skip is None:
+        skip = fenced_lines(lines)
     heads = [
         i for i in range(start, end)
-        if lines[i].startswith("### Requirement:")
+        if lines[i].startswith("### Requirement:") and i not in skip
     ]
     out = []
     for pos, head in enumerate(heads):
         stop = heads[pos + 1] if pos + 1 < len(heads) else end
         # A `## ` heading also terminates the block.
         for i in range(head + 1, stop):
-            if lines[i].startswith("## ") and not lines[i].startswith("###"):
+            if lines[i].startswith("## ") and not lines[i].startswith("###") and i not in skip:
                 stop = i
                 break
         name = lines[head][len("### Requirement:"):].strip()
         req = Requirement(name, head, stop, lines[head:stop])
         for i in range(head + 1, stop):
             line = lines[i]
+            if i in skip:
+                continue
             if line.startswith("#### Scenario:"):
                 req.scenarios.append(line[len("#### Scenario:"):].strip())
             elif re.match(r"^(#{1,3}|#{5,6})\s*Scenario:", line):
@@ -174,7 +222,9 @@ class SpecDoc:
 
     def _parse(self) -> None:
         lines = self.lines
-        heads = [i for i, l in enumerate(lines) if l.startswith("## ") and not l.startswith("###")]
+        skip = fenced_lines(lines)
+        heads = [i for i, l in enumerate(lines)
+                 if l.startswith("## ") and not l.startswith("###") and i not in skip]
         bounds = [(h, heads[n + 1] if n + 1 < len(heads) else len(lines))
                   for n, h in enumerate(heads)]
 
@@ -188,22 +238,26 @@ class SpecDoc:
 
             op = next((o for o in OPERATIONS if upper.startswith(o + " ")), None)
             if op:
-                reqs = parse_requirements(lines, start, end)
+                reqs = parse_requirements(lines, start, end, skip)
                 self.sections.setdefault(op, []).extend(reqs)
                 if op == "RENAMED":
-                    self.renames.extend(self._parse_renames(lines, start, end))
+                    self.renames.extend(self._parse_renames(lines, start, end, skip))
                 continue
 
-            self.requirements.extend(parse_requirements(lines, start, end))
+            self.requirements.extend(parse_requirements(lines, start, end, skip))
 
         # Requirements before any `## ` heading (root-level delta form).
         first = bounds[0][0] if bounds else len(lines)
-        self.requirements.extend(parse_requirements(lines, 0, first))
+        self.requirements.extend(parse_requirements(lines, 0, first, skip))
 
     @staticmethod
-    def _parse_renames(lines: list, start: int, end: int) -> list:
+    def _parse_renames(lines: list, start: int, end: int, skip: set = None) -> list:
+        if skip is None:
+            skip = fenced_lines(lines)
         pairs, pending = [], None
         for i in range(start, end):
+            if i in skip:
+                continue
             m = re.match(r"^\s*-?\s*(FROM|TO):\s*`?#*\s*(?:Requirement:)?\s*(.+?)`?\s*$",
                          lines[i], re.IGNORECASE)
             if not m:
@@ -346,8 +400,10 @@ class BacklogItem:
 
     @staticmethod
     def _title_from_body(body: str) -> str:
-        for line in body.splitlines():
-            if line.startswith("# "):
+        lines = body.splitlines()
+        skip = fenced_lines(lines)
+        for i, line in enumerate(lines):
+            if line.startswith("# ") and i not in skip:
                 return line[2:].strip()
         return ""
 
@@ -872,7 +928,11 @@ def read_journal(root: Path, limit: int) -> list:
     if not path.is_file():
         return []
     lines = path.read_text(encoding="utf-8").splitlines()
-    heads = [i for i, l in enumerate(lines) if re.match(r"^##\s+\d{4}-\d{2}-\d{2}", l)]
+    # The journal documents its own format in a fenced block at the top, and
+    # entries quote spec headings routinely — same pre-pass, same reason.
+    skip = fenced_lines(lines)
+    heads = [i for i, l in enumerate(lines)
+             if re.match(r"^##\s+\d{4}-\d{2}-\d{2}", l) and i not in skip]
     out = []
     for n, start in enumerate(heads[:limit] if limit else heads):
         end = heads[n + 1] if n + 1 < len(heads) else len(lines)

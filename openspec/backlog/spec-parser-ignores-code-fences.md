@@ -2,7 +2,7 @@
 id: spec-parser-ignores-code-fences
 title: Spec parser reads headings inside fenced code blocks as real structure
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -69,3 +69,41 @@ Same pre-pass fixes `read_journal`, where a fenced `## 2026-01-01 — ...`
 example inside an entry body would be read as a separate entry. `JOURNAL.md`
 carries exactly such a block in its header today; it survives only because the
 regex wants a date and the example lives above the first real entry.
+
+## Outcome (2026-07-28)
+
+Fixed as the notes proposed: one `fenced_lines()` pre-pass returning the line
+indices inside fences, consulted by every scanner. Five sites, not the three
+filed — `_parse_renames` and `BacklogItem._title_from_body` have the same blind
+spot.
+
+`parse_requirements` computes the set itself when a caller does not supply one,
+so fence awareness cannot be opted out of by accident; `SpecDoc._parse`
+computes it once and threads it through.
+
+CommonMark rules that turned out to matter, each with a test: the opening run
+length is tracked so a ````-fence can contain ``` (documenting fenced syntax is
+the reason this bug exists); an unterminated fence runs to end of file, which is
+how it renders; a backtick fence's info string may not contain a backtick, which
+is what separates ```` ```python ```` from inline ``` ``code`` ``` in a
+sentence; a closing fence may not carry an info string; three spaces of indent
+still opens a fence and four does not.
+
+**One thing worse than filed.** The merge did not just add the phantom — it
+rewrote the example. Splitting `Docs` at the phantom heading and rejoining the
+pieces injected a blank line after the opening fence, so `archive` corrupted the
+very block it should not have been reading. Pinned by
+`test_the_fenced_example_survives_the_merge_unaltered`.
+
+`tests/test_fenced_blocks.py`, 24 tests. Of the 13 that exercise existing entry
+points, 12 fail against the unfixed parser; the one that passes is
+`test_a_spec_with_no_fences_parses_exactly_as_before`, the guard that a
+fence-free spec is unaffected. The other 11 are unit tests of `fenced_lines`
+itself and error rather than fail without it, since the function is new — worth
+noting as weaker evidence than the 12.
+
+Verified behaviour-preserving on this repo: `validate --all` and `journal`
+produce byte-identical output before and after.
+
+**Still open**: `archive-allows-incomplete-tasks` (P1),
+`frontmatter-drops-block-lists` (P2), `validate-change-metadata` (P2).
