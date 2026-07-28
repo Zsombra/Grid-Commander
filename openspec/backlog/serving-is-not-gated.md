@@ -49,3 +49,26 @@ against a fake.
 
 Do not reach for a browser driver. These are server-rendered pages and `curl`
 plus a string match covers what the requirement actually claims.
+
+## Second instance, found 2026-07-28
+
+Verifying `close-the-reachability-gap` served every route from a production
+build against real PostgreSQL — the first time anything had. **Every capability
+route returned 500**; only `/connect` worked.
+
+Cause: `.env.example` documents four of the five variables `loadConfig()`
+requires. `SESSION_SECRET` is missing, and it is read on every request that
+resolves a session. Filed as `env-example-missing-session-secret`.
+
+Adding the variable and changing nothing else took all 16 routes to 200.
+
+This is the second time this exact gap has produced a live defect — the first
+was a malformed encryption key during `prove-it-runs`. Both were invisible to
+build, typecheck, lint, 394 unit tests and 51 database tests, because the
+database suite builds its own configuration rather than going through
+`loadConfig()`.
+
+**The gate that would catch it**: start the built application with only what
+`.env.example` provides, request one authenticated route, and require a
+non-5xx. That is a handful of lines and it is the only check that exercises
+`loadConfig()` the way a deployment does.
