@@ -14,6 +14,15 @@ import { ListAgentsQuery } from './application/use-cases/list-agents.query.js';
 import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
+import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
+import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
+import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
+import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
+import {
+  DescribeArchiveStrategyQuery,
+  ForkStrategyCommand,
+  SetStrategyActiveCommand,
+} from './application/use-cases/strategy-lifecycle.command.js';
 import {
   DescribeRebindQuery,
   RebindAgentCommand,
@@ -21,6 +30,7 @@ import {
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
+import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
 import { createCipher } from './infrastructure/crypto/envelope.js';
 import {
@@ -65,6 +75,7 @@ interface Infrastructure {
   readonly confirmations: DrizzleConfirmationStore;
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
+  readonly strategies: McpStrategyAdapter;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
 }
@@ -95,6 +106,7 @@ function infrastructure(): Infrastructure {
     confirmations,
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
+    strategies: new McpStrategyAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
   };
@@ -148,6 +160,17 @@ export function app(cookies: CookieStore) {
     describeArchive: new DescribeArchiveQuery(i.agents, i.confirmations, random, systemClock),
     setLifecycle: new SetLifecycleCommand(i.agents),
     readJournal: new ReadAgentJournalQuery(i.agents),
+
+    listStrategies: new ListStrategiesQuery(i.strategies),
+    readVocabulary: new ReadVocabularyQuery(i.strategies),
+    // Two use cases, not one with a flag. Compiling writes nothing; applying
+    // writes to every bound agent at once.
+    compilePlan: new CompilePlanCommand(i.strategies),
+    describeApply: new DescribeApplyQuery(i.confirmations, random, systemClock),
+    applyPlan: new ApplyPlanCommand(i.strategies),
+    forkStrategy: new ForkStrategyCommand(i.strategies),
+    describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
+    setStrategyActive: new SetStrategyActiveCommand(i.strategies),
   };
 }
 
