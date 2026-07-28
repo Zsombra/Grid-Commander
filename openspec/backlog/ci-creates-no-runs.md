@@ -93,3 +93,41 @@ The API token available to the session cannot dispatch a run
 (`403 Resource not accessible by integration` on `POST .../dispatches`, i.e. no
 `actions: write` scope) and cannot read repository settings or billing. That is
 why this is a report rather than a fix.
+
+## Workaround (2026-07-28)
+
+The owner has no billing access, so restoring GitHub-hosted minutes is not
+available. Three routes, in the order they are worth considering:
+
+**1. `scripts/check.sh` — done, needs nobody's permission.** Every gate,
+runnable anywhere: `./scripts/check.sh` for one interpreter,
+`--matrix` for every `python3.x` on the machine. Verification no longer depends
+on GitHub at all. CI's new `matrix` job calls the same script so it stays
+exercised — a fallback nothing runs is not a fallback.
+
+Demonstrated failing before being trusted: breaking `fenced_lines` produced
+19 test failures and exit 1.
+
+**2. Make the repository public.** Actions is free and unlimited for public
+repositories, so this removes the billing dependency permanently rather than
+working around it. It is a one-way door and an owner decision — the repository
+carries BattleGrid MCP reconnaissance and product specs, though per PR #3 no
+credential is in it.
+
+**3. Register a self-hosted runner.** Minutes are only billed for
+GitHub-hosted runners, so a self-hosted one is free on a private repository.
+Needs repo admin (to mint a registration token) and a machine that stays up.
+Better than option 2 if the repository must stay private.
+
+## What this found on the way
+
+The failure-injection pass turned up an untested guard. `parse_requirements`
+falls back to computing `fenced_lines` itself when a caller omits `skip` —
+added so no caller can go fence-blind by forgetting an argument. `SpecDoc._parse`
+always passes it, so replacing the fallback with `set()` broke **no test**.
+Now covered by
+`test_parse_requirements_is_fence_aware_without_being_handed_a_skip_set`,
+which was watched failing with the fallback disabled.
+
+That is the third time on this branch that writing the guard was not the same
+as knowing it worked.

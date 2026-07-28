@@ -14,6 +14,27 @@ permissions:
   contents: read
 
 jobs:
+  # Runs the same entry point contributors run, across the interpreter range
+  # the tool claims to support. The two jobs below restate their commands
+  # inline; this one calls scripts/check.sh, so the script cannot rot while
+  # looking maintained — a script nothing exercises is not a fallback.
+  matrix:
+    name: checks (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Run every gate
+        run: ./scripts/check.sh
+
   tests:
     name: tests
     runs-on: ubuntu-latest

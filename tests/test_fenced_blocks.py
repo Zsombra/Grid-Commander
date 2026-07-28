@@ -122,6 +122,19 @@ class FencedLinesTest(unittest.TestCase):
     def test_a_document_with_no_fences_has_no_skipped_lines(self):
         self.assertEqual(openspec.fenced_lines(["# Title", "", "## Requirements"]), set())
 
+    def test_parse_requirements_is_fence_aware_without_being_handed_a_skip_set(self):
+        """`SpecDoc._parse` always passes `skip`, so the default-argument
+        fallback in parse_requirements is dead code from the tool's own call
+        sites — replacing it with `set()` broke no test. It exists so that a
+        future caller cannot go fence-blind by forgetting an argument, which is
+        a guarantee only a direct call can check."""
+        lines = [F3 + "markdown", "### Requirement: Example", F3,
+                 "### Requirement: Real", "", "The system SHALL real."]
+
+        reqs = openspec.parse_requirements(lines, 0, len(lines))
+
+        self.assertEqual([r.name for r in reqs], ["Real"])
+
 
 class SpecParsingTest(unittest.TestCase):
     def setUp(self) -> None:

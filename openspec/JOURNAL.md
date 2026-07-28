@@ -29,6 +29,39 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — Verification no longer depends on GitHub
+
+**Did**: The owner has no billing access, so Actions minutes are not coming
+back on request. Added `scripts/check.sh` — every gate, runnable anywhere,
+`--matrix` across every `python3.x` present. CI gained a `matrix` job that
+calls the same script across 3.10–3.13, so the script stays exercised rather
+than rotting while looking maintained. Verified the branch from a clean
+checkout of the pushed commit on four interpreters: 58/58 and `validate --all`
+exit 0 on each.
+
+**State**: All five review findings fixed, 59 tests, `check.sh` green on
+3.10/3.11/3.12/3.13. Backlog 6 open. GitHub has still executed none of it.
+
+**Next**: If Actions matters, the repository has to go public (free unlimited
+minutes) or get a self-hosted runner (free on private, needs admin). Both are
+owner decisions. Neither blocks the work now that the gates run locally.
+
+**Watch out**:
+- **Failure injection found an untested guard, again.** Breaking
+  `parse_requirements`'s `skip is None` fallback broke *no test* —
+  `SpecDoc._parse` always passes `skip`, so the defensive path the comment
+  justifies had nothing checking it. Now covered, and watched failing first.
+  Third time on this branch that writing a guard was not the same as knowing it
+  worked.
+- **The first failure-injection attempt was itself invalid** and briefly looked
+  like the check script was broken. Worth the reflex: when a guard does not fire,
+  suspect the injection before the guard.
+- **The two inline CI jobs were left alone deliberately.** They are byte-identical
+  to PR #3's, so converting them to call the script would have turned a
+  keep-one conflict into a semantic one. The new `matrix` job is additive.
+- **A script CI never runs is not a fallback**, which is why the matrix job
+  calls it rather than restating the commands a third time.
+
 ## 2026-07-28 — CI diagnosed properly: no runs are being created, and it is not a startup failure
 
 **Did**: Stopped repeating the inherited diagnosis and actually queried the
