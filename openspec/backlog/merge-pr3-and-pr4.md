@@ -89,3 +89,19 @@ files and rebases trivially either way.
 
 CI cannot verify any of this — see `ci-creates-no-runs`. Everything above is
 from `./scripts/check.sh --matrix` on the merged tree.
+
+## Also lands with this merge: the first UI surfaces
+
+`docs/merge/surfaces/` holds two `UISurface` manifests surveyed from the merged
+tree — `strategy-catalog` and `strategy-editor`. Copy both into
+`openspec/design/surfaces/` when the merge lands.
+
+They are **not** committed to `openspec/design/surfaces/` on the PR #4 branch on
+purpose: they reference `app/` and `src/` files that only exist on PR #3, so
+`validate --all` there reports `design_source_file_missing` — 2 errors. On the
+merged tree the same manifests validate clean, with every component id
+traceable.
+
+`generated_at_commit` is `52ea2b5` (PR #3's head at survey time). If PR #3 moves
+before the merge lands, `validate` will report `design_surface_stale` and the
+survey needs re-running rather than re-stamping.

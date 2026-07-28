@@ -29,6 +29,46 @@ resolution is always the same: keep both entries, newest first.
 
 ---
 
+## 2026-07-28 — First UI survey: two surfaces, and the empty state nobody wrote
+
+**Did**: Surveyed the built UI for the first time, in the merged worktree where
+it exists. Two `UISurface` manifests — `strategy-catalog` and `strategy-editor`
+— covering the product's differentiating flow (compose → compile → review →
+apply). Both validate clean on the merged tree with every component id
+traceable. Delivered as `docs/merge/surfaces/` because they cannot live on this
+branch. Filed `strategy-list-has-no-empty-state` (P2).
+
+**State**: 2 of ~14 surfaces surveyed. PR #4 green, merge recipe verified.
+Backlog 8 open.
+
+**Next**: `/design strategy-editor` to establish the visual language, or survey
+the remaining surfaces first. The design system is still `placeholder`.
+
+**Watch out**:
+- **Surfaces cannot be committed to this branch.** They reference `app/` and
+  `src/` files that only exist on PR #3, so `validate --all` here reports
+  `design_source_file_missing` — 2 errors. Verified, not assumed. They ship in
+  `docs/merge/surfaces/` and get copied into `openspec/design/surfaces/` at
+  merge.
+- **I invented six components that do not exist.** `strategy-row`,
+  `concerns-panel`, `apply-confirmation` and others were regions I could see in
+  the JSX but that no ticket could target. `design_component_not_found` caught
+  every one. Folded them into the real components as prefixed states, and added
+  `edit-strategy-page` for the route's five render branches — that identifier
+  does exist. The check maps kebab-case ids to PascalCase source identifiers.
+- **Collapsing them naively lost real content.** The first pass dropped four
+  page-level branches (`vocabulary-unavailable`, `compile-rejected`,
+  `strategy-not-found`, the compose form) because they were not children of a
+  kept component. Re-added under the route component. Check what a
+  restructuring script discards, not just what it keeps.
+- **The empty state is the first impression.** `StrategyList` has no
+  `listings.length === 0` branch, so a newly connected user sees a heading and
+  blank space — which reads exactly like the broken page the `unreadable`
+  branch was carefully written to distinguish itself from.
+- Every constraint in these manifests came from a comment in the code, not from
+  my judgement. That code explains *why* unusually well, and it is what makes
+  the constraints defensible rather than preferences.
+
 ## 2026-07-28 — Merge verified: clean auto-merge, 16 failing tests
 
 **Did**: Merged this branch into PR #3 in a scratch worktree and ran the
