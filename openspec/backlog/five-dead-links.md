@@ -2,11 +2,11 @@
 id: five-dead-links
 title: The UI renders five links to routes that do not exist
 type: bug
-status: open
+status: in-progress
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: close-the-reachability-gap
 capability: app-access
 blocked_by: []
 tags: [reachability, routing, spec-violation]

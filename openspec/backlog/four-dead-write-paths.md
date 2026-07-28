@@ -2,11 +2,11 @@
 id: four-dead-write-paths
 title: Four of six write paths cannot be submitted — the forms are not bound to their actions
 type: bug
-status: open
+status: in-progress
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: close-the-reachability-gap
 capability: app-access
 blocked_by: []
 tags: [reachability, forms, server-actions, spec-violation]
