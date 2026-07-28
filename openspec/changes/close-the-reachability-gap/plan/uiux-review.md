@@ -44,10 +44,71 @@ as one would tell the user to retry something that will never work.
 | A design token reference | PENDING |
 | A stylesheet import | PENDING |
 
+## Served Evidence
+
+All sixteen paths the interface can render, requested from the built and served
+application. **Zero 404s** — previously five.
+
+```
+/connect 200  /agents 200  /audit 200  /strategies 200  /assistant 200
+/agents/new 200
+/agents/x 200  /agents/x/edit 200  /agents/x/reactivate 200
+/agents/x/rebind 200  /agents/x/archive 200  /agents/x/journal 200
+/strategies/x/edit 200  /strategies/x/fork 200
+/strategies/x/archive 200  /strategies/x/restore 200
+```
+
+### Task 4.4 — what the binding looks like in the served HTML
+
+The rendered form is itself the evidence, and better evidence than a forged POST
+would be:
+
+```html
+<!-- before -->
+<form method="post" action="/agents/new">
+
+<!-- after, from the served application -->
+<form action="" encType="multipart/form-data" method="POST">
+<input name="$ACTION_ID_0004a43e083cbb32539bf647a6c965fcf2f3c57b01" ...>
+```
+
+A bound form renders an empty action plus the action id Next resolves on the
+server. An unbound one renders a URL. The difference is visible in the markup,
+so "is this form connected to anything" is answerable by looking rather than by
+pressing.
+
+**Limit, stated rather than glossed.** Only `/connect` renders a form to an
+unauthenticated visitor; every other write path sits behind a session, and the
+capability pages correctly show the not-connected outcome instead. So the served
+probe confirms the mechanism on one path and cannot reach the other five without
+an OAuth consent in a browser. The static guard covers those five — it reads the
+source rather than the response, which is exactly why both checks exist.
+
+Forging a Server Action POST with `curl` returns 404: Next validates the action
+id, a build-time hash embedded in the rendered page. Correct behaviour, not a
+defect — and the reason this verification reads markup instead.
+
 ## Findings
 
-_To be filled by the executor with `path:line` evidence._
+**F-1 — the layout must not add a landmark**, carried over: every page supplies
+its own `<main>`, and the five new pages follow that rather than nesting.
+
+**F-2 — three pages initially reached past the use cases.** `isEditable` and
+`isReactivatable` are domain predicates, and importing them into `app/` broke the
+route-boundary rule. Moved to `src/presentation/components/agent-edit.tsx`,
+alongside `agent-actions.tsx`, which had solved the same problem already. A
+pre-existing guard finding real drift in new code, cleanly, for the first time in
+this project.
+
+**F-3 — `repair-required` renders as `role="status"`, not `role="alert"`.**
+Nothing failed: BattleGrid declined and named what would work instead. Marking it
+as an error would tell the user to retry something that never will.
+
+**F-4 — no new page carries a colour, font, spacing or token value.** The five
+new surfaces match the plainness of the existing eleven, so the design survey
+sees one consistent product rather than five pages designed ahead of the design
+agent.
 
 ## Verdict
 
-`PENDING EXECUTION EVIDENCE`
+`EXECUTION EVIDENCE COMPLETE`

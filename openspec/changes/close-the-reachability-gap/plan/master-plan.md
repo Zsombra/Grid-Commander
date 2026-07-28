@@ -4,7 +4,7 @@
 
 - Change ID: `close-the-reachability-gap`
 - Track: `full`
-- Current phase: `Planning`
+- Current phase: `Ready for Production Gate`
 - Base ref for diffs: `origin/main`
 - Evidence base: `4890081`
 - Last updated: `2026-07-28`
@@ -244,4 +244,4 @@ for; do not add an id-based lookup to the port to avoid it.
 | `plan/decision-log.md` | planner → executor → auditor | started |
 | `plan/production-gate.md` | auditor | not yet |
 
-PLAN READY FOR REVIEW
+EXECUTION READY FOR PRODUCTION GATE

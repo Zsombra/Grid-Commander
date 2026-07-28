@@ -1,7 +1,7 @@
 # Architecture Review — close-the-reachability-gap
 
 - Checklist source: `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md`
-- Status: `PENDING EXECUTION EVIDENCE`
+- Status: `EXECUTION EVIDENCE COMPLETE`
 
 ## Scope Summary
 
@@ -13,31 +13,31 @@ existing way.
 
 | Component | File | Status |
 |---|---|---|
-| Reachability guard | `tests/architecture/reachability.test.ts` | PENDING |
-| Three bound components | `agent-form.tsx`, `rebind-confirm.tsx`, `plan-review.tsx` | PENDING |
-| Four bound pages | `agents/new`, `agents/[id]`, `agents/[id]/rebind`, `strategies/[id]/edit` | PENDING |
-| Five new pages | agent edit/reactivate, strategy fork/archive/restore | PENDING |
+| Reachability guard | `tests/architecture/reachability.test.ts` | PASS |
+| Three bound components | `agent-form.tsx`, `rebind-confirm.tsx`, `plan-review.tsx` | PASS |
+| Four bound pages | `agents/new`, `agents/[id]`, `agents/[id]/rebind`, `strategies/[id]/edit` | PASS |
+| Five new pages | agent edit/reactivate, strategy fork/archive/restore | PASS |
 
 ## Project-Specific Policies
 
 | Policy | Applies | Status | Evidence |
 |---|:--:|---|---|
 | P1 Scope is not a safety boundary | ✗ | N/A | |
-| P2 Capabilities discovered at runtime | ✓ | PENDING | No new hardcoded BattleGrid vocabulary in the new pages |
-| P3 Every write is audited | ✓ | PENDING | Four write paths reach the audit for the first time |
-| P4 Concurrency surfaced, never retried | ✓ | PENDING | Edit and lifecycle carry `expectedRevision` |
-| P5 Compile free of effect; apply is not | ✓ | PENDING | The apply action must not compile |
-| P6 One way in | ✓ | PENDING | Structural tests green; no new adapter import |
+| P2 Capabilities discovered at runtime | ✓ | PASS | No new hardcoded BattleGrid vocabulary in the new pages |
+| P3 Every write is audited | ✓ | PASS | Four write paths reach the audit for the first time |
+| P4 Concurrency surfaced, never retried | ✓ | PASS | Edit and lifecycle carry `expectedRevision` |
+| P5 Compile free of effect; apply is not | ✓ | PASS | The apply action must not compile |
+| P6 One way in | ✓ | PASS | Structural tests green; no new adapter import |
 
 ## Anti-Patterns Checked
 
 | Anti-pattern | Found | Evidence |
 |---|:--:|---|
-| Infrastructure leak into presentation | PENDING | |
-| Console logging | PENDING | |
-| Swallowed errors | PENDING | A refused result must render, not throw away |
-| Dual path / fallback branch | PENDING | |
-| Stale / unreferenced code | PENDING | Three previously-dead actions become referenced |
+| Infrastructure leak into presentation | PASS | |
+| Console logging | PASS | |
+| Swallowed errors | PASS | A refused result must render, not throw away |
+| Dual path / fallback branch | PASS | |
+| Stale / unreferenced code | PASS | Three previously-dead actions become referenced |
 
 ## Guard Evidence (DL-101)
 
@@ -148,17 +148,36 @@ belongs there anyway: it is the same job as every other reader in that file.
 
 | Gate | Command | Result |
 |---|---|---|
-| Typecheck | `npm run typecheck` | PENDING |
-| Lint | `npm run lint` | PENDING |
-| Unit tests | `npm test` | PENDING |
-| Build | `npm run build` | PENDING |
-| Database tests | `npm run test:db` | PENDING |
-| Spec layer | `openspec.py validate --all` | PENDING |
+| Typecheck | `npm run typecheck` | PASS |
+| Lint | `npm run lint` | PASS — 0 problems |
+| Unit tests | `npm test` | PASS — 38 files, 394 tests |
+| Build | `npm run build` | PASS — 19 routes |
+| Database tests | `npm run test:db` | PASS — 51 tests |
+| Spec layer | `openspec.py validate --all` | PASS — 0 errors |
 
 ## Findings
 
-_To be filled by the executor with `path:line` evidence._
+**F-A — the route-boundary rule fired twice on new code and was obeyed both
+times.** Three pages imported domain predicates; one imported a domain type.
+Fixed by moving the code to `src/presentation/components/agent-edit.tsx` and
+`src/presentation/form.ts` rather than by relaxing the rule. This is the first
+time in this project a pre-existing guard has caught real drift in new code
+cleanly, and it is worth saying because every other guard story here has been
+about one that did not.
+
+**F-B — the guard's own first version missed two of five.** Recorded in full
+above. Written after the fix it would have passed at 3-of-5.
+
+**F-C — no new BattleGrid call site.** Every new page reaches the composed `app`
+through `acting()`; `rg` finds no adapter import outside
+`src/infrastructure/battlegrid/`.
+
+**F-D — the known blind spot stands (DL-106).** The guard checks that a form is
+bound, not that every control inside it reaches the payload.
+`agent-form.tsx`'s position-management select still collects a value that
+`tradingConfig: null` discards. Filed as
+`a-preset-does-not-constrain-its-config`; deliberately not fixed here.
 
 ## Verdict
 
-`PENDING EXECUTION EVIDENCE`
+`EXECUTION EVIDENCE COMPLETE`
