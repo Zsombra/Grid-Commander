@@ -26,7 +26,19 @@
 ## Prove it
 
 - [x] 8. Re-inject each defect and watch the guards fail.
-- [ ] 9. Live probe: create → rename → read back → archive.  ← next
+- [x] 9. Live probe passed. `update_intelligence_agent=succeeded` for the first
+      time in the life of this product:
+
+      ```
+      propose: Renames "Grid-Commander probe (off) …" to "GC probe renamed …".
+      rename:  updated
+      renamed: GC probe renamed … r2
+      archive: ARCHIVED
+      ```
+
+      Through the real propose -> confirm -> perform flow, with the consequence
+      sentence an operator would have read. Account verified after: probe agent
+      ARCHIVED, slot returned, only `THE .0` active.
 - [x] 10. `npm test`, `typecheck`, `lint` green.
 
 ## Close the loop
@@ -45,3 +57,17 @@ nothing says why or that reactivating restores it. A blank space where a form
 was reads as the page forgetting rather than refusing. Fixed in the component,
 which is where the decision already lived — `app/` may not import the domain,
 and `src/presentation/` may.
+
+## A third probe defect, found by the fix working
+
+The first successful rename broke the teardown. The `finally` archived at
+`agent.revision` — captured at create, before the rename bumped it to r2 — so
+the platform refused with a revision conflict and the probe **left a live agent
+on the operator's account**, which is the one thing a `finally` exists to
+prevent.
+
+The guard was right and the cleanup was wrong. Optimistic concurrency did its
+job; a teardown that assumes nothing changed has no business running after a
+test whose whole point is that something did. It re-reads the revision now.
+
+Cleaned up by hand within a minute, verified, and the probe re-run end to end.

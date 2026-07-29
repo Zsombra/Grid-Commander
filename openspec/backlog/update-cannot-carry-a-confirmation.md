@@ -14,12 +14,14 @@ tags: [battlegrid, guard, agent-edit-form]
 
 # update_intelligence_agent is destructive and the port cannot carry a confirmation
 
-> **Done** — . 
-> now takes a required ;  mints it alongside
-> the rendered consequence, and  never issues its own. The
-> question raised below — whether renaming and changing a loss cap deserve the
-> same copy — was answered in : they get different sentences, and
-> the money one is deliberately the heaviest.
+> **Done** — `renaming-an-agent-is-offered-and-cannot-work`.
+> `AgentsPort.updateAgent` now takes a **required** `confirmationToken`;
+> `DescribeEditQuery` mints it alongside the rendered consequence, and
+> `UpdateAgentCommand` never issues its own.
+>
+> The question raised below — whether renaming and changing a loss cap deserve
+> the same copy — was answered in `describeEdit`: they get different sentences,
+> and the money one is deliberately the heaviest.
 
 ## What
 

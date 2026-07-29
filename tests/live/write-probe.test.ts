@@ -3,8 +3,11 @@ import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
+import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
+import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { SequentialRandom } from '../support/agent-fakes.js';
 
 /**
  * One write, against the real platform, through the product's own path.
@@ -217,6 +220,9 @@ live('an agent can be created with limits the product can state', () => {
       expect(target, 'need a SYSTEM strategy to bind to').toBeDefined();
       if (!target) return;
 
+      // Unique per run, same reason as the create name below.
+      const renamed = `GC probe renamed ${Date.now()}`;
+
       const created = await new CreateAgentCommand(agents).execute({
         ...who,
         /**
@@ -308,6 +314,47 @@ live('an agent can be created with limits the product can state', () => {
           Object.keys(config ?? {}).length,
           'the read is wider than the write — the defect this session fixed',
         ).toBeGreaterThan(20);
+
+        /**
+         * Rename it — the path that could never succeed, for three reasons.
+         *
+         * The guard demands a confirmation because BattleGrid marks
+         * `update_intelligence_agent` destructive, and until now no caller could
+         * supply one. `DescribeEditQuery` mints it here, alongside the sentence
+         * naming what changes — the same object a page would render before
+         * asking. Nothing self-issues.
+         */
+        const proposed = await new DescribeEditQuery(
+          agents,
+          confirmations,
+          new SequentialRandom(),
+          clock,
+        ).execute({ ...who, agentId: agent.id, changes: { displayName: renamed } });
+
+        expect(proposed.kind, 'the proposal is what mints the confirmation').toBe('proposal');
+        if (proposed.kind !== 'proposal') return;
+        // eslint-disable-next-line no-console
+        console.log(`  propose: ${proposed.proposal.consequence}`);
+
+        const edited = await new UpdateAgentCommand(agents).execute({
+          ...who,
+          agentId: agent.id,
+          changes: { displayName: renamed },
+          confirmationToken: proposed.proposal.confirmationToken,
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  rename:  ${edited.kind}`);
+        expect(edited.kind, 'update_intelligence_agent could not succeed before this').toBe(
+          'updated',
+        );
+
+        const afterRename = await agents.getAgent({ ...who, agentId: agent.id });
+        // eslint-disable-next-line no-console
+        console.log(`  renamed: ${afterRename.displayName} r${afterRename.revision}`);
+        expect(afterRename.displayName).toBe(renamed);
+        // The rename must not have disturbed the money limits.
+        expect(afterRename.tradingConfig?.fields['tradingMode']).toBe('OFF');
+        expect(afterRename.tradingConfig?.fields['maxDailyLossUsd']).toBe(10);
       } finally {
         const token = 'probe-archive-agent';
         await confirmations.issue({
@@ -320,10 +367,24 @@ live('an agent can be created with limits the product can state', () => {
           consumedAt: null,
         });
 
+        /**
+         * Re-read the revision. It moved.
+         *
+         * This archived at `agent.revision` — the value captured at create,
+         * before the rename bumped it. The platform refused with a revision
+         * conflict and the probe left a live agent on the operator's account,
+         * which is precisely what a `finally` exists to prevent.
+         *
+         * The guard was right and the cleanup was wrong: optimistic concurrency
+         * did its job, and a teardown that assumes nothing changed has no
+         * business running after a test whose whole point is that something did.
+         */
+        const current = await agents.getAgent({ ...who, agentId: agent.id });
+
         const archived = await agents.setLifecycle({
           ...who,
           agentId: agent.id,
-          expectedRevision: agent.revision,
+          expectedRevision: current.revision,
           to: 'ARCHIVED',
           confirmationToken: token,
         });
