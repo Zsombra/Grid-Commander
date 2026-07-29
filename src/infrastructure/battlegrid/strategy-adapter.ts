@@ -72,7 +72,7 @@ export class McpStrategyAdapter implements StrategiesPort {
       return {
         kind: 'compiled',
         approvedPlan: approvedPlan as Record<string, unknown>,
-        reviewContext: asObject(payload['reviewContext']),
+        reviewContext: optionalObject(payload['reviewContext']),
         planToken,
       };
     } catch (err) {
@@ -164,7 +164,10 @@ export class McpStrategyAdapter implements StrategiesPort {
       args: ENVELOPED.has(tool) ? { request: payload } : payload,
       ...extras,
     });
-    return asObject(result.content);
+    // Already the payload: the adapter unwrapped the MCP envelope. There was
+    // an `asObject` here that returned `{}` for anything it did not recognise,
+    // which is precisely how an unread envelope became "you have no agents".
+    return result.content as Record<string, unknown>;
   }
 }
 
@@ -232,8 +235,15 @@ function mapCategory(raw: unknown): VocabularyCategory {
   };
 }
 
-function asObject(content: unknown): Record<string, unknown> {
-  return typeof content === 'object' && content !== null
-    ? (content as Record<string, unknown>)
-    : {};
+/**
+ * An optional nested object on a payload that was already read successfully.
+ *
+ * Empty is a truthful answer here, unlike for an envelope: `reviewContext`
+ * carries advisory notes about a compiled plan, and a plan with none is
+ * ordinary. This was called `asObject` and shared its name with the function
+ * that silently turned an unread MCP envelope into "you have no agents" — the
+ * name is different now so the two are never confused again.
+ */
+function optionalObject(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 }

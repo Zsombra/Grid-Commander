@@ -70,7 +70,13 @@ function fakeBattleGrid() {
               },
             ],
           }
-        : respond(body.params?.name ?? '', body.params?.arguments ?? {}, calls);
+        : // The real wire format, not the payload. `tools/call` answers with an
+          // MCP envelope carrying the payload inside `content[].text` and again
+          // in `structuredContent`. This fake used to return the payload bare,
+          // which is why nothing here noticed that the adapter never unwrapped
+          // it — a live account with two agents rendered as "no agents yet".
+          // A fake that models the wrong wire format proves the wrong thing.
+          envelope(respond(body.params?.name ?? '', body.params?.arguments ?? {}, calls));
 
     return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result }), {
       status: 200,
@@ -79,6 +85,14 @@ function fakeBattleGrid() {
   }) as typeof globalThis.fetch;
 
   return { fetch, calls };
+}
+
+/** The MCP `tools/call` envelope, as the live platform actually sends it. */
+function envelope(payload: unknown): unknown {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(payload) }],
+    structuredContent: payload,
+  };
 }
 
 function respond(

@@ -25,7 +25,10 @@ const fetchOk: typeof globalThis.fetch = (async (_url: string | URL | Request, i
   const result =
     body.method === 'tools/list'
       ? { tools: [{ name: 'get_account_state', annotations: { readOnlyHint: true } }] }
-      : { ok: true };
+      : // The MCP envelope, as the live platform sends it. Returning `{ ok: true }`
+        // bare modelled a wire format that does not exist, and a fake that models
+        // the wrong wire format proves the wrong thing.
+        { content: [{ type: 'text', text: '{"ok":true}' }], structuredContent: { ok: true } };
   return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

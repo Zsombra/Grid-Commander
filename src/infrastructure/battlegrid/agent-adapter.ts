@@ -239,12 +239,9 @@ export class McpAgentAdapter implements AgentsPort {
       args,
       ...extras,
     });
-    return asObject(result.content);
+    // Already the payload: the adapter unwrapped the MCP envelope. There was
+    // an `asObject` here that returned `{}` for anything it did not recognise,
+    // which is precisely how an unread envelope became "you have no agents".
+    return result.content as Record<string, unknown>;
   }
-}
-
-function asObject(content: unknown): Record<string, unknown> {
-  return typeof content === 'object' && content !== null
-    ? (content as Record<string, unknown>)
-    : {};
 }

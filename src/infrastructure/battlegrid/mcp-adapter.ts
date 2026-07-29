@@ -69,6 +69,93 @@ interface JsonRpcResponse {
   error?: { code: number; message: string };
 }
 
+/**
+ * The MCP envelope a `tools/call` result arrives in.
+ *
+ * Two encodings of one value, plus a flag saying the tool refused. All three
+ * were established against the live platform; the reference documentation
+ * describes the payload, not the wrapper it travels in, which is how the wrapper
+ * went unread for the whole life of this product.
+ */
+interface ToolEnvelope {
+  content?: Array<{ type?: string; text?: string }>;
+  structuredContent?: unknown;
+  isError?: boolean;
+}
+
+/** A tool answered, and the answer was a refusal. Not a transport failure. */
+export class ToolRefusedError extends Error {
+  constructor(tool: string, detail: string) {
+    super(detail || `BattleGrid refused "${tool}"`);
+    this.name = 'ToolRefusedError';
+  }
+}
+
+/** A result arrived carrying no payload this product can read. */
+export class UnreadableEnvelopeError extends Error {
+  constructor(tool: string) {
+    super(`BattleGrid returned no readable payload for "${tool}"`);
+    this.name = 'UnreadableEnvelopeError';
+  }
+}
+
+/**
+ * The payload a tool returned, taken out of the envelope carrying it.
+ *
+ * **This is the seam that was missing.** `tools/call` answers with
+ * `{ content: [{ type: 'text', text: '<json>' }], structuredContent: {…} }`, and
+ * the payload every mapper expects is *inside*. Passing the envelope on does not
+ * fail — the mappers look for `agents`, find nothing, and report an account with
+ * no agents. A real account with two agents rendered as "no agents yet" for the
+ * entire life of this product, and no test could see it because every fake
+ * returns the payload already unwrapped.
+ *
+ * So the one rule here is: **never return an empty object.** An envelope this
+ * cannot read is a failed call, not a successful call that found nothing. That
+ * distinction is the difference between "we could not ask" and "you own
+ * nothing", and getting it wrong is how someone recreates work they already
+ * have.
+ *
+ * Reading either encoding is not a dual path in the sense the architecture
+ * review forbids: nothing branches on domain state, and the two are the same
+ * value — verified byte-identical across every tool sampled against the live
+ * platform. `structuredContent` is preferred because it needs no parsing;
+ * the text block is read when it is absent, because relying on one field the
+ * server is free to omit is what this whole change exists to stop repeating.
+ */
+function payloadOf(tool: string, result: unknown): Record<string, unknown> {
+  const envelope = (result ?? {}) as ToolEnvelope;
+
+  if (envelope.isError === true) {
+    throw new ToolRefusedError(tool, textOf(envelope) ?? '');
+  }
+
+  if (typeof envelope.structuredContent === 'object' && envelope.structuredContent !== null) {
+    return envelope.structuredContent as Record<string, unknown>;
+  }
+
+  const text = textOf(envelope);
+  if (text !== null) {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (typeof parsed === 'object' && parsed !== null) return parsed as Record<string, unknown>;
+    } catch {
+      // Falls through to the throw. A text block that is not JSON is a result
+      // this product cannot read, which is the one thing it must not call empty.
+    }
+  }
+
+  throw new UnreadableEnvelopeError(tool);
+}
+
+/** Every text block, joined. One is the norm; more is legal and cheap to allow. */
+function textOf(envelope: ToolEnvelope): string | null {
+  const blocks = (envelope.content ?? [])
+    .filter((b) => b?.type === 'text' && typeof b.text === 'string')
+    .map((b) => b.text as string);
+  return blocks.length > 0 ? blocks.join('') : null;
+}
+
 export class McpBattleGridAdapter implements BattleGridPort {
   private readonly capabilities: CapabilityCache;
 
@@ -153,10 +240,18 @@ export class McpBattleGridAdapter implements BattleGridPort {
     );
 
     try {
-      const content = await this.rpc(request.accessToken, 'tools/call', {
+      const envelope = await this.rpc(request.accessToken, 'tools/call', {
         name: request.tool,
         arguments: request.args,
       });
+      // Unwrapped before the audit completes. What makes a refusal land in the
+      // record as `failed` is the catch below, which re-completes the entry
+      // whatever was thrown — proven by moving this line after the completion
+      // and watching nothing fail. So the order is not load-bearing, and saying
+      // it was would leave the next reader defending a property the code does
+      // not rest on. It is kept this way because writing `succeeded` and then
+      // correcting it is a worse thing to read in a table than never writing it.
+      const content = payloadOf(request.tool, envelope);
       await this.deps.audit.complete(auditEntryId, 'succeeded');
       return { content, classification, auditEntryId };
     } catch (err) {

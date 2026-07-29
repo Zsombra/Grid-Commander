@@ -1,5 +1,79 @@
 # Journal
 
+## 2026-07-29 — First contact with the real platform: every read had been empty
+
+**Did**: The operator supplied a live `bg_live_` key. Proposed, executed and
+archived `unwrap-what-battlegrid-answers` (standard, 15/15).
+`battlegrid-connection` 14 → 16 requirements, purely additive. 579 tests, up
+from 561.
+
+**The product had never read anything.** The first page served against a real
+account said *"This BattleGrid account has no agents yet."* The account has
+three. `/strategies` said *"Nothing is listed here — not even BattleGrid's own
+catalog"* while BattleGrid was returning Dunkirk, Leningrad, London, Tobruk,
+Midway, El Alamein and Bastogne. `/audit` recorded both calls as **Succeeded**,
+because they had succeeded.
+
+A `tools/call` result is an MCP envelope — `{ content: [{ type: 'text', text:
+'<json>' }], structuredContent: {…} }` — and the payload every mapper expects is
+inside it. Both adapters passed the envelope to `asObject`, which saw an object,
+returned it unchanged, and the mappers then looked for `agents` on a value whose
+only keys were `content` and `structuredContent`. `undefined` is not an array,
+so the roster was `empty`.
+
+**This is the exact failure the roster's three-state design exists to prevent**,
+and it happened anyway. `empty` and `unreadable` were kept apart, and the
+constraint written down, precisely so nobody is told they own nothing when the
+read failed. The branch was correct. The data never arrived, one layer below
+where the design was looking.
+
+**No test could have caught it.** Every fake in the suite returned the payload
+already unwrapped — modelling a wire format that does not exist. The fakes and
+the mappers agreed with each other and both disagreed with the platform. The
+reference documentation was right; it describes the payload, not the wrapper.
+The mappers were right too — `strategyId`, `strategyName`, `strategyRevision`,
+`bindingState`, `revision`, `capabilities` all match the live payload field for
+field. One seam was wrong, and it was the only seam nothing modelled.
+
+**`asObject` is what made it silent.** Its whole behaviour was to return `{}`
+for anything it did not recognise. That is the "unnecessary defensive fallback
+that masks a required contract" the architecture review forbids, and here it
+converted a completely broken integration into a confident, specific, false
+statement about someone's account. It is gone. An envelope this cannot read now
+throws, and surfaces as `unreadable` with cause `unreachable` — which is exactly
+what it is: BattleGrid answered, but not with an answer.
+
+**A second defect found on the way.** The same envelope carries `isError: true`
+when a tool refuses, over a healthy transport — HTTP 200, well-formed JSON-RPC
+`result`. Nothing read it. A refused write completed its audit entry as
+*succeeded* and returned an object with no usable fields, making a failed write
+indistinguishable in the record from a write that ran and changed nothing.
+
+**Two fakes had to be corrected, not just the code.** `end-to-end.test.ts` and
+`scope.test.ts` returned bare payloads from their fake `fetch`. Both now send
+real envelopes. A fake that models the wrong wire format proves the wrong thing,
+and these two had been proving it confidently for the whole project.
+
+**A surviving mutation caught a false comment of mine.** Moving the audit
+completion *before* the unwrap passed all 579 tests. I had written that the
+ordering was what stopped a refusal being recorded as a success; it is not —
+the catch block re-completes the entry as `failed` whatever was thrown. The
+ordering is a readability preference, not a guarantee, and the comment now says
+so. Second time this session a comment asserted a property the code did not rest
+on.
+
+**Verified against the live account, which is the only place this was visible.**
+Three agents render with their real bindings — THE .0 on Midway r2, Volatilis,
+archived Quadratorum on Bastogne — capacity shows one slot free, action sets are
+correctly gated (the archived agent offers only Reactivate and Journal), and all
+seven platform strategies list with their true bound-agent counts. Proof was
+captured outside the repository on purpose: it is the operator's live account
+data and the repository is public.
+
+**Next**: the write path shares this seam and improves identically, but no
+mutation was performed against the live account, so writes remain unproven end
+to end.
+
 ## 2026-07-29 — The deploy doc described a deployment we are not doing
 
 **Did**: Proposed, executed and archived `a-doc-for-the-path-we-ship` (lite,
