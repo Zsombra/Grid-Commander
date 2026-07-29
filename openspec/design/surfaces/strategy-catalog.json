@@ -4,7 +4,7 @@
   "route": "/strategies",
   "capability": "strategy-authoring",
   "status": "functional",
-  "generated_at_commit": "52ea2b5",
+  "generated_at_commit": "7d57039",
   "source_files": [
     "app/(app)/strategies/page.tsx",
     "src/presentation/components/strategy-list.tsx",
@@ -17,7 +17,7 @@
   "data": [
     {
       "name": "result",
-      "shape": "StrategyListResult ('strategies' | 'unreadable')",
+      "shape": "StrategyListResult ('strategies' | 'empty' | 'unreadable')",
       "source": "app.listStrategies.execute() \u2192 BattleGrid MCP"
     },
     {

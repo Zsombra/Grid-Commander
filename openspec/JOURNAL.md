@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-07-29 — A control that did nothing, documented for two changes
+
+**Did**: Proposed, executed, verified and archived `a-control-that-does-nothing`
+(standard track, 17/17). `agent-authoring` 10 → 11 requirements, the nine
+untouched ones byte-identical. 486 tests, up from 483.
+
+The create-agent form rendered a **Position management** fieldset with a preset
+select. A user chose how their agent should trail stops and decay positions,
+submitted, and `app/(app)/agents/new/page.tsx:71` sent `tradingConfig: null`.
+The choice was discarded, nothing said so, and the agent was created with
+BattleGrid's defaults while the user believed otherwise.
+
+**This is `close-the-reachability-gap`'s defect one level in.** That change made
+every *form* reach its operation. This was a *control inside a form* reaching
+nothing — less visible precisely because the rest of the form works.
+
+The fieldset is removed. Wiring it was not available:
+`tradingConfig.positionManagement` needs fifteen fields and
+`PositionManagementPreset` carries three, so this product does not hold the
+values a complete payload requires. Not offered is honest; offered and ignored
+is not.
+
+**State**: archived. Board clean.
+
+**Next**: unchanged — `image-never-built` (P1) and the CI payment block, both
+needing the user. Then `form-inputs-ignore-dark-mode` (P2).
+
+**Watch out**:
+
+- **The blind spot was written down and left, and that is the lesson.**
+  `reachability.test.ts` has carried this since `close-the-reachability-gap`:
+  *"It does not check that every control inside the form reaches that action's
+  payload — `agent-form.tsx` renders a position-management select while the
+  create action sends `tradingConfig: null`."* Naming the control, naming the
+  line. It survived two further changes and a production gate in that state.
+  **A documented gap is still a gap** — writing it down bought traceability, not
+  safety, and the user whose choice was discarded would not have been consoled
+  by the comment. DL-106 is now closed by the check that should have been
+  written then.
+- **The probe found four candidates and three were false positives.** `plan` is
+  read through `compiledPlan(formData, 'plan')`, a project accessor my first
+  scan did not know; `q` and `tagline` are GET forms read from `searchParams`.
+  Only `positionManagementPreset` was real. Worth the extra pass: a guard that
+  reported three false positives would have been turned off within a week, so
+  the final check excludes GET forms — and a mutation removing `method="get"`
+  from the assistant proves that exclusion is load-bearing rather than a blanket
+  skip.
+- Position management is still not settable, and that is now honest rather than
+  hidden. Owned by `agent-edit-form` and `a-preset-does-not-constrain-its-config`.
+
 ## 2026-07-29 — A catalog with nothing in it, and a premise that was wrong
 
 **Did**: Proposed, executed, verified and archived `a-catalog-with-nothing-in-it`

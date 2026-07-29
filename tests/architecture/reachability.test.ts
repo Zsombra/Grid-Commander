@@ -25,12 +25,13 @@ import { describe, expect, it } from 'vitest';
  * same mistake one level up: it would pass while a route was deleted, which is
  * how the current defect survived three production gates.
  *
- * **Known blind spot, stated rather than discovered (DL-106).** This checks that
- * a form is bound to an action. It does not check that every control inside the
- * form reaches that action's payload — `agent-form.tsx` renders a
- * position-management select while the create action sends `tradingConfig: null`,
- * and nothing here catches it. That is filed as
- * `a-preset-does-not-constrain-its-config`.
+ * **DL-106 is closed.** This file used to record a known blind spot: it checked
+ * that a form was bound to an action and not that every control inside the form
+ * reached that action's payload — so `agent-form.tsx` rendered a
+ * position-management select while the create action sent `tradingConfig: null`,
+ * and a user's choice was discarded silently. The last section below is that
+ * check. The blind spot was stated here for two changes before anything acted on
+ * it, which is its own lesson: a documented gap is still a gap.
  */
 
 const APP = 'app';
@@ -425,5 +426,92 @@ describe('every capability is reachable from wherever you already are', () => {
     for (const section of TOP_LEVEL) {
       expect(available, 'four sections that all refuse is worse than none').not.toContain(section);
     }
+  });
+});
+
+/**
+ * Every control inside a form reaches the operation, not just the form itself.
+ *
+ * This closes the blind spot stated at the top of this file (DL-106). The checks
+ * above establish that a form is bound to an action; none of them asked whether
+ * the values the form collects are ones that action reads. So `agent-form.tsx`
+ * rendered a position-management preset select, the create action sent
+ * `tradingConfig: null`, and a user's choice was discarded silently — the same
+ * defect as a form that submits nowhere, one level in, and less visible because
+ * the *rest* of the form works.
+ *
+ * **A GET form is not a defect.** It navigates: its values go into the query
+ * string and are read from `searchParams`, which is a legitimate way to submit a
+ * question and reaches no Server Action by design. The first version of this
+ * scan did not know that and reported three false positives — `q` on the
+ * assistant and `tagline` on the strategy editor — which is how a guard gets
+ * turned off.
+ */
+describe('every control the interface renders reaches an operation', () => {
+  /** Named controls inside forms that are bound to a Server Action. */
+  function controlsInActionForms(): Array<{ file: string; name: string }> {
+    const found: Array<{ file: string; name: string }> = [];
+
+    for (const file of uiFiles) {
+      const src = read(file);
+      for (const form of src.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)) {
+        const attrs = form[1] as string;
+        // Navigates rather than acting — its values are read from the query
+        // string, and no Server Action is involved.
+        if (/method=["']get["']/i.test(attrs)) continue;
+
+        for (const control of (form[2] as string).matchAll(
+          /<(?:input|select|textarea)\b[^>]*?\bname=["']([^"']+)["']/gs,
+        )) {
+          found.push({ file, name: control[1] as string });
+        }
+      }
+    }
+    return found;
+  }
+
+  /**
+   * Every field name any Server Action reads.
+   *
+   * Matched as a string literal anywhere in a file containing `'use server'`,
+   * because a form and the action bound to it are usually in different files —
+   * the component takes its action as a prop. Deliberately generous: a name that
+   * appears is assumed read. The failure this catches is a name that appears
+   * *nowhere*, which is unambiguous.
+   */
+  function namesActionsRead(): Set<string> {
+    const names = new Set<string>();
+    for (const file of uiFiles) {
+      const src = read(file);
+      if (!src.includes("'use server'")) continue;
+      for (const m of src.matchAll(/["']([a-zA-Z][a-zA-Z0-9_]*)["']/g)) names.add(m[1] as string);
+    }
+    return names;
+  }
+
+  it('leaves no control whose value no operation reads', () => {
+    const read_ = namesActionsRead();
+    const orphans = controlsInActionForms()
+      .filter(({ name }) => !read_.has(name))
+      .map(({ file, name }) => `${name}  (rendered by ${file})`);
+
+    expect(
+      [...new Set(orphans)],
+      'a user sets these and the operation never receives them',
+    ).toEqual([]);
+  });
+
+  it('finds the controls it is checking', () => {
+    // Passing vacuously is the failure mode every check in this file guards
+    // against, and this one would pass on a product with no forms at all.
+    expect(controlsInActionForms().length).toBeGreaterThan(5);
+    expect(namesActionsRead().size).toBeGreaterThan(5);
+  });
+
+  it('does not report a form that navigates', () => {
+    // The assistant's question box is a GET form. If this ever appears in the
+    // scanned set, the check has started producing false positives and will be
+    // ignored rather than fixed.
+    expect(controlsInActionForms().map((c) => c.name)).not.toContain('q');
   });
 });

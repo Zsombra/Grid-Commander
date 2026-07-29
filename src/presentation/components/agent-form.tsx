@@ -85,23 +85,24 @@ export function AgentForm({
         <Choice label="Conviction" name="conviction" options={CONVICTIONS} />
       </fieldset>
 
-      <fieldset className="space-y-3">
-        <legend className="font-medium">Position management</legend>
-        <Field label="Preset" name="positionManagementPreset">
-          <select
-            id="positionManagementPreset"
-            name="positionManagementPreset"
-            className="w-full rounded border p-2"
-          >
-            {catalog.positionManagementPresets.map((p) => (
-              <option key={p.preset} value={p.preset}>
-                {p.label} — {p.description}
-              </option>
-            ))}
-            <option value="CUSTOM">Custom</option>
-          </select>
-        </Field>
-      </fieldset>
+      {/*
+        Position management is deliberately not offered here.
+
+        This fieldset used to render a preset select. The create action sends
+        `tradingConfig: null`, so whatever the user chose was discarded and the
+        agent was created with BattleGrid's defaults — with nothing on the screen
+        saying so. Offering a setting and dropping it is worse than not offering
+        it: the user leaves believing they configured something they did not.
+
+        Wiring the select instead is not available. `tradingConfig.positionManagement`
+        requires fifteen fields — fourteen behavioural values *and* the preset
+        label beside them — and `PositionManagementPreset` carries only `preset`,
+        `label` and `description`. This product does not hold the values a
+        complete payload needs, and inventing them is the fabrication it refuses
+        everywhere else. See `a-preset-does-not-constrain-its-config`, which
+        establishes that against the live server, and `agent-edit-form`, which is
+        the feature that would build the real editor.
+      */}
 
       <button type="submit" className="rounded border px-4 py-2 text-sm">
         Create agent
