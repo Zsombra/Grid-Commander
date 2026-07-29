@@ -100,9 +100,17 @@ none of them — nor all of them together — is sufficient: they establish that
 every path *out* of a page leads somewhere, and say nothing about whether
 anything leads *in*.
 
-A capability that exists only as an internal interface, only in source that
-cannot be built, only behind an affordance that leads nowhere, or only at an
-address no link points to, MUST NOT be described as delivered.
+**The walk MUST NOT pass through an operation that changes anything.** A route
+reachable only from inside an edit, rebind, archive or other mutation flow is
+not reachable: getting to it means opening a form the user did not come to
+submit. A destructive page is a destination, never a corridor.
+
+**A page about one of several things SHALL name which one.** Where a route is
+scoped to an entity the user owns more than one of, the page states which entity
+it is showing and offers a way back to it. A heading that says "this agent" on
+an account with eleven agents identifies nothing, and a page that reports
+something is wrong without naming the subject or offering a way to act on it
+leaves the user further from a fix than when they arrived.
 
 #### Scenario: Connecting and disconnecting
 - **WHEN** a user wants to connect or disconnect their BattleGrid account
@@ -118,6 +126,16 @@ address no link points to, MUST NOT be described as delivered.
 - **THEN** each is reachable
 - **AND** each can be carried out, not merely opened
 
+#### Scenario: Opening an agent from the list
+- **WHEN** a user is looking at their agents
+- **THEN** each agent's own page is reachable directly
+- **AND** reaching it does not require opening a form that would change it
+
+#### Scenario: A page scoped to one agent
+- **WHEN** a user opens a page about a single agent
+- **THEN** the page names that agent
+- **AND** offers a way back to it
+
 #### Scenario: Authoring strategies
 - **WHEN** a user wants to list, edit, fork, archive or restore a strategy, or
   apply a compiled plan
@@ -128,30 +146,6 @@ address no link points to, MUST NOT be described as delivered.
 - **WHEN** a user is anywhere inside the product
 - **THEN** every other top-level capability is reachable from where they are
 - **AND** they do not have to know an address to get there
-
-#### Scenario: Reachable in a served build
-- **WHEN** a capability is described as reachable
-- **THEN** its route is present in a build of the application
-- **AND** requesting that route from the served application returns a page
-
-#### Scenario: A route table is not the interface
-- **WHEN** reachability is checked by enumerating the routes the application
-  defines
-- **THEN** that check is not sufficient
-- **AND** the check that decides the requirement starts from what the interface
-  renders
-
-#### Scenario: A destination nothing points at
-- **WHEN** the application serves a route that no link the interface renders
-  can reach
-- **THEN** that route is not reachable, however well it renders
-- **AND** this fails a check that gates a change
-
-#### Scenario: Checking the direction that was missed
-- **WHEN** reachability is checked by confirming every rendered link resolves
-- **THEN** that check is not sufficient on its own
-- **AND** the check that decides the requirement also starts at the root and
-  walks outward
 
 ### Requirement: The Composed Application Is Assembled Once, From Configuration
 Grid-Commander SHALL construct the adapters that reach BattleGrid and the

@@ -1,5 +1,94 @@
 # Journal
 
+## 2026-07-29 (late) — walking the product, and what it found
+
+**Did**: Archived `the-journal-can-never-show-anything` and
+`you-cannot-open-your-own-agent`. 758 tests, up from 736. `agent-authoring` and
+`app-access` each gained one modified requirement.
+
+The task was to serve the product and use it as an operator would. Four defects,
+none of which a test could have raised, and the first is the worst thing found
+this week.
+
+**The journal page could never show anything.** `readJournal` read
+`payload['entries'] ?? payload['journal']`. `get_agent_journal` sends neither —
+it answers `{ username, recentThoughts, recentActivity, recentGames }`. So the
+lookup missed, `Array.isArray(undefined)` was false, and the method returned
+`empty`. Every agent's journal has said *"has not recorded anything yet"* on
+every account since the page shipped, while `/thinking` — one click away — listed
+eighty-five decisions for the same agent.
+
+`JournalResult` has three states specifically to keep *unreadable* apart from
+*nothing recorded*. A fourth case defeated them: the call succeeded, the payload
+parsed, and the mapper looked in the wrong place. **It reported the reassuring
+one of the three.**
+
+What the wrong key was hiding is the answer to the first question an operator
+asks. Volatilis, whose journal read "has not recorded anything yet":
+
+```
+INSUFFICIENT_FUNDS   Insufficient balance. Required: $10, Available: $0.
+                     Deposit USDC to your HyperLiquid perps account.
+GRID_SKIPPED         Agent … is halted — new wagers are blocked.
+```
+
+**The test that covered it could not see it.** `tests/agent/journal.test.ts`
+assigns `port.journalEntries` a value it invents and asserts the query returns
+it — proving the query forwards a field. The mapper, the only place the defect
+lived, was untested for the life of the page. It now runs against a recorded
+payload, with the fixture itself asserted to be the observed shape so a future
+"repair" of the fixture fails too.
+
+**Rendering it live immediately found more than a ten-entry sample had**: two
+outcomes and three event kinds, shown as bare identifiers rather than dropped.
+That is the open map earning its keep — `OUTCOMES` and `EVENTS` are deliberately
+not unions, and this is the first time it paid. `SKIPPED_INSUFFICIENT_FUNDS` was
+**not** folded into `stoodDown()`: an agent that chose not to act and one that
+could not are different answers to "why is it quiet", and only the first is a
+decision.
+
+**You could not open your own agent.** Every row on `/agents` offered six links
+and none was the agent. `/agents/[id]` carries the binding, the brain, the money
+summary and the rename form; the only live link to it was the cancel on
+`/agents/[id]/archive`. You reached your agent's own page by starting to retire
+it.
+
+Both reachability checks were right by their own terms — the scan reads source,
+`agent-edit.tsx` has the link three times, the walk arrives via `/edit`. Neither
+can see that those links sit in branches that do not render, nor that the
+surviving path opens a form the user did not come to submit. Two new guards, both
+derived: *nothing is reachable only by passing through a mutation*, and *a list
+offers the thing it lists*.
+
+`/thinking` and `/limits` also named no agent — "What would stop this agent", on
+an account with eleven — and both dead-ended, the second while reporting that two
+loss ceilings are unset.
+
+**Re-injecting is where the guards were actually earned.** Two of three mutations
+passed at first: deleting the row's name-link left the suite green (the corridor
+guard is satisfied by any path, and the sub-pages now link back), and the
+narrower check written to catch *that* also passed, because `/agents/new` matches
+`^/agents/[^/]+$`. A static sibling is not an entity. Neither was found by
+reading.
+
+**One gap is stated rather than guarded.** `AgentEditForm`'s editable branch had
+no way back while both refusal branches did — so the file read as covered, and
+the page a working account actually sees was a dead end. A source scan cannot
+tell which branch renders.
+
+**The pattern across all four**: every one was visible in thirty seconds of use
+and invisible to 736 tests, four gates and a production audit. Two of them —
+the journal mapper and the edit dead end — were *specifically* invisible because
+the artefact under test agreed with itself. A fake returns what you assigned it;
+a scan finds a link in a file it cannot execute.
+
+**Next**: `get_agent_performance` and `get_agent_fund_allocation` remain observed
+and unmodelled — and until performance is called, nothing in this product has
+seen a settled result, so nothing should be written about scoring. The
+strategies section has not been walked; the two new guards cover its reachability
+and say nothing about naming or return paths, which is where the agents side
+broke. Both filed.
+
 ## 2026-07-29 (evening) — what would stop an agent, including nothing
 
 **Did**: Archived `how-close-an-agent-is-to-its-ceilings`. `agent-understanding`
