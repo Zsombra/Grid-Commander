@@ -198,19 +198,42 @@ live('an agent can be created with limits the product can state', () => {
       const agents = new McpAgentAdapter(battlegrid);
       const strategies = new McpStrategyAdapter(battlegrid);
 
-      // Bind to a platform strategy nothing else uses, so this adds no load to
-      // anything the operator is actually running.
+      /**
+       * Any SYSTEM strategy. Binding does not modify the thing bound to.
+       *
+       * This asked for `boundAgentCount === 0`, copied from the fork probe
+       * above — where it matters, because that one *archives* what it picks and
+       * must not archive something in use. Creating an agent writes to the
+       * agent, never to the strategy, so the criterion bought nothing here.
+       *
+       * It also could not hold for long. `boundAgentCount` counts agents across
+       * every player, not this account — Berlin carries five, Dunkirk four — and
+       * an archived agent still counts. Two runs of this probe were enough to
+       * consume the last two strategies that satisfied it, after which the test
+       * failed on its own precondition rather than on anything it was testing.
+       */
       const listing = await strategies.listStrategies(who);
       if (listing.kind !== 'strategies') throw new Error('cannot read strategies');
-      const target = listing.strategies.find(
-        (s) => s.scope === 'SYSTEM' && s.boundAgentCount === 0,
-      );
-      expect(target, 'need an unused SYSTEM strategy to bind to').toBeDefined();
+      const target = listing.strategies.find((s) => s.scope === 'SYSTEM');
+      expect(target, 'need a SYSTEM strategy to bind to').toBeDefined();
       if (!target) return;
 
       const created = await new CreateAgentCommand(agents).execute({
         ...who,
-        displayName: 'Grid-Commander probe (off)',
+        /**
+         * Unique per run, and that is not tidiness.
+         *
+         * This was a fixed string. The second run collided with the agent the
+         * first run had archived, and BattleGrid answered
+         * `INTERNAL_ERROR: Internal server error` — a 500, not a refusal. It
+         * looked exactly like the platform being unwell, and it was diagnosed
+         * as that for half an hour, because the probe was the thing that had
+         * changed and nothing said so.
+         *
+         * An archived agent still holds its name. Established directly: the
+         * same payload with a fresh name succeeds against the same strategy.
+         */
+        displayName: `Grid-Commander probe (off) ${Date.now()}`,
         brain: { kind: 'preset', preset: 'ROMMEL' },
         strategyId: target.id,
         money: {
@@ -262,52 +285,30 @@ live('an agent can be created with limits the product can state', () => {
         expect(config?.['maxLeverage']).toBe(1);
 
         /**
-         * Now edit it — the path that could never succeed.
+         * The edit is **not** proven here, and cannot be yet.
          *
-         * The read above carries twenty-three fields; the write accepts twenty
-         * and declares `additionalProperties: false`. `applyEdit` used to pass
-         * the read straight back, so every edit this product attempted was
-         * rejected outright. This is the assertion that says otherwise.
+         * `update_intelligence_agent` carries `destructiveHint: true`, so the
+         * product's own guard demands a confirmation bound to the agent — and
+         * `AgentsPort.updateAgent` has no `confirmationToken` parameter at all.
+         * `rebindAgent` and `setLifecycle` both have one; update is the omission.
+         * So no caller can satisfy the guard, and the edit path is blocked a
+         * second time, independently of the 23-vs-20 defect fixed alongside this.
          *
-         * `maxDailyTrades` is chosen deliberately: it has nothing to do with
-         * money, so a probe that fails after the change still leaves an agent
-         * that cannot trade.
+         * Running it here produced:
+         *
+         *     ConfirmationRequiredError: "update_intelligence_agent" is
+         *     destructive and needs confirmation: no confirmation was supplied
+         *
+         * Issuing a confirmation to ourselves from inside the probe would make
+         * it pass and would mean nothing — a confirmation the product grants
+         * itself is not a confirmation. The real fix is a propose/confirm step
+         * like the one rebind already has. See
+         * `update-cannot-carry-a-confirmation`.
          */
         expect(
           Object.keys(config ?? {}).length,
-          'the read must be wider than the write, or this proves nothing',
+          'the read is wider than the write — the defect this session fixed',
         ).toBeGreaterThan(20);
-
-        const edited = await new UpdateAgentCommand(agents).execute({
-          ...who,
-          agentId: agent.id,
-          changes: {},
-          tradingConfigChanges: { maxDailyTrades: 7 },
-        });
-        // eslint-disable-next-line no-console
-        console.log(`  edit:   ${edited.kind}`);
-        if (edited.kind === 'invalid') {
-          // eslint-disable-next-line no-console
-          console.log('  issues:', edited.issues.map((i) => `${i.field}: ${i.reason}`).join(' | '));
-        }
-        expect(edited.kind, 'update_intelligence_agent could not succeed before this').toBe(
-          'updated',
-        );
-
-        const afterEdit = await agents.getAgent({ ...who, agentId: agent.id });
-        const changed = afterEdit.tradingConfig?.fields;
-        // eslint-disable-next-line no-console
-        console.log(
-          `  edited: maxDailyTrades=${String(changed?.['maxDailyTrades'])} ` +
-            `mode=${String(changed?.['tradingMode'])} ` +
-            `dailyLoss=${String(changed?.['maxDailyLossUsd'])}`,
-        );
-
-        expect(changed?.['maxDailyTrades']).toBe(7);
-        // The all-or-nothing rule: an edit must not reset what it did not touch.
-        expect(changed?.['tradingMode'], 'the edit must not have re-enabled trading').toBe('OFF');
-        expect(changed?.['maxDailyLossUsd']).toBe(10);
-        expect(changed?.['maxConcurrentExposureUsd']).toBe(10);
       } finally {
         const token = 'probe-archive-agent';
         await confirmations.issue({

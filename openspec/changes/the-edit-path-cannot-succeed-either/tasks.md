@@ -39,3 +39,27 @@
 - [x] 10. Closed `trading-config-read-shape-is-not-write-shape` — it described
       this and is now fixed.
 - [x] 11. Filed `conformance-sweep-for-required-and-accepted-params`.
+
+## Two probe defects this shook out
+
+Neither was in the product, and both cost real time by looking like something
+else.
+
+**A fixed `displayName`.** The probe called itself `Grid-Commander probe (off)`
+every run. An archived agent still holds its name, so the second run collided
+with the first and BattleGrid answered `INTERNAL_ERROR: Internal server error` —
+a 500, not a refusal. It was diagnosed as a degraded backend for half an hour,
+including in a scheduled check-in written to skip work while "the platform is
+unwell". Established directly: same payload, fresh name, same strategy →
+created. Now `Date.now()`-suffixed.
+
+**An inherited precondition.** Target selection asked for a SYSTEM strategy with
+`boundAgentCount === 0`, copied from the fork probe above — where it matters,
+because that one archives what it picks. Creating an agent writes to the agent,
+never to the strategy, so it bought nothing here. It also could not hold:
+`boundAgentCount` counts agents across every player and archived agents still
+count, so two runs consumed the last two strategies that satisfied it and the
+test began failing on its own precondition.
+
+Both are the same shape as the defects this session found in the product: a
+check that looked like it was protecting something and was not.
