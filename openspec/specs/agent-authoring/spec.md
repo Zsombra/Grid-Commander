@@ -150,13 +150,35 @@ NOT imply that it does.
 - **AND** archiving is not offered as though it were the same thing
 
 ### Requirement: Agents The Platform Owns Are Not Presented As Editable
-Where BattleGrid treats an agent as immutable, Grid-Commander SHALL show it
-without offering any action that would attempt to change it.
+Where an agent cannot currently be changed, Grid-Commander SHALL show it without
+offering any action that would attempt to change it, and SHALL say why.
+
+Two things make an agent unchangeable, and they are not the same. BattleGrid may
+treat an agent as immutable, which is permanent and belongs to the platform. Or
+the agent may be **archived**, which the operator did and can undo. Offering a
+rename box on either is an affordance with nothing behind it; offering one on an
+archived agent is worse, because the operator is one action away from being able
+to use it and is not told so.
+
+Where the reason is archival, Grid-Commander SHALL name reactivation as what
+makes changes possible again.
 
 #### Scenario: A platform-owned agent in the roster
 - **WHEN** an immutable agent appears in a user's roster
 - **THEN** it is shown and readable
 - **AND** no edit, rebind or archive action is offered for it
+
+#### Scenario: An archived agent
+- **WHEN** an archived agent is shown
+- **THEN** it is readable, and its history is not hidden
+- **AND** no control that would change it is offered
+- **AND** the user is told it is retired and that reactivating it makes changes
+  possible again
+
+#### Scenario: Attempting to change one anyway
+- **WHEN** a change is attempted against an agent that cannot be changed
+- **THEN** it is refused before anything is sent to the platform
+- **AND** the user is told which of the two reasons applies
 
 ### Requirement: Every Agent Mutation Carries The Revision It Was Formed Against
 Grid-Commander SHALL send, with every change to an agent, the revision of the
@@ -235,6 +257,12 @@ creates something that trades under limits nobody chose. This product refuses to
 state what it does not know everywhere else; agent creation is where that
 refusal is worth the most.
 
+The same holds when limits are **changed**. BattleGrid's `tradingConfig` is
+all-or-nothing: a partial send does not error, it resets the fields it omits. So
+an edit that reaches the platform carrying nineteen of twenty fields silently
+discards the twentieth. Completeness SHALL be checked before an edit is sent,
+not only before a create.
+
 #### Scenario: Composing an agent
 - **WHEN** a user composes an agent
 - **THEN** they are asked for every spending limit the platform declines to
@@ -257,16 +285,11 @@ refusal is worth the most.
 - **THEN** no value is pre-filled
 - **AND** an empty answer is treated as unanswered rather than as zero
 
-#### Scenario: Configuration is sent whole
-- **WHEN** an agent is created
-- **THEN** every field the platform requires in its trading configuration is
-  sent
-- **AND** none is left to be reset by a partial submission
-
-#### Scenario: What the platform does default
-- **WHEN** the platform declares a default for a setting
-- **THEN** that default is used
-- **AND** the user is not asked for it
+#### Scenario: Editing an agent's limits
+- **WHEN** a user changes one of an agent's spending limits
+- **THEN** the configuration sent carries every field the platform requires
+- **AND** an incomplete one is refused before it is sent, rather than silently
+  resetting the limits it omits
 
 ### Requirement: Every Value The Product Sends Is One The Platform Accepts
 Where Grid-Commander supplies a value the operator did not choose — a
@@ -303,3 +326,62 @@ safe, in one place.
 - **WHEN** the platform's permitted values are recorded for checking against
 - **THEN** the record carries the permitted values themselves, not only the
   names of the fields that carry them
+
+### Requirement: A Value Read Back Is Not Therefore A Value That May Be Sent
+Where Grid-Commander returns a value it read from the platform in a subsequent
+write, it SHALL send only the fields that operation accepts, and MUST NOT assume
+the shape it read is the shape it may write.
+
+BattleGrid's `tradingConfig` reads back with twenty-three fields and writes with
+twenty. The three extra are real facts about an agent and are not writable. An
+operation declaring `additionalProperties: false` rejects the entire object for
+one unaccepted key, so a read-modify-write that passes the read through cannot
+succeed — which is what `update_intelligence_agent` did, every time, for the
+life of this product.
+
+Where a read carries fields a write will not accept, dropping them SHALL be
+visible to the caller rather than silent, so a surface can say what it did not
+send instead of leaving an operator to infer it.
+
+#### Scenario: Writing back a value that was read
+- **WHEN** the product sends back a configuration it read from the platform
+- **THEN** only the fields the write operation accepts are sent
+
+#### Scenario: A field the write does not accept
+- **WHEN** a read carries a field the write operation does not accept
+- **THEN** it is dropped from the write
+- **AND** the drop is reported to the caller rather than performed silently
+
+#### Scenario: A key the operation would reject
+- **WHEN** the product builds a payload containing a key an operation does not
+  accept
+- **THEN** this fails a check that gates a change, rather than being found by an
+  operator whose edit was refused
+
+### Requirement: The Outcome Of A Write Reaches The Person Who Asked For It
+Where a user performs an operation that can be refused, Grid-Commander SHALL
+read the outcome and show it. A surface MUST NOT discard the result of a write
+and present the page as though nothing had been attempted.
+
+A refusal the operator cannot see is worse than a failure they can. The page
+reloads, the value is unchanged, and the only available reading is that the
+product ignored them. Renaming an agent did exactly this: the action awaited the
+result, discarded it, and redirected, so a refusal — including one the product
+itself raised — was indistinguishable from success.
+
+Where the operation was refused, the reason given SHALL be the one the operation
+returned, rather than a generic failure.
+
+#### Scenario: A write that succeeds
+- **WHEN** a user performs a write that succeeds
+- **THEN** they are shown its effect
+
+#### Scenario: A write that is refused
+- **WHEN** a write is refused
+- **THEN** the user is told, on the surface they acted from
+- **AND** the reason given is the one the operation returned
+
+#### Scenario: A result the surface never reads
+- **WHEN** a surface performs a write and does not read its outcome
+- **THEN** this fails a check that gates a change, rather than being found by an
+  operator whose action silently did nothing

@@ -355,6 +355,59 @@ live('an agent can be created with limits the product can state', () => {
         // The rename must not have disturbed the money limits.
         expect(afterRename.tradingConfig?.fields['tradingMode']).toBe('OFF');
         expect(afterRename.tradingConfig?.fields['maxDailyLossUsd']).toBe(10);
+
+        /**
+         * Now change a trading limit — the path `applyEdit` governs.
+         *
+         * The rename above proves the confirmation plumbing and nothing else:
+         * it never touches `tradingConfig`, so it cannot exercise the 23-vs-20
+         * projection. This does. The read carries `strategyTimeframe`,
+         * `regimeAutoDerive` and `regimeTimeframe`; the write declares
+         * `additionalProperties: false` and rejects all three. Sending the read
+         * back verbatim — which is what this product did — is refused outright.
+         *
+         * `maxDailyTrades` is chosen deliberately: it is not a money cap, so
+         * even a half-applied change leaves an agent that still cannot trade.
+         */
+        const proposedEdit = await new DescribeEditQuery(
+          agents,
+          confirmations,
+          new SequentialRandom(),
+          clock,
+        ).execute({ ...who, agentId: agent.id, changes: { tradingConfig: {} } });
+        if (proposedEdit.kind !== 'proposal') throw new Error('no proposal for the config edit');
+        // eslint-disable-next-line no-console
+        console.log(`  propose: ${proposedEdit.proposal.consequence}`);
+
+        const limits = await new UpdateAgentCommand(agents).execute({
+          ...who,
+          agentId: agent.id,
+          changes: {},
+          tradingConfigChanges: { maxDailyTrades: 7 },
+          confirmationToken: proposedEdit.proposal.confirmationToken,
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  limits:  ${limits.kind}`);
+        if (limits.kind === 'invalid') {
+          // eslint-disable-next-line no-console
+          console.log('  issues:', limits.issues.map((i) => `${i.field}: ${i.reason}`).join(' | '));
+        }
+        expect(limits.kind, 'the 23-key write was rejected before this change').toBe('updated');
+
+        const afterLimits = await agents.getAgent({ ...who, agentId: agent.id });
+        const changed = afterLimits.tradingConfig?.fields;
+        // eslint-disable-next-line no-console
+        console.log(
+          `  limited: maxDailyTrades=${String(changed?.['maxDailyTrades'])} ` +
+            `mode=${String(changed?.['tradingMode'])} ` +
+            `dailyLoss=${String(changed?.['maxDailyLossUsd'])}`,
+        );
+
+        expect(changed?.['maxDailyTrades']).toBe(7);
+        // All-or-nothing: an edit must not reset what it did not touch.
+        expect(changed?.['tradingMode'], 'the edit must not have re-enabled trading').toBe('OFF');
+        expect(changed?.['maxDailyLossUsd']).toBe(10);
+        expect(changed?.['maxConcurrentExposureUsd']).toBe(10);
       } finally {
         const token = 'probe-archive-agent';
         await confirmations.issue({

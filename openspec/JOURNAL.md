@@ -1,5 +1,96 @@
 # Journal
 
+## 2026-07-29 (later) — an agent can be created, renamed, and have its limits changed
+
+**Did**: Archived `the-edit-path-cannot-succeed-either` and
+`renaming-an-agent-is-offered-and-cannot-work`. `agent-authoring` 13 → 15
+requirements. 691 tests, up from 673.
+
+**Three write paths now work that never had.** Create was proven earlier today.
+These two close the rest:
+
+```
+create:  created
+stored:  mode=OFF dailyLoss=10 leverage=1
+propose: Renames "Grid-Commander probe (off) …" to "GC probe renamed …".
+rename:  updated
+propose: Replaces every trading limit this agent runs under.
+limits:  updated
+limited: maxDailyTrades=7 mode=OFF dailyLoss=10
+archive: ARCHIVED
+```
+
+The `limited:` line is the one worth reading twice. `maxDailyTrades` changed and
+`tradingMode` and `maxDailyLossUsd` did not — the all-or-nothing rule holding
+against the real platform rather than against a fake.
+
+**Defect: the read is wider than the write.** `get_intelligence_agent` returns a
+`tradingConfig` of twenty-three keys; `update_intelligence_agent` accepts twenty
+and declares `additionalProperties: false`. `applyEdit` was
+`{ ...current.fields, ...changes }`, so all twenty-three went back and every edit
+was rejected outright. `applyEdit` projects onto `TRADING_CONFIG_FIELDS` now,
+reports what it dropped, and refuses an incomplete merge — the completeness check
+the create path always had and the edit path never did.
+
+**The fixture is why nobody saw it.** It modelled a four-field config. A
+four-field config cannot exist, because create requires twenty. Tests built on it
+proved a read-modify-write preserved untouched fields — true, and useless, since
+none of the four were the three that broke it.
+
+**Defect: renaming was offered, impossible, and silent about it.** Three causes,
+and the third hid the other two. `AgentsPort.updateAgent` had no
+`confirmationToken`, so the guard refused before a request was built. The action
+awaited the result, discarded it, and redirected, so every refusal looked like
+being ignored. And the rename box self-gated to `null` for an archived agent —
+correct in rendering nothing dead, silent in a way that reads as forgetting.
+
+**The token is minted by `DescribeEditQuery`, never by `UpdateAgentCommand`.**
+That distinction is the change. A token the command grants itself records that
+the product intended to proceed, which was never in doubt; the guard exists so a
+person saw the consequence and agreed. Making the parameter **required** rather
+than optional was the other half — the type checker then named all thirteen
+callers at once instead of a live call finding them one at a time.
+
+**The operator's suggestion was right and sharper than my framing.** They asked
+that an archived agent say no changes can happen until it is reactivated. The
+rule already existed in `UpdateAgentCommand`; what was missing was the screen
+honouring it. Now it distinguishes the two reasons: platform-locked is permanent
+and not the operator's doing, archived is theirs and one button away on the same
+page.
+
+**Four corrections this session, all mine.**
+
+1. I predicted `apply_strategy_plan` would be the next dead path. It is not —
+   sixty-four of its sixty-eight required paths live inside the server's own
+   `approvedPlan`, handed back verbatim. The "161 unverified params" figure
+   counted server-supplied fields as product risk. The real defect was in
+   `update`, which that framing rated *lower*.
+2. I diagnosed `INTERNAL_ERROR` on create as a degraded BattleGrid backend, and
+   wrote it into a scheduled check-in. It was the probe reusing a fixed
+   `displayName`; an archived agent still holds its name and BattleGrid answers
+   the collision with an unhandled 500. Half an hour lost.
+3. I said the rename form rendered unconditionally for archived agents. It has
+   always self-gated. The defect was the silence, not a dead control.
+4. I pushed once with a lint error, having read the summary line and not the
+   message under it.
+
+**And the fix broke the probe's own teardown.** The first successful rename
+bumped the revision, and the `finally` archived at the value captured before it —
+so optimistic concurrency correctly refused and the probe left a live agent on
+the operator's account. Archived by hand within the minute. A teardown that
+assumes nothing changed has no business running after a test whose whole point is
+that something did.
+
+**Next**: the agent-internals reads. The write side is closed — create, rename,
+limits, archive, fork, compile, strategy archive all proven live — and
+`get_user_thought_log` now carries real observed types, so that group can finally
+be built against observation rather than inference.
+
+**Filed**: `no-action-may-discard-a-write-result` (the rename's discarded result
+is fixed and guarded; nothing checks the other actions),
+`conformance-sweep-for-required-and-accepted-params`. **Closed**:
+`update-cannot-carry-a-confirmation`, `trading-config-read-shape-is-not-write-shape`.
+
 ## 2026-07-29 — create_intelligence_agent succeeded, for the first time
 
 **Did**: Archived `every-value-sent-is-one-the-platform-accepts` (standard,

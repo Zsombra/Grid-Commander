@@ -80,6 +80,12 @@ document.
   `regimeAutoDerive` and `regimeTimeframe` stay on the domain object and stay
   displayable. They are real facts about an agent; they are simply not writable,
   and this change is about the write.
+- **Recording what every operation *accepts*, and sweeping every payload against
+  it.** The guards here pin the three fields that broke this path specifically —
+  `applyEdit` drops them, and exactly the twenty are sent. The general form needs
+  the probe to record the accepted property set per object path and which paths
+  are closed (`additionalProperties: false`), which is a different piece of work.
+  Filed as `conformance-sweep-for-required-and-accepted-params`.
 - **The other 161-param sweep.** Investigating this found that
   `apply_strategy_plan` (64 of its 68 required paths live inside the server's own
   `approvedPlan`, handed straight back), `compile_strategy_plan` (the UPDATE
