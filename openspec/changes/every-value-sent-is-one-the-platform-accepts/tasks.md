@@ -8,8 +8,14 @@
 - [x] 1b. Retry with backoff in `rpc`, and SSE-frame parsing. One timeout used
       to abandon the whole probe, including the `tools/list` every later step
       depends on.
+- [x] 1c. `shape()` records six levels deep, not two. The cap sat one level
+      short of every answer: a paginated response nests `entries[] → {…}` before
+      reaching a field, so every per-entry type in `get_user_thought_log`
+      recorded as `…`. Names captured, not one type. Verified it still cannot
+      leak a value — every leaf is `type(...).__name__`.
 - [ ] 2. **Blocked — BattleGrid auth is down.** Re-probe so
-      `docs/battlegrid-mcp-surface.json` carries `input_constants`.
+      `docs/battlegrid-mcp-surface.json` carries `input_constants`, and the
+      observed shapes carry types rather than `…`.
 
 ## Fix the two defects
 

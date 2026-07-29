@@ -188,9 +188,19 @@ def shape(value: Any, depth: int = 0) -> Any:
     """A response's shape, without its contents.
 
     The account's real data does not belong in a committed artifact. What is
-    useful is which keys exist and what type each holds, one level into arrays.
+    useful is which keys exist and what type each holds.
+
+    The depth cap was 2, which is one level short of where the answers are. A
+    paginated response nests `entries[] → {…}` before reaching a single field,
+    so every per-entry type in `get_user_thought_log` recorded as `…` — the key
+    names were captured and not one type was. A mapper written against that
+    knows `confidenceScore` exists and has to guess whether it is a number or a
+    string, which is the same guess that made `sizingStrategy` wrong.
+
+    Six is enough for the deepest response observed and still cannot leak a
+    value: only `type(...).__name__` is ever emitted for a leaf.
     """
-    if depth > 2:
+    if depth > 6:
         return "…"
     if isinstance(value, dict):
         return {k: shape(v, depth + 1) for k, v in sorted(value.items())}
