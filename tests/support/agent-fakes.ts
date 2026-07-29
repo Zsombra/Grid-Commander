@@ -91,6 +91,7 @@ export class FakeAgentsPort implements AgentsPort {
       tradingConfig: params.tradingConfig,
       arenaChallengeEnabled: params.arenaChallengeEnabled ?? false,
       overlayText: null,
+      performance: null,
       permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     };
     this.agents.set(id, agent);
@@ -208,6 +209,7 @@ export function anAgent(overrides: Partial<Agent> = {}): Agent {
     tradingConfig: null,
     arenaChallengeEnabled: false,
     overlayText: null,
+    performance: null,
     permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     ...overrides,
   };

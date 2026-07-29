@@ -17,6 +17,7 @@ const agent: Agent = {
   tradingConfig: null,
   arenaChallengeEnabled: false,
   overlayText: null,
+  performance: null,
   permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
 };
 

@@ -12,6 +12,7 @@
  * appeared in none of them is not here.
  */
 
+import { usd } from './performance.js';
 import type { ThoughtEntry } from './thought.js';
 
 /**
@@ -41,10 +42,9 @@ export interface ActivityEvent {
 /**
  * A submission, and what became of it.
  *
- * `score` is null while the session is open. Every one of the ten games
- * observed was pending, so what a *settled* game reads like is not established
- * here and nothing about it is guessed: `outcome` carries the platform's own
- * string when there is one, exactly as a thought's outcome does.
+ * `score` is null while the session is open, and signed once it settles — see
+ * `settled` and `GAME_OUTCOMES` for what an older account established about the
+ * four result fields, which is that none of them implies another.
  */
 export interface GameResult {
   readonly at: Date;
@@ -90,6 +90,15 @@ export const EVENTS: Readonly<Record<string, string>> = {
   INSUFFICIENT_FUNDS: 'Not enough funds',
   SESSION_SETTLED: 'Session settled',
   SUMMARY_GENERATED: 'Wrote a summary',
+  // Six more, from an older account with nine agents and 97 games on one of
+  // them. The first account was three days old and contained none of these —
+  // which is the argument for this map being open, made twice now.
+  AGENT_WON_COMPETITION: 'Won its heat',
+  AGENT_OUTCOMPETED: 'Lost its heat',
+  MULTI_AGENT_DISPATCHED: 'Ran against other agents',
+  AGENT_ASSIGNED_TO_PRESET: 'Assigned to a game',
+  TRADING_BALANCE_BELOW_THRESHOLD: 'Balance below its floor',
+  COST_LIMIT_REACHED: 'Hit its spending limit',
 };
 
 export function describeEvent(kind: string): string {
@@ -103,9 +112,9 @@ export function isKnownEvent(kind: string): boolean {
 /**
  * The platform's own sentence about an event, where it wrote one.
  *
- * `reason` is the field it uses, and it holds two different things: a code
- * (`low_confidence`) when the detail is elsewhere in the same object, and a
- * finished English sentence when it is not —
+ * `reason` holds two different things: a code (`low_confidence`) when the detail
+ * is elsewhere in the same object, and a finished English sentence when it is
+ * not —
  *
  *     "Insufficient balance. Required: $10, Available: $0. Deposit USDC to
  *      your HyperLiquid perps account."
@@ -114,11 +123,28 @@ export function isKnownEvent(kind: string): boolean {
  * it is why this function exists rather than the surface reading `detail.reason`
  * itself. A code is not shown as prose: it reads as a stray identifier, and the
  * numbers beside it say the same thing better.
+ *
+ * **`reason` is not the only key it uses**, which cost this function a defect.
+ * `COST_LIMIT_REACHED` puts its message under `error`:
+ *
+ *     "Daily cost limit reached ($6.0544 / $6)"
+ *
+ * — so an agent that stopped spending explained itself, and the one line saying
+ * so was missed and demoted to the key-value list. Found by reading an older
+ * account, not by reading this file. Keys are tried in order and the list is
+ * expected to grow; a sentence under a key nobody anticipated is invisible, and
+ * this is precisely the surface where that matters.
  */
+const SENTENCE_KEYS = ['reason', 'error'] as const;
+
 export function eventSentence(event: ActivityEvent): string | null {
-  const reason = event.detail['reason'];
-  if (typeof reason !== 'string' || reason.length === 0) return null;
-  return isCode(reason) ? null : reason;
+  for (const key of SENTENCE_KEYS) {
+    const text = event.detail[key];
+    if (typeof text !== 'string' || text.length === 0) continue;
+    if (isCode(text)) continue;
+    return text;
+  }
+  return null;
 }
 
 /** `low_confidence` is a machine token; the sentence above is not. */
@@ -149,10 +175,23 @@ export function eventBar(event: ActivityEvent): { confidence: number; threshold:
  * them next to a date. Rather than enumerate the kinds and guess at the next
  * one, whatever is left after the known readers is passed through as pairs.
  *
- * `agentId` and `sessionId` are dropped: they identify the row the reader is
- * already looking at, and a page of UUIDs buries the sentence beside it.
+ * Identifiers are dropped: they name the row the reader is already looking at,
+ * and a page of UUIDs buries the sentence beside it. `agentIds` and `winnerId`
+ * joined that list from the older account — `MULTI_AGENT_DISPATCHED` carries an
+ * array of five and `AGENT_OUTCOMPETED` the winner's, and rendered they were a
+ * wall of hex with the useful number (`agentCount`, `winnerConfidence`) lost in
+ * the middle of it.
  */
-const READ_ELSEWHERE = new Set(['reason', 'confidence', 'threshold', 'agentId', 'sessionId']);
+const READ_ELSEWHERE = new Set([
+  'reason',
+  'error',
+  'confidence',
+  'threshold',
+  'agentId',
+  'agentIds',
+  'sessionId',
+  'winnerId',
+]);
 
 /**
  * Copy for the detail fields observed, and a readable fallback for the rest.
@@ -168,6 +207,14 @@ const FACT_LABELS: Readonly<Record<string, string>> = {
   picksCount: 'Picks',
   score: 'Score',
   rank: 'Rank',
+  agentCount: 'Agents in the heat',
+  competitorCount: 'Competitors',
+  winnerConfidence: "Winner's confidence",
+  presetDisplayName: 'Game',
+  gamePresetId: 'Game id',
+  equityUsd: 'Balance',
+  thresholdUsd: 'Floor',
+  errorCategory: 'Category',
 };
 
 export function describeFact(key: string): string {
@@ -180,21 +227,76 @@ export function describeFact(key: string): string {
 export function eventFacts(event: ActivityEvent): ReadonlyArray<readonly [string, string]> {
   return Object.entries(event.detail)
     .filter(([key, value]) => !READ_ELSEWHERE.has(key) && value !== null && value !== undefined)
-    .map(
-      ([key, value]) =>
-        [describeFact(key), typeof value === 'string' ? value : JSON.stringify(value)] as const,
-    );
+    .map(([key, value]) => [describeFact(key), formatFact(key, value)] as const);
+}
+
+/**
+ * A value, in whatever unit its key says it is in.
+ *
+ * The `Usd` suffix is the platform's own convention, so the unit is derived from
+ * the key rather than from a list this file would have to keep in step. Found by
+ * walking the product: `TRADING_BALANCE_BELOW_THRESHOLD` rendered as
+ *
+ *     Balance  2.179006      Floor  10
+ *
+ * which is a warning about someone's money written as two bare floats. The same
+ * raw-value problem as printing a JSON array of UUIDs, one order of magnitude
+ * quieter, and quiet is why it survived the first pass.
+ */
+function formatFact(key: string, value: unknown): string {
+  if (typeof value === 'number' && key.endsWith('Usd')) return usd(value);
+  return typeof value === 'string' ? value : JSON.stringify(value);
 }
 
 /**
  * Has this submission been scored?
  *
- * A pending game reports `finalScore: null`, and every game observed was
- * pending. Rendering that as `0` would show a submission that has not been
- * judged as one that scored nothing — the same defect as a gauge with no
- * ceiling reading "0 remaining", and wrong in the same direction: it looks like
- * a result.
+ * A pending game reports `finalScore: null`. Rendering that as `0` would show a
+ * submission that has not been judged as one that scored nothing — the same
+ * defect as a gauge with no ceiling reading "0 remaining", and wrong in the same
+ * direction: it looks like a result.
+ *
+ * **Measured, where it used to be a guess.** This was written when no settled
+ * game had ever been observed, so which field marked "settled" was inferred from
+ * names. Across five agents and 37 games on an older account:
+ *
+ * ```
+ * finalScore and outcome both present   24
+ * finalScore only                        0
+ * outcome only                           0
+ * both absent                           13
+ * ```
+ *
+ * They never disagree, so reading the score is exactly equivalent to reading the
+ * outcome, and this line is right for a reason rather than by luck.
  */
 export function settled(game: GameResult): boolean {
   return game.score !== null;
+}
+
+/**
+ * What became of a submission, as the platform names it.
+ *
+ * **Not a summary, and not derived from the score.** The four axes are
+ * independent, which one live row settles on its own:
+ *
+ * ```
+ * outcome "WON"  rank 1  isItm false  totalPayout 0  finalScore −177
+ * ```
+ *
+ * Won its heat, placed first, was not in the money, was paid nothing, and scored
+ * below zero — all at once. Meanwhile `PLACED` at rank 2 paid $1.75. Any attempt
+ * to render one of these as a consequence of another would state something false
+ * about someone's money, so each is shown as sent.
+ *
+ * `finalScore` is signed: `676`, `−403`, `−177` observed.
+ */
+export const GAME_OUTCOMES: Readonly<Record<string, string>> = {
+  WON: 'Won',
+  PLACED: 'Placed',
+  NO_WIN: 'No win',
+};
+
+export function describeGameOutcome(outcome: string): string {
+  return GAME_OUTCOMES[outcome] ?? outcome;
 }

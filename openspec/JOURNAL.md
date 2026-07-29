@@ -1,5 +1,80 @@
 # Journal
 
+## 2026-07-29 (night) — a second account, and what age reveals
+
+**Did**: Archived `performance-was-already-in-the-payload`. 780 tests, up from
+758. `agent-understanding` gained one requirement and modified another.
+
+A temporary key for an older account of the same operator's — nine agents, one
+with **97 games played**. Everything below came from calling it.
+
+**The tool named `get_agent_performance` is not where the performance is.**
+
+```
+get_agent_performance   pnlCurveUsd empty on all nine agents, every figure zero
+get_agent_fund_allocation   zeros across all nine
+```
+
+Twelve agents across two accounts and neither tool has ever returned a populated
+value. Meanwhile `list_intelligence_agents` — which this product calls on every
+agents page — carries the whole record per agent, and `mapAgent` discarded it:
+
+```
+Fade Master II   97 games · 39% win · 50% accuracy · $73.87 · 18 trades 5W/13L
+Fade Master      20 games · 65% win · $36.90
+Apex             42 games · 26% win · $22.96 · 3 trades 0W/3L
+```
+
+Anyone modelling this from the schema would have built a surface on a tool that
+has never once answered.
+
+**The exclusion was reasoned, and the reasoning stopped one step short.**
+`Agent`'s doc comment named the performance block as one of the fields "none of
+which participates in a rule", and a test asserted it never reached the domain.
+That rule is right for a domain type and it is the wrong test for what the
+product may *show* — this is a workbench for building, tuning and
+*understanding*. A comment that reads as settled is why nobody asked again. Both
+the comment and the guard were amended rather than deleted, so the reversal is
+recorded where the original reasoning was.
+
+**A fixture modelling a platform that cannot exist, for the third time on this
+branch.** `performance: { winRate: 0.5 }` sat in `mapper.test.ts` — invented, and
+wrong: the rate is nested under `gameStats`, never at the top. It was never
+exercised because the only assertion on it was that the block got *dropped*.
+
+**Eight names the first account was too young to contain**, all rendering as bare
+identifiers rather than being dropped — the open maps working, and this time the
+argument is evidence rather than reasoning. One was a defect:
+`COST_LIMIT_REACHED` files its message under `error`, not `reason`, so
+`eventSentence` missed *"Daily cost limit reached ($6.0544 / $6)"* — the one line
+saying why an agent stopped.
+
+**A guess that can stop being a guess.** `settled()` reads `score !== null`,
+written when no settled game had ever been seen. Measured across five agents and
+37 games: both present 24, both absent 13, **one without the other zero times**.
+Right for a reason now. And `finalScore` is signed — one live row is `WON` at
+rank 1 with `isItm: false`, a payout of zero and a score of −177, which settles
+that none of the four result fields implies another.
+
+**The walk found two more that no test could.**
+`TRADING_BALANCE_BELOW_THRESHOLD` rendered as `Balance 2.179006 · Floor 10` — a
+warning about someone's money as two bare floats. Fixing it exposed that money
+was formatted in three places and had already drifted: `paid $0` on one page
+beside `−$0.25` on the next. One `usd()` in the domain now.
+
+**The pattern, said once**: an older account is a different *kind* of evidence
+from a bigger sample of the same one. Three days of history contained no settled
+game, no competition, no cost limit and no populated record — so every
+conclusion drawn from it was a conclusion about a young account, and four of
+them were wrong.
+
+**Next**: the two empty tools stay unmodelled, with a test asserting the
+emptiness so a populated account fails the suite and answers the question. Two
+P&L figures disagree — roster `avgPnl: -0.248` over 18 trades against
+`realizedPnlUsd: 0` — and the product shows the roster's, captioned with its
+source rather than reconciled. `last24hCostUsd` is unmapped and probably matters:
+spend is a fifth way to be stopped and `/limits` does not mention it. All filed.
+
 ## 2026-07-29 (late) — walking the product, and what it found
 
 **Did**: Archived `the-journal-can-never-show-anything` and

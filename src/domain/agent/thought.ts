@@ -63,6 +63,10 @@ export const OUTCOMES: Readonly<Record<string, string>> = {
   // `stoodDown` stays narrow for exactly that reason.
   SKIPPED_INSUFFICIENT_FUNDS: 'Could not act — not enough funds',
   SKIPPED_SESSION_UNAVAILABLE: 'Could not act — no session was open',
+  // From an older account. Also not a decision: the agent was stopped by its own
+  // spending cap before it could reason. `COST_LIMIT_REACHED` is the matching
+  // activity event, and it carries the figures.
+  SKIPPED_COST_LIMIT: 'Could not act — spending limit reached',
 };
 
 /** Copy for an outcome, or the platform's own name when there is none. */

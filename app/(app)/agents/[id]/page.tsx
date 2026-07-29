@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { AgentRenameForm } from '@/presentation/components/agent-edit.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
+import { AgentRecord } from '@/presentation/components/record.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredText } from '@/presentation/form.js';
 
@@ -54,6 +55,14 @@ export default async function AgentPage({
         <h1 className="text-xl font-medium">{agent.displayName}</h1>
         <p className="text-sm">{agent.status}</p>
       </div>
+
+      {/**
+       * How it has done, from the block the roster payload already carried and
+       * this product discarded on every load. Null means the record was absent,
+       * which the component never sees — an agent that has played nothing
+       * reports a record full of zeroes and says so in its own words.
+       */}
+      {agent.performance && <AgentRecord performance={agent.performance} />}
 
       <section className="space-y-1">
         <h2 className="font-medium">Inherited from its strategy</h2>

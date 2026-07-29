@@ -4,6 +4,7 @@ import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
 import type { Budget, Gauge } from '@/domain/agent/budget.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
+import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
@@ -28,6 +29,7 @@ interface RawAgent {
   modelId?: unknown;
   behavior?: unknown;
   tradingConfig?: unknown;
+  performance?: unknown;
   arenaChallengeEnabled?: unknown;
   overlayText?: unknown;
   capabilities?: unknown;
@@ -65,6 +67,7 @@ export function mapAgent(raw: unknown): Agent {
     tradingConfig: mapTradingConfig(a.tradingConfig),
     arenaChallengeEnabled: a.arenaChallengeEnabled === true,
     overlayText: str(a.overlayText),
+    performance: mapPerformance(a.performance),
     permissions: mapPermissions(a.capabilities),
   };
 }
@@ -457,4 +460,56 @@ function mapGame(raw: unknown): GameResult {
     payoutUsd: num(g['totalPayout']) ?? null,
     outcome: str(g['outcome']),
   };
+}
+
+/**
+ * An agent's record, from the block the roster payload already carries.
+ *
+ * `null` when the block is absent, and a `Performance` full of zeroes when the
+ * agent simply has not played. Those are different facts and the mapper must not
+ * merge them: six of the nine agents observed had a real block reporting zero
+ * games, three of them created that afternoon.
+ *
+ * `winRatePercent` and `avgAccuracyPercent` are read and discarded. They are the
+ * same numbers as `winRate` and `avgAccuracy`, pre-rounded — `0.3917525773195876`
+ * against `39`. Keeping both would put two versions of one fact on one screen,
+ * and the rounded one cannot be recovered from. Same call as `mapThought` makes
+ * for `confidenceScorePercent`.
+ */
+export function mapPerformance(raw: unknown): Performance | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const p = raw as Record<string, unknown>;
+  const games = (p['gameStats'] ?? {}) as Record<string, unknown>;
+  const trades = (p['tradeStats'] ?? {}) as Record<string, unknown>;
+  const winLoss = (trades['winLoss'] ?? {}) as Record<string, unknown>;
+
+  return {
+    games: {
+      played: num(games['gamesPlayed']) ?? 0,
+      // Null rather than 0: a win rate nobody has established is not a win rate
+      // of zero, and an agent with no games reports exactly that.
+      winRate: num(games['winRate']) ?? null,
+      avgAccuracy: num(games['avgAccuracy']) ?? null,
+      earningsUsd: num(games['gameEarnings']) ?? 0,
+      earningsCurve: mapCurve(games['earningsSparkline']),
+    },
+    trades: {
+      trades: num(trades['trades']) ?? 0,
+      open: num(trades['open']) ?? 0,
+      wins: num(winLoss['wins']) ?? 0,
+      losses: num(winLoss['losses']) ?? 0,
+      // The platform itself sends null here on an agent that has not traded —
+      // the one place in this payload it draws the distinction unprompted.
+      avgPnlUsd: num(trades['avgPnl']) ?? null,
+      pnlCurve: mapCurve(trades['pnlSparkline']),
+    },
+  };
+}
+
+function mapCurve(raw: unknown): readonly Point[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry) => {
+    const e = (entry ?? {}) as Record<string, unknown>;
+    return { at: new Date(String(e['timestamp'] ?? 0)), value: num(e['value']) ?? 0 };
+  });
 }

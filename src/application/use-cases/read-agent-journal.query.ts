@@ -1,5 +1,12 @@
 import type { ActivityEvent, GameResult } from '@/domain/agent/journal.js';
-import { describeEvent, eventBar, eventFacts, eventSentence, settled } from '@/domain/agent/journal.js';
+import {
+  describeEvent,
+  describeGameOutcome,
+  eventBar,
+  eventFacts,
+  eventSentence,
+  settled,
+} from '@/domain/agent/journal.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import { clearedItsBar, describeOutcome, stoodDown } from '@/domain/agent/thought.js';
 import type { AgentsPort } from '@/ports/agents.js';
@@ -35,6 +42,14 @@ export interface Submission {
   readonly game: GameResult;
   /** False while the session is open. Never rendered as a score of zero. */
   readonly settled: boolean;
+  /**
+   * Copy where this product has it, the platform's own name where it does not.
+   *
+   * Null while the session is open. `WON`, `PLACED` and `NO_WIN` are what an
+   * older account produced, and none of them can be inferred from the score:
+   * one live row is `WON` at rank 1 with a payout of zero and a score of −177.
+   */
+  readonly outcome: string | null;
 }
 
 export type JournalReading =
@@ -109,6 +124,10 @@ function read(result: Awaited<ReturnType<AgentsPort['readJournal']>>): JournalRe
       bar: clearedItsBar(entry),
       declined: stoodDown(entry),
     })),
-    submissions: record.games.map((game) => ({ game, settled: settled(game) })),
+    submissions: record.games.map((game) => ({
+      game,
+      settled: settled(game),
+      outcome: game.outcome === null ? null : describeGameOutcome(game.outcome),
+    })),
   };
 }

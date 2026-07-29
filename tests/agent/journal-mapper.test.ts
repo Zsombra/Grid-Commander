@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mapRecord } from '@/infrastructure/battlegrid/agent-mapper.js';
 import {
   describeEvent,
+  describeGameOutcome,
   eventBar,
   eventFacts,
   eventSentence,
@@ -174,5 +175,134 @@ describe('an event says what it can, and no more', () => {
     }).activity[0];
     // A field with no copy still reads as a phrase, not a symbol.
     expect(eventFacts(unknown!)).toEqual([['Note', 'kept']]);
+  });
+});
+
+/**
+ * The vocabulary an older account produced.
+ *
+ * Nine agents, one with 97 games. The first account this product was built
+ * against was three days old and contained none of the names below — which is
+ * the argument for the open maps, made a second time by evidence rather than by
+ * reasoning.
+ */
+describe('a second, older account produced names the first could not', () => {
+  const event = (kind: string, metadata: Record<string, unknown>) =>
+    mapRecord({
+      recentActivity: [{ id: 'e1', eventType: kind, createdAt: '2026-06-26T11:51:12.833Z', metadata }],
+    }).activity[0]!;
+
+  it('names the six event kinds it learned', () => {
+    for (const [kind, copy] of [
+      ['AGENT_WON_COMPETITION', 'Won its heat'],
+      ['AGENT_OUTCOMPETED', 'Lost its heat'],
+      ['MULTI_AGENT_DISPATCHED', 'Ran against other agents'],
+      ['AGENT_ASSIGNED_TO_PRESET', 'Assigned to a game'],
+      ['TRADING_BALANCE_BELOW_THRESHOLD', 'Balance below its floor'],
+      ['COST_LIMIT_REACHED', 'Hit its spending limit'],
+    ] as const) {
+      expect(describeEvent(kind)).toBe(copy);
+    }
+  });
+
+  /**
+   * The defect the older account exposed. `COST_LIMIT_REACHED` puts its message
+   * under `error`, not `reason` — so the one sentence explaining why an agent
+   * stopped spending was missed and demoted to the key-value list.
+   *
+   * Re-injecting `SENTENCE_KEYS = ['reason']` makes this fail.
+   */
+  it('finds the sentence when the platform files it under a different key', () => {
+    const cost = event('COST_LIMIT_REACHED', {
+      error: 'Daily cost limit reached ($6.0544 / $6)',
+      errorCategory: 'COST_LIMIT',
+    });
+    expect(eventSentence(cost)).toBe('Daily cost limit reached ($6.0544 / $6)');
+    // And the category still reaches the reader, labelled.
+    expect(eventFacts(cost)).toEqual([['Category', 'COST_LIMIT']]);
+  });
+
+  it('shows the balance warning as figures, since it carries no prose', () => {
+    const low = event('TRADING_BALANCE_BELOW_THRESHOLD', { equityUsd: 2.179006, thresholdUsd: 10 });
+    expect(eventSentence(low)).toBeNull();
+    // Dollars, because the platform's own key says `Usd`. It rendered as two
+    // bare floats until the product was walked — a warning about someone's
+    // money, written as `2.179006`.
+    expect(eventFacts(low)).toEqual([['Balance', '$2.18'], ['Floor', '$10.00']]);
+  });
+
+  /**
+   * Five UUIDs in an array, rendered raw, buried the one useful number beside
+   * them. Identifiers for what the reader is already looking at say nothing.
+   */
+  it('does not print an array of identifiers back at the reader', () => {
+    const dispatched = event('MULTI_AGENT_DISPATCHED', {
+      agentIds: ['a-1', 'a-2', 'a-3', 'a-4', 'a-5'],
+      sessionId: 's-1',
+      agentCount: 5,
+    });
+    expect(eventFacts(dispatched)).toEqual([['Agents in the heat', '5']]);
+    expect(JSON.stringify(eventFacts(dispatched))).not.toContain('a-1');
+  });
+
+  it('drops the winner’s id and keeps what it says', () => {
+    const lost = event('AGENT_OUTCOMPETED', {
+      winnerId: 'a-9',
+      confidence: 0.734,
+      winnerConfidence: 0.81,
+    });
+    // `confidence` is read by `eventBar` only when a threshold accompanies it.
+    expect(eventBar(lost)).toBeNull();
+    expect(eventFacts(lost)).toEqual([["Winner's confidence", '0.81']]);
+  });
+});
+
+/**
+ * A settled game, which no account had ever shown before.
+ *
+ * `settled()` was written from field names when every observed game was pending.
+ * Measured since across five agents and 37 games: score and outcome are present
+ * together 24 times, absent together 13, and never one without the other.
+ */
+describe('a settled submission', () => {
+  const game = (over: Record<string, unknown>) =>
+    mapRecord({
+      recentGames: [{
+        gameType: 'MARKET_GRID', submittedAt: '2026-06-21T15:51:09.421Z',
+        confidenceScore: 0.52, reasoning: 'r', cells: Array.from({ length: 9 }, () => ({})),
+        finalScore: null, rank: null, totalPayout: null, outcome: null, ...over,
+      }],
+    }).games[0]!;
+
+  it('reads a score, a rank and a payout', () => {
+    const g = game({ finalScore: 676, rank: 2, totalPayout: 1.75, outcome: 'PLACED' });
+    expect(settled(g)).toBe(true);
+    expect(g.score).toBe(676);
+    expect(g.payoutUsd).toBe(1.75);
+    expect(describeGameOutcome(g.outcome!)).toBe('Placed');
+  });
+
+  /**
+   * One live row settles the design: won its heat, ranked first, not in the
+   * money, paid nothing, and scored below zero — all at once. Nothing here may
+   * be inferred from anything else here.
+   */
+  it('keeps a negative score, and a win that paid nothing', () => {
+    const g = game({ finalScore: -177, rank: 1, totalPayout: 0, outcome: 'WON' });
+    expect(settled(g)).toBe(true);
+    expect(g.score).toBe(-177);
+    expect(g.rank).toBe(1);
+    expect(g.payoutUsd).toBe(0);
+    expect(describeGameOutcome(g.outcome!)).toBe('Won');
+  });
+
+  it('is still pending when the platform sent neither', () => {
+    expect(settled(game({}))).toBe(false);
+    expect(game({}).outcome).toBeNull();
+  });
+
+  it('names a game outcome it has no copy for', () => {
+    expect(describeGameOutcome('NO_WIN')).toBe('No win');
+    expect(describeGameOutcome('SOMETHING_NEW')).toBe('SOMETHING_NEW');
   });
 });

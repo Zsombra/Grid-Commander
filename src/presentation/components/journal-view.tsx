@@ -4,6 +4,7 @@ import type {
   Reasoning,
   Submission,
 } from '@/application/use-cases/read-agent-journal.query.js';
+import { usd } from '@/domain/agent/performance.js';
 
 /**
  * An agent's own record.
@@ -232,7 +233,7 @@ function Thought({ reasoning }: { reasoning: Reasoning }) {
 }
 
 function Game({ submission }: { submission: Submission }) {
-  const { game, settled } = submission;
+  const { game, settled, outcome } = submission;
   return (
     <li className="space-y-1 rounded-gc-2 border border-consequence-border p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -255,8 +256,10 @@ function Game({ submission }: { submission: Submission }) {
           <>
             Scored <strong>{game.score}</strong>
             {game.rank !== null && <> · ranked {game.rank}</>}
-            {game.payoutUsd !== null && <> · paid ${game.payoutUsd}</>}
-            {game.outcome && <> · {game.outcome}</>}
+            {/* The same rule as the agent record and an event's detail — it
+                rendered `$0` next to a `−$0.25` on the neighbouring page. */}
+            {game.payoutUsd !== null && <> · paid {usd(game.payoutUsd)}</>}
+            {outcome && <> · {outcome}</>}
           </>
         ) : (
           'Submitted. The session has not settled, so there is no score yet.'
