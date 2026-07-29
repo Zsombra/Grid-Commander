@@ -20,6 +20,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent()]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'Renamed' },
     });
@@ -31,6 +32,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent()]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { contextSources: { includeRsi: false } },
     });
@@ -44,6 +46,7 @@ describe('editing an agent', () => {
     ]);
     const res = await new UpdateAgentCommand(locked).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'x' },
     });
@@ -55,6 +58,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent({ status: 'ARCHIVED' })]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'x' },
     });
@@ -74,6 +78,7 @@ describe('editing one limit preserves the others', () => {
     const port = configured();
     await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -91,6 +96,7 @@ describe('editing one limit preserves the others', () => {
     const port = configured();
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       tradingConfigChanges: { maxStopLossPct: 90 },
       changes: {},
@@ -104,6 +110,7 @@ describe('editing one limit preserves the others', () => {
     const port = new FakeAgentsPort([anAgent({ tradingConfig: null })]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -117,6 +124,7 @@ describe('editing one limit preserves the others', () => {
     port.catalogReadable = false;
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -144,6 +152,7 @@ describe('what a read carries is not what a write may send', () => {
     const port = configured();
     await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -159,6 +168,7 @@ describe('what a read carries is not what a write may send', () => {
     const port = configured();
     await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -192,6 +202,7 @@ describe('what a read carries is not what a write may send', () => {
 
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },

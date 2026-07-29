@@ -18,7 +18,28 @@ export function AgentRenameForm({
   agent: Agent;
   action: (formData: FormData) => Promise<void>;
 }) {
-  if (!isEditable(agent)) return null;
+  /**
+   * A control that cannot work is not offered — and its absence is explained.
+   *
+   * This returned `null`, so an archived agent showed a blank space where the
+   * name box had been. Correct in that nothing dead was rendered, and silent in
+   * a way that reads as the page forgetting rather than refusing.
+   *
+   * The two reasons are not interchangeable. A platform-locked agent will never
+   * be editable here. An **archived** one is the operator's own decision and is
+   * one button away from being undone — on this very page. Saying so is the
+   * difference between a dead end and a next step.
+   */
+  if (!isEditable(agent)) {
+    return (
+      <p className="text-sm text-text-secondary">
+        {agent.status === 'ARCHIVED'
+          ? `${agent.displayName} is retired, so it cannot be renamed. Reactivating it makes changes possible again — its history is kept either way.`
+          : `BattleGrid does not permit Grid-Commander to rename ${agent.displayName}.`}
+      </p>
+    );
+  }
+
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="agentId" value={agent.id} />

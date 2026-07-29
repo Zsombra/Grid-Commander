@@ -43,6 +43,13 @@ export interface AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    /**
+     * `update_intelligence_agent` carries `destructiveHint: true`, so the guard
+     * demands one. This parameter did not exist, which meant no caller could
+     * satisfy the guard and every rename was refused by the product before it
+     * reached the platform — the sibling of the 23-vs-20 defect one layer out.
+     */
+    confirmationToken: string;
   }): Promise<Agent>;
 
   rebindAgent(params: {

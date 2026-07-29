@@ -14,6 +14,7 @@ describe('conflict_names_the_agent', () => {
     const port = new FakeAgentsPort([anAgent({ revision: 7 })]);
     await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'Renamed' },
     });
@@ -42,6 +43,7 @@ describe('conflict_names_the_agent', () => {
     const port = new FakeAgentsPort([anAgent({ revision: 2 })]);
     await new SetLifecycleCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       to: 'ARCHIVED',
       expectedRevision: 2,

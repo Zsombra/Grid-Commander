@@ -76,10 +76,24 @@ export async function updateAgent(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const agentId = requiredText(formData, 'agentId');
+  const changes = { displayName: requiredText(formData, 'displayName') };
+
+  // Propose first: the guard needs a confirmation bound to this agent, and the
+  // thing that performs the write must not be the thing that authorises it.
+  const proposed = await app.describeEdit.execute({ ...user.authority, agentId, changes });
+  if (proposed.kind !== 'proposal') {
+    const why =
+      'reason' in proposed
+        ? proposed.reason
+        : proposed.rejected.map((r) => r.reason).join(' ');
+    redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(why)}`);
+  }
+
   const result = await app.updateAgent.execute({
     ...user.authority,
     agentId,
-    changes: { displayName: requiredText(formData, 'displayName') },
+    changes,
+    confirmationToken: proposed.proposal.confirmationToken,
   });
 
   if (result.kind === 'updated') redirect(`/agents/${agentId}`);

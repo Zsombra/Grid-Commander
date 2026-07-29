@@ -2,7 +2,7 @@
 id: update-cannot-carry-a-confirmation
 title: update_intelligence_agent is destructive and the port cannot carry a confirmation
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-29
 updated: 2026-07-29
@@ -13,6 +13,13 @@ tags: [battlegrid, guard, agent-edit-form]
 ---
 
 # update_intelligence_agent is destructive and the port cannot carry a confirmation
+
+> **Done** — . 
+> now takes a required ;  mints it alongside
+> the rendered consequence, and  never issues its own. The
+> question raised below — whether renaming and changing a loss cap deserve the
+> same copy — was answered in : they get different sentences, and
+> the money one is deliberately the heaviest.
 
 ## What
 

@@ -14,6 +14,13 @@ export interface UpdateAgentRequest {
   readonly changes: Readonly<Record<string, unknown>>;
   /** Individual trading-config fields to change. Merged onto the current config. */
   readonly tradingConfigChanges?: Readonly<Record<string, unknown>> | undefined;
+  /**
+   * Issued by `ProposeEditCommand` against this agent. Required, not optional:
+   * BattleGrid marks `update_intelligence_agent` destructive, and the guard
+   * refuses without one. Making it optional here would move the failure from
+   * the type checker to a live call, which is where it lived until now.
+   */
+  readonly confirmationToken: string;
 }
 
 export type UpdateAgentResult =
@@ -114,6 +121,7 @@ export class UpdateAgentCommand {
       agentId: req.agentId,
       expectedRevision: agent.revision,
       changes,
+      confirmationToken: req.confirmationToken,
     });
     return { kind: 'updated', agent: updated };
   }

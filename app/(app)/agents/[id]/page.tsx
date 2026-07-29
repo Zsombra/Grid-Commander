@@ -12,7 +12,14 @@ import { requiredText } from '@/presentation/form.js';
  * the platform does not permit it, and presenting a field the platform will
  * refuse is worse than not offering it.
  */
-export default async function AgentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AgentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ problem?: string }>;
+}) {
+  const { problem } = await searchParams;
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
@@ -68,6 +75,12 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
         </p>
       </section>
 
+      {problem ? (
+        <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-3 text-sm text-text-primary">
+          {problem}
+        </p>
+      ) : null}
+
       <AgentRenameForm agent={agent} action={rename} />
 
       <AgentActions agent={agent} />
@@ -75,16 +88,56 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
   );
 }
 
+/**
+ * Rename an agent — propose, then perform.
+ *
+ * Two calls, not one, and the first is not ceremony. BattleGrid marks
+ * `update_intelligence_agent` destructive, so the guard demands a confirmation
+ * bound to this agent. `describeEdit` mints it alongside the sentence naming
+ * what will change; `updateAgent` consumes it. Nothing here issues a token to
+ * itself.
+ *
+ * This action used to `await` the update and throw the result away, then
+ * redirect. Every refusal — archived agent, rejected field, and the missing
+ * confirmation that made all of them moot — arrived as a page that simply
+ * reloaded with the old name. The operator had no way to tell a refusal from
+ * being ignored.
+ */
 export async function rename(formData: FormData) {
   'use server';
   const { app, user } = await acting();
   if (user.kind === 'not-connected') redirect('/connect');
 
   const agentId = requiredText(formData, 'agentId');
-  await app.updateAgent.execute({
+  const changes = { displayName: requiredText(formData, 'displayName') };
+
+  const proposed = await app.describeEdit.execute({ ...user.authority, agentId, changes });
+  if (proposed.kind !== 'proposal') {
+    redirect(`/agents/${agentId}?problem=${encodeURIComponent(reasonOf(proposed))}`);
+  }
+
+  const result = await app.updateAgent.execute({
     ...user.authority,
     agentId,
-    changes: { displayName: requiredText(formData, 'displayName') },
+    changes,
+    confirmationToken: proposed.proposal.confirmationToken,
   });
-  redirect(`/agents/${agentId}`);
+
+  if (result.kind === 'updated') redirect(`/agents/${agentId}`);
+  redirect(`/agents/${agentId}?problem=${encodeURIComponent(reasonOf(result))}`);
+}
+
+/** The reason an operation gave, rather than a generic failure. */
+function reasonOf(
+  result:
+    | { kind: 'not-editable'; reason: string }
+    | { kind: 'no-op'; reason: string }
+    | { kind: 'rejected'; rejected: readonly { field: string; reason: string }[] }
+    | { kind: 'invalid'; issues: readonly { field: string; reason: string }[] }
+    | { kind: string },
+): string {
+  if ('reason' in result && typeof result.reason === 'string') return result.reason;
+  if ('rejected' in result) return result.rejected.map((r) => r.reason).join(' ');
+  if ('issues' in result) return result.issues.map((i) => i.reason).join(' ');
+  return 'That change could not be made.';
 }

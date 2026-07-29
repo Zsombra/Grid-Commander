@@ -130,6 +130,7 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    confirmationToken: string;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
@@ -139,7 +140,9 @@ export class McpAgentAdapter implements AgentsPort {
         expectedRevision: params.expectedRevision,
         ...params.changes,
       },
-      { target: params.agentId },
+      // `target` alone was supplied here, and the guard needs both. A
+      // destructive tool with a target and no token is refused every time.
+      { target: params.agentId, confirmationToken: params.confirmationToken },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
