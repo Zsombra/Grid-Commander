@@ -3,9 +3,9 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult } from '@/ports/agents.js';
+import type { AgentsPort, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
-import { mapAgent, mapCatalog, mapSlotUsage } from './agent-mapper.js';
+import { mapAgent, mapCatalog, mapSlotUsage, mapThought } from './agent-mapper.js';
 import { unreadable } from './unreadable.js';
 
 /**
@@ -33,6 +33,8 @@ const TOOLS = {
   models: 'list_approved_models',
   tradingCatalog: 'get_trading_config_catalog',
   journal: 'get_agent_journal',
+  thoughts: 'get_agent_thought_log',
+  allThoughts: 'get_user_thought_log',
 } as const;
 
 /**
@@ -189,6 +191,49 @@ export class McpAgentAdapter implements AgentsPort {
       { target: params.agentId, confirmationToken: params.confirmationToken },
     );
     return mapAgent(payload['agent'] ?? payload);
+  }
+
+  /**
+   * Two tools, one shape.
+   *
+   * `get_agent_thought_log` needs an `agentId`; `get_user_thought_log` takes
+   * none and aggregates across every agent. Both were called live and both
+   * return `{ entries, limit, page, total }` with identical entries, so the
+   * choice is which tool, not which mapper.
+   */
+  async readThoughtLog(params: {
+    userId: string;
+    accessToken: string;
+    agentId?: string | undefined;
+    limit?: number | undefined;
+  }): Promise<ThoughtLogResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(
+        params,
+        params.agentId === undefined ? TOOLS.allThoughts : TOOLS.thoughts,
+        {
+          ...(params.agentId === undefined ? {} : { agentId: params.agentId }),
+          ...(params.limit === undefined ? {} : { limit: params.limit }),
+        },
+      );
+    } catch (err) {
+      // Unreadable is its own state. An agent that has not reasoned yet and a
+      // log that failed to load are different facts about an agent, and telling
+      // a user the first when the second happened is the defect the roster's
+      // three states exist to prevent.
+      return unreadable(err);
+    }
+
+    const raw = payload['entries'];
+    if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
+    return {
+      kind: 'entries',
+      entries: raw.map(mapThought),
+      // The server's own count, not `entries.length` — this reads one page of
+      // a log that had 340 entries on it.
+      total: typeof payload['total'] === 'number' ? payload['total'] : raw.length,
+    };
   }
 
   async readJournal(params: {

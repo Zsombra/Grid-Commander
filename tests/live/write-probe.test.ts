@@ -5,6 +5,7 @@ import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
+import { ReadThoughtLogQuery } from '@/application/use-cases/read-thought-log.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
@@ -61,7 +62,7 @@ function wire() {
     remedy: 'repair-the-key',
     fetch: globalThis.fetch,
   });
-  return { audit, confirmations, clock, strategies: new McpStrategyAdapter(battlegrid) };
+  return { audit, confirmations, clock, battlegrid, strategies: new McpStrategyAdapter(battlegrid) };
 }
 
 live('a write reaches the real platform', () => {
@@ -449,4 +450,74 @@ live('an agent can be created with limits the product can state', () => {
       }
     },
   );
+});
+
+/**
+ * Reading an agent's reasoning, against the real platform.
+ *
+ * A read, so it touches nothing. It is here rather than in the default suite
+ * for the same reason as everything else in this file: the fakes agree with the
+ * mappers and both have been wrong about BattleGrid before.
+ *
+ * The account carried 340 thought-log entries while the product could not show
+ * one. This is the assertion that it can.
+ */
+live('an agent can be read thinking', () => {
+  const who = { userId: 'owner', accessToken: KEY as string };
+
+  it('reads real decisions, including the ones the agent declined', { timeout: 120_000 }, async () => {
+    const { battlegrid } = wire();
+    const agents = new McpAgentAdapter(battlegrid);
+    const read = new ReadThoughtLogQuery(agents);
+
+    const roster = await agents.listAgents(who);
+    expect(roster.kind).toBe('agents');
+    if (roster.kind !== 'agents') return;
+    const target = roster.agents.find((a) => a.status === 'ACTIVE') ?? roster.agents[0];
+    if (!target) return;
+
+    const log = await read.execute({ ...who, agentId: target.id, limit: 20 });
+    // eslint-disable-next-line no-console
+    console.log(`  thinking: ${log.kind}${log.kind === 'decisions' ? ` ${log.decisions.length} of ${log.total}` : ''}`);
+    expect(log.kind, 'the account has hundreds of entries').toBe('decisions');
+    if (log.kind !== 'decisions') return;
+
+    for (const d of log.decisions.slice(0, 3)) {
+      const bar =
+        d.bar.kind === 'no-bar' ? 'no bar' : `${d.bar.kind} by ${d.bar.by}`;
+      // eslint-disable-next-line no-console
+      console.log(
+        `    ${d.entry.snapshot?.coinTicker ?? '—'} ${d.outcome} · ${bar} · ${d.entry.reasoning.length} chars`,
+      );
+    }
+
+    /**
+     * Prose on every entry the agent got to write one for.
+     *
+     * This asserted *every* entry carried reasoning and failed against real
+     * data: `ERROR` entries have none, because the agent failed before writing
+     * anything. Two of fifty. The assumption was mine, and the platform
+     * corrected it.
+     */
+    const wrote = log.decisions.filter((d) => d.entry.reasoning.trim().length > 0);
+    const silent = log.decisions.filter((d) => d.entry.reasoning.trim().length === 0);
+    expect(wrote.length, 'the reasoning is the point').toBeGreaterThan(0);
+    for (const d of silent) {
+      expect(d.entry.outcome, 'only a failed cycle writes nothing').toBe('ERROR');
+    }
+    expect(log.total, 'the server reports more than one page holds').toBeGreaterThan(
+      log.decisions.length,
+    );
+
+    // Confidence and threshold arrive as floats, not the *Percent ints.
+    const measured = log.decisions.filter((d) => d.bar.kind !== 'no-bar');
+    expect(measured.length, 'decisions are measured against a threshold').toBeGreaterThan(0);
+    for (const d of measured) {
+      expect(d.entry.confidence).toBeLessThanOrEqual(1);
+      expect(d.entry.threshold).toBeLessThanOrEqual(1);
+    }
+
+    // The whole point: an outcome we have never seen must still arrive named.
+    for (const d of log.decisions) expect(d.outcome.length).toBeGreaterThan(0);
+  });
 });

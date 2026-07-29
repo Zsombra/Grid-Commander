@@ -2,7 +2,8 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult } from '@/ports/agents.js';
+import type { AgentsPort, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { ThoughtEntry } from '@/domain/agent/thought.js';
 
 /**
  * An in-memory agent platform.
@@ -161,6 +162,13 @@ export class FakeAgentsPort implements AgentsPort {
     return next;
   }
 
+  /** Seeded per test. `empty` by default — an agent that has not reasoned yet. */
+  thoughts: ThoughtLogResult = { kind: 'empty' };
+
+  async readThoughtLog(): Promise<ThoughtLogResult> {
+    return this.thoughts;
+  }
+
   async readJournal(): Promise<JournalResult> {
     return this.journalEntries;
   }
@@ -297,6 +305,27 @@ export function defaultCatalog(): Catalog {
       mediumPct: 2.5,
       largePct: 5,
     },
+  };
+}
+
+/**
+ * A thought-log entry shaped like the ones the live server returns.
+ *
+ * The defaults are a real entry: confidence exactly equal to its threshold,
+ * which the platform treated as clearing the bar. Overrides let a test say the
+ * one thing it is about.
+ */
+export function aThought(overrides: Partial<ThoughtEntry> = {}): ThoughtEntry {
+  return {
+    id: 't1',
+    at: new Date('2026-07-29T13:56:33.385Z'),
+    agentId: 'a1',
+    reasoning: 'LDO is trading below VWAP with bearish momentum, but the setup is a mean-reversion LONG.',
+    snapshot: { coinTicker: 'LDO', thesisDirection: 'UP', primaryTimeframe: '1h' },
+    confidence: 0.35,
+    threshold: 0.35,
+    outcome: 'AGENT_TRADE_THESIS',
+    ...overrides,
   };
 }
 

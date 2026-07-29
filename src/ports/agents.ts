@@ -1,4 +1,5 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
+import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
@@ -72,6 +73,20 @@ export interface AgentsPort {
     confirmationToken?: string | undefined;
   }): Promise<Agent>;
 
+  /**
+   * An agent's decision cycles, newest first.
+   *
+   * `agentId` omitted reads the account-wide log — BattleGrid exposes those as
+   * two tools (`get_agent_thought_log`, `get_user_thought_log`) returning the
+   * same entry shape, established by calling both.
+   */
+  readThoughtLog(params: {
+    userId: string;
+    accessToken: string;
+    agentId?: string | undefined;
+    limit?: number | undefined;
+  }): Promise<ThoughtLogResult>;
+
   readJournal(params: {
     userId: string;
     accessToken: string;
@@ -99,6 +114,12 @@ export interface JournalEntry {
   readonly summary: string;
   readonly detail: string | null;
 }
+
+export type ThoughtLogResult =
+  | { readonly kind: 'entries'; readonly entries: readonly ThoughtEntry[]; readonly total: number }
+  /** The agent has not reasoned yet. Distinct from `unreadable` — see the roster. */
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type JournalResult =
   | { readonly kind: 'entries'; readonly entries: readonly JournalEntry[] }

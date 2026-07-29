@@ -2,6 +2,7 @@ import type { Agent, AgentStatus, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
+import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -275,4 +276,48 @@ function str(v: unknown): string | null {
 
 function num(v: unknown): number | undefined {
   return typeof v === 'number' ? v : undefined;
+}
+
+/**
+ * A thought-log entry, from the payload the live server returns.
+ *
+ * Written against an observed response, not the declared schema — the field
+ * names, and crucially their *types*, come from calling
+ * `get_agent_thought_log` and `get_user_thought_log` and recording what came
+ * back. `confidenceScore` is a float, `confidenceScorePercent` an int, and the
+ * two are the same number twice; this keeps the float and derives nothing.
+ *
+ * Nulls are preserved rather than defaulted. `thesisDirection` is absent on
+ * roughly a third of the entries observed, and a threshold nobody set is not a
+ * threshold of zero — defaulting either would invent a fact about an agent's
+ * reasoning.
+ */
+export function mapThought(raw: unknown): ThoughtEntry {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const snapshot = t['marketSnapshot'];
+
+  return {
+    id: str(t['id']) ?? '',
+    at: new Date(String(t['createdAt'] ?? 0)),
+    agentId: str(t['agentId']) ?? '',
+    reasoning: str(t['reasoning']) ?? '',
+    snapshot: mapSnapshot(snapshot),
+    confidence: num(t['confidenceScore']) ?? null,
+    threshold: num(t['confidenceThreshold']) ?? null,
+    // Never narrowed and never defaulted to a recognised value: an outcome this
+    // product has not seen must reach the surface as the platform named it.
+    outcome: str(t['outcome']) ?? 'UNKNOWN',
+  };
+}
+
+function mapSnapshot(raw: unknown): MarketSnapshot | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const s = raw as Record<string, unknown>;
+  const coinTicker = str(s['coinTicker']);
+  if (!coinTicker) return null;
+  return {
+    coinTicker,
+    thesisDirection: str(s['thesisDirection']),
+    primaryTimeframe: str(s['primaryTimeframe']),
+  };
 }
