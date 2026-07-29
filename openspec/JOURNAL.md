@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-07-29 — A catalog with nothing in it, and a premise that was wrong
+
+**Did**: Proposed, executed, verified and archived `a-catalog-with-nothing-in-it`
+(standard track, 22/22). `strategy-authoring` 9 → 10 requirements, the eight
+untouched ones byte-identical. 483 tests, up from 472.
+
+`StrategyList` branched on `unreadable` and otherwise mapped the listings, so a
+catalog with nothing in it rendered as an empty `<ul>` — indistinguishable from
+the failure case directly above it, which had been written with real care to say
+the strategies are not gone.
+
+**The fix belonged in the port, and the asymmetry ran three levels deep.**
+`RosterResult` and `JournalResult` both carry an `'empty'` kind;
+`StrategyListResult` did not, and `strategy-authoring` said nothing about the
+case while `agent-authoring` has required it all along. One capability having
+learned something the other had not. A `listings.length === 0` check in the
+component would have left the two modelling the same distinction differently,
+which is how the next person gets it wrong again. Adding the kind made the type
+checker find every call site, which is the argument for doing it there.
+
+**State**: archived. Board clean, 0 errors / 0 warnings.
+
+**Next**: still `image-never-built` (P1) and the CI payment block, both of which
+need the user. Then `form-inputs-ignore-dark-mode` (P2, product-wide).
+
+**Watch out**:
+
+- **The backlog item's premise was wrong, and reading the reference before
+  writing the copy caught it.** It framed this as a new user's first impression —
+  *"the first screen a newly connected user reaches with nothing set up"*. But
+  `list_strategies` returns *"the visible SYSTEM catalog **and** owned PRIVATE
+  strategies"*, so a new user with none of their own still sees BattleGrid's
+  catalog. Their list is not empty. An empty result means nothing came back at
+  all — unexpected, and with **nothing left to fork from**.
+- **My first draft of the empty state was an affordance leading nowhere.** It
+  said *"This account has no strategies yet. Start from one of BattleGrid's own:
+  forking makes a private copy…"* — an instruction pointing at strategies that
+  were not returned. Worse than silence, because it reads as reassurance. That
+  is the exact class of defect `close-the-reachability-gap` exists to prevent,
+  and I wrote it into the fix for a different defect. **The lesson is narrow and
+  useful: a backlog item's framing is evidence, not fact — this one was written
+  from the component and never checked against what the tool returns.** Now
+  guarded by a test asserting the empty branch renders no link and names no fork.
+- `'empty'` carries no quota, unlike `RosterResult`'s which keeps `slots`. An
+  account with no agents still has a capacity worth showing; a catalog that owns
+  no strategies has no quota to report. Stated in the type so it does not look
+  like an omission.
+- Checked rather than assumed: `JournalResult` already carries `'empty'`, and
+  `audit-list` handles its own empty case inline and reads correctly. Neither
+  needed touching.
+
 ## 2026-07-28 — There is something to deploy
 
 **Did**: Proposed, planned, executed, audited (**PASS**) and archived

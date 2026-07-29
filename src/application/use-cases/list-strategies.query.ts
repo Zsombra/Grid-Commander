@@ -30,6 +30,17 @@ export class ListStrategiesQuery {
       return { result, listings: [], forking: { kind: 'unknown' } };
     }
 
+    // An empty catalog and an unreadable one both produce no listings, and they
+    // are different facts about the account — the surface is handed which one it
+    // is rather than inferring it from a length.
+    //
+    // `forking` is `unknown` here rather than `available`: the platform reported
+    // no strategies, so it reported no quota either, and inventing a remaining
+    // count would be the fabrication this product refuses everywhere else.
+    if (result.kind === 'empty') {
+      return { result, listings: [], forking: { kind: 'unknown' } };
+    }
+
     return {
       result,
       listings: result.strategies.map((strategy) => ({

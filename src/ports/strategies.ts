@@ -50,12 +50,29 @@ export interface StrategiesPort {
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;
 }
 
+/**
+ * Three outcomes, and the middle one is why this is a type rather than a length
+ * check.
+ *
+ * An account with no strategies and an account whose catalog failed to load look
+ * identical as blank space, and telling the second user they own nothing is how
+ * someone recreates work they already have. `RosterResult` and `JournalResult`
+ * both carry this distinction already; this one did not, and a component
+ * branching on `strategies.length === 0` would have made it a convention that
+ * each surface has to remember rather than something the type enforces.
+ *
+ * `empty` carries no quota, deliberately. A quota is meaningful against the
+ * strategies you own, and an empty catalog owns none — unlike `RosterResult`'s
+ * `empty`, which keeps `slots` because an account with no agents still has a
+ * capacity worth showing.
+ */
 export type StrategyListResult =
   | {
       readonly kind: 'strategies';
       readonly strategies: readonly Strategy[];
       readonly quota: StrategyQuota | null;
     }
+  | { readonly kind: 'empty' }
   | { readonly kind: 'unreadable'; readonly reason: string };
 
 export type CompileResult =

@@ -31,6 +31,42 @@ export function StrategyList({
     );
   }
 
+  /**
+   * Not a length check, deliberately.
+   *
+   * The use case hands this branch down from where BattleGrid was actually read.
+   * An account with no strategies and one whose catalog failed to load are both
+   * an empty list to a component, and only one of them is true — telling the
+   * second user they own nothing is how someone recreates work they already
+   * have. The branch above says the strategies are not gone; this one says there
+   * are none, and the difference has to survive all the way to the screen.
+   */
+  if (result.kind === 'empty') {
+    return (
+      <div className="space-y-3">
+        <p className="text-base text-text-primary">
+          Nothing is listed here — not even BattleGrid&rsquo;s own catalog.
+        </p>
+        {/*
+          No next action, deliberately.
+
+          `list_strategies` returns the visible SYSTEM catalog *and* the private
+          strategies you own, so an empty result means there is nothing to fork
+          from either. "Start by forking one of BattleGrid's" would point at
+          something that was not returned — the affordance-leading-nowhere
+          mistake this product already fixed once, and worse here because it
+          would read as reassurance.
+        */}
+        <p className="text-base text-text-secondary">
+          A catalog usually shows BattleGrid&rsquo;s strategies alongside any you
+          own, so this is unexpected rather than a starting point. Your account
+          is connected and nothing here has failed — there is simply nothing to
+          show.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {forking.kind === 'at-capacity' && (

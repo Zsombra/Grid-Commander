@@ -42,9 +42,13 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.list, { includeInactive: true });
       const raw = payload['strategies'];
+      // Decided here, where the platform was actually read, rather than by a
+      // surface counting what it was handed. The same condition the agent
+      // adapter uses: no array, or an empty one.
+      if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
       return {
         kind: 'strategies',
-        strategies: Array.isArray(raw) ? raw.map(mapStrategy) : [],
+        strategies: raw.map(mapStrategy),
         quota: mapQuota(payload['quota']),
       };
     } catch (err) {
