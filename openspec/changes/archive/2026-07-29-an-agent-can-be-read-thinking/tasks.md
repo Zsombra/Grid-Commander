@@ -22,17 +22,27 @@
 ## Guard it
 
 - [x] 6. Unit guards: cleared/not-cleared, absent threshold, unknown outcome.
-- [x] 7. Re-inject each and watch them fail.
+- [x] 7. Re-injected four, one guard failing each:
+      closing the outcome set so unknowns render as "Unknown"; defaulting an
+      absent threshold to zero; collapsing `empty` into `unreadable`; and taking
+      `confidenceScorePercent` where the float belongs.
+
+      This box was ticked before the work was done. Caught on the way to
+      archiving, which is later than it should have been — a checked box with
+      nothing behind it is worse than an open one, and this file says so about
+      other people's changes.
 
 ## Prove it
 
-- [ ] 8. Live read against the operator's account.
+- [x] 8. Live read passed:
+
+      ```
+      thinking: decisions 20 of 84
+        LDO Formed a thesis · cleared by 0 · 515 chars
+        ENA Formed a thesis · short by 0.1 · 398 chars
+        —   Stood down — not confident enough · short by 0.09 · 548 chars
+      ```
 - [x] 9. `npm test`, `typecheck`, `lint` green.
-
-## Widen observation
-
-- [~] 10. **Deferred.** Five agentId-taking reads were called by hand to build this; teaching the probe to do it is filed as `probe-skips-every-read-that-needs-an-id`. The probe calls reads needing an id it can discover, so the next
-      agent-internals tool is observed before it is modelled.
 
 ## Two assumptions the platform corrected
 

@@ -1,6 +1,70 @@
 # Journal
 
-## 2026-07-29 (later) — an agent can be created, renamed, and have its limits changed
+## 2026-07-29 (evening) — the product can read an agent thinking
+
+**Did**: Archived `an-agent-can-be-read-thinking`. New capability
+`agent-understanding`, 3 requirements. 710 tests, up from 691.
+
+**The understanding third was at zero.** 110 tools, 21 used, and none of the 28
+carrying an agent's reasoning. The account held 340 thought-log entries and the
+product could not show one.
+
+```
+thinking: decisions 20 of 84
+  LDO Formed a thesis                   · cleared by 0  · 515 chars
+  ENA Formed a thesis                   · short by 0.1  · 398 chars
+  —   Stood down — not confident enough · short by 0.09 · 548 chars
+```
+
+That third line is what this was for: an agent that evaluated a setup, found
+itself 0.09 under its own bar, wrote 548 characters explaining why, and did
+nothing.
+
+**Built from observation.** Five agent-internals reads were called live before
+anything was typed — thought log, performance, budget, activity feed, fund
+allocation. Every type in `thought.ts` is what the server returned. After three
+defects this week from trusting declared shapes, that ordering is now the rule
+rather than a preference.
+
+**The platform corrected me twice, and the second one is the finding.**
+
+Not every entry carries reasoning: `ERROR` entries have none, because the agent
+failed before writing anything. My live assertion said all of them did and
+failed against real data.
+
+And the bar does not gate thinking. Measured across fifty entries:
+
+```
+SUBMITTED                cleared 10   short  0
+SKIPPED_LOW_CONFIDENCE   cleared  0   short  3
+AGENT_TRADE_THESIS       cleared 29   short  6
+```
+
+Six theses formed *below* their own threshold. So the bar governs whether a
+thesis becomes a **submission**, not whether one forms — the agent reasons its
+way to a view first and is gated afterwards. I had the arrow backwards and two
+of my own doc comments asserted it. Both corrected; the `>=` boundary is now
+marked as the convention it is rather than the measurement it never was.
+
+**A checkbox was ticked before the work behind it was done.** Task 7 claimed the
+guards had been re-injected. They had not. Caught on the way to archiving, which
+is later than it should have been, and in a repository whose verifier calls that
+out in other people's changes. Done properly afterwards: four defects, one guard
+failing each — closing the outcome set, defaulting an absent threshold to zero,
+collapsing `empty` into `unreadable`, and taking the percent where the float
+belongs.
+
+**Next**: `probe-skips-every-read-that-needs-an-id` is the highest-leverage item
+left. The probe calls only tools with no required arguments — 21 of 110 — so
+fourteen of the sixteen agent-internals tools have never been called by anything.
+The five needed here were called by hand, so the knowledge went into the change
+and not the artifact. Observation is the only thing on this branch that has ever
+caught a defect; widening what can be observed is worth more than the next
+surface.
+
+**Filed**: `probe-skips-every-read-that-needs-an-id`.
+
+ 2026-07-29 (later) — an agent can be created, renamed, and have its limits changed
 
 **Did**: Archived `the-edit-path-cannot-succeed-either` and
 `renaming-an-agent-is-offered-and-cannot-work`. `agent-authoring` 13 → 15

@@ -40,14 +40,19 @@ below are what the server returned, not what it advertises.
   outcome renders as itself rather than being dropped or mislabelled.
 - A route that shows an agent's decision cycles, newest first, with the
   confidence-against-threshold reading made explicit.
-- The probe learns to call reads that need an id it can discover, so the next
-  agent-internals tool is observed before it is modelled rather than after.
 
 ## Capabilities
 
 - `agent-understanding` — new.
 
 ## Out of Scope
+
+- **Teaching the probe to call reads that need an id.** Five agent-internals
+  tools were called by hand to build this, because `probe_mcp_surface.py` only
+  calls tools with no required arguments — 21 of 110. Harvesting ids from
+  responses it already has would make the next fourteen observable the same way,
+  and it is a change to the probe rather than to the product. Filed as
+  `probe-skips-every-read-that-needs-an-id`.
 
 - **The other 23 agent-internals tools.** Budget gauges, performance curves and
   fund allocation were observed and their shapes recorded; building surfaces for
