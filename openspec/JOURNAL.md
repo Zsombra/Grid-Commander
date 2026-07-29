@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-07-29 (night, later) — the OAuth endpoints were assumed
+
+**Did**: Archived `oauth-endpoints-are-assumed`. 722 tests, up from 712.
+`battlegrid-connection` 17 → 19 requirements.
+
+`CLAUDE.md` states the lesson: *the tool list goes stale after a BattleGrid
+deployment — never hard-code it.* **That lesson was applied to tools and nowhere
+else.** Four OAuth URLs are built from a constant in `config.ts` and were
+compared to nothing, on the one path whose failure mode is sending a user to a
+consent screen that does not exist.
+
+They agree. That is the finding, and recording it is the difference between
+*correct* and *known to be correct* — only the second survives a deployment
+nobody announced.
+
+**Three things were genuinely unproven and now are not**, none of which needed a
+credential:
+
+```
+authorize accepts the product's exact URL   302 → the consent screen
+PKCE enforced, not merely advertised        no challenge → invalid_request
+pinned endpoints match what is published    authorize / token / revoke
+```
+
+The PKCE one is worth keeping. The server issues no `client_secret` whatever a
+registration asks for, so PKCE is the *only* thing between this public client and
+a stolen authorization code. Knowing the server rejects a request without it is a
+different fact from knowing it advertises S256.
+
+**I recommended re-doing work that was already done.** I proposed this saying
+registration was untested. `findings-dcr.md` recorded it on 2026-07-27 — live,
+two registrations, both findings that matter. I had not read the archive before
+offering the recommendation. The same pattern the journal already names: a claim
+made while the intention was fresh, without checking. It cost nothing this time
+because re-registering was cheap and reconfirmed F-1 and F-2, but the
+recommendation was wrong when I gave it and the user acted on it.
+
+**Deliberately not done: resolving the endpoints at runtime.** Tempting, since
+that is what the tool list does, and wrong here. A client that reads its
+authorization endpoint off the network on each request follows a redirect an
+attacker controls the first time discovery is poisoned. Tools change weekly and
+carry annotations the product must obey; an issuer's endpoints are meant to be
+stable, and a change in them is news rather than routine. **Pin, and check.**
+
+**The re-injection that mattered was not a strawman.** Pointing `authorizeUrl` at
+`${BASE}/oauth/authorize` fails the new guard — and that is precisely where
+BattleGrid's consent screen actually lives (`battlegrid.trade/oauth/authorize`),
+so it is the wrong answer a person would genuinely reach for.
+
+**What is left of OAuth is exactly three things**, and all three need a browser:
+consent, the code exchange, refresh. Token lifetimes and refresh rotation remain
+unknown — `findings-dcr` predicted that on 2026-07-27 and it is still the honest
+answer. `oauth-path-may-be-dead-weight` is narrowed to say so rather than
+implying the whole path is untested.
+
+**Next**: the operator has a registered `mcp:read`-only client and a redirect URI
+pointing at localhost. The remaining segment is a two-minute browser round trip
+on their machine — this container is not reachable from their browser.
+
 ## 2026-07-29 (late night) — only MCP control
 
 **Did**: Archived `only-mcp-control`. The `assistant` capability is gone — 8

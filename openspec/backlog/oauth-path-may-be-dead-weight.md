@@ -6,13 +6,34 @@ status: open
 priority: p2
 created: 2026-07-29
 updated: 2026-07-29
-change: ""
+change: oauth-endpoints-are-assumed
 capability: battlegrid-connection
 blocked_by: []
 tags: [architecture, personal-mode]
 ---
 
 # The delegated OAuth path may now be dead weight
+
+> **Narrowed** — `oauth-endpoints-are-assumed`.
+>
+> Most of what "unproven" covered is now proven, without a credential:
+>
+> ```
+> discovery endpoints match config.ts        ✓  authorize / token / revoke
+> authorize accepts the product's exact URL  ✓  302 to the consent screen
+> PKCE is enforced, not just advertised      ✓  no challenge → invalid_request
+> registration open, no secret, scope-capped ✓  findings-dcr F-1 and F-2 hold
+> callback handles error= from the server    ✓  redirects to /connect?declined
+> ```
+>
+> **What is left is exactly three things, and all three need a browser:** the
+> consent itself, the authorization-code exchange, and refresh. Token lifetimes
+> and refresh-rotation behaviour are still unknown — `findings-dcr` predicted
+> that on 2026-07-27 and it is still the honest answer.
+>
+> So this is no longer "the path may be dead weight". It is a working path with
+> one untested segment, and the segment needs the operator at a keyboard.
+> `docs/DEPLOYING.md` says so under *What is not here*.
 
 ## What
 
