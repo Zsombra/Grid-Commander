@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-07-29 (late) — the probe reaches twice as much of the platform
+
+**Did**: Archived `observe-the-reads-that-need-an-id`. `battlegrid-connection`
++1 requirement. **21 → 49 of 83 read tools observed.**
+
+**Why it mattered more than another surface.** Six defects were found on this
+branch and every one came from calling the real platform — none from a test, a
+gate, or a review. So the set of tools the probe can call *is* the set the
+product can safely be built against, and it was 21 of 110. Fourteen of the
+sixteen agent-internals tools had never been called by anything, purely because
+they take an `agentId` the account plainly has.
+
+The probe now harvests ids from responses it already holds and calls the reads
+those satisfy, **repeating until it stops yielding**. That last part was not
+polish: `list_entry_decisions` itself needs an `agentId`, so the `decisionId` it
+returns cannot exist until a round that had one. One pass left six tools
+unreachable for no reason but the order they were tried in.
+
+The safety property did not move — `readOnlyHint` only, filtered before any
+request is built. Zero non-reads called, and none attempted.
+
+**My own id table was three-fifths wrong, and nothing said so.** I wrote it from
+assumption: `list_entry_decisions` returns `entries`, not `decisions`;
+`list_signal_logs` returns `entries`, not `logs`; the argument is `logId`, not
+`signalLogId`. The lookups returned nothing, the tools stayed uncalled, and the
+artifact went on reporting them as needing an argument the account had.
+
+That is precisely the failure this probe exists to remove from the product,
+reproduced inside the probe, by me, in a change whose entire subject is not
+guessing. It is now a test that fails when a row stops resolving rather than a
+row that quietly yields nothing.
+
+**A guard that only holds after a live run is not a guard.** The safety check
+asserted against the artifact, so deleting the classification filter and not
+re-probing failed nothing — found by re-injecting exactly that. There is a
+source-level assertion now: both passes filter on classification, and `attempt`
+is the only thing issuing a `tools/call`.
+
+**Third time today that a checkbox or a comment claimed more than the code did.**
+Task 7 of the thinking change, the stale outage note in the edit change, and now
+this. The pattern is mine and it is worth naming: the claim gets written while
+the intention is fresh, and nothing re-reads it.
+
+**Next**: 28 tools now have observed response shapes that did not before —
+budget gauges, performance curves, entry decisions, signal logs, trade outcomes,
+gate blocks. Anything built on them starts from what the server returned rather
+than what it advertises. `get_agent_budget` looks like the most useful: it
+carries `gauges` with `breached` / `configured` / `fill` / `remaining` per limit,
+which is the "is this agent near its ceiling" question the product cannot answer.
+
 ## 2026-07-29 (evening) — the product can read an agent thinking
 
 **Did**: Archived `an-agent-can-be-read-thinking`. New capability
