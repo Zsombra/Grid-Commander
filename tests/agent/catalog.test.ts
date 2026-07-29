@@ -28,6 +28,9 @@ const catalog: Catalog = {
     maxDailyTrades: { max: 100 },
     minAllocationUsd: { min: 10 },
   },
+  // The six the platform refuses to default are absent here on purpose — see
+  // `undefaultableFields`. Filling them in a fixture would hide the whole point.
+  defaults: { maxLeverage: 1, maxStopLossPct: 5, maxDailyTrades: 10 },
 };
 
 /** A2 — choices come from the server. */

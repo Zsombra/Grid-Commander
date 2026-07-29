@@ -53,6 +53,14 @@ export class FakeAgentsPort implements AgentsPort {
     return { kind: 'catalog', catalog: this.catalog };
   }
 
+  /** Every create payload, in order. */
+  readonly created: Array<{
+    displayName: string;
+    brain: Brain;
+    strategyId: string;
+    tradingConfig: TradingConfig | null;
+  }> = [];
+
   async createAgent(params: {
     displayName: string;
     brain: Brain;
@@ -61,6 +69,10 @@ export class FakeAgentsPort implements AgentsPort {
     arenaChallengeEnabled?: boolean | undefined;
   }): Promise<Agent> {
     this.calls.push({ op: 'create' });
+    // The whole payload, kept. `tradingConfig` was `null` on every create for
+    // the life of the product and nothing recorded it, so nothing could assert
+    // on it.
+    this.created.push(params);
     const id = `a${this.agents.size + 1}`;
     const agent: Agent = {
       id,
@@ -203,6 +215,27 @@ export function defaultCatalog(): Catalog {
     bounds: {
       maxStopLossPct: { min: 0.1, max: 25 },
       maxDailyTrades: { max: 100 },
+    },
+    // The live catalog's defaults, as `get_trading_config_catalog` returns them.
+    // The six money fields are absent here because BattleGrid genuinely does not
+    // default them — that absence is the whole subject of `undefaultableFields`,
+    // and a fixture that filled them in would prove the opposite of the point.
+    defaults: {
+      maxDailyTrades: 10,
+      maxLeverage: 1,
+      maxStopLossPct: 5,
+      minStopLossPct: 1,
+      maxEntryDeviationAtrMultiple: 1.5,
+      minRiskRewardRatio: 1.5,
+      minTradeConviction: 0.35,
+      gridMinConfidence: 0.7,
+      maxSlippageBps: 300,
+      signalTimeoutMinutes: 10,
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
+      smallPct: 1,
+      mediumPct: 2.5,
+      largePct: 5,
     },
   };
 }

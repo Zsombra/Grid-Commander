@@ -90,3 +90,30 @@ export function compiledPlan(formData: FormData, name: string): CompiledPlan {
   }
   return parsed as CompiledPlan;
 }
+
+/**
+ * The six money questions, read off the form.
+ *
+ * Every value stays `undefined` when the control was left empty, so
+ * `buildTradingConfig` reports it as missing rather than silently receiving a
+ * zero. `Number('')` is `0`, and a `maxDailyLossUsd` of 0 would be the most
+ * expensive possible misreading of an empty box.
+ */
+export function moneyAnswers(formData: FormData): Record<string, unknown> {
+  const mode = optionalText(formData, 'tradingMode');
+  return {
+    ...(mode ? { tradingMode: mode } : {}),
+    ...money(formData, 'minAllocationUsd'),
+    ...money(formData, 'balanceThresholdUsd'),
+    ...money(formData, 'maxConcurrentExposureUsd'),
+    ...money(formData, 'maxCumulativeDrawdownUsd'),
+    ...money(formData, 'maxDailyLossUsd'),
+  };
+}
+
+function money(formData: FormData, name: string): Record<string, number> {
+  const raw = optionalText(formData, name);
+  if (!raw) return {};
+  const value = Number(raw);
+  return Number.isFinite(value) ? { [name]: value } : {};
+}

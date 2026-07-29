@@ -2,6 +2,7 @@ import type { Catalog } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
 import { CONTROL } from './control.js';
+import { MoneyLimits } from './money-limits.js';
 
 /**
  * The create form.
@@ -104,6 +105,9 @@ export function AgentForm({
         establishes that against the live server, and `agent-edit-form`, which is
         the feature that would build the real editor.
       */}
+
+      <MoneyLimits catalog={catalog} />
+
 
       <button type="submit" className="rounded border px-4 py-2 text-sm">
         Create agent

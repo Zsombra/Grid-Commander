@@ -1,0 +1,134 @@
+import type { Catalog } from '@/domain/agent/catalog.js';
+import { undefaultableFields } from '@/domain/agent/catalog.js';
+import { CONTROL } from './control.js';
+
+/**
+ * The six questions BattleGrid will not answer for you.
+ *
+ * The platform declares a default for leverage, stop loss, trade count,
+ * slippage and a dozen other knobs. It declares **none** for `tradingMode`,
+ * `maxDailyLossUsd`, `maxCumulativeDrawdownUsd`, `maxConcurrentExposureUsd`,
+ * `balanceThresholdUsd` or `minAllocationUsd` — which is to say, it will not
+ * decide on anyone's behalf how much an agent may lose.
+ *
+ * Until this existed, `create_intelligence_agent` was called with no
+ * `tradingConfig` at all. The button created something that trades real money
+ * under limits this product could neither set nor name, on a page whose whole
+ * design elsewhere is refusing to state what it does not know.
+ *
+ * The fields are not enumerated here. They come from `undefaultableFields`, so
+ * if BattleGrid starts defaulting one it stops being asked, and if it stops
+ * defaulting one it starts — without anyone remembering to edit this file.
+ */
+export function MoneyLimits({ catalog }: { catalog: Catalog }) {
+  const asked = new Set(undefaultableFields(catalog));
+
+  return (
+    <fieldset className="space-y-4 rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4">
+      <legend className="px-1 text-base font-medium text-text-primary">
+        What this agent may do with money
+      </legend>
+
+      <p className="text-sm text-text-primary">
+        BattleGrid sets sensible defaults for how this agent trades — leverage,
+        stop loss, how many trades a day. It sets <strong>no default at all</strong>{' '}
+        for the questions below, so they have to be answered here. An agent
+        created without them trades under limits nobody chose.
+      </p>
+
+      {asked.has('tradingMode') && (
+        <div className="space-y-1">
+          <label htmlFor="tradingMode" className="block text-sm text-text-primary">
+            Trading mode
+          </label>
+          {/*
+            `OFF` first, and selected by default. It is the only answer that
+            makes the other five harmless — an agent that does not trade cannot
+            exceed a loss cap. This ordering is the difference between creating
+            something that reasons and creating something that spends.
+          */}
+          <select id="tradingMode" name="tradingMode" defaultValue="OFF" className={CONTROL}>
+            <option value="OFF">Off — reasons, never places a trade</option>
+            <option value="APPROVAL_REQUIRED">
+              Approval required — proposes trades, waits for you
+            </option>
+            <option value="FULL_EXECUTION">Full execution — trades on its own</option>
+          </select>
+          <p className="text-sm text-text-secondary">
+            You can change this later. Starting at <strong>Off</strong> lets you
+            read what the agent decides before any of it costs anything.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {asked.has('maxDailyLossUsd') && (
+          <Money
+            name="maxDailyLossUsd"
+            label="Most it may lose in a day"
+            hint="Trading stops for the day once this is reached."
+          />
+        )}
+        {asked.has('maxCumulativeDrawdownUsd') && (
+          <Money
+            name="maxCumulativeDrawdownUsd"
+            label="Most it may lose in total"
+            hint="Across its whole life, not per day."
+          />
+        )}
+        {asked.has('maxConcurrentExposureUsd') && (
+          <Money
+            name="maxConcurrentExposureUsd"
+            label="Most it may have at risk at once"
+            hint="The total of everything open at the same time."
+          />
+        )}
+        {asked.has('balanceThresholdUsd') && (
+          <Money
+            name="balanceThresholdUsd"
+            label="Stop if the balance falls below"
+            hint="A floor. Trading stops rather than spending the last of it."
+          />
+        )}
+        {asked.has('minAllocationUsd') && (
+          <Money
+            name="minAllocationUsd"
+            label="Smallest single trade"
+            hint="BattleGrid does not accept anything below 10."
+          />
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
+ * One money field.
+ *
+ * `required`, and with no default value. A pre-filled loss cap would be this
+ * product choosing a number on the operator's behalf — the exact thing the
+ * absence of a platform default says nobody should do.
+ */
+function Money({ name, label, hint }: { name: string; label: string; hint: string }) {
+  return (
+    <div className="space-y-1">
+      <label htmlFor={name} className="block text-sm text-text-primary">
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="number"
+        min="0"
+        step="any"
+        required
+        inputMode="decimal"
+        aria-describedby={`${name}-hint`}
+        className={CONTROL}
+      />
+      <p id={`${name}-hint`} className="text-sm text-text-secondary">
+        {hint}
+      </p>
+    </div>
+  );
+}

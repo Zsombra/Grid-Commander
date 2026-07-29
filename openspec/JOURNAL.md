@@ -1,5 +1,71 @@
 # Journal
 
+## 2026-07-29 — The create button could not say what it was creating
+
+**Did**: Proposed, executed and archived `name-what-an-agent-may-spend`
+(standard, 13/13). `agent-authoring` 11 → 12 requirements, purely additive. 655
+tests, up from 635.
+
+**The defect.** `app/(app)/agents/new/page.tsx` passed **`tradingConfig: null`**.
+Not a shortcut around an optional field: BattleGrid's catalog declares defaults
+for leverage, stop loss, trade count, slippage and a dozen other knobs — and
+**none** for the six that answer *how much can this lose*. Omitting them did not
+inherit something sensible. It left the money questions unanswered, and the
+product could neither set nor state what it had just created.
+
+Read from the live account, for scale: both existing agents run
+`FULL_EXECUTION` at **5× leverage**, and one carries `maxDailyLossUsd: 0`.
+
+**Every other surface here refuses to state what it does not know.** The roster
+will not say "no agents" when the read failed. A declared scope is never
+described as enforced. A threshold the platform did not send renders "not set".
+Agent creation was the exception, on the one subject where being wrong costs
+money.
+
+**The split is the platform's, not ours.** `undefaultableFields` derives the
+questions from `Catalog.defaults`, so if BattleGrid starts defaulting a field it
+stops being asked and if it stops, it starts — nobody edits a list. It returns
+eight: the six money questions plus `positionManagement` and
+`positionSizePresets`, which are composite objects a flat default cannot
+express. The command supplies those two; only the six reach the operator.
+
+**All-or-nothing forced the shape.** `tradingConfig` is rejected when partial
+and *resets whatever a partial send omits* (findings-agents F-6), so "collect
+just the loss cap" was never available. `buildTradingConfig` produces all twenty
+fields or refuses and names what is missing.
+
+**Two decisions worth keeping.** `OFF` is offered first and selected by default
+— it is the only `tradingMode` that makes the other five harmless, and it lets
+someone read what an agent decides before any of it costs anything. And no money
+field is pre-filled: a suggested loss cap would be this product choosing a number
+on the operator's behalf, which is exactly what the absence of a platform default
+says nobody should do. Empty is unanswered and refuses; a typed `0` is a real
+answer and is kept.
+
+**The boundary guard, again.** First draft had the route importing the domain to
+assemble the config. The command already reads the catalog, so it assembles it —
+and the route passes raw answers. Second time this session that rule caught a
+page reaching past its layer, and both times the fix was better than the thing
+it replaced.
+
+**A fixture was modelling a platform that does not exist.** `defaultCatalog()`
+defaulted three fields, so every other field read as unanswered and a passing
+test started failing for the right reason in the wrong place. It now carries the
+live catalog's fifteen real defaults — with the six money absences intact,
+because that absence is the entire subject.
+
+**Regex-on-source cost a third repair.** A blanket `tradingConfig: null` replace
+hit `Agent` fixtures as well as create requests, and an earlier one inserted a
+key inside a `bounds` object. Both repaired by hand. The lesson has now been
+paid for three times in one session: match on a unique anchor, or use an editor.
+
+Seven mutations injected, seven caught — including `tradingConfig: null`
+restored, `OFF` swapped for `FULL_EXECUTION`, and a field dropped from
+`TRADING_CONFIG_FIELDS` (which would silently reset it on every create).
+
+**Not done, deliberately**: no agent was created. That would spawn something on
+a live trading account, and the remaining slot is the operator's to spend.
+
 ## 2026-07-29 — The product can finally see a strategy
 
 **Did**: Proposed, executed and archived `read-a-whole-strategy` (standard,

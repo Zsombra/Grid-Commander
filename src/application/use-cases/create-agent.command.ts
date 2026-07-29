@@ -1,8 +1,13 @@
 import type { Agent } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import { isApprovedModel, isKnownBrainPreset } from '@/domain/agent/catalog.js';
-import type { TradingConfig, ValidationIssue } from '@/domain/agent/trading-config.js';
-import { validateTradingConfig } from '@/domain/agent/trading-config.js';
+import type { ValidationIssue } from '@/domain/agent/trading-config.js';
+import {
+  buildTradingConfig,
+  positionManagementFrom,
+  positionSizePresetsFrom,
+  validateTradingConfig,
+} from '@/domain/agent/trading-config.js';
 import type { AgentsPort } from '@/ports/agents.js';
 
 export interface CreateAgentRequest {
@@ -11,7 +16,12 @@ export interface CreateAgentRequest {
   readonly displayName: string;
   readonly brain: Brain;
   readonly strategyId: string;
-  readonly tradingConfig: TradingConfig | null;
+  /**
+   * The money questions BattleGrid refuses to default, as the operator answered
+   * them. Raw rather than a built `TradingConfig`, because assembling one needs
+   * the catalog — and this command already has it.
+   */
+  readonly money: Readonly<Record<string, unknown>>;
   readonly arenaChallengeEnabled?: boolean | undefined;
   readonly idempotencyKey?: string | undefined;
 }
@@ -86,11 +96,39 @@ export class CreateAgentCommand {
       issues.push({ field: 'strategyId', reason: 'An agent must be bound to a strategy.' });
     }
 
-    if (req.tradingConfig) {
-      issues.push(...validateTradingConfig(req.tradingConfig, catalog));
+    /**
+     * The config is assembled here, not supplied.
+     *
+     * `tradingConfig` used to arrive as `null` from the one page that creates
+     * agents, so every agent this product made traded under limits it neither
+     * set nor could name. BattleGrid declares no default for the money
+     * questions, so omitting them did not inherit something sensible — it left
+     * them unanswered.
+     *
+     * All-or-nothing: the platform rejects a partial `tradingConfig` and resets
+     * whatever a partial send omits, so this either produces a complete one or
+     * refuses and says which questions have no answer.
+     */
+    const built = buildTradingConfig(catalog, {
+      ...req.money,
+      positionManagement: positionManagementFrom(catalog, 'CUSTOM'),
+      positionSizePresets: positionSizePresetsFrom(catalog),
+    });
+
+    if (built.kind === 'incomplete') {
+      issues.push(
+        ...built.missing.map((field) => ({
+          field,
+          reason: 'BattleGrid sets no default for this, so it has to be answered here.',
+        })),
+      );
+    } else {
+      issues.push(...validateTradingConfig(built.config, catalog));
     }
 
     if (issues.length > 0) return { kind: 'invalid', issues };
+    // Narrowed by the guard above: `incomplete` always produced an issue.
+    if (built.kind !== 'config') return { kind: 'invalid', issues };
 
     const agent = await this.agents.createAgent({
       userId: req.userId,
@@ -98,7 +136,7 @@ export class CreateAgentCommand {
       displayName: req.displayName,
       brain: req.brain,
       strategyId: req.strategyId,
-      tradingConfig: req.tradingConfig,
+      tradingConfig: built.config,
       arenaChallengeEnabled: req.arenaChallengeEnabled,
       idempotencyKey: req.idempotencyKey,
     });

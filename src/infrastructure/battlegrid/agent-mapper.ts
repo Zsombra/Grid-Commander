@@ -153,7 +153,41 @@ export function mapCatalog(models: unknown, tradingConfig: unknown, brainPresets
     brainPresets,
     positionManagementPresets: mapPositionPresets(tradingConfig),
     bounds: mapBounds(tradingConfig),
+    defaults: mapDefaults(tradingConfig),
   };
+}
+
+/**
+ * What the platform is willing to default, keyed by the field it defaults.
+ *
+ * The catalog names them `defaultMaxLeverage`, `defaultMaxStopLossPct` and so
+ * on; the write schema calls the same things `maxLeverage`, `maxStopLossPct`.
+ * The rename is mechanical, and doing it here means the rest of the product
+ * only ever sees the write-schema name.
+ *
+ * Some catalog defaults have no write-schema counterpart at all
+ * (`defaultStrategyTimeframe`, `defaultRegimeAutoDerive`) — those are the read
+ * shape's extra fields, which create rejects. They are carried anyway and
+ * simply never asked for: filtering here would put knowledge of the write
+ * schema in a mapper.
+ */
+function mapDefaults(raw: unknown): Readonly<Record<string, unknown>> {
+  const declared = ((raw ?? {}) as Record<string, unknown>)['tradingDefaults'];
+  const values = ((declared ?? {}) as Record<string, unknown>)['defaults'];
+  if (typeof values !== 'object' || values === null) return {};
+
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
+    if (!key.startsWith('default')) continue;
+    const field = key.slice('default'.length);
+    out[field.charAt(0).toLowerCase() + field.slice(1)] = value;
+  }
+  // The catalog spells the slippage default `defaultEntrySlippageBps` and the
+  // write schema calls it `maxSlippageBps`. One rename, stated rather than
+  // pattern-matched, because guessing at the pairing is how a value lands in a
+  // field it does not belong to.
+  if (out['entrySlippageBps'] !== undefined) out['maxSlippageBps'] = out['entrySlippageBps'];
+  return out;
 }
 
 function mapModels(raw: unknown): readonly ApprovedModel[] {
