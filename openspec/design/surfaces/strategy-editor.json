@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "5190a46",
+  "generated_at_commit": "dc7b5d4",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/plan-review.tsx",
@@ -66,7 +66,7 @@
           "effect": "Server action: applies the reviewed plan, reconfigures bound agents, redirects to /strategies"
         }
       ],
-      "current_implementation": "Server component with seven render branches, each a full-page <main> on the shared shell from DT-0001. Page headings at type.size.2xl \u2014 raised from xl when rendering DT-0002 showed h1 and the panel h2 were the same size. The compose branch is a method=get form with a single tagline input; only the tagline is editable today (backlog `strategy-section-editor`).",
+      "current_implementation": "Server component with seven render branches, each a full-page <main> on the shared shell from DT-0001. Page headings at type.size.2xl \u2014 raised from xl when rendering DT-0002 showed h1 and the panel h2 were the same size. The compose branch is a method=get form with a single tagline input; only the tagline is editable today (backlog `strategy-section-editor`). | Form controls now take their treatment from src/presentation/components/control.ts (one token-based constant, imported everywhere) rather than the stock `w-full rounded border p-2` they carried \u2014 which had no background, so the browser supplied white and every control was a white box in dark mode. Closed by `forms-that-work-in-the-dark`; the treatment has one source and must keep it.",
       "constraints": [
         "The compile control must keep saying what it does and does not do \u2014 'Compile \u2014 see what this would do, without doing it'. Compiling is effect-free by platform design precisely so a human can look first; a label that reads like a save button gives that back",
         "The bound-agent count must appear above the field on the compose branch, before the user edits \u2014 not only on the review",

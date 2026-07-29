@@ -47,12 +47,26 @@ mapfile -t KEYS < <(grep -oE '^[A-Z][A-Z0-9_]*=' "$EXAMPLE" | tr -d '=')
 
 echo "checking $EXAMPLE covers a real boot — ${#KEYS[@]} variables"
 
+# Precedence: the caller's value, then the example's, then a random one.
+#
+# The caller must win, and this used to have it the other way round. The
+# example's `DATABASE_URL` is a *placeholder* — `postgres://localhost:5432/grid_commander`,
+# documenting the shape — so a caller supplying a real one (CI's service
+# container, or a developer's local database) had it silently overridden by the
+# placeholder. Nothing noticed for as long as this check existed, because no
+# route it probed ever queried the database; the wrong URL was never used.
+#
+# The schema check below is what surfaced it, on its first run.
+#
+# This does not weaken what the script is for. The loop still only iterates the
+# variables the *example* declares, so one the application requires and the
+# example omits is still never set here and the boot still fails.
 for key in "${KEYS[@]}"; do
   current="$(grep -E "^${key}=" "$EXAMPLE" | head -1 | cut -d= -f2-)"
-  if [[ -n "$current" ]]; then
+  if [[ -n "${!key:-}" ]]; then
+    :                                            # caller supplied one — it wins
+  elif [[ -n "$current" ]]; then
     export "$key=$current"                       # the example ships a value
-  elif [[ -n "${!key:-}" ]]; then
-    :                                            # caller supplied one (CI: DATABASE_URL)
   else
     export "$key=$(openssl rand -base64 32)"     # blank in the example: any value will do
   fi
@@ -112,6 +126,30 @@ if [[ $up -ne 1 ]]; then
   echo "the server never answered on port $PORT. Output:"
   echo
   grep -iE 'error|not set|EADDRINUSE' "$LOG" | sort -u | head -10 | sed 's/^/  /'
+  exit 1
+fi
+
+# Every route above answers without touching the database.
+#
+# Found by running this against a stopped PostgreSQL: all five returned 200 and
+# this check said "serving ok". They resolve a session first, find none, and
+# render "Not connected" — which needs no query. So the probe below proves the
+# application *boots* and says nothing about whether it can reach its database,
+# and the first person to discover otherwise would be a user who connected an
+# account.
+#
+# `check-schema.mjs` is the shortest honest fix: it connects, reads the
+# migrations the database has applied, and compares them to what this build
+# carries. Reachable *and* migrated, using the tool a deployment already runs.
+#
+# What this still does not prove: that a route can query. No route does without
+# a session, and manufacturing one here would mean signing a cookie to reach a
+# page — worth doing, and a different check. See `no-route-exercises-the-database`.
+if ! node tools/check-schema.mjs; then
+  echo
+  echo "The application boots, and its database is not usable. The pages this"
+  echo "check probes would still answer 200 — they render 'Not connected'"
+  echo "without querying, which is why this runs before them rather than after."
   exit 1
 fi
 

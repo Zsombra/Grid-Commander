@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-07-29 — The serving gate passed with the database stopped
+
+**Did**: Proposed, executed and archived `a-gate-that-checks-its-database`
+(lite track, `skip_specs: true`).
+
+`scripts/check-serving.sh` reported **"serving ok" with PostgreSQL stopped**.
+Every route it probes resolves a session, finds none, and renders "Not
+connected" — which needs no query. So all five returned 200 against a database
+that was not running, and the gate whose job is proving a deployment serves said
+it did. The first person to find out otherwise would be a user who connected an
+account.
+
+It now runs `tools/check-schema.mjs` first: reachable *and* migrated, using the
+tool a deployment already runs as its release step. Before the routes rather than
+after, because the routes cannot tell you.
+
+**The new check found a second bug on its first run.** `.env.example` ships a
+*placeholder* `DATABASE_URL` (`postgres://localhost:5432/grid_commander`,
+documenting the shape), and the variable loop preferred the example's value over
+the caller's — so a real one, CI's service container included, was silently
+discarded. Nothing had ever noticed because no probed route used the connection.
+**The CI `app` job has been passing a `DATABASE_URL` the script threw away**, and
+would have started failing the moment the schema check landed. Precedence is now
+caller → example → random.
+
+Proven in three directions: reachable and migrated → exit 0 reporting
+`schema ok — 1 migration(s) applied`; reachable but unmigrated → exit 1;
+unreachable → exit 1.
+
+**State**: archived. 492 tests, board clean.
+
+**Next**: `image-never-built` (P1) and the CI payment block, both needing the
+user.
+
+**Watch out**:
+
+- **Two of the three things I offered were declined, and the reasons matter.**
+  Writing a product README: leave it. Registering a BattleGrid OAuth client:
+  the user is not convinced it is the right architecture, because *"this is more
+  of an MCP controller for the tools that BattleGrid offers"*. That is a real
+  open question about how this product should authenticate at all, and nothing
+  should be registered against BattleGrid until it is settled. **Do not register
+  a client.**
+- **What is still not proven**: that a *route* can query. Every route needs a
+  session to reach the repositories, and `check-schema.mjs` connects with `pg`
+  directly while the application connects through Drizzle's pool — two paths to
+  the same database, one exercised. Filed as
+  `no-route-exercises-the-database` (P2). Narrower than what was just closed, and
+  not empty.
+- The residual risk is now a permissions or pool problem, not a stopped
+  database. That is a much smaller class, and a first deployment's connection is
+  tested by the first person who connects an account.
+
 ## 2026-07-29 — Forms that work in the dark
 
 **Did**: Proposed, executed, verified and archived `forms-that-work-in-the-dark`
