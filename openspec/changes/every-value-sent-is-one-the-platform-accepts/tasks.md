@@ -13,9 +13,10 @@
       reaching a field, so every per-entry type in `get_user_thought_log`
       recorded as `…`. Names captured, not one type. Verified it still cannot
       leak a value — every leaf is `type(...).__name__`.
-- [ ] 2. **Blocked — BattleGrid auth is down.** Re-probe so
-      `docs/battlegrid-mcp-surface.json` carries `input_constants`, and the
-      observed shapes carry types rather than `…`.
+- [x] 2. Re-probed live. `docs/battlegrid-mcp-surface.json` carries
+      `input_constants` for 49 tools — `brain.kind → [PRESET, CUSTOM]`,
+      `sizingStrategy → [MANUAL, VOLATILITY_AUTO]`, `atrTimeframe` all thirteen
+      values — and observed shapes now carry types instead of `…`.
 
 ## Fix the two defects
 
@@ -31,18 +32,22 @@
       any kind before this.
 - [x] 6b. `tests/agent/unprompted-values.test.ts` — the six values no operator
       chooses, and a source check banning the lookup-shaped disguise.
-- [ ] 6c. **Blocked on 2.** `tests/architecture/wire-values.test.ts` — the
-      generic walk of every wire value against `input_constants`. Written and
-      held out of the tree; it fails today only because the artifact is stale.
+- [x] 6c. `tests/architecture/wire-values.test.ts` restored and passing. The
+      generic walk catches **both** defects against the live artifact — including
+      `brain.kind`, which neither the source guards nor the prose reference could
+      see. Re-injected: `'FIXED'` → 3 failures, lowercase `kind` → 2.
 - [x] 7. Re-inject both defects, three ways, and watch the guards fail:
       lowercase `kind` → 3 failures; `'FIXED'` plainly → 3; `'FIXED'` behind the
       lookup → 4.
 
 ## Prove it
 
-- [ ] 8. **Blocked — BattleGrid auth is down.** Live probe: create → read back →
-      archive, `tradingMode: OFF`.
-- [x] 9. `npm test` 667 passing, `npm run typecheck`, `npm run lint` all green.
+- [x] 8. Live probe passed. `create_intelligence_agent=succeeded` for the first
+      time in the life of this product. Agent `86325fc8` created r1 ACTIVE, read
+      back `mode=OFF dailyLoss=10 leverage=1`, archived to r2. Account verified
+      after: probe agent ARCHIVED, slot returned (2 of 3 used), the operator's
+      three agents untouched at their original revisions.
+- [x] 9. `npm test` 673 passing, `npm run typecheck`, `npm run lint` all green.
 
 ## File what is deferred
 
@@ -51,24 +56,35 @@
 - [x] 11. `brain-presets-are-hardcoded-and-short-one` — the schema pins eleven,
       the adapter lists ten.
 
-## Blocked: what the platform is doing
+## The outage, while it lasted
 
-`POST /mcp` with **no** `Authorization` header returns 401 in 1.2s. The same
-request carrying **any** bearer token — a valid key or the literal string
-`bg_live_notarealkey` — hangs until the client gives up. Measured four ways:
+BattleGrid's MCP backend went down mid-session (~09:50Z) and came back ~12:35Z.
+Recorded because the shape was diagnostic and the next outage will look the same.
 
 ```
-no auth        401 in 1.2s
-GET /mcp       401 in 1.2s
-garbage key    000 in 20.0s   (timeout)
-real key       000 in 20.0s   (timeout)
+GET  /health              504 Gateway Time-out (nginx)
+POST /mcp   no auth       401 in 0.9s
+POST /mcp   garbage key   timeout
+POST /mcp   real key      timeout
+battlegrid.trade          200 — the game site was never affected
 ```
 
-`battlegrid.trade` serves 200 and `mcp.battlegrid.trade/` serves 404, so the
-host and TLS are fine and the egress proxy reports no relay failures. The hang
-is BattleGrid's token-validation path, and it is not specific to this key: a key
-that cannot exist hangs identically to one that works.
+nginx was up and answering; the service behind it was not. That explains the
+auth split exactly: an unauthenticated request is rejected at the edge and never
+touches the upstream, while *validating* a token requires it — so any bearer
+token, valid or invented, hung identically. The key was never implicated, and
+neither was the network.
 
-It worked earlier in the same session — the strategy write probe, the schema
-dumps, and `get_trading_config_catalog` all returned normally — so this began
-mid-session. Tasks 2, 6c and 8 resume the moment it answers.
+`GET /health` is the cheap signal: ~1s, unambiguous, versus waiting 25s for a
+`tools/call` to time out. Worth reaching for first next time.
+
+Two tools failed on the recovery probe, neither of which this product calls:
+
+- `get_market_context` — `VALIDATION_ERROR: Provide sessionId or primaryTimeframe`.
+  Its schema declares **no** required arguments, so this is a declared-vs-actual
+  divergence rather than an outage symptom.
+- `get_open_orders` — `INTERNAL_ERROR: Internal server error` on a read tool that
+  takes no arguments.
+
+Both filed as `two-read-tools-do-not-answer`. Both answered on the previous
+probe, when all 21 succeeded.
