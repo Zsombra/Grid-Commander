@@ -19,15 +19,6 @@ export interface AppConfig {
   /** False only in local development, where there is no TLS to require. */
   readonly secureCookies: boolean;
   /**
-   * Undefined is a supported deployment, not a misconfiguration.
-   *
-   * Without it the assistant reports that no model is configured and the rest of
-   * the product is untouched — which is also what keeps `check-serving.sh`
-   * honest, since it boots from `.env.example` alone and cannot be handed a real
-   * key.
-   */
-  readonly anthropicApiKey: string | undefined;
-  /**
    * The owner's own BattleGrid credential, for a personal deployment.
    *
    * Undefined leaves the delegated OAuth path exactly as it is. Present means
@@ -122,10 +113,6 @@ export function loadConfig(): AppConfig {
     // Opt *out* of secure cookies explicitly. A missing variable must not
     // silently produce a session that travels in the clear.
     secureCookies: process.env['ALLOW_INSECURE_COOKIES'] !== 'true',
-    // Read through `optional`, not `required`. The asymmetry is deliberate:
-    // everything above is something the product cannot run without, and this is
-    // one capability's answer quality.
-    anthropicApiKey: optional('ANTHROPIC_API_KEY'),
     personal,
   };
 }

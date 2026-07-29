@@ -163,7 +163,6 @@ deployment-specific value.
 | `BATTLEGRID_KEY_SCOPES` | no | — | Defaults to `mcp:read`. A declaration, not a limit. |
 | `BATTLEGRID_CLIENT_ID` | not read | yes | From the registration |
 | `BATTLEGRID_REDIRECT_URI` | not read | yes | Must match the registration exactly |
-| `ANTHROPIC_API_KEY` | no | no | Absent means the assistant says it is not configured |
 | `ALLOW_INSECURE_COOKIES` | localhost only | **never** | Any value but `true` leaves cookies secure |
 
 The two secrets are deliberately different values. `SESSION_SECRET` proves who
@@ -179,18 +178,6 @@ first request that needs it. `.env.example` is the authoritative list —
 `scripts/check-serving.sh` boots the application from that file alone, so a
 variable the product needs and the example omits fails a check rather than a
 deployment.
-
-## On `ANTHROPIC_API_KEY`
-
-Setting it changes what users are told. With a key, `/assistant` states that
-answering sends what it reads from the account to Anthropic, outside this
-product. Without one, it states the opposite — that nothing typed there leaves.
-Both are true of their deployment, and the page reads the difference from what
-is actually configured.
-
-Nothing bounds how many questions are asked. One answer is capped at six rounds
-and 8k tokens; a thousand questions are not, and on a delegated deployment every
-tenant's questions bill your key. See `assistant-has-no-spend-ceiling`.
 
 ---
 
@@ -259,8 +246,22 @@ problem and the key may be fine.
 Connect an account; if the callback fails, the redirect URI registration is
 wrong.
 
-**Both.** Check `/audit`. Everything Grid-Commander did on the account is there,
-and reads the assistant made on someone's behalf are marked as the assistant's.
+**Both.** Check `/audit`. Everything Grid-Commander did on the account is there.
+Rows may name an `assistant` actor: that capability was removed in
+`only-mcp-control`, and the log still renders what it recorded rather than
+attributing someone else's reads to you.
+
+---
+
+# What has been proven against the real platform
+
+The **personal** path has. Against two live BattleGrid accounts, this product
+has created an agent, renamed it, changed its trading limits, archived and
+reactivated it, forked a strategy, compiled and applied a plan, archived and
+restored a strategy, and read back an agent's reasoning, ceilings, record and
+journal. The success branches are not theoretical.
+
+What that does **not** cover is below.
 
 ---
 
@@ -282,9 +283,16 @@ and reads the assistant made on someone's behalf are marked as the assistant's.
   was assembled by hand and proven to migrate, refuse, and serve. The layer
   mechanics are unproven. See `image-never-built`. **A local `npm start` does
   not depend on any of this.**
-- **A verified round trip to BattleGrid.** Every path here has been exercised
-  against a fake and against a deliberately invalid key, which proves the
-  failure branches. No valid `bg_live_` key has existed in any environment this
-  was built in, so the success branch has never been seen against the real
-  platform. Yours will be the first. See `assistant-unverified-against-live-api`
-  for the same gap on the Anthropic side.
+- **The delegated path end to end.** Every OAuth branch here is exercised
+  against a fake and against a deliberately invalid grant, which proves the
+  failure branches. **No real OAuth authorization has ever been completed
+  against BattleGrid** — every live verification of this product used the
+  personal `bg_live_` path instead. If you deploy the delegated path, the
+  registration, the callback and the refresh will be running for the first time.
+  See `oauth-path-may-be-dead-weight`.
+- **A model API, or any second destination.** The application reaches
+  `mcp.battlegrid.trade` and nothing else. An assistant backed by Anthropic's
+  API was removed in `only-mcp-control`: no deployment this was built in ever
+  had a credential for it, so the page shipped saying it was unavailable.
+  `tests/architecture/one-destination.test.ts` fails if a second one returns.
+  One third-party credential, and it is BattleGrid's.

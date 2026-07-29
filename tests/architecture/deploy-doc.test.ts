@@ -80,9 +80,28 @@ describe('the deploy doc admits what has not been proven', () => {
     expect(doc()).toMatch(/never been built/i);
   });
 
-  it('says no real BattleGrid key has ever been used', () => {
-    // The success branch has never run against the real platform. A deployment
-    // document that reads as though it had is the most expensive kind of wrong.
-    expect(doc()).toMatch(/no valid `?bg_live_`? key has existed|never been seen against the real platform/i);
+  /**
+   * This used to assert the opposite, and the assertion outlived its truth.
+   *
+   * It required the doc to say *"no valid `bg_live_` key has existed in any
+   * environment this was built in"* — correct when written, and false from the
+   * day the personal path was exercised against two live accounts. A guard that
+   * pins a document to a fact about the past will, the moment the fact changes,
+   * fail on the honest edit and pass on the stale one. The fix was to point it
+   * at what is *still* unproven rather than to delete it.
+   *
+   * The delegated path is that. Every OAuth branch is covered against a fake and
+   * an invalid grant; no real authorization has ever been completed. It is also
+   * the MVP's own exit criterion — "connect without ever handling a raw
+   * credential" — so a deployer choosing it must be told.
+   */
+  it('says the OAuth path has never been completed for real', () => {
+    expect(doc()).toMatch(/no real OAuth authorization has ever been completed/i);
+  });
+
+  it('does not claim the personal path is unproven either', () => {
+    // The other half of the same failure: a document that reads as untested
+    // everywhere is ignored everywhere.
+    expect(doc()).toMatch(/What has been proven against the real platform/i);
   });
 });

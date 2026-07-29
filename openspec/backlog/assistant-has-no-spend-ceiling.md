@@ -2,17 +2,25 @@
 id: assistant-has-no-spend-ceiling
 title: One question is bounded; a thousand questions are not
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-29
+change: only-mcp-control
 capability: assistant
 blocked_by: []
 tags: [assistant, cost, multi-tenant]
 ---
 
 # One question is bounded; a thousand questions are not
+
+> **Closed as moot** — `only-mcp-control`.
+>
+> There is no longer a key to spend. The assistant was removed; the product
+> holds one third-party credential and it is BattleGrid's.
+>
+> If an assistant is ever proposed again, this item is the reason it needs a
+> ceiling *before* it ships, not after.
 
 ## What
 

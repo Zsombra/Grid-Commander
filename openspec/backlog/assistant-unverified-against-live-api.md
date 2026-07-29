@@ -2,17 +2,27 @@
 id: assistant-unverified-against-live-api
 title: The assistant request has never been sent to the real API
 type: debt
-status: open
+status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-29
+change: only-mcp-control
 capability: assistant
 blocked_by: []
 tags: [assistant, verification, deployment]
 ---
 
 # The assistant request has never been sent to the real API
+
+> **Closed as moot** — `only-mcp-control`.
+>
+> The gap was real and it was never going to close here: no `ANTHROPIC_API_KEY`
+> existed in any environment this product was built in, on the day this was
+> filed or two days later. The assistant was removed rather than shipped
+> unverified, and with it the only outbound destination that was not BattleGrid.
+>
+> `tests/architecture/one-destination.test.ts` fails if a vendor API client
+> returns to `package.json`, so this cannot silently come back.
 
 ## What
 

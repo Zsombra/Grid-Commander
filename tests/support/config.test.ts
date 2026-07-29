@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '@/config.js';
 
@@ -42,24 +43,23 @@ describe('what the application refuses to start without', () => {
   }
 });
 
-describe('the assistant key is optional', () => {
-  it('starts with no ANTHROPIC_API_KEY at all', () => {
-    // A deployment without a model is supported. If this ever throws, the
-    // serving gate stops being able to boot the application.
-    expect(() => loadConfig()).not.toThrow();
-    expect(loadConfig().anthropicApiKey).toBeUndefined();
-  });
-
-  it('reads set-but-empty as absent', () => {
-    // `ANTHROPIC_API_KEY=` in a .env is a blank line, not a key. Carrying '' as
-    // a value would build a client that fails on every question instead of an
-    // assistant that says it is not configured.
-    process.env['ANTHROPIC_API_KEY'] = '';
-    expect(loadConfig().anthropicApiKey).toBeUndefined();
-  });
-
-  it('carries the key when one is set', () => {
+describe('the application needs no credential but BattleGrid’s', () => {
+  it('starts with no ANTHROPIC_API_KEY, because nothing reads one', () => {
+    // The assistant was the only thing that ever did, and it was removed in
+    // `only-mcp-control` — it reached a model API no deployment had a
+    // credential for. This asserts the variable is genuinely gone rather than
+    // merely unset: setting it must change nothing.
     process.env['ANTHROPIC_API_KEY'] = 'sk-ant-test';
-    expect(loadConfig().anthropicApiKey).toBe('sk-ant-test');
+    expect(() => loadConfig()).not.toThrow();
+    expect(JSON.stringify(loadConfig())).not.toContain('sk-ant-test');
+  });
+
+  it('documents exactly one third-party credential', () => {
+    // `.env.example` is what a deployment is configured from, and
+    // `check-serving.sh` boots the application from it. One BattleGrid key, or
+    // an OAuth client for the delegated path — and nothing else.
+    const example = readFileSync('.env.example', 'utf8');
+    expect(example).not.toContain('ANTHROPIC');
+    expect(example).toContain('BATTLEGRID');
   });
 });

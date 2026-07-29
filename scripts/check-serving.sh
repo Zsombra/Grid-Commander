@@ -36,7 +36,7 @@ LOG="$(mktemp)"
 # because it is the only address a user is ever given. It returned 404 for the
 # product's whole life with every gate green, which is how it earned a place in
 # the one check that asks what a deployment actually serves.
-ROUTES=(/ /agents /strategies /audit /assistant)
+ROUTES=(/ /agents /strategies /audit)
 
 [[ -f "$EXAMPLE" ]] || { echo "no $EXAMPLE"; exit 1; }
 

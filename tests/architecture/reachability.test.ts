@@ -420,9 +420,26 @@ describe('every capability is reachable by walking from the root', () => {
  * someone on the strategies page.
  */
 describe('every capability is reachable from wherever you already are', () => {
-  const TOP_LEVEL = ['/agents', '/strategies', '/assistant', '/audit'];
-
   const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+
+  /**
+   * Derived from the route table, not written down.
+   *
+   * It was written down — `['/agents', '/strategies', '/assistant', '/audit']` —
+   * and `only-mcp-control` broke it by removing a capability, which is the
+   * milder half of what a hardcoded list does. The worse half is silent: add a
+   * fifth section and this keeps passing while no page links to it.
+   *
+   * A top-level section is a route one segment deep inside the group that
+   * carries the shared navigation. **Not derived from the nav itself**, which
+   * would be circular — the nav lives in the layout, so every page's render set
+   * contains it by construction and the check would assert nothing.
+   */
+  const TOP_LEVEL = pageFiles
+    .filter((f) => f.includes('(app)'))
+    .map(routeOf)
+    .filter((r) => r.split('/').length === 2 && !r.includes('['))
+    .sort();
 
   /** Pages inside the group that carries the shared navigation. */
   const inGroup = pageFiles.filter((f) => f.includes('(app)'));
@@ -460,6 +477,12 @@ describe('every capability is reachable from wherever you already are', () => {
 
   it('checks every page rather than a sample', () => {
     expect(inGroup.length).toBeGreaterThan(9);
+  });
+
+  it('derived a section list that is neither empty nor everything', () => {
+    // The derivation must find the real sections. Empty would pass the check
+    // above vacuously; the whole route table would fail it for the wrong reason.
+    expect(TOP_LEVEL).toEqual(['/agents', '/audit', '/strategies']);
   });
 
   /**

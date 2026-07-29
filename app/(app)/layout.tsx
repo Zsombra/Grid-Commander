@@ -7,7 +7,7 @@ import { SectionNav } from '@/presentation/components/section-nav.js';
  * The shell every capability shares.
  *
  * It exists for one reason: the navigation belongs in exactly one place. Before
- * this, `/agents`, `/strategies`, `/assistant` and `/audit` were four islands —
+ * this, `/agents`, `/strategies` and `/audit` were three islands —
  * each worked, none linked to any other, and the only way between them was
  * typing a URL.
  *

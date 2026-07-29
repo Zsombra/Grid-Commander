@@ -20,8 +20,6 @@ import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
-import { AskAssistantCommand } from './application/use-cases/ask-assistant.command.js';
-import { DescribeAssistantQuery } from './application/use-cases/describe-assistant.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
 import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
@@ -52,9 +50,6 @@ import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
-import { claudeAssistant } from './infrastructure/assistant/claude.js';
-import { NotConfiguredAssistant } from './infrastructure/assistant/not-configured.js';
-import type { AssistantPort } from './ports/assistant.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
 import { CookieSession } from './infrastructure/http/cookie-session.js';
 import { systemClock } from './ports/clock.js';
@@ -90,7 +85,6 @@ interface Infrastructure {
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
-  readonly assistant: AssistantPort;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
@@ -134,14 +128,6 @@ function infrastructure(): Infrastructure {
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
-    // Which model answers is a deployment decision (A-D), and a deployment
-    // where none is configured is a supported one — the assistant says so
-    // rather than pretending. Nothing else in the product changes either way:
-    // the read-only toolset, the citation and the revocation abandon all live
-    // above the port.
-    assistant: config.anthropicApiKey
-      ? claudeAssistant(config.anthropicApiKey)
-      : new NotConfiguredAssistant(),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
@@ -229,13 +215,6 @@ export function app(cookies: CookieStore) {
     forkStrategy: new ForkStrategyCommand(i.strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
-
-    // The assistant's read-only toolset is derived inside the use case, from
-    // the live discovered set. Nothing here can widen it.
-    askAssistant: new AskAssistantCommand(i.battlegrid, i.assistant),
-    // Reads from the same instance `askAssistant` will use, so what the user is
-    // told and what actually answers cannot be two different deployments.
-    describeAssistant: new DescribeAssistantQuery(i.assistant),
   };
 }
 
