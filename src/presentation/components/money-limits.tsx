@@ -1,5 +1,5 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
-import { undefaultableFields } from '@/domain/agent/catalog.js';
+import { undefaultableFields, UNBOUNDED_AT_ZERO } from '@/domain/agent/catalog.js';
 import { CONTROL } from './control.js';
 
 /**
@@ -110,6 +110,18 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
  * absence of a platform default says nobody should do.
  */
 function Money({ name, label, hint }: { name: string; label: string; hint: string }) {
+  /**
+   * Where a zero removes the limit, say so here — beside the box it is typed
+   * into, not in a paragraph above the form.
+   *
+   * BattleGrid reads `0` on these three as *no cap*. Under a label reading
+   * "most it may lose in a day" and a hint promising "trading stops once this
+   * is reached", `0` is the most cautious answer the wording offers and it
+   * produces an agent nothing will stop. The safest input made the least
+   * bounded agent, and nothing said so.
+   */
+  const unbounded = (UNBOUNDED_AT_ZERO as readonly string[]).includes(name);
+
   return (
     <div className="space-y-1">
       <label htmlFor={name} className="block text-sm text-text-primary">
@@ -128,6 +140,15 @@ function Money({ name, label, hint }: { name: string; label: string; hint: strin
       />
       <p id={`${name}-hint`} className="text-sm text-text-secondary">
         {hint}
+        {unbounded && (
+          <>
+            {' '}
+            <strong className="text-text-primary">
+              Entering 0 removes this limit — BattleGrid will not stop the agent
+              on it at all.
+            </strong>
+          </>
+        )}
       </p>
     </div>
   );

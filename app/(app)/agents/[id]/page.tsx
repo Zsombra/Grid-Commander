@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { AgentRenameForm } from '@/presentation/components/agent-edit.js';
+import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredText } from '@/presentation/form.js';
 
@@ -71,7 +72,13 @@ export default async function AgentPage({
           {agent.brain.kind === 'preset' ? agent.brain.preset : agent.brain.modelId}
         </p>
         <p className="text-sm">
-          Money limits: {agent.tradingConfig ? 'configured' : 'not configured'}
+          {/*
+            "configured" used to mean `tradingConfig != null` — that an object
+            came back, not that limits were set. The live agent carries a full
+            twenty-field config in which two of three caps are zero, which
+            BattleGrid reads as no cap, and this line called it configured.
+          */}
+          Money limits: <MoneySummary agent={agent} />
         </p>
       </section>
 

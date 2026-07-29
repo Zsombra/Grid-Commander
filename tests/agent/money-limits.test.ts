@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
-import { TRADING_CONFIG_FIELDS, undefaultableFields } from '@/domain/agent/catalog.js';
+import {
+  removesTheLimit,
+  TRADING_CONFIG_FIELDS,
+  unboundedCaps,
+  UNBOUNDED_AT_ZERO,
+  undefaultableFields,
+} from '@/domain/agent/catalog.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { buildTradingConfig } from '@/domain/agent/trading-config.js';
 import { anAgent, defaultCatalog, FakeAgentsPort } from '../support/agent-fakes.js';
@@ -138,8 +144,10 @@ describe('a config is complete or it is refused', () => {
   });
 
   it('keeps a genuine zero the operator typed', () => {
-    // Zero is a real answer to "most it may lose in a day" — it means the same
-    // as `OFF` for that limit. Only *absence* is unanswered.
+    // Zero is a real answer and it reaches the platform unchanged. What it
+    // *means* is corrected below: BattleGrid reads it as "no daily limit", not
+    // as "lose nothing". The comment that used to sit here said the opposite,
+    // and it was the reason nothing questioned a zero anywhere else.
     const built = buildTradingConfig(catalog, { ...MONEY, ...structural, maxDailyLossUsd: 0 });
     expect(built.kind === 'config' && built.config.fields['maxDailyLossUsd']).toBe(0);
   });
@@ -223,5 +231,97 @@ describe('the route stays out of the domain', () => {
     expect(page).not.toMatch(/@\/domain\//);
     expect(page).toMatch(/money: moneyAnswers\(formData\)/);
     expect(page, 'the defect, stated directly').not.toMatch(/tradingConfig: null/);
+  });
+});
+
+/**
+ * Zero removes the limit. It does not set one to nothing.
+ *
+ * BattleGrid's own field descriptions:
+ *
+ * ```
+ * maxConcurrentExposureUsd   0 = unset
+ * maxCumulativeDrawdownUsd   0 = no stop
+ * maxDailyLossUsd            0 = no daily limit
+ * ```
+ *
+ * The form asks "most it may lose in a day" and promises "trading stops for the
+ * day once this is reached". Under that wording `0` is the most cautious answer
+ * available and it produces an agent nothing will stop. A comment in this very
+ * file used to assert the opposite — that zero "means the same as OFF for that
+ * limit" — and it was load-bearing: nothing questioned a zero anywhere else
+ * because of it.
+ */
+describe('zero does not mean nothing', () => {
+  it('names the caps the platform reads as unbounded at zero', () => {
+    expect([...UNBOUNDED_AT_ZERO].sort()).toEqual([
+      'maxConcurrentExposureUsd',
+      'maxCumulativeDrawdownUsd',
+      'maxDailyLossUsd',
+    ]);
+  });
+
+  it('leaves out the floors, where nothing is established about zero', () => {
+    // The schema carries no `0 = …` note for either, so nothing is guessed.
+    expect(UNBOUNDED_AT_ZERO).not.toContain('balanceThresholdUsd');
+    expect(UNBOUNDED_AT_ZERO).not.toContain('minAllocationUsd');
+  });
+
+  it('knows a zero removes the limit', () => {
+    expect(removesTheLimit('maxDailyLossUsd', 0)).toBe(true);
+    expect(removesTheLimit('maxDailyLossUsd', 10)).toBe(false);
+    // Not every zero is unbounded — only the three the platform says so about.
+    expect(removesTheLimit('balanceThresholdUsd', 0)).toBe(false);
+  });
+
+  it('names which caps a configuration leaves unbounded', () => {
+    // The live agent's shape: a complete config, two caps at zero.
+    const live = { ...MONEY, maxDailyLossUsd: 0, maxCumulativeDrawdownUsd: 0 };
+    expect([...unboundedCaps(live)].sort()).toEqual([
+      'maxCumulativeDrawdownUsd',
+      'maxDailyLossUsd',
+    ]);
+  });
+
+  it('reports a fully bounded configuration as bounded', () => {
+    expect(unboundedCaps(MONEY)).toEqual([]);
+  });
+});
+
+describe('the form says what zero does, where it is typed', () => {
+  const form = () => readFileSync('src/presentation/components/money-limits.tsx', 'utf8');
+
+  it('warns that zero removes the limit', () => {
+    expect(form()).toMatch(/Entering 0 removes this limit/);
+  });
+
+  it('warns beside the field rather than only in a paragraph above it', () => {
+    // The hint is `aria-describedby` on the input. A caution about zero that
+    // sits above the fieldset is not read by someone tabbing into the box.
+    const source = form();
+    const hint = source.indexOf('id={`${name}-hint`}');
+    const warning = source.indexOf('Entering 0 removes this limit');
+    expect(hint).toBeGreaterThan(-1);
+    expect(warning).toBeGreaterThan(hint);
+  });
+
+  it('derives which fields warn rather than listing them', () => {
+    expect(form()).toMatch(/UNBOUNDED_AT_ZERO as readonly string\[\]\)\.includes\(name\)/);
+  });
+});
+
+describe('a present configuration is not a set limit', () => {
+  const page = () => readFileSync('src/presentation/components/money-summary.tsx', 'utf8');
+
+  it('does not decide by the object being present', () => {
+    // The defect, stated directly: `agent.tradingConfig ? 'configured' : …`
+    expect(readFileSync('app/(app)/agents/[id]/page.tsx', 'utf8')).not.toMatch(
+      /tradingConfig \? 'configured'/,
+    );
+  });
+
+  it('names the caps that have no ceiling', () => {
+    expect(page()).toMatch(/unboundedCaps/);
+    expect(page()).toMatch(/no ceiling at all/);
   });
 });
