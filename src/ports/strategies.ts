@@ -1,4 +1,4 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -40,6 +40,18 @@ export interface StrategiesPort {
     sourceRevision: number;
   }): Promise<Strategy>;
 
+  /**
+   * One strategy, whole.
+   *
+   * Distinct from `listStrategies` because they are two different calls
+   * returning two different amounts — see `StrategyDetail`.
+   */
+  readStrategy(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+  }): Promise<StrategyDetailResult>;
+
   setActive(params: {
     userId: string;
     accessToken: string;
@@ -52,6 +64,20 @@ export interface StrategiesPort {
 
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;
 }
+
+/**
+ * Why there is no strategy to show.
+ *
+ * `missing` and `unreadable` are separate for the same reason `empty` and
+ * `unreadable` are separate on a roster: one says the thing is not there, the
+ * other says we could not ask. Telling a user their strategy is gone when the
+ * platform merely refused is the mistake this codebase has already made once,
+ * one layer down.
+ */
+export type StrategyDetailResult =
+  | { readonly kind: 'strategy'; readonly detail: StrategyDetail }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * Three outcomes, and the middle one is why this is a type rather than a length

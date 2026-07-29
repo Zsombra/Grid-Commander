@@ -23,6 +23,7 @@ import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.que
 import { AskAssistantCommand } from './application/use-cases/ask-assistant.command.js';
 import { DescribeAssistantQuery } from './application/use-cases/describe-assistant.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
+import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
 import {
@@ -209,6 +210,7 @@ export function app(cookies: CookieStore) {
     readJournal: new ReadAgentJournalQuery(i.agents),
 
     listStrategies: new ListStrategiesQuery(i.strategies),
+    readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.

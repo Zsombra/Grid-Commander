@@ -83,12 +83,39 @@ interface ToolEnvelope {
   isError?: boolean;
 }
 
-/** A tool answered, and the answer was a refusal. Not a transport failure. */
+/**
+ * A tool answered, and the answer was a refusal. Not a transport failure.
+ *
+ * Carries the platform's own `code` when it sent one. BattleGrid's refusals are
+ * JSON — `{"code":"NOT_FOUND","message":…}` — inside the text block, and a
+ * caller that needs to tell "not there" from "not allowed" would otherwise have
+ * to match on the message. Parsing it once here is the same lesson as
+ * `FailureCause`: decide it where the evidence is, not by reading words
+ * downstream where a rewording starts a silent lie.
+ */
 export class ToolRefusedError extends Error {
+  /** e.g. `NOT_FOUND`, `VALIDATION_ERROR`. Null when the refusal was not JSON. */
+  readonly code: string | null;
+
   constructor(tool: string, detail: string) {
     super(detail || `BattleGrid refused "${tool}"`);
     this.name = 'ToolRefusedError';
+    this.code = codeOf(detail);
   }
+}
+
+function codeOf(detail: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(detail);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const code = (parsed as Record<string, unknown>)['code'];
+      if (typeof code === 'string') return code;
+    }
+  } catch {
+    // Not JSON. Some refusals are plain prose — an MCP validation error, for
+    // one — and having no code is a fact, not a failure.
+  }
+  return null;
 }
 
 /** A result arrived carrying no payload this product can read. */

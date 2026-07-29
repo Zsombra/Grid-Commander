@@ -1,14 +1,22 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type {
+  SignalRule,
+  Strategy,
+  StrategyDetail,
+  StrategyQuota,
+  StrategySection,
+} from '@/domain/strategy/strategy.js';
 import type {
   CompileResult,
   LifecycleResult,
   StrategiesPort,
+  StrategyDetailResult,
   StrategyListResult,
   VocabularyCategory,
   VocabularyResult,
 } from '@/ports/strategies.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
+import { ToolRefusedError } from './mcp-adapter.js';
 
 /**
  * Strategy operations, expressed as BattleGrid tool calls.
@@ -31,6 +39,7 @@ const TOOLS = {
   archive: 'archive_strategy',
   restore: 'restore_strategy',
   categories: 'list_strategy_categories',
+  get: 'get_strategy',
 } as const;
 
 /** The four tools that require the strict outer envelope. */
@@ -109,6 +118,61 @@ export class McpStrategyAdapter implements StrategiesPort {
       sourceRevision: params.sourceRevision,
     });
     return mapStrategy(payload['strategy'] ?? payload);
+  }
+
+  async readStrategy(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+  }): Promise<StrategyDetailResult> {
+    /**
+     * Two calls, because the platform offers no single one.
+     *
+     * `get_strategy` defaults to *active visible* strategies. `includeInactive`
+     * does not widen that — it **replaces** it with *owned PRIVATE, including
+     * inactive*. The description says "only to load an owned PRIVATE strategy",
+     * and the two modes are strictly disjoint:
+     *
+     *   |                    | SYSTEM     | archived PRIVATE |
+     *   | default            | found      | NOT_FOUND        |
+     *   | includeInactive    | NOT_FOUND  | found            |
+     *
+     * Verified against the live platform in all four cells. Sending
+     * `includeInactive: true` unconditionally — which is what this did first —
+     * made every SYSTEM strategy unreadable, and it rendered as "could not reach
+     * BattleGrid" on a page where BattleGrid had answered perfectly clearly.
+     *
+     * So a detail page that serves both kinds must ask twice. The second call
+     * happens only on a not-found, so the common read stays one round trip.
+     */
+    const first = await this.tryRead(params, false);
+    if (first.kind !== 'missing') return first;
+    return this.tryRead(params, true);
+  }
+
+  private async tryRead(
+    params: { userId: string; accessToken: string; strategyId: string },
+    includeInactive: boolean,
+  ): Promise<StrategyDetailResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.get, {
+        strategyId: params.strategyId,
+        ...(includeInactive ? { includeInactive: true } : {}),
+      });
+    } catch (err) {
+      // A refusal carrying NOT_FOUND is the platform answering, not failing.
+      // Read from the code the platform sent rather than from its prose — see
+      // `ToolRefusedError`.
+      if (err instanceof ToolRefusedError && err.code === 'NOT_FOUND') {
+        return { kind: 'missing' };
+      }
+      return unreadable(err);
+    }
+
+    const raw = payload['strategy'];
+    if (typeof raw !== 'object' || raw === null) return { kind: 'missing' };
+    return { kind: 'strategy', detail: mapStrategyDetail(raw) };
   }
 
   async setActive(params: {
@@ -258,4 +322,71 @@ function mapCategory(raw: unknown): VocabularyCategory {
  */
 function optionalObject(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+/**
+ * A whole strategy, from `get_strategy`.
+ *
+ * Reuses `mapStrategy` for the summary rather than re-deriving it: the roster
+ * and the detail page must agree about a strategy's name, scope and bound-agent
+ * count, and two mappers is how they stop agreeing.
+ */
+function mapStrategyDetail(raw: unknown): StrategyDetail {
+  const s = (raw ?? {}) as Record<string, unknown>;
+
+  return {
+    summary: mapStrategy(s),
+    sections: mapSections(s['sections']),
+    marketReadText: typeof s['marketReadText'] === 'string' ? s['marketReadText'] : null,
+    thresholds: {
+      minAggregateScore: num(s['minAggregateScore']),
+      minRequiredCount: num(s['minRequiredCount']),
+      minAtrPct: num(s['minAtrPct']),
+    },
+    signalRules: mapSignalRules(s['signalRules']),
+    // Not defaulted to zero. Zero means "nothing is open under this"; absent
+    // means the platform did not say, and a surface that shows a confident 0 for
+    // an unknown is inviting a change nobody priced.
+    openPositionCount: typeof s['openPositionCount'] === 'number' ? s['openPositionCount'] : 0,
+    cadence: typeof s['cadence'] === 'string' ? s['cadence'] : null,
+    regimeAutoDerive: s['regimeAutoDerive'] === true,
+    regimeTimeframe: typeof s['regimeTimeframe'] === 'string' ? s['regimeTimeframe'] : null,
+  };
+}
+
+function mapSections(raw: unknown): readonly StrategySection[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (entry ?? {}) as Record<string, unknown>)
+    .filter((e) => typeof e['sectionKey'] === 'string')
+    .map((e) => ({
+      kind: typeof e['kind'] === 'string' ? e['kind'] : 'unknown',
+      sectionKey: e['sectionKey'] as string,
+    }));
+}
+
+/**
+ * The signal rules, kept in the order the platform gave them.
+ *
+ * A rule with no `signalId` is dropped rather than given a placeholder: the id
+ * is what the rule *is*, and a row reading "(unknown signal): weight 3" tells a
+ * user something is being weighted without telling them what.
+ */
+function mapSignalRules(raw: unknown): readonly SignalRule[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (entry ?? {}) as Record<string, unknown>)
+    .filter((e) => typeof e['signalId'] === 'string' && (e['signalId'] as string).length > 0)
+    .map((e) => ({
+      signalId: e['signalId'] as string,
+      allocation: typeof e['allocation'] === 'number' ? e['allocation'] : 0,
+      required: e['required'] === true,
+      // Opaque on purpose — the shape belongs to the signal, not to us.
+      params: optionalObject(e['params']),
+    }));
+}
+
+/** Null rather than 0 for an absent threshold: "no minimum" and "unstated" differ. */
+function num(value: unknown): number | null {
+  return typeof value === 'number' ? value : null;
 }

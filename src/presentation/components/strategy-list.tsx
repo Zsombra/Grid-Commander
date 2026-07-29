@@ -77,7 +77,14 @@ export function StrategyList({
         {listings.map(({ strategy, governs, editable, forkToEdit }) => (
           <li key={strategy.id} className="rounded border p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="font-medium">{strategy.name}</h3>
+              {/* The name is the way in. Every row offered only actions before
+                  this — four things to do to a strategy and no way to look at
+                  one, because until `get_strategy` there was nothing to show. */}
+              <h3 className="font-medium">
+                <a href={`/strategies/${strategy.id}`} className="underline">
+                  {strategy.name}
+                </a>
+              </h3>
               <span className="text-xs uppercase">
                 {strategy.scope === 'SYSTEM' ? 'BattleGrid' : 'Yours'} · revision {strategy.revision}
               </span>

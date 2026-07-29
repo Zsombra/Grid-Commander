@@ -1,5 +1,63 @@
 # Journal
 
+## 2026-07-29 — The product can finally see a strategy
+
+**Did**: Proposed, executed and archived `read-a-whole-strategy` (standard,
+18/18). `strategy-authoring` 10 → 11 requirements, purely additive. 635 tests,
+up from 612.
+
+**The gap, restated.** `get_strategy` was one of the 74 unused tools. So a
+roster row was everything the product knew, and a roster row carries
+`sectionCount: 4` — a *number*. That is why the editor edited a tagline: not a
+missing form, no data behind a bigger one.
+
+What a strategy actually is, now visible: 4 sections, **82 signal rules** with
+weights and per-signal params, a page of authored `marketReadText`, three
+thresholds, and an open-position count. `/strategies/[id]` is the route that was
+missing — agents have had a detail page since they were built; strategies had
+four things you could *do* to one and nowhere to *look*.
+
+**Rendering caught a bug I shipped, again — the fourth time this session.** I
+sent `includeInactive: true` unconditionally, reasoning from the name that it
+widens the read. It does not. The tool description says *"only to load an owned
+PRIVATE strategy"* — I read that sentence, quoted it in a comment, and still
+missed the word "only". The two modes are strictly **disjoint**, verified live
+in all four cells:
+
+| | SYSTEM | archived PRIVATE |
+|---|---|---|
+| default | found | NOT_FOUND |
+| `includeInactive: true` | NOT_FOUND | found |
+
+Every SYSTEM strategy was unreadable, and the page said *"Grid-Commander could
+not reach BattleGrid to ask"* — on a request where BattleGrid answered clearly
+and immediately. The same shape of wrongness the `FailureCause` work fixed, one
+layer up.
+
+**So `readStrategy` asks twice**, and only on a not-found. The common read stays
+one round trip. That is not a runtime dual-path — it is one behaviour against a
+platform that offers no single call.
+
+**A refusal now carries the platform's own code.** BattleGrid's errors are JSON
+— `{"code":"NOT_FOUND","message":…}` — inside the text block. `ToolRefusedError`
+parses it once, so the adapter tells "not there" from "not allowed" by reading a
+code rather than matching on prose. Every tool gets that, not just this one.
+
+**The boundary guard earned its keep.** My first page imported `isEditable` and
+friends straight from the domain; `app/` may not. The fix follows the pattern
+already there for the roster — the use case decides the affordances and hands
+down `can`. Two places computing the same permission is how a detail page and a
+roster start disagreeing about whether something is editable.
+
+**Verified live**: London renders with 82 signals, 82 carrying weight, 0
+required, and "Make my own copy to edit"; the archived fork renders "· archived"
+with "Restore". Four mutations injected, four caught — including the exact
+`includeInactive` bug.
+
+**Next**: editing. Eighty-two rules with weights, required flags and per-signal
+params is a real surface, and it should be designed against the page that now
+exists rather than against a schema.
+
 ## 2026-07-29 — A write reached the real platform
 
 **Did**: Ran the write probe the operator authorised. `tests/live/write-probe.test.ts`

@@ -1,8 +1,9 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
 import type {
   CompileResult,
   LifecycleResult,
   StrategiesPort,
+  StrategyDetailResult,
   StrategyListResult,
   VocabularyResult,
 } from '@/ports/strategies.js';
@@ -26,6 +27,17 @@ export class FakeStrategiesPort implements StrategiesPort {
 
   constructor(seed: readonly Strategy[] = []) {
     this.strategies = [...seed];
+  }
+
+  /** Set to hand back a detail; `null` means the strategy is not there. */
+  detail: StrategyDetail | null = null;
+  detailReadable = true;
+
+  async readStrategy(): Promise<StrategyDetailResult> {
+    if (!this.detailReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return this.detail ? { kind: 'strategy', detail: this.detail } : { kind: 'missing' };
   }
 
   async listStrategies(): Promise<StrategyListResult> {
