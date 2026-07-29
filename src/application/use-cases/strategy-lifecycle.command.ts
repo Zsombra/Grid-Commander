@@ -134,6 +134,16 @@ export class SetStrategyActiveCommand {
       userId: req.userId,
       accessToken: req.accessToken,
       strategyId: req.strategy.id,
+      // BattleGrid requires the revision the caller formed this intent against,
+      // and refuses the call without it — so archiving and restoring could not
+      // succeed at all until this was passed. Found by checking what the
+      // platform declares it requires against what the adapter builds.
+      //
+      // It is also the right value on its own terms: the same optimistic
+      // concurrency every agent mutation already carries, so a strategy edited
+      // in another tab is refused rather than silently archived at a revision
+      // the user never saw. See architecture policy P4.
+      expectedRevision: req.strategy.revision,
       active: req.active,
       confirmationToken: req.confirmationToken,
     });

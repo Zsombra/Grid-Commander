@@ -44,6 +44,8 @@ export interface StrategiesPort {
     userId: string;
     accessToken: string;
     strategyId: string;
+    /** The revision the intent was formed against. BattleGrid requires it. */
+    expectedRevision: number;
     active: boolean;
     confirmationToken?: string | undefined;
   }): Promise<LifecycleResult>;

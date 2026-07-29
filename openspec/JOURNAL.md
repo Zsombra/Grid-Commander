@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-07-29 — Mapped the MCP surface, and two writes could never have worked
+
+**Did**: Proposed, executed and archived `map-the-mcp-surface` (lite, 10/10).
+611 tests, up from 579. No spec change — a probe, an artifact, a regenerated map,
+a conformance check, and the two defects it found.
+
+**Why now.** The envelope defect proved that a reference generated from
+`tools/list` inherits a blind spot: it records what to *send* and never what
+comes *back*. And the product calls 20 of 110 tools, so ninety tools of
+capability were unmapped against reality.
+
+**The finding that pays for the whole exercise.** `archive_strategy` and
+`restore_strategy` **could never have succeeded**. Both require
+`expectedRevision`; archive also requires `confirm`. `setActive` sent
+`{ strategyId }` alone. Nothing noticed because no write has ever reached the
+real platform. Fixed: the command already held the `Strategy`, so its revision
+was one field away — and passing it is right on its own terms, being the same
+optimistic concurrency every agent mutation already carries.
+
+**Declared and observed agreed exactly.** 21 read tools called live; across all
+of them the `outputSchema` matched the response with zero keys
+declared-but-absent and zero returned-but-undeclared. That is the result that
+makes the other 89 checkable from their schemas without calling them — which
+matters, because 27 of them change things. Every response carried both
+encodings, byte-identical.
+
+**A branch that cannot fire.** `setActive` detects `REPAIR_REQUIRED` by reading
+`payload['status'] ?? payload['result']`. Neither tool declares either key. A
+whole lifecycle outcome — its result case, its guidance copy, its surface — is
+unreachable. Filed as `repair-required-cannot-be-detected` rather than guessed
+at; where it actually surfaces is unknown, and replacing one wrong branch with
+another is not a fix.
+
+**An input schema can under-declare.** `get_market_context` declares no required
+arguments and refuses an empty call. A client building arguments from the schema
+alone — which is exactly what the assistant does — can construct a request the
+tool rejects.
+
+**The checker was wrong three times before it was right**, each time in the same
+shape as the bug it was hunting:
+
+1. File-level scan reported `confirm` present for `archive_strategy`, because
+   `applyPlan` sends `confirm: true` two methods away.
+2. Method-level scan reported `expectedRevision` present *after it was deleted*
+   — the method's parameter type declares `expectedRevision: number`. Every
+   required argument sharing a parameter name would have passed regardless of
+   whether it was sent. Caught only by a surviving mutation.
+3. `wraps nothing else` asserted two tools take a bare `request` envelope. Four
+   do. An assertion making a claim about the platform it had not looked up.
+
+Now scoped to the argument object at `this.call(…)`, where a type signature
+cannot reach. Both real defects fail it; both mutations are caught.
+
+**Kept out of the artifacts on purpose**: the key, and the account's contents.
+The probe records key names and value *types*, never values — this repository is
+public and that is the operator's live trading account.
+
+**Next**: `writes-unproven-against-live` (P1) is unchanged as a live proof,
+though every write shape is now verified against a declared schema that has
+earned trust on 21 out of 21.
+
 ## 2026-07-29 — First contact with the real platform: every read had been empty
 
 **Did**: The operator supplied a live `bg_live_` key. Proposed, executed and

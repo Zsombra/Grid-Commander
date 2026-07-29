@@ -1,0 +1,3490 @@
+{
+  "source": "https://mcp.battlegrid.trade/mcp",
+  "tool_count": 110,
+  "by_classification": {
+    "read": 83,
+    "write": 17,
+    "destructive": 10,
+    "unclassified": 0
+  },
+  "probed": {
+    "called": 21,
+    "skipped": 87,
+    "failed": 2
+  },
+  "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product.",
+  "tools": [
+    {
+      "name": "accept_entry_decision",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Accept a PENDING ENTER entry decision for trade execution. Only works for APPROVAL_REQUIRED mode agents with PENDING decisions. Requires mcp:wager scope.",
+      "input_required": [
+        "decisionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "accepted",
+        "decisionId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "activate_intelligence_agent",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Activate an archived intelligence agent (ARCHIVED -> ACTIVE). Subject to the per-rank private-agent slot limit. Requires expectedRevision for optimistic concurrency.",
+      "input_required": [
+        "agentId",
+        "expectedRevision"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "agent"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "apply_strategy_plan",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Confirm and atomically apply a compiled plan with its credential-bound token. Resubmit the plan's identity, expiry, normalized sections, post-state fields, and rule overrides exactly as compiled; the ",
+      "input_required": [
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "appliedImpact",
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "archive_intelligence_agent",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Archive an intelligence agent (ACTIVE -> ARCHIVED). This is the RECOVERABLE lifecycle \u2014 reverse it with activate_intelligence_agent; permanent deletion is not available over MCP. Archived agents stop ",
+      "input_required": [
+        "agentId",
+        "expectedRevision"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "agent"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "archive_strategy",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Archive an owned active PRIVATE strategy at the expected revision. Bound-agent configuration stays byte-identical, provenance advances immediately, and open positions do not block the lifecycle edit.",
+      "input_required": [
+        "confirm",
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "cancel_entry_decision",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Cancel/deny a PENDING ENTER entry decision. Prevents the trade from being executed. Only works for PENDING decisions. Requires mcp:wager scope.",
+      "input_required": [
+        "decisionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "cancelled",
+        "decisionId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "check_market_grid_submission",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Whether you have already submitted a grid to a session. When you have, the submission id and timestamp are included \u2014 call update_market_grid rather than submit_market_grid in that case.",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "hasSubmitted",
+        "submissionId",
+        "submittedAt"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sessionId"
+    },
+    {
+      "name": "close_agent_position",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "DESTRUCTIVE / irreversible: submits a reduce-only market order that closes the position and realizes its P&L. Requires mcp:wager scope and confirm:true. An exchange rejection is returned as an error c",
+      "input_required": [
+        "confirm",
+        "decisionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "closeOrderAccepted",
+        "decisionId",
+        "outcomeId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "compile_strategy_plan",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Compile one strict CREATE, UPDATE, or RESTORE request into a complete normalized approvedPlan, bounded live report review, exact revision/blast-radius diagnostics, and a five-minute credential-bound t",
+      "input_required": [
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "approvedPlan",
+        "planToken",
+        "reviewContext"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: request"
+    },
+    {
+      "name": "create_intelligence_agent",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Create an intelligence agent by selecting a strategy and approved LLM model, then optionally supplying one complete agent-owned trading configuration. Strategy-owned context, report, rules, prose, and",
+      "input_required": [
+        "brain",
+        "displayName",
+        "strategyId"
+      ],
+      "input_optional": [
+        "arenaChallengeEnabled",
+        "idempotencyKey",
+        "tradingConfig"
+      ],
+      "declared_output": [
+        "agent",
+        "slotUsage"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "delete_deployment_policy",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "DESTRUCTIVE: delete the entire deployment policy for a game preset, un-deploying ALL agents from it (the preset stops auto-submitting). Requires the mcp:wager scope \u2014 it revokes autonomous-wager autho",
+      "input_required": [
+        "confirm",
+        "expectedRevision",
+        "presetId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "deleted",
+        "presetId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "delete_radar_deployment",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "DESTRUCTIVE: un-deploy a coin entirely, removing its Radar policy with every slot and condition. Requires the mcp:wager scope \u2014 it revokes standing autonomous authority. Requires confirm:true, the hea",
+      "input_required": [
+        "coinId",
+        "confirm",
+        "expectedRevision"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "coinId",
+        "deleted"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "derive_strategy_rule_view",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Derive report membership, canonical report-default allocation and parameters, and non-destructive suggestions from self-contained draft sections and optional sparse rules. This reads no persisted stra",
+      "input_required": [
+        "sections"
+      ],
+      "input_optional": [
+        "rules"
+      ],
+      "declared_output": [
+        "rules"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sections"
+    },
+    {
+      "name": "fork_strategy",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Fork one exact visible source revision into a new owned PRIVATE strategy at revision 1. The locked source snapshot is copied coherently; the source must still match sourceRevision.",
+      "input_required": [
+        "sourceRevision",
+        "strategyId"
+      ],
+      "input_optional": [
+        "name"
+      ],
+      "declared_output": [
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "generate_agent_grid",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Generate a grid recommendation using the user's Intelligence Agent. Returns the agent's grid pick with confidence score and reasoning. This is a PROPOSAL: nothing is wagered and no session is entered ",
+      "input_required": [
+        "agentId",
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "agentDisplayName",
+        "confidence",
+        "confidenceThreshold",
+        "gridPick",
+        "isUpdate",
+        "meetsThreshold",
+        "reasoning"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "get_account_state",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get the authenticated user's complete account state: play balance (USDC), game statistics (level, rank, win rate), and intelligence agent slot usage. Use this to check if you're ready to play.",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "agentSlots",
+        "balance",
+        "mcpWagerEnabled",
+        "stats",
+        "tradingWalletProvisioned",
+        "username"
+      ],
+      "observed": [
+        "agentSlots",
+        "balance",
+        "mcpWagerEnabled",
+        "stats",
+        "tradingWalletProvisioned",
+        "username"
+      ],
+      "observed_shape": {
+        "agentSlots": {
+          "level": "int",
+          "limit": "int",
+          "rank": {
+            "displayName": "\u2026",
+            "name": "\u2026",
+            "tier": "\u2026"
+          },
+          "remaining": "int",
+          "used": "int"
+        },
+        "balance": {
+          "hasAccount": "bool",
+          "totalBalance": "str",
+          "usdc": "str"
+        },
+        "mcpWagerEnabled": "bool",
+        "stats": {
+          "avgRank": "float",
+          "level": "int",
+          "rank": {
+            "displayName": "\u2026",
+            "name": "\u2026",
+            "tier": "\u2026"
+          },
+          "tierClass": "str",
+          "totalGames": "int",
+          "totalWagered": "int",
+          "winRate": "int"
+        },
+        "tradingWalletProvisioned": "bool",
+        "username": "str"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_agent_activity_feed",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated activity feed for one of your agents \u2014 lifecycle, trade, funding, halt, and deployment events, newest first.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "events",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_automation_status",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get an agent's current preset assignments (what it's auto-playing) and all available presets it can be assigned to.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "assignablePresets",
+        "assignments",
+        "username"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_budget",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read an agent's live risk budget: the two static ceilings (maxConcurrentExposureUsd, maxCumulativeDrawdownUsd) plus server-computed live state \u2014 capital at risk now, remaining headroom (the sizing bas",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "budget"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_coin_qualification",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Pre-qualify coins against one of your own agents' gates \u2014 candidate-level construction, aggregate score, required-signal count, and the ATR% volatility floor \u2014 without spending an LLM call. Each verdi",
+      "input_required": [
+        "agentId",
+        "coinTickers"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "verdicts"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, coinTickers"
+    },
+    {
+      "name": "get_agent_decision_context",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "The pre-decision context your agents evaluated for a coin \u2014 the decision and signal-log ids, direction, conviction, planned entry, horizon, and the effective protection levels with their order ids. `c",
+      "input_required": [
+        "coinTicker"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "context"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: coinTicker"
+    },
+    {
+      "name": "get_agent_explorer",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Agent discovery list for a stats window, sorted by net P&L, win rate, or trade count. Each entry is a resume: identity and owner, windowed KPIs, best/worst trade, a 12-bucket P&L sparkline, the public",
+      "input_required": [],
+      "input_optional": [
+        "limit",
+        "search",
+        "sortBy",
+        "timeframe"
+      ],
+      "declared_output": [
+        "aggregations",
+        "currentUser",
+        "entries",
+        "filter",
+        "generatedAt",
+        "stats"
+      ],
+      "observed": [
+        "aggregations",
+        "currentUser",
+        "entries",
+        "filter",
+        "generatedAt",
+        "stats"
+      ],
+      "observed_shape": {
+        "aggregations": {
+          "modelVendors": [
+            "\u2026",
+            "\u2026\u00d79"
+          ],
+          "topMovers": {
+            "gainers": "\u2026",
+            "losers": "\u2026"
+          }
+        },
+        "currentUser": {
+          "agents": [
+            "\u2026",
+            "\u2026\u00d71"
+          ],
+          "userId": "str"
+        },
+        "entries": [
+          {
+            "activeTradeCount": "\u2026",
+            "agentId": "\u2026",
+            "agentName": "\u2026",
+            "avatarUrl": "\u2026",
+            "avgTradeSizeUsd": "\u2026",
+            "behavior": "\u2026",
+            "bestTrade": "\u2026",
+            "contextSources": "\u2026",
+            "gridAccuracyPercent": "\u2026",
+            "modelDisplayName": "\u2026",
+            "modelImageUrl": "\u2026",
+            "objective": "\u2026",
+            "overlayCharCount": "\u2026",
+            "ownerAvatarUrl": "\u2026",
+            "ownerDisplayName": "\u2026",
+            "ownerUserId": "\u2026",
+            "pnlSparkline": "\u2026",
+            "rank": "\u2026",
+            "roiPercent": "\u2026",
+            "scope": "\u2026",
+            "signalProfile": "\u2026",
+            "strategyName": "\u2026",
+            "subtitle": "\u2026",
+            "tenureDays": "\u2026",
+            "totalNetPnl": "\u2026",
+            "totalVolumeUsd": "\u2026",
+            "tradeCount": "\u2026",
+            "tradingMode": "\u2026",
+            "tradingSpec": "\u2026",
+            "winRate": "\u2026",
+            "winRatePercent": "\u2026",
+            "worstTrade": "\u2026"
+          },
+          "\u2026\u00d736"
+        ],
+        "filter": {
+          "sortBy": "str",
+          "timeframe": "str"
+        },
+        "generatedAt": "str",
+        "stats": {
+          "activeAgentCount": "int",
+          "activeAgentPercent": "float",
+          "avgNetPnl": "float",
+          "avgTradeSizeUsd": "float",
+          "lossCount": "int",
+          "totalAgents": "int",
+          "totalNetPnl": "float",
+          "totalVolumeUsd": "float",
+          "winCount": "int",
+          "winRate": "float",
+          "winRatePercent": "int"
+        }
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_agent_fund_allocation",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read an agent's funding envelope: spendable balance, funds committed to in-flight wagers and trade margin, lifetime allocated and recalled totals, the halt timestamp, and the per-trade push flag. Allo",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "allocation"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_game_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated Market Grid game history for one of your agents over a rolling window \u2014 per-game grid picks with their settled scoring, placement, accuracy, change capture, and payout split, plus the owner-",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page",
+        "timeframe"
+      ],
+      "declared_output": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_journal",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get an agent's recent performance journal: thought log entries (decisions + reasoning), activity events, and session summaries. Use this to monitor how your agent is performing.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit"
+      ],
+      "declared_output": [
+        "recentActivity",
+        "recentGames",
+        "recentThoughts",
+        "username"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_open_positions",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Public view of any agent's current open positions \u2014 entry fills, protection levels, leverage, and conviction. Entry-only: it carries no mark price and no unrealized P&L. Use list_user_active_positions",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "coinTicker"
+      ],
+      "declared_output": [
+        "positions"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_performance",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read an agent's realized performance since its budget baseline: cumulative realized P&L (trade net P&L plus wager payout minus stake), the peak-to-trough drawdown of that curve, the drawdown stop it i",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "performance"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_agent_prompt_context_preview",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Preview the full assembled prompt an agent will receive (system prompt + context sections + overlay). Provide sessionId OR primaryTimeframe.",
+      "input_required": [
+        "agentId",
+        "gameType"
+      ],
+      "input_optional": [
+        "primaryTimeframe",
+        "sessionId"
+      ],
+      "declared_output": [
+        "preview"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, gameType"
+    },
+    {
+      "name": "get_agent_thought_log",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated reasoning journal for one of your agents \u2014 one entry per decision cycle, carrying the market snapshot the agent saw, its written reasoning, the parsed grid picks, and its confidence against ",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_coin_candles",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Recent CLOSED OHLCV candles for one coin at a candle interval. Forming candles are never returned.",
+      "input_required": [
+        "interval",
+        "ticker"
+      ],
+      "input_optional": [
+        "limit"
+      ],
+      "declared_output": [
+        "candles"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: interval, ticker"
+    },
+    {
+      "name": "get_coin_market_context",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Full per-coin market context (the indicator modules agents use) for one or more SPECIFIC coins. Provide tickers (1-100) + a strategy timeframe (an enabled platform timeframe, e.g. 5m/15m/1h/4h/1d). Re",
+      "input_required": [
+        "strategyTimeframe",
+        "tickers"
+      ],
+      "input_optional": [
+        "modules"
+      ],
+      "declared_output": [
+        "coins",
+        "strategyTimeframe"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: strategyTimeframe, tickers"
+    },
+    {
+      "name": "get_coin_metadata",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "The tradable coin universe with per-coin metadata \u2014 ticker, name, exchange symbols, size decimals, max leverage, asset class, category, and whether the coin is enabled.",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "coins"
+      ],
+      "observed": [
+        "coins"
+      ],
+      "observed_shape": {
+        "coins": [
+          {
+            "assetClass": "\u2026",
+            "category": "\u2026",
+            "createdAt": "\u2026",
+            "hypercoreAssetId": "\u2026",
+            "hyperliquidSymbol": "\u2026",
+            "id": "\u2026",
+            "imageUrl": "\u2026",
+            "isActive": "\u2026",
+            "maxLeverage": "\u2026",
+            "name": "\u2026",
+            "primaryExchange": "\u2026",
+            "szDecimals": "\u2026",
+            "ticker": "\u2026"
+          },
+          "\u2026\u00d778"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_coin_performance_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Time-series of historical performance metrics for one coin at an interval \u2014 signed change and its absolute-value rank, RSI activity and rank, volume ratio and rank. A metric is null when the underlyin",
+      "input_required": [
+        "interval",
+        "ticker"
+      ],
+      "input_optional": [
+        "count"
+      ],
+      "declared_output": [
+        "history"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: interval, ticker"
+    },
+    {
+      "name": "get_coin_signal_preview",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Preview the signal pipeline for one coin at an interval \u2014 every evaluated signal (each carrying its own `triggered` flag), the dominant bias, the aggregate score percent, the conflict flag, and the co",
+      "input_required": [
+        "interval",
+        "ticker"
+      ],
+      "input_optional": [
+        "agentId"
+      ],
+      "declared_output": [
+        "aggregateScorePercent",
+        "allEvaluatedSignals",
+        "coinImageUrl",
+        "coinName",
+        "coinTicker",
+        "comparison",
+        "currentPrice",
+        "dominantBias",
+        "hasConflictingSignals",
+        "isAgentWeighted",
+        "priceChangePercent"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: interval, ticker"
+    },
+    {
+      "name": "get_context_source_full_preview",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Full GFM content + token count for ONE context source. `sourceKey` is any of the 21 toggleable source keys or `sessionContext`; take the value from get_context_sources_preview rather than composing it",
+      "input_required": [
+        "gameType",
+        "sourceKey"
+      ],
+      "input_optional": [
+        "primaryTimeframe",
+        "sessionId"
+      ],
+      "declared_output": [
+        "coinCount",
+        "content",
+        "displayName",
+        "estimatedTokenCount",
+        "snapshotTimestamp",
+        "sourceKey",
+        "tokenCountModel"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: gameType, sourceKey"
+    },
+    {
+      "name": "get_context_sources_preview",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Preview the live per-source context an agent would receive. Returns all 22 entries of the assembled context: the 21 TOGGLEABLE sources, whose `enabled` reflects the agent's own configuration, plus `se",
+      "input_required": [
+        "agentId",
+        "gameType"
+      ],
+      "input_optional": [
+        "primaryTimeframe",
+        "sessionId"
+      ],
+      "declared_output": [
+        "coinCount",
+        "primaryTimeframe",
+        "sessionId",
+        "snapshotTimestamp",
+        "sources"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, gameType"
+    },
+    {
+      "name": "get_decision_order_attribution",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Maps each executed order back to the entry decision that produced it (decision id, order id, agent, coin, direction, conviction) across all your agents. Use it to trace an order or trade row to its or",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "attributions"
+      ],
+      "observed": [
+        "attributions"
+      ],
+      "observed_shape": {
+        "attributions": [
+          {
+            "agentId": "\u2026",
+            "coinTicker": "\u2026",
+            "conviction": "\u2026",
+            "decisionId": "\u2026",
+            "direction": "\u2026",
+            "executedOrderId": "\u2026",
+            "signalLogId": "\u2026"
+          },
+          "\u2026\u00d712"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_deployment_policy",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read the deployment policy for a game preset. Returns { policy, authoringContext }: `policy` is the ordered agent slots \u2014 each with its agentId, agentDisplayName, minConfidence gate, priority, isDefau",
+      "input_required": [
+        "presetId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "authoringContext",
+        "policy"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: presetId"
+    },
+    {
+      "name": "get_entry_decision",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get one entry decision by id, including its signal checklist, candidate levels, execution ids, and challenge context. `decision` is null when no decision with that id is visible to you.",
+      "input_required": [
+        "decisionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "decision"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: decisionId"
+    },
+    {
+      "name": "get_intelligence_agent",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get full configuration for a specific intelligence agent including behavior profile, context sources, and overlay text. Used for building specialist prompts.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "agent"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_leaderboard",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get the global leaderboard ranked by a specific metric (PROFIT, VOLUME, or SCORE) and timeframe.",
+      "input_required": [
+        "metric",
+        "timeframe"
+      ],
+      "input_optional": [
+        "gameType",
+        "limit"
+      ],
+      "declared_output": [
+        "currentUser",
+        "filter",
+        "generatedAt",
+        "leaderboard"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: metric, timeframe"
+    },
+    {
+      "name": "get_macd_heatmap",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Full MACD heatmap for a heatmap interval \u2014 per-coin PPO histogram across all four intervals, price and 24h change, latest crossover signal, and exchange market stats, plus market-wide bullish/bearish ",
+      "input_required": [],
+      "input_optional": [
+        "exchange",
+        "limit",
+        "timeframe"
+      ],
+      "declared_output": [
+        "aggregates",
+        "data",
+        "meta"
+      ],
+      "observed": [
+        "aggregates",
+        "data",
+        "meta"
+      ],
+      "observed_shape": {
+        "aggregates": {
+          "averagePpo": "float",
+          "bearishCount": "int",
+          "bearishPercent": "float",
+          "bullishCount": "int",
+          "bullishPercent": "float"
+        },
+        "data": [
+          {
+            "crossover": "\u2026",
+            "marketStats": "\u2026",
+            "name": "\u2026",
+            "ppo": "\u2026",
+            "ppoHistogram": "\u2026",
+            "price": "\u2026",
+            "priceChange24h": "\u2026",
+            "symbol": "\u2026",
+            "volume24h": "\u2026"
+          },
+          "\u2026\u00d778"
+        ],
+        "meta": {
+          "coinCount": "int",
+          "exchange": "str",
+          "generatedAt": "int",
+          "timeframe": "str"
+        }
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_market_context",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get comprehensive market context with 21 selectable modules. Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research \u2014 exactly one of the tw",
+      "input_required": [],
+      "input_optional": [
+        "modules",
+        "primaryTimeframe",
+        "sessionId"
+      ],
+      "declared_output": [
+        "coins",
+        "gridSize",
+        "presetDisplayName",
+        "primaryTimeframe",
+        "sections",
+        "sessionId"
+      ],
+      "observed": null,
+      "call_failed": "{\"code\":\"VALIDATION_ERROR\",\"message\":\"Provide sessionId or primaryTimeframe\"}"
+    },
+    {
+      "name": "get_market_grid_player_grid",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Your submitted grid for a session, with live or settled per-cell scoring, direction accuracy, captain rank, change capture, jackpot pattern overlay, and the agent attribution when an agent submitted o",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "accuracyPercent",
+        "agentAvatarUrl",
+        "agentConfidence",
+        "agentConfidencePercent",
+        "agentDisplayName",
+        "agentId",
+        "agentModelImageUrl",
+        "agentModelName",
+        "agentReasoning",
+        "avatarUrl",
+        "captainRank",
+        "cellScores",
+        "correctCount",
+        "grid",
+        "jackpotPattern",
+        "netChangeCapture",
+        "sessionId",
+        "submittedAt",
+        "totalChangeCapture",
+        "totalCount",
+        "userId",
+        "username"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sessionId"
+    },
+    {
+      "name": "get_market_grid_results",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Results for a settled Market Grid session \u2014 the ranked leaderboard with payouts and outcomes, per-coin resolutions with their on-chain capture provenance, the settled candle display data, the final co",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "avgNetChangeCapture",
+        "captureEfficiency",
+        "coinBoard",
+        "coinCaptainBadges",
+        "dominantBiasDirection",
+        "dominantBiasPercent",
+        "gameDuration",
+        "gameName",
+        "gameType",
+        "itmCount",
+        "itmPercent",
+        "leaderboard",
+        "playerGrids",
+        "players",
+        "resolutions",
+        "session",
+        "sessionAccuracy",
+        "settledMarketData",
+        "totalCorrectCount",
+        "totalDownCount",
+        "totalPlayers",
+        "totalPredictionCount",
+        "totalUpCount"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sessionId"
+    },
+    {
+      "name": "get_market_grid_session",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Full detail for one Market Grid session \u2014 grid dimensions, the resolved coin pool with categories, candle timeframe, entry fee, prize pool, jackpot, War Bond contribution, the fee split, payout bands,",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "chartIntervalMs",
+        "coinCaptainBadges",
+        "coinCount",
+        "coinPool",
+        "createdAt",
+        "displayName",
+        "entryFee",
+        "feeConfig",
+        "finalScoringSource",
+        "gamePresetId",
+        "gameType",
+        "gridCols",
+        "gridRows",
+        "gridSize",
+        "hostUserId",
+        "id",
+        "jackpotPayoutHighlights",
+        "lockAt",
+        "payoutBandSummary",
+        "payoutMultiplier",
+        "payoutStructure",
+        "perfectGameJackpot",
+        "playerCount",
+        "presetBadgeImageUrl",
+        "prizePool",
+        "settleAt",
+        "status",
+        "timeRangeKey",
+        "timeframe",
+        "totalPurse",
+        "warBondContribution",
+        "warBondCycleId",
+        "warBondDeployed",
+        "warBondPoolId"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sessionId"
+    },
+    {
+      "name": "get_mcp_reasoning_journal",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Your reasoning journal record for a Market Grid session submission \u2014 the reasoning, confidence, model name, client name, and grid pick you supplied when submitting. `entry` is null when this session h",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "entry"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: sessionId"
+    },
+    {
+      "name": "get_metric_construction_hints",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get the canonical native value contract and executable transform-authoring hints for one metric returned by list_strategy_vocabulary.",
+      "input_required": [
+        "metric"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "metric"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: metric"
+    },
+    {
+      "name": "get_open_orders",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Your current open orders on the live exchange \u2014 resting limit, stop-loss, and take-profit legs. Queries the venue directly, so it is slower than a cached read and can fail when the exchange is unreach",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "orders"
+      ],
+      "observed": null,
+      "call_failed": "{\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\"}"
+    },
+    {
+      "name": "get_order_status",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Live status of one of your orders on the exchange by order id \u2014 filled / resting / canceled plus fill detail. `order` is null when the venue has no order under that id for your account. Queries the ve",
+      "input_required": [
+        "orderId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "order"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: orderId"
+    },
+    {
+      "name": "get_position_audit_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Public view of the order-lifecycle audit trail for one position \u2014 the same transparency record an anonymous visitor sees on the agent's profile, for any agent. Returned as a single chronologically-ord",
+      "input_required": [
+        "agentId",
+        "positionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "events",
+        "positionId"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, positionId"
+    },
+    {
+      "name": "get_public_agent_game_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated public Market Grid game history for any public agent over a rolling window \u2014 per-game grid picks with their settled scoring, placement, accuracy, change capture, and payout split. Owner-only",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page",
+        "timeframe"
+      ],
+      "declared_output": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_public_agent_realized_trades",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated public realized (closed) trades for any public agent over a rolling window \u2014 per-trade entry and exit fills, net P&L, win flag, price move %, return on equity, leverage, conviction, duration",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "filter",
+        "limit",
+        "page",
+        "timeframe"
+      ],
+      "declared_output": [
+        "limit",
+        "page",
+        "total",
+        "trades"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_public_agent_signal_log_detail",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Full pipeline detail for one public signal log: the scorecard (per-signal scores, bias, and indicator readings), per-signal attribution, comparison coins, candidate trade levels, and the gate \u2192 attemp",
+      "input_required": [
+        "agentId",
+        "logId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "log"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, logId"
+    },
+    {
+      "name": "get_public_agent_signal_logs",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated public signal logs for any public agent \u2014 each row's coin, dominant bias, assessment direction, aggregate score, gate result, and terminal pipeline status. Filter by coin plus any signal fac",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "filter",
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "entries",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_public_agent_signal_performance",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Aggregate public signal performance for any public agent: evaluation and enter/skip counts, per-status entry breakdown, average aggregate score and conviction, fill rate, top coins by evaluation count",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "avgAggregateScore",
+        "avgAggregateScorePercent",
+        "avgConviction",
+        "avgConvictionPercent",
+        "avgDurationSeconds",
+        "avgNetPnl",
+        "avgRiskRewardRatio",
+        "blockedCount",
+        "cancelledCount",
+        "enterCount",
+        "executedCount",
+        "expiredCount",
+        "failedCount",
+        "fillRatePct",
+        "lossCount",
+        "outcomeCount",
+        "pendingCount",
+        "skipCount",
+        "skippedCount",
+        "topCoinsByEvaluation",
+        "totalEntryDecisions",
+        "totalEvaluations",
+        "totalNetPnl",
+        "winCount",
+        "winRate",
+        "winRatePercent"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_public_agent_trade_chart",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Frozen candle series with the entry/exit/SL/TP overlay for one public agent's signal log. `result` is discriminated on `status`: READY carries the chart, UNAVAILABLE means the log never reached a fill",
+      "input_required": [
+        "agentId",
+        "logId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "result"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, logId"
+    },
+    {
+      "name": "get_public_agent_unrealized_pnl",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Live unrealized P&L snapshot for a PUBLIC agent's open positions \u2014 per-position size, entry price, unrealized P&L, leverage, raw price move, and return on equity, plus the account total. This is the p",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "signalSource"
+      ],
+      "declared_output": [
+        "snapshot"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_radar_deployment",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read your Radar deployment policy for one coin, or null when that coin is not deployed. `policy` carries the ordered agent slots \u2014 each with agentId, agentDisplayName, its minConviction trade bar (nul",
+      "input_required": [
+        "coinId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "policy"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: coinId"
+    },
+    {
+      "name": "get_regime_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read the market-regime time-series for a coin at a timeframe. Each point is {timestamp, regime, conviction} on that timeframe's candle grid, oldest-first. The MDS persists the per-bar regime projectio",
+      "input_required": [],
+      "input_optional": [
+        "bars",
+        "symbol",
+        "timeframe"
+      ],
+      "declared_output": [
+        "points",
+        "symbol",
+        "timeframe"
+      ],
+      "observed": [
+        "points",
+        "symbol",
+        "timeframe"
+      ],
+      "observed_shape": {
+        "points": [
+          {
+            "conviction": "\u2026",
+            "regime": "\u2026",
+            "timestamp": "\u2026"
+          },
+          "\u2026\u00d7239"
+        ],
+        "symbol": "str",
+        "timeframe": "str"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_regime_snapshot",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read the CURRENT market-regime snapshot for a coin at a timeframe: regime + conviction + how many bars it has held (regimeRunLengthBars) + the classified context (trend / volatility / momentum / struc",
+      "input_required": [],
+      "input_optional": [
+        "symbol",
+        "timeframe"
+      ],
+      "declared_output": [
+        "snapshot",
+        "symbol",
+        "timeframe"
+      ],
+      "observed": [
+        "snapshot",
+        "symbol",
+        "timeframe"
+      ],
+      "observed_shape": {
+        "snapshot": {
+          "context": {
+            "momentum": "\u2026",
+            "momentumTrajectory": "\u2026",
+            "pricePosition": "\u2026",
+            "structuralBias": "\u2026",
+            "trend": "\u2026",
+            "trendTrajectory": "\u2026",
+            "volatility": "\u2026",
+            "volatilityTrajectory": "\u2026"
+          },
+          "conviction": "str",
+          "regime": "str",
+          "regimeRunLengthBars": "int"
+        },
+        "symbol": "str",
+        "timeframe": "str"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_signal_log",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get full detail for one signal evaluation: the scorecard (every evaluated signal with score, bias, direction, and indicator readings), per-signal attribution, comparison coins, candidate trade levels,",
+      "input_required": [
+        "agentId",
+        "logId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "log"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, logId"
+    },
+    {
+      "name": "get_signal_performance",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Aggregate signal performance for one of your agents: evaluation and enter/skip counts, per-status entry breakdown, average aggregate score and conviction, fill rate, top coins by evaluation count, and",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "avgAggregateScore",
+        "avgAggregateScorePercent",
+        "avgConviction",
+        "avgConvictionPercent",
+        "avgDurationSeconds",
+        "avgNetPnl",
+        "avgRiskRewardRatio",
+        "blockedCount",
+        "cancelledCount",
+        "enterCount",
+        "executedCount",
+        "expiredCount",
+        "failedCount",
+        "fillRatePct",
+        "lossCount",
+        "outcomeCount",
+        "pendingCount",
+        "skipCount",
+        "skippedCount",
+        "topCoinsByEvaluation",
+        "totalEntryDecisions",
+        "totalEvaluations",
+        "totalNetPnl",
+        "winCount",
+        "winRate",
+        "winRatePercent"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "get_strategy",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get one active visible strategy by default, with its complete report, dense signal scorecard, setup gates, lifecycle state, usage counts, and current revision. Set includeInactive:true only to load an",
+      "input_required": [
+        "strategyId"
+      ],
+      "input_optional": [
+        "includeInactive"
+      ],
+      "declared_output": [
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: strategyId"
+    },
+    {
+      "name": "get_strategy_column_contract",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Compile one proposed strategy-report column into its normalized parameters, output contract, formula semantics, timeframe contract, and null presentation without reading market values.",
+      "input_required": [
+        "column"
+      ],
+      "input_optional": [
+        "sectionTimeframe"
+      ],
+      "declared_output": [
+        "contract"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: column"
+    },
+    {
+      "name": "get_strategy_section_template",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get the full canonical definition for one platform or custom report template listed by list_strategy_vocabulary.",
+      "input_required": [
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "template"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: request"
+    },
+    {
+      "name": "get_strategy_signal_definition",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Get the canonical authoring definition for one listed strategy signal. Supply an enabled timeframe only when a structural availability assessment is needed.",
+      "input_required": [
+        "signalId"
+      ],
+      "input_optional": [
+        "timeframe"
+      ],
+      "declared_output": [
+        "signal"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: signalId"
+    },
+    {
+      "name": "get_top_ranked_coins",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Top N coins by a discovery metric over a candle interval. `latestMetricValue` is signed change for abs_change, RSI activity for rsi_activity, and the volume ratio for volume.",
+      "input_required": [
+        "interval",
+        "metric"
+      ],
+      "input_optional": [
+        "limit"
+      ],
+      "declared_output": [
+        "coins"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: interval, metric"
+    },
+    {
+      "name": "get_trade_chart",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Frozen candle series with the entry/exit/SL/TP overlay for one of your own agent's signal logs. `result` is discriminated on `status`: READY carries the chart, UNAVAILABLE means the log never reached ",
+      "input_required": [
+        "agentId",
+        "logId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "result"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId, logId"
+    },
+    {
+      "name": "get_trade_outcome_by_decision",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "The settled trade outcome for one of your entry decisions \u2014 entry and exit fills, gross and net P&L, fees, slippage, leverage, duration, and close reason. `outcome` is null when the decision has no se",
+      "input_required": [
+        "decisionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "outcome"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: decisionId"
+    },
+    {
+      "name": "get_trading_config_catalog",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Trading-config vocabulary in one call: position-management presets (COLT/BERETTA/LUGER/WALTHER) + trading defaults and valid bounds (min/max ranges). `tradingConfig` is an input to BOTH create_intelli",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "positionManagementPresets",
+        "tradingDefaults"
+      ],
+      "observed": [
+        "positionManagementPresets",
+        "tradingDefaults"
+      ],
+      "observed_shape": {
+        "positionManagementPresets": [
+          {
+            "cardSummary": "\u2026",
+            "config": "\u2026",
+            "description": "\u2026",
+            "label": "\u2026",
+            "preset": "\u2026",
+            "tagline": "\u2026"
+          },
+          "\u2026\u00d75"
+        ],
+        "tradingDefaults": {
+          "bounds": {
+            "agentMinConfidenceFloor": "\u2026",
+            "agentMinTradeConvictionFloor": "\u2026",
+            "maximumAtrPct": "\u2026",
+            "maximumMaxDailyTrades": "\u2026",
+            "maximumMaxEntryDeviationAtrMultiple": "\u2026",
+            "maximumMaxSlippageBps": "\u2026",
+            "maximumRiskRewardRatio": "\u2026",
+            "maximumStopLossPct": "\u2026",
+            "minimumAllocationUsd": "\u2026",
+            "minimumAtrPct": "\u2026",
+            "minimumLeverage": "\u2026",
+            "minimumMaxEntryDeviationAtrMultiple": "\u2026",
+            "minimumMaxSlippageBps": "\u2026",
+            "minimumRiskRewardRatio": "\u2026",
+            "minimumStopLossPct": "\u2026",
+            "minimumTradingEquityUsd": "\u2026"
+          },
+          "defaults": {
+            "defaultAtrMatchesStrategyTimeframe": "\u2026",
+            "defaultAtrTimeframe": "\u2026",
+            "defaultEntrySlippageBps": "\u2026",
+            "defaultGridMinConfidence": "\u2026",
+            "defaultLargePct": "\u2026",
+            "defaultMaxDailyTrades": "\u2026",
+            "defaultMaxEntryDeviationAtrMultiple": "\u2026",
+            "defaultMaxLeverage": "\u2026",
+            "defaultMaxStopLossPct": "\u2026",
+            "defaultMediumPct": "\u2026",
+            "defaultMinAtrPct": "\u2026",
+            "defaultMinRiskRewardRatio": "\u2026",
+            "defaultMinStopLossPct": "\u2026",
+            "defaultMinTradeConviction": "\u2026",
+            "defaultPositionMgmtBreakevenTriggerTpProgressPct": "\u2026",
+            "defaultPositionMgmtEnabled": "\u2026",
+            "defaultPositionMgmtTimeDecayGracePeriodMinutes": "\u2026",
+            "defaultPositionMgmtTimeDecayIntervalMinutes": "\u2026",
+            "defaultPositionMgmtTimeDecayMaxTightenPct": "\u2026",
+            "defaultPositionMgmtTimeDecayStaleThresholdTpProgressPct": "\u2026",
+            "defaultPositionMgmtTimeDecayTightenPct": "\u2026",
+            "defaultPositionMgmtTrailingAtrMultiple": "\u2026",
+            "defaultPositionMgmtTrailingBufferPct": "\u2026",
+            "defaultPositionMgmtTrailingFixedPct": "\u2026",
+            "defaultRegimeAutoDerive": "\u2026",
+            "defaultRegimeTimeframe": "\u2026",
+            "defaultSignalTimeoutMinutes": "\u2026",
+            "defaultSmallPct": "\u2026",
+            "defaultStrategyTimeframe": "\u2026",
+            "defaultTtlMinutes": "\u2026"
+          }
+        }
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_user_activity_feed",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated activity feed aggregated across ALL your agents, newest first.",
+      "input_required": [],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "events",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": [
+        "events",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "events": [
+          {
+            "agentId": "\u2026",
+            "coinGridSessionId": "\u2026",
+            "createdAt": "\u2026",
+            "eventType": "\u2026",
+            "id": "\u2026",
+            "marketGridSessionId": "\u2026",
+            "metadata": "\u2026",
+            "thoughtLogId": "\u2026",
+            "userId": "\u2026"
+          },
+          "\u2026\u00d720"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_user_agent_game_history",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated Market Grid game history aggregated across ALL your agents over a rolling window, newest first.",
+      "input_required": [],
+      "input_optional": [
+        "limit",
+        "page",
+        "timeframe"
+      ],
+      "declared_output": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "accuracy": "\u2026",
+            "agentId": "\u2026",
+            "captainChangePercent": "\u2026",
+            "cells": "\u2026",
+            "confidenceScore": "\u2026",
+            "confidenceScorePercent": "\u2026",
+            "finalScore": "\u2026",
+            "gameType": "\u2026",
+            "isItm": "\u2026",
+            "jackpotPayout": "\u2026",
+            "marketGridSessionId": "\u2026",
+            "netChangeCapture": "\u2026",
+            "outcome": "\u2026",
+            "ownerView": "\u2026",
+            "playerId": "\u2026",
+            "poolPayout": "\u2026",
+            "rank": "\u2026",
+            "reasoning": "\u2026",
+            "submittedAt": "\u2026",
+            "thoughtLogId": "\u2026",
+            "totalChangeCapture": "\u2026",
+            "totalPayout": "\u2026"
+          },
+          "\u2026\u00d720"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "get_user_thought_log",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated reasoning journal aggregated across ALL your agents, newest first.",
+      "input_required": [],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "\u2026",
+            "coinGridSessionId": "\u2026",
+            "confidenceScore": "\u2026",
+            "confidenceScorePercent": "\u2026",
+            "confidenceThreshold": "\u2026",
+            "confidenceThresholdPercent": "\u2026",
+            "createdAt": "\u2026",
+            "gridPick": "\u2026",
+            "id": "\u2026",
+            "marketGridSessionId": "\u2026",
+            "marketSnapshot": "\u2026",
+            "outcome": "\u2026",
+            "parsedPicks": "\u2026",
+            "reasoning": "\u2026",
+            "usageEventId": "\u2026",
+            "userId": "\u2026"
+          },
+          "\u2026\u00d720"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "halt_intelligence_agent",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Stop an agent from opening any new trade, immediately. Requires the mcp:wager scope \u2014 halting changes whether real capital can be committed. Open positions are NOT closed: use close_agent_position for",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "allocation"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "list_approved_models",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List all approved LLM models available for intelligence agents. Use the returned modelId values when creating or updating agents.",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "models"
+      ],
+      "observed": [
+        "models"
+      ],
+      "observed_shape": {
+        "models": [
+          {
+            "costScore": "\u2026",
+            "displayName": "\u2026",
+            "id": "\u2026",
+            "imageUrl": "\u2026",
+            "intelligenceScore": "\u2026",
+            "isDefault": "\u2026",
+            "maxOutputTokens": "\u2026",
+            "modelId": "\u2026",
+            "pinProvider": "\u2026",
+            "provider": "\u2026",
+            "reasoningEffort": "\u2026",
+            "sortOrder": "\u2026",
+            "speedScore": "\u2026",
+            "temperature": "\u2026",
+            "topP": "\u2026"
+          },
+          "\u2026\u00d726"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_entry_decisions",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List entry decisions for an agent with optional filters. Returns paginated results with total count. Filter by PENDING status to see actionable decisions requiring accept/cancel.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "coinTicker",
+        "decision",
+        "direction",
+        "limit",
+        "page",
+        "status"
+      ],
+      "declared_output": [
+        "entries",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "list_game_presets",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List all active game presets showing available game configurations (grid sizes, timeframes, entry fees).",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "presets"
+      ],
+      "observed": [
+        "presets"
+      ],
+      "observed_shape": {
+        "presets": [
+          {
+            "badgeImageUrl": "\u2026",
+            "cancelBelowThreshold": "\u2026",
+            "captainMultiplier": "\u2026",
+            "captainWrongPenaltyMultiplier": "\u2026",
+            "changeMultiplier": "\u2026",
+            "coHostUserId": "\u2026",
+            "coinIds": "\u2026",
+            "createdAt": "\u2026",
+            "defaultCoinId": "\u2026",
+            "description": "\u2026",
+            "displayName": "\u2026",
+            "distributionCurveId": "\u2026",
+            "entryFee": "\u2026",
+            "finalScoringSource": "\u2026",
+            "gameType": "\u2026",
+            "gridCols": "\u2026",
+            "gridRows": "\u2026",
+            "gridSize": "\u2026",
+            "hostUserId": "\u2026",
+            "id": "\u2026",
+            "inviteCode": "\u2026",
+            "isActive": "\u2026",
+            "jackpotEnabled": "\u2026",
+            "maxPlayers": "\u2026",
+            "minimumPlayers": "\u2026",
+            "perfectGameAllCorrectRequired": "\u2026",
+            "regimeReferenceCoinId": "\u2026",
+            "regimeReferenceTimeframe": "\u2026",
+            "scheduledStartAt": "\u2026",
+            "schedulingMode": "\u2026",
+            "timeRangeKey": "\u2026",
+            "updatedAt": "\u2026",
+            "visibility": "\u2026",
+            "warBondPoolId": "\u2026",
+            "wrongPenaltyMultiplier": "\u2026"
+          },
+          "\u2026\u00d72"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_gate_blocks",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Paginated pre-signal pipeline rejections for one of your agents \u2014 the gate stage, reason code, quantified reason detail, and linked thought log for each candidate that never reached signal evaluation.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "entries",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "list_intelligence_agents",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List the user's private intelligence agents. Returns each agent's id, display name, lifecycle status, revision, strategy binding provenance (strategyId, strategyRevision, strategyName, bindingState), ",
+      "input_required": [],
+      "input_optional": [
+        "statuses"
+      ],
+      "declared_output": [
+        "agents",
+        "slotUsage"
+      ],
+      "observed": [
+        "agents",
+        "slotUsage"
+      ],
+      "observed_shape": {
+        "agents": [
+          {
+            "activeGameCount": "\u2026",
+            "arenaChallengeEnabled": "\u2026",
+            "avatarUrl": "\u2026",
+            "behavior": "\u2026",
+            "bindingState": "\u2026",
+            "brainPreset": "\u2026",
+            "capabilities": "\u2026",
+            "contextSources": "\u2026",
+            "createdAt": "\u2026",
+            "displayName": "\u2026",
+            "hasActiveAssignments": "\u2026",
+            "id": "\u2026",
+            "isSystemDefault": "\u2026",
+            "last24hCostUsd": "\u2026",
+            "modelDisplayName": "\u2026",
+            "modelId": "\u2026",
+            "modelImageUrl": "\u2026",
+            "overlayText": "\u2026",
+            "performance": "\u2026",
+            "provider": "\u2026",
+            "revision": "\u2026",
+            "scope": "\u2026",
+            "status": "\u2026",
+            "strategyId": "\u2026",
+            "strategyName": "\u2026",
+            "strategyRevision": "\u2026",
+            "systemKey": "\u2026",
+            "tradingConfig": "\u2026",
+            "updatedAt": "\u2026",
+            "userId": "\u2026"
+          },
+          "\u2026\u00d72"
+        ],
+        "slotUsage": {
+          "level": "int",
+          "limit": "int",
+          "rank": {
+            "displayName": "\u2026",
+            "name": "\u2026",
+            "tier": "\u2026"
+          },
+          "remaining": "int",
+          "used": "int"
+        }
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_market_grid_sessions",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List Market Grid sessions, optionally filtered by status. Each summary carries the coin-pool preview, lock and settle times, the full fee and payout structure, and the crowd consensus. Filter to PENDI",
+      "input_required": [],
+      "input_optional": [
+        "limit",
+        "status"
+      ],
+      "declared_output": [
+        "sessions"
+      ],
+      "observed": [
+        "sessions"
+      ],
+      "observed_shape": {
+        "sessions": [
+          {
+            "alpha": "\u2026",
+            "calculatedItmCount": "\u2026",
+            "coinPicks": "\u2026",
+            "coinPoolPreview": "\u2026",
+            "crowdDownPercent": "\u2026",
+            "crowdUpPercent": "\u2026",
+            "displayName": "\u2026",
+            "distributionCurveId": "\u2026",
+            "entryFee": "\u2026",
+            "feeBreakdown": "\u2026",
+            "feeConfig": "\u2026",
+            "finalScoringSource": "\u2026",
+            "gamePresetId": "\u2026",
+            "gameType": "\u2026",
+            "hostAvatarUrl": "\u2026",
+            "hostDisplayName": "\u2026",
+            "hostUserId": "\u2026",
+            "itmPercent": "\u2026",
+            "jackpotPayoutHighlights": "\u2026",
+            "lockAt": "\u2026",
+            "minimumPlayers": "\u2026",
+            "payoutBandSummary": "\u2026",
+            "payoutMultiplier": "\u2026",
+            "payoutStructure": "\u2026",
+            "perfectGameJackpot": "\u2026",
+            "playerCount": "\u2026",
+            "playersNeeded": "\u2026",
+            "presetBadgeImageUrl": "\u2026",
+            "regimeReferenceTicker": "\u2026",
+            "regimeReferenceTimeframe": "\u2026",
+            "selectedCoinId": "\u2026",
+            "sessionId": "\u2026",
+            "settleAt": "\u2026",
+            "source": "\u2026",
+            "status": "\u2026",
+            "timeRangeKey": "\u2026",
+            "totalPrizePool": "\u2026",
+            "totalPurse": "\u2026",
+            "warBondContribution": "\u2026",
+            "warBondCycleId": "\u2026",
+            "warBondCycleStarted": "\u2026"
+          },
+          "\u2026\u00d750"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_pending_approvals",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Every decision across all your agents awaiting your approval (status AWAITING_APPROVAL), enriched with execution and outcome context. Read this before accept_entry_decision or cancel_entry_decision. R",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "approvals"
+      ],
+      "observed": [
+        "approvals"
+      ],
+      "observed_shape": {
+        "approvals": []
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_radar_deployments",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read every coin you have deployed on Radar, each with its full policy, revision, and live resolvesNow projection, plus a fleet roll-up. `summary` carries coinsDeployed (paused policies included \u2014 it i",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "policies",
+        "summary"
+      ],
+      "observed": [
+        "policies",
+        "summary"
+      ],
+      "observed_shape": {
+        "policies": [
+          {
+            "coinId": "\u2026",
+            "coinTicker": "\u2026",
+            "deploymentTimeframe": "\u2026",
+            "enabled": "\u2026",
+            "policyId": "\u2026",
+            "resolvesNow": "\u2026",
+            "revision": "\u2026",
+            "slots": "\u2026"
+          },
+          "\u2026\u00d716"
+        ],
+        "summary": {
+          "agentsActive": "int",
+          "coinCap": "int",
+          "coinsDeployed": "int",
+          "idle": "int",
+          "inPosition": "int",
+          "needsAttention": "int",
+          "onDutyNow": "int",
+          "paused": "int",
+          "scanning": "int",
+          "sittingOut": "int",
+          "warming": "int"
+        }
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_session_agent_positions",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "The same open-position view as list_user_active_positions, scoped to one Market Grid session.",
+      "input_required": [
+        "marketGridSessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "activeCoinTickers",
+        "agents",
+        "marketGridSessionId",
+        "positions",
+        "totals",
+        "userId"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: marketGridSessionId"
+    },
+    {
+      "name": "list_signal_logs",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List signal evaluation logs for one of your agents. Each row carries the aggregate score, dominant bias, assessment direction, gate result, and terminal pipeline status. Use it to monitor how the agen",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "coinTicker",
+        "direction",
+        "dominantBias",
+        "limit",
+        "page",
+        "signalSource",
+        "terminalStatus"
+      ],
+      "declared_output": [
+        "entries",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "list_strategies",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List the visible SYSTEM catalog and owned PRIVATE strategies with revision, lifecycle, usage, and quota summaries. Include inactive owned strategies when preparing a RESTORE plan.",
+      "input_required": [],
+      "input_optional": [
+        "includeInactive"
+      ],
+      "declared_output": [
+        "quota",
+        "strategies"
+      ],
+      "observed": [
+        "quota",
+        "strategies"
+      ],
+      "observed_shape": {
+        "quota": {
+          "limit": "int",
+          "remaining": "int",
+          "used": "int"
+        },
+        "strategies": [
+          {
+            "boundAgentCount": "\u2026",
+            "cadence": "\u2026",
+            "createdAt": "\u2026",
+            "description": "\u2026",
+            "forkedFromStrategyId": "\u2026",
+            "id": "\u2026",
+            "isActive": "\u2026",
+            "name": "\u2026",
+            "ownerUserId": "\u2026",
+            "revision": "\u2026",
+            "scope": "\u2026",
+            "sectionCount": "\u2026",
+            "systemKey": "\u2026",
+            "tagline": "\u2026",
+            "timeframe": "\u2026",
+            "updatedAt": "\u2026",
+            "visibility": "\u2026"
+          },
+          "\u2026\u00d715"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_strategy_categories",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Start report authoring here. List canonical metric categories with focused guidance and examples, then pass one returned category to list_strategy_vocabulary.",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "categories"
+      ],
+      "observed": [
+        "categories"
+      ],
+      "observed_shape": {
+        "categories": [
+          {
+            "bestPractices": "\u2026",
+            "category": "\u2026",
+            "commonMisuses": "\u2026",
+            "examples": "\u2026",
+            "label": "\u2026",
+            "metricCount": "\u2026",
+            "purpose": "\u2026",
+            "whenToUse": "\u2026"
+          },
+          "\u2026\u00d710"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_strategy_signals",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List compact canonical strategy-signal summaries, optionally narrowed by an exact module and/or bounded text query. Use a returned signalId with get_strategy_signal_definition for full authoring detai",
+      "input_required": [],
+      "input_optional": [
+        "module",
+        "query"
+      ],
+      "declared_output": [
+        "signals"
+      ],
+      "observed": [
+        "signals"
+      ],
+      "observed_shape": {
+        "signals": [
+          {
+            "direction": "\u2026",
+            "display": "\u2026",
+            "kind": "\u2026",
+            "module": "\u2026",
+            "priceBasis": "\u2026",
+            "signalId": "\u2026"
+          },
+          "\u2026\u00d782"
+        ]
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_strategy_vocabulary",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List compact report-authoring vocabulary for one category, including metrics, transforms, timeframe references, budgets, enabled timeframes, and template summaries.",
+      "input_required": [
+        "category"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "budgets",
+        "category",
+        "metrics",
+        "templates",
+        "timeframeRefs",
+        "timeframes",
+        "transforms"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: category"
+    },
+    {
+      "name": "list_trade_outcomes",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "List realized trade outcomes for one of your agents \u2014 entry and exit fills, gross and net P&L, fees, slippage, leverage, duration, and close reason.",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [
+        "limit",
+        "page"
+      ],
+      "declared_output": [
+        "outcomes",
+        "total"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: agentId"
+    },
+    {
+      "name": "list_user_active_positions",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Every open position across all your agents \u2014 account totals, per-agent groups, and per-position live P&L (unrealizedPnlUsd, roePct, markPrice). Read `pricingStatus` and `generatedAtMs` to judge mark-p",
+      "input_required": [],
+      "input_optional": [],
+      "declared_output": [
+        "activeCoinTickers",
+        "agents",
+        "positions",
+        "totals",
+        "userId"
+      ],
+      "observed": [
+        "activeCoinTickers",
+        "agents",
+        "positions",
+        "totals",
+        "userId"
+      ],
+      "observed_shape": {
+        "activeCoinTickers": [
+          "str",
+          "\u2026\u00d71"
+        ],
+        "agents": [
+          {
+            "agentAvatarUrl": "\u2026",
+            "agentId": "\u2026",
+            "agentName": "\u2026",
+            "currentNotionalUsd": "\u2026",
+            "longCount": "\u2026",
+            "marginedUsd": "\u2026",
+            "openPositionCount": "\u2026",
+            "openValueUsd": "\u2026",
+            "positions": "\u2026",
+            "pricedPositionCount": "\u2026",
+            "pricingStatus": "\u2026",
+            "roePct": "\u2026",
+            "shortCount": "\u2026",
+            "strategyCadence": "\u2026",
+            "strategyLabel": "\u2026",
+            "strategyTimeframe": "\u2026",
+            "unpricedPositionCount": "\u2026",
+            "unrealizedPnlUsd": "\u2026"
+          },
+          "\u2026\u00d71"
+        ],
+        "positions": [
+          {
+            "ageMs": "\u2026",
+            "agentAvatarUrl": "\u2026",
+            "agentId": "\u2026",
+            "agentName": "\u2026",
+            "coinTicker": "\u2026",
+            "conviction": "\u2026",
+            "currentNotionalUsd": "\u2026",
+            "decision": "\u2026",
+            "decisionId": "\u2026",
+            "direction": "\u2026",
+            "effectiveLeverage": "\u2026",
+            "effectiveStopLoss": "\u2026",
+            "effectiveTakeProfit": "\u2026",
+            "entryFillPrice": "\u2026",
+            "entryFillQuantity": "\u2026",
+            "entryNotionalUsd": "\u2026",
+            "liquidationPrice": "\u2026",
+            "marginedUsd": "\u2026",
+            "markPrice": "\u2026",
+            "marketGridSessionId": "\u2026",
+            "openValueUsd": "\u2026",
+            "openedAt": "\u2026",
+            "openedAtMs": "\u2026",
+            "pairLabel": "\u2026",
+            "positionId": "\u2026",
+            "priceMovePct": "\u2026",
+            "pricingStatus": "\u2026",
+            "riskRewardRatio": "\u2026",
+            "roePct": "\u2026",
+            "signalLogId": "\u2026",
+            "status": "\u2026",
+            "strategyCadence": "\u2026",
+            "strategyLabel": "\u2026",
+            "strategyTimeframe": "\u2026",
+            "timeHorizon": "\u2026",
+            "unrealizedPnlUsd": "\u2026"
+          },
+          "\u2026\u00d71"
+        ],
+        "totals": {
+          "activeAgentCount": "int",
+          "currentNotionalUsd": "float",
+          "generatedAtMs": "int",
+          "longCount": "int",
+          "marginedUsd": "float",
+          "openPositionCount": "int",
+          "openValueUsd": "float",
+          "pricedPositionCount": "int",
+          "pricingStatus": "str",
+          "refreshIntervalMs": "int",
+          "roePct": "float",
+          "shortCount": "int",
+          "trackingLabel": "str",
+          "unpricedPositionCount": "int",
+          "unrealizedPnlUsd": "float"
+        },
+        "userId": "str"
+      },
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "override_agent_protection",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Override the agent's automated stop-loss on an OPEN execution with a manual stop level. SL-only (manual TP uses the cancel/replace flow). Requires mcp:wager scope. Get effectiveStopLossOrderId from ge",
+      "input_required": [
+        "decisionId",
+        "effectiveStopLoss",
+        "effectiveStopLossOrderId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "decisionId",
+        "result"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "preview_deployment_resolution",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Pure dry-run \u2014 resolve which agent/slot a DRAFT policy would deploy for the preset's NEXT scheduled session (or under a simulated regime), exactly as the auto-submit scheduler would. `resolution` is d",
+      "input_required": [
+        "presetId",
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "resolution"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: presetId, request"
+    },
+    {
+      "name": "preview_radar_resolution",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Pure dry-run \u2014 resolve which agent a DRAFT Radar policy would put on duty for this coin right now, through the same resolver the live sweep uses. Returns the full `resolvesNow` projection, so you see ",
+      "input_required": [
+        "coinId",
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "resolvesNow"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: coinId, request"
+    },
+    {
+      "name": "preview_strategy_report",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Render a bounded live-market preview for a draft report and required bounded coin selection. Returns server-owned token and budget usage without saving or mutating strategy state.",
+      "input_required": [
+        "coinSelection",
+        "regimeAutoDerive",
+        "sections",
+        "timeframe"
+      ],
+      "input_optional": [
+        "regimeTimeframe"
+      ],
+      "declared_output": [
+        "budgetUsage",
+        "estimatedTokenCount",
+        "rankScopingNote",
+        "renderedSections",
+        "tokenCountModel"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: coinSelection, regimeAutoDerive, sections, timeframe"
+    },
+    {
+      "name": "random_submit_market_grid",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Shuffle the coin pool, assign random UP/DOWN predictions, place the captain at position 0, and submit \u2014 one atomic call including the wager. The sessionId must come from list_market_grid_sessions \u2014 ne",
+      "input_required": [
+        "sessionId"
+      ],
+      "input_optional": [
+        "confidenceScore",
+        "modelName",
+        "reasoning"
+      ],
+      "declared_output": [
+        "message",
+        "submissionId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "rebind_intelligence_agent",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "DESTRUCTIVE: rebind an agent to a different strategy. The target strategy's active revision is materialized onto the agent, REPLACING its current context modules, signal rules, prose, and timeframe \u2014 ",
+      "input_required": [
+        "agentId",
+        "confirm",
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_optional": [
+        "idempotencyKey"
+      ],
+      "declared_output": [
+        "agent"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "reset_agent_drawdown_baseline",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Acknowledge the realized loss and re-arm the drawdown stop from today. Requires the mcp:wager scope \u2014 this is the affordance that lets a drawdown-halted agent trade again, so it re-authorizes real cap",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "budget"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "restore_strategy",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Restore unchanged, already-viable content for an owned inactive PRIVATE strategy at the expected revision. Bound-agent provenance advances immediately and open positions do not block the lifecycle edi",
+      "input_required": [
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "resume_intelligence_agent",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Lift a halt so the agent may open trades again. Requires the mcp:wager scope. Breach-gated: while the stop that triggered the halt is STILL breached the resume is refused \u2014 clear the breach first, or ",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "allocation"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "set_agent_per_trade_push",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Turn per-trade push notifications on or off for one of your agents. Requires the mcp:wager scope: it writes the same funding-envelope row that carries the halt state, so it is gated with the rest of t",
+      "input_required": [
+        "agentId",
+        "enabled"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "allocation"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "simulate_aggregate_score",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Stateless what-if: given a set of {label, score (0-1), allocation tier (0-3)} signals and a gate threshold (0-1), compute the weighted aggregate score, per-signal attribution percentages, and whether ",
+      "input_required": [
+        "gate",
+        "signals"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "aggregateScore",
+        "aggregateScorePercent",
+        "attributions",
+        "gate",
+        "gatePercent",
+        "wouldRoute"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: gate, signals"
+    },
+    {
+      "name": "submit_agent_grid",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Submit a previously generated agent grid. Must be called after generate_agent_grid. The grid is submitted with full audit trail including thought log, activity event, and LLM call log linkage. Require",
+      "input_required": [
+        "agentId",
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "message",
+        "submissionId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "submit_market_grid",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Submit a Market Grid prediction. Call list_market_grid_sessions with status PENDING first to get a valid sessionId \u2014 never fabricate one. For a paid session the server transfers the entry fee as part ",
+      "input_required": [
+        "confidenceScore",
+        "grid",
+        "modelName",
+        "pickReasoning",
+        "reasoning",
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "message",
+        "submissionId"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "test_generate_deployment_grid",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Runs the agent's LLM to generate a sample grid for this preset to preview what it would do. Resolves the winning slot for the preset's NEXT scheduled session (or the chosen simulated regime), like the",
+      "input_required": [
+        "presetId",
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "result"
+      ],
+      "observed": null,
+      "not_called_because": "needs arguments: presetId, request"
+    },
+    {
+      "name": "update_intelligence_agent",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Update an existing private intelligence agent: display name, brain (model/behavior or preset), trading configuration, and challenge participation. Supply at least one mutable field. A complete trading",
+      "input_required": [
+        "agentId",
+        "expectedRevision"
+      ],
+      "input_optional": [
+        "arenaChallengeEnabled",
+        "behavior",
+        "brainPreset",
+        "displayName",
+        "modelId",
+        "tradingConfig"
+      ],
+      "declared_output": [
+        "agent"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "update_market_grid",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Replace your existing Market Grid prediction before the session locks. The sessionId must come from list_market_grid_sessions \u2014 never fabricate one. No further entry fee is charged; it was paid on the",
+      "input_required": [
+        "confidenceScore",
+        "grid",
+        "modelName",
+        "pickReasoning",
+        "reasoning",
+        "sessionId"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "message",
+        "submissionId",
+        "version"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "update_strategy_signal_rule",
+      "classification": "destructive",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "description": "Update exactly one signal allocation, Required flag, and optionally its strict parameters through the unified revision planner. Changed scorecard configuration propagates to every bound agent immediat",
+      "input_required": [
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "strategy"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
+    },
+    {
+      "name": "upsert_deployment_policy",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Create or replace the deployment policy for a game preset. Requires the mcp:wager scope \u2014 a session-start policy is autonomous-wager authority (it auto-submits real wagers at the next session). `reque",
+      "input_required": [
+        "presetId",
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "presetId",
+        "revision",
+        "slotCount"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    },
+    {
+      "name": "upsert_radar_deployment",
+      "classification": "write",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Create or FULLY REPLACE your Radar deployment policy for one coin. Requires the mcp:wager scope \u2014 a Radar policy is standing autonomous authority that fires real trades on confirmed-regime flips. `req",
+      "input_required": [
+        "coinId",
+        "request"
+      ],
+      "input_optional": [],
+      "declared_output": [
+        "revision"
+      ],
+      "observed": null,
+      "not_called_because": "classification is 'write' \u2014 this tool can change things"
+    }
+  ]
+}

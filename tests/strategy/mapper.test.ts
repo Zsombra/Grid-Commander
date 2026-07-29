@@ -158,13 +158,13 @@ describe('the strict outer envelope', () => {
 describe('restoring can need repair', () => {
   it('reports REPAIR_REQUIRED as its own outcome', async () => {
     const { adapter } = adapterOver(() => ({ status: 'REPAIR_REQUIRED' }));
-    const result = await adapter.setActive({ ...who, strategyId: 's1', active: true });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('repair-required');
   });
 
   it('reports an ordinary restore as changed', async () => {
     const { adapter } = adapterOver(() => ({ strategy: { ...LIVE, isActive: true } }));
-    const result = await adapter.setActive({ ...who, strategyId: 's1', active: true });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('changed');
   });
 });

@@ -115,13 +115,25 @@ export class McpStrategyAdapter implements StrategiesPort {
     userId: string;
     accessToken: string;
     strategyId: string;
+    expectedRevision: number;
     active: boolean;
     confirmationToken?: string | undefined;
   }): Promise<LifecycleResult> {
     const payload = await this.call(
       params,
       params.active ? TOOLS.restore : TOOLS.archive,
-      { strategyId: params.strategyId },
+      {
+        strategyId: params.strategyId,
+        // Both tools require it. This sent `{ strategyId }` alone, so every
+        // archive and every restore was refused for a missing argument — which
+        // nothing noticed, because no write had ever reached the real platform.
+        expectedRevision: params.expectedRevision,
+        // Only `archive_strategy` requires it: it is the destructive one of the
+        // pair. Sent where it is declared and nowhere else, rather than to both
+        // for symmetry — an argument a tool does not declare is one more thing
+        // that can be rejected.
+        ...(params.active ? {} : { confirm: true }),
+      },
       { target: params.strategyId, confirmationToken: params.confirmationToken },
     );
 
