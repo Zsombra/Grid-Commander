@@ -2,8 +2,10 @@
 
 ## 2026-07-29 (later) — twelve controls that cannot work, and four pages with no way back
 
-**Did**: Archived `the-strategies-walk`. 741 tests. `app-access` and
-`strategy-authoring` each gained scenarios; 7 capabilities, 78 requirements.
+**Did**: Archived `the-strategies-walk`. 741 tests. 7 capabilities, **76
+requirements — unchanged**: all three deltas were MODIFIED, so `app-access` and
+`strategy-authoring` gained five scenarios between them and no new requirement.
+(The commit message for the archive says 78. It is wrong; this is the count.)
 
 Walked `/strategies` as an operator against the older live account, which sits at
 25/25 strategies. The section had never been walked, and the two guards added
