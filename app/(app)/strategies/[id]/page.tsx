@@ -69,12 +69,17 @@ export default async function StrategyPage({ params }: { params: Promise<{ id: s
               </a>
             </li>
           )}
-          {can.forkToEdit && (
+          {can.fork.kind === 'offered' && (
             <li>
               <a href={`/strategies/${summary.id}/fork`} className="underline">
                 Make my own copy to edit
               </a>
             </li>
+          )}
+          {can.fork.kind === 'withheld' && (
+            // The same control the roster withholds, withheld the same way. This
+            // page is one click from that list and offers the identical action.
+            <li className="text-text-secondary">{can.fork.because}</li>
           )}
           {can.editable && (
             <li>

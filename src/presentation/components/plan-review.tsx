@@ -18,6 +18,7 @@ import type { PlanReview } from '@/application/use-cases/compile-plan.command.js
 export function PlanReviewPanel({
   review,
   action,
+  changeIt,
   confirmation,
   applyBlockedBecause,
 }: {
@@ -28,6 +29,17 @@ export function PlanReviewPanel({
    * nothing at all.
    */
   action: (formData: FormData) => Promise<void>;
+  /**
+   * Where "go back and change it" goes. **Required, and absolute.**
+   *
+   * It used to be `href=".."`, which does not resolve to what the label promises:
+   * from `/strategies/<id>/edit` a relative `..` resolves to `/strategies/` — the
+   * roster. So the one control offering to *change* the composed plan discarded
+   * it and landed the user on a list of thirty-seven, and the copy said otherwise.
+   *
+   * Required rather than defaulted so no caller can silently inherit a guess.
+   */
+  changeIt: string;
   /**
    * What the apply needs to carry. Absent when the apply was refused before it
    * could be offered — the review still renders, without a button.
@@ -150,7 +162,7 @@ export function PlanReviewPanel({
             {/* A visible peer of Apply, not a footnote. Going back is the
                 expected outcome of a review that surprised the user. */}
             <a
-              href=".."
+              href={changeIt}
               className="inline-flex min-h-11 items-center justify-center rounded-gc-2 border border-border-default px-4 py-2 text-base text-text-primary"
             >
               Go back and change it

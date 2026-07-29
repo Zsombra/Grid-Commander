@@ -50,6 +50,49 @@ export function mustForkToEdit(strategy: Strategy): boolean {
   return strategy.scope === 'SYSTEM';
 }
 
+/**
+ * Whether a private copy is how this strategy changes, and whether one can be
+ * made right now.
+ *
+ * A union rather than a boolean and a reason string, because the invariant is
+ * the point: something offered has nothing to explain, and something withheld
+ * always does. Two fields could hold both at once, and the surface would have to
+ * be trusted not to.
+ */
+export type ForkAffordance =
+  /** Editable directly — a copy is not how this one changes. */
+  | { readonly kind: 'not-needed' }
+  | { readonly kind: 'offered' }
+  /** Platform-owned, and there is no room. `because` goes where the control was. */
+  | { readonly kind: 'withheld'; readonly because: string };
+
+/**
+ * A control that cannot work is not offered, and its absence is explained.
+ *
+ * The rule this product already applies to a delete button it never built and to
+ * a rename input it stopped rendering (AL-2). The strategy roster broke it twelve
+ * times on one screen, directly beneath a sentence stating the constraint that
+ * made every one of them impossible: `fork_strategy` answers
+ * `VALIDATION_ERROR: "Strategy limit reached — you can have at most 25 active
+ * strategies."`
+ *
+ * **Unknown is not at-capacity.** `quota` is `null` when the platform reported
+ * none, and withholding a working control on a fact we do not have is the
+ * opposite mistake — the fork page refuses honestly if BattleGrid declines. Only
+ * a counted refusal withholds anything.
+ */
+export function forkAffordance(
+  strategy: Strategy,
+  quota: StrategyQuota | null,
+): ForkAffordance {
+  if (!mustForkToEdit(strategy)) return { kind: 'not-needed' };
+  if (quota === null || hasCapacity(quota)) return { kind: 'offered' };
+  // Said where the control would have been. A control that simply vanishes reads
+  // as the page forgetting rather than refusing, and the roster's own top-level
+  // sentence says what to do about it — this says why *this row* lost its action.
+  return { kind: 'withheld', because: `No room for a copy — you own all ${quota.limit}.` };
+}
+
 export function isArchivable(strategy: Strategy): boolean {
   return strategy.scope === 'PRIVATE' && strategy.isActive;
 }

@@ -1,6 +1,6 @@
-import { isEditable, isRestorable, mustForkToEdit } from '@/domain/strategy/strategy.js';
+import { forkAffordance, isEditable, isRestorable } from '@/domain/strategy/strategy.js';
 import type { StrategiesPort, StrategyDetailResult } from '@/ports/strategies.js';
-import type { StrategyDetail } from '@/domain/strategy/strategy.js';
+import type { ForkAffordance, StrategyDetail } from '@/domain/strategy/strategy.js';
 
 export interface ReadStrategyRequest {
   readonly userId: string;
@@ -18,7 +18,8 @@ export interface ReadStrategyRequest {
  */
 export interface StrategyAffordances {
   readonly editable: boolean;
-  readonly forkToEdit: boolean;
+  /** Withheld at capacity, with the reason — see `forkAffordance`. */
+  readonly fork: ForkAffordance;
   readonly restorable: boolean;
 }
 
@@ -38,7 +39,23 @@ export class ReadStrategyQuery {
   constructor(private readonly strategies: StrategiesPort) {}
 
   async execute(req: ReadStrategyRequest): Promise<ReadStrategyResponse> {
-    const result = await this.strategies.readStrategy(req);
+    /**
+     * Two reads, because this page offers a fork and `get_strategy` does not
+     * report the quota — only `list_strategies` does.
+     *
+     * The roster was the surface where twelve impossible fork controls were
+     * found, and it would have been easy to gate it alone. This page offers the
+     * same control for the same strategy one click away; fixing one and not the
+     * other leaves the defect in place somewhere a test would not look.
+     *
+     * Concurrent, and the roster is allowed to fail: an unreadable roster means
+     * no quota, which means *unknown*, which offers the fork rather than hiding
+     * it. A second read must not be able to take a working control away.
+     */
+    const [result, roster] = await Promise.all([
+      this.strategies.readStrategy(req),
+      this.strategies.listStrategies(req),
+    ]);
     if (result.kind !== 'strategy') return result;
 
     const { summary } = result.detail;
@@ -47,7 +64,7 @@ export class ReadStrategyQuery {
       detail: result.detail,
       can: {
         editable: isEditable(summary),
-        forkToEdit: mustForkToEdit(summary),
+        fork: forkAffordance(summary, roster.kind === 'strategies' ? roster.quota : null),
         restorable: isRestorable(summary),
       },
     };

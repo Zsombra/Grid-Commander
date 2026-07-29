@@ -74,7 +74,7 @@ export function StrategyList({
       )}
 
       <ul className="space-y-3">
-        {listings.map(({ strategy, governs, editable, forkToEdit }) => (
+        {listings.map(({ strategy, governs, editable, fork }) => (
           <li key={strategy.id} className="rounded border p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               {/* The name is the way in. Every row offered only actions before
@@ -105,7 +105,7 @@ export function StrategyList({
                     </a>
                   </li>
                 )}
-                {forkToEdit && (
+                {fork.kind === 'offered' && (
                   <li>
                     {/*
                       A platform strategy is not editable, and offering an edit
@@ -116,6 +116,12 @@ export function StrategyList({
                       Make my own copy to edit
                     </a>
                   </li>
+                )}
+                {fork.kind === 'withheld' && (
+                  // Where the control would have been, not only at the top of
+                  // the page. Twelve of these read as a screen that knows why it
+                  // is offering nothing; twelve gaps read as one that forgot.
+                  <li className="text-text-secondary">{fork.because}</li>
                 )}
                 {editable && (
                   <li>

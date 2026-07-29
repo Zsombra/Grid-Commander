@@ -26,29 +26,57 @@ export default async function EditStrategyPage({
   const { id } = await params;
   const { tagline } = await searchParams;
 
-  const vocabulary = await app.readVocabulary.execute(user.authority);
-  if (!vocabulary.composable) {
-    return (
-      <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-2xl font-medium text-text-primary">Cannot edit this strategy right now</h1>
-        <p role="alert" className="text-sm">
-          The vocabulary a strategy is composed from comes from BattleGrid, and it
-          could not be read. Composing a change without it would mean guessing at
-          values the platform will reject.
-        </p>
-      </main>
-    );
-  }
-
+  /**
+   * The strategy first, the vocabulary second.
+   *
+   * Reversed on purpose. The vocabulary check used to run before the roster was
+   * read, so its refusal had no name to show and no strategy to return to — a
+   * page that reports something is wrong, identifies no subject, and offers no
+   * next step. It also meant a nonexistent id on a day BattleGrid's vocabulary
+   * was down reported the wrong problem.
+   */
   const { result } = await app.listStrategies.execute(user.authority);
   const strategy = result.kind === 'strategies' ? result.strategies.find((s) => s.id === id) : undefined;
   if (!strategy) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
+        {/* The roster is the honest destination here, and the only one: there is
+            no strategy to go back to. */}
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
+      </main>
+    );
+  }
+
+  /**
+   * The way back, on every state this page can render.
+   *
+   * Held once because there are five of them and this page had it on none. It
+   * rendered exactly four links, all of them the global navigation — so someone
+   * composing a change to a strategy could reach Agents, Strategies and Activity,
+   * and not the strategy in front of them.
+   */
+  const back = (
+    <a href={`/strategies/${strategy.id}`} className="underline">
+      Back to {strategy.name}
+    </a>
+  );
+
+  const vocabulary = await app.readVocabulary.execute(user.authority);
+  if (!vocabulary.composable) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-2xl font-medium text-text-primary">
+          Cannot edit {strategy.name} right now
+        </h1>
+        <p role="alert" className="text-sm">
+          The vocabulary a strategy is composed from comes from BattleGrid, and it
+          could not be read. Composing a change without it would mean guessing at
+          values the platform will reject.
+        </p>
+        <p className="text-sm">{back}</p>
       </main>
     );
   }
@@ -77,6 +105,7 @@ export default async function EditStrategyPage({
             Compile — see what this would do, without doing it
           </button>
         </form>
+        <p className="text-sm">{back}</p>
       </main>
     );
   }
@@ -98,9 +127,19 @@ export default async function EditStrategyPage({
   if (compiled.kind === 'rejected') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-2xl font-medium text-text-primary">BattleGrid could not compile this</h1>
+        <h1 className="text-2xl font-medium text-text-primary">
+          BattleGrid could not compile this change to {strategy.name}
+        </h1>
         <p role="alert" className="text-sm">{compiled.reason}</p>
         <p className="text-sm">Nothing was changed.</p>
+        <p className="flex flex-wrap gap-3 text-sm">
+          {/* Both, and in this order. The reason usually names what to change,
+              so the first thing offered is another attempt. */}
+          <a href={`/strategies/${strategy.id}/edit`} className="underline">
+            Compose a different change
+          </a>
+          {back}
+        </p>
       </main>
     );
   }
@@ -120,7 +159,13 @@ export default async function EditStrategyPage({
         {/* The review still renders — the user should see what was compiled even
             when it cannot be applied, because the reason usually names what to
             change. */}
-        <PlanReviewPanel review={compiled.review} action={apply} applyBlockedBecause={proposal.reason} />
+        <PlanReviewPanel
+          review={compiled.review}
+          action={apply}
+          changeIt={`/strategies/${strategy.id}/edit`}
+          applyBlockedBecause={proposal.reason}
+        />
+        <p className="text-sm">{back}</p>
       </main>
     );
   }
@@ -131,12 +176,18 @@ export default async function EditStrategyPage({
       <PlanReviewPanel
         review={compiled.review}
         action={apply}
+        // The compose form, which is what "change it" means. Without the tagline
+        // in the query it renders the field again at the strategy's current value.
+        changeIt={`/strategies/${strategy.id}/edit`}
         confirmation={{
           strategyId: id,
           confirmationToken: proposal.proposal.confirmationToken,
           consequence: proposal.proposal.consequence,
         }}
       />
+      {/* Declining a review is not an operation and needs no button of its own —
+          but it does need somewhere to go. */}
+      <p className="text-sm">{back}</p>
     </main>
   );
 }

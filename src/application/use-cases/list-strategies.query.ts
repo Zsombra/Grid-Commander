@@ -1,5 +1,5 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
-import { describeBlastRadius, hasCapacity, isEditable, mustForkToEdit } from '@/domain/strategy/strategy.js';
+import type { ForkAffordance, Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import { describeBlastRadius, forkAffordance, hasCapacity, isEditable } from '@/domain/strategy/strategy.js';
 import type { StrategiesPort, StrategyListResult } from '@/ports/strategies.js';
 
 export interface StrategyListing {
@@ -7,7 +7,8 @@ export interface StrategyListing {
   /** Stated for zero as plainly as for five — see `describeBlastRadius`. */
   readonly governs: string;
   readonly editable: boolean;
-  readonly forkToEdit: boolean;
+  /** Withheld at capacity, with the reason — see `forkAffordance`. */
+  readonly fork: ForkAffordance;
 }
 
 export type ForkAvailability =
@@ -47,7 +48,10 @@ export class ListStrategiesQuery {
         strategy,
         governs: describeBlastRadius(strategy.boundAgentCount),
         editable: isEditable(strategy),
-        forkToEdit: mustForkToEdit(strategy),
+        // The quota the platform returned with this very roster, not a second
+        // read: the count and the rows have to agree, and two calls could not be
+        // made to.
+        fork: forkAffordance(strategy, result.quota),
       })),
       forking: availability(result.quota),
     };

@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
+import type { StrategyQuota } from '@/domain/strategy/strategy.js';
 import { requiredSignals, weightedSignals } from '@/domain/strategy/strategy.js';
+import { aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
@@ -344,19 +346,19 @@ describe('what the route is allowed to do', () => {
   it('decides the affordances in the use case, not the page', async () => {
     const result = await detailOf({ ...LONDON, scope: 'PRIVATE' });
     if (result.kind !== 'strategy') throw new Error('expected a strategy');
-    expect(result.can).toEqual({ editable: true, forkToEdit: false, restorable: false });
+    expect(result.can).toEqual({ editable: true, fork: { kind: 'not-needed' }, restorable: false });
   });
 
   it('offers forking rather than editing on a platform strategy', async () => {
     const result = await detailOf(LONDON);
     if (result.kind !== 'strategy') throw new Error('expected a strategy');
-    expect(result.can).toEqual({ editable: false, forkToEdit: true, restorable: false });
+    expect(result.can).toEqual({ editable: false, fork: { kind: 'offered' }, restorable: false });
   });
 
   it('offers restoring on an archived private strategy', async () => {
     const result = await detailOf({ ...LONDON, scope: 'PRIVATE', isActive: false });
     if (result.kind !== 'strategy') throw new Error('expected a strategy');
-    expect(result.can).toEqual({ editable: false, forkToEdit: false, restorable: true });
+    expect(result.can).toEqual({ editable: false, fork: { kind: 'not-needed' }, restorable: true });
   });
 
   it('keeps the domain out of the route', () => {
@@ -364,6 +366,63 @@ describe('what the route is allowed to do', () => {
     // guard caught this page doing exactly that, which is why `can` exists.
     const page = readFileSync('app/(app)/strategies/[id]/page.tsx', 'utf8');
     expect(page).not.toMatch(/@\/domain\//);
+  });
+});
+
+/**
+ * The same control, withheld the same way.
+ *
+ * The twelve impossible fork affordances were found on the roster, and gating
+ * the roster alone would have left this page offering the identical action one
+ * click away — with a test suite green, because nothing here would have looked.
+ *
+ * `get_strategy` does not report the quota; only `list_strategies` does. So this
+ * page reads twice, and the second read is allowed to fail.
+ */
+describe('a copy that cannot be made is not offered on the strategy either', () => {
+  const PLATFORM = aStrategy({ id: 'sys-1', name: 'Berlin', scope: 'SYSTEM' });
+
+  const detailFrom = async (quota: StrategyQuota | null, readable = true) => {
+    const port = new FakeStrategiesPort([PLATFORM]);
+    port.quota = quota;
+    port.readable = readable;
+    port.detail = {
+      summary: PLATFORM,
+      sections: [],
+      marketReadText: null,
+      thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
+      signalRules: [],
+      openPositionCount: 0,
+      cadence: null,
+      regimeAutoDerive: false,
+      regimeTimeframe: null,
+    };
+    const result = await new ReadStrategyQuery(port).execute({
+      userId: 'u1',
+      accessToken: 'at',
+      strategyId: PLATFORM.id,
+    });
+    if (result.kind !== 'strategy') throw new Error(`expected a strategy, got ${result.kind}`);
+    return result.can;
+  };
+
+  it('withholds it at capacity, with the reason', async () => {
+    const can = await detailFrom({ used: 25, limit: 25, remaining: 0 });
+    expect(can.fork.kind).toBe('withheld');
+    expect(can.fork.kind === 'withheld' ? can.fork.because : '').toMatch(/no room/i);
+  });
+
+  it('offers it while there is room', async () => {
+    expect((await detailFrom({ used: 2, limit: 25, remaining: 23 })).fork).toEqual({
+      kind: 'offered',
+    });
+  });
+
+  it('still shows the strategy when the roster read fails', async () => {
+    // The load-bearing half. A second read added to make a control honest must
+    // not be able to take the page — or the control — away: an unreadable roster
+    // is an unknown quota, and unknown offers.
+    expect((await detailFrom(null, false)).fork).toEqual({ kind: 'offered' });
   });
 });
 

@@ -779,3 +779,191 @@ describe('a list offers the thing it lists', () => {
     expect(listRoutes.length).toBeGreaterThan(1);
   });
 });
+
+/**
+ * A page about one thing can get back to it.
+ *
+ * The third property, and the two above do not imply it. One asks whether a
+ * route can be reached at all; the other whether a list offers the thing it
+ * lists. Neither notices a page with no way out — and both were green while
+ * `/strategies/[id]/edit` rendered exactly four links, all of them the global
+ * navigation.
+ *
+ * It was written down before it was enforced. `app-access` has said *"a page
+ * about one of several things SHALL name which one, and offer a way back to it"*
+ * since the agents side broke the same way this morning; the fix there was four
+ * hand-edits and a component, and nothing measured whether it held or whether
+ * the other half of the product had the same hole. It did, in all four places.
+ *
+ * **The list is not a way back, and neither is a sibling sub-page.** Returning a
+ * user to `/strategies` after they decline an archive loses their place, which
+ * makes the safe choice the more costly one; and `/strategies/[id]/restore`
+ * offered `/strategies/[id]/edit` — which is another page about the same
+ * strategy, not the strategy.
+ *
+ * This reads source text, so it cannot tell a link in a rendering branch from
+ * one in a branch that does not render — the same limitation every check in this
+ * file has. It catches the absence of the link, which is unambiguous.
+ */
+describe('a page about one thing can get back to it', () => {
+  const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+  const served = pageFiles.map(routeOf);
+
+  const linksIn = (file: string): string[] =>
+    [...read(file).matchAll(/\bhref\s*[:=]\s*(?:\{\s*)?(?:["'`])(\/[^"'`#?]*)(?:["'`])/g)].map(
+      (m) => (m[1] as string).replace(/\$\{[^}]*\}/g, 'x').replace(/(.)\/$/, '$1'),
+    );
+
+  function renderSet(pageFile: string): string[] {
+    const seen = new Set<string>();
+    const frontier = [pageFile, ...layoutsFor(pageFile)];
+    while (frontier.length > 0) {
+      const file = frontier.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      frontier.push(...importsOf(file));
+    }
+    return [...seen];
+  }
+
+  /**
+   * **Derived, never listed.** A route is one entity when its last segment is
+   * dynamic: `/agents/[id]`, `/strategies/[id]`. Writing the two down would pass
+   * while a third entity was added with the same hole — the mistake every check
+   * in this file carries a comment about.
+   */
+  const entityRoutes = served.filter((r) => /\/\[[^\]]+\]$/.test(r));
+
+  /** A page is scoped to an entity when an entity route is a strict prefix. */
+  const scoped = pageFiles.flatMap((file) => {
+    const route = routeOf(file);
+    const entity = entityRoutes.find((e) => route.startsWith(`${e}/`));
+    return entity === undefined ? [] : [{ file, route, entity }];
+  });
+
+  /**
+   * The entity's own page, and nothing else.
+   *
+   * A static sibling has the same shape and is a route of its own: `/agents/new`
+   * matches `^/agents/[^/]+$` and is not an agent. The same exclusion the list
+   * check needs, for the same reason.
+   */
+  const staticSiblings = new Set(served);
+  const isTheEntity = (entity: string, path: string): boolean =>
+    new RegExp(`^${entity.replace(/\[[^\]]+\]/g, '[^/]+')}$`).test(path) &&
+    !staticSiblings.has(path);
+
+  it('offers a way back to the entity from every page scoped to one', () => {
+    const stranded = scoped
+      .filter(
+        ({ file, entity }) =>
+          !renderSet(file)
+            .flatMap(linksIn)
+            .some((path) => isTheEntity(entity, path)),
+      )
+      .map(({ route, entity, file }) => `${route} cannot get back to ${entity}  (${file})`);
+
+    expect(stranded, 'a user here has no way back to what the page is about').toEqual([]);
+  });
+
+  it('does not accept the list, or another page about the same thing, as a way back', () => {
+    // Asserted against the function the check actually uses, not against a
+    // regex retyped here — a vacuity check that tests its own copy of the rule
+    // measures nothing.
+    expect(isTheEntity('/strategies/[id]', '/strategies/x')).toBe(true);
+    expect(isTheEntity('/strategies/[id]', '/strategies')).toBe(false);
+    expect(isTheEntity('/strategies/[id]', '/strategies/x/edit')).toBe(false);
+    expect(isTheEntity('/agents/[id]', '/agents/new')).toBe(false);
+  });
+
+  it('derived the entities, and the pages scoped to them', () => {
+    // The derivation must find the real ones. Empty passes the check above
+    // vacuously; everything fails it for a reason unrelated to getting back.
+    expect([...entityRoutes].sort()).toEqual(['/agents/[id]', '/strategies/[id]']);
+    // An entity's own page is the destination, never in the set that must reach
+    // it. Getting this wrong would demand every entity page link to itself.
+    for (const entity of entityRoutes) {
+      expect(scoped.map((s) => s.route)).not.toContain(entity);
+    }
+    expect(scoped.length).toBeGreaterThan(8);
+    expect(scoped.length).toBeLessThan(served.length);
+  });
+
+  /**
+   * Declining does not dump you on the roster.
+   *
+   * The check above is satisfied by any link to the entity anywhere in the page,
+   * which is the right question for "is this a dead end" and the wrong one for
+   * the decline itself. A page can carry a perfectly good `Back to X` paragraph
+   * while the button beside Apply goes somewhere else — and three of them did.
+   *
+   * **This is the check that found the worst instance, because it resolves
+   * relative hrefs.** `plan-review.tsx` offered *"Go back and change it"* as
+   * `href=".."`, which from `/strategies/<id>/edit` resolves to `/strategies/` —
+   * the roster. The one control promising to change the composed plan discarded
+   * it and landed the user in a list of thirty-seven. Every scan in this file
+   * matched only paths beginning with `/`, so none of them could see it.
+   *
+   * Going back to the form is a fine place to be sent, and so is the entity.
+   * The list is not: it is the one destination that throws away both the
+   * operation and the user's place.
+   */
+  it('sends a declined confirmation somewhere other than the list', () => {
+    /** The list a scoped entity belongs to: `/strategies/[id]` → `/strategies`. */
+    const listOf = (entity: string): string => entity.slice(0, entity.lastIndexOf('/'));
+
+    const wrong: string[] = [];
+
+    for (const { file, route, entity } of scoped) {
+      const list = listOf(entity);
+      for (const source of renderSet(file)) {
+        for (const form of read(source).matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)) {
+          const attrs = form[1] as string;
+          // A GET form navigates and reaches no operation, so it has nothing to
+          // decline — the same exclusion the sibling checks make.
+          if (/method=["']get["']/i.test(attrs)) continue;
+          if (!/action=\{(?!`)/.test(attrs)) continue;
+
+          for (const link of (form[2] as string).matchAll(/href=\{?["'`]([^"'`]+)/g)) {
+            const href = link[1] as string;
+            // Resolved the way a browser resolves it, against a concrete URL
+            // standing in for this route. Reading the attribute as written is
+            // what let `..` pass for a way back.
+            const here = `http://h${route.replace(/\[[^\]]+\]/g, 'x')}`;
+            const to = new URL(href.replace(/\$\{[^}]*\}/g, 'x'), here).pathname.replace(
+              /(.)\/$/,
+              '$1',
+            );
+            if (to === list) {
+              wrong.push(`${route}: declining goes to ${list} — "${href}" in ${source}`);
+            }
+          }
+        }
+      }
+    }
+
+    expect(wrong, 'declining an operation drops the user on a list').toEqual([]);
+  });
+
+  it('is looking inside forms that actually exist', () => {
+    // Vacuity: if no scoped page had an action-bound form, the check above would
+    // pass on a product where every confirmation cancelled to the roster.
+    const withForms = scoped.filter(({ file }) =>
+      renderSet(file).some((source) =>
+        [...read(source).matchAll(/<form\b([^>]*)>/g)].some(
+          (m) => !/method=["']get["']/i.test(m[1] as string) && /action=\{(?!`)/.test(m[1] as string),
+        ),
+      ),
+    );
+    expect(withForms.map((w) => w.route).sort()).toEqual([
+      '/agents/[id]/archive',
+      '/agents/[id]/edit',
+      '/agents/[id]/reactivate',
+      '/agents/[id]/rebind',
+      '/strategies/[id]/archive',
+      '/strategies/[id]/edit',
+      '/strategies/[id]/fork',
+      '/strategies/[id]/restore',
+    ]);
+  });
+});
