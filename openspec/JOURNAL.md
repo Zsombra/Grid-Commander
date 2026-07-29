@@ -1,5 +1,83 @@
 # Journal
 
+## 2026-07-29 (later) — twelve controls that cannot work, and four pages with no way back
+
+**Did**: Archived `the-strategies-walk`. 741 tests. `app-access` and
+`strategy-authoring` each gained scenarios; 7 capabilities, 78 requirements.
+
+Walked `/strategies` as an operator against the older live account, which sits at
+25/25 strategies. The section had never been walked, and the two guards added
+this morning covered reachability only.
+
+**Twelve affordances offered under a sentence saying they cannot work.** The
+roster prints *"You have all 25 of your strategies"* and then renders **Make my
+own copy to edit** on all twelve platform strategies. `fork_strategy` refuses
+every one — `VALIDATION_ERROR: "Strategy limit reached"`. This product already
+has the rule, written in `agent-actions.tsx` and acted on twice: a control that
+cannot work is not offered, and its absence is explained. It broke it twelve
+times on one screen, directly beneath the constraint that made them impossible.
+
+**The guard found twice what the walk did.** The walk found two dead-end
+sub-pages, because two are the ones a person opens on the way somewhere. Run
+before any fix, the guard named all four — `edit`, `archive`, `fork`, `restore` —
+and no agent sub-page, which is the control group: the agents side was fixed by
+hand this morning and the guard confirms that fix holds rather than merely
+describing it.
+
+**The worst instance was invisible to every scan, including the first new one.**
+Writing the *decline* half — a confirmation must not send you to a list — turned
+up `plan-review.tsx` offering *"Go back and change it"* as `href=".."`. That does
+not resolve to the page above:
+
+```
+new URL('..', 'http://h/strategies/abc/edit').pathname   ->  /strategies/
+```
+
+The one control promising to change the composed plan discarded it and landed the
+user in a list of thirty-seven, and the label said otherwise. Every link scan in
+`reachability.test.ts` matches paths beginning with `/`, so none of them could
+see a relative href at all. The new check resolves each href against the route it
+appears on, the way a browser does.
+
+**The surface manifest had been right the whole time.**
+`openspec/design/surfaces/strategy-editor.json` records that link's effect as
+*"Link back to the compose form"*. Declared intent and implementation had
+disagreed since the panel was built, and the survey that wrote it down did not
+check. A manifest is not a guard either.
+
+**Two properties, and they are independent — with a receipt.** Re-injecting the
+archive defect fails *only* the decline check: the page's own `Cannot archive`
+branch still links to the strategy, so the way-back check stays green while the
+button beside Archive goes to the roster. That is why it is two checks.
+
+**Both fork surfaces, not just the one that was walked.** `/strategies/[id]`
+offers the same control for the same strategy one click from the list. Gating the
+roster alone would have left the defect somewhere no test looked. `get_strategy`
+does not report the quota, so `ReadStrategyQuery` reads the roster too —
+concurrently, and allowed to fail, because a read added to make a control honest
+must not be able to take a working control away.
+
+**Unknown is not at-capacity**, and the re-injection for it matters as much as
+the one for the defect: withholding on a `null` quota fails three tests. That
+mistake is the silent one — the user simply cannot fork any more and nothing says
+why.
+
+**Filed rather than fixed.** `restore-has-never-been-walked`: both accounts have
+zero archived strategies, so the `!isActive` branch has never rendered and
+`restore_strategy` has never been called by this product. Whether
+`list_strategies` returns archived strategies at all is unknown, and if it does
+not, restore is unreachable the way `/thinking` and `/limits` were.
+`naming-an-entity-is-held-by-the-walk-only`: the requirement's other clause. Every
+cheap static form is either misleadingly weak (`{x.name}` anywhere passes) or
+wrong (`No such strategy` legitimately names nothing), and the property is
+per-branch, which needs a rendering layer this project does not have. Naming was
+verified by walking all five strategy routes and all eight agent routes.
+
+**Next**: OAuth Part B — consent, the code exchange, refresh. All three need the
+operator's own browser; this container is not reachable from it. Client
+`20d80ad5-…` is registered `mcp:read`-only with redirect
+`http://localhost:3000/api/auth/battlegrid/callback`.
+
 ## 2026-07-29 (late) — money limits are editable, and someone reads the consequence
 
 **Did**: Archived `money-limits-are-editable`. 728 tests. `agent-authoring`
