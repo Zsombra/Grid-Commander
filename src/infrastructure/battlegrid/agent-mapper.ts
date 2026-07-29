@@ -3,6 +3,7 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
 import type { Budget, Gauge } from '@/domain/agent/budget.js';
+import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
@@ -388,4 +389,72 @@ const GAUGE_CEILINGS: Readonly<Record<string, string>> = {
 function ceilingFor(gauge: string, budget: Record<string, unknown>): number | null {
   const key = GAUGE_CEILINGS[gauge];
   return key === undefined ? null : (num(budget[key]) ?? null);
+}
+
+/**
+ * An agent's record, from the payload `get_agent_journal` returns.
+ *
+ * The three key names below are the whole point of this function. The adapter
+ * used to read `payload['entries'] ?? payload['journal']`; the response carries
+ * neither, so the lookup missed, the result was `empty`, and every agent's
+ * journal said the agent had recorded nothing. Both of those key names were
+ * invented, as were `at`, `type`, `kind`, `summary` and `title` beneath them.
+ *
+ * These five came from calling the tool. `username` is the sixth and is not
+ * read: it names the account, which every page already states.
+ */
+export function mapRecord(raw: unknown): AgentRecord {
+  const p = (raw ?? {}) as Record<string, unknown>;
+  return {
+    activity: array(p['recentActivity']).map(mapActivity),
+    // The same entries `/thinking` renders, through the same mapper. Two
+    // readings of one payload shape would be two things to keep in step.
+    thoughts: array(p['recentThoughts']).map(mapThought),
+    games: array(p['recentGames']).map(mapGame),
+  };
+}
+
+function array(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+
+function mapActivity(raw: unknown): ActivityEvent {
+  const e = (raw ?? {}) as Record<string, unknown>;
+  const detail = e['metadata'];
+  return {
+    id: str(e['id']) ?? '',
+    at: new Date(String(e['createdAt'] ?? 0)),
+    // Never narrowed to a recognised kind, for the reason `EVENTS` gives.
+    kind: str(e['eventType']) ?? 'UNKNOWN',
+    // Carried whole and unread. What it holds depends on the kind, and one kind
+    // was observed with two different shapes — so the domain reads it, and this
+    // does not decide in advance which fields survive.
+    detail: typeof detail === 'object' && detail !== null ? (detail as Record<string, unknown>) : {},
+  };
+}
+
+/**
+ * One submitted grid.
+ *
+ * `finalScore`, `rank`, `outcome` and every payout field were `null` on all ten
+ * games observed — the account has none that settled. So nothing here defaults
+ * them: a null reaches the domain as a null, `settled()` reads it, and the
+ * surface says "not settled yet" rather than showing a score of zero.
+ *
+ * `cells` is counted rather than carried. It holds the nine picks with their
+ * per-coin reasoning, which is a grid view and not a journal line.
+ */
+function mapGame(raw: unknown): GameResult {
+  const g = (raw ?? {}) as Record<string, unknown>;
+  return {
+    at: new Date(String(g['submittedAt'] ?? 0)),
+    gameType: str(g['gameType']) ?? 'UNKNOWN',
+    confidence: num(g['confidenceScore']) ?? null,
+    reasoning: str(g['reasoning']) ?? '',
+    picks: array(g['cells']).length,
+    score: num(g['finalScore']) ?? null,
+    rank: num(g['rank']) ?? null,
+    payoutUsd: num(g['totalPayout']) ?? null,
+    outcome: str(g['outcome']),
+  };
 }

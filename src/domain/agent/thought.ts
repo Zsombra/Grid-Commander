@@ -57,6 +57,12 @@ export const OUTCOMES: Readonly<Record<string, string>> = {
   SUBMITTED: 'Submitted a trade',
   SKIPPED_LOW_CONFIDENCE: 'Stood down — not confident enough',
   ERROR: 'Failed partway',
+  // Two more, found by the journal fix rendering them as bare identifiers on a
+  // live page — which is the open map working as intended rather than a miss.
+  // Neither is the agent choosing: one had no money and one had no session, and
+  // `stoodDown` stays narrow for exactly that reason.
+  SKIPPED_INSUFFICIENT_FUNDS: 'Could not act — not enough funds',
+  SKIPPED_SESSION_UNAVAILABLE: 'Could not act — no session was open',
 };
 
 /** Copy for an outcome, or the platform's own name when there is none. */

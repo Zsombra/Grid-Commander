@@ -1,5 +1,6 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Budget } from '@/domain/agent/budget.js';
+import type { AgentRecord } from '@/domain/agent/journal.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
@@ -116,12 +117,6 @@ export type RosterResult =
   | { readonly kind: 'empty'; readonly slots: SlotUsage | null }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
-export interface JournalEntry {
-  readonly at: Date;
-  readonly kind: string;
-  readonly summary: string;
-  readonly detail: string | null;
-}
 
 export type BudgetResult =
   | { readonly kind: 'budget'; readonly budget: Budget }
@@ -133,7 +128,17 @@ export type ThoughtLogResult =
   | { readonly kind: 'empty' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
+/**
+ * The three states, over an agent's whole record rather than one list.
+ *
+ * `empty` now means the platform sent three empty collections — which is what a
+ * freshly created agent looks like before its first cycle. It used to mean
+ * something else entirely: the mapper read a key the response does not carry,
+ * `Array.isArray(undefined)` was false, and a missed lookup was reported as an
+ * agent that had done nothing. Three states cannot keep *unreadable* apart from
+ * *silent* if a fourth case is quietly folded into the reassuring one.
+ */
 export type JournalResult =
-  | { readonly kind: 'entries'; readonly entries: readonly JournalEntry[] }
+  | { readonly kind: 'record'; readonly record: AgentRecord }
   | { readonly kind: 'empty' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

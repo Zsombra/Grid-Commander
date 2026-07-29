@@ -5,7 +5,8 @@ import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
-import { mapAgent, mapBudget, mapCatalog, mapSlotUsage, mapThought } from './agent-mapper.js';
+import { isSilent } from '@/domain/agent/journal.js';
+import { mapAgent, mapBudget, mapCatalog, mapRecord, mapSlotUsage, mapThought } from './agent-mapper.js';
 import { unreadable } from './unreadable.js';
 
 /**
@@ -252,6 +253,13 @@ export class McpAgentAdapter implements AgentsPort {
     }
   }
 
+  /**
+   * An agent's whole record — what it did, thought, and submitted.
+   *
+   * `limit` is accepted and forwarded because the port declares it, and the
+   * platform ignores it: `get_agent_journal` returned ten of each array on every
+   * call, and its schema offers no page argument. Ten is what the surface says.
+   */
   async readJournal(params: {
     userId: string;
     accessToken: string;
@@ -268,20 +276,8 @@ export class McpAgentAdapter implements AgentsPort {
       return unreadable(err);
     }
 
-    const raw = payload['entries'] ?? payload['journal'];
-    if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
-    return {
-      kind: 'entries',
-      entries: raw.map((entry: unknown) => {
-        const e = (entry ?? {}) as Record<string, unknown>;
-        return {
-          at: new Date(String(e['createdAt'] ?? e['at'] ?? 0)),
-          kind: String(e['type'] ?? e['kind'] ?? 'entry'),
-          summary: String(e['summary'] ?? e['title'] ?? ''),
-          detail: typeof e['detail'] === 'string' ? e['detail'] : null,
-        };
-      }),
-    };
+    const record = mapRecord(payload);
+    return isSilent(record) ? { kind: 'empty' } : { kind: 'record', record };
   }
 
   // -- internals ---------------------------------------------------------
