@@ -3,6 +3,7 @@ import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
+import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 
@@ -259,6 +260,54 @@ live('an agent can be created with limits the product can state', () => {
         expect(config?.['maxConcurrentExposureUsd']).toBe(10);
         // And the defaults the platform supplied came through too.
         expect(config?.['maxLeverage']).toBe(1);
+
+        /**
+         * Now edit it — the path that could never succeed.
+         *
+         * The read above carries twenty-three fields; the write accepts twenty
+         * and declares `additionalProperties: false`. `applyEdit` used to pass
+         * the read straight back, so every edit this product attempted was
+         * rejected outright. This is the assertion that says otherwise.
+         *
+         * `maxDailyTrades` is chosen deliberately: it has nothing to do with
+         * money, so a probe that fails after the change still leaves an agent
+         * that cannot trade.
+         */
+        expect(
+          Object.keys(config ?? {}).length,
+          'the read must be wider than the write, or this proves nothing',
+        ).toBeGreaterThan(20);
+
+        const edited = await new UpdateAgentCommand(agents).execute({
+          ...who,
+          agentId: agent.id,
+          changes: {},
+          tradingConfigChanges: { maxDailyTrades: 7 },
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  edit:   ${edited.kind}`);
+        if (edited.kind === 'invalid') {
+          // eslint-disable-next-line no-console
+          console.log('  issues:', edited.issues.map((i) => `${i.field}: ${i.reason}`).join(' | '));
+        }
+        expect(edited.kind, 'update_intelligence_agent could not succeed before this').toBe(
+          'updated',
+        );
+
+        const afterEdit = await agents.getAgent({ ...who, agentId: agent.id });
+        const changed = afterEdit.tradingConfig?.fields;
+        // eslint-disable-next-line no-console
+        console.log(
+          `  edited: maxDailyTrades=${String(changed?.['maxDailyTrades'])} ` +
+            `mode=${String(changed?.['tradingMode'])} ` +
+            `dailyLoss=${String(changed?.['maxDailyLossUsd'])}`,
+        );
+
+        expect(changed?.['maxDailyTrades']).toBe(7);
+        // The all-or-nothing rule: an edit must not reset what it did not touch.
+        expect(changed?.['tradingMode'], 'the edit must not have re-enabled trading').toBe('OFF');
+        expect(changed?.['maxDailyLossUsd']).toBe(10);
+        expect(changed?.['maxConcurrentExposureUsd']).toBe(10);
       } finally {
         const token = 'probe-archive-agent';
         await confirmations.issue({

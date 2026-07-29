@@ -197,6 +197,66 @@ export function anAgent(overrides: Partial<Agent> = {}): Agent {
   };
 }
 
+/**
+ * A `tradingConfig` shaped like the ones the live server actually returns.
+ *
+ * **Twenty-three keys, not twenty.** Every agent on the account this was built
+ * against reads back with `strategyTimeframe`, `regimeAutoDerive` and
+ * `regimeTimeframe` on top of the twenty the write schema accepts — and
+ * `update_intelligence_agent.tradingConfig` declares
+ * `additionalProperties: false`, so passing them back rejects the whole object.
+ *
+ * The fixture here used to carry four fields. A four-field config cannot exist:
+ * create requires all twenty, so nothing on the platform can produce one. Tests
+ * built on it proved that a read-modify-write preserved untouched fields, which
+ * was true, while the same code could not complete a single edit — because the
+ * fixture had none of the three keys that made every edit fail.
+ *
+ * Overrides apply to the writable fields, so a test can set the one value it is
+ * about without restating the other nineteen.
+ */
+export function liveTradingConfig(
+  overrides: Readonly<Record<string, unknown>> = {},
+): TradingConfig {
+  return {
+    fields: {
+      tradingMode: 'OFF',
+      minAllocationUsd: 10,
+      maxDailyTrades: 30,
+      balanceThresholdUsd: 10,
+      maxLeverage: 5,
+      maxSlippageBps: 300,
+      maxConcurrentExposureUsd: 250,
+      maxCumulativeDrawdownUsd: 500,
+      maxDailyLossUsd: 300,
+      maxStopLossPct: 1,
+      minStopLossPct: 0.5,
+      signalTimeoutMinutes: 10,
+      maxEntryDeviationAtrMultiple: 1.5,
+      minRiskRewardRatio: 1.5,
+      minTradeConviction: 0.35,
+      gridMinConfidence: 0.7,
+      positionSizePresets: { sizingStrategy: 'MANUAL', smallPct: 1, mediumPct: 2.5, largePct: 5 },
+      positionManagement: { positionManagementPreset: 'CUSTOM', enabled: false },
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
+      ...overrides,
+      // Read-only, and last on purpose: a test must not be able to override
+      // them away, because the live server always sends them.
+      strategyTimeframe: '1h',
+      regimeAutoDerive: true,
+      regimeTimeframe: '4h',
+    },
+  };
+}
+
+/** The three the read carries and the write rejects. */
+export const READ_ONLY_CONFIG_FIELDS = [
+  'strategyTimeframe',
+  'regimeAutoDerive',
+  'regimeTimeframe',
+] as const;
+
 export function defaultCatalog(): Catalog {
   return {
     models: [

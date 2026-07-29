@@ -116,6 +116,18 @@ function readPath(obj: Readonly<Record<string, unknown>>, path: string): unknown
   return current;
 }
 
+export interface EditResult {
+  readonly config: TradingConfig;
+  /**
+   * Fields the read carried that the write will not take. Reported rather than
+   * dropped quietly: a surface that silently discards part of what it read is
+   * how "I changed the timeframe and nothing happened" becomes unexplainable.
+   */
+  readonly dropped: readonly string[];
+  /** Required fields absent after the merge. Non-empty means: do not send. */
+  readonly missing: readonly string[];
+}
+
 /**
  * Apply an edit to an existing config.
  *
@@ -124,12 +136,46 @@ function readPath(obj: Readonly<Record<string, unknown>>, path: string): unknown
  * changed `maxLeverage` would silently lose their `maxDailyLossUsd`. See design
  * D-E; this is why reading before writing is a correctness rule here rather
  * than a convenience.
+ *
+ * **But the read is wider than the write, and that is not symmetrical.**
+ * `get_intelligence_agent` returns twenty-three fields;
+ * `update_intelligence_agent` accepts twenty and declares
+ * `additionalProperties: false`. The three extra — `strategyTimeframe`,
+ * `regimeAutoDerive`, `regimeTimeframe` — are real facts about an agent and are
+ * not writable.
+ *
+ * This function used to be `{ ...current.fields, ...changes }`, which passed all
+ * twenty-three straight back, so **every edit was rejected outright**, for the
+ * life of this product. The projection onto `TRADING_CONFIG_FIELDS` is the fix:
+ * that list is already the twenty names a create is assembled from, so there is
+ * no second list to keep in sync.
+ *
+ * Completeness is checked here too. The create path has always refused an
+ * incomplete config; the edit path never did, and a partial `tradingConfig`
+ * resets what it omits rather than erroring — so an edit missing a field is the
+ * one case where sending is worse than refusing.
  */
 export function applyEdit(
   current: TradingConfig,
   changes: Readonly<Record<string, unknown>>,
-): TradingConfig {
-  return { fields: { ...current.fields, ...changes } };
+): EditResult {
+  const merged: Record<string, unknown> = { ...current.fields, ...changes };
+  const writable: Record<string, unknown> = {};
+  const missing: string[] = [];
+
+  for (const field of TRADING_CONFIG_FIELDS) {
+    if (merged[field] === undefined) {
+      missing.push(field);
+      continue;
+    }
+    writable[field] = merged[field];
+  }
+
+  const dropped = Object.keys(merged).filter(
+    (key) => !(TRADING_CONFIG_FIELDS as readonly string[]).includes(key),
+  );
+
+  return { config: { fields: writable }, dropped, missing };
 }
 
 /**

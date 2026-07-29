@@ -70,7 +70,27 @@ export class UpdateAgentCommand {
         };
       }
 
-      const merged = applyEdit(current, req.tradingConfigChanges);
+      const edit = applyEdit(current, req.tradingConfigChanges);
+
+      /**
+       * A partial `tradingConfig` does not error — it resets what it omits. So
+       * a merge that came out short is the one case where sending is worse than
+       * refusing, and the create path has always refused it. This is that check,
+       * arriving on the edit path where it was missing.
+       */
+      if (edit.missing.length > 0) {
+        return {
+          kind: 'invalid',
+          issues: edit.missing.map((field) => ({
+            field,
+            reason:
+              'This agent’s configuration has no value for it, and a partial ' +
+              'send would reset the fields it omits. Set the configuration in full.',
+          })),
+        };
+      }
+
+      const merged = edit.config;
 
       const catalogResult = await this.agents.readCatalog(req);
       if (catalogResult.kind === 'unreadable') {
