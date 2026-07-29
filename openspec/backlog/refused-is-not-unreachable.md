@@ -2,11 +2,11 @@
 id: refused-is-not-unreachable
 title: A refused credential is reported as a platform that could not be reached
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-29
 updated: 2026-07-29
-change: ""
+change: "refused-is-not-unreachable"
 capability: agent-authoring
 blocked_by: []
 tags: [copy, error-reporting, both-modes]
@@ -70,3 +70,31 @@ one branch in each view.
 Worth doing with the shape change rather than as a copy edit: rewording the
 sentence to cover both cases would make it vaguer, and it is currently the only
 thing on screen telling the user their agents still exist.
+
+## Resolution
+
+Closed by `refused-is-not-unreachable` (2026-07-29).
+
+`unreadable` now carries a `FailureCause` alongside its `reason`, set once in
+`src/infrastructure/battlegrid/unreadable.ts` where the error is still in hand.
+`ConnectionRevokedError` is a refusal; everything else — transport failure,
+JSON-RPC error, malformed payload — is unreachable. The two adapters route every
+site through that one function, so they cannot describe the same failure two
+ways.
+
+`WhyNotLoaded` renders the sentence for both views. The reassurance sits outside
+the branch, so neither case can be written without it.
+
+Beyond what was filed: splitting the sentence broke the one after it. "Nothing
+can be created or changed **until it can**" had "could not reach BattleGrid" as
+its antecedent, and once that clause started varying the pronoun referred to
+nothing. Caught by rendering the page, not by reading the diff. It now states
+its own condition.
+
+A surviving mutation also exposed that `callTool`'s `instanceof
+ConnectionRevokedError` guard was redundant in fact — `toDomainError` returns a
+non-conflict `Error` unchanged, so revocations were preserved by accident. The
+hazard is real (a revocation reshaped into a `RevisionConflictError` would tell
+a user their state moved on when their credential died), so the invariant is now
+pinned where it can actually break: the remedy sentences. Reword one to contain
+"conflict" and the test fails.

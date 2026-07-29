@@ -2,6 +2,7 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
+import type { FailureCause } from './failure.js';
 
 /**
  * Everything the product does to agents.
@@ -83,7 +84,7 @@ export interface AgentsPort {
 export type RosterResult =
   | { readonly kind: 'agents'; readonly agents: readonly Agent[]; readonly slots: SlotUsage | null }
   | { readonly kind: 'empty'; readonly slots: SlotUsage | null }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export interface JournalEntry {
   readonly at: Date;
@@ -95,4 +96,4 @@ export interface JournalEntry {
 export type JournalResult =
   | { readonly kind: 'entries'; readonly entries: readonly JournalEntry[] }
   | { readonly kind: 'empty' }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

@@ -1,5 +1,69 @@
 # Journal
 
+## 2026-07-29 — The reassuring sentence was the one that was wrong
+
+**Did**: Proposed, executed and archived `refused-is-not-unreachable`
+(standard, 16/16). `agent-authoring` 11 → 11 requirements — one MODIFIED, purely
+additive at the text level, every other requirement byte-identical. 553 tests,
+up from 532.
+
+**The bug.** A 401 rendered *"This does not mean your agents are gone —
+Grid-Commander could not reach BattleGrid to ask."* It did reach BattleGrid.
+BattleGrid answered, and the answer was no. The sentence was written for a
+network failure and shown for every `unreadable`.
+
+**The wrong half was the reassuring half**, which is what made it worth fixing
+rather than filing forever. It says the problem is transient and on somebody
+else's side, so someone with a mistyped key waits for an outage that is not
+happening — and it is the *more* likely of the two paragraphs to be believed,
+because it is the one offering comfort.
+
+**Not a reword.** "Could not get an answer from BattleGrid" would be true in
+both cases and worse in both. The sentence exists to stop a user concluding
+their agents were deleted, and it earns that by naming a cause obviously
+external and obviously not deletion. A vaguer cause is a weaker reassurance, and
+it is the only thing on screen saying their work still exists. So the shape
+changed instead: `unreadable` carries a `FailureCause`, set once where the error
+is still in hand.
+
+**Both adapters had their own identical `message(err)`.** Adding a second
+identical *classification* beside it is how the same failure ends up described
+one way on `/agents` and another on `/strategies`. One `unreadable.ts` now owns
+both, and the duplicated helpers are gone — a test asserts neither adapter
+writes a `cause:` literal of its own.
+
+**Rendering found the defect I introduced, immediately after fixing theirs.**
+Splitting the sentence broke the one after it: *"Nothing can be created or
+changed **until it can**"* had "could not reach BattleGrid" as its antecedent,
+and the moment that clause started varying the pronoun referred to nothing. Not
+visible in the diff, obvious on the page. Fifth time this session that reading
+the rendered output caught what an assertion did not.
+
+**A surviving mutation was right about the code and wrong about the risk.**
+Deleting `callTool`'s `err instanceof ConnectionRevokedError ? err : …` guard
+changed nothing, because `toDomainError` returns a non-conflict `Error`
+unchanged — revocations were being preserved by accident, not by the guard. The
+hazard is still real: a revocation reshaped into `RevisionConflictError` tells a
+user their state moved on when their credential died, which is this same bug in
+a different costume. So rather than delete the guard or leave it untested, the
+invariant is pinned where it can actually break — the remedy sentences. Reword
+one to contain "conflict" and four tests fail.
+
+**A failing test is not always a failing product.** The end-to-end adapter test
+reported `unreachable` for a 401 and looked like a real gap in the wiring. The
+fixture had declared a tool named `list_agents`; the adapter calls
+`list_intelligence_agents`, so the guard refused before any HTTP call happened.
+Second time today the harness was wrong and the code was right — suspect the
+test before the code when the code has a clear reading.
+
+**Also**: rendered the `unreachable` branch too, by pointing `BASE` at a dead
+port locally and reverting. Both branches read correctly. Eight duplicate PR
+check-in triggers deleted; one left, re-armed.
+
+**Next**: `image-never-built` (P1) still needs a Docker daemon this container
+does not have. `assistant-unverified-against-live-api` (P1) needs a key. Both
+are the operator's step. Nothing else P1 is open.
+
 ## 2026-07-29 — The remedy personal mode named did not exist
 
 **Did**: Proposed, executed, verified and archived `a-remedy-that-exists`

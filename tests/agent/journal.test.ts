@@ -33,7 +33,7 @@ describe('reads_agent_record', () => {
     expect((await new ReadAgentJournalQuery(quiet).execute(who)).journal.kind).toBe('empty');
 
     const broken = new FakeAgentsPort();
-    broken.journalEntries = { kind: 'unreadable', reason: 'BattleGrid did not respond' };
+    broken.journalEntries = { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     expect((await new ReadAgentJournalQuery(broken).execute(who)).journal.kind).toBe('unreadable');
   });
 });

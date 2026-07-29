@@ -18,6 +18,11 @@ Grid-Commander SHALL present a user's agents as read from their BattleGrid
 account at the time of viewing. It MUST NOT present agents from a cached copy
 without saying that is what it is showing.
 
+Where it explains why a read failed, the explanation MUST match what actually
+happened. A platform that answered and declined is not a platform that could not
+be reached, and telling a user the second when the first occurred sends them to
+wait for an outage that is not happening.
+
 #### Scenario: Viewing the roster
 - **WHEN** a user opens their roster
 - **THEN** they see the agents that exist on their BattleGrid account, each with
@@ -32,7 +37,24 @@ without saying that is what it is showing.
 - **WHEN** the roster cannot be read from BattleGrid
 - **THEN** the user is told it could not be loaded rather than shown an empty
   roster
+- **AND** told their agents have not been lost
 - **AND** no create or edit action is offered against state that was not read
+
+#### Scenario: BattleGrid declines to answer
+- **WHEN** the read fails because BattleGrid refused the authority it was given
+- **THEN** the user is told the platform refused rather than that it could not
+  be reached
+- **AND** still told their agents have not been lost
+
+#### Scenario: BattleGrid gives no answer
+- **WHEN** the read fails for any reason other than a refusal
+- **THEN** the user is told the platform could not be reached
+- **AND** still told their agents have not been lost
+
+#### Scenario: The distinction survives the read
+- **WHEN** a read fails
+- **THEN** which of the two occurred is carried out of the read itself
+- **AND** is not re-derived by inspecting the message text
 
 ### Requirement: Agent Fields Are Offered Only From Values The Platform Confirms
 Where a field has a set of valid values or a permitted range, Grid-Commander

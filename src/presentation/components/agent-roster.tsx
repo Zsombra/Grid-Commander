@@ -1,6 +1,7 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
+import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
  * The roster, in its three states.
@@ -22,9 +23,16 @@ export function AgentRoster({
       <div role="alert" className="rounded border p-4 text-sm">
         <p className="font-medium">Your roster could not be loaded.</p>
         <p className="mt-1">{roster.reason}</p>
+        <WhyNotLoaded cause={roster.cause} subject="your agents are" />
+        {/*
+          States its own condition rather than pointing at the sentence above.
+          It used to read "until it can", whose antecedent was "could not reach
+          BattleGrid" — and the moment that clause started varying, the pronoun
+          referred to nothing. Caught by reading the rendered page, not the diff.
+        */}
         <p className="mt-2">
-          This does not mean your agents are gone — Grid-Commander could not reach
-          BattleGrid to ask. Nothing can be created or changed until it can.
+          Nothing can be created or changed until Grid-Commander can read your
+          account again.
         </p>
       </div>
     );

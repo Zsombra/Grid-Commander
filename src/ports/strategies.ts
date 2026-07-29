@@ -1,4 +1,5 @@
 import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { FailureCause } from './failure.js';
 
 /**
  * Everything the product does with strategies.
@@ -73,7 +74,7 @@ export type StrategyListResult =
       readonly quota: StrategyQuota | null;
     }
   | { readonly kind: 'empty' }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type CompileResult =
   | {
@@ -105,4 +106,4 @@ export interface VocabularyCategory {
 
 export type VocabularyResult =
   | { readonly kind: 'vocabulary'; readonly categories: readonly VocabularyCategory[] }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

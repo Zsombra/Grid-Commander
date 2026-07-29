@@ -1,5 +1,6 @@
 import type { ForkAvailability, StrategyListing } from '@/application/use-cases/list-strategies.query.js';
 import type { StrategyListResult } from '@/ports/strategies.js';
+import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
  * The strategy roster.
@@ -23,10 +24,7 @@ export function StrategyList({
       <div role="alert" className="rounded border p-4 text-sm">
         <p className="font-medium">Your strategies could not be loaded.</p>
         <p className="mt-1">{result.reason}</p>
-        <p className="mt-2">
-          This does not mean they are gone — Grid-Commander could not reach BattleGrid
-          to ask.
-        </p>
+        <WhyNotLoaded cause={result.cause} subject="they are" />
       </div>
     );
   }

@@ -6,6 +6,7 @@ import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { AgentsPort, JournalResult, RosterResult } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { mapAgent, mapCatalog, mapSlotUsage } from './agent-mapper.js';
+import { unreadable } from './unreadable.js';
 
 /**
  * Agent operations, expressed as BattleGrid tool calls.
@@ -64,7 +65,7 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       // Unreadable is its own state. Reporting an empty roster here would tell a
       // user their agents are gone. See design D-H.
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
 
     const slots = mapSlotUsage(payload['slotUsage']);
@@ -92,7 +93,7 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       // No catalog, no form. Offering one whose submission is certain to fail
       // is worse than saying the platform could not be reached.
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -200,7 +201,7 @@ export class McpAgentAdapter implements AgentsPort {
         ...(params.limit === undefined ? {} : { limit: params.limit }),
       });
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
 
     const raw = payload['entries'] ?? payload['journal'];
@@ -246,8 +247,4 @@ function asObject(content: unknown): Record<string, unknown> {
   return typeof content === 'object' && content !== null
     ? (content as Record<string, unknown>)
     : {};
-}
-
-function message(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

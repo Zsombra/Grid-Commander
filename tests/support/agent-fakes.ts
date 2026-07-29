@@ -36,7 +36,7 @@ export class FakeAgentsPort implements AgentsPort {
   }
 
   async listAgents(): Promise<RosterResult> {
-    if (!this.rosterReadable) return { kind: 'unreadable', reason: 'BattleGrid did not respond' };
+    if (!this.rosterReadable) return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     const agents = [...this.agents.values()];
     if (agents.length === 0) return { kind: 'empty', slots: this.slots };
     return { kind: 'agents', agents, slots: this.slots };

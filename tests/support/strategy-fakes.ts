@@ -29,7 +29,7 @@ export class FakeStrategiesPort implements StrategiesPort {
   }
 
   async listStrategies(): Promise<StrategyListResult> {
-    if (!this.readable) return { kind: 'unreadable', reason: 'BattleGrid did not respond' };
+    if (!this.readable) return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     return { kind: 'strategies', strategies: this.strategies, quota: this.quota };
   }
 
@@ -90,7 +90,7 @@ export class FakeStrategiesPort implements StrategiesPort {
   }
 
   async readVocabulary(): Promise<VocabularyResult> {
-    if (!this.vocabularyReadable) return { kind: 'unreadable', reason: 'catalog unavailable' };
+    if (!this.vocabularyReadable) return { kind: 'unreadable', reason: 'catalog unavailable', cause: 'unreachable' };
     return {
       kind: 'vocabulary',
       categories: [

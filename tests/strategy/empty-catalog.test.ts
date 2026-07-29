@@ -122,7 +122,7 @@ describe('what the use case hands to the surface', () => {
   });
 
   it('keeps an unreadable catalog distinguishable at the surface', async () => {
-    const { result } = await query({ kind: 'unreadable', reason: 'timeout' });
+    const { result } = await query({ kind: 'unreadable', reason: 'timeout', cause: 'unreachable' });
     expect(result.kind).toBe('unreadable');
   });
 });

@@ -8,6 +8,7 @@ import type {
   VocabularyResult,
 } from '@/ports/strategies.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import { malformed, messageOf, unreadable } from './unreadable.js';
 
 /**
  * Strategy operations, expressed as BattleGrid tool calls.
@@ -52,7 +53,7 @@ export class McpStrategyAdapter implements StrategiesPort {
         quota: mapQuota(payload['quota']),
       };
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -77,7 +78,7 @@ export class McpStrategyAdapter implements StrategiesPort {
     } catch (err) {
       // The compiler refusing a request is an ordinary outcome — a bad value, or
       // nothing to change. It is not a failure of the product.
-      return { kind: 'rejected', reason: message(err) };
+      return { kind: 'rejected', reason: messageOf(err) };
     }
   }
 
@@ -139,10 +140,10 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.categories, {});
       const raw = payload['categories'];
-      if (!Array.isArray(raw)) return { kind: 'unreadable', reason: 'no categories returned' };
+      if (!Array.isArray(raw)) return malformed('no categories returned');
       return { kind: 'vocabulary', categories: raw.map(mapCategory) };
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -235,8 +236,4 @@ function asObject(content: unknown): Record<string, unknown> {
   return typeof content === 'object' && content !== null
     ? (content as Record<string, unknown>)
     : {};
-}
-
-function message(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }
