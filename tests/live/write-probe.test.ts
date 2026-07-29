@@ -3,7 +3,6 @@ import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
-import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 
