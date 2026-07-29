@@ -562,3 +562,197 @@ describe('every control the interface renders reaches an operation', () => {
     expect(controlsInActionForms().map((c) => c.name)).not.toContain('q');
   });
 });
+
+/**
+ * A destructive page is a destination, never a corridor.
+ *
+ * The walk above is satisfied by any path. That made it green while
+ * `/agents/[id]` — an agent's own page, holding its binding, its brain, its
+ * money summary and its rename form — was linked from nowhere a person would
+ * look. Its row on `/agents` offered six sub-pages and not the agent; the only
+ * live link to it was the cancel on `/agents/[id]/archive`. **You reached your
+ * agent's own page by starting to retire it.**
+ *
+ * Both prior checks were right by their own terms. The link scan reads source
+ * text, `agent-edit.tsx` contains `/agents/${agent.id}` three times, and the
+ * walk arrives via `/agents/[id]/edit`. Neither can see that those links sit in
+ * branches that do not render, nor that the surviving path opens a form the
+ * user did not come to submit.
+ *
+ * So this walks again with the mutation routes removed from the corridors. They
+ * stay reachable as destinations — the point is that nothing may *depend* on
+ * passing through one.
+ */
+describe('nothing is reachable only by passing through a mutation', () => {
+  const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+  const served = pageFiles.map(routeOf);
+
+  const linksIn = (file: string): string[] =>
+    [...read(file).matchAll(/\bhref\s*[:=]\s*(?:\{\s*)?(?:["'`])(\/[^"'`#?]*)(?:["'`])/g)].map(
+      (m) => (m[1] as string).replace(/\$\{[^}]*\}/g, 'x').replace(/(.)\/$/, '$1'),
+    );
+
+  function renderSet(pageFile: string): string[] {
+    const seen = new Set<string>();
+    const frontier = [pageFile, ...layoutsFor(pageFile)];
+    while (frontier.length > 0) {
+      const file = frontier.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      frontier.push(...importsOf(file));
+    }
+    return [...seen];
+  }
+
+  /**
+   * **Derived, never listed.** A hardcoded set of destructive segments —
+   * `archive`, `edit`, `rebind` — is the same mistake one level up: it passes
+   * while a seventh is added, which is exactly how every check in this file
+   * earned its comment.
+   *
+   * A page mutates when what renders it binds a form to a Server Action. That is
+   * the definition the sibling checks already use for "can be submitted", so the
+   * two cannot drift apart.
+   */
+  function mutates(pageFile: string): boolean {
+    return renderSet(pageFile).some((file) =>
+      [...read(file).matchAll(/<form\b[^>]*>/g)].some(
+        (m) => !/method=["']get["']/i.test(m[0]) && /action=\{(?!`)/.test(m[0]),
+      ),
+    );
+  }
+
+  const mutationRoutes = new Set(pageFiles.filter(mutates).map(routeOf));
+
+  const linksByRoute = new Map(
+    pageFiles.map((f) => [routeOf(f), renderSet(f).flatMap(linksIn)] as const),
+  );
+
+  function reachedWithoutMutating(): Set<string> {
+    const matches = (path: string): string | undefined =>
+      served.find((r) => r === path) ??
+      served.find((r) => new RegExp(`^${r.replace(/\[[^\]]+\]/g, '[^/]+')}$`).test(path));
+
+    const rootFile = pageFiles.find((f) => routeOf(f) === '/');
+    const seen = new Set<string>();
+    const frontier = ['/'];
+    if (rootFile !== undefined) {
+      for (const m of read(rootFile).matchAll(/redirect\(\s*['"`](\/[^'"`]*)['"`]/g)) {
+        frontier.push(m[1] as string);
+      }
+      for (const m of read(rootFile).matchAll(/\?\s*['"`](\/[^'"`]*)['"`]\s*:\s*['"`](\/[^'"`]*)['"`]/g)) {
+        frontier.push(m[1] as string, m[2] as string);
+      }
+    }
+
+    while (frontier.length > 0) {
+      const route = matches(frontier.pop() as string);
+      if (route === undefined || seen.has(route)) continue;
+      seen.add(route);
+      // Arrived at, and that is as far as it goes: a page that changes something
+      // is somewhere a user chose to be, not somewhere they pass through.
+      if (mutationRoutes.has(route)) continue;
+      frontier.push(...(linksByRoute.get(route) ?? []));
+    }
+    return seen;
+  }
+
+  it('reaches every route without opening a form that changes something', () => {
+    const reached = reachedWithoutMutating();
+    const stranded = served.filter((r) => !reached.has(r));
+
+    expect(
+      stranded,
+      'a user can only get to these by first opening something that mutates',
+    ).toEqual([]);
+  });
+
+  it('found mutation routes to exclude, and did not exclude everything', () => {
+    // Both halves matter. An empty set makes this identical to the walk above
+    // and it stops guarding; a set containing the whole product makes it fail
+    // for a reason that has nothing to do with reachability.
+    expect(mutationRoutes.size).toBeGreaterThan(2);
+    expect(mutationRoutes.size).toBeLessThan(served.length - 2);
+  });
+});
+
+/**
+ * A list of things offers each thing.
+ *
+ * The check above protects the *property* — the agent page is reachable without
+ * mutating — and any one link satisfies it. Mutation testing showed the cost:
+ * deleting the agent's name-link from its row left the suite green, because
+ * `thinking` and `limits` now link back and the walk finds the agent through
+ * one of them. True, and not what a person does. They look at their agents and
+ * open one.
+ *
+ * So this is the narrower requirement, stated separately: a page that lists
+ * entities links to each entity's own page. Not *how* — the name, a button, a
+ * chevron are all a design question — only that the destination is offered from
+ * the list, rather than reached by wandering through its children.
+ */
+describe('a list offers the thing it lists', () => {
+  const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+
+  function renderSet(pageFile: string): string[] {
+    const seen = new Set<string>();
+    const frontier = [pageFile, ...layoutsFor(pageFile)];
+    while (frontier.length > 0) {
+      const file = frontier.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      frontier.push(...importsOf(file));
+    }
+    return [...seen];
+  }
+
+  /**
+   * Derived: a list route is one with a dynamic sibling beneath it. `/agents`
+   * has `/agents/[id]`, `/strategies` has `/strategies/[id]`. Listing the two
+   * by hand would pass while a third was added — the mistake every check in
+   * this file carries a comment about.
+   */
+  const listRoutes = pageFiles
+    .map(routeOf)
+    .filter((r) => !r.includes('['))
+    .filter((r) =>
+      pageFiles
+        .map(routeOf)
+        // The prefix test is load-bearing and was missing. Without it,
+        // `/agents/new` counted as a list because `/strategies/[id]` happens to
+        // have `[id]` at the same offset — a substring coincidence between two
+        // unrelated routes, reported as a real finding.
+        .some((other) => other.startsWith(`${r}/`) && /^\[[^\]]+\]$/.test(other.slice(r.length + 1))),
+    );
+
+  it('links from each list to the entity it lists', () => {
+    const missing: string[] = [];
+
+    for (const list of listRoutes) {
+      const page = pageFiles.find((f) => routeOf(f) === list) as string;
+      const offered = renderSet(page).flatMap((f) =>
+        [...read(f).matchAll(/\bhref\s*[:=]\s*(?:\{\s*)?(?:["'`])(\/[^"'`#?]*)(?:["'`])/g)].map((m) =>
+          (m[1] as string).replace(/\$\{[^}]*\}/g, 'x'),
+        ),
+      );
+      const entity = new RegExp(`^${list}/[^/]+$`);
+      // A static sibling is not an entity. `/agents/new` matches the shape and
+      // is a route of its own — counting it passed this check with the row link
+      // deleted, found by re-injecting the defect rather than by reading.
+      const staticSiblings = new Set(pageFiles.map(routeOf));
+      // A sub-page is not the entity either. `/agents/x/edit` has an extra
+      // segment and fails this deliberately: it was the whole defect, six links
+      // to an agent's pages and none to the agent.
+      if (!offered.some((path) => entity.test(path) && !staticSiblings.has(path))) {
+        missing.push(`${list} lists things and links to none of them`);
+      }
+    }
+
+    expect(missing, 'a user can see these and not open them').toEqual([]);
+  });
+
+  it('found lists to check', () => {
+    expect(listRoutes).toContain('/agents');
+    expect(listRoutes.length).toBeGreaterThan(1);
+  });
+});

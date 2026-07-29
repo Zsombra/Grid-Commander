@@ -97,6 +97,19 @@ export function AgentEditForm({
           omits — a form that sends one value would quietly clear the rest.
         </p>
       </section>
+      {/**
+       * The branch that actually renders had no way back.
+       *
+       * Both refusal branches above carry one, so the file read as covered; this
+       * is the path a user on a working account takes, and it ended here. Walking
+       * the product is what found it — a scan sees the link in the file and
+       * cannot see which branch holds it.
+       */}
+      <p className="text-sm">
+        <a href={`/agents/${agent.id}`} className="underline">
+          Back to {agent.displayName}
+        </a>
+      </p>
     </div>
   );
 }

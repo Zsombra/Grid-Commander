@@ -52,7 +52,21 @@ export function AgentRoster({
           {roster.agents.map((agent) => (
             <li key={agent.id} className="rounded border p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="font-medium">{agent.displayName}</h3>
+                {/**
+                 * The name is the link to the agent, and it was not one.
+                 *
+                 * The row offered six sub-pages and never `/agents/[id]` — the
+                 * page holding the binding, the brain, the money summary and the
+                 * rename form. The only live route to it was the cancel on
+                 * `archive`, so opening your own agent meant starting to retire
+                 * it. Here rather than in `AgentActions` because a person looks
+                 * for the thing itself under its name, not in a list of verbs.
+                 */}
+                <h3 className="font-medium">
+                  <a href={`/agents/${agent.id}`} className="underline">
+                    {agent.displayName}
+                  </a>
+                </h3>
                 <span className="text-xs uppercase">{agent.status}</span>
               </div>
               <p className="mt-1 text-sm">

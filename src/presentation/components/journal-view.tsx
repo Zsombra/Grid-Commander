@@ -21,9 +21,11 @@ import type {
  * a fuller version of it lives one page away at `thinking`.
  */
 export function JournalView({
+  agentId,
   agentName,
   response,
 }: {
+  agentId: string;
   agentName: string;
   response: ReadAgentJournalResponse;
 }) {
@@ -36,6 +38,17 @@ export function JournalView({
           {agentName}&apos;s journal
         </h2>
         <p className="text-sm text-text-secondary">{heading}</p>
+        {/**
+         * This page named the agent and still led nowhere back to it — the same
+         * dead end as `thinking` and `limits`, one link short of invisible. The
+         * audit pointer below is not a substitute: it goes to a different
+         * record, deliberately.
+         */}
+        <p className="text-sm">
+          <a href={`/agents/${agentId}`} className="underline">
+            Back to {agentName}
+          </a>
+        </p>
         <p className="text-xs text-text-secondary">
           Looking for what Grid-Commander changed on your account instead?{' '}
           <a href="/audit" className="underline">
