@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
+import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
+import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 
@@ -152,6 +154,135 @@ live('a write reaches the real platform', () => {
         // eslint-disable-next-line no-console
         console.log(`  audit: ${mutations.map((e) => `${e.tool}=${e.outcome}`).join(' ')}`);
         expect(mutations.every((e) => e.outcome === 'succeeded')).toBe(true);
+      }
+    },
+  );
+});
+
+/**
+ * The agent write path, on an agent that cannot trade.
+ *
+ * `create_intelligence_agent` had never run against the real platform, and it
+ * is the call this session made the largest change to: it used to send
+ * `tradingConfig: null`, meaning every agent it made traded under limits the
+ * product neither set nor could name.
+ *
+ * **What makes this safe is `tradingMode: OFF`**, not care. An agent in OFF
+ * reasons and never places a trade, so the caps below are belt-and-braces on
+ * something that already cannot spend. They are set to the platform's own
+ * minimums anyway, because a probe that ships loose limits teaches the wrong
+ * habit even when they are unreachable.
+ *
+ * The agent is archived in a `finally`. It occupies the operator's last slot
+ * for the length of this test and gives it back.
+ */
+live('an agent can be created with limits the product can state', () => {
+  const who = { userId: 'owner', accessToken: KEY as string };
+
+  it(
+    'creates, reads back, and archives — with trading off',
+    { timeout: 180_000 },
+    async () => {
+      const clock = new FakeClock();
+      const audit = new FakeAuditStore(clock);
+      const confirmations = new FakeConfirmationStore(clock);
+      const battlegrid = new McpBattleGridAdapter({
+        config,
+        audit,
+        confirmations,
+        heldScopes: new DeclaredScopes(['mcp:read']),
+        remedy: 'repair-the-key',
+        fetch: globalThis.fetch,
+      });
+      const agents = new McpAgentAdapter(battlegrid);
+      const strategies = new McpStrategyAdapter(battlegrid);
+
+      // Bind to a platform strategy nothing else uses, so this adds no load to
+      // anything the operator is actually running.
+      const listing = await strategies.listStrategies(who);
+      if (listing.kind !== 'strategies') throw new Error('cannot read strategies');
+      const target = listing.strategies.find(
+        (s) => s.scope === 'SYSTEM' && s.boundAgentCount === 0,
+      );
+      expect(target, 'need an unused SYSTEM strategy to bind to').toBeDefined();
+      if (!target) return;
+
+      const created = await new CreateAgentCommand(agents).execute({
+        ...who,
+        displayName: 'Grid-Commander probe (off)',
+        brain: { kind: 'preset', preset: 'ROMMEL' },
+        strategyId: target.id,
+        money: {
+          tradingMode: 'OFF',
+          // The platform's own minimums. `minimumAllocationUsd` and
+          // `minimumTradingEquityUsd` are both 10; going lower is rejected.
+          minAllocationUsd: 10,
+          balanceThresholdUsd: 10,
+          maxConcurrentExposureUsd: 10,
+          maxCumulativeDrawdownUsd: 10,
+          maxDailyLossUsd: 10,
+        },
+      });
+
+      // eslint-disable-next-line no-console
+      console.log(`  create: ${created.kind}`);
+      if (created.kind === 'invalid') {
+        // eslint-disable-next-line no-console
+        console.log('  issues:', created.issues.map((i) => `${i.field}: ${i.reason}`).join(' | '));
+      }
+      if (created.kind === 'no-catalog') {
+        // eslint-disable-next-line no-console
+        console.log('  reason:', created.reason);
+      }
+      expect(created.kind).toBe('created');
+      if (created.kind !== 'created') return;
+
+      const agent = created.agent;
+      // eslint-disable-next-line no-console
+      console.log(`  agent:  ${agent.displayName} ${agent.id} r${agent.revision} ${agent.status}`);
+
+      try {
+        // Read it back through the product, not from the create response — the
+        // create response is what the platform *said*; this is what it *holds*.
+        const readBack = await agents.getAgent({ ...who, agentId: agent.id });
+        const config = readBack.tradingConfig?.fields;
+        // eslint-disable-next-line no-console
+        console.log(
+          `  stored: mode=${String(config?.['tradingMode'])} ` +
+            `dailyLoss=${String(config?.['maxDailyLossUsd'])} ` +
+            `leverage=${String(config?.['maxLeverage'])}`,
+        );
+
+        // The whole point of the change: the limits are the ones we named.
+        expect(config?.['tradingMode'], 'this agent must not be able to trade').toBe('OFF');
+        expect(config?.['maxDailyLossUsd']).toBe(10);
+        expect(config?.['maxConcurrentExposureUsd']).toBe(10);
+        // And the defaults the platform supplied came through too.
+        expect(config?.['maxLeverage']).toBe(1);
+      } finally {
+        const token = 'probe-archive-agent';
+        await confirmations.issue({
+          token,
+          userId: who.userId,
+          tool: 'archive_intelligence_agent',
+          target: agent.id,
+          consequence: `Archives the probe agent "${agent.displayName}".`,
+          expiresAt: new Date(clock.now().getTime() + 300_000),
+          consumedAt: null,
+        });
+
+        const archived = await agents.setLifecycle({
+          ...who,
+          agentId: agent.id,
+          expectedRevision: agent.revision,
+          to: 'ARCHIVED',
+          confirmationToken: token,
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  archive: ${archived.status}`);
+        // eslint-disable-next-line no-console
+        console.log(`  audit: ${audit.entries.map((e) => `${e.tool}=${e.outcome}`).join(' ')}`);
+        expect(archived.status).toBe('ARCHIVED');
       }
     },
   );

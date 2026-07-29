@@ -200,6 +200,42 @@ export function buildTradingConfig(
 }
 
 /**
+ * The values this product chooses, because BattleGrid declines to.
+ *
+ * These six are required by `create_intelligence_agent` and absent from
+ * `get_trading_config_catalog`'s defaults. Something has to go on the wire, so
+ * this product picks — and the picking is stated here rather than hidden in a
+ * `?? literal` at the end of a lookup that always misses.
+ *
+ * That disguise is not a style complaint. `sizingStrategy` read
+ * `d['sizingStrategy'] ?? 'FIXED'`, which looks like a default being honoured
+ * and was a guess being made — and `FIXED` is not one of the two values the
+ * enum permits, so it made `create_intelligence_agent` impossible. It survived
+ * because a fallback reads as though the question is answered.
+ *
+ * Each choice, and why:
+ *
+ * - `sizingStrategy: MANUAL` — the enum is `MANUAL | VOLATILITY_AUTO`, and
+ *   MANUAL is the mode that *uses the preset percentages*. This product sends
+ *   `smallPct`/`mediumPct`/`largePct` from the platform's own catalog;
+ *   VOLATILITY_AUTO would derive sizes from ATR and make those three inert.
+ *   MANUAL is the value that matches what is actually sent.
+ * - `trailingType: ATR` — the enum is `ATR | FIXED`, and all five position
+ *   management presets the platform ships use ATR. None uses FIXED.
+ * - The three feature switches — `false`. The platform *does* default the
+ *   master switch, `positionMgmtEnabled`, to false. With the block off, its
+ *   sub-switches are moot, and off is the only completion coherent with the one
+ *   value the platform was willing to state.
+ */
+const OURS: Readonly<Record<string, unknown>> = {
+  sizingStrategy: 'MANUAL',
+  trailingType: 'ATR',
+  breakEvenEnabled: false,
+  trailingEnabled: false,
+  timeDecayEnabled: false,
+};
+
+/**
  * The position-management block, all fifteen fields of it.
  *
  * A preset is a *label the caller supplies alongside* the fourteen values, not
@@ -207,6 +243,9 @@ export function buildTradingConfig(
  * `a-preset-does-not-constrain-its-config`. So choosing "COLT" means sending
  * COLT's fourteen values *and* the label; it does not mean sending the label
  * and letting BattleGrid fill in the rest.
+ *
+ * Where a value has a platform default it is read; where it does not it comes
+ * from `OURS`, which says so.
  */
 export function positionManagementFrom(
   catalog: Catalog,
@@ -216,14 +255,14 @@ export function positionManagementFrom(
   return {
     positionManagementPreset: preset,
     enabled: d['positionMgmtEnabled'] ?? false,
-    breakEvenEnabled: d['positionMgmtBreakevenEnabled'] ?? false,
+    breakEvenEnabled: OURS['breakEvenEnabled'],
     breakEvenTriggerTpProgressPct: d['positionMgmtBreakevenTriggerTpProgressPct'] ?? 50,
-    trailingEnabled: d['positionMgmtTrailingEnabled'] ?? false,
-    trailingType: d['positionMgmtTrailingType'] ?? 'ATR',
+    trailingEnabled: OURS['trailingEnabled'],
+    trailingType: OURS['trailingType'],
     trailingAtrMultiple: d['positionMgmtTrailingAtrMultiple'] ?? 3,
     trailingFixedPct: d['positionMgmtTrailingFixedPct'] ?? 1,
     trailingBufferPct: d['positionMgmtTrailingBufferPct'] ?? 0.25,
-    timeDecayEnabled: d['positionMgmtTimeDecayEnabled'] ?? false,
+    timeDecayEnabled: OURS['timeDecayEnabled'],
     timeDecayGracePeriodMinutes: d['positionMgmtTimeDecayGracePeriodMinutes'] ?? 60,
     timeDecayIntervalMinutes: d['positionMgmtTimeDecayIntervalMinutes'] ?? 15,
     timeDecayTightenPct: d['positionMgmtTimeDecayTightenPct'] ?? 5,
@@ -237,9 +276,20 @@ export function positionManagementFrom(
 export function positionSizePresetsFrom(catalog: Catalog): Readonly<Record<string, unknown>> {
   const d = catalog.defaults;
   return {
-    sizingStrategy: d['sizingStrategy'] ?? 'FIXED',
+    sizingStrategy: OURS['sizingStrategy'],
     smallPct: d['smallPct'] ?? 1,
     mediumPct: d['mediumPct'] ?? 2.5,
     largePct: d['largePct'] ?? 5,
   };
+}
+
+/**
+ * Every value this product puts on the wire that no operator chose.
+ *
+ * Exported so the conformance guard can check it against the platform's own
+ * declared constants. A list the guard derives from the code is the only kind
+ * that cannot drift away from it.
+ */
+export function unpromptedValues(): Readonly<Record<string, unknown>> {
+  return { ...OURS };
 }

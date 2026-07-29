@@ -1,5 +1,95 @@
 # Journal
 
+## 2026-07-29 — create_intelligence_agent had never once succeeded
+
+**Did**: Ran the agent create probe against the live account. It failed, on two
+literals this product invented. Proposed and executed
+`every-value-sent-is-one-the-platform-accepts` (standard). `agent-authoring`
+12 → 13 requirements. 667 tests, up from 655.
+
+**The finding.** The probe called `create_intelligence_agent` for the first time
+in the life of this product, and BattleGrid rejected it:
+
+```
+brain.kind — Invalid discriminator value. Expected 'PRESET' | 'CUSTOM'
+tradingConfig.positionSizePresets.sizingStrategy —
+    Expected 'MANUAL' | 'VOLATILITY_AUTO', received 'FIXED'
+```
+
+Not a regression. The create path has never worked. Four production gates, 655
+tests, a full surface map and an architecture conformance check all passed over
+it, because every one of them checked whether a field was *sent* and none
+checked whether its *value* would be accepted.
+
+**Defect 1 is a translation nobody performed.** The domain's brain union
+discriminates on `'preset' | 'custom'` — correctly; it is internal.
+`brainToArgument` is the four-line function that renders it for the wire, and it
+passed the internal spelling straight through to a schema that pins
+`const: "PRESET"`. It had no test of any kind. Four lines, one job, zero tests,
+and the job was not done.
+
+**Defect 2 is more instructive, because it looked answered.**
+
+```ts
+sizingStrategy: d['sizingStrategy'] ?? 'FIXED'
+```
+
+That reads as a default being honoured. The catalog has no `sizingStrategy` key
+at all, so the fallback fired every single time — and `FIXED` is not one of the
+two values the enum permits. The `??` is what made a guess look like a lookup.
+Five more values are chosen the same way (`trailingType` and three feature
+switches); they survive only because they happen to be acceptable. `trailingType:
+'ATR'` is in the enum by luck.
+
+**Why nothing caught it.** `docs/battlegrid-mcp-surface.json` recorded
+`input_required` and `input_optional` — **field names, top level only.** Not one
+enum, not one const, in 110 tools. So `mcp-conformance.test.ts` could assert that
+`createAgent` sends a `brain`, and had nothing to check the brain against. The
+artifact was missing exactly the half that mattered, and the check built on it
+inherited the blindness without anyone noticing it was blind.
+
+**The fix, in three parts.** The probe now records `input_constants`: every enum
+and const at any depth, as `dotted.path → [values]`, with union branches merging
+onto one path so `brain.kind` yields both. The two literals are corrected, and
+the values this product chooses because the platform declines to are named in
+one place (`OURS`) with what each is and why — `MANUAL` because it is the mode
+that reads the percentages we actually send, `ATR` because all five platform
+presets use it, `false` for the three switches because the platform defaults
+their master switch off. A new guard walks every wire value against the recorded
+constants, generically: naming the two known-bad fields would guard the mistakes
+already made.
+
+**Guard discipline.** Both defects re-injected, three ways. Lowercase `kind` →
+3 failures. `'FIXED'` written plainly → 3. `'FIXED'` put back behind the lookup
+disguise → 4, including the source check that bans the pattern. The source check
+itself failed on first run against its own comment, which quoted the pattern it
+bans; it strips comments now.
+
+**BattleGrid's auth went down mid-session, and the shape of it is worth
+recording.** `POST /mcp` with no `Authorization` header returns 401 in 1.2s. The
+same request carrying *any* bearer token — a working key or the literal
+`bg_live_notarealkey` — hangs until the client gives up. `battlegrid.trade`
+serves 200, `mcp.battlegrid.trade/` serves 404, the egress proxy reports no
+relay failures. It is their token-validation path, and it is not about this key:
+a key that cannot exist hangs identically to one that works. Earlier calls in
+this same session succeeded, so it began mid-session.
+
+Three tasks are blocked on it: regenerating the artifact, the artifact-based
+guard (written, held out of the tree so the suite stays green and honest), and
+re-running the live create probe to prove the fix end to end. **The fix is not
+yet proven against the platform.** It is proven against the platform's declared
+schema, which is what caught the defect in the first place — but this project
+has learned twice now that declared is not observed.
+
+**Next**: re-probe and run the live create the moment auth answers, then the 28
+agent-internals read tools — thought logs, decision context, performance — the
+"understanding" third of the product, still at zero.
+
+**Filed**: `preset-configs-are-discarded` (the catalog ships all fourteen values
+per preset; `mapPositionPresets` keeps three fields and drops them),
+`brain-presets-are-hardcoded-and-short-one` (schema pins eleven, adapter lists
+ten).
+
 ## 2026-07-29 — The create button could not say what it was creating
 
 **Did**: Proposed, executed and archived `name-what-an-agent-may-spend`
