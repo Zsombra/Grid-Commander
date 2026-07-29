@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-07-29 — A write reached the real platform
+
+**Did**: Ran the write probe the operator authorised. `tests/live/write-probe.test.ts`
+— guarded on `BATTLEGRID_API_KEY`, so `npm test` skips it and CI cannot reach
+it. 612 tests (611 + 1 skipped by default).
+
+**It works.** Through the product's own adapters, not raw HTTP:
+
+```
+source:  London (SYSTEM, r2, 0 bound)
+forked:  London (fork) 8ecb1363… r1 scope=PRIVATE
+compile: compiled
+archive: changed
+audit:   fork_strategy=succeeded compile_strategy_plan=succeeded archive_strategy=succeeded
+```
+
+**`archive_strategy` is the line that matters.** It could not have succeeded
+this morning — it sent `{ strategyId }` alone and would have been refused for a
+missing `expectedRevision`. Found by the surface map, fixed, and now proven
+against the real platform in the same day.
+
+**What the probe touched, and what it did not.** A fork of a SYSTEM strategy
+with zero agents bound — an object that did not exist before the test. The
+archive runs in a `finally`, because a fork left behind by a failed probe is
+litter on someone's real trading account. Verified afterwards: the fork is
+`ARCHIVED`, the twelve SYSTEM strategies are untouched, and the four
+pre-existing private ones are untouched. No agent was touched. No wager tool
+exists in any code path this ran.
+
+**Four properties retired at once**: the `ENVELOPED` argument split (compile
+accepted wrapped, fork and archive accepted flat), the response reads
+(`payload['strategy'] ?? payload` on a real fork, a real `planToken`), the
+confirmation gate on a destructive call, and the audit path — three mutating
+calls, three records, all `succeeded`.
+
+**What is still unproven, and stays filed**: `apply_strategy_plan` (compiling is
+effect-free; applying reconfigures every bound agent, and there was nothing
+disposable to apply to), all five agent mutations, revision-conflict detection,
+and `REPAIR_REQUIRED`.
+
+**A near-miss worth recording.** The strategy page appeared to list 7 strategies
+when the account has 17. It was my own `head -c` truncation of the captured HTML,
+not a defect — the product renders all 17, and the newly archived fork correctly
+offers Restore instead of Edit and Archive. Third time this session an apparent
+finding was an artefact of how I looked rather than what was there. Check the
+instrument before filing the bug.
+
 ## 2026-07-29 — Mapped the MCP surface, and two writes could never have worked
 
 **Did**: Proposed, executed and archived `map-the-mcp-surface` (lite, 10/10).
