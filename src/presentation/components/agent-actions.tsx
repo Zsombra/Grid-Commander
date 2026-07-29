@@ -26,6 +26,21 @@ export function AgentActions({ agent }: { agent: Agent }) {
     actions.push({ href: `/agents/${agent.id}/reactivate`, label: 'Reactivate' });
   }
 
+  /**
+   * Reading an agent is always offered, whatever its state.
+   *
+   * The four above are gated on what BattleGrid permits for *this* agent. These
+   * three are not: an archived agent cannot be edited and its reasoning is still
+   * worth reading — arguably more so, since "why did it do that before I retired
+   * it" is the question archiving prompts.
+   *
+   * `thinking` and `limits` were built and linked from nowhere. Twenty routes,
+   * and the only two an orphan check found were the two added the same
+   * afternoon. That is `close-the-reachability-gap` mirrored: it fixed links
+   * pointing at nothing, and this was a page nothing pointed at.
+   */
+  actions.push({ href: `/agents/${agent.id}/thinking`, label: 'What it decided' });
+  actions.push({ href: `/agents/${agent.id}/limits`, label: 'What would stop it' });
   actions.push({ href: `/agents/${agent.id}/journal`, label: 'Journal' });
 
   return (

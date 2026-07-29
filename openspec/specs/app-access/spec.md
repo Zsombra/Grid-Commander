@@ -234,23 +234,29 @@ behaviour the database is responsible for enforcing.
 - **THEN** it is not treated as proven
 
 ### Requirement: Every Affordance The Interface Offers Resolves
-Where the interface offers a user a way to reach something, that way SHALL
-resolve to a route the application serves. An affordance that the product
-decides a user is entitled to use MUST NOT lead nowhere.
+Grid-Commander SHALL render no link to a route it does not serve, and SHALL
+serve no route the interface never offers.
 
-#### Scenario: A link the interface renders
-- **WHEN** the interface renders a link to somewhere in this product
-- **THEN** requesting it returns a page rather than a not-found
+Both directions, because only one was ever checked. Five rendered links returned
+404 through three production gates; the check written to catch that compared
+offered paths against servable routes and stopped there. A route built and
+linked from nowhere passed every gate afterwards — and two did, in the same
+afternoon they were written.
 
-#### Scenario: An affordance gated on permission
-- **WHEN** the product decides a user may edit, rebind, archive, reactivate,
-  fork or restore, and renders the affordance for it
-- **THEN** following that affordance reaches the thing it offered
+A page nobody can navigate to is capability the operator does not have. It is
+the same failure as a link to nothing, seen from the other side.
 
-#### Scenario: An affordance with no destination
-- **WHEN** the interface can render a link to a route that does not exist
-- **THEN** this fails a check that gates a change, rather than being found by a
-  user
+#### Scenario: A link to a route that is not served
+- **WHEN** the interface renders a link to a path no route serves
+- **THEN** this fails a check that gates a change
+
+#### Scenario: A route nothing links to
+- **WHEN** the application serves a route the interface never offers
+- **THEN** this fails a check that gates a change, naming the route
+
+#### Scenario: Reading an agent whatever its state
+- **WHEN** an agent cannot be edited, rebound or archived
+- **THEN** what it decided and what would stop it are still offered
 
 ### Requirement: Every Form The Interface Renders Can Be Submitted
 A form the user is shown SHALL be connected to the operation it describes.

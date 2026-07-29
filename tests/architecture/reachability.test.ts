@@ -259,6 +259,43 @@ function layoutsFor(pageFile: string): string[] {
   return found;
 }
 
+describe('every route the application serves is offered somewhere', () => {
+  /**
+   * The mirror of the check above it, and it was missing.
+   *
+   * `renders no link to a route the application does not serve` compares
+   * offered against servable in one direction: no link may 404. Nothing
+   * compared the other way, so a route that exists and is linked from nowhere
+   * passed every gate.
+   *
+   * It was not hypothetical. `/agents/[id]/thinking` and `/agents/[id]/limits`
+   * were built, tested, proven against the live platform, archived — and
+   * unreachable. Of twenty routes, the only two orphans were the two added that
+   * afternoon.
+   *
+   * This is DL-106's shape one level up: that blind spot was a control inside a
+   * form that reached no payload; this is a page inside the app that reached no
+   * link. Both are capability the operator cannot get to.
+   */
+  it('leaves no route that nothing links to', () => {
+    const offered = offeredLinks().map((l) => l.path);
+    // `servableRoutes` yields matchers, so the comparison runs the same way the
+    // sibling check does: a route is offered when some rendered path matches it.
+    const orphans = servableRoutes()
+      .filter((route) => !route.test('/'))
+      .filter((route) => !offered.some((path) => route.test(path)))
+      .map((route) => route.source);
+
+    expect(orphans, 'built, and reachable from nowhere').toEqual([]);
+  });
+
+  it('is comparing against paths it actually found', () => {
+    // A vacuous pass here would hide every orphan at once.
+    expect(offeredLinks().length).toBeGreaterThan(10);
+    expect(servableRoutes().length).toBeGreaterThan(10);
+  });
+});
+
 describe('every capability is reachable by walking from the root', () => {
   const pageFiles = appFiles.filter((f) => /(^|[/\\])page\.tsx$/.test(f));
   const served = pageFiles.map(routeOf);
