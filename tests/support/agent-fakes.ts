@@ -2,7 +2,8 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 
 /**
@@ -160,6 +161,13 @@ export class FakeAgentsPort implements AgentsPort {
     const next: Agent = { ...current, revision: current.revision + 1, status: params.to };
     this.agents.set(next.id, next);
     return next;
+  }
+
+  /** Seeded per test. Defaults to the live agent's real shape. */
+  budgetResult: BudgetResult = { kind: 'budget', budget: aBudget() };
+
+  async readBudget(): Promise<BudgetResult> {
+    return this.budgetResult;
   }
 
   /** Seeded per test. `empty` by default — an agent that has not reasoned yet. */
@@ -325,6 +333,35 @@ export function aThought(overrides: Partial<ThoughtEntry> = {}): ThoughtEntry {
     confidence: 0.35,
     threshold: 0.35,
     outcome: 'AGENT_TRADE_THESIS',
+    ...overrides,
+  };
+}
+
+/**
+ * A budget shaped like the live agent's.
+ *
+ * Two gauges with ceilings, two without — which is the account's real state and
+ * the case that matters: the unconfigured pair are **drawdown** and **daily
+ * loss**, the two governing how much can be lost. A fixture with all four
+ * configured would never exercise the `remaining: null` path that exists
+ * because the platform sends `0` there.
+ */
+export function aBudget(overrides: Partial<Budget> = {}): Budget {
+  return {
+    agentId: 'a1',
+    gauges: {
+      dailyTrades: { used: 21, remaining: 13, ceiling: 34, breached: false },
+      exposure: { used: 0, remaining: 250, ceiling: 250, breached: false },
+      drawdown: { used: 0, remaining: null, ceiling: null, breached: false },
+      dailyLoss: { used: 0.07, remaining: null, ceiling: null, breached: false },
+    },
+    overSubscribed: false,
+    stopBelowSingleTradeLoss: false,
+    stopEffectivelyUnbounded: false,
+    haltedAt: null,
+    haltReason: null,
+    capitalAtRiskUsd: 0,
+    headroomUsd: 250,
     ...overrides,
   };
 }

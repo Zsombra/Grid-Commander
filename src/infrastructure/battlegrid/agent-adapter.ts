@@ -3,9 +3,9 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
-import { mapAgent, mapCatalog, mapSlotUsage, mapThought } from './agent-mapper.js';
+import { mapAgent, mapBudget, mapCatalog, mapSlotUsage, mapThought } from './agent-mapper.js';
 import { unreadable } from './unreadable.js';
 
 /**
@@ -35,6 +35,7 @@ const TOOLS = {
   journal: 'get_agent_journal',
   thoughts: 'get_agent_thought_log',
   allThoughts: 'get_user_thought_log',
+  budget: 'get_agent_budget',
 } as const;
 
 /**
@@ -234,6 +235,21 @@ export class McpAgentAdapter implements AgentsPort {
       // a log that had 340 entries on it.
       total: typeof payload['total'] === 'number' ? payload['total'] : raw.length,
     };
+  }
+
+  async readBudget(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<BudgetResult> {
+    try {
+      const payload = await this.call(params, TOOLS.budget, { agentId: params.agentId });
+      return { kind: 'budget', budget: mapBudget(payload) };
+    } catch (err) {
+      // A budget that failed to load is not an agent with no limits, and the
+      // difference is the whole subject of this surface.
+      return unreadable(err);
+    }
   }
 
   async readJournal(params: {

@@ -2,6 +2,7 @@ import type { Agent, AgentStatus, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
+import type { Budget, Gauge } from '@/domain/agent/budget.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
@@ -320,4 +321,71 @@ function mapSnapshot(raw: unknown): MarketSnapshot | null {
     thesisDirection: str(s['thesisDirection']),
     primaryTimeframe: str(s['primaryTimeframe']),
   };
+}
+
+/**
+ * An agent's live risk budget, from the payload the server returns.
+ *
+ * The one translation that matters: a gauge the platform reports as
+ * `configured: false` carries `remaining: 0`, and that zero is passed on here
+ * as `null`. Rendering the platform's zero would say "no headroom left" about a
+ * limit that does not exist — the inverse of the truth, on the gauges that
+ * govern loss.
+ *
+ * `fill` is the amount consumed, not a fraction: `fill: 21, remaining: 13`
+ * against a ceiling of 34. Mapped to `used` because `fill` invites a reader to
+ * treat it as a proportion, which is how a 21-of-34 bar gets drawn at 2100%.
+ */
+export function mapBudget(raw: unknown): Budget {
+  const b = ((raw ?? {}) as Record<string, unknown>);
+  const inner = (typeof b['budget'] === 'object' && b['budget'] !== null ? b['budget'] : b) as Record<string, unknown>;
+
+  const gauges: Record<string, Gauge> = {};
+  const rawGauges = inner['gauges'];
+  if (typeof rawGauges === 'object' && rawGauges !== null) {
+    for (const [name, value] of Object.entries(rawGauges as Record<string, unknown>)) {
+      if (typeof value !== 'object' || value === null) continue;
+      const g = value as Record<string, unknown>;
+      const configured = g['configured'] === true;
+      gauges[name] = {
+        used: num(g['fill']) ?? 0,
+        remaining: configured ? (num(g['remaining']) ?? null) : null,
+        ceiling: configured ? ceilingFor(name, inner) : null,
+        breached: g['breached'] === true,
+      };
+    }
+  }
+
+  const haltedAt = str(inner['haltedAt']);
+  return {
+    agentId: str(inner['agentId']) ?? '',
+    gauges,
+    overSubscribed: inner['budgetOverSubscribed'] === true,
+    stopBelowSingleTradeLoss: inner['stopBelowSingleTradeLoss'] === true,
+    stopEffectivelyUnbounded: inner['stopEffectivelyUnbounded'] === true,
+    haltedAt: haltedAt === null ? null : new Date(haltedAt),
+    haltReason: str(inner['haltReason']),
+    capitalAtRiskUsd: num(inner['capitalAtRiskUsd']) ?? null,
+    headroomUsd: num(inner['headroomUsd']) ?? null,
+  };
+}
+
+/**
+ * The ceiling a gauge is measured against.
+ *
+ * Written out rather than derived from the gauge name: `dailyLoss` is capped by
+ * `maxDailyLossUsd` and `exposure` by `maxConcurrentExposureUsd`, and string
+ * surgery on those pairings is how a ceiling lands on the wrong gauge — the
+ * same reasoning as `BOUND_KEYS` above.
+ */
+const GAUGE_CEILINGS: Readonly<Record<string, string>> = {
+  dailyLoss: 'maxDailyLossUsd',
+  dailyTrades: 'maxDailyTrades',
+  drawdown: 'maxCumulativeDrawdownUsd',
+  exposure: 'maxConcurrentExposureUsd',
+};
+
+function ceilingFor(gauge: string, budget: Record<string, unknown>): number | null {
+  const key = GAUGE_CEILINGS[gauge];
+  return key === undefined ? null : (num(budget[key]) ?? null);
 }

@@ -33,6 +33,7 @@ import {
 } from './application/use-cases/strategy-lifecycle.command.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
+import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import {
   DescribeRebindQuery,
   RebindAgentCommand,
@@ -206,6 +207,7 @@ export function app(cookies: CookieStore) {
     readCatalog: new ReadCatalogQuery(i.agents),
     updateAgent: new UpdateAgentCommand(i.agents),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
+    readBudget: new ReadBudgetQuery(i.agents),
     // Mints the confirmation `updateAgent` consumes. Separate objects on
     // purpose: the thing that performs the write must not be the thing that
     // authorises it.

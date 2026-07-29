@@ -6,6 +6,7 @@ import { CreateAgentCommand } from '@/application/use-cases/create-agent.command
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from '@/application/use-cases/read-thought-log.query.js';
+import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
@@ -519,5 +520,66 @@ live('an agent can be read thinking', () => {
 
     // The whole point: an outcome we have never seen must still arrive named.
     for (const d of log.decisions) expect(d.outcome.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * What would stop an agent, against the real platform.
+ *
+ * A read. The assertion that matters is negative: a gauge the platform reports
+ * as unconfigured must not arrive carrying a `remaining` number. BattleGrid
+ * sends `0` there, and on the account this was built against the two
+ * unconfigured gauges were drawdown and daily loss — the two that govern how
+ * much can be lost. "0 remaining" would read as about to halt and mean nothing
+ * will ever halt it.
+ */
+live('how close an agent is to its ceilings', () => {
+  const who = { userId: 'owner', accessToken: KEY as string };
+
+  it('reads real limits, and never invents headroom', { timeout: 120_000 }, async () => {
+    const { battlegrid } = wire();
+    const agents = new McpAgentAdapter(battlegrid);
+
+    const roster = await agents.listAgents(who);
+    expect(roster.kind).toBe('agents');
+    if (roster.kind !== 'agents') return;
+    const target = roster.agents.find((a) => a.status === 'ACTIVE') ?? roster.agents[0];
+    if (!target) return;
+
+    const res = await new ReadBudgetQuery(agents).execute({ ...who, agentId: target.id });
+    // eslint-disable-next-line no-console
+    console.log(`  limits: ${res.kind}`);
+    expect(res.kind).toBe('budget');
+    if (res.kind !== 'budget') return;
+
+    for (const l of res.limits) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `    ${l.label.padEnd(18)} ${l.binds ? `${l.gauge.used} of ${l.gauge.ceiling}, ${l.gauge.remaining} left` : `${l.gauge.used} used · no limit set`}`,
+      );
+    }
+    if (res.unbounded.length) {
+      // eslint-disable-next-line no-console
+      console.log(`    unbounded: ${res.unbounded.join(', ')}`);
+    }
+
+    expect(res.limits.length, 'the platform reports four gauges').toBeGreaterThan(0);
+
+    for (const l of res.limits) {
+      if (l.binds) {
+        expect(l.gauge.ceiling, `${l.name} binds, so it has a ceiling`).not.toBeNull();
+        expect(l.gauge.remaining, `${l.name} binds, so it has headroom`).not.toBeNull();
+        // used + remaining = ceiling, which is how we know `fill` is an amount.
+        expect((l.gauge.used ?? 0) + (l.gauge.remaining ?? 0)).toBeCloseTo(l.gauge.ceiling ?? 0, 5);
+      } else {
+        // The defect, asserted against the live server rather than a fixture.
+        expect(l.gauge.remaining, `${l.name} has no ceiling and must report no headroom`).toBeNull();
+        expect(l.gauge.ceiling).toBeNull();
+      }
+    }
+
+    // Binding limits first.
+    const order = res.limits.map((l) => l.binds);
+    expect([...order].sort((a, b) => Number(b) - Number(a))).toEqual(order);
   });
 });

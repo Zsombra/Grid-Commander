@@ -1,4 +1,5 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
+import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
@@ -87,6 +88,13 @@ export interface AgentsPort {
     limit?: number | undefined;
   }): Promise<ThoughtLogResult>;
 
+  /** How close this agent is to the ceilings that would stop it. */
+  readBudget(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<BudgetResult>;
+
   readJournal(params: {
     userId: string;
     accessToken: string;
@@ -114,6 +122,10 @@ export interface JournalEntry {
   readonly summary: string;
   readonly detail: string | null;
 }
+
+export type BudgetResult =
+  | { readonly kind: 'budget'; readonly budget: Budget }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type ThoughtLogResult =
   | { readonly kind: 'entries'; readonly entries: readonly ThoughtEntry[]; readonly total: number }
