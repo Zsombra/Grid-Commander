@@ -22,10 +22,24 @@ a `brain` was sent, and could not see that it said `kind: 'preset'` where the
 schema says `const: "PRESET"`. A name-only record checks that a slot is filled,
 never that what fills it would be accepted.
 
-**It calls read tools only.** A tool is called only when `readOnlyHint` is true
-*and* its input schema has no required arguments. Nothing here can create,
-change, archive or wager, and that is a property of the code rather than of the
-operator's care: the write set is filtered out before any request is built.
+**It calls read tools only.** A tool is called only when the server annotates it
+`readOnlyHint`. Nothing here can create, change, archive or wager, and that is a
+property of the code rather than of the operator's care: the write set is
+filtered out before any request is built.
+
+It runs in two passes. The first calls reads that require nothing. The second
+harvests ids from those responses — an `agentId` from `list_intelligence_agents`,
+a `strategyId` from `list_strategies` — and calls the reads whose requirements
+they satisfy.
+
+The second pass exists because the first reached 21 of 110 tools, leaving 89 that
+could only be modelled from declared schemas. Every defect this product has found
+came from an observed response contradicting a declaration, and fourteen of the
+sixteen agent-internals tools had never been called by anything, purely because
+they take an id the account plainly has.
+
+Supplying arguments widens what can be **observed**. It does not widen what can
+be **called**: the classification filter is unchanged and applies first.
 
 Usage:
     BATTLEGRID_API_KEY=bg_live_... python3 tools/probe_mcp_surface.py
@@ -211,6 +225,66 @@ def shape(value: Any, depth: int = 0) -> Any:
     return type(value).__name__
 
 
+# Which response field answers which argument name. Written out rather than
+# derived: `agentId` is answered by an agent's `id`, and guessing that pairing
+# by string surgery is how an id lands in a parameter it does not belong to —
+# the same reasoning as `BOUND_KEYS` in the agent mapper.
+#
+# Every row here was checked against a real response. The first version was
+# written from assumption and three of five were wrong: `list_entry_decisions`
+# returns `entries` rather than `decisions`, `list_signal_logs` returns
+# `entries` rather than `logs`, and the argument is named `logId` rather than
+# `signalLogId`. They yielded nothing and said nothing, which is the failure
+# mode this whole file exists to remove — so `test_probe_id_sources.py` now
+# fails if a row stops resolving against the artifact.
+ID_SOURCES: dict[str, tuple[str, str]] = {
+    # argument     (tool that returns it,        array field carrying `id`)
+    "agentId":     ("list_intelligence_agents",  "agents"),
+    "strategyId":  ("list_strategies",           "strategies"),
+    "decisionId":  ("list_entry_decisions",      "entries"),
+    "logId":       ("list_signal_logs",          "entries"),
+    # `list_market_grid_sessions` is deliberately absent: its rows carry no
+    # `id` at all, so a `sessionId` cannot be taken from them. Recorded here
+    # rather than left as a silently empty lookup.
+}
+
+
+def harvest(observed: dict[str, Any]) -> dict[str, str]:
+    """One id per argument name, from responses the probe already holds.
+
+    The first element of each list, not a random one: a probe that picks
+    differently on each run produces an artifact that appears to change when
+    nothing did, and the point of the artifact is that a diff means something.
+    """
+    found: dict[str, str] = {}
+    for argument, (tool, field) in ID_SOURCES.items():
+        payload = observed.get(tool)
+        if not isinstance(payload, dict):
+            continue
+        rows = payload.get(field)
+        if not isinstance(rows, list) or not rows:
+            continue
+        first = rows[0]
+        if isinstance(first, dict) and isinstance(first.get("id"), str):
+            found[argument] = first["id"]
+    return found
+
+
+def arguments_for(required: list[str], ids: dict[str, str]) -> tuple[dict[str, Any] | None, str]:
+    """The call's arguments, or the reason it cannot be made.
+
+    Names the argument that could not be supplied rather than the whole list —
+    "needs arguments: agentId, ticker" does not say which of the two the account
+    lacks, and that is the fact worth recording.
+    """
+    args: dict[str, Any] = {}
+    for name in required:
+        if name not in ids:
+            return None, f"no {name} available on this account"
+        args[name] = ids[name]
+    return args, ""
+
+
 def main() -> int:
     key = os.environ.get("BATTLEGRID_API_KEY")
     if not key:
@@ -221,8 +295,47 @@ def main() -> int:
     tools = listing["result"]["tools"]
     print(f"discovered {len(tools)} tools")
 
-    entries = []
+    entries: list[dict[str, Any]] = []
+    payloads: dict[str, Any] = {}
     called = skipped = failed = 0
+
+    def attempt(entry: dict[str, Any], args: dict[str, Any], how: str) -> None:
+        """Call one tool and record what came back. Never called for a non-read."""
+        nonlocal called, failed
+        name = entry["name"]
+        try:
+            response = rpc(key, "tools/call", {"name": name, "arguments": args})
+            payload, error = unwrap(response.get("result", {}))
+            if error is not None:
+                entry["observed"] = None
+                entry["call_failed"] = error[:300]
+                entry["arguments_from"] = how
+                failed += 1
+                print(f"  fail {name}: {error[:70]}")
+                return
+            payloads[name] = payload
+            entry["observed"] = sorted(payload.keys())
+            entry["observed_shape"] = shape(payload)
+            entry["arguments_from"] = how
+            entry["envelope"] = {
+                "had_structured_content": "structuredContent" in response.get("result", {}),
+                "had_text_block": any(
+                    b.get("type") == "text"
+                    for b in response.get("result", {}).get("content", [])
+                ),
+            }
+            declared = set(entry["declared_output"])
+            seen = set(entry["observed"])
+            entry["declared_not_returned"] = sorted(declared - seen)
+            entry["returned_not_declared"] = sorted(seen - declared)
+            called += 1
+            print(f"  ok   {name}{'' if how == 'none-required' else f'  [{how}]'}")
+        except Exception as exc:  # noqa: BLE001 — the reason is the finding
+            entry["observed"] = None
+            entry["call_failed"] = str(exc)[:300]
+            entry["arguments_from"] = how
+            failed += 1
+            print(f"  err  {name}: {exc}")
 
     for tool in sorted(tools, key=lambda t: t["name"]):
         name = tool["name"]
@@ -241,48 +354,69 @@ def main() -> int:
             "input_constants": input_constants(tool),
             "declared_output": declared_output_keys(tool),
         }
+        entries.append(entry)
 
-        # The safety rule, enforced in code rather than by discipline: only a
-        # read tool with nothing required is ever called.
+        # THE SAFETY RULE, and it does not move: only a read tool is ever
+        # called. Supplying arguments widens what can be *observed*; it must
+        # never widen what can be *called*. Filtered here, before any request is
+        # built, rather than left to the care of whoever runs this.
         if kind != "read":
             entry["observed"] = None
             entry["not_called_because"] = f"classification is '{kind}' — this tool can change things"
             skipped += 1
-        elif required:
-            entry["observed"] = None
-            entry["not_called_because"] = f"needs arguments: {', '.join(required)}"
-            skipped += 1
-        else:
-            try:
-                response = rpc(key, "tools/call", {"name": name, "arguments": {}})
-                payload, error = unwrap(response.get("result", {}))
-                if error is not None:
-                    entry["observed"] = None
-                    entry["call_failed"] = error[:300]
-                    failed += 1
-                else:
-                    entry["observed"] = sorted(payload.keys())
-                    entry["observed_shape"] = shape(payload)
-                    entry["envelope"] = {
-                        "had_structured_content": "structuredContent" in response.get("result", {}),
-                        "had_text_block": any(
-                            b.get("type") == "text"
-                            for b in response.get("result", {}).get("content", [])
-                        ),
-                    }
-                    declared = set(entry["declared_output"])
-                    seen = set(entry["observed"])
-                    entry["declared_not_returned"] = sorted(declared - seen)
-                    entry["returned_not_declared"] = sorted(seen - declared)
-                    called += 1
-                print(f"  {'ok  ' if entry['observed'] else 'fail'} {name}")
-            except Exception as exc:  # noqa: BLE001 — the reason is the finding
-                entry["observed"] = None
-                entry["call_failed"] = str(exc)[:300]
-                failed += 1
-                print(f"  err  {name}: {exc}")
+            continue
 
-        entries.append(entry)
+        # Pass one: everything the schema says needs nothing.
+        if required:
+            continue
+        attempt(entry, {}, "none-required")
+
+    # Pass two: reads whose required arguments the first pass can answer.
+    #
+    # This existed because the probe reached 21 of 110 tools, so 89 could only
+    # be modelled from declared schemas — and every defect this product has
+    # found came from an observed response contradicting one. Fourteen of the
+    # sixteen agent-internals tools had never been called by anything, purely
+    # because they take an `agentId` the account plainly has.
+    #
+    # Repeated until it stops yielding, not run once. `list_entry_decisions`
+    # itself needs an `agentId`, so the `decisionId` it returns cannot exist
+    # until after a round that had one. A single pass leaves those tools
+    # unreachable for no reason other than the order they were tried in.
+    #
+    # It terminates because every round either calls at least one tool that has
+    # never been called, or stops.
+    for round_no in range(1, 6):
+        ids = harvest(payloads)
+        print(f"round {round_no} · ids: {', '.join(sorted(ids)) if ids else 'none'}")
+
+        progressed = False
+        for entry in entries:
+            if entry.get("observed") is not None or entry.get("call_failed"):
+                continue
+            if entry["classification"] != "read" or not entry["input_required"]:
+                continue
+
+            args, why = arguments_for(entry["input_required"], ids)
+            if args is None:
+                # Names the argument that could not be supplied, not the whole
+                # list: "needs arguments: agentId, ticker" never said which of
+                # the two the account lacked, and that is the fact worth having.
+                # Overwritten each round — a later round may supply it.
+                entry["not_called_because"] = why
+                continue
+
+            attempt(entry, args, "discovered:" + ",".join(sorted(args)))
+            progressed = True
+
+        if not progressed:
+            break
+
+    skipped += sum(
+        1
+        for e in entries
+        if e["classification"] == "read" and e.get("observed") is None and not e.get("call_failed")
+    )
 
     surface = {
         "source": MCP_URL,

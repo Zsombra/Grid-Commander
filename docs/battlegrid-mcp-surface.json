@@ -8,9 +8,9 @@
     "unclassified": 0
   },
   "probed": {
-    "called": 21,
-    "skipped": 87,
-    "failed": 2
+    "called": 49,
+    "skipped": 60,
+    "failed": 1
   },
   "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product.",
   "tools": [
@@ -403,8 +403,7 @@
         "submissionId",
         "submittedAt"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sessionId"
+      "not_called_because": "no sessionId available on this account"
     },
     {
       "name": "close_agent_position",
@@ -698,8 +697,7 @@
         "planToken",
         "reviewContext"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: request"
+      "not_called_because": "no request available on this account"
     },
     {
       "name": "create_intelligence_agent",
@@ -1079,8 +1077,7 @@
       "declared_output": [
         "rules"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sections"
+      "not_called_because": "no sections available on this account"
     },
     {
       "name": "fork_strategy",
@@ -1197,6 +1194,7 @@
         "tradingWalletProvisioned": "bool",
         "username": "str"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -1228,8 +1226,42 @@
         "page",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "events",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "events": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "createdAt": "str",
+            "eventType": "str",
+            "id": "str",
+            "marketGridSessionId": "str",
+            "metadata": {
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
+            },
+            "thoughtLogId": "null",
+            "userId": "str"
+          },
+          "\u2026\u00d720"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_automation_status",
@@ -1251,8 +1283,52 @@
         "assignments",
         "username"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "assignablePresets",
+        "assignments",
+        "username"
+      ],
+      "observed_shape": {
+        "assignablePresets": [
+          {
+            "activeAgentDisplayName": "str",
+            "activeAgentId": "str",
+            "badgeImageUrl": "str",
+            "displayName": "str",
+            "entryFee": "int",
+            "gameType": "str",
+            "id": "str",
+            "isActive": "bool",
+            "timeRangeKey": "str"
+          },
+          "\u2026\u00d72"
+        ],
+        "assignments": [
+          {
+            "agentId": "str",
+            "createdAt": "str",
+            "gamePresetId": "str",
+            "id": "str",
+            "isActive": "bool",
+            "minConfidence": "float",
+            "presetBadgeImageUrl": "str",
+            "presetDisplayName": "str",
+            "presetEntryFee": "int",
+            "presetGameType": "str",
+            "presetIsActive": "bool",
+            "presetTimeRangeKey": "str"
+          },
+          "\u2026\u00d72"
+        ],
+        "username": "str"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_budget",
@@ -1272,8 +1348,66 @@
       "declared_output": [
         "budget"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "budget"
+      ],
+      "observed_shape": {
+        "budget": {
+          "accountEquityUsd": "int",
+          "agentId": "str",
+          "budgetOverSubscribed": "bool",
+          "capitalAtRiskUsd": "int",
+          "dailyRealizedPnlUsd": "float",
+          "drawdownUsd": "int",
+          "effectiveNotionalUsd": "int",
+          "gauges": {
+            "dailyLoss": {
+              "breached": "bool",
+              "configured": "bool",
+              "fill": "float",
+              "remaining": "int"
+            },
+            "dailyTrades": {
+              "breached": "bool",
+              "configured": "bool",
+              "fill": "int",
+              "remaining": "int"
+            },
+            "drawdown": {
+              "breached": "bool",
+              "configured": "bool",
+              "fill": "int",
+              "remaining": "int"
+            },
+            "exposure": {
+              "breached": "bool",
+              "configured": "bool",
+              "fill": "int",
+              "remaining": "int"
+            }
+          },
+          "haltReason": "null",
+          "haltedAt": "null",
+          "headroomUsd": "int",
+          "maxConcurrentExposureUsd": "int",
+          "maxCumulativeDrawdownUsd": "int",
+          "maxDailyLossUsd": "int",
+          "maxDailyTrades": "int",
+          "openUnrealizedPnlUsd": "int",
+          "perTradePushEnabled": "bool",
+          "realizedPnlUsd": "int",
+          "stopBelowSingleTradeLoss": "bool",
+          "stopEffectivelyUnbounded": "bool",
+          "tradesToday": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_coin_qualification",
@@ -1294,8 +1428,7 @@
       "declared_output": [
         "verdicts"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, coinTickers"
+      "not_called_because": "no coinTickers available on this account"
     },
     {
       "name": "get_agent_decision_context",
@@ -1315,8 +1448,7 @@
       "declared_output": [
         "context"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: coinTicker"
+      "not_called_because": "no coinTicker available on this account"
     },
     {
       "name": "get_agent_explorer",
@@ -1536,7 +1668,7 @@
               "netPnl": "float"
             }
           },
-          "\u2026\u00d736"
+          "\u2026\u00d738"
         ],
         "filter": {
           "sortBy": "str",
@@ -1557,6 +1689,7 @@
           "winRatePercent": "int"
         }
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -1582,8 +1715,27 @@
       "declared_output": [
         "allocation"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "allocation"
+      ],
+      "observed_shape": {
+        "allocation": {
+          "agentId": "str",
+          "availableUsd": "int",
+          "committedUsd": "int",
+          "haltedAt": "null",
+          "lifetimeAllocatedUsd": "int",
+          "lifetimeRecalledUsd": "int",
+          "perTradePushEnabled": "bool"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_game_history",
@@ -1617,8 +1769,73 @@
         "page",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": {
+              "billingType": "str",
+              "costUsd": "float",
+              "durationMs": "int",
+              "errorMessage": "null",
+              "modelDisplayName": "str",
+              "modelId": "str",
+              "provider": "str",
+              "usageEventId": "str"
+            },
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d714"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_journal",
@@ -1643,8 +1860,114 @@
         "recentThoughts",
         "username"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "recentActivity",
+        "recentGames",
+        "recentThoughts",
+        "username"
+      ],
+      "observed_shape": {
+        "recentActivity": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "createdAt": "str",
+            "eventType": "str",
+            "id": "str",
+            "marketGridSessionId": "str",
+            "metadata": {
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
+            },
+            "thoughtLogId": "null",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
+        "recentGames": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": {
+              "billingType": "str",
+              "costUsd": "float",
+              "durationMs": "int",
+              "errorMessage": "null",
+              "modelDisplayName": "str",
+              "modelId": "str",
+              "provider": "str",
+              "usageEventId": "str"
+            },
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d710"
+        ],
+        "recentThoughts": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "confidenceThreshold": "float",
+            "confidenceThresholdPercent": "int",
+            "createdAt": "str",
+            "gridPick": "null",
+            "id": "str",
+            "marketGridSessionId": "null",
+            "marketSnapshot": {
+              "coinTicker": "str",
+              "primaryTimeframe": "str",
+              "thesisDirection": "str"
+            },
+            "outcome": "str",
+            "parsedPicks": [],
+            "reasoning": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
+        "username": "str"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_open_positions",
@@ -1666,8 +1989,19 @@
       "declared_output": [
         "positions"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "positions"
+      ],
+      "observed_shape": {
+        "positions": []
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_performance",
@@ -1687,8 +2021,26 @@
       "declared_output": [
         "performance"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "performance"
+      ],
+      "observed_shape": {
+        "performance": {
+          "agentId": "str",
+          "drawdownUsd": "int",
+          "haltedAt": "null",
+          "maxCumulativeDrawdownUsd": "int",
+          "pnlCurveUsd": [],
+          "realizedPnlUsd": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_prompt_context_preview",
@@ -1724,8 +2076,7 @@
       "declared_output": [
         "preview"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, gameType"
+      "not_called_because": "no gameType available on this account"
     },
     {
       "name": "get_agent_thought_log",
@@ -1751,8 +2102,49 @@
         "page",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "confidenceThreshold": "float",
+            "confidenceThresholdPercent": "int",
+            "createdAt": "str",
+            "gridPick": "null",
+            "id": "str",
+            "marketGridSessionId": "null",
+            "marketSnapshot": {
+              "coinTicker": "str",
+              "primaryTimeframe": "str",
+              "thesisDirection": "str"
+            },
+            "outcome": "str",
+            "parsedPicks": [],
+            "reasoning": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d720"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_coin_candles",
@@ -1791,8 +2183,7 @@
       "declared_output": [
         "candles"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: interval, ticker"
+      "not_called_because": "no interval available on this account"
     },
     {
       "name": "get_coin_market_context",
@@ -1855,8 +2246,7 @@
         "coins",
         "strategyTimeframe"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: strategyTimeframe, tickers"
+      "not_called_because": "no strategyTimeframe available on this account"
     },
     {
       "name": "get_coin_metadata",
@@ -1897,6 +2287,7 @@
           "\u2026\u00d778"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -1941,8 +2332,7 @@
       "declared_output": [
         "history"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: interval, ticker"
+      "not_called_because": "no interval available on this account"
     },
     {
       "name": "get_coin_signal_preview",
@@ -1991,8 +2381,7 @@
         "isAgentWeighted",
         "priceChangePercent"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: interval, ticker"
+      "not_called_because": "no interval available on this account"
     },
     {
       "name": "get_context_source_full_preview",
@@ -2058,8 +2447,7 @@
         "sourceKey",
         "tokenCountModel"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: gameType, sourceKey"
+      "not_called_because": "no gameType available on this account"
     },
     {
       "name": "get_context_sources_preview",
@@ -2099,8 +2487,7 @@
         "snapshotTimestamp",
         "sources"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, gameType"
+      "not_called_because": "no gameType available on this account"
     },
     {
       "name": "get_decision_order_attribution",
@@ -2135,6 +2522,7 @@
           "\u2026\u00d715"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -2161,8 +2549,7 @@
         "authoringContext",
         "policy"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: presetId"
+      "not_called_because": "no presetId available on this account"
     },
     {
       "name": "get_entry_decision",
@@ -2182,8 +2569,67 @@
       "declared_output": [
         "decision"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: decisionId"
+      "not_called_because": "no decisionId available on this account",
+      "observed": [
+        "decision"
+      ],
+      "observed_shape": {
+        "decision": {
+          "agentId": "str",
+          "atrPct": "float",
+          "challenge": "null",
+          "closedAt": "str",
+          "coinTicker": "str",
+          "conviction": "float",
+          "convictionPercent": "int",
+          "createdAt": "str",
+          "decision": "str",
+          "direction": "str",
+          "entryFee": "null",
+          "entryFillPrice": "null",
+          "entryFillQuantity": "null",
+          "entryPrice": "float",
+          "executedAt": "str",
+          "executedOrderId": "null",
+          "expiresAt": "str",
+          "id": "str",
+          "llmDurationMs": "int",
+          "positionSizePct": "float",
+          "positionSizePreset": "str",
+          "reasoning": "str",
+          "riskRewardRatio": "float",
+          "signalChecklist": [
+            {
+              "interpretation": "str",
+              "label": "str",
+              "signalId": "str",
+              "verdict": "str"
+            },
+            "\u2026\u00d75"
+          ],
+          "signalLogId": "str",
+          "signalModulesUsed": [
+            "str",
+            "\u2026\u00d75"
+          ],
+          "status": "str",
+          "stopLoss": "float",
+          "stopLossOrderId": "null",
+          "takeProfit": "float",
+          "takeProfitOrderId": "null",
+          "timeHorizon": "str",
+          "tradeStatus": "str",
+          "usageEventId": "str",
+          "userId": "str"
+        }
+      },
+      "arguments_from": "discovered:decisionId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_intelligence_agent",
@@ -2203,8 +2649,152 @@
       "declared_output": [
         "agent"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "agent"
+      ],
+      "observed_shape": {
+        "agent": {
+          "activeGameCount": "int",
+          "arenaChallengeEnabled": "bool",
+          "avatarUrl": "str",
+          "behavior": {
+            "conviction": "str",
+            "outlook": "str",
+            "risk": "str"
+          },
+          "bindingState": "str",
+          "brainPreset": "str",
+          "capabilities": {
+            "canArchive": "bool",
+            "canDelete": "bool",
+            "canEdit": "bool",
+            "canEditOverlay": "bool"
+          },
+          "contextSources": {
+            "includeBollingerBands": "bool",
+            "includeCrowdIntelligence": "bool",
+            "includeCvd": "bool",
+            "includeCvdCrowdConvergence": "bool",
+            "includeFundingRates": "bool",
+            "includeHigherTimeframe": "bool",
+            "includeMacd": "bool",
+            "includeMfi": "bool",
+            "includeMovingAverages": "bool",
+            "includeMtfConfluence": "bool",
+            "includeOpenInterest": "bool",
+            "includeRegimeContext": "bool",
+            "includeRelativeStrength": "bool",
+            "includeRsi": "bool",
+            "includeStochastic": "bool",
+            "includeStructureZones": "bool",
+            "includeSubTimeframe": "bool",
+            "includeSupportResistance": "bool",
+            "includeTrendStrength": "bool",
+            "includeVolatility": "bool",
+            "includeVolume": "bool"
+          },
+          "createdAt": "str",
+          "displayName": "str",
+          "hasActiveAssignments": "bool",
+          "id": "str",
+          "isSystemDefault": "bool",
+          "last24hCostUsd": "int",
+          "modelDisplayName": "str",
+          "modelId": "str",
+          "modelImageUrl": "str",
+          "overlayText": "str",
+          "performance": {
+            "gameStats": {
+              "avgAccuracy": "null",
+              "avgAccuracyPercent": "null",
+              "earningsSparkline": [],
+              "gameEarnings": "int",
+              "gamesPlayed": "int",
+              "winRate": "null",
+              "winRatePercent": "null"
+            },
+            "tradeStats": {
+              "avgPnl": "float",
+              "open": "int",
+              "pnlSparkline": [
+                {
+                  "timestamp": "str",
+                  "value": "float"
+                },
+                "\u2026\u00d715"
+              ],
+              "trades": "int",
+              "winLoss": {
+                "losses": "int",
+                "wins": "int"
+              }
+            }
+          },
+          "provider": "null",
+          "revision": "int",
+          "scope": "str",
+          "status": "str",
+          "strategyId": "str",
+          "strategyName": "str",
+          "strategyRevision": "int",
+          "systemKey": "null",
+          "tradingConfig": {
+            "atrMatchesStrategyTimeframe": "bool",
+            "atrTimeframe": "str",
+            "balanceThresholdUsd": "int",
+            "gridMinConfidence": "float",
+            "maxConcurrentExposureUsd": "int",
+            "maxCumulativeDrawdownUsd": "int",
+            "maxDailyLossUsd": "int",
+            "maxDailyTrades": "int",
+            "maxEntryDeviationAtrMultiple": "float",
+            "maxLeverage": "int",
+            "maxSlippageBps": "int",
+            "maxStopLossPct": "int",
+            "minAllocationUsd": "int",
+            "minRiskRewardRatio": "int",
+            "minStopLossPct": "float",
+            "minTradeConviction": "float",
+            "positionManagement": {
+              "breakEvenEnabled": "bool",
+              "breakEvenTriggerTpProgressPct": "int",
+              "enabled": "bool",
+              "positionManagementPreset": "str",
+              "timeDecayEnabled": "bool",
+              "timeDecayGracePeriodMinutes": "int",
+              "timeDecayIntervalMinutes": "int",
+              "timeDecayMaxTightenPct": "int",
+              "timeDecayStaleThresholdTpProgressPct": "int",
+              "timeDecayTightenPct": "int",
+              "trailingAtrMultiple": "float",
+              "trailingBufferPct": "float",
+              "trailingEnabled": "bool",
+              "trailingFixedPct": "float",
+              "trailingType": "str"
+            },
+            "positionSizePresets": {
+              "largePct": "int",
+              "mediumPct": "float",
+              "sizingStrategy": "str",
+              "smallPct": "int"
+            },
+            "regimeAutoDerive": "bool",
+            "regimeTimeframe": "str",
+            "signalTimeoutMinutes": "int",
+            "strategyTimeframe": "str",
+            "tradingMode": "str"
+          },
+          "updatedAt": "str",
+          "userId": "str"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_leaderboard",
@@ -2248,8 +2838,7 @@
         "generatedAt",
         "leaderboard"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: metric, timeframe"
+      "not_called_because": "no metric available on this account"
     },
     {
       "name": "get_macd_heatmap",
@@ -2330,6 +2919,7 @@
           "timeframe": "str"
         }
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -2394,7 +2984,8 @@
         "sessionId"
       ],
       "observed": null,
-      "call_failed": "{\"code\":\"VALIDATION_ERROR\",\"message\":\"Provide sessionId or primaryTimeframe\"}"
+      "call_failed": "{\"code\":\"VALIDATION_ERROR\",\"message\":\"Provide sessionId or primaryTimeframe\"}",
+      "arguments_from": "none-required"
     },
     {
       "name": "get_market_grid_player_grid",
@@ -2435,8 +3026,7 @@
         "userId",
         "username"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sessionId"
+      "not_called_because": "no sessionId available on this account"
     },
     {
       "name": "get_market_grid_results",
@@ -2478,8 +3068,7 @@
         "totalPredictionCount",
         "totalUpCount"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sessionId"
+      "not_called_because": "no sessionId available on this account"
     },
     {
       "name": "get_market_grid_session",
@@ -2532,8 +3121,7 @@
         "warBondDeployed",
         "warBondPoolId"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sessionId"
+      "not_called_because": "no sessionId available on this account"
     },
     {
       "name": "get_mcp_reasoning_journal",
@@ -2553,8 +3141,7 @@
       "declared_output": [
         "entry"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: sessionId"
+      "not_called_because": "no sessionId available on this account"
     },
     {
       "name": "get_metric_construction_hints",
@@ -2638,8 +3225,7 @@
       "declared_output": [
         "metric"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: metric"
+      "not_called_because": "no metric available on this account"
     },
     {
       "name": "get_open_orders",
@@ -2657,8 +3243,19 @@
       "declared_output": [
         "orders"
       ],
-      "observed": null,
-      "call_failed": "{\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\"}"
+      "observed": [
+        "orders"
+      ],
+      "observed_shape": {
+        "orders": []
+      },
+      "arguments_from": "none-required",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_order_status",
@@ -2678,8 +3275,7 @@
       "declared_output": [
         "order"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: orderId"
+      "not_called_because": "no orderId available on this account"
     },
     {
       "name": "get_position_audit_history",
@@ -2701,8 +3297,7 @@
         "events",
         "positionId"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, positionId"
+      "not_called_because": "no positionId available on this account"
     },
     {
       "name": "get_public_agent_game_history",
@@ -2736,8 +3331,64 @@
         "page",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "limit",
+        "page",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": "null",
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d714"
+        ],
+        "limit": "int",
+        "page": "int",
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_realized_trades",
@@ -2841,8 +3492,47 @@
         "total",
         "trades"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "limit",
+        "page",
+        "total",
+        "trades"
+      ],
+      "observed_shape": {
+        "limit": "int",
+        "page": "int",
+        "total": "int",
+        "trades": [
+          {
+            "closeReason": "str",
+            "closedAt": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "direction": "str",
+            "durationSeconds": "int",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "float",
+            "exitFillPrice": "float",
+            "isWin": "bool",
+            "leverage": "int",
+            "movePercent": "float",
+            "netPnl": "float",
+            "openedAt": "str",
+            "outcomeId": "str",
+            "positionId": "str",
+            "roePercent": "float",
+            "signalLogId": "str"
+          },
+          "\u2026\u00d715"
+        ]
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_signal_log_detail",
@@ -2863,8 +3553,20 @@
       "declared_output": [
         "log"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, logId"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "log"
+      ],
+      "observed_shape": {
+        "log": "null"
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_signal_logs",
@@ -2959,8 +3661,48 @@
         "entries",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "str",
+            "aggregateScore": "float",
+            "aggregateScorePercent": "int",
+            "assessmentConfidence": "float",
+            "assessmentConfidencePercent": "int",
+            "assessmentDirection": "str",
+            "atrPct": "float",
+            "coinTicker": "str",
+            "createdAt": "str",
+            "dominantBias": "str",
+            "effectiveMinAggregateScore": "float",
+            "effectiveMinAggregateScorePercent": "int",
+            "effectiveMinRequiredCount": "int",
+            "evaluatedAt": "str",
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "hasConflictingSignals": "bool",
+            "id": "str",
+            "primarySignalCount": "int",
+            "signalSource": "str",
+            "sourceThoughtLogId": "str",
+            "terminalStatus": "str",
+            "triggeredSignalCount": "int"
+          },
+          "\u2026\u00d720"
+        ],
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_signal_performance",
@@ -3005,8 +3747,75 @@
         "winRate",
         "winRatePercent"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "avgAggregateScore",
+        "avgAggregateScorePercent",
+        "avgConviction",
+        "avgConvictionPercent",
+        "avgDurationSeconds",
+        "avgNetPnl",
+        "avgRiskRewardRatio",
+        "blockedCount",
+        "cancelledCount",
+        "enterCount",
+        "executedCount",
+        "expiredCount",
+        "failedCount",
+        "fillRatePct",
+        "lossCount",
+        "outcomeCount",
+        "pendingCount",
+        "skipCount",
+        "skippedCount",
+        "topCoinsByEvaluation",
+        "totalEntryDecisions",
+        "totalEvaluations",
+        "totalNetPnl",
+        "winCount",
+        "winRate",
+        "winRatePercent"
+      ],
+      "observed_shape": {
+        "avgAggregateScore": "float",
+        "avgAggregateScorePercent": "int",
+        "avgConviction": "float",
+        "avgConvictionPercent": "int",
+        "avgDurationSeconds": "float",
+        "avgNetPnl": "float",
+        "avgRiskRewardRatio": "float",
+        "blockedCount": "int",
+        "cancelledCount": "int",
+        "enterCount": "int",
+        "executedCount": "int",
+        "expiredCount": "int",
+        "failedCount": "int",
+        "fillRatePct": "int",
+        "lossCount": "int",
+        "outcomeCount": "int",
+        "pendingCount": "int",
+        "skipCount": "int",
+        "skippedCount": "int",
+        "topCoinsByEvaluation": [
+          {
+            "coinTicker": "str",
+            "count": "int"
+          },
+          "\u2026\u00d712"
+        ],
+        "totalEntryDecisions": "int",
+        "totalEvaluations": "int",
+        "totalNetPnl": "float",
+        "winCount": "int",
+        "winRate": "float",
+        "winRatePercent": "float"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_trade_chart",
@@ -3027,8 +3836,22 @@
       "declared_output": [
         "result"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, logId"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "result"
+      ],
+      "observed_shape": {
+        "result": {
+          "status": "str"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_unrealized_pnl",
@@ -3057,8 +3880,24 @@
       "declared_output": [
         "snapshot"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "snapshot"
+      ],
+      "observed_shape": {
+        "snapshot": {
+          "fetchedAt": "str",
+          "openPositionCount": "int",
+          "positions": [],
+          "unrealizedPnl": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_radar_deployment",
@@ -3078,8 +3917,7 @@
       "declared_output": [
         "policy"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: coinId"
+      "not_called_because": "no coinId available on this account"
     },
     {
       "name": "get_regime_history",
@@ -3136,6 +3974,7 @@
         "symbol": "str",
         "timeframe": "str"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -3225,6 +4064,7 @@
         "symbol": "str",
         "timeframe": "str"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -3251,8 +4091,304 @@
       "declared_output": [
         "log"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, logId"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "log"
+      ],
+      "observed_shape": {
+        "log": {
+          "agentAvatarUrl": "str",
+          "agentId": "str",
+          "agentModelName": "str",
+          "agentName": "str",
+          "aggregateScore": "float",
+          "aggregateScorePercent": "int",
+          "assessmentConfidence": "float",
+          "assessmentConfidencePercent": "int",
+          "assessmentDirection": "str",
+          "atrPct": "float",
+          "attributions": [
+            {
+              "attributionPercent": "int",
+              "effectiveAllocation": "int",
+              "name": "str",
+              "score": "float",
+              "scorePercent": "int",
+              "signalId": "str"
+            },
+            "\u2026\u00d713"
+          ],
+          "challenge": "null",
+          "coinTicker": "str",
+          "createdAt": "str",
+          "dominantBias": "str",
+          "effectiveMinAggregateScore": "float",
+          "effectiveMinAggregateScorePercent": "int",
+          "effectiveMinRequiredCount": "int",
+          "evaluatedAt": "str",
+          "evaluationGateReason": "null",
+          "evaluationGateStatus": "str",
+          "hasConflictingSignals": "bool",
+          "id": "str",
+          "linkedEntryDecision": {
+            "agentId": "str",
+            "atrPct": "float",
+            "challenge": "null",
+            "closedAt": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "convictionPercent": "int",
+            "createdAt": "str",
+            "decision": "str",
+            "direction": "str",
+            "entryFee": "null",
+            "entryFillPrice": "null",
+            "entryFillQuantity": "null",
+            "entryPrice": "float",
+            "executedAt": "str",
+            "executedOrderId": "null",
+            "expiresAt": "str",
+            "id": "str",
+            "llmDurationMs": "int",
+            "positionSizePct": "float",
+            "positionSizePreset": "str",
+            "reasoning": "str",
+            "riskRewardRatio": "float",
+            "signalChecklist": [
+              {
+                "interpretation": "str",
+                "label": "str",
+                "signalId": "str",
+                "verdict": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "signalLogId": "str",
+            "signalModulesUsed": [
+              "str",
+              "\u2026\u00d75"
+            ],
+            "status": "str",
+            "stopLoss": "float",
+            "stopLossOrderId": "null",
+            "takeProfit": "float",
+            "takeProfitOrderId": "null",
+            "timeHorizon": "str",
+            "tradeStatus": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "pipeline": {
+            "agentId": "str",
+            "attempt": {
+              "attemptId": "str",
+              "completedAt": "str",
+              "createdAt": "str",
+              "llmPartialReasoning": "null",
+              "ownerView": "null",
+              "reasonCodeDetails": {},
+              "reasonCodes": [],
+              "result": "str",
+              "setupOptions": [
+                {
+                  "riskRewardRatio": "float",
+                  "setupIndex": "int",
+                  "stopLossDistancePct": "float",
+                  "stopLossMethod": "str",
+                  "stopLossPrice": "float",
+                  "takeProfitDistancePct": "float",
+                  "takeProfitMethod": "str",
+                  "takeProfitPrice": "float"
+                },
+                "\u2026\u00d75"
+              ]
+            },
+            "candidateLevelsRejectionStage": "null",
+            "candidateLevelsSlCandidateCount": "null",
+            "candidateLevelsSlClosestPct": "null",
+            "candidateLevelsSlMinPct": "null",
+            "coinTicker": "str",
+            "decision": {
+              "conviction": "float",
+              "convictionPercent": "int",
+              "createdAt": "str",
+              "decision": "str",
+              "decisionId": "str",
+              "direction": "str",
+              "entryPrice": "float",
+              "reasoning": "str",
+              "riskRewardRatio": "float",
+              "selectedSetupIndex": "int",
+              "signalChecklist": [
+                {
+                  "interpretation": "str",
+                  "label": "str",
+                  "measured": {
+                    "indicators": "\u2026",
+                    "kind": "\u2026"
+                  },
+                  "signalId": "str",
+                  "verdict": "str"
+                },
+                "\u2026\u00d75"
+              ],
+              "stopLoss": "float",
+              "stopLossDistancePct": "float",
+              "takeProfit": "float",
+              "takeProfitDistancePct": "float",
+              "timeHorizon": "str"
+            },
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "execution": {
+              "atrPct": "float",
+              "closedAt": "str",
+              "entryFee": "null",
+              "entryFillPrice": "null",
+              "entryFillQuantity": "null",
+              "executedAt": "str",
+              "executionMessage": "str",
+              "expiryReason": "null",
+              "failureReason": "str",
+              "leverage": "int",
+              "marginUsd": "null",
+              "notionalUsd": "null",
+              "positionId": "str",
+              "status": "str"
+            },
+            "liveOverlay": "null",
+            "outcome": "null",
+            "signalLogId": "str"
+          },
+          "primarySignalCount": "int",
+          "scorecard": {
+            "aggregateScore": "float",
+            "allEvaluatedSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "rsi14": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d782"
+            ],
+            "coinTicker": "str",
+            "comparison": [
+              {
+                "category": "str",
+                "correlationToTarget": "float",
+                "momentumState": "str",
+                "priceChange1h": "float",
+                "priceChange24h": "float",
+                "relationship": "str",
+                "ticker": "str",
+                "trendBias1h": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "dominantBias": "str",
+            "evaluatedAt": "str",
+            "hasConflictingSignals": "bool",
+            "primarySignals": [],
+            "supportingSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "ema13": "float",
+                  "ema20": "float",
+                  "ema5": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "float",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d713"
+            ],
+            "timeframesUsed": [
+              "str",
+              "\u2026\u00d71"
+            ],
+            "tradeAssessment": {
+              "candidateLevels": {
+                "atr": "float",
+                "atrPct": "float",
+                "candidateStopLosses": [
+                  {
+                    "atrMultiple": "\u2026",
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d71"
+                ],
+                "candidateTakeProfits": [
+                  {
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d75"
+                ],
+                "direction": "str",
+                "entryPrice": "float",
+                "maxStopLossDistance": "float",
+                "minRiskRewardRatio": "int"
+              },
+              "confidence": "float",
+              "direction": "str"
+            },
+            "triggeredSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "ema13": "float",
+                  "ema20": "float",
+                  "ema5": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "float",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d713"
+            ]
+          },
+          "signalSource": "str",
+          "sourceThoughtLogId": "str",
+          "terminalStatus": "str",
+          "triggeredSignalCount": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_signal_performance",
@@ -3297,8 +4433,75 @@
         "winRate",
         "winRatePercent"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "avgAggregateScore",
+        "avgAggregateScorePercent",
+        "avgConviction",
+        "avgConvictionPercent",
+        "avgDurationSeconds",
+        "avgNetPnl",
+        "avgRiskRewardRatio",
+        "blockedCount",
+        "cancelledCount",
+        "enterCount",
+        "executedCount",
+        "expiredCount",
+        "failedCount",
+        "fillRatePct",
+        "lossCount",
+        "outcomeCount",
+        "pendingCount",
+        "skipCount",
+        "skippedCount",
+        "topCoinsByEvaluation",
+        "totalEntryDecisions",
+        "totalEvaluations",
+        "totalNetPnl",
+        "winCount",
+        "winRate",
+        "winRatePercent"
+      ],
+      "observed_shape": {
+        "avgAggregateScore": "float",
+        "avgAggregateScorePercent": "int",
+        "avgConviction": "float",
+        "avgConvictionPercent": "int",
+        "avgDurationSeconds": "float",
+        "avgNetPnl": "float",
+        "avgRiskRewardRatio": "float",
+        "blockedCount": "int",
+        "cancelledCount": "int",
+        "enterCount": "int",
+        "executedCount": "int",
+        "expiredCount": "int",
+        "failedCount": "int",
+        "fillRatePct": "int",
+        "lossCount": "int",
+        "outcomeCount": "int",
+        "pendingCount": "int",
+        "skipCount": "int",
+        "skippedCount": "int",
+        "topCoinsByEvaluation": [
+          {
+            "coinTicker": "str",
+            "count": "int"
+          },
+          "\u2026\u00d712"
+        ],
+        "totalEntryDecisions": "int",
+        "totalEvaluations": "int",
+        "totalNetPnl": "float",
+        "winCount": "int",
+        "winRate": "float",
+        "winRatePercent": "float"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_strategy",
@@ -3320,8 +4523,88 @@
       "declared_output": [
         "strategy"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: strategyId"
+      "observed": [
+        "strategy"
+      ],
+      "observed_shape": {
+        "strategy": {
+          "boundAgentCount": "int",
+          "cadence": "str",
+          "conditionVerdicts": [
+            {
+              "then": "str",
+              "when": "str"
+            },
+            "\u2026\u00d72"
+          ],
+          "conditions": [
+            {
+              "conditionKey": "str",
+              "definition": {
+                "kind": "str",
+                "members": [
+                  {
+                    "column": "\u2026",
+                    "kind": "\u2026",
+                    "label": "\u2026",
+                    "op": "\u2026"
+                  },
+                  "\u2026\u00d73"
+                ],
+                "op": "str"
+              },
+              "name": "str"
+            },
+            "\u2026\u00d72"
+          ],
+          "createdAt": "str",
+          "description": "str",
+          "forkedFromStrategyId": "null",
+          "id": "str",
+          "isActive": "bool",
+          "marketReadText": "str",
+          "minAggregateScore": "float",
+          "minAtrPct": "float",
+          "minRequiredCount": "int",
+          "name": "str",
+          "openPositionCount": "int",
+          "ownerUserId": "null",
+          "regimeAutoDerive": "bool",
+          "regimeTimeframe": "null",
+          "revision": "int",
+          "scope": "str",
+          "sections": [
+            {
+              "kind": "str",
+              "sectionKey": "str"
+            },
+            "\u2026\u00d74"
+          ],
+          "signalRules": [
+            {
+              "allocation": "int",
+              "params": {
+                "threshold": "int"
+              },
+              "required": "bool",
+              "signalId": "str"
+            },
+            "\u2026\u00d782"
+          ],
+          "systemKey": "str",
+          "tagline": "str",
+          "timeframe": "str",
+          "updatedAt": "str",
+          "visibility": "str"
+        }
+      },
+      "arguments_from": "discovered:strategyId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_strategy_column_contract",
@@ -3432,8 +4715,7 @@
       "declared_output": [
         "contract"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: column"
+      "not_called_because": "no column available on this account"
     },
     {
       "name": "get_strategy_section_template",
@@ -3481,8 +4763,7 @@
       "declared_output": [
         "template"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: request"
+      "not_called_because": "no request available on this account"
     },
     {
       "name": "get_strategy_signal_definition",
@@ -3604,8 +4885,7 @@
       "declared_output": [
         "signal"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: signalId"
+      "not_called_because": "no signalId available on this account"
     },
     {
       "name": "get_top_ranked_coins",
@@ -3649,8 +4929,7 @@
       "declared_output": [
         "coins"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: interval, metric"
+      "not_called_because": "no interval available on this account"
     },
     {
       "name": "get_trade_chart",
@@ -3671,8 +4950,22 @@
       "declared_output": [
         "result"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId, logId"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "result"
+      ],
+      "observed_shape": {
+        "result": {
+          "status": "str"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_trade_outcome_by_decision",
@@ -3692,8 +4985,20 @@
       "declared_output": [
         "outcome"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: decisionId"
+      "not_called_because": "no decisionId available on this account",
+      "observed": [
+        "outcome"
+      ],
+      "observed_shape": {
+        "outcome": "null"
+      },
+      "arguments_from": "discovered:decisionId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_trading_config_catalog",
@@ -3796,6 +5101,7 @@
           }
         }
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -3841,8 +5147,9 @@
             "id": "str",
             "marketGridSessionId": "str",
             "metadata": {
-              "error": "str",
-              "errorCategory": "str"
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
             },
             "thoughtLogId": "null",
             "userId": "str"
@@ -3853,6 +5160,7 @@
         "page": "int",
         "total": "int"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -3944,12 +5252,13 @@
             "totalChangeCapture": "null",
             "totalPayout": "null"
           },
-          "\u2026\u00d720"
+          "\u2026\u00d714"
         ],
         "limit": "int",
         "page": "int",
         "total": "int"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4015,6 +5324,7 @@
         "page": "int",
         "total": "int"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4084,6 +5394,7 @@
           "\u2026\u00d726"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4134,8 +5445,71 @@
         "entries",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "str",
+            "atrPct": "float",
+            "challenge": "null",
+            "closedAt": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "convictionPercent": "int",
+            "createdAt": "str",
+            "decision": "str",
+            "direction": "str",
+            "entryFee": "null",
+            "entryFillPrice": "null",
+            "entryFillQuantity": "null",
+            "entryPrice": "float",
+            "executedAt": "str",
+            "executedOrderId": "null",
+            "expiresAt": "str",
+            "id": "str",
+            "llmDurationMs": "int",
+            "positionSizePct": "float",
+            "positionSizePreset": "str",
+            "reasoning": "str",
+            "riskRewardRatio": "float",
+            "signalChecklist": [
+              {
+                "interpretation": "str",
+                "label": "str",
+                "signalId": "str",
+                "verdict": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "signalLogId": "str",
+            "signalModulesUsed": [
+              "str",
+              "\u2026\u00d75"
+            ],
+            "status": "str",
+            "stopLoss": "float",
+            "stopLossOrderId": "null",
+            "takeProfit": "float",
+            "takeProfitOrderId": "null",
+            "timeHorizon": "str",
+            "tradeStatus": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "list_game_presets",
@@ -4201,6 +5575,7 @@
           "\u2026\u00d72"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4230,8 +5605,39 @@
         "entries",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "str",
+            "coinTicker": "str",
+            "createdAt": "str",
+            "gateStage": "str",
+            "id": "str",
+            "reasonCode": "str",
+            "reasonDetail": {
+              "equityUsd": "float",
+              "maxLeverage": "int",
+              "minEquityUsd": "float",
+              "smallPct": "int"
+            },
+            "sourceThoughtLogId": "null",
+            "userId": "str"
+          },
+          "\u2026\u00d720"
+        ],
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "list_intelligence_agents",
@@ -4331,7 +5737,7 @@
                     "timestamp": "\u2026",
                     "value": "\u2026"
                   },
-                  "\u2026\u00d712"
+                  "\u2026\u00d715"
                 ],
                 "trades": "int",
                 "winLoss": {
@@ -4397,7 +5803,7 @@
             "updatedAt": "str",
             "userId": "str"
           },
-          "\u2026\u00d72"
+          "\u2026\u00d71"
         ],
         "slotUsage": {
           "level": "int",
@@ -4411,6 +5817,7 @@
           "used": "int"
         }
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4545,6 +5952,7 @@
           "\u2026\u00d750"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4574,6 +5982,7 @@
       "observed_shape": {
         "approvals": []
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4616,19 +6025,19 @@
               "lastFireAt": "null",
               "lastFlipAt": "null",
               "matchedIsDefault": "bool",
-              "matchedSlotId": "str",
+              "matchedSlotId": "null",
               "matchedSlotPriority": "null",
-              "onDutyAgentAvatarUrl": "str",
-              "onDutyAgentDisplayName": "str",
-              "onDutyAgentId": "str",
+              "onDutyAgentAvatarUrl": "null",
+              "onDutyAgentDisplayName": "null",
+              "onDutyAgentId": "null",
               "openPositionAgentAvatarUrl": "null",
               "openPositionAgentDisplayName": "null",
               "openPositionAgentId": "null",
-              "qualificationBlock": "str",
-              "qualified": "bool",
-              "reason": "null",
-              "regimeConviction": "str",
-              "regimeUsed": "str",
+              "qualificationBlock": "null",
+              "qualified": "null",
+              "reason": "str",
+              "regimeConviction": "null",
+              "regimeUsed": "null",
               "section": "str"
             },
             "revision": "int",
@@ -4666,6 +6075,7 @@
           "warming": "int"
         }
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4696,8 +6106,7 @@
         "totals",
         "userId"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: marketGridSessionId"
+      "not_called_because": "no marketGridSessionId available on this account"
     },
     {
       "name": "list_signal_logs",
@@ -4755,8 +6164,48 @@
         "entries",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "entries",
+        "total"
+      ],
+      "observed_shape": {
+        "entries": [
+          {
+            "agentId": "str",
+            "aggregateScore": "float",
+            "aggregateScorePercent": "int",
+            "assessmentConfidence": "float",
+            "assessmentConfidencePercent": "int",
+            "assessmentDirection": "str",
+            "atrPct": "float",
+            "coinTicker": "str",
+            "createdAt": "str",
+            "dominantBias": "str",
+            "effectiveMinAggregateScore": "float",
+            "effectiveMinAggregateScorePercent": "int",
+            "effectiveMinRequiredCount": "int",
+            "evaluatedAt": "str",
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "hasConflictingSignals": "bool",
+            "id": "str",
+            "primarySignalCount": "int",
+            "signalSource": "str",
+            "sourceThoughtLogId": "str",
+            "terminalStatus": "str",
+            "triggeredSignalCount": "int"
+          },
+          "\u2026\u00d710"
+        ],
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "list_strategies",
@@ -4810,6 +6259,7 @@
           "\u2026\u00d716"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4874,6 +6324,7 @@
           "\u2026\u00d710"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4942,6 +6393,7 @@
           "\u2026\u00d782"
         ]
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -4986,8 +6438,7 @@
         "timeframes",
         "transforms"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: category"
+      "not_called_because": "no category available on this account"
     },
     {
       "name": "list_trade_outcomes",
@@ -5011,8 +6462,51 @@
         "outcomes",
         "total"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: agentId"
+      "observed": [
+        "outcomes",
+        "total"
+      ],
+      "observed_shape": {
+        "outcomes": [
+          {
+            "agentId": "str",
+            "closeReason": "str",
+            "closedAt": "str",
+            "closedBy": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "createdAt": "str",
+            "decisionId": "str",
+            "direction": "str",
+            "durationSeconds": "int",
+            "effectiveLeverage": "int",
+            "entryFee": "float",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "float",
+            "exitFee": "float",
+            "exitFillPrice": "float",
+            "exitFillQuantity": "float",
+            "id": "str",
+            "netPnl": "float",
+            "openedAt": "str",
+            "realizedPnl": "float",
+            "signalLogId": "str",
+            "slippageEntry": "float",
+            "slippageExit": "float",
+            "totalFees": "float",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
+        "total": "int"
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "list_user_active_positions",
@@ -5042,133 +6536,29 @@
         "userId"
       ],
       "observed_shape": {
-        "activeCoinTickers": [
-          "str",
-          "\u2026\u00d73"
-        ],
-        "agents": [
-          {
-            "agentAvatarUrl": "str",
-            "agentId": "str",
-            "agentName": "str",
-            "currentNotionalUsd": "float",
-            "longCount": "int",
-            "marginedUsd": "float",
-            "openPositionCount": "int",
-            "openValueUsd": "float",
-            "positions": [
-              {
-                "ageMs": "int",
-                "agentAvatarUrl": "str",
-                "agentId": "str",
-                "agentName": "str",
-                "coinTicker": "str",
-                "conviction": "float",
-                "currentNotionalUsd": "float",
-                "decision": "str",
-                "decisionId": "str",
-                "direction": "str",
-                "effectiveLeverage": "int",
-                "effectiveStopLoss": "float",
-                "effectiveTakeProfit": "float",
-                "entryFillPrice": "float",
-                "entryFillQuantity": "float",
-                "entryNotionalUsd": "float",
-                "liquidationPrice": "null",
-                "marginedUsd": "float",
-                "markPrice": "float",
-                "marketGridSessionId": "null",
-                "openValueUsd": "float",
-                "openedAt": "str",
-                "openedAtMs": "int",
-                "pairLabel": "str",
-                "positionId": "str",
-                "priceMovePct": "float",
-                "pricingStatus": "str",
-                "riskRewardRatio": "int",
-                "roePct": "float",
-                "signalLogId": "str",
-                "status": "str",
-                "strategyCadence": "str",
-                "strategyLabel": "str",
-                "strategyTimeframe": "str",
-                "timeHorizon": "str",
-                "unrealizedPnlUsd": "float"
-              },
-              "\u2026\u00d73"
-            ],
-            "pricedPositionCount": "int",
-            "pricingStatus": "str",
-            "roePct": "float",
-            "shortCount": "int",
-            "strategyCadence": "str",
-            "strategyLabel": "str",
-            "strategyTimeframe": "str",
-            "unpricedPositionCount": "int",
-            "unrealizedPnlUsd": "float"
-          },
-          "\u2026\u00d71"
-        ],
-        "positions": [
-          {
-            "ageMs": "int",
-            "agentAvatarUrl": "str",
-            "agentId": "str",
-            "agentName": "str",
-            "coinTicker": "str",
-            "conviction": "float",
-            "currentNotionalUsd": "float",
-            "decision": "str",
-            "decisionId": "str",
-            "direction": "str",
-            "effectiveLeverage": "int",
-            "effectiveStopLoss": "float",
-            "effectiveTakeProfit": "float",
-            "entryFillPrice": "float",
-            "entryFillQuantity": "float",
-            "entryNotionalUsd": "float",
-            "liquidationPrice": "null",
-            "marginedUsd": "float",
-            "markPrice": "float",
-            "marketGridSessionId": "null",
-            "openValueUsd": "float",
-            "openedAt": "str",
-            "openedAtMs": "int",
-            "pairLabel": "str",
-            "positionId": "str",
-            "priceMovePct": "float",
-            "pricingStatus": "str",
-            "riskRewardRatio": "int",
-            "roePct": "float",
-            "signalLogId": "str",
-            "status": "str",
-            "strategyCadence": "str",
-            "strategyLabel": "str",
-            "strategyTimeframe": "str",
-            "timeHorizon": "str",
-            "unrealizedPnlUsd": "float"
-          },
-          "\u2026\u00d73"
-        ],
+        "activeCoinTickers": [],
+        "agents": [],
+        "positions": [],
         "totals": {
           "activeAgentCount": "int",
-          "currentNotionalUsd": "float",
+          "currentNotionalUsd": "int",
           "generatedAtMs": "int",
           "longCount": "int",
-          "marginedUsd": "float",
+          "marginedUsd": "int",
           "openPositionCount": "int",
-          "openValueUsd": "float",
+          "openValueUsd": "int",
           "pricedPositionCount": "int",
           "pricingStatus": "str",
           "refreshIntervalMs": "int",
-          "roePct": "float",
+          "roePct": "int",
           "shortCount": "int",
           "trackingLabel": "str",
           "unpricedPositionCount": "int",
-          "unrealizedPnlUsd": "float"
+          "unrealizedPnlUsd": "int"
         },
         "userId": "str"
       },
+      "arguments_from": "none-required",
       "envelope": {
         "had_structured_content": true,
         "had_text_block": true
@@ -5260,8 +6650,7 @@
       "declared_output": [
         "resolution"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: presetId, request"
+      "not_called_because": "no presetId available on this account"
     },
     {
       "name": "preview_radar_resolution",
@@ -5318,8 +6707,7 @@
       "declared_output": [
         "resolvesNow"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: coinId, request"
+      "not_called_because": "no coinId available on this account"
     },
     {
       "name": "preview_strategy_report",
@@ -5506,8 +6894,7 @@
         "renderedSections",
         "tokenCountModel"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: coinSelection, regimeAutoDerive, sections, timeframe"
+      "not_called_because": "no coinSelection available on this account"
     },
     {
       "name": "random_submit_market_grid",
@@ -5675,8 +7062,7 @@
         "gatePercent",
         "wouldRoute"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: gate, signals"
+      "not_called_because": "no gate available on this account"
     },
     {
       "name": "submit_agent_grid",
@@ -5793,8 +7179,7 @@
       "declared_output": [
         "result"
       ],
-      "observed": null,
-      "not_called_because": "needs arguments: presetId, request"
+      "not_called_because": "no presetId available on this account"
     },
     {
       "name": "update_intelligence_agent",
