@@ -1,8 +1,7 @@
 import type { AuditWriter } from '@/domain/audit/audit-repository.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
-import { isUsable } from '@/domain/connection/connection.js';
-import type { ConnectionReader } from '@/domain/connection/connection-repository.js';
+import type { HeldScopes } from '@/domain/connection/held-scopes.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
 import { ConnectionRevokedError } from '@/domain/errors.js';
@@ -42,8 +41,16 @@ export interface AdapterDeps {
   readonly config: BattleGridConfig;
   readonly audit: AuditWriter;
   readonly confirmations: ConfirmationStore;
-  /** The authority on what each user's grant carries. Never assumed — see PG-004. */
-  readonly connections: ConnectionReader;
+  /**
+   * What the credential this request acts with carries. Never assumed — see
+   * PG-004.
+   *
+   * A seam rather than a repository read, because a delegated grant and an
+   * operator-supplied credential answer it from different places. The default
+   * still reads the connection row; a personal deployment has no row and
+   * declares instead. See `HeldScopes`.
+   */
+  readonly heldScopes: HeldScopes;
   readonly fetch: typeof globalThis.fetch;
 }
 
@@ -155,21 +162,20 @@ export class McpBattleGridAdapter implements BattleGridPort {
   // -- internals ---------------------------------------------------------
 
   /**
-   * What this user's grant actually carries.
+   * What the credential this request acts with carries.
    *
-   * The connection is the record of what BattleGrid granted, written at exchange
-   * time, and it is the only thing entitled to answer this. An earlier version
-   * returned the constant `['mcp:read']`, which happened to be true under the
-   * pinned registration and would have failed *open* the moment it stopped being
-   * true — reporting authority the connection does not hold. See PG-004.
+   * Delegated to `HeldScopes` because the answer has two sources now — a grant
+   * BattleGrid issued, or a declaration the operator made — and they are not the
+   * same kind of fact. Both still go through the same guard, because policy P1
+   * says scope must never be the thing that decides.
    *
-   * No connection, or a revoked one, holds nothing. Refusing everything is the
-   * correct answer to "what may this absent grant do".
+   * An earlier version returned the constant `['mcp:read']`, which happened to
+   * be true under the pinned registration and would have failed *open* the moment
+   * it stopped being true. See PG-004: whatever answers this must be entitled to,
+   * never a convenient constant.
    */
   private async scopesFor(userId: string): Promise<readonly Scope[]> {
-    const connection = await this.deps.connections.findByUserId(userId);
-    if (!connection || !isUsable(connection)) return [];
-    return connection.scopes;
+    return this.deps.heldScopes.forUser(userId);
   }
 
   private async rawDiscoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {

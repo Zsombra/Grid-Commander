@@ -1,5 +1,78 @@
 # Journal
 
+## 2026-07-29 — It can be run against your own account now
+
+**Did**: Proposed, planned, executed, audited (**PASS**) and archived
+`a-personal-key` (full track, 23/23). `battlegrid-connection` 10 → 13
+requirements, the nine untouched ones byte-identical. 511 tests, up from 492.
+
+**The direction changed.** Grid-Commander is a personal controller — one person,
+their own BattleGrid account, over the MCP surface. Not the multi-tenant product
+the brief describes.
+
+Which meant it **could not be run at all**: pressing *Continue to BattleGrid*
+redirects to `/authorize` with a `client_id` nobody registered. To use a personal
+tool against your own account you first had to register an OAuth client with a
+third party — to talk to yourself.
+
+**The architecture had already anticipated this.** `Authority` is
+`{ userId, accessToken }`, `ResolveAuthorityQuery` is documented as *"the single
+place a BattleGrid token is obtained"*, and the adapter does
+`Authorization: Bearer ${accessToken}`. A `bg_live_` key **is** a bearer token to
+that endpoint, so agents, strategies, compile/review/apply, audit and the
+assistant all work unchanged. The port design paid off exactly as intended.
+
+Three seams needed a second implementation, picked at the composition root and
+never branched on downstream: who is acting, what token, what scopes.
+
+**It now boots and serves all five routes with no OAuth client configured at
+all.** Verified, not assumed.
+
+**State**: archived. Production gate PASS, one MINOR filed.
+
+**Next**: `personal-mode-says-reconnect` (P1) — see below. Then
+`image-never-built`, still needing a Docker daemon.
+
+**Watch out**:
+
+- **`scopesFor` would have refused every call.** It read `connections.scopes` and
+  returned `[]` with no connection — correct for a delegated deployment, fatal
+  for a personal one where there is no row. Found by reading it before writing
+  anything, which is why `HeldScopes` exists at all. Had I gone straight to
+  wiring the key, personal mode would have booted cleanly and then refused every
+  single tool call.
+- **A declared scope is not a granted one, and that is the whole safety story.**
+  The delegated path registers `mcp:read`, so wager is *unobtainable*. A
+  `bg_live_` key carries whatever the account gave it and the product cannot
+  read which. `BATTLEGRID_KEY_SCOPES` is restraint, not protection: declaring
+  `mcp:read` stops this product asking, not the key. What still protects is the
+  classification guard and the confirmation gate — where the boundary always
+  was. Disclosed on every page, in the product.
+- **Requiring a registered client would have made the path unreachable by its own
+  precondition.** `BATTLEGRID_CLIENT_ID` and `BATTLEGRID_REDIRECT_URI` are no
+  longer required when a key is set. Registration is the ceremony this path
+  removes; it cannot be a precondition for removing it.
+- **Serving it found the defect a diff could not.** A refused key renders
+  *"Reconnect to continue"* — an action personal mode does not have, with
+  `/connect` not in the navigation and the OAuth client deliberately unset.
+  Wrong remedy, correct diagnosis. Not fixed here: both strings are domain
+  constants and design W-C deliberately gives one message for every way authority
+  is lost, so varying the remedy by mode is a design decision rather than a copy
+  edit. Filed `personal-mode-says-reconnect` (P1). **Third time this session that
+  rendering caught something no assertion would have.**
+- **A route finally exercised the database.** `/audit` returned 500 mid-probe
+  because PostgreSQL had stopped, and it was the *only* route to notice —
+  personal mode has no session gate in front of it. First time a probe in this
+  project has touched the database; it narrows
+  `no-route-exercises-the-database` without closing it.
+- **Regex edits on source cost a repair, again.** Moving three test harnesses
+  from `connections` to `heldScopes` mangled the imports in `scope.test.ts`.
+  Second time this session. Use them to *find*, not to rewrite.
+- **The OAuth path was kept, not deleted.** It is audited, archived and correct
+  for the product the brief describes, and the personal path had not run once
+  when the direction changed. Filed `oauth-path-may-be-dead-weight` (P2) so the
+  decision gets made rather than drifted into.
+
 ## 2026-07-29 — The serving gate passed with the database stopped
 
 **Did**: Proposed, executed and archived `a-gate-that-checks-its-database`

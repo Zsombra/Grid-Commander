@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ScopeUnavailableError } from '@/domain/errors.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import type { Scope } from '@/domain/connection/scope.js';
+import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 import {
   FakeAuditStore,
   FakeClock,
@@ -56,7 +57,7 @@ function adapterFor(scopes: readonly Scope[] | null, opts: { revoked?: boolean }
     config,
     audit: new FakeAuditStore(clock),
     confirmations: new FakeConfirmationStore(clock),
-    connections,
+    heldScopes: new ConnectionScopes(connections),
     fetch: fetchOk,
   });
   return { adapter, ready };

@@ -4,6 +4,7 @@ import { RecordAuditCommand } from '@/application/use-cases/record-audit.command
 import { ConnectionRevokedError } from '@/domain/errors.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore, FakeConnectionStore } from '../support/fakes.js';
+import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 
 const config = {
   clientId: 'client-1',
@@ -62,7 +63,7 @@ describe('R10 — authority withdrawn at BattleGrid rather than through us', () 
       config,
       audit,
       confirmations,
-      connections: connected(clock),
+      heldScopes: new ConnectionScopes(connected(clock)),
       fetch: fetchWith(status),
     });
 
@@ -175,7 +176,7 @@ describe('R2 — a grant with no subject cannot establish an identity', () => {
       config,
       audit: new FakeAuditStore(clock),
       confirmations: new FakeConfirmationStore(clock),
-      connections: new FakeConnectionStore(clock),
+      heldScopes: new ConnectionScopes(new FakeConnectionStore(clock)),
       fetch,
     });
   };

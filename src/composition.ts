@@ -2,8 +2,13 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
+import type { PersonalConfig } from './config.js';
+import { DeclaredScopes } from './domain/connection/held-scopes.js';
+import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
 import { CreateAgentCommand } from './application/use-cases/create-agent.command.js';
 import { CurrentUserQuery } from './application/use-cases/current-user.query.js';
+import type { ActingUser } from './application/use-cases/current-user.query.js';
+import { OwnerOnlyUser } from './application/use-cases/owner-only-user.js';
 import {
   CompleteConnectionCommand,
   DisconnectCommand,
@@ -84,6 +89,8 @@ interface Infrastructure {
   readonly assistant: AssistantPort;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
+  /** Set when this deployment holds the owner's own credential. */
+  readonly personal: PersonalConfig | undefined;
 }
 
 function infrastructure(): Infrastructure {
@@ -101,7 +108,12 @@ function infrastructure(): Infrastructure {
     config: config.battlegrid,
     audit,
     confirmations,
-    connections,
+    // Where "what may this credential do" is answered. A delegated grant is read
+    // from the connection BattleGrid issued; a personal key carries a
+    // declaration the operator made. Two sources, one guard — see HeldScopes.
+    heldScopes: config.personal
+      ? new DeclaredScopes(config.personal.scopes)
+      : new ConnectionScopes(connections),
     fetch: globalThis.fetch,
   });
 
@@ -123,6 +135,7 @@ function infrastructure(): Infrastructure {
       : new NotConfiguredAssistant(),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
+    personal: config.personal,
   };
   return cached;
 }
@@ -144,9 +157,24 @@ export function app(cookies: CookieStore) {
 
   const authority = new ResolveAuthorityQuery(i.connections, i.connections, i.battlegrid, systemClock);
 
+  /**
+   * Who a request acts for.
+   *
+   * Two implementations, picked here and never branched on downstream. A
+   * personal deployment holds the owner's credential and authenticates nobody;
+   * a delegated one resolves a session and refreshes a grant. Every route calls
+   * `currentUser` and cannot tell which it got, which is the point.
+   */
+  const currentUser: ActingUser = i.personal
+    ? new OwnerOnlyUser(i.personal.apiKey)
+    : new CurrentUserQuery(sessions, i.connections, authority);
+
   return {
     sessions,
-    currentUser: new CurrentUserQuery(sessions, i.connections, authority),
+    currentUser,
+    // Null on a delegated deployment. The surface uses it to disclose that a
+    // deployment authenticates nobody, which is true only of the personal one.
+    personal: i.personal ?? null,
 
     startConnection: new StartConnectionCommand(i.battlegrid, i.transactions, random, systemClock),
     completeConnection: new CompleteConnectionCommand(

@@ -9,6 +9,7 @@ import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore, FakeConnectionStore } from '../support/fakes.js';
+import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 
 /**
  * The assumption three changes have rested on: that the layers are plugged into
@@ -133,7 +134,7 @@ async function wire() {
     config,
     audit,
     confirmations,
-    connections,
+    heldScopes: new ConnectionScopes(connections),
     fetch: platform.fetch,
   });
   const agents = new McpAgentAdapter(battlegrid);
