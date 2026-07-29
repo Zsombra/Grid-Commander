@@ -199,7 +199,7 @@ describe('losing access', () => {
   it('abandons the answer rather than completing it from what was already read', async () => {
     const h = harness({
       toolResult: (req) =>
-        req.tool === 'list_strategies' ? new ConnectionRevokedError() : { agents: [1, 2, 3] },
+        req.tool === 'list_strategies' ? new ConnectionRevokedError('reconnect') : { agents: [1, 2, 3] },
       script: async (req) => {
         await req.callTool('list_intelligence_agents', {});
         await req.callTool('list_strategies', {});
@@ -224,7 +224,7 @@ describe('losing access', () => {
   it('abandons the answer even when the assistant swallows the error', async () => {
     const h = harness({
       toolResult: (req) =>
-        req.tool === 'list_strategies' ? new ConnectionRevokedError() : { agents: [1, 2, 3] },
+        req.tool === 'list_strategies' ? new ConnectionRevokedError('reconnect') : { agents: [1, 2, 3] },
       script: async (req) => {
         await req.callTool('list_intelligence_agents', {});
         // The model catches, shrugs, and answers from what it got.

@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '@/config.js';
 import { OWNER_USER_ID, OwnerOnlyUser } from '@/application/use-cases/owner-only-user.js';
@@ -29,6 +30,15 @@ const OAUTH = {
   BATTLEGRID_CLIENT_ID: 'client-id',
   BATTLEGRID_REDIRECT_URI: 'http://localhost:3000/api/auth/battlegrid/callback',
 };
+
+function walkApp(dir = 'app', out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walkApp(full, out);
+    else if (/\.tsx?$/.test(full)) out.push(full);
+  }
+  return out;
+}
 
 let saved: NodeJS.ProcessEnv;
 
@@ -158,6 +168,22 @@ describe('the owner, on a deployment that authenticates nobody', () => {
     // stops working surfaces from the call, not from resolving who is acting.
     const result = await new OwnerOnlyUser('bg_live_abc').execute();
     expect(result.kind).not.toBe('not-connected');
+  });
+
+  it('leaves the page that reports a missing session unreachable', () => {
+    // The half of that claim the assertion above does not reach. `OwnerOnlyUser`
+    // never says not-connected, so `NotConnected` cannot render — but only while
+    // every page asks *it* who is acting. A page that resolved a session itself
+    // would bring the page back, in the one mode where its advice is wrong, and
+    // nothing else here would notice.
+    const pages = walkApp().filter((f) => /(^|[/\\])page\.tsx$/.test(f));
+    const rendering = pages.filter((f) => readFileSync(f, 'utf8').includes('<NotConnected'));
+
+    // If this scan found nothing, the check below would pass vacuously.
+    expect(rendering.length).toBeGreaterThan(5);
+
+    const bypassing = rendering.filter((f) => !readFileSync(f, 'utf8').includes('acting()'));
+    expect(bypassing, 'these render NotConnected without asking who is acting').toEqual([]);
   });
 });
 

@@ -135,6 +135,7 @@ async function wire() {
     audit,
     confirmations,
     heldScopes: new ConnectionScopes(connections),
+    remedy: 'reconnect',
     fetch: platform.fetch,
   });
   const agents = new McpAgentAdapter(battlegrid);

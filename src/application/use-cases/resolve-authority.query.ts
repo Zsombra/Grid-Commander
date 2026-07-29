@@ -28,6 +28,11 @@ export interface Authority {
  * One place also gives one answer to the harder question, which is what happens
  * when a refresh fails: `ConnectionRevokedError`, which the product already
  * knows how to present, rather than a new failure mode per route.
+ *
+ * Every failure here names `'reconnect'`, and that is not a choice this class
+ * makes — it is what this class *is*. A deployment acting with a configured
+ * credential has no session to resolve and no grant to refresh, so
+ * `OwnerOnlyUser` never reaches here. The remedy is fixed because the caller is.
  */
 export class ResolveAuthorityQuery {
   constructor(
@@ -41,10 +46,10 @@ export class ResolveAuthorityQuery {
     const connection = await this.connections.findByUserId(userId);
     // Absent and revoked are the same outcome. They differ in cause and not in
     // remedy — both are fixed by connecting, and by nothing else. See W-C.
-    if (!connection || !isUsable(connection)) throw new ConnectionRevokedError();
+    if (!connection || !isUsable(connection)) throw new ConnectionRevokedError('reconnect');
 
     const stored = await this.vault.read(userId);
-    if (!stored) throw new ConnectionRevokedError();
+    if (!stored) throw new ConnectionRevokedError('reconnect');
 
     if (!needsRefresh(connection, this.clock.now())) {
       return { userId, accessToken: stored.accessToken };
@@ -53,7 +58,7 @@ export class ResolveAuthorityQuery {
     if (!stored.refreshToken) {
       // Expired with nothing to refresh from. The authority is gone; saying so
       // now is better than letting the user watch a call fail.
-      throw new ConnectionRevokedError();
+      throw new ConnectionRevokedError('reconnect');
     }
 
     let grant;
@@ -62,7 +67,7 @@ export class ResolveAuthorityQuery {
     } catch {
       // BattleGrid refused the refresh. Whatever the cause, the remedy is the
       // same one.
-      throw new ConnectionRevokedError();
+      throw new ConnectionRevokedError('reconnect');
     }
 
     await this.connections.updateTokens(userId, {

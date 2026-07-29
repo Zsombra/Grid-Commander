@@ -58,6 +58,7 @@ function adapterFor(scopes: readonly Scope[] | null, opts: { revoked?: boolean }
     audit: new FakeAuditStore(clock),
     confirmations: new FakeConfirmationStore(clock),
     heldScopes: new ConnectionScopes(connections),
+    remedy: 'reconnect',
     fetch: fetchOk,
   });
   return { adapter, ready };

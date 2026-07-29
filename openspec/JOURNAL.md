@@ -1,5 +1,79 @@
 # Journal
 
+## 2026-07-29 — The remedy personal mode named did not exist
+
+**Did**: Proposed, executed, verified and archived `a-remedy-that-exists`
+(standard, 17/17). `battlegrid-connection` 13 → 14 requirements, the twelve
+untouched ones byte-identical and the thirteenth a one-line scenario edit. 532
+tests, up from 511. Committed and pushed `a-personal-key` (32 files) first; PR
+#5 body brought current from eleven commits to seventeen.
+
+**The bug.** Personal mode shipped last change with a failure path that told the
+operator to reconnect. There is nothing to reconnect: `/connect` is not in the
+navigation and the OAuth client is unset by design. A correct diagnosis with a
+remedy from a different deployment — which reads as "the product is broken",
+not as "this advice was written for someone else".
+
+**Diagnosis and remedy are different facts, and only one of them should be
+constant.** W-C says the diagnosis is one message for every cause, so nobody has
+to tell an expired token from a forged cookie. That was read as covering the
+whole sentence. It covers half: *what went wrong* is the same everywhere, *what
+to do about it* depends entirely on how the deployment got its authority. The
+split is now a `Remedy` type with two cases, and the composition root picks one
+on the line beside `heldScopes`.
+
+**Five of six throw sites never needed the choice.** `ConnectionRevokedError` is
+constructed in six places; four in `resolve-authority.query.ts` and one in
+`connect.commands.ts` are behind a session or a callback and structurally cannot
+run in personal mode. Only the adapter's 401/403 can. So one site takes the
+value and the other five pass `'reconnect'` explicitly — which is not ceremony,
+it is each site saying which deployment it belongs to. The constructor takes it
+as **required**: a default is precisely how a call site inherits the wrong
+deployment's advice.
+
+**Looking for where the remedy was produced found a second face of it.**
+`/connect` still rendered in personal mode, offering "Continue to BattleGrid"
+over a `client_id` that is empty by design. The page the broken advice sent
+people to was itself a dead end. It now says there is nothing to connect, and
+names the same remedy from the same source rather than holding a copy.
+
+**Rendering found something again — the fourth time this session.** Serving
+personal mode with a bad key and reading the *whole* page, not the sentence
+under test, showed the corrected remedy sitting directly above "Grid-Commander
+could not reach BattleGrid to ask." It did reach BattleGrid; BattleGrid refused.
+That sentence was written for a network failure and is shown for every
+`unreadable`, so the reassuring half of the screen contradicts the accurate
+half. Pre-existing and identical on the delegated path — filed as
+`refused-is-not-unreachable` (P2) rather than widened into this change, because
+fixing it means `unreadable` carrying *which* failure, not just what.
+
+**A mutation that does not reproduce the defect is not a surviving mutation.**
+Eleven injected. The first attempt at the reachability one appeared to survive;
+it had mutated the `filter`, which tests the *full* path where `app/page.tsx`
+does have a separator, rather than the `replace`, which tests the path relative
+to `app/` where it does not. Re-injected correctly, it failed immediately. The
+comment I had written next to the fix was wrong in the same way, and was
+corrected — a guard whose explanation is wrong will be "simplified" back into
+the bug by the next reader.
+
+**The guard bug was real, and only a link to `/` could find it.**
+`servableRoutes()` required a separator before `page.tsx`, so the root route was
+absent from the servable list. The same bug had been fixed once already in
+`routeOf`, in the same file, and survived in the helper written first — invisible
+because nothing had ever linked to `/`. The new page's "Back to your agents" was
+the first, and it was reported dead on the first run.
+
+**Verification found half a claim.** The proposal said the change would *prove*
+`NotConnected` is unreachable in personal mode rather than assume it. The test
+proved `OwnerOnlyUser` never returns `not-connected` — true, and not the whole
+claim: nothing would have failed if a future page resolved its own session. Now
+asserted structurally across all thirteen pages that render it, and mutated to
+confirm it fails.
+
+**Next**: `image-never-built` (P1) still needs a Docker daemon — no daemon in
+this container, so it stays the operator's step. `refused-is-not-unreachable`
+(P2) is the next thing worth doing here.
+
 ## 2026-07-29 — It can be run against your own account now
 
 **Did**: Proposed, planned, executed, audited (**PASS**) and archived

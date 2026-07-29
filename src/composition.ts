@@ -114,6 +114,11 @@ function infrastructure(): Infrastructure {
     heldScopes: config.personal
       ? new DeclaredScopes(config.personal.scopes)
       : new ConnectionScopes(connections),
+    // And where "what can this user do about it" is answered. Same shape, same
+    // reason: a delegated grant can be obtained again, a configured key can only
+    // be replaced by the person who configured it. Fixed here so that no failure
+    // path has to work it out.
+    remedy: config.personal ? 'repair-the-key' : 'reconnect',
     fetch: globalThis.fetch,
   });
 

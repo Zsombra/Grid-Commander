@@ -1,5 +1,8 @@
 /** Errors the domain raises. Infrastructure converts its own failures into these. */
 
+import type { Remedy } from './connection/remedy.js';
+import { describeRemedy } from './connection/remedy.js';
+
 export class DomainError extends Error {
   constructor(message: string) {
     super(message);
@@ -75,10 +78,22 @@ export class UntrustedCallbackError extends DomainError {
   }
 }
 
-/** The connection is gone or was revoked at BattleGrid. */
+/**
+ * The connection is gone or was revoked at BattleGrid.
+ *
+ * The diagnosis is fixed; the remedy is not. A deployment that authenticates
+ * users can offer reconnection, and one acting with a configured credential
+ * cannot — so the remedy is supplied rather than assumed.
+ *
+ * **Required, deliberately.** A default would let a construction site inherit
+ * whichever deployment happened to be written first, silently, which is the
+ * defect this parameter exists to remove. Passing `'reconnect'` explicitly at a
+ * site that can only run on the delegated path is not ceremony: it is the site
+ * saying which deployment it belongs to.
+ */
 export class ConnectionRevokedError extends DomainError {
-  constructor() {
-    super('Your BattleGrid connection is no longer valid. Reconnect to continue.');
+  constructor(remedy: Remedy) {
+    super(`Your BattleGrid connection is no longer valid. ${describeRemedy(remedy)}`);
   }
 }
 

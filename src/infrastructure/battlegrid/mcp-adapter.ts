@@ -4,6 +4,7 @@ import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
 import type { HeldScopes } from '@/domain/connection/held-scopes.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
+import type { Remedy } from '@/domain/connection/remedy.js';
 import { ConnectionRevokedError } from '@/domain/errors.js';
 import type {
   BattleGridPort,
@@ -51,6 +52,15 @@ export interface AdapterDeps {
    * declares instead. See `HeldScopes`.
    */
   readonly heldScopes: HeldScopes;
+  /**
+   * What to tell the user when BattleGrid refuses this deployment's credential.
+   *
+   * The only construction site of `ConnectionRevokedError` a personal
+   * deployment can reach — every other one is behind a session or a callback.
+   * So the choice is made here, from a value the composition root already holds,
+   * and the six render sites that print `err.message` need to know nothing.
+   */
+  readonly remedy: Remedy;
   readonly fetch: typeof globalThis.fetch;
 }
 
@@ -208,10 +218,15 @@ export class McpBattleGridAdapter implements BattleGridPort {
       },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
-    // Authority withdrawn at BattleGrid rather than through us. The next
-    // operation must fail as "disconnected, reconnect" rather than as a generic
-    // error the user cannot act on. See R10's second scenario.
-    if (res.status === 401 || res.status === 403) throw new ConnectionRevokedError();
+    // Authority withdrawn at BattleGrid rather than through us — or, on a
+    // personal deployment, a key that was wrong from the start. The next
+    // operation must fail as "no longer valid, here is what to do" rather than
+    // as a generic error the user cannot act on. See R10's second scenario, and
+    // "A Remedy Named Must Exist In That Deployment" for why the second half of
+    // that sentence is not a constant.
+    if (res.status === 401 || res.status === 403) {
+      throw new ConnectionRevokedError(this.deps.remedy);
+    }
     if (!res.ok) throw new Error(`${method} failed with ${res.status}`);
     const body = (await res.json()) as JsonRpcResponse;
     if (body.error) throw new Error(body.error.message);

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ListAuditQuery } from '@/application/use-cases/list-audit.query.js';
 import { RecordAuditCommand } from '@/application/use-cases/record-audit.command.js';
+import type { Remedy } from '@/domain/connection/remedy.js';
 import { ConnectionRevokedError } from '@/domain/errors.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore, FakeConnectionStore } from '../support/fakes.js';
@@ -58,12 +59,13 @@ describe('R10 — authority withdrawn at BattleGrid rather than through us', () 
     confirmations = new FakeConfirmationStore(clock);
   });
 
-  const adapter = (status: number) =>
+  const adapter = (status: number, remedy: Remedy = 'reconnect') =>
     new McpBattleGridAdapter({
       config,
       audit,
       confirmations,
       heldScopes: new ConnectionScopes(connected(clock)),
+      remedy,
       fetch: fetchWith(status),
     });
 
@@ -177,6 +179,7 @@ describe('R2 — a grant with no subject cannot establish an identity', () => {
       audit: new FakeAuditStore(clock),
       confirmations: new FakeConfirmationStore(clock),
       heldScopes: new ConnectionScopes(new FakeConnectionStore(clock)),
+      remedy: 'reconnect',
       fetch,
     });
   };

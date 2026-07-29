@@ -2,11 +2,11 @@
 id: personal-mode-says-reconnect
 title: A refused key tells you to reconnect, and there is nothing to reconnect to
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-29
 updated: 2026-07-29
-change: ""
+change: "a-remedy-that-exists"
 capability: battlegrid-connection
 blocked_by: []
 tags: [personal-mode, copy]
@@ -64,3 +64,22 @@ nothing new has to be discovered.
 
 Personal: "Check `BATTLEGRID_API_KEY` and restart."
 Delegated: "Connect your account to continue." (unchanged)
+
+## Resolution
+
+Closed by `a-remedy-that-exists` (2026-07-29).
+
+The remedy became a `Remedy` value chosen at the composition root rather than a
+sentence baked into `ConnectionRevokedError`. A personal deployment now names
+`BATTLEGRID_API_KEY` and a restart; a delegated one still says "Reconnect to
+continue.", byte for byte.
+
+`NOT_CONNECTED` was left alone, as this item's Fix section anticipated it might
+not need changing: `OwnerOnlyUser` returns `acting` unconditionally, so the page
+carrying that string is unreachable in personal mode. That is now asserted
+across all thirteen pages that render it rather than inferred.
+
+Beyond what was filed: `/connect` itself was the same defect. It rendered a
+consent page in personal mode with a button that would have built an
+`/authorize` URL with an empty `client_id` — the dead end the broken advice
+pointed at. It now says there is nothing to connect.

@@ -267,7 +267,7 @@ describe('losing access mid-answer', () => {
       new ClaudeAssistant(svc).answer(
         ask({
           callTool: async () => {
-            throw new ConnectionRevokedError();
+            throw new ConnectionRevokedError('reconnect');
           },
         }),
       ),

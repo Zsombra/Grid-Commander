@@ -60,10 +60,20 @@ const read = (f: string) => readFileSync(f, 'utf8');
  */
 function servableRoutes(): RegExp[] {
   return appFiles
-    .filter((f) => /[/\\]page\.tsx$/.test(f))
+    .filter((f) => /(^|[/\\])page\.tsx$/.test(f))
     .map((f) => {
+      // The separator is optional, because this runs on the path *relative* to
+      // `app/` — and the root route's is just `page.tsx`, with nothing before
+      // it. Requiring one turned `/` into `/page.tsx`, so the root was absent
+      // from this list and any link to it read as dead. Nothing linked to `/`
+      // until `nothing-to-connect.tsx` did, and then it was reported dead
+      // immediately: the same bug already fixed once in `routeOf` below, living
+      // on in the helper written first.
+      //
+      // The `filter` above is not the same case and never was: it tests the
+      // full path, where `app/page.tsx` does have a separator.
       const url = relative(APP, f)
-        .replace(/[/\\]page\.tsx$/, '')
+        .replace(/(^|[/\\])page\.tsx$/, '')
         .split(/[/\\]/)
         .filter((s) => !/^\(.*\)$/.test(s))
         .join('/');
