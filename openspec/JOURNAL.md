@@ -1,5 +1,83 @@
 # Journal
 
+## 2026-07-29 (late) — money limits are editable, and someone reads the consequence
+
+**Did**: Archived `money-limits-are-editable`. 728 tests. `agent-authoring`
+16 → 17 requirements.
+
+Two defects, and the second was the one worth finding.
+
+**The page refused, citing a reason that had been fixed.** `/agents/[id]/edit`
+said money limits were not editable because "a form that sends one value would
+quietly clear the rest" — which `the-edit-path-cannot-succeed-either` had already
+solved by rewriting `applyEdit` to merge onto the current config. The product
+declined to do something it could demonstrably do.
+
+**The confirmation confirmed nothing.** The rename action called `describeEdit`
+and spent the token it was handed four lines later, in the same request. The
+consequence was computed, stored for the audit, and read by nobody.
+`update-cannot-carry-a-confirmation` had named that exact shape as *the fix that
+would be wrong* — it was fixed in the **command** and reappeared in the
+**action**. The comment directly above it read "the thing that performs the write
+must not be the thing that authorises it".
+
+Two offenders, not one: the agent detail page did it too, under a doc comment
+saying "Nothing here issues a token to itself".
+
+**A guard had been enforcing the defect.** `rename.test.ts` asserted
+`confirmationToken: proposed.proposal.confirmationToken` on the agent page — it
+would have failed the correct fix. Guards that pin *where code is* rather than
+*what it does* were a theme today; the deploy-doc guard was the other.
+
+**My own new guard had the same hole.** `SPENDS` matched `confirmationToken:`,
+so threading the token through a variable and passing it shorthand walked
+straight past it. Caught by a re-injection that did exactly that. It now looks
+for the *call* — mint and perform in one request — because how the token travels
+is incidental.
+
+**The browser found what nothing else could.** Playwright against the
+pre-installed Chromium, after Next's server-action wire protocol proved not worth
+reverse-engineering. First press:
+
+```
+$ACTION_ID_405…: "$ACTION_ID_405…" is not a field this agent owns.
+```
+
+The apply action swept `formData.entries()` and skipped two known keys, so the
+framework's own field became a proposed change. **A denylist of framework
+internals can never be complete.** Now an allowlist. `partitionEdit` refused it
+rather than sending it — the layered defence working, and the form still wrong.
+
+**Proven end to end against BattleGrid**, on a throwaway agent cloned from a real
+config, archived afterwards:
+
+```
+dailyLoss 10 → 42 · drawdown 20 → 99 · exposure 30 unchanged · revision 1 → 2
+23 fields present afterwards — the form sent six, applyEdit merged the rest
+```
+
+**Walking the finished form is what improved it most.** The confirm screen first
+read *"Replaces every trading limit this agent runs under."* and nothing else —
+accurate, and useless, on the one screen whose entire purpose is that a person
+reads what they are agreeing to. It now names every value, and says **"to no
+limit at all"** where the platform reads `0` as no cap. That is
+`zero-does-not-mean-nothing` carried to the last screen before the write.
+
+**A checkbox that vanished.** Task 9 was briefly marked `[~]` while the live
+write was unfinished, and the tally read 10/10 — the honest marker made the
+incomplete task *invisible*. Changed to `[ ]` and it read 10/11. An unchecked box
+that explains itself is the record; one the count cannot see is checkbox theatre
+with the sign flipped. Then the work was finished properly rather than waived
+with `--allow-incomplete`.
+
+**Filed**: `confirmation-is-not-bound-to-values` (P2). `consume(token, userId,
+tool, target)` matches the operation and the agent, never the values — so a token
+issued for $25 is accepted with $25,000. Product-wide, `rebind` carries the same
+shape, and a UI change is the wrong place to alter the confirmation contract.
+
+**Next**: OAuth Part B still needs the operator's browser. The remaining fourteen
+`tradingConfig` fields are filed, not urgent.
+
 ## 2026-07-29 (night, later) — the OAuth endpoints were assumed
 
 **Did**: Archived `oauth-endpoints-are-assumed`. 722 tests, up from 712.

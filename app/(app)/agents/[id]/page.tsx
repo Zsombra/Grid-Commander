@@ -1,11 +1,8 @@
-import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
-import { AgentRenameForm } from '@/presentation/components/agent-edit.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { requiredText } from '@/presentation/form.js';
 
 /**
  * One agent: what it is, what it inherits, and what may be done to it.
@@ -97,63 +94,20 @@ export default async function AgentPage({
         </p>
       ) : null}
 
-      <AgentRenameForm agent={agent} action={rename} />
-
+      {/**
+       * The rename form was here, and it self-issued its own confirmation —
+       * `describeEdit` then `updateAgent` in one request, with the consequence
+       * computed, stored for the audit and read by nobody. Its doc comment said
+       * "Nothing here issues a token to itself" directly above the code that
+       * did.
+       *
+       * Renaming now happens on `/agents/[id]/edit`, alongside the money
+       * limits, in two requests with a person between them. One rename surface
+       * rather than two, and this page goes back to being about reading an
+       * agent. `only-mcp-control`'s corridor guard benefits too: with no bound
+       * form left, this stops being a mutation route.
+       */}
       <AgentActions agent={agent} />
     </main>
   );
-}
-
-/**
- * Rename an agent — propose, then perform.
- *
- * Two calls, not one, and the first is not ceremony. BattleGrid marks
- * `update_intelligence_agent` destructive, so the guard demands a confirmation
- * bound to this agent. `describeEdit` mints it alongside the sentence naming
- * what will change; `updateAgent` consumes it. Nothing here issues a token to
- * itself.
- *
- * This action used to `await` the update and throw the result away, then
- * redirect. Every refusal — archived agent, rejected field, and the missing
- * confirmation that made all of them moot — arrived as a page that simply
- * reloaded with the old name. The operator had no way to tell a refusal from
- * being ignored.
- */
-export async function rename(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const agentId = requiredText(formData, 'agentId');
-  const changes = { displayName: requiredText(formData, 'displayName') };
-
-  const proposed = await app.describeEdit.execute({ ...user.authority, agentId, changes });
-  if (proposed.kind !== 'proposal') {
-    redirect(`/agents/${agentId}?problem=${encodeURIComponent(reasonOf(proposed))}`);
-  }
-
-  const result = await app.updateAgent.execute({
-    ...user.authority,
-    agentId,
-    changes,
-    confirmationToken: proposed.proposal.confirmationToken,
-  });
-
-  if (result.kind === 'updated') redirect(`/agents/${agentId}`);
-  redirect(`/agents/${agentId}?problem=${encodeURIComponent(reasonOf(result))}`);
-}
-
-/** The reason an operation gave, rather than a generic failure. */
-function reasonOf(
-  result:
-    | { kind: 'not-editable'; reason: string }
-    | { kind: 'no-op'; reason: string }
-    | { kind: 'rejected'; rejected: readonly { field: string; reason: string }[] }
-    | { kind: 'invalid'; issues: readonly { field: string; reason: string }[] }
-    | { kind: string },
-): string {
-  if ('reason' in result && typeof result.reason === 'string') return result.reason;
-  if ('rejected' in result) return result.rejected.map((r) => r.reason).join(' ');
-  if ('issues' in result) return result.issues.map((i) => i.reason).join(' ');
-  return 'That change could not be made.';
 }

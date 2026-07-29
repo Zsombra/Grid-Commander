@@ -200,16 +200,44 @@ describe('the safe answer is the default answer', () => {
   it('offers OFF, and offers it first', () => {
     // The only answer that makes the other five harmless: an agent that does
     // not trade cannot exceed a loss cap.
+    //
+    // This asserted the literal `defaultValue="OFF"` and broke when the same
+    // component learned to prefill for editing. The property was never the
+    // literal — it is that OFF is what you get when there is nothing to
+    // prefill.
     const source = form();
-    expect(source).toMatch(/defaultValue="OFF"/);
+    expect(source).toMatch(/defaultValue=\{value\('tradingMode'\) \?\? 'OFF'\}/);
     expect(source.indexOf('value="OFF"')).toBeLessThan(source.indexOf('value="FULL_EXECUTION"'));
   });
 
-  it('pre-fills no money limit', () => {
-    // A pre-filled loss cap would be this product choosing a number on the
-    // operator's behalf — the exact thing the absence of a platform default
-    // says nobody should do.
-    expect(form()).not.toMatch(/type="number"[\s\S]{0,200}defaultValue=/);
+  /**
+   * Composing and editing want opposite things, and one component now serves
+   * both.
+   *
+   * A pre-filled loss cap at **create** would be this product choosing a number
+   * on the operator's behalf — the exact thing the absence of a platform default
+   * says nobody should do. At **edit** the number already exists and they chose
+   * it, and a blank box would be worse than presumptuous: `tradingConfig` is
+   * all-or-nothing, so a field submitted empty is a limit removed.
+   *
+   * So the check is not "never prefills". It is that the prefill can only come
+   * from a value that was passed in, which at create time is absent.
+   */
+  it('pre-fills a money limit only from a value it was given', () => {
+    const source = form();
+    // Every number input takes its default from `current`, never from a literal.
+    const defaults = source.match(/type="number"[\s\S]{0,220}?defaultValue=\{([^}]*)\}/g) ?? [];
+    expect(defaults.length, 'no number field found to check').toBeGreaterThan(0);
+    for (const d of defaults) expect(d).toMatch(/defaultValue=\{current\}/);
+    expect(source).not.toMatch(/type="number"[\s\S]{0,220}?defaultValue="/);
+  });
+
+  it('passes nothing to prefill when composing', () => {
+    // The create form renders `MoneyLimits` with no `current`, so every box is
+    // empty there whatever the edit form does.
+    const create = readFileSync('src/presentation/components/agent-form.tsx', 'utf8');
+    expect(create).toMatch(/<MoneyLimits\s+catalog=\{[^}]*\}\s*\/>/);
+    expect(create).not.toMatch(/<MoneyLimits[^>]*current=/);
   });
 
   it('requires every money field it renders', () => {

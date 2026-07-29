@@ -1,4 +1,5 @@
 import { isEditable } from '@/domain/agent/agent.js';
+import { removesTheLimit } from '@/domain/agent/catalog.js';
 import type { RejectedField } from '@/domain/agent/field-ownership.js';
 import { partitionEdit } from '@/domain/agent/field-ownership.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
@@ -114,11 +115,74 @@ export function describeEdit(
     parts.push('Replaces the overlay text.');
   }
 
-  if (changes['tradingConfig'] !== undefined) {
+  const config = changes['tradingConfig'];
+  if (config !== undefined) {
     // Deliberately the heaviest sentence here. Everything else on this screen
     // is cosmetic; this one governs money.
     parts.push('Replaces every trading limit this agent runs under.');
+
+    /**
+     * And says what to, which the sentence above does not.
+     *
+     * Walking the finished edit form is what showed this up: the confirm screen
+     * read "Replaces every trading limit this agent runs under" and nothing
+     * else, so the person agreeing could not tell $25 from $25,000. A
+     * confirmation exists so someone reads a consequence; one that names no
+     * number describes an event rather than a decision.
+     *
+     * Money fields are named in full, and a value the platform reads as *no
+     * cap* is called that rather than printed as `0` — the same finding as
+     * `zero-does-not-mean-nothing`, carried to the last screen before the
+     * write.
+     */
+    const money = describeMoney(config);
+    if (money.length > 0) parts.push(`Sets ${sentenceList(money)}.`);
   }
 
   return parts.length === 0 ? null : parts.join(' ');
+}
+
+/** The money fields, in the operator's words, with unbounded named as unbounded. */
+function describeMoney(config: unknown): string[] {
+  if (typeof config !== 'object' || config === null) return [];
+  const fields = config as Record<string, unknown>;
+  const out: string[] = [];
+
+  for (const [field, label] of Object.entries(MONEY_LABELS)) {
+    const raw = fields[field];
+    if (raw === undefined || raw === '') continue;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    out.push(
+      removesTheLimit(field, value)
+        ? `${label} to no limit at all`
+        : `${label} to $${value}`,
+    );
+  }
+
+  const mode = fields['tradingMode'];
+  if (typeof mode === 'string' && mode.length > 0) {
+    out.push(`trading to ${MODES[mode] ?? mode}`);
+  }
+  return out;
+}
+
+const MONEY_LABELS: Readonly<Record<string, string>> = {
+  maxDailyLossUsd: 'the most it may lose in a day',
+  maxCumulativeDrawdownUsd: 'the most it may lose in total',
+  maxConcurrentExposureUsd: 'the most it may have at risk at once',
+  balanceThresholdUsd: 'its balance floor',
+  minAllocationUsd: 'its smallest trade',
+};
+
+const MODES: Readonly<Record<string, string>> = {
+  OFF: 'off',
+  APPROVAL_REQUIRED: 'approval required',
+  FULL_EXECUTION: 'full execution',
+};
+
+/** `a, b and c` — read aloud, which is how a consequence should scan. */
+function sentenceList(items: readonly string[]): string {
+  if (items.length === 1) return items[0] as string;
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }

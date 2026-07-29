@@ -1,37 +1,46 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { AgentEditForm } from '@/presentation/components/agent-edit.js';
+import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
 import { requiredText } from '@/presentation/form.js';
 
 /**
- * Edit the fields the agent owns.
+ * Change what an agent owns, in two requests.
  *
- * This page existed as a link for the whole life of the project and as a route
- * for none of it — `isEditable(agent)` rendered an "Edit" affordance pointing at
- * a 404. See `five-dead-links`.
+ * The first renders the form. Submitting it is a **GET** — it navigates back
+ * here carrying what was typed, and this page then proposes the change and
+ * renders the consequence the confirmation was issued against. The second
+ * request, from that confirm form, applies it.
  *
- * Scope is deliberately the agent-owned fields the domain already validates.
- * The trading-config section belongs to `agent-edit-form`, which stays open, and
- * is harder than it looks: three of BattleGrid's tradingConfig keys come back on
- * read and are rejected on write, and a position-management preset is a label
- * supplied alongside fourteen independent values rather than a shorthand for
- * them. Shipping a half-built config editor here would be worse than shipping
- * none.
+ * The split is the point. This page used to hold one server action that called
+ * `describeEdit` and spent the token it was handed four lines later, in the same
+ * request — so the sentence a person was meant to agree to was computed, stored
+ * for the audit, and read by nobody. `update-cannot-carry-a-confirmation` had
+ * already named that as *the fix that would be wrong*; it was fixed in the
+ * command and reappeared here. See
+ * `tests/architecture/confirmation-is-human.test.ts`.
+ *
+ * The trading-config caveat this file used to carry is gone with it. Three keys
+ * still come back on read and are rejected on write — `applyEdit` drops them,
+ * which is exactly what `the-edit-path-cannot-succeed-either` built it to do.
  */
 export default async function EditAgentPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ problem?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { problem } = await searchParams;
-  const { roster } = await app.listAgents.execute(user.authority);
+  const query = await searchParams;
+
+  const [{ roster }, catalog] = await Promise.all([
+    app.listAgents.execute(user.authority),
+    app.readCatalog.execute(user.authority),
+  ]);
 
   if (roster.kind === 'unreadable') {
     return (
@@ -54,46 +63,156 @@ export default async function EditAgentPage({
     );
   }
 
+  if (catalog.kind !== 'catalog') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        {/*
+          The form asks the catalog which limits BattleGrid refuses to default.
+          Without it this page cannot know what to ask for, and guessing would
+          produce a form that omits a limit — which `tradingConfig` reads as
+          removing it.
+        */}
+        <p role="alert" className="text-sm">
+          The catalog of what BattleGrid will accept could not be read, so this
+          form cannot say which limits it has to ask for. {catalog.reason}
+        </p>
+        <p className="text-sm">
+          <a href={`/agents/${agent.id}`} className="underline">Back to {agent.displayName}</a>
+        </p>
+      </main>
+    );
+  }
+
+  // The form branch: nothing proposed, no token in existence.
+  if (query['review'] !== '1') {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 p-6">
+        <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={query['problem']} />
+      </main>
+    );
+  }
+
+  /**
+   * The review branch. Every value is carried forward from the query, so what
+   * the token is issued against is what the confirm form will post.
+   *
+   * `describeEdit` refuses a field the agent does not own, so a parameter added
+   * to the URL by hand is rejected here rather than sent to BattleGrid.
+   */
+  const changes = pick(query, ['displayName']);
+  const money = pick(query, MONEY_FIELDS);
+
+  const proposed = await app.describeEdit.execute({
+    ...user.authority,
+    agentId: id,
+    changes: { ...changes, ...(Object.keys(money).length > 0 ? { tradingConfig: money } : {}) },
+  });
+
+  if (proposed.kind !== 'proposal') {
+    const why =
+      'reason' in proposed ? proposed.reason : proposed.rejected.map((r) => r.reason).join(' · ');
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 p-6">
+        <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
-      <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
-      <AgentEditForm agent={agent} action={updateAgent} problem={problem} />
+      <AgentEditConfirm
+        agent={agent}
+        consequence={proposed.proposal.consequence}
+        confirmationToken={proposed.proposal.confirmationToken}
+        changes={changes}
+        tradingConfigChanges={money}
+        action={applyEdit}
+      />
     </main>
   );
 }
 
 /**
- * The four outcomes are rendered as four outcomes.
+ * The six BattleGrid declines to default.
  *
- * `rejected` and `invalid` both name the fields at fault, and neither is a
- * generic failure: one means the field belongs to the strategy, the other that
- * the value is outside what the platform accepts. Collapsing them into "that
- * did not work" would leave the user guessing which of their inputs to change.
+ * Written down here rather than read from the catalog because this is a *query
+ * string* filter: it decides which URL parameters are trusted enough to forward
+ * into a proposal, and that decision must not widen because a catalog response
+ * changed. The form that renders the fields still asks the catalog, so one the
+ * platform starts defaulting stops being shown while staying forwardable —
+ * which is the safe direction for the two to disagree in.
  */
-export async function updateAgent(formData: FormData) {
+const MONEY_FIELDS = [
+  'tradingMode',
+  'maxDailyLossUsd',
+  'maxCumulativeDrawdownUsd',
+  'maxConcurrentExposureUsd',
+  'balanceThresholdUsd',
+  'minAllocationUsd',
+] as const;
+
+function pick(
+  query: Record<string, string | undefined>,
+  names: readonly string[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of names) {
+    const v = query[name];
+    if (v !== undefined && v !== '') out[name] = v;
+  }
+  return out;
+}
+
+/**
+ * Apply what was agreed to.
+ *
+ * This spends a token it did not mint. The token came back on the form the
+ * previous request rendered, which is the only arrangement in which a
+ * confirmation attests to anything: a person read the consequence, then pressed
+ * a button.
+ */
+export async function applyEdit(formData: FormData) {
   'use server';
   const { app, user } = await acting();
   if (user.kind === 'not-connected') redirect('/connect');
 
   const agentId = requiredText(formData, 'agentId');
-  const changes = { displayName: requiredText(formData, 'displayName') };
+  const confirmationToken = requiredText(formData, 'confirmationToken');
 
-  // Propose first: the guard needs a confirmation bound to this agent, and the
-  // thing that performs the write must not be the thing that authorises it.
-  const proposed = await app.describeEdit.execute({ ...user.authority, agentId, changes });
-  if (proposed.kind !== 'proposal') {
-    const why =
-      'reason' in proposed
-        ? proposed.reason
-        : proposed.rejected.map((r) => r.reason).join(' ');
-    redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(why)}`);
+  /**
+   * Read by name, never by sweeping the form.
+   *
+   * This iterated `formData.entries()` and skipped the two keys it knew about,
+   * which meant Next's own `$ACTION_ID_…` field arrived as a proposed change:
+   *
+   *     $ACTION_ID_405…: "$ACTION_ID_405…" is not a field this agent owns.
+   *
+   * Found by driving the real button in a browser — a hand-built request does
+   * not carry that field, and no unit test would have invented it. `partitionEdit`
+   * refused it rather than sending it, which is the layered defence working, but
+   * a denylist of framework internals can never be complete. An allowlist can.
+   */
+  const changes: Record<string, unknown> = {};
+  const displayName = formData.get('displayName');
+  if (typeof displayName === 'string' && displayName !== '') changes['displayName'] = displayName;
+
+  const tradingConfigChanges: Record<string, unknown> = {};
+  for (const field of MONEY_FIELDS) {
+    // `tc.` marks a trading-config field, so the two sets cannot be confused by
+    // a name that appears in both.
+    const value = formData.get(`tc.${field}`);
+    if (typeof value === 'string' && value !== '') tradingConfigChanges[field] = numberish(value);
   }
 
   const result = await app.updateAgent.execute({
     ...user.authority,
     agentId,
     changes,
-    confirmationToken: proposed.proposal.confirmationToken,
+    ...(Object.keys(tradingConfigChanges).length > 0 ? { tradingConfigChanges } : {}),
+    confirmationToken,
   });
 
   if (result.kind === 'updated') redirect(`/agents/${agentId}`);
@@ -106,4 +225,16 @@ export async function updateAgent(formData: FormData) {
         : [result.reason];
 
   redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(reasons.join(' · '))}`);
+}
+
+/**
+ * A form sends strings; the schema wants numbers for the money fields.
+ *
+ * `tradingMode` is an enum and must stay a string, so this converts only what
+ * parses cleanly as a number rather than consulting a field list that would need
+ * keeping in step with the schema.
+ */
+function numberish(value: string): string | number {
+  const n = Number(value);
+  return value.trim() !== '' && Number.isFinite(n) ? n : value;
 }

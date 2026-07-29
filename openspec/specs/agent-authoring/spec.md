@@ -303,43 +303,27 @@ The same holds when limits are **changed**. `tradingConfig` is all-or-nothing: a
 partial send does not error, it resets what it omits, so completeness is checked
 before an edit is sent and not only before a create.
 
+**A limit that can be set SHALL be changeable.** Showing an operator a ceiling
+they cannot move — or declining to offer the change for a reason that has since
+been fixed — leaves them able to read a danger and unable to act on it. Where the
+product can write a value, the surface offers it; where it cannot, it says which
+of the two reasons applies.
+
 #### Scenario: Composing an agent
 - **WHEN** a user composes an agent
 - **THEN** they are asked for every spending limit the platform declines to
   default
 - **AND** told that the platform sets no default for them
 
+#### Scenario: Changing what an agent may spend
+- **WHEN** a user changes an agent's spending limits
+- **THEN** the current values are shown as the starting point
+- **AND** the limits the platform does not default are all present in what is sent
+
 #### Scenario: A value that removes the limit
 - **WHEN** a field accepts a value the platform reads as *no cap*
 - **THEN** the user is told, where they enter it, that the limit is removed
 - **AND** the wording does not describe a stop that would never fire
-
-#### Scenario: An agent created without a ceiling
-- **WHEN** an agent is created with a cap the platform reads as unbounded
-- **THEN** the agent is created
-- **AND** it is not described as having that limit set
-
-#### Scenario: A limit is left unanswered
-- **WHEN** a user submits without answering one
-- **THEN** the agent is not created
-- **AND** they are told which limit has no answer, and why it must be given
-
-#### Scenario: The safe answer is available and offered first
-- **WHEN** a user is asked how the agent may trade
-- **THEN** an option that places no trades at all is offered before the others
-  and chosen by default
-- **AND** they are told the choice can be changed later
-
-#### Scenario: No limit is suggested
-- **WHEN** a spending limit is asked for
-- **THEN** no value is pre-filled
-- **AND** an empty answer is treated as unanswered rather than as zero
-
-#### Scenario: Editing an agent's limits
-- **WHEN** a user changes one of an agent's spending limits
-- **THEN** the configuration sent carries every field the platform requires
-- **AND** an incomplete one is refused before it is sent, rather than silently
-  resetting the limits it omits
 
 ### Requirement: Every Value The Product Sends Is One The Platform Accepts
 Where Grid-Commander supplies a value the operator did not choose — a
@@ -435,3 +419,32 @@ returned, rather than a generic failure.
 - **WHEN** a surface performs a write and does not read its outcome
 - **THEN** this fails a check that gates a change, rather than being found by an
   operator whose action silently did nothing
+
+### Requirement: A Destructive Change Is Agreed To By A Person
+Where an operation requires a confirmation naming its consequence,
+Grid-Commander SHALL obtain that agreement from a person between naming the
+consequence and performing the operation.
+
+**Proposing and performing in one request satisfies the guard and defeats it.**
+A confirmation the product issues to itself moments before the call records that
+the product intended to proceed, which was never in doubt. The token must be
+issued in response to one request and spent in response to a later one that a
+person initiated, or the consequence is computed, stored for the audit, and read
+by nobody.
+
+This has now been got wrong twice, in the same operation, one layer apart: first
+inside the command, then inside the action that calls it. The property to hold is
+not "a token exists" but "a human saw this sentence and then acted".
+
+#### Scenario: Changing an agent
+- **WHEN** a change to an agent is submitted
+- **THEN** the consequence is shown and the change is not yet made
+- **AND** it is made only on a further request the user initiated
+
+#### Scenario: The consequence that was agreed to
+- **WHEN** a confirmed change is recorded
+- **THEN** the sentence recorded is the sentence the user was shown
+
+#### Scenario: A change that changes nothing
+- **WHEN** a submission would alter nothing
+- **THEN** no confirmation is sought and the user is told why

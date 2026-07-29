@@ -20,8 +20,25 @@ import { CONTROL } from './control.js';
  * if BattleGrid starts defaulting one it stops being asked, and if it stops
  * defaulting one it starts — without anyone remembering to edit this file.
  */
-export function MoneyLimits({ catalog }: { catalog: Catalog }) {
+export function MoneyLimits({
+  catalog,
+  current,
+}: {
+  catalog: Catalog;
+  /**
+   * The agent's values, when editing rather than composing.
+   *
+   * One component for both, so the zero-means-unbounded warning cannot drift
+   * between the screen that creates an agent and the screen that changes it —
+   * which is exactly the drift `zero-does-not-mean-nothing` was written about.
+   */
+  current?: Readonly<Record<string, unknown>> | undefined;
+}) {
   const asked = new Set(undefaultableFields(catalog));
+  const value = (name: string): string | undefined => {
+    const v = current?.[name];
+    return v === null || v === undefined ? undefined : String(v);
+  };
 
   return (
     <fieldset className="space-y-4 rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4">
@@ -47,7 +64,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
             exceed a loss cap. This ordering is the difference between creating
             something that reasons and creating something that spends.
           */}
-          <select id="tradingMode" name="tradingMode" defaultValue="OFF" className={CONTROL}>
+          <select id="tradingMode" name="tradingMode" defaultValue={value('tradingMode') ?? 'OFF'} className={CONTROL}>
             <option value="OFF">Off — reasons, never places a trade</option>
             <option value="APPROVAL_REQUIRED">
               Approval required — proposes trades, waits for you
@@ -65,6 +82,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
         {asked.has('maxDailyLossUsd') && (
           <Money
             name="maxDailyLossUsd"
+            current={value('maxDailyLossUsd')}
             label="Most it may lose in a day"
             hint="Trading stops for the day once this is reached."
           />
@@ -72,6 +90,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
         {asked.has('maxCumulativeDrawdownUsd') && (
           <Money
             name="maxCumulativeDrawdownUsd"
+            current={value('maxCumulativeDrawdownUsd')}
             label="Most it may lose in total"
             hint="Across its whole life, not per day."
           />
@@ -79,6 +98,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
         {asked.has('maxConcurrentExposureUsd') && (
           <Money
             name="maxConcurrentExposureUsd"
+            current={value('maxConcurrentExposureUsd')}
             label="Most it may have at risk at once"
             hint="The total of everything open at the same time."
           />
@@ -86,6 +106,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
         {asked.has('balanceThresholdUsd') && (
           <Money
             name="balanceThresholdUsd"
+            current={value('balanceThresholdUsd')}
             label="Stop if the balance falls below"
             hint="A floor. Trading stops rather than spending the last of it."
           />
@@ -93,6 +114,7 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
         {asked.has('minAllocationUsd') && (
           <Money
             name="minAllocationUsd"
+            current={value('minAllocationUsd')}
             label="Smallest single trade"
             hint="BattleGrid does not accept anything below 10."
           />
@@ -105,11 +127,28 @@ export function MoneyLimits({ catalog }: { catalog: Catalog }) {
 /**
  * One money field.
  *
- * `required`, and with no default value. A pre-filled loss cap would be this
- * product choosing a number on the operator's behalf — the exact thing the
- * absence of a platform default says nobody should do.
+ * **Composing: no default.** A pre-filled loss cap would be this product
+ * choosing a number on the operator's behalf — the exact thing the absence of a
+ * platform default says nobody should do.
+ *
+ * **Editing: the agent's own value.** The opposite reasoning, for the opposite
+ * situation. The number already exists and the operator chose it; showing an
+ * empty box would make every edit look like a fresh decision about all six, and
+ * `tradingConfig` is all-or-nothing — a blank field submitted is a limit
+ * removed, not a limit left alone.
  */
-function Money({ name, label, hint }: { name: string; label: string; hint: string }) {
+function Money({
+  name,
+  label,
+  hint,
+  current,
+}: {
+  name: string;
+  label: string;
+  hint: string;
+  /** The agent's value when editing. Absent when composing — see below. */
+  current?: string | undefined;
+}) {
   /**
    * Where a zero removes the limit, say so here — beside the box it is typed
    * into, not in a paragraph above the form.
@@ -134,6 +173,7 @@ function Money({ name, label, hint }: { name: string; label: string; hint: strin
         min="0"
         step="any"
         required
+        defaultValue={current}
         inputMode="decimal"
         aria-describedby={`${name}-hint`}
         className={CONTROL}

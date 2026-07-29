@@ -51,27 +51,63 @@ describe('the token is not minted by the thing that spends it', () => {
   });
 });
 
+/**
+ * Renaming moved, and one of these guards had been enforcing the defect.
+ *
+ * It asserted `confirmationToken: proposed.proposal.confirmationToken` on the
+ * agent page — which is precisely the shape `update-cannot-carry-a-confirmation`
+ * calls *the fix that would be wrong*: propose and spend in one request, so the
+ * consequence is computed, stored for the audit, and read by nobody. The guard
+ * had frozen the anti-pattern in place and would have failed the correct fix.
+ *
+ * The behaviour worth protecting was never "the page calls these two in this
+ * order". It is that a refusal reaches the operator instead of looking like the
+ * product ignored them — which is what `renaming-an-agent-is-offered-and-cannot-
+ * work` was actually about. That now lives on the edit page, so these point
+ * there.
+ */
 describe('the surface says what happened', () => {
-  const page = readFileSync('app/(app)/agents/[id]/page.tsx', 'utf8');
+  const page = readFileSync('app/(app)/agents/[id]/edit/page.tsx', 'utf8');
 
   it('reads the result of the write instead of discarding it', () => {
-    // The defect, stated directly: `await …execute({…}); redirect(…)`.
+    // The original defect, stated directly: `await …execute({…}); redirect(…)`.
     expect(page).toMatch(/const result = await app\.updateAgent\.execute/);
     expect(page).toMatch(/result\.kind === 'updated'/);
   });
 
-  it('proposes before performing', () => {
-    expect(page).toMatch(/app\.describeEdit\.execute/);
-    expect(page).toMatch(/confirmationToken: proposed\.proposal\.confirmationToken/);
-  });
-
   it('surfaces the reason the operation gave', () => {
     expect(page).toMatch(/problem=/);
-    expect(page).toMatch(/role="alert"/);
+  });
+
+  it('renders a refusal where the operator will see it', () => {
+    const form = readFileSync('src/presentation/components/agent-edit.tsx', 'utf8');
+    expect(form).toMatch(/role="alert"/);
   });
 
   it('stays out of the domain', () => {
     expect(page, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
+  });
+
+  /**
+   * The replacement for the assertion that froze the defect. The token is read
+   * off the submitted form — meaning it was rendered by an earlier request that
+   * showed someone the consequence — and is not minted in the same function that
+   * spends it.
+   */
+  it('spends a token it did not mint', () => {
+    expect(page).toMatch(/requiredText\(formData, 'confirmationToken'\)/);
+    const action = page.slice(page.indexOf('export async function applyEdit'));
+    expect(action, 'the action that applies must not also propose').not.toMatch(
+      /describeEdit\.execute/,
+    );
+  });
+
+  it('no longer renames from the agent page', () => {
+    // Two rename surfaces, one of them self-confirming. The read-only page kept
+    // the wrong one.
+    const detail = readFileSync('app/(app)/agents/[id]/page.tsx', 'utf8');
+    expect(detail).not.toMatch(/updateAgent\.execute/);
+    expect(detail).not.toMatch(/describeEdit\.execute/);
   });
 });
 
