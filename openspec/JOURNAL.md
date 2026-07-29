@@ -1,5 +1,82 @@
 # Journal
 
+## 2026-07-29 — create_intelligence_agent succeeded, for the first time
+
+**Did**: Archived `every-value-sent-is-one-the-platform-accepts` (standard,
+15/15). `agent-authoring` 12 → 13 requirements. 673 tests, up from 655.
+
+**The headline.** `create_intelligence_agent=succeeded` on the operator's real
+account. That call had never once worked in the life of this product. Agent
+created r1 ACTIVE, read back `mode=OFF dailyLoss=10 leverage=1`, archived to r2.
+Account verified after: probe agent ARCHIVED, slot returned (2 of 3 used), the
+operator's three agents untouched at their original revisions.
+
+The money limits are the part that matters. `tradingMode: OFF` and a $10
+daily-loss cap are what the product *said* it was creating, and what the platform
+actually stored. The requirement archived two entries ago — an agent's spending
+limits are stated before it exists — is now true against a live server rather
+than against a fake.
+
+**The knowledge was never missing.** The sharpest thing found today was not the
+defect. It was that `docs/BATTLEGRID_MCP_REFERENCE.md` has carried
+`enum(MANUAL|VOLATILITY_AUTO)` since **2026-07-27** — committed two days before a
+live probe discovered we were sending `FIXED`. 110 tools, 589 parameters, full
+types and enums, sitting in the repo. We had the fact and stored it in prose,
+where no test can read it.
+
+That reframes the class of defect. It is not "we do not know the platform". It is
+"what we know is not in a form anything can check".
+
+**Measured, and it is worse than the one defect.** The conformance check reads
+`input_required` — top level only. Nested required params on the tools the
+product calls, never verified: `create_intelligence_agent` 47,
+`update_intelligence_agent` 39, `compile_strategy_plan` 25, `apply_strategy_plan`
+50. **161 unverified.** Today's defect was one of the 47. The check that should
+have caught it verified two fields and was blind to the rest.
+
+`apply_strategy_plan` is the one to worry about: 50 unchecked required params,
+classified destructive, still unproven live.
+
+**What the guard can now do that no earlier guard could.** With the artifact
+regenerated, `wire-values.test.ts` walks every value the product can put on the
+wire against `input_constants` and catches **both** defects — including
+`brain.kind`, which is a `const`. Source-level guards cannot see a const, and the
+prose reference had flattened it to bare `string`. Only the machine-readable
+record sees it. Re-injected to prove it: `'FIXED'` fails 3 tests, lowercase
+`kind` fails 2.
+
+**The outage, and what it taught.** BattleGrid's MCP backend died mid-session
+(~09:50Z) and returned ~12:35Z. `GET /health` gave nginx's own `504 Gateway
+Time-out` — nginx up, upstream dead. That explained the odd auth signature
+exactly: unauthenticated requests were rejected at the edge in 0.9s and never
+touched the backend, while *validating* a token required it, so any bearer
+token — a working key or the literal `bg_live_notarealkey` — hung identically.
+The game site was never affected, which is probably why it went unnoticed.
+`/health` is the cheap probe: ~1s and unambiguous, versus 25s waiting for a
+`tools/call` to time out.
+
+**The verifier earned its place.** It caught that the proposal declared the
+artifact's observed half unchanged when `shape()` had gone from depth 2 to 6.
+Small, and the code was right — but the proposal was about to become the record
+while saying something the diff disproved. Corrected rather than reverted.
+
+**Also fixed while the probe was open**: `shape()` capped one level short of
+every answer, so `get_user_thought_log` had recorded sixteen key names and zero
+types. Six levels now, verified against a payload seeded with recognisable values
+at every depth — nothing leaks; every leaf is a type name.
+
+**Next**: the reference is the highest-value target. Make
+`generate_mcp_reference.py` emit machine-readable JSON alongside the prose (it
+truncates 37 enum lists with `…` and flattens 4 consts to bare `string`), then
+sweep all 21 called tools for required-param coverage. None of it needs
+BattleGrid. After that, `get_user_thought_log` — it now has real types, so the
+agent-internals reads can be built against observation.
+
+**Filed**: `two-read-tools-do-not-answer` — `get_market_context` refuses `{}` for
+omitting an argument its schema does not mark required (a declared-vs-actual
+divergence), and `get_open_orders` returns a 500 on a no-argument read. Both
+answered on the previous probe.
+
 ## 2026-07-29 — create_intelligence_agent had never once succeeded
 
 **Did**: Ran the agent create probe against the live account. It failed, on two
