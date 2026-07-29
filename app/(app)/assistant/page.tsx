@@ -2,6 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { AssistantAnswer } from '@/presentation/components/assistant-answer.js';
 import { AssistantDisclosureNote } from '@/presentation/components/assistant-disclosure.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { CONTROL } from '@/presentation/components/control.js';
 
 /**
  * Ask a question about your own setup.
@@ -56,7 +57,7 @@ export default async function AssistantPage({
           type="text"
           defaultValue={q ?? ''}
           placeholder="Which of my agents are bound to Berlin?"
-          className="w-full rounded border p-2"
+          className={CONTROL}
         />
         <button type="submit" className="rounded border px-4 py-2 text-sm">
           Ask

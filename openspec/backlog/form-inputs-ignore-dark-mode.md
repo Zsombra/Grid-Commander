@@ -2,11 +2,11 @@
 id: form-inputs-ignore-dark-mode
 title: Text inputs stay white in dark mode
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: forms-that-work-in-the-dark
 capability: app-access
 blocked_by: []
 tags: [ui, dark-mode, forms]

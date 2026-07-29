@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-07-29 — Forms that work in the dark
+
+**Did**: Proposed, executed, verified and archived `forms-that-work-in-the-dark`
+(lite track, `skip_specs: true` — no behaviour changed). 492 tests, up from 486.
+
+Every input, select and textarea in this product was
+`className="w-full rounded border p-2"` — seven byte-identical copies, none
+touching a token. `border` resolved to Tailwind's default grey and the
+background stayed the browser's, which is white, so in dark mode each control
+was a white box beside panels that *were* themed.
+
+Not illegible, and worse than that: it read as an element that did not belong to
+the page, and next to a themed panel it looked disabled.
+
+`src/presentation/components/control.ts` now holds the treatment once, imported
+by all four files. A constant rather than a component, because the three element
+types take different props and the thing worth sharing is the treatment. **And a
+constant rather than seven copies, because seven copies of a token-based
+className is the same defect one layer along** — four files that can disagree,
+invisibly, until someone notices one form looks different.
+
+Dark mode measured, not eyeballed: background `rgb(24, 28, 34)` where it was
+`rgb(255, 255, 255)`, border `rgb(57, 64, 74)`, text `rgb(242, 244, 247)`.
+
+**State**: archived. Board clean, 0 errors / 0 warnings.
+
+**Next**: unchanged — `image-never-built` (P1) and the CI payment block, both
+needing the user.
+
+**Watch out**:
+
+- **The guard was wrong once and the code was right.** A first version asserted
+  `CONTROL` contained no bare `border`, reasoning that a width with no colour
+  was the defect. It failed against correct code: in Tailwind the bare `border`
+  *is* the width and `border-border-default` is the colour, and both are
+  required. The meaningful assertion was already the line above it. Worth
+  recording because the reflex when a new test fails is to suspect the code —
+  here the test had simply encoded a wrong idea about Tailwind, and the reasoning
+  is now written into the test so it is not re-derived wrongly.
+- **The `focus` token had existed since DT-0001 and was referenced by nothing.**
+  Keyboard focus on a control got the browser default. It is now used, and
+  `focus-visible` rather than `focus` — a mouse click should not draw a ring that
+  only a keyboard user needs.
+- **Buttons and labels were left, deliberately.** They use stock utilities too
+  and are legible in both schemes: untokenised, not broken. Filed as
+  `buttons-and-labels-untokenised` (P3). Sweeping them in would have made "the
+  inputs are fixed" and "the forms were restyled" one commit, and only the first
+  was verified by looking at it.
+
 ## 2026-07-29 — A control that did nothing, documented for two changes
 
 **Did**: Proposed, executed, verified and archived `a-control-that-does-nothing`

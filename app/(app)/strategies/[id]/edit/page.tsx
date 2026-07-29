@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { CONTROL } from '@/presentation/components/control.js';
 
 /**
  * Compose a change, compile it, and review what applying would do.
@@ -70,7 +71,7 @@ export default async function EditStrategyPage({
             name="tagline"
             type="text"
             defaultValue={strategy.tagline ?? ''}
-            className="w-full rounded border p-2"
+            className={CONTROL}
           />
           <button type="submit" className="rounded border px-4 py-2 text-sm">
             Compile — see what this would do, without doing it

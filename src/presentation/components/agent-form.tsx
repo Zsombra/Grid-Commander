@@ -1,6 +1,7 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
+import { CONTROL } from './control.js';
 
 /**
  * The create form.
@@ -47,7 +48,7 @@ export function AgentForm({
           type="text"
           maxLength={80}
           required
-          className="w-full rounded border p-2"
+          className={CONTROL}
         />
       </Field>
 
@@ -59,7 +60,7 @@ export function AgentForm({
         </p>
 
         <Field label="Preset" name="brainPreset" error={issueFor('brain.preset')}>
-          <select id="brainPreset" name="brainPreset" className="w-full rounded border p-2">
+          <select id="brainPreset" name="brainPreset" className={CONTROL}>
             <option value="">Choose a model instead</option>
             {catalog.brainPresets.map((preset) => (
               <option key={preset} value={preset}>
@@ -70,7 +71,7 @@ export function AgentForm({
         </Field>
 
         <Field label="Model" name="modelId" error={issueFor('brain.modelId')}>
-          <select id="modelId" name="modelId" className="w-full rounded border p-2">
+          <select id="modelId" name="modelId" className={CONTROL}>
             <option value="">Use a preset instead</option>
             {catalog.models.map((m) => (
               <option key={m.modelId} value={m.modelId}>
@@ -149,7 +150,7 @@ function Choice({
 }) {
   return (
     <Field label={label} name={name}>
-      <select id={name} name={name} className="w-full rounded border p-2">
+      <select id={name} name={name} className={CONTROL}>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}

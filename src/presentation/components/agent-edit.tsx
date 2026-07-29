@@ -1,5 +1,6 @@
 import type { Agent } from '@/domain/agent/agent.js';
 import { isEditable, isReactivatable } from '@/domain/agent/agent.js';
+import { CONTROL } from './control.js';
 
 /**
  * The editable-agent forms, and the refusals that replace them.
@@ -29,7 +30,7 @@ export function AgentRenameForm({
         defaultValue={agent.displayName}
         maxLength={80}
         required
-        className="w-full rounded border p-2"
+        className={CONTROL}
       />
       <button type="submit" className="rounded border px-4 py-2 text-sm">Rename</button>
     </form>
