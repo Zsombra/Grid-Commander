@@ -58,6 +58,13 @@ default either. They are the same mistake with a kinder outcome.
 - `tools/probe_mcp_surface.py` records `input_constants`: every enum and const
   in every tool's input schema, at any depth, as `dotted.path → [values]`.
   Allowed values only — no account data, and no key.
+- The same tool gains three fixes the probe needed to survive doing it. Its
+  `shape()` capped at depth 2, which is one level short of every answer — a
+  paginated response nests `entries[] → {…}` before reaching a field, so
+  `get_user_thought_log` recorded sixteen key names and not one type. Six levels
+  now, still leaking nothing: every leaf is `type(...).__name__`. And `rpc()`
+  retries with backoff and parses SSE frames, because a single timeout used to
+  abandon the whole run including the `tools/list` everything else depends on.
 - A new guard, `tests/architecture/wire-values.test.ts`, checks every literal
   the product can put on the wire against that record. It fails on both defects
   when they are re-injected.
@@ -78,5 +85,13 @@ default either. They are the same mistake with a kinder outcome.
 - **`CUSTOM` as a brain preset.** The live schema's preset enum has eleven
   values; the adapter's `BRAIN_PRESETS` has ten, omitting `CUSTOM`. Nothing is
   broken — the product simply cannot offer it. → backlog.
-- Re-probing every tool's observed response. The artifact regeneration here is
-  for input constants; the observed half is unchanged.
+- Re-probing every tool's *response* for its own sake — no new tools are called
+  and the called set is unchanged at 21.
+
+  The observed half of the artifact **does** change, which an earlier draft of
+  this proposal wrongly said it would not. Raising `shape()`'s depth was not
+  scope creep so much as the same defect one door down: the record was storing
+  names where it needed to store values on the input side, and names where it
+  needed types on the output side. Fixing one and leaving the other would have
+  left the next mapper guessing whether `confidenceScore` is a number — the
+  guess that made `sizingStrategy` wrong.
