@@ -1,5 +1,77 @@
 # Journal
 
+## 2026-07-29 (late night) — only MCP control
+
+**Did**: Archived `only-mcp-control`. The `assistant` capability is gone — 8
+requirements, 16 files, 77 tests, the route, the nav entry, the SDK. 712 tests,
+7 capabilities where there were 8.
+
+The operator said they did not think this product had API availability, and that
+it was only MCP control. Checked rather than assumed:
+
+```
+outbound hosts in src/ and app/   →  mcp.battlegrid.trade   (one)
+ANTHROPIC_API_KEY                 →  not set
+ANTHROPIC_AUTH_TOKEN              →  not set
+```
+
+`assistant-unverified-against-live-api` filed exactly this on 2026-07-28 and was
+still P1 two days later. The page meanwhile shipped rendering *"The assistant is
+not available on this deployment"* and then naming the pages that do work — copy
+that is already an argument for deleting the page.
+
+**It was never in the exit criteria.** The idea brief scopes the assistant as
+MVP feature 14, the lowest-rated row in the table, and the exit criteria do not
+mention it. Every clause there is BattleGrid over MCP. Removing it does not move
+the bar the product set itself, and it takes a deployment from two third-party
+credentials to one.
+
+**Two things were kept on purpose, with the reason in the code**, because both
+would read as oversights to a stale-code scan:
+
+- `AuditActor` still admits `'assistant'`. The audit log renders stored history,
+  `actor` is `text` not a Postgres enum, and narrowing it would render an old row
+  as "you" — a false statement about who acted, on the one surface whose entire
+  job is saying who acted.
+- BattleGrid's `anthropic/claude-…` model ids. Those name a brain *the platform*
+  runs for an agent. A grep-and-delete on "anthropic" would break agent creation.
+
+**The new guard's second half is the interesting one.** A URL scan of `src/`
+would have called this a single-destination product all along — the SDK carried
+its own base URL, so `api.anthropic.com` never appeared in source. That is how a
+dependency stayed unexercisable for the life of the repository without any check
+noticing. So `one-destination.test.ts` reads the dependency list too, and derives
+the vendor-client test rather than banning one name.
+
+**Two findings that were not the assistant.**
+
+A hardcoded list broke because a capability left. `reachability.test.ts` held
+`TOP_LEVEL = ['/agents', '/strategies', '/assistant', '/audit']` and failed on
+the removal. That is the *mild* half of what a written-down list does; the silent
+half is adding a fifth section and having it keep passing. Now derived from
+routes one segment deep — deliberately not from the nav, which would be circular,
+since the nav lives in the layout and every page contains it by construction.
+
+And a guard was pinning a document to a fact that had stopped being true. It
+required `DEPLOYING.md` to say *"no valid `bg_live_` key has existed in any
+environment this was built in"* — correct when written, false from the moment the
+personal path was exercised against two live accounts. **A guard aimed at the
+past fails on the honest edit and passes on the stale one.** Repointed at what is
+genuinely still unproven: no real OAuth authorization has ever been completed.
+The doc now also states what *has* been proven live, because one that reads as
+untested everywhere gets ignored everywhere.
+
+**Five new validation warnings, left standing.** Four backlog items name a
+capability that no longer has a spec. Two I closed as moot with the reason
+written in; two are historical `done` items. Rewriting their `capability:` field
+to clear the board would falsify what they were about. A truthful warning beats a
+clean board.
+
+**Next**: OAuth is now unambiguously the largest gap — it is the MVP exit
+criterion, it has never been completed against BattleGrid, and it is the only
+remaining way to connect that nobody has run. The other standing P1s are the
+unbuilt image and the CI runner block, neither a code defect.
+
 ## 2026-07-29 (night) — a second account, and what age reveals
 
 **Did**: Archived `performance-was-already-in-the-payload`. 780 tests, up from
