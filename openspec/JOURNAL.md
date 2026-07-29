@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-07-29 (evening) — what would stop an agent, including nothing
+
+**Did**: Archived `how-close-an-agent-is-to-its-ceilings`. `agent-understanding`
+3 → 5 requirements. 724 tests, up from 710.
+
+**Reading the live payload first paid for itself twice**, and neither fact is in
+the declared schema.
+
+```
+              configured   fill    remaining   ceiling
+dailyTrades      true       21        13          34
+exposure         true        0       250         250
+drawdown        false        0         0           0
+dailyLoss       false     0.07         0           0
+```
+
+**`fill` is not a fraction.** It is the amount consumed in the gauge's own unit —
+21 + 13 = 34. A surface treating it as a proportion would draw that bar at
+2100%. Mapped to `used` so the name cannot invite the mistake.
+
+**An unconfigured gauge reports `remaining: 0`.** As a bare number that reads
+*about to halt*; it means *no cap exists at all*. The two unconfigured gauges on
+this account are **drawdown** and **daily loss** — the two governing how much can
+be lost — so the naive rendering states the exact inverse of the truth on
+precisely the limits where being wrong costs money.
+
+So `remaining` and `ceiling` are `null` when nothing caps a gauge, never the
+platform's zero, and the surface prints "no limit set" rather than a figure.
+`stoppableLimits` names the unbounded ones explicitly: four calm rows read as an
+agent operating inside its limits when the truth may be that it has none.
+
+The platform's own warnings — over-subscribed, stop below a single trade's loss,
+stop effectively unbounded, halted — are carried as stated. BattleGrid decides
+those against state this product cannot see, and a local re-derivation would be
+a second opinion that quietly diverges.
+
+**Live, on the operator's account:**
+
+```
+At risk at once    0 of 250, 250 left
+Trades in a day    21 of 34, 13 left
+Loss in a day      0.07 used · no limit set
+Loss in total      0 used · no limit set
+```
+
+`THE .0` is active, has traded twenty-one times today, and has **no ceiling on
+either loss limit**. The product can now show that. It cannot set it — a ceiling
+lives in `tradingConfig`, which the edit path owns, and a second write path to
+the same object from a read surface would be the affordance problem this branch
+spent the day removing.
+
+**The live assertion is negative and that is the point**: a gauge the platform
+reports as unconfigured must not arrive carrying a `remaining`. Four defects
+re-injected, each caught — carrying the zero through, treating an unconfigured
+gauge as binding, putting a ceiling on the wrong gauge, dropping usage on an
+uncapped one.
+
+**Next**: `get_agent_performance` and `get_agent_fund_allocation` are observed
+and unmodelled; both answer what an agent has *done* rather than what it is still
+allowed to do. Or the four remaining P2s. Nothing is blocked.
+
 ## 2026-07-29 (late) — the probe reaches twice as much of the platform
 
 **Did**: Archived `observe-the-reads-that-need-an-id`. `battlegrid-connection`
