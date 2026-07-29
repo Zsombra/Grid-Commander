@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-07-29 — The deploy doc described a deployment we are not doing
+
+**Did**: Proposed, executed and archived `a-doc-for-the-path-we-ship` (lite,
+7/7). No spec change — prose and one guard. 561 tests, up from 553.
+
+**The gap.** `docs/DEPLOYING.md` opened with *"Register the redirect URI at
+BattleGrid — do this first"*, listed `BATTLEGRID_CLIENT_ID` and
+`BATTLEGRID_REDIRECT_URI` as **required**, and mentioned `BATTLEGRID_API_KEY`
+**zero** times. Two changes after the personal path shipped — whose entire
+purpose is that you do *not* register a client to talk to your own account — the
+only document telling anyone how to run this still sent them to register one.
+
+Someone following it would have performed the exact ceremony the code was
+changed to remove, concluded the personal path did not exist, and been right to,
+because nothing said otherwise. The code was correct and unreachable through its
+own instructions.
+
+**Prose drifts silently and in one direction.** A change lands, the doc is not
+opened, and nothing fails. Every other claim this product makes is guarded by
+something — the reachability walk, the serving gate, the mutation sweeps — and
+the one artifact a new operator actually reads had nothing at all.
+
+**Walked, not reviewed.** Dropped and recreated a database, ran
+`node tools/migrate.mjs`, `npm ci && npm run build`, and the exact environment
+block as written with both OAuth variables unset. It boots; `/` returns 307 to
+`/agents`; the refused-key page names the key. The claims about scope parsing
+(`split(/[\s,]+/)` — space *or* comma) and cookie behaviour
+(`!== 'true'`, so a typo fails safe) were read out of `src/config.ts` rather
+than recalled, and the `npm start` / `output: standalone` warning is now
+documented instead of left to alarm someone.
+
+**The guard had a passenger, and the mutation found it.** Nine assertions;
+against the old document six failed and three passed. One of the three was
+supposed to catch it: it matched the old table's `| BATTLEGRID_CLIENT_ID | yes |`
+shape, but that row had a third column, so `yes` was never the last cell and the
+anchor never matched. Deleted rather than repaired — the row is already rejected
+by the assertion beside it, and a second one that cannot fail against the defect
+it names costs a reader's attention and buys nothing. Eight now, six of which
+fail on the old doc.
+
+**The doc now says what has not been proven**, in its own section: the image has
+never been built, and no valid `bg_live_` key has existed in any environment this
+was built in — so every failure branch is proven and the success branch has
+never run against the real platform. That belongs in the deployment document
+more than anywhere else.
+
+**Next**: nothing P1 remains that can be acted on in this repository. Both open
+P1s need something this container does not have — `image-never-built` a Docker
+daemon, `assistant-unverified-against-live-api` an Anthropic key. The operator
+supplies a `bg_live_` key and follows the document.
+
 ## 2026-07-29 — The reassuring sentence was the one that was wrong
 
 **Did**: Proposed, executed and archived `refused-is-not-unreachable`
