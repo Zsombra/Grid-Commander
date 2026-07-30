@@ -5,6 +5,7 @@ import { describeBlastRadius, isArchivable, isRestorable, mustForkToEdit } from 
 import type { LifecycleResult, StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 export interface ForkStrategyRequest {
   readonly userId: string;
@@ -88,7 +89,7 @@ export class DescribeArchiveStrategyQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'archive_strategy',
-      target: strategy.id,
+      target: confirmationTarget.strategy(strategy.id),
       consequence,
       expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
       consumedAt: null,
@@ -134,8 +135,27 @@ export class SetStrategyActiveCommand {
       userId: req.userId,
       accessToken: req.accessToken,
       strategyId: req.strategy.id,
+      // BattleGrid requires the revision the caller formed this intent against,
+      // and refuses the call without it — so archiving and restoring could not
+      // succeed at all until this was passed. Found by checking what the
+      // platform declares it requires against what the adapter builds.
+      //
+      // It is also the right value on its own terms: the same optimistic
+      // concurrency every agent mutation already carries, so a strategy edited
+      // in another tab is refused rather than silently archived at a revision
+      // the user never saw. See architecture policy P4.
+      expectedRevision: req.strategy.revision,
       active: req.active,
-      confirmationToken: req.confirmationToken,
+      // Only archiving is destructive, so only archiving carries one. Built
+      // through the shared construction either way — a flow that opts out of
+      // it is a flow the guard cannot see.
+      confirmation:
+        req.confirmationToken === undefined
+          ? undefined
+          : {
+              token: req.confirmationToken,
+              target: confirmationTarget.strategy(req.strategy.id),
+            },
     });
   }
 }

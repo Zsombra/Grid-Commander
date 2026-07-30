@@ -59,10 +59,11 @@ export function AuditList({
                 </td>
                 <td>
                   {/*
-                    "I did this" and "the assistant did this while answering me"
-                    are different levels of intent, and telling them apart is
-                    what makes this log useful when someone is reading it
-                    carefully. See design A-E.
+                    Nothing can write an `assistant` row any more — that
+                    capability was removed in `only-mcp-control`. This branch
+                    reads rows from before it was, and deleting it would render
+                    them as "you": a false statement about who acted, on the one
+                    surface whose entire job is saying who acted. See `AuditActor`.
                   */}
                   {e.actor === 'assistant' ? 'the assistant, answering you' : 'you'}
                 </td>

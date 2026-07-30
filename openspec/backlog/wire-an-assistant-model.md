@@ -2,11 +2,11 @@
 id: wire-an-assistant-model
 title: The assistant has no model behind it
 type: chore
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: wire-the-assistant-model
 capability: assistant
 blocked_by: []
 tags: [deployment, assistant]

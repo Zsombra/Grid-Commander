@@ -37,26 +37,39 @@ paste, or upload a BattleGrid credential, and MUST NOT accept one if offered.
 - **AND** retrying starts a fresh authorization
 
 ### Requirement: The Connection Is The Identity
-A user's BattleGrid connection SHALL be their Grid-Commander identity. The
-system MUST NOT maintain a separate password for a Grid-Commander account. One
-BattleGrid account MUST resolve to exactly one Grid-Commander identity, however
-many times its authorization is completed.
+A connection to BattleGrid SHALL be the identity Grid-Commander acts under, and
+the product SHALL NOT invent an identity of its own to act with.
 
-#### Scenario: Returning user
-- **WHEN** a user who has connected before returns
-- **THEN** authorizing with BattleGrid signs them in to their existing workspace
+**The local identifier and BattleGrid's are distinct, and SHALL NOT be
+interchanged.** `users.id` names a row in this product's database; the subject
+BattleGrid issues names an account on the platform. They are stored as separate
+columns precisely because they are different facts — one is minted here, the other
+is given to us — and a value the platform issued MUST be compared only against the
+platform's own.
 
-#### Scenario: A connection is removed
-- **WHEN** a user disconnects their BattleGrid account
-- **THEN** they can no longer act on that account through Grid-Commander
-- **AND** their recorded history remains readable to them
+Every comparison against a platform-issued claim SHALL be typed so that supplying
+the local identifier is not possible, rather than guarded by convention. A
+convention was in force and produced a check that could never pass: BattleGrid's
+account id compared against a random sixteen-byte local id in one mode and the
+string `'owner'` in the other.
 
-#### Scenario: One authorization completed twice at once
-- **WHEN** two authorization callbacks for the same BattleGrid account complete
-  at the same time, and that account has never connected before
-- **THEN** one identity exists for it afterwards
-- **AND** both callbacks resolve to that identity
-- **AND** neither reports a storage-level failure to the user
+**Where the platform's identity for the acting account is unknown, it SHALL be
+represented as unknown** rather than substituted. A substituted identity reads as
+a mismatch, and a mismatch reads as a refusal the user cannot act on.
+
+#### Scenario: Acting under a delegated connection
+- **WHEN** the product acts for a user who connected by authorization
+- **THEN** the identity it presents to a platform-issued check is the subject
+  BattleGrid issued, not the local row id
+
+#### Scenario: Acting under the owner's own credential
+- **WHEN** the deployment holds the owner's own key
+- **THEN** the platform's identity for that account is established from the
+  platform, or reported as unknown
+
+#### Scenario: The two identifiers are not interchangeable
+- **WHEN** code compares a platform-issued claim about an account
+- **THEN** the local identifier cannot be supplied in its place
 
 ### Requirement: Read Scope Is Requested And Wager Scope Is Not
 Grid-Commander SHALL request only the scope required to read and configure. It
@@ -128,6 +141,26 @@ both modifying and destructive.
 Before performing an operation classified as destructive, Grid-Commander SHALL
 obtain confirmation from the user that names what will be changed or lost.
 
+**A confirmation SHALL authorise the operation it described, and no other.**
+Where the operation carries values — an amount, a destination, a configuration —
+those values are part of what was agreed to, and a confirmation issued against
+one set of values MUST NOT authorise a submission carrying different ones.
+
+Matching the user, the tool and the entity is not sufficient. A token issued
+against *"sets the most it may lose in a day to $25"* and a submission carrying
+$25,000 are the same user, the same tool and the same agent. The consequence is
+stored, so such a mismatch is **recorded** in the audit log; recording it is not
+preventing it, and the audit log is what this product offers in place of trust.
+
+**The binding SHALL be checked before a request is built**, not after the platform
+answers. A refusal that arrives from BattleGrid has already sent the tampered
+values.
+
+**One mechanism, in one place.** Where several flows bind values into a
+confirmation, they SHALL do so through a single shared construction rather than
+each composing the same string by hand. Three flows building it independently is
+how the fourth came to be written without it.
+
 #### Scenario: A destructive operation is requested
 - **WHEN** a user asks for something classified as destructive
 - **THEN** they are shown what it will change or remove before it happens
@@ -136,6 +169,16 @@ obtain confirmation from the user that names what will be changed or lost.
 #### Scenario: Confirmation is withheld
 - **WHEN** the user does not confirm
 - **THEN** nothing is changed
+
+#### Scenario: The submitted values differ from the agreed ones
+- **WHEN** an operation is submitted carrying values other than those the
+  confirmation was issued against
+- **THEN** the confirmation does not authorise it
+- **AND** no request is built
+
+#### Scenario: The values are the ones that were agreed
+- **WHEN** an operation is submitted carrying exactly the values described
+- **THEN** the confirmation authorises it, once
 
 ### Requirement: Every Modifying Operation Is Recorded
 Grid-Commander SHALL record every operation that modifies a user's BattleGrid
@@ -187,3 +230,271 @@ relinquish Grid-Commander's authority at BattleGrid, not merely locally.
 - **THEN** the next operation fails cleanly and the connection is shown as
   disconnected
 - **AND** the user is invited to reconnect
+
+### Requirement: A Deployment May Hold The Owner's Own Credential
+Where a deployment is configured with a credential belonging to the person using
+it, the product SHALL act with that credential directly and MUST NOT require a
+delegated authorization it does not need.
+
+A personal tool obtaining a grant to act on its own operator's behalf is
+ceremony that protects nobody: the operator already holds the credential the
+grant would produce.
+
+#### Scenario: Configured with the owner's credential
+- **WHEN** a deployment is given the owner's BattleGrid credential
+- **THEN** requests act with it
+- **AND** no authorization flow is required before the product can be used
+
+#### Scenario: Not configured with one
+- **WHEN** no owner credential is configured
+- **THEN** the product behaves exactly as it does for a delegated connection
+- **AND** nothing about the delegated path changes
+
+#### Scenario: The credential stops working
+- **WHEN** the platform refuses the owner's credential
+- **THEN** the product reports the loss of authority in the same terms it
+  reports a lost connection
+- **AND** names the remedy that applies to a configured credential
+- **AND** does not present the account as readable
+
+#### Scenario: The owner is never turned away for lacking a session
+- **WHEN** a deployment is configured with the owner's credential
+- **THEN** no request is refused for having no session
+- **AND** the page that reports a missing session is unreachable
+
+### Requirement: A Declared Scope Is Not A Granted One
+Where the authority a credential holds cannot be verified, the product SHALL
+treat what it was told as a declaration, and MUST NOT present it as a
+restriction the platform enforces.
+
+A delegated grant is registered for named scopes, so authority beyond them is
+unobtainable. A credential the operator supplies carries whatever the platform
+gave it, which may be more. Presenting the second as though it were the first
+would claim a boundary that does not exist.
+
+#### Scenario: Acting with a declared scope
+- **WHEN** the product acts with a credential whose scopes were declared rather
+  than granted
+- **THEN** the declaration is used to decide what may be attempted
+- **AND** it is not described to the user as a limit the platform imposes
+
+#### Scenario: What still decides
+- **WHEN** an operation would change or destroy something
+- **THEN** it is decided by what the platform says the operation does, and by
+  confirmation
+- **AND** not by the declared scope alone
+
+#### Scenario: Declaring less than the credential holds
+- **WHEN** a declaration names fewer scopes than the credential actually carries
+- **THEN** the product still refuses what the declaration excludes
+- **AND** this is understood as the product's own restraint, not the platform's
+
+### Requirement: A Deployment Without A Login Says So
+Where the product acts as the owner without authenticating anyone, it SHALL
+disclose that on the pages it serves.
+
+Anyone who can reach such a deployment acts as the account owner. That is
+correct on one person's machine and wrong the moment it is reachable from
+anywhere else, and the difference is invisible from the screen.
+
+#### Scenario: Using a deployment that authenticates nobody
+- **WHEN** a user is on any page of a deployment acting as the owner
+- **THEN** they are told that it authenticates nobody
+- **AND** told what that means for anyone else who can reach it
+
+#### Scenario: A deployment that does authenticate
+- **WHEN** the product resolves a session before acting
+- **THEN** no such disclosure is shown
+
+### Requirement: A Remedy Named Must Exist In That Deployment
+Where the product tells a user how to recover from a failure, it SHALL name a
+remedy available in the deployment they are using, and MUST NOT name one that
+exists only in another.
+
+Diagnosis and remedy are different facts and travel differently. *What went
+wrong* is the same everywhere — authority is no longer valid — and is stated in
+one way for every cause, so nobody has to distinguish an expired token from a
+forged cookie. *What to do about it* depends on how the deployment obtained its
+authority in the first place, and there are only two answers.
+
+Naming the wrong one is worse than naming none. A user who is told to reconnect
+goes looking for a connect button; when there is none, the reasonable conclusion
+is that the product is broken, not that the advice was written for a deployment
+they are not running.
+
+#### Scenario: A configured credential is refused
+- **WHEN** the platform refuses the credential a deployment was configured with
+- **THEN** the user is told the authority is no longer valid
+- **AND** told to repair the configured credential
+- **AND** not told to reconnect
+
+#### Scenario: A delegated authority is lost
+- **WHEN** a deployment that authenticates users loses its authority for one of
+  them
+- **THEN** the user is told the authority is no longer valid
+- **AND** invited to reconnect
+
+#### Scenario: Offering to connect where there is nothing to connect
+- **WHEN** a user reaches the page that begins an authorization, on a deployment
+  acting with a configured credential
+- **THEN** they are told this deployment acts with a configured credential
+- **AND** no authorization can be started from it
+
+#### Scenario: Which remedy applies is not decided per request
+- **WHEN** the product is assembled
+- **THEN** the remedy its failures will name is fixed for that deployment
+- **AND** no request chooses it
+
+### Requirement: A Tool Result Is Read From Its Envelope, Or Refused
+Grid-Commander SHALL extract the payload a tool returned from the transport
+envelope that carries it, and MUST NOT treat an envelope it cannot read as an
+empty result.
+
+An envelope and a payload are different things. Handing the envelope to code
+expecting the payload does not fail — every field it looks for is simply absent,
+and absent reads as *nothing there*. That turns a broken integration into a
+confident, wrong statement about the user's account: no agents, no strategies,
+no capacity. It is the same class of error as reporting an unread roster as an
+empty one, one layer further down, and the type system cannot see it because
+both are objects.
+
+#### Scenario: A tool returns a payload
+- **WHEN** a tool call succeeds
+- **THEN** the caller receives what the tool returned, not the envelope around it
+
+#### Scenario: The envelope carries the payload in more than one encoding
+- **WHEN** a result offers the payload both as structured data and as text
+- **THEN** either may be read
+- **AND** the caller cannot tell which was used
+
+#### Scenario: The envelope cannot be read
+- **WHEN** a result carries no payload in any encoding the product understands
+- **THEN** the call fails
+- **AND** it MUST NOT be reported as a successful call that returned nothing
+- **AND** the user is told the platform could not be reached, rather than that
+  they own nothing
+
+### Requirement: A Refused Tool Call Is A Failure
+Where the platform accepts a request and reports that the tool itself refused,
+Grid-Commander SHALL treat that as a failed operation.
+
+A tool that rejects its arguments answers over a healthy transport: the response
+is well-formed and the status is success. Reading only the transport makes every
+such refusal look like an operation that ran and changed nothing — which is
+indistinguishable, in the record, from one that ran and did nothing.
+
+#### Scenario: The platform reports a tool error
+- **WHEN** a result is marked as an error by the platform
+- **THEN** the call fails rather than returning a payload
+- **AND** the failure carries what the platform said about it
+
+#### Scenario: The record of a refused call
+- **WHEN** a modifying operation is refused by the tool
+- **THEN** the audit record for it shows that it failed
+- **AND** does not show it as succeeded
+
+### Requirement: What The Platform Returns Is Observed Wherever It Can Be
+Where a read tool's required arguments can be satisfied from what the platform
+has already returned, Grid-Commander's surface probe SHALL call it and record
+the response shape. Where they cannot, it SHALL record which argument was
+missing rather than reporting the tool as merely skipped.
+
+A declared schema is what a server says; an observed response is what it does.
+Every defect this product has found came from the second, and the tools that
+could only be modelled from the first are where the next one is waiting. A probe
+that reaches a fifth of the surface leaves four fifths to be built on
+declarations.
+
+The probe SHALL call only tools the server annotates as read-only, and that
+filter MUST be applied in code before a request is built rather than by the
+care of whoever runs it. Supplying arguments widens what can be observed; it
+MUST NOT widen what can be called.
+
+**This holds beyond the tool surface.** BattleGrid is also an OAuth
+authorization server that describes itself, and what it says about its own
+endpoints and capabilities is observable without any credential at all. A
+boundary the product depends on and has never called is a boundary it has
+assumed, whether or not a tool is involved.
+
+#### Scenario: A read whose arguments can be discovered
+- **WHEN** a read tool requires an argument the probe can take from a response
+  it already holds
+- **THEN** the tool is called and its observed shape recorded
+
+#### Scenario: A read whose arguments cannot be discovered
+- **WHEN** a required argument cannot be satisfied from what the platform
+  returned
+- **THEN** the tool is not called
+- **AND** the record names the argument that was missing
+
+#### Scenario: A tool that changes things
+- **WHEN** a tool is not annotated read-only
+- **THEN** it is never called, whatever arguments could be supplied
+- **AND** this holds as a property of the code rather than of the operator
+
+#### Scenario: A boundary that is not a tool
+- **WHEN** the product depends on a platform boundary reachable without a tool call
+- **THEN** it is observed and recorded rather than assumed
+
+### Requirement: The Authorization Server's Own Description Is Checked, Not Assumed
+Where BattleGrid publishes the location of an endpoint Grid-Commander depends
+on, the product's value SHALL be checked against that publication rather than
+trusted because it was once correct.
+
+The project's stated lesson is that the tool list goes stale after a platform
+deployment and must never be hard-coded. Four OAuth URLs were hard-coded and
+compared to nothing, on the one path whose failure mode is sending a user to a
+consent screen that does not exist. They agree today — which is the difference
+between correct and *known* to be correct, and only the second survives a
+deployment nobody told us about.
+
+**The URLs SHALL remain pinned rather than read at request time.** This is not
+the tool list and must not be treated like it. Tools change weekly and carry
+annotations the product must obey; an issuer's endpoints are meant to be stable,
+and a client that resolves its authorization endpoint from the network on each
+request will follow a redirect an attacker controls the first time discovery is
+poisoned. Pin, and check.
+
+**What the product assumes of the protocol SHALL be checked the same way** — the
+scopes it may request, the grant and response types it uses, and the PKCE method
+it sends. Each is a claim about the server, and each is published.
+
+#### Scenario: An endpoint the platform moved
+- **WHEN** BattleGrid publishes an endpoint at a location the product does not use
+- **THEN** the mismatch fails a check rather than a user's connection
+
+#### Scenario: A capability the product assumes
+- **WHEN** the product depends on a scope, grant type, response type or challenge
+  method
+- **THEN** it is confirmed present in what the platform publishes
+
+#### Scenario: The published description changes
+- **WHEN** the platform's description differs from what was recorded
+- **THEN** that is detectable by re-fetching it and comparing
+- **AND** the recording is what offline checks run against, so a stale recording
+  cannot silently pass
+
+### Requirement: The Client Registration Is Bounded At Registration
+Grid-Commander SHALL register its OAuth client with the narrowest scope the
+product needs, so authority it does not use is unrequestable rather than merely
+unrequested.
+
+BattleGrid's registration is open and unauthenticated, issues no
+`client_secret` whatever authentication method is asked for, and returns no
+management token — so a registration cannot be edited or revoked afterwards.
+All security therefore rests on PKCE and exact redirect-URI matching, and the
+registration itself is write-once.
+
+That makes the scope requested at registration a ceiling worth using. Omitting
+wager authority from each authorization request is one line of code away from
+being added back; registering without it means stepping up is a deliberate act
+of registering again.
+
+#### Scenario: Registering the client
+- **WHEN** an OAuth client is registered for a deployment
+- **THEN** it requests only the scope the product uses
+- **AND** it declares itself a public client, because no secret is issued
+
+#### Scenario: Authority beyond the registration
+- **WHEN** an authorization requests a scope the registration did not include
+- **THEN** the product does not depend on the platform allowing it

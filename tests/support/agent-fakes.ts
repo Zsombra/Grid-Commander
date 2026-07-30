@@ -2,7 +2,10 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult } from '@/ports/agents.js';
+import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { Budget } from '@/domain/agent/budget.js';
+import type { ThoughtEntry } from '@/domain/agent/thought.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * An in-memory agent platform.
@@ -20,6 +23,8 @@ export class FakeAgentsPort implements AgentsPort {
     agentId?: string | undefined;
     revision?: number | undefined;
     token?: string | undefined;
+    /** What the write bound its confirmation to. The pair is the point. */
+    target?: string | undefined;
   }> = [];
 
   catalog: Catalog = defaultCatalog();
@@ -36,7 +41,7 @@ export class FakeAgentsPort implements AgentsPort {
   }
 
   async listAgents(): Promise<RosterResult> {
-    if (!this.rosterReadable) return { kind: 'unreadable', reason: 'BattleGrid did not respond' };
+    if (!this.rosterReadable) return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     const agents = [...this.agents.values()];
     if (agents.length === 0) return { kind: 'empty', slots: this.slots };
     return { kind: 'agents', agents, slots: this.slots };
@@ -53,6 +58,14 @@ export class FakeAgentsPort implements AgentsPort {
     return { kind: 'catalog', catalog: this.catalog };
   }
 
+  /** Every create payload, in order. */
+  readonly created: Array<{
+    displayName: string;
+    brain: Brain;
+    strategyId: string;
+    tradingConfig: TradingConfig | null;
+  }> = [];
+
   async createAgent(params: {
     displayName: string;
     brain: Brain;
@@ -61,6 +74,10 @@ export class FakeAgentsPort implements AgentsPort {
     arenaChallengeEnabled?: boolean | undefined;
   }): Promise<Agent> {
     this.calls.push({ op: 'create' });
+    // The whole payload, kept. `tradingConfig` was `null` on every create for
+    // the life of the product and nothing recorded it, so nothing could assert
+    // on it.
+    this.created.push(params);
     const id = `a${this.agents.size + 1}`;
     const agent: Agent = {
       id,
@@ -77,6 +94,7 @@ export class FakeAgentsPort implements AgentsPort {
       tradingConfig: params.tradingConfig,
       arenaChallengeEnabled: params.arenaChallengeEnabled ?? false,
       overlayText: null,
+      performance: null,
       permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     };
     this.agents.set(id, agent);
@@ -87,8 +105,19 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    confirmation: Confirmation;
   }): Promise<Agent> {
-    this.calls.push({ op: 'update', agentId: params.agentId, revision: params.expectedRevision });
+    this.calls.push({
+      op: 'update',
+      agentId: params.agentId,
+      revision: params.expectedRevision,
+      token: params.confirmation.token,
+      // Recorded rather than checked here. This fake is not the guard — the guard
+      // is `enforce()`, and a fake that quietly accepted any target would be the
+      // fixture-modelling-an-impossible-platform mistake that hid the apply-plan
+      // defect for the life of the project.
+      target: params.confirmation.target,
+    });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = {
       ...current,
@@ -108,13 +137,13 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     strategyId: string;
     expectedRevision: number;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     this.calls.push({
       op: 'rebind',
       agentId: params.agentId,
       revision: params.expectedRevision,
-      token: params.confirmationToken,
+      token: params.confirmation?.token,
     });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = {
@@ -135,18 +164,32 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent> {
     this.calls.push({
       op: `lifecycle:${params.to}`,
       agentId: params.agentId,
       revision: params.expectedRevision,
-      token: params.confirmationToken,
+      token: params.confirmation?.token,
     });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = { ...current, revision: current.revision + 1, status: params.to };
     this.agents.set(next.id, next);
     return next;
+  }
+
+  /** Seeded per test. Defaults to the live agent's real shape. */
+  budgetResult: BudgetResult = { kind: 'budget', budget: aBudget() };
+
+  async readBudget(): Promise<BudgetResult> {
+    return this.budgetResult;
+  }
+
+  /** Seeded per test. `empty` by default — an agent that has not reasoned yet. */
+  thoughts: ThoughtLogResult = { kind: 'empty' };
+
+  async readThoughtLog(): Promise<ThoughtLogResult> {
+    return this.thoughts;
   }
 
   async readJournal(): Promise<JournalResult> {
@@ -180,10 +223,71 @@ export function anAgent(overrides: Partial<Agent> = {}): Agent {
     tradingConfig: null,
     arenaChallengeEnabled: false,
     overlayText: null,
+    performance: null,
     permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     ...overrides,
   };
 }
+
+/**
+ * A `tradingConfig` shaped like the ones the live server actually returns.
+ *
+ * **Twenty-three keys, not twenty.** Every agent on the account this was built
+ * against reads back with `strategyTimeframe`, `regimeAutoDerive` and
+ * `regimeTimeframe` on top of the twenty the write schema accepts — and
+ * `update_intelligence_agent.tradingConfig` declares
+ * `additionalProperties: false`, so passing them back rejects the whole object.
+ *
+ * The fixture here used to carry four fields. A four-field config cannot exist:
+ * create requires all twenty, so nothing on the platform can produce one. Tests
+ * built on it proved that a read-modify-write preserved untouched fields, which
+ * was true, while the same code could not complete a single edit — because the
+ * fixture had none of the three keys that made every edit fail.
+ *
+ * Overrides apply to the writable fields, so a test can set the one value it is
+ * about without restating the other nineteen.
+ */
+export function liveTradingConfig(
+  overrides: Readonly<Record<string, unknown>> = {},
+): TradingConfig {
+  return {
+    fields: {
+      tradingMode: 'OFF',
+      minAllocationUsd: 10,
+      maxDailyTrades: 30,
+      balanceThresholdUsd: 10,
+      maxLeverage: 5,
+      maxSlippageBps: 300,
+      maxConcurrentExposureUsd: 250,
+      maxCumulativeDrawdownUsd: 500,
+      maxDailyLossUsd: 300,
+      maxStopLossPct: 1,
+      minStopLossPct: 0.5,
+      signalTimeoutMinutes: 10,
+      maxEntryDeviationAtrMultiple: 1.5,
+      minRiskRewardRatio: 1.5,
+      minTradeConviction: 0.35,
+      gridMinConfidence: 0.7,
+      positionSizePresets: { sizingStrategy: 'MANUAL', smallPct: 1, mediumPct: 2.5, largePct: 5 },
+      positionManagement: { positionManagementPreset: 'CUSTOM', enabled: false },
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
+      ...overrides,
+      // Read-only, and last on purpose: a test must not be able to override
+      // them away, because the live server always sends them.
+      strategyTimeframe: '1h',
+      regimeAutoDerive: true,
+      regimeTimeframe: '4h',
+    },
+  };
+}
+
+/** The three the read carries and the write rejects. */
+export const READ_ONLY_CONFIG_FIELDS = [
+  'strategyTimeframe',
+  'regimeAutoDerive',
+  'regimeTimeframe',
+] as const;
 
 export function defaultCatalog(): Catalog {
   return {
@@ -204,6 +308,77 @@ export function defaultCatalog(): Catalog {
       maxStopLossPct: { min: 0.1, max: 25 },
       maxDailyTrades: { max: 100 },
     },
+    // The live catalog's defaults, as `get_trading_config_catalog` returns them.
+    // The six money fields are absent here because BattleGrid genuinely does not
+    // default them — that absence is the whole subject of `undefaultableFields`,
+    // and a fixture that filled them in would prove the opposite of the point.
+    defaults: {
+      maxDailyTrades: 10,
+      maxLeverage: 1,
+      maxStopLossPct: 5,
+      minStopLossPct: 1,
+      maxEntryDeviationAtrMultiple: 1.5,
+      minRiskRewardRatio: 1.5,
+      minTradeConviction: 0.35,
+      gridMinConfidence: 0.7,
+      maxSlippageBps: 300,
+      signalTimeoutMinutes: 10,
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
+      smallPct: 1,
+      mediumPct: 2.5,
+      largePct: 5,
+    },
+  };
+}
+
+/**
+ * A thought-log entry shaped like the ones the live server returns.
+ *
+ * The defaults are a real entry: confidence exactly equal to its threshold,
+ * which the platform treated as clearing the bar. Overrides let a test say the
+ * one thing it is about.
+ */
+export function aThought(overrides: Partial<ThoughtEntry> = {}): ThoughtEntry {
+  return {
+    id: 't1',
+    at: new Date('2026-07-29T13:56:33.385Z'),
+    agentId: 'a1',
+    reasoning: 'LDO is trading below VWAP with bearish momentum, but the setup is a mean-reversion LONG.',
+    snapshot: { coinTicker: 'LDO', thesisDirection: 'UP', primaryTimeframe: '1h' },
+    confidence: 0.35,
+    threshold: 0.35,
+    outcome: 'AGENT_TRADE_THESIS',
+    ...overrides,
+  };
+}
+
+/**
+ * A budget shaped like the live agent's.
+ *
+ * Two gauges with ceilings, two without — which is the account's real state and
+ * the case that matters: the unconfigured pair are **drawdown** and **daily
+ * loss**, the two governing how much can be lost. A fixture with all four
+ * configured would never exercise the `remaining: null` path that exists
+ * because the platform sends `0` there.
+ */
+export function aBudget(overrides: Partial<Budget> = {}): Budget {
+  return {
+    agentId: 'a1',
+    gauges: {
+      dailyTrades: { used: 21, remaining: 13, ceiling: 34, breached: false },
+      exposure: { used: 0, remaining: 250, ceiling: 250, breached: false },
+      drawdown: { used: 0, remaining: null, ceiling: null, breached: false },
+      dailyLoss: { used: 0.07, remaining: null, ceiling: null, breached: false },
+    },
+    overSubscribed: false,
+    stopBelowSingleTradeLoss: false,
+    stopEffectivelyUnbounded: false,
+    haltedAt: null,
+    haltReason: null,
+    capitalAtRiskUsd: 0,
+    headroomUsd: 250,
+    ...overrides,
   };
 }
 

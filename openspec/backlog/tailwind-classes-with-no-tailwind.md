@@ -2,7 +2,7 @@
 id: tailwind-classes-with-no-tailwind
 title: 213 Tailwind class names, and no Tailwind
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
@@ -51,3 +51,16 @@ Two decisions, and they are not the same one.
 
 Do not resolve this by deleting the classes. They are the best surviving record
 of the layout each page intended, and the surveyor should read them.
+
+## Resolved (2026-07-28)
+
+Closed by DT-0001, which installed and configured Tailwind alongside the token
+generator. Verified rather than assumed: `tailwind.config.mjs` and
+`postcss.config.mjs` exist, `app/globals.css` carries the `@tailwind`
+directives, and the CSS `next build` emits contains the utilities themselves
+(`max-w-2xl`, `space-y-6`) rather than only their names in the markup.
+
+The config uses `extend` rather than a replacement theme, deliberately: 28
+components use stock utilities like `p-3` and `text-sm`, and a replacement theme
+would have deleted them while the class names stayed in the markup — the same
+bug this item describes, reintroduced from the other direction.

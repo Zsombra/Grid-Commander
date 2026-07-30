@@ -1,0 +1,28 @@
+{
+  "issuer": "https://mcp.battlegrid.trade/",
+  "authorization_endpoint": "https://mcp.battlegrid.trade/authorize",
+  "response_types_supported": [
+    "code"
+  ],
+  "code_challenge_methods_supported": [
+    "S256"
+  ],
+  "token_endpoint": "https://mcp.battlegrid.trade/token",
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_post",
+    "none"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "scopes_supported": [
+    "mcp:read",
+    "mcp:wager"
+  ],
+  "revocation_endpoint": "https://mcp.battlegrid.trade/revoke",
+  "revocation_endpoint_auth_methods_supported": [
+    "client_secret_post"
+  ],
+  "registration_endpoint": "https://mcp.battlegrid.trade/register"
+}

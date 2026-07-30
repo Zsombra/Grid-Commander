@@ -1,23 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
-import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
+import { TRADING_CONFIG_FIELDS } from '@/domain/agent/catalog.js';
+import { applyEdit } from '@/domain/agent/trading-config.js';
+import {
+  anAgent,
+  FakeAgentsPort,
+  liveTradingConfig,
+  READ_ONLY_CONFIG_FIELDS,
+} from '../support/agent-fakes.js';
 
 const who = { userId: 'u1', accessToken: 'at' };
 
 const configured = () =>
-  new FakeAgentsPort([
-    anAgent({
-      revision: 3,
-      tradingConfig: {
-        fields: {
-          maxLeverage: 5,
-          maxDailyLossUsd: 300,
-          maxStopLossPct: 1,
-          maxDailyTrades: 30,
-        },
-      },
-    }),
-  ]);
+  new FakeAgentsPort([anAgent({ revision: 3, tradingConfig: liveTradingConfig() })]);
 
 /** A4, at the application layer. */
 describe('editing an agent', () => {
@@ -25,6 +20,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent()]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'Renamed' },
     });
@@ -36,6 +32,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent()]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { contextSources: { includeRsi: false } },
     });
@@ -49,6 +46,7 @@ describe('editing an agent', () => {
     ]);
     const res = await new UpdateAgentCommand(locked).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'x' },
     });
@@ -60,6 +58,7 @@ describe('editing an agent', () => {
     const port = new FakeAgentsPort([anAgent({ status: 'ARCHIVED' })]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: { displayName: 'x' },
     });
@@ -79,6 +78,7 @@ describe('editing one limit preserves the others', () => {
     const port = configured();
     await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -96,6 +96,7 @@ describe('editing one limit preserves the others', () => {
     const port = configured();
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       tradingConfigChanges: { maxStopLossPct: 90 },
       changes: {},
@@ -109,6 +110,7 @@ describe('editing one limit preserves the others', () => {
     const port = new FakeAgentsPort([anAgent({ tradingConfig: null })]);
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
@@ -122,11 +124,92 @@ describe('editing one limit preserves the others', () => {
     port.catalogReadable = false;
     const res = await new UpdateAgentCommand(port).execute({
       ...who,
+      confirmationToken: 'confirmed',
       agentId: 'a1',
       changes: {},
       tradingConfigChanges: { maxLeverage: 3 },
     });
     expect(res.kind).toBe('invalid');
     expect(port.calls).toEqual([]);
+  });
+});
+
+/**
+ * The read is wider than the write, and that asymmetry made every edit fail.
+ *
+ * `get_intelligence_agent` returns twenty-three fields. `update_intelligence_agent`
+ * accepts twenty and declares `additionalProperties: false`. The three extra —
+ * `strategyTimeframe`, `regimeAutoDerive`, `regimeTimeframe` — are real facts
+ * about an agent and are not writable.
+ *
+ * `applyEdit` was `{ ...current.fields, ...changes }`, so all twenty-three went
+ * back and the platform rejected the whole object. Every time, for the life of
+ * this product. It was never noticed because the fixture carried four fields and
+ * none of them were the three that mattered.
+ */
+describe('what a read carries is not what a write may send', () => {
+  it('never sends a field the write schema rejects', async () => {
+    const port = configured();
+    await new UpdateAgentCommand(port).execute({
+      ...who,
+      confirmationToken: 'confirmed',
+      agentId: 'a1',
+      changes: {},
+      tradingConfigChanges: { maxLeverage: 3 },
+    });
+
+    const sent = port.agents.get('a1')?.tradingConfig?.fields ?? {};
+    for (const field of READ_ONLY_CONFIG_FIELDS) {
+      expect(sent, `${field} is rejected by additionalProperties: false`).not.toHaveProperty(field);
+    }
+  });
+
+  it('sends exactly the twenty the write accepts', async () => {
+    const port = configured();
+    await new UpdateAgentCommand(port).execute({
+      ...who,
+      confirmationToken: 'confirmed',
+      agentId: 'a1',
+      changes: {},
+      tradingConfigChanges: { maxLeverage: 3 },
+    });
+
+    const sent = port.agents.get('a1')?.tradingConfig?.fields ?? {};
+    expect(Object.keys(sent).sort()).toEqual([...TRADING_CONFIG_FIELDS].sort());
+  });
+
+  it('says what it dropped rather than dropping it quietly', () => {
+    const edit = applyEdit(liveTradingConfig(), { maxLeverage: 3 });
+    expect([...edit.dropped].sort()).toEqual([...READ_ONLY_CONFIG_FIELDS].sort());
+  });
+
+  it('starts from a fixture that could actually exist', () => {
+    // A four-field config is unconstructible: create requires all twenty. The
+    // old fixture proved a read-modify-write preserved untouched fields — true,
+    // and useless, because it omitted the three keys that made every edit fail.
+    const fields = liveTradingConfig().fields;
+    expect(Object.keys(fields)).toHaveLength(TRADING_CONFIG_FIELDS.length + 3);
+    for (const field of READ_ONLY_CONFIG_FIELDS) expect(fields).toHaveProperty(field);
+  });
+
+  it('refuses an incomplete merge rather than resetting what it omits', async () => {
+    // A partial tradingConfig does not error — it resets the fields it omits.
+    // The create path has always refused one; the edit path never did.
+    const short = liveTradingConfig();
+    const fields = { ...short.fields };
+    delete fields['maxDailyLossUsd'];
+    const port = new FakeAgentsPort([anAgent({ tradingConfig: { fields } })]);
+
+    const res = await new UpdateAgentCommand(port).execute({
+      ...who,
+      confirmationToken: 'confirmed',
+      agentId: 'a1',
+      changes: {},
+      tradingConfigChanges: { maxLeverage: 3 },
+    });
+
+    expect(res.kind).toBe('invalid');
+    expect(res.kind === 'invalid' && res.issues[0]?.field).toBe('maxDailyLossUsd');
+    expect(port.calls, 'nothing may reach the platform').toEqual([]);
   });
 });

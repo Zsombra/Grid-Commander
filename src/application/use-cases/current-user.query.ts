@@ -10,6 +10,20 @@ export type CurrentUserResult =
   | { readonly kind: 'not-connected'; readonly message: string };
 
 /**
+ * Who this request acts for.
+ *
+ * An interface rather than a class, because there are two answers and they are
+ * reached differently: a delegated deployment resolves a session and refreshes a
+ * grant; a personal one already holds the owner's credential and has nobody to
+ * authenticate. Two implementations chosen at the composition root, exactly as
+ * `AssistantPort` is — never a branch inside one of them, which is the runtime
+ * dual-path the architecture review forbids.
+ */
+export interface ActingUser {
+  execute(): Promise<CurrentUserResult>;
+}
+
+/**
  * Who this request acts for, and with what.
  *
  * The one gate between an HTTP request and everything else. Every route calls
@@ -20,7 +34,7 @@ export type CurrentUserResult =
  * session, not evidence of a BattleGrid grant, and identity in this product
  * comes only from BattleGrid confirming one. See design W-G.
  */
-export class CurrentUserQuery {
+export class CurrentUserQuery implements ActingUser {
   constructor(
     private readonly sessions: SessionPort,
     private readonly connections: ConnectionReader,

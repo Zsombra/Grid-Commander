@@ -1,4 +1,6 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
+import type { FailureCause } from './failure.js';
 
 /**
  * Everything the product does with strategies.
@@ -29,7 +31,7 @@ export interface StrategiesPort {
     strategyId: string;
     plan: Readonly<Record<string, unknown>>;
     planToken: string;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Readonly<Record<string, unknown>>>;
 
   forkStrategy(params: {
@@ -39,24 +41,69 @@ export interface StrategiesPort {
     sourceRevision: number;
   }): Promise<Strategy>;
 
+  /**
+   * One strategy, whole.
+   *
+   * Distinct from `listStrategies` because they are two different calls
+   * returning two different amounts — see `StrategyDetail`.
+   */
+  readStrategy(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+  }): Promise<StrategyDetailResult>;
+
   setActive(params: {
     userId: string;
     accessToken: string;
     strategyId: string;
+    /** The revision the intent was formed against. BattleGrid requires it. */
+    expectedRevision: number;
     active: boolean;
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult>;
 
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;
 }
 
+/**
+ * Why there is no strategy to show.
+ *
+ * `missing` and `unreadable` are separate for the same reason `empty` and
+ * `unreadable` are separate on a roster: one says the thing is not there, the
+ * other says we could not ask. Telling a user their strategy is gone when the
+ * platform merely refused is the mistake this codebase has already made once,
+ * one layer down.
+ */
+export type StrategyDetailResult =
+  | { readonly kind: 'strategy'; readonly detail: StrategyDetail }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Three outcomes, and the middle one is why this is a type rather than a length
+ * check.
+ *
+ * An account with no strategies and an account whose catalog failed to load look
+ * identical as blank space, and telling the second user they own nothing is how
+ * someone recreates work they already have. `RosterResult` and `JournalResult`
+ * both carry this distinction already; this one did not, and a component
+ * branching on `strategies.length === 0` would have made it a convention that
+ * each surface has to remember rather than something the type enforces.
+ *
+ * `empty` carries no quota, deliberately. A quota is meaningful against the
+ * strategies you own, and an empty catalog owns none — unlike `RosterResult`'s
+ * `empty`, which keeps `slots` because an account with no agents still has a
+ * capacity worth showing.
+ */
 export type StrategyListResult =
   | {
       readonly kind: 'strategies';
       readonly strategies: readonly Strategy[];
       readonly quota: StrategyQuota | null;
     }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type CompileResult =
   | {
@@ -88,4 +135,4 @@ export interface VocabularyCategory {
 
 export type VocabularyResult =
   | { readonly kind: 'vocabulary'; readonly categories: readonly VocabularyCategory[] }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

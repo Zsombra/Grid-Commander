@@ -31,17 +31,16 @@ export function planRebind(
   };
 }
 
-/**
- * The identity a confirmation is issued against.
+/*
+ * `rebindTarget` used to live here and is now `confirmationTarget.agentRebind`.
  *
- * Bound to the *pair* — this agent, that target — not to the verb. A token
- * meaning only "a rebind was confirmed" could carry a user's agreement about
- * one agent onto a different one, which is exactly the failure the token design
- * exists to prevent (DL-5). This is its first real use.
+ * It produced the same string, which made it a second construction of a
+ * confirmation target — the exact duplication that let a fifth flow be written
+ * without its values. Reasoning kept, in one place: the target is bound to the
+ * *pair*, this agent and that destination, not to the verb. A token meaning only
+ * "a rebind was confirmed" could carry agreement about one agent onto another.
+ * See DL-5.
  */
-export function rebindTarget(rebind: Rebind): string {
-  return `agent:${rebind.agentId}->strategy:${rebind.toStrategyId}`;
-}
 
 /**
  * What the user must read before confirming.

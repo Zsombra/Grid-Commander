@@ -1,4 +1,5 @@
 import type { Brain } from './brain.js';
+import type { Performance } from './performance.js';
 import type { TradingConfig } from './trading-config.js';
 
 /**
@@ -10,6 +11,19 @@ import type { TradingConfig } from './trading-config.js';
  * it depends on things it does not, and would couple the domain to a shape that
  * changes when BattleGrid ships. See design D-A; the mapping lives at the
  * infrastructure boundary.
+ *
+ * **The performance block is now here, and the sentence above is kept rather
+ * than quietly edited.** Its rule was right and its conclusion was too wide.
+ * "Governs no mutation" is the correct test for what an *authoring* rule may
+ * depend on; it is the wrong test for what the product may show, and this is a
+ * workbench for building, tuning and *understanding*. The block arrived on every
+ * roster read for the life of the product and was discarded every time, and a
+ * comment that read as settled is why nobody asked again.
+ *
+ * The rest of the exclusion stands. Avatar urls, `last24hCostUsd`,
+ * `activeGameCount` and `provider` remain unmapped — not because they are
+ * uninteresting, but because nothing has asked for them yet, which is a
+ * different reason from the one above and worth keeping distinct.
  */
 export interface Agent {
   readonly id: string;
@@ -22,6 +36,14 @@ export interface Agent {
   readonly tradingConfig: TradingConfig | null;
   readonly arenaChallengeEnabled: boolean;
   readonly overlayText: string | null;
+  /**
+   * How it has done, or `null` when the payload carried no record.
+   *
+   * Null means absent, never "has done nothing" — an agent that has played no
+   * games reports a `Performance` full of zeroes, and `isUnproven` is what tells
+   * those apart.
+   */
+  readonly performance: Performance | null;
   /**
    * What BattleGrid says this client may do to this agent.
    *

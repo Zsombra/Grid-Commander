@@ -3,9 +3,12 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, JournalResult, RosterResult } from '@/ports/agents.js';
+import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
-import { mapAgent, mapCatalog, mapSlotUsage } from './agent-mapper.js';
+import { isSilent } from '@/domain/agent/journal.js';
+import { mapAgent, mapBudget, mapCatalog, mapRecord, mapSlotUsage, mapThought } from './agent-mapper.js';
+import { unreadable } from './unreadable.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * Agent operations, expressed as BattleGrid tool calls.
@@ -32,6 +35,9 @@ const TOOLS = {
   models: 'list_approved_models',
   tradingCatalog: 'get_trading_config_catalog',
   journal: 'get_agent_journal',
+  thoughts: 'get_agent_thought_log',
+  allThoughts: 'get_user_thought_log',
+  budget: 'get_agent_budget',
 } as const;
 
 /**
@@ -64,7 +70,7 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       // Unreadable is its own state. Reporting an empty roster here would tell a
       // user their agents are gone. See design D-H.
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
 
     const slots = mapSlotUsage(payload['slotUsage']);
@@ -92,7 +98,7 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       // No catalog, no form. Offering one whose submission is certain to fail
       // is worse than saying the platform could not be reached.
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -129,6 +135,7 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
@@ -138,7 +145,10 @@ export class McpAgentAdapter implements AgentsPort {
         expectedRevision: params.expectedRevision,
         ...params.changes,
       },
-      { target: params.agentId },
+      // Forwarded, not composed. `target` alone was supplied here once, and the
+      // guard needs both; then both were supplied and the target was the bare
+      // agent id, which is what let an agreement about $25 authorise $25,000.
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
@@ -149,7 +159,7 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     strategyId: string;
     expectedRevision: number;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
@@ -160,12 +170,10 @@ export class McpAgentAdapter implements AgentsPort {
         expectedRevision: params.expectedRevision,
         confirm: true,
       },
-      {
-        // Bound to the pair, not to the verb — a confirmation for one agent must
-        // not carry onto another. See domain `rebindTarget`.
-        target: `agent:${params.agentId}->strategy:${params.strategyId}`,
-        confirmationToken: params.confirmationToken,
-      },
+      // Built by the command with `confirmationTarget.agentRebind`. It was
+      // composed here, correctly, and being correct in four adapters out of five
+      // is what made the fifth invisible.
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
@@ -176,17 +184,82 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
       params.to === 'ARCHIVED' ? TOOLS.archive : TOOLS.activate,
       { agentId: params.agentId, expectedRevision: params.expectedRevision },
-      { target: params.agentId, confirmationToken: params.confirmationToken },
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
 
+  /**
+   * Two tools, one shape.
+   *
+   * `get_agent_thought_log` needs an `agentId`; `get_user_thought_log` takes
+   * none and aggregates across every agent. Both were called live and both
+   * return `{ entries, limit, page, total }` with identical entries, so the
+   * choice is which tool, not which mapper.
+   */
+  async readThoughtLog(params: {
+    userId: string;
+    accessToken: string;
+    agentId?: string | undefined;
+    limit?: number | undefined;
+  }): Promise<ThoughtLogResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(
+        params,
+        params.agentId === undefined ? TOOLS.allThoughts : TOOLS.thoughts,
+        {
+          ...(params.agentId === undefined ? {} : { agentId: params.agentId }),
+          ...(params.limit === undefined ? {} : { limit: params.limit }),
+        },
+      );
+    } catch (err) {
+      // Unreadable is its own state. An agent that has not reasoned yet and a
+      // log that failed to load are different facts about an agent, and telling
+      // a user the first when the second happened is the defect the roster's
+      // three states exist to prevent.
+      return unreadable(err);
+    }
+
+    const raw = payload['entries'];
+    if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
+    return {
+      kind: 'entries',
+      entries: raw.map(mapThought),
+      // The server's own count, not `entries.length` — this reads one page of
+      // a log that had 340 entries on it.
+      total: typeof payload['total'] === 'number' ? payload['total'] : raw.length,
+    };
+  }
+
+  async readBudget(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<BudgetResult> {
+    try {
+      const payload = await this.call(params, TOOLS.budget, { agentId: params.agentId });
+      return { kind: 'budget', budget: mapBudget(payload) };
+    } catch (err) {
+      // A budget that failed to load is not an agent with no limits, and the
+      // difference is the whole subject of this surface.
+      return unreadable(err);
+    }
+  }
+
+  /**
+   * An agent's whole record — what it did, thought, and submitted.
+   *
+   * `limit` is accepted and forwarded because the port declares it, and the
+   * platform ignores it: `get_agent_journal` returned ten of each array on every
+   * call, and its schema offers no page argument. Ten is what the surface says.
+   */
   async readJournal(params: {
     userId: string;
     accessToken: string;
@@ -200,23 +273,11 @@ export class McpAgentAdapter implements AgentsPort {
         ...(params.limit === undefined ? {} : { limit: params.limit }),
       });
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
 
-    const raw = payload['entries'] ?? payload['journal'];
-    if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
-    return {
-      kind: 'entries',
-      entries: raw.map((entry: unknown) => {
-        const e = (entry ?? {}) as Record<string, unknown>;
-        return {
-          at: new Date(String(e['createdAt'] ?? e['at'] ?? 0)),
-          kind: String(e['type'] ?? e['kind'] ?? 'entry'),
-          summary: String(e['summary'] ?? e['title'] ?? ''),
-          detail: typeof e['detail'] === 'string' ? e['detail'] : null,
-        };
-      }),
-    };
+    const record = mapRecord(payload);
+    return isSilent(record) ? { kind: 'empty' } : { kind: 'record', record };
   }
 
   // -- internals ---------------------------------------------------------
@@ -226,8 +287,7 @@ export class McpAgentAdapter implements AgentsPort {
     tool: string,
     args: Record<string, unknown>,
     extras: {
-      target?: string | undefined;
-      confirmationToken?: string | undefined;
+      confirmation?: Confirmation | undefined;
       idempotencyKey?: string | undefined;
     } = {},
   ): Promise<Record<string, unknown>> {
@@ -236,18 +296,16 @@ export class McpAgentAdapter implements AgentsPort {
       accessToken: who.accessToken,
       tool,
       args,
-      ...extras,
+      // The pair, split onto the two wire-level fields the guard reads. **One
+      // place** — this is where a target could once again be composed by hand,
+      // and a second mapping is the defect this change exists to remove.
+      target: extras.confirmation?.target,
+      confirmationToken: extras.confirmation?.token,
+      idempotencyKey: extras.idempotencyKey,
     });
-    return asObject(result.content);
+    // Already the payload: the adapter unwrapped the MCP envelope. There was
+    // an `asObject` here that returned `{}` for anything it did not recognise,
+    // which is precisely how an unread envelope became "you have no agents".
+    return result.content as Record<string, unknown>;
   }
-}
-
-function asObject(content: unknown): Record<string, unknown> {
-  return typeof content === 'object' && content !== null
-    ? (content as Record<string, unknown>)
-    : {};
-}
-
-function message(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

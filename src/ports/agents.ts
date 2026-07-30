@@ -1,7 +1,12 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
+import type { Budget } from '@/domain/agent/budget.js';
+import type { AgentRecord } from '@/domain/agent/journal.js';
+import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
+import type { FailureCause } from './failure.js';
 
 /**
  * Everything the product does to agents.
@@ -42,6 +47,17 @@ export interface AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    /**
+     * `update_intelligence_agent` carries `destructiveHint: true`, so the guard
+     * demands one. This parameter did not exist, which meant no caller could
+     * satisfy the guard and every rename was refused by the product before it
+     * reached the platform — the sibling of the 23-vs-20 defect one layer out.
+     *
+     * It is now the pair rather than the bare token: this is the write that
+     * carries money, and the target is what makes the amounts part of what was
+     * agreed to.
+     */
+    confirmation: Confirmation;
   }): Promise<Agent>;
 
   rebindAgent(params: {
@@ -51,7 +67,7 @@ export interface AgentsPort {
     strategyId: string;
     expectedRevision: number;
     /** Issued against the (agent, target strategy) pair. Never a boolean. */
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent>;
 
   setLifecycle(params: {
@@ -61,8 +77,29 @@ export interface AgentsPort {
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
     /** Archiving is destructive by classification; reactivating is not. */
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent>;
+
+  /**
+   * An agent's decision cycles, newest first.
+   *
+   * `agentId` omitted reads the account-wide log — BattleGrid exposes those as
+   * two tools (`get_agent_thought_log`, `get_user_thought_log`) returning the
+   * same entry shape, established by calling both.
+   */
+  readThoughtLog(params: {
+    userId: string;
+    accessToken: string;
+    agentId?: string | undefined;
+    limit?: number | undefined;
+  }): Promise<ThoughtLogResult>;
+
+  /** How close this agent is to the ceilings that would stop it. */
+  readBudget(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<BudgetResult>;
 
   readJournal(params: {
     userId: string;
@@ -83,16 +120,30 @@ export interface AgentsPort {
 export type RosterResult =
   | { readonly kind: 'agents'; readonly agents: readonly Agent[]; readonly slots: SlotUsage | null }
   | { readonly kind: 'empty'; readonly slots: SlotUsage | null }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
-export interface JournalEntry {
-  readonly at: Date;
-  readonly kind: string;
-  readonly summary: string;
-  readonly detail: string | null;
-}
 
-export type JournalResult =
-  | { readonly kind: 'entries'; readonly entries: readonly JournalEntry[] }
+export type BudgetResult =
+  | { readonly kind: 'budget'; readonly budget: Budget }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+export type ThoughtLogResult =
+  | { readonly kind: 'entries'; readonly entries: readonly ThoughtEntry[]; readonly total: number }
+  /** The agent has not reasoned yet. Distinct from `unreadable` — see the roster. */
   | { readonly kind: 'empty' }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * The three states, over an agent's whole record rather than one list.
+ *
+ * `empty` now means the platform sent three empty collections — which is what a
+ * freshly created agent looks like before its first cycle. It used to mean
+ * something else entirely: the mapper read a key the response does not carry,
+ * `Array.isArray(undefined)` was false, and a missed lookup was reported as an
+ * agent that had done nothing. Three states cannot keep *unreadable* apart from
+ * *silent* if a fourth case is quietly folded into the reassuring one.
+ */
+export type JournalResult =
+  | { readonly kind: 'record'; readonly record: AgentRecord }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

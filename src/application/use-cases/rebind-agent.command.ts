@@ -1,12 +1,13 @@
 import type { Agent } from '@/domain/agent/agent.js';
 import { isRebindable } from '@/domain/agent/agent.js';
 import type { Rebind } from '@/domain/agent/rebind.js';
-import { describeRebind, isNoOp, planRebind, rebindTarget } from '@/domain/agent/rebind.js';
+import { describeRebind, isNoOp, planRebind } from '@/domain/agent/rebind.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import { CONFIRMATION_TTL_SECONDS } from '@/domain/capability/confirmation.js';
 import type { AgentsPort } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 export interface DescribeRebindRequest {
   readonly userId: string;
@@ -73,7 +74,7 @@ export class DescribeRebindQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'rebind_intelligence_agent',
-      target: rebindTarget(rebind),
+      target: confirmationTarget.agentRebind(rebind.agentId, rebind.toStrategyId),
       // Stored as shown, so the audit can prove what was agreed to rather than
       // what a later version of the copy happens to say.
       consequence,
@@ -114,7 +115,11 @@ export class RebindAgentCommand {
       agentId: req.agentId,
       strategyId: req.toStrategyId,
       expectedRevision: req.expectedRevision,
-      confirmationToken: req.confirmationToken,
+      // The pair the proposal bound: this agent, that destination.
+      confirmation: {
+        token: req.confirmationToken,
+        target: confirmationTarget.agentRebind(req.agentId, req.toStrategyId),
+      },
     });
     return { kind: 'rebound', agent };
   }

@@ -18,6 +18,11 @@ Grid-Commander SHALL present a user's agents as read from their BattleGrid
 account at the time of viewing. It MUST NOT present agents from a cached copy
 without saying that is what it is showing.
 
+Where it explains why a read failed, the explanation MUST match what actually
+happened. A platform that answered and declined is not a platform that could not
+be reached, and telling a user the second when the first occurred sends them to
+wait for an outage that is not happening.
+
 #### Scenario: Viewing the roster
 - **WHEN** a user opens their roster
 - **THEN** they see the agents that exist on their BattleGrid account, each with
@@ -32,7 +37,24 @@ without saying that is what it is showing.
 - **WHEN** the roster cannot be read from BattleGrid
 - **THEN** the user is told it could not be loaded rather than shown an empty
   roster
+- **AND** told their agents have not been lost
 - **AND** no create or edit action is offered against state that was not read
+
+#### Scenario: BattleGrid declines to answer
+- **WHEN** the read fails because BattleGrid refused the authority it was given
+- **THEN** the user is told the platform refused rather than that it could not
+  be reached
+- **AND** still told their agents have not been lost
+
+#### Scenario: BattleGrid gives no answer
+- **WHEN** the read fails for any reason other than a refusal
+- **THEN** the user is told the platform could not be reached
+- **AND** still told their agents have not been lost
+
+#### Scenario: The distinction survives the read
+- **WHEN** a read fails
+- **THEN** which of the two occurred is carried out of the read itself
+- **AND** is not re-derived by inspecting the message text
 
 ### Requirement: Agent Fields Are Offered Only From Values The Platform Confirms
 Where a field has a set of valid values or a permitted range, Grid-Commander
@@ -128,13 +150,35 @@ NOT imply that it does.
 - **AND** archiving is not offered as though it were the same thing
 
 ### Requirement: Agents The Platform Owns Are Not Presented As Editable
-Where BattleGrid treats an agent as immutable, Grid-Commander SHALL show it
-without offering any action that would attempt to change it.
+Where an agent cannot currently be changed, Grid-Commander SHALL show it without
+offering any action that would attempt to change it, and SHALL say why.
+
+Two things make an agent unchangeable, and they are not the same. BattleGrid may
+treat an agent as immutable, which is permanent and belongs to the platform. Or
+the agent may be **archived**, which the operator did and can undo. Offering a
+rename box on either is an affordance with nothing behind it; offering one on an
+archived agent is worse, because the operator is one action away from being able
+to use it and is not told so.
+
+Where the reason is archival, Grid-Commander SHALL name reactivation as what
+makes changes possible again.
 
 #### Scenario: A platform-owned agent in the roster
 - **WHEN** an immutable agent appears in a user's roster
 - **THEN** it is shown and readable
 - **AND** no edit, rebind or archive action is offered for it
+
+#### Scenario: An archived agent
+- **WHEN** an archived agent is shown
+- **THEN** it is readable, and its history is not hidden
+- **AND** no control that would change it is offered
+- **AND** the user is told it is retired and that reactivating it makes changes
+  possible again
+
+#### Scenario: Attempting to change one anyway
+- **WHEN** a change is attempted against an agent that cannot be changed
+- **THEN** it is refused before anything is sent to the platform
+- **AND** the user is told which of the two reasons applies
 
 ### Requirement: Every Agent Mutation Carries The Revision It Was Formed Against
 Grid-Commander SHALL send, with every change to an agent, the revision of the
@@ -154,10 +198,46 @@ agent that the user's intent was formed against.
 Grid-Commander SHALL let a user read what an agent thought and did, separately
 from the record of what Grid-Commander did to their account.
 
+**What the platform records SHALL be read from what the platform sends.** A
+mapper that looks for a key the response does not carry finds nothing, and
+"found nothing" is indistinguishable from "the agent did nothing" — so the
+product asserts silence about an agent that has been busy. Where a reading is
+empty, that MUST be because the platform sent an empty collection, not because
+a lookup missed.
+
+**An agent's record has three parts and SHALL show all three.** BattleGrid keeps
+what an agent *did* separately from what it *thought* and from how a submission
+*scored*. The first is the one a user comes for — an agent that is quiet is quiet
+for a reason, and the platform states the reason in that record.
+
+**A shape that varies SHALL NOT be narrowed to the case that was seen first.**
+Event detail differs per event type, and one type was observed carrying two
+different shapes. An unrecognised detail is shown as the platform sent it rather
+than dropped, on the same grounds as an unrecognised outcome.
+
 #### Scenario: Reading an agent's journal
 - **WHEN** a user opens an agent's journal
 - **THEN** they see that agent's thoughts, activity and decisions as BattleGrid
   records them
+
+#### Scenario: An agent that has done something
+- **WHEN** BattleGrid holds activity for an agent
+- **THEN** the journal shows it
+- **AND** does not report that the agent has recorded nothing
+
+#### Scenario: An agent that is not trading
+- **WHEN** the platform recorded why an agent declined or could not act
+- **THEN** that reason is shown in the agent's own words from the platform
+
+#### Scenario: An event kind this product has no copy for
+- **WHEN** BattleGrid records an event kind Grid-Commander does not recognise
+- **THEN** it is shown named as the platform named it
+- **AND** its detail is shown rather than dropped
+
+#### Scenario: A submission that has not settled
+- **WHEN** a recorded submission has no score yet
+- **THEN** it is shown as not yet settled
+- **AND** not as a score of zero
 
 #### Scenario: Telling the two records apart
 - **WHEN** a user is looking at either record
@@ -173,3 +253,221 @@ commits funds.
   any path
 - **THEN** it is refused before it is attempted
 - **AND** the refusal is recorded as a refusal, not as a failed attempt
+
+### Requirement: A Field Offered Reaches The Operation It Configures
+Where the interface renders a control for a value, submitting the form SHALL
+carry that value to the operation. A control whose value the operation never
+reads MUST NOT be rendered.
+
+Offering a setting and discarding it is worse than not offering it: the user
+leaves believing they configured something, and the agent behaves as though they
+had not. Nothing on the screen distinguishes the two.
+
+#### Scenario: Setting a value the form offers
+- **WHEN** a user sets a value using a control the interface renders and submits
+- **THEN** that value reaches the operation the form performs
+
+#### Scenario: A control the operation does not read
+- **WHEN** a control is rendered whose value no operation reads
+- **THEN** this fails a check that gates a change, rather than being found by a
+  user whose agent was configured without it
+
+#### Scenario: A setting the product cannot yet carry
+- **WHEN** the product cannot supply what an operation requires for a setting
+- **THEN** the control for it is not rendered
+- **AND** the user is not shown a configuration they cannot make
+
+#### Scenario: A form that navigates rather than acting
+- **WHEN** a form submits by navigating, putting its values in the query string
+- **THEN** its controls are read from there
+- **AND** this is not reported as a control that reaches nothing
+
+### Requirement: An Agent's Spending Limits Are Stated Before It Exists
+Where the platform declines to default a limit on what an agent may spend,
+Grid-Commander SHALL obtain that limit before creating the agent, and MUST NOT
+create one whose limits it cannot state.
+
+A platform that defaults a value has decided it. A platform that declines to
+default one has not — and treating the second as though it were the first
+creates something that trades under limits nobody chose.
+
+**A value that removes a limit SHALL be described as removing it.** BattleGrid
+reads `0` as *no cap* on the exposure, drawdown and daily-loss ceilings. A form
+that asks "most it may lose in a day", promises "trading stops once this is
+reached", and accepts `0` invites the most cautious operator to create the least
+bounded agent. Where a value means unbounded, Grid-Commander SHALL say so where
+that value is entered, and MUST NOT present the resulting agent as one whose
+limits are set.
+
+The same holds when limits are **changed**. `tradingConfig` is all-or-nothing: a
+partial send does not error, it resets what it omits, so completeness is checked
+before an edit is sent and not only before a create.
+
+**A limit that can be set SHALL be changeable.** Showing an operator a ceiling
+they cannot move — or declining to offer the change for a reason that has since
+been fixed — leaves them able to read a danger and unable to act on it. Where the
+product can write a value, the surface offers it; where it cannot, it says which
+of the two reasons applies.
+
+#### Scenario: Composing an agent
+- **WHEN** a user composes an agent
+- **THEN** they are asked for every spending limit the platform declines to
+  default
+- **AND** told that the platform sets no default for them
+
+#### Scenario: Changing what an agent may spend
+- **WHEN** a user changes an agent's spending limits
+- **THEN** the current values are shown as the starting point
+- **AND** the limits the platform does not default are all present in what is sent
+
+#### Scenario: A value that removes the limit
+- **WHEN** a field accepts a value the platform reads as *no cap*
+- **THEN** the user is told, where they enter it, that the limit is removed
+- **AND** the wording does not describe a stop that would never fire
+
+### Requirement: Every Value The Product Sends Is One The Platform Accepts
+Where Grid-Commander supplies a value the operator did not choose — a
+discriminator, a structural literal, or a completion that makes a required
+object whole — that value SHALL be one the platform's own schema permits, and
+SHALL be checked against the platform's declared constants rather than against
+what this product remembers.
+
+A value nobody was asked for is still a value on the wire. The rule that choices
+must come from the platform has always covered what is *offered*; this extends it
+to what is *filled in*. The difference is invisible to a user and total to a
+server: `create_intelligence_agent` could never succeed, for the life of this
+product, because two literals nobody had ever looked at were wrong.
+
+Where the platform declares no default for such a value, Grid-Commander MUST NOT
+present its choice as a lookup. The value is named, with what it is and why it is
+safe, in one place.
+
+#### Scenario: A value the operator never chose
+- **WHEN** the product sends a value the operator was not asked for
+- **THEN** that value is one the platform's schema permits
+
+#### Scenario: A value outside the platform's constants
+- **WHEN** a value the product sends is not one the platform's schema permits
+- **THEN** this fails a check that gates a change, rather than being found by an
+  operator whose agent could not be created
+
+#### Scenario: The platform declares no default
+- **WHEN** the platform declares no default for a value the product must supply
+- **THEN** the product's own choice is stated as its own, with the reason
+- **AND** it is not written as a fallback behind a lookup that always misses
+
+#### Scenario: The record of what the platform permits
+- **WHEN** the platform's permitted values are recorded for checking against
+- **THEN** the record carries the permitted values themselves, not only the
+  names of the fields that carry them
+
+### Requirement: A Value Read Back Is Not Therefore A Value That May Be Sent
+Where Grid-Commander returns a value it read from the platform in a subsequent
+write, it SHALL send only the fields that operation accepts, and MUST NOT assume
+the shape it read is the shape it may write.
+
+BattleGrid's `tradingConfig` reads back with twenty-three fields and writes with
+twenty. The three extra are real facts about an agent and are not writable. An
+operation declaring `additionalProperties: false` rejects the entire object for
+one unaccepted key, so a read-modify-write that passes the read through cannot
+succeed — which is what `update_intelligence_agent` did, every time, for the
+life of this product.
+
+Where a read carries fields a write will not accept, dropping them SHALL be
+visible to the caller rather than silent, so a surface can say what it did not
+send instead of leaving an operator to infer it.
+
+#### Scenario: Writing back a value that was read
+- **WHEN** the product sends back a configuration it read from the platform
+- **THEN** only the fields the write operation accepts are sent
+
+#### Scenario: A field the write does not accept
+- **WHEN** a read carries a field the write operation does not accept
+- **THEN** it is dropped from the write
+- **AND** the drop is reported to the caller rather than performed silently
+
+#### Scenario: A key the operation would reject
+- **WHEN** the product builds a payload containing a key an operation does not
+  accept
+- **THEN** this fails a check that gates a change, rather than being found by an
+  operator whose edit was refused
+
+### Requirement: The Outcome Of A Write Reaches The Person Who Asked For It
+Where a user performs an operation that can be refused, Grid-Commander SHALL
+read the outcome and show it. A surface MUST NOT discard the result of a write
+and present the page as though nothing had been attempted.
+
+A refusal the operator cannot see is worse than a failure they can. The page
+reloads, the value is unchanged, and the only available reading is that the
+product ignored them. Renaming an agent did exactly this: the action awaited the
+result, discarded it, and redirected, so a refusal — including one the product
+itself raised — was indistinguishable from success.
+
+Where the operation was refused, the reason given SHALL be the one the operation
+returned, rather than a generic failure.
+
+#### Scenario: A write that succeeds
+- **WHEN** a user performs a write that succeeds
+- **THEN** they are shown its effect
+
+#### Scenario: A write that is refused
+- **WHEN** a write is refused
+- **THEN** the user is told, on the surface they acted from
+- **AND** the reason given is the one the operation returned
+
+#### Scenario: A result the surface never reads
+- **WHEN** a surface performs a write and does not read its outcome
+- **THEN** this fails a check that gates a change, rather than being found by an
+  operator whose action silently did nothing
+
+### Requirement: A Destructive Change Is Agreed To By A Person
+Where an operation requires a confirmation naming its consequence,
+Grid-Commander SHALL obtain that agreement from a person between naming the
+consequence and performing the operation.
+
+**Proposing and performing in one request satisfies the guard and defeats it.**
+A confirmation the product issues to itself moments before the call records that
+the product intended to proceed, which was never in doubt. The token must be
+issued in response to one request and spent in response to a later one that a
+person initiated, or the consequence is computed, stored for the audit, and read
+by nobody.
+
+This has now been got wrong twice, in the same operation, one layer apart: first
+inside the command, then inside the action that calls it. The property to hold is
+not "a token exists" but "a human saw this sentence and then acted".
+
+**And the change performed SHALL be the change described.** *When* the token is
+spent was the first half; *what it authorises* is the second, and the two are
+independent. An agreement carried across two requests, correctly, still authorised
+any amount at all: the token bound to the agent, so a submission that named the
+same agent consumed it whatever the numbers said. An edit that alters money is the
+one place in this product where the difference between the described change and
+the performed change is measured in the operator's own funds.
+
+The values SHALL be those the platform will accept — the ones surviving the
+partition that drops fields BattleGrid rejects — so that what was agreed to and
+what reaches the wire are the same set, rather than the agreement covering fields
+that are silently discarded on the way.
+
+#### Scenario: Changing an agent
+- **WHEN** a change to an agent is submitted
+- **THEN** the consequence is shown and the change is not yet made
+- **AND** it is made only on a further request the user initiated
+
+#### Scenario: The consequence that was agreed to
+- **WHEN** a confirmed change is recorded
+- **THEN** the sentence recorded is the sentence the user was shown
+
+#### Scenario: A change that changes nothing
+- **WHEN** a submission would alter nothing
+- **THEN** no confirmation is sought and the user is told why
+
+#### Scenario: An amount altered after it was agreed to
+- **WHEN** an edit is submitted carrying a money value other than the one whose
+  consequence was shown
+- **THEN** the change is refused before any request is built
+- **AND** the agent is unchanged
+
+#### Scenario: Two agreements for one agent
+- **WHEN** a user proposes one edit, then proposes a second, and submits the first
+- **THEN** each agreement authorises only the change it described

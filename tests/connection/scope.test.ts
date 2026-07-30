@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ScopeUnavailableError } from '@/domain/errors.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import type { Scope } from '@/domain/connection/scope.js';
+import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 import {
   FakeAuditStore,
   FakeClock,
@@ -24,7 +25,10 @@ const fetchOk: typeof globalThis.fetch = (async (_url: string | URL | Request, i
   const result =
     body.method === 'tools/list'
       ? { tools: [{ name: 'get_account_state', annotations: { readOnlyHint: true } }] }
-      : { ok: true };
+      : // The MCP envelope, as the live platform sends it. Returning `{ ok: true }`
+        // bare modelled a wire format that does not exist, and a fake that models
+        // the wrong wire format proves the wrong thing.
+        { content: [{ type: 'text', text: '{"ok":true}' }], structuredContent: { ok: true } };
   return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +60,8 @@ function adapterFor(scopes: readonly Scope[] | null, opts: { revoked?: boolean }
     config,
     audit: new FakeAuditStore(clock),
     confirmations: new FakeConfirmationStore(clock),
-    connections,
+    heldScopes: new ConnectionScopes(connections),
+    remedy: 'reconnect',
     fetch: fetchOk,
   });
   return { adapter, ready };

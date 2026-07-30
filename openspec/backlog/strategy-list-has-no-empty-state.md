@@ -2,11 +2,11 @@
 id: strategy-list-has-no-empty-state
 title: The strategy roster renders an empty list with nothing in it
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-28
 updated: 2026-07-28
-change: ""
+change: a-catalog-with-nothing-in-it
 capability: strategy-authoring
 blocked_by: []
 tags: [ui, surface]

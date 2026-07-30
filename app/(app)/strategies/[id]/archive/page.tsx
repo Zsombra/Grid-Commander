@@ -24,6 +24,11 @@ export default async function ArchiveStrategyPage({ params }: { params: Promise<
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* The roster, not the strategy: the read that would have said the
+            strategy is there is the one that failed. */}
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
       </main>
     );
   }
@@ -48,10 +53,12 @@ export default async function ArchiveStrategyPage({ params }: { params: Promise<
   if (proposal.kind === 'refused') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">Cannot archive</h1>
+        <h1 className="text-xl font-medium">Cannot archive {listing.strategy.name}</h1>
         <p role="alert" className="text-sm">{proposal.reason}</p>
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href={`/strategies/${listing.strategy.id}`} className="underline">
+            Back to {listing.strategy.name}
+          </a>
         </p>
       </main>
     );
@@ -74,7 +81,11 @@ export default async function ArchiveStrategyPage({ params }: { params: Promise<
         <button type="submit" className="rounded border px-4 py-2 text-sm">
           Archive {listing.strategy.name}
         </button>
-        <a href="/strategies" className="px-4 py-2 text-sm underline">
+        {/* Back to the strategy, not to the list. Someone who opens this and
+            decides against it has not finished with the strategy, and sending
+            them to the roster loses their place — which makes declining the more
+            costly choice. */}
+        <a href={`/strategies/${listing.strategy.id}`} className="px-4 py-2 text-sm underline">
           Leave it active
         </a>
       </form>

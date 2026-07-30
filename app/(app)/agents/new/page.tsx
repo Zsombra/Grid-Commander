@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { AgentForm } from '@/presentation/components/agent-form.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { behavior, optionalText, requiredText } from '@/presentation/form.js';
+import { moneyAnswers } from '@/presentation/form.js';
 
 /**
  * Create.
@@ -68,7 +69,13 @@ export async function create(formData: FormData) {
           behavior: behavior(formData),
         },
     strategyId: requiredText(formData, 'strategyId'),
-    tradingConfig: null,
+    // Was `null` — which meant every agent this button created traded under
+    // limits the product neither set nor could name. BattleGrid declares no
+    // default for the money questions, so leaving them out did not inherit
+    // something sensible; it left them unanswered.
+    // The six questions BattleGrid refuses to default. The command assembles
+    // the rest from the catalog and refuses if any of these is unanswered.
+    money: moneyAnswers(formData),
   });
 
   if (result.kind === 'created') redirect(`/agents/${result.agent.id}`);

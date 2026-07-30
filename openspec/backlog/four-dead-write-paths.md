@@ -2,7 +2,7 @@
 id: four-dead-write-paths
 title: Four of six write paths cannot be submitted — the forms are not bound to their actions
 type: bug
-status: in-progress
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -89,3 +89,9 @@ posts into a void is indistinguishable from a working one unless you press it.
 
 Prefer a test over a lint rule — the "unreferenced server action" half needs to
 see across files.
+
+## Closed (2026-07-28)
+
+Closed by `close-the-reachability-gap`, archived 2026-07-28. All four forms now take their action as a required prop, so a missing binding is a type error rather than a form that renders perfectly and submits nowhere: `agent-form.tsx:28`, `rebind-confirm.tsx:20`, `agent-edit.tsx:18`, and the apply action for the strategy pipeline, which had not existed at all.
+
+Guarded from both directions — no `<form>` may carry a string action, and no exported `'use server'` function may go unreferenced. Both halves were demonstrated failing during the production gate.

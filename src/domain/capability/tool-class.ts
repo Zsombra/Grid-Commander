@@ -41,6 +41,17 @@ export interface DiscoveredTool {
   readonly name: string;
   readonly description?: string | undefined;
   readonly annotations?: ToolAnnotations | undefined;
+  /**
+   * The JSON Schema the server reports for this tool's arguments.
+   *
+   * Carried opaquely — nothing in this product reads inside it. It exists so
+   * that whatever answers questions can call a tool with the arguments the
+   * server actually expects rather than with names it guessed. Optional,
+   * because a deployment may stop reporting it, and a missing schema must not
+   * be read as a reason to withhold the tool: the safety decision is made from
+   * `annotations`, and it is made elsewhere.
+   */
+  readonly inputSchema?: Record<string, unknown> | undefined;
   /** Extracted from the tool's own schema/description text, when it says so. */
   readonly declaredScope?: Scope | undefined;
 }

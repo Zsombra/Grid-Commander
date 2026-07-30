@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
 import {
   blastRadius,
@@ -10,6 +9,7 @@ import {
   type Concern,
 } from '@/domain/strategy/compiled-plan.js';
 import type { StrategiesPort } from '@/ports/strategies.js';
+import { digestOf } from '@/domain/capability/digest.js';
 
 export interface CompilePlanRequest {
   readonly userId: string;
@@ -77,25 +77,6 @@ export class CompilePlanCommand {
   }
 }
 
-/**
- * A stable digest of the composed intent.
- *
- * Keys are sorted so that two structurally identical intents digest identically
- * regardless of how they were built — otherwise a re-render that reorders an
- * object would discard a perfectly good plan.
- */
-export function digestOf(value: unknown): string {
-  return createHash('sha256').update(canonicalise(value)).digest('hex');
-}
-
-function canonicalise(value: unknown): string {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
-  if (Array.isArray(value)) return `[${value.map(canonicalise).join(',')}]`;
-  const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalise(v)}`).join(',')}}`;
-}
 
 function readExpiry(approvedPlan: Readonly<Record<string, unknown>>): Date | null {
   const raw = approvedPlan['expiresAt'];

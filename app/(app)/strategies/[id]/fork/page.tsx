@@ -27,6 +27,11 @@ export default async function ForkStrategyPage({ params }: { params: Promise<{ i
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* The roster, not the strategy: the read that would have said the
+            strategy is there is the one that failed. */}
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
       </main>
     );
   }
@@ -50,9 +55,14 @@ export default async function ForkStrategyPage({ params }: { params: Promise<{ i
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No room for another strategy</h1>
         {/* Before the work, not after submitting it. */}
+        {/* Reachable by address only, now that neither the roster nor the
+            strategy page offers a copy it cannot make. It still has to refuse
+            honestly, and still has to lead somewhere. */}
         <p role="status" className="text-sm">{forking.explanation}</p>
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href={`/strategies/${strategy.id}`} className="underline">
+            Back to {strategy.name}
+          </a>
         </p>
       </main>
     );
@@ -77,7 +87,8 @@ export default async function ForkStrategyPage({ params }: { params: Promise<{ i
         <button type="submit" className="rounded border px-4 py-2 text-sm">
           Make my copy
         </button>
-        <a href="/strategies" className="px-4 py-2 text-sm underline">
+        {/* The strategy being copied, not the roster. */}
+        <a href={`/strategies/${strategy.id}`} className="px-4 py-2 text-sm underline">
           Cancel
         </a>
       </form>

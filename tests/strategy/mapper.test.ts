@@ -130,7 +130,7 @@ describe('the strict outer envelope', () => {
       strategyId: 's1',
       plan: { operation: 'UPDATE' },
       planToken: 'bgsp1.x.y',
-      confirmationToken: 'c1',
+      confirmation: { token: 'c1', target: 't' },
     });
     expect(calls[0]?.args).toHaveProperty('request');
   });
@@ -142,29 +142,41 @@ describe('the strict outer envelope', () => {
   });
 
   it('carries the confirmation and the target into the guarded call', async () => {
+    /**
+     * Forwards the target; does not compose it.
+     *
+     * This used to assert the adapter built `strategy:s1` itself — and that was
+     * the bug. `DescribeApplyQuery` issues against
+     * `strategy:<id>#<intentDigest>`, so a token issued for a plan was spent
+     * against the bare strategy id, `consume` never matched, and **every apply
+     * was refused by the product before it reached BattleGrid.** The fake port
+     * does not go through `enforce()`, so nothing saw it.
+     *
+     * A composed target can differ from the issued one. A forwarded one cannot.
+     */
     const { adapter, calls } = adapterOver(() => ({ strategy: LIVE }));
     await adapter.applyPlan({
       ...who,
       strategyId: 's1',
       plan: {},
-      planToken: 't',
-      confirmationToken: 'c1',
+      planToken: 'pt',
+      confirmation: { token: 'c1', target: 'strategy:s1#abc123' },
     });
     expect(calls[0]?.confirmationToken).toBe('c1');
-    expect(calls[0]?.target).toBe('strategy:s1');
+    expect(calls[0]?.target, 'the target the caller bound, unaltered').toBe('strategy:s1#abc123');
   });
 });
 
 describe('restoring can need repair', () => {
   it('reports REPAIR_REQUIRED as its own outcome', async () => {
     const { adapter } = adapterOver(() => ({ status: 'REPAIR_REQUIRED' }));
-    const result = await adapter.setActive({ ...who, strategyId: 's1', active: true });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('repair-required');
   });
 
   it('reports an ordinary restore as changed', async () => {
     const { adapter } = adapterOver(() => ({ strategy: { ...LIVE, isActive: true } }));
-    const result = await adapter.setActive({ ...who, strategyId: 's1', active: true });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('changed');
   });
 });

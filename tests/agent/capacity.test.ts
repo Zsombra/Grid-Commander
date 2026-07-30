@@ -10,7 +10,7 @@ const validCreate = {
   displayName: 'New Agent',
   brain: { kind: 'preset', preset: 'ROMMEL' } as const,
   strategyId: 's1',
-  tradingConfig: null,
+  money: { tradingMode: 'OFF', minAllocationUsd: 10, balanceThresholdUsd: 10, maxConcurrentExposureUsd: 100, maxCumulativeDrawdownUsd: 100, maxDailyLossUsd: 50 },
 };
 
 function full(): FakeAgentsPort {

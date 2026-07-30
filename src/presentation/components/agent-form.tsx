@@ -1,6 +1,8 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
+import { CONTROL } from './control.js';
+import { MoneyLimits } from './money-limits.js';
 
 /**
  * The create form.
@@ -47,7 +49,7 @@ export function AgentForm({
           type="text"
           maxLength={80}
           required
-          className="w-full rounded border p-2"
+          className={CONTROL}
         />
       </Field>
 
@@ -59,7 +61,7 @@ export function AgentForm({
         </p>
 
         <Field label="Preset" name="brainPreset" error={issueFor('brain.preset')}>
-          <select id="brainPreset" name="brainPreset" className="w-full rounded border p-2">
+          <select id="brainPreset" name="brainPreset" className={CONTROL}>
             <option value="">Choose a model instead</option>
             {catalog.brainPresets.map((preset) => (
               <option key={preset} value={preset}>
@@ -70,7 +72,7 @@ export function AgentForm({
         </Field>
 
         <Field label="Model" name="modelId" error={issueFor('brain.modelId')}>
-          <select id="modelId" name="modelId" className="w-full rounded border p-2">
+          <select id="modelId" name="modelId" className={CONTROL}>
             <option value="">Use a preset instead</option>
             {catalog.models.map((m) => (
               <option key={m.modelId} value={m.modelId}>
@@ -85,23 +87,27 @@ export function AgentForm({
         <Choice label="Conviction" name="conviction" options={CONVICTIONS} />
       </fieldset>
 
-      <fieldset className="space-y-3">
-        <legend className="font-medium">Position management</legend>
-        <Field label="Preset" name="positionManagementPreset">
-          <select
-            id="positionManagementPreset"
-            name="positionManagementPreset"
-            className="w-full rounded border p-2"
-          >
-            {catalog.positionManagementPresets.map((p) => (
-              <option key={p.preset} value={p.preset}>
-                {p.label} — {p.description}
-              </option>
-            ))}
-            <option value="CUSTOM">Custom</option>
-          </select>
-        </Field>
-      </fieldset>
+      {/*
+        Position management is deliberately not offered here.
+
+        This fieldset used to render a preset select. The create action sends
+        `tradingConfig: null`, so whatever the user chose was discarded and the
+        agent was created with BattleGrid's defaults — with nothing on the screen
+        saying so. Offering a setting and dropping it is worse than not offering
+        it: the user leaves believing they configured something they did not.
+
+        Wiring the select instead is not available. `tradingConfig.positionManagement`
+        requires fifteen fields — fourteen behavioural values *and* the preset
+        label beside them — and `PositionManagementPreset` carries only `preset`,
+        `label` and `description`. This product does not hold the values a
+        complete payload needs, and inventing them is the fabrication it refuses
+        everywhere else. See `a-preset-does-not-constrain-its-config`, which
+        establishes that against the live server, and `agent-edit-form`, which is
+        the feature that would build the real editor.
+      */}
+
+      <MoneyLimits catalog={catalog} />
+
 
       <button type="submit" className="rounded border px-4 py-2 text-sm">
         Create agent
@@ -148,7 +154,7 @@ function Choice({
 }) {
   return (
     <Field label={label} name={name}>
-      <select id={name} name={name} className="w-full rounded border p-2">
+      <select id={name} name={name} className={CONTROL}>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}

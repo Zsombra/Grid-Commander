@@ -2,8 +2,13 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
+import type { PersonalConfig } from './config.js';
+import { DeclaredScopes } from './domain/connection/held-scopes.js';
+import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
 import { CreateAgentCommand } from './application/use-cases/create-agent.command.js';
 import { CurrentUserQuery } from './application/use-cases/current-user.query.js';
+import type { ActingUser } from './application/use-cases/current-user.query.js';
+import { OwnerOnlyUser } from './application/use-cases/owner-only-user.js';
 import {
   CompleteConnectionCommand,
   DisconnectCommand,
@@ -15,8 +20,8 @@ import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
-import { AskAssistantCommand } from './application/use-cases/ask-assistant.command.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
+import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
 import {
@@ -24,12 +29,16 @@ import {
   ForkStrategyCommand,
   SetStrategyActiveCommand,
 } from './application/use-cases/strategy-lifecycle.command.js';
+import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
+import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
+import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import {
   DescribeRebindQuery,
   RebindAgentCommand,
 } from './application/use-cases/rebind-agent.command.js';
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
+import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -42,8 +51,6 @@ import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
-import { NotConfiguredAssistant } from './infrastructure/assistant/not-configured.js';
-import type { AssistantPort } from './ports/assistant.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
 import { CookieSession } from './infrastructure/http/cookie-session.js';
 import { systemClock } from './ports/clock.js';
@@ -79,9 +86,10 @@ interface Infrastructure {
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
-  readonly assistant: AssistantPort;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
+  /** Set when this deployment holds the owner's own credential. */
+  readonly personal: PersonalConfig | undefined;
 }
 
 function infrastructure(): Infrastructure {
@@ -99,7 +107,17 @@ function infrastructure(): Infrastructure {
     config: config.battlegrid,
     audit,
     confirmations,
-    connections,
+    // Where "what may this credential do" is answered. A delegated grant is read
+    // from the connection BattleGrid issued; a personal key carries a
+    // declaration the operator made. Two sources, one guard — see HeldScopes.
+    heldScopes: config.personal
+      ? new DeclaredScopes(config.personal.scopes)
+      : new ConnectionScopes(connections),
+    // And where "what can this user do about it" is answered. Same shape, same
+    // reason: a delegated grant can be obtained again, a configured key can only
+    // be replaced by the person who configured it. Fixed here so that no failure
+    // path has to work it out.
+    remedy: config.personal ? 'repair-the-key' : 'reconnect',
     fetch: globalThis.fetch,
   });
 
@@ -111,11 +129,9 @@ function infrastructure(): Infrastructure {
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
-    // Which model answers is a deployment decision (A-D). Until one is chosen,
-    // the assistant says so rather than pretending.
-    assistant: new NotConfiguredAssistant(),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
+    personal: config.personal,
   };
   return cached;
 }
@@ -137,9 +153,24 @@ export function app(cookies: CookieStore) {
 
   const authority = new ResolveAuthorityQuery(i.connections, i.connections, i.battlegrid, systemClock);
 
+  /**
+   * Who a request acts for.
+   *
+   * Two implementations, picked here and never branched on downstream. A
+   * personal deployment holds the owner's credential and authenticates nobody;
+   * a delegated one resolves a session and refreshes a grant. Every route calls
+   * `currentUser` and cannot tell which it got, which is the point.
+   */
+  const currentUser: ActingUser = i.personal
+    ? new OwnerOnlyUser(i.personal.apiKey, new McpAccountAdapter(i.battlegrid))
+    : new CurrentUserQuery(sessions, i.connections, authority);
+
   return {
     sessions,
-    currentUser: new CurrentUserQuery(sessions, i.connections, authority),
+    currentUser,
+    // Null on a delegated deployment. The surface uses it to disclose that a
+    // deployment authenticates nobody, which is true only of the personal one.
+    personal: i.personal ?? null,
 
     startConnection: new StartConnectionCommand(i.battlegrid, i.transactions, random, systemClock),
     completeConnection: new CompleteConnectionCommand(
@@ -162,6 +193,12 @@ export function app(cookies: CookieStore) {
     createAgent: new CreateAgentCommand(i.agents),
     readCatalog: new ReadCatalogQuery(i.agents),
     updateAgent: new UpdateAgentCommand(i.agents),
+    readThoughtLog: new ReadThoughtLogQuery(i.agents),
+    readBudget: new ReadBudgetQuery(i.agents),
+    // Mints the confirmation `updateAgent` consumes. Separate objects on
+    // purpose: the thing that performs the write must not be the thing that
+    // authorises it.
+    describeEdit: new DescribeEditQuery(i.agents, i.confirmations, random, systemClock),
     describeRebind: new DescribeRebindQuery(i.agents, i.confirmations, random, systemClock),
     rebindAgent: new RebindAgentCommand(i.agents),
     describeArchive: new DescribeArchiveQuery(i.agents, i.confirmations, random, systemClock),
@@ -169,6 +206,7 @@ export function app(cookies: CookieStore) {
     readJournal: new ReadAgentJournalQuery(i.agents),
 
     listStrategies: new ListStrategiesQuery(i.strategies),
+    readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
@@ -178,10 +216,6 @@ export function app(cookies: CookieStore) {
     forkStrategy: new ForkStrategyCommand(i.strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
-
-    // The assistant's read-only toolset is derived inside the use case, from
-    // the live discovered set. Nothing here can widen it.
-    askAssistant: new AskAssistantCommand(i.battlegrid, i.assistant),
   };
 }
 

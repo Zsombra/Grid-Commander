@@ -2,11 +2,11 @@
 id: trading-config-read-shape-is-not-write-shape
 title: Three tradingConfig fields come back on read and are rejected on write
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-29
+change: the-edit-path-cannot-succeed-either
 capability: agent-authoring
 blocked_by: []
 tags: [battlegrid, mapper, agent-edit-form]
@@ -71,3 +71,24 @@ it throws on anything unexpected rather than silently dropping.
 Do not hardcode the three names. Derive the accepted set from the discovered
 schema at runtime, for the same reason the tool list is never hardcoded: this is
 exactly the kind of thing that changes under a deployment.
+
+## Resolved — 2026-07-29
+
+Closed by `the-edit-path-cannot-succeed-either`.
+
+This item read as a warning about `agent-edit-form`, a surface nobody had built.
+It was not. **The product already contained the implementation being warned
+about**: `applyEdit` was `{ ...current.fields, ...changes }` and
+`update-agent.command.ts` sent the result straight to
+`update_intelligence_agent`. So every trading-config edit was rejected outright,
+for the life of the product — not a future risk, a present defect.
+
+Confirmed against the live schema: `update_intelligence_agent.tradingConfig`
+declares `additionalProperties: false` and accepts none of the three.
+
+`applyEdit` now projects onto `TRADING_CONFIG_FIELDS`, reports what it dropped,
+and reports required fields missing after the merge. The fixture that hid it —
+a four-field config the platform cannot produce — was replaced with
+`liveTradingConfig()`, all 23 keys as the server actually returns them.
+
+The general form of the check is `conformance-sweep-for-required-and-accepted-params`.

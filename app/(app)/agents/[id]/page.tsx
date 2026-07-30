@@ -1,9 +1,8 @@
-import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
-import { AgentRenameForm } from '@/presentation/components/agent-edit.js';
+import { MoneySummary } from '@/presentation/components/money-summary.js';
+import { AgentRecord } from '@/presentation/components/record.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { requiredText } from '@/presentation/form.js';
 
 /**
  * One agent: what it is, what it inherits, and what may be done to it.
@@ -12,7 +11,14 @@ import { requiredText } from '@/presentation/form.js';
  * the platform does not permit it, and presenting a field the platform will
  * refuse is worse than not offering it.
  */
-export default async function AgentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AgentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ problem?: string }>;
+}) {
+  const { problem } = await searchParams;
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
@@ -47,6 +53,14 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
         <p className="text-sm">{agent.status}</p>
       </div>
 
+      {/**
+       * How it has done, from the block the roster payload already carried and
+       * this product discarded on every load. Null means the record was absent,
+       * which the component never sees — an agent that has played nothing
+       * reports a record full of zeroes and says so in its own words.
+       */}
+      {agent.performance && <AgentRecord performance={agent.performance} />}
+
       <section className="space-y-1">
         <h2 className="font-medium">Inherited from its strategy</h2>
         <p className="text-sm">
@@ -64,27 +78,36 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
           {agent.brain.kind === 'preset' ? agent.brain.preset : agent.brain.modelId}
         </p>
         <p className="text-sm">
-          Money limits: {agent.tradingConfig ? 'configured' : 'not configured'}
+          {/*
+            "configured" used to mean `tradingConfig != null` — that an object
+            came back, not that limits were set. The live agent carries a full
+            twenty-field config in which two of three caps are zero, which
+            BattleGrid reads as no cap, and this line called it configured.
+          */}
+          Money limits: <MoneySummary agent={agent} />
         </p>
       </section>
 
-      <AgentRenameForm agent={agent} action={rename} />
+      {problem ? (
+        <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-3 text-sm text-text-primary">
+          {problem}
+        </p>
+      ) : null}
 
+      {/**
+       * The rename form was here, and it self-issued its own confirmation —
+       * `describeEdit` then `updateAgent` in one request, with the consequence
+       * computed, stored for the audit and read by nobody. Its doc comment said
+       * "Nothing here issues a token to itself" directly above the code that
+       * did.
+       *
+       * Renaming now happens on `/agents/[id]/edit`, alongside the money
+       * limits, in two requests with a person between them. One rename surface
+       * rather than two, and this page goes back to being about reading an
+       * agent. `only-mcp-control`'s corridor guard benefits too: with no bound
+       * form left, this stops being a mutation route.
+       */}
       <AgentActions agent={agent} />
     </main>
   );
-}
-
-export async function rename(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const agentId = requiredText(formData, 'agentId');
-  await app.updateAgent.execute({
-    ...user.authority,
-    agentId,
-    changes: { displayName: requiredText(formData, 'displayName') },
-  });
-  redirect(`/agents/${agentId}`);
 }

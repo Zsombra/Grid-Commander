@@ -2,6 +2,10 @@ import type { Agent, AgentStatus, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
+import type { Budget, Gauge } from '@/domain/agent/budget.js';
+import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
+import type { Performance, Point } from '@/domain/agent/performance.js';
+import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -25,6 +29,7 @@ interface RawAgent {
   modelId?: unknown;
   behavior?: unknown;
   tradingConfig?: unknown;
+  performance?: unknown;
   arenaChallengeEnabled?: unknown;
   overlayText?: unknown;
   capabilities?: unknown;
@@ -62,6 +67,7 @@ export function mapAgent(raw: unknown): Agent {
     tradingConfig: mapTradingConfig(a.tradingConfig),
     arenaChallengeEnabled: a.arenaChallengeEnabled === true,
     overlayText: str(a.overlayText),
+    performance: mapPerformance(a.performance),
     permissions: mapPermissions(a.capabilities),
   };
 }
@@ -153,7 +159,41 @@ export function mapCatalog(models: unknown, tradingConfig: unknown, brainPresets
     brainPresets,
     positionManagementPresets: mapPositionPresets(tradingConfig),
     bounds: mapBounds(tradingConfig),
+    defaults: mapDefaults(tradingConfig),
   };
+}
+
+/**
+ * What the platform is willing to default, keyed by the field it defaults.
+ *
+ * The catalog names them `defaultMaxLeverage`, `defaultMaxStopLossPct` and so
+ * on; the write schema calls the same things `maxLeverage`, `maxStopLossPct`.
+ * The rename is mechanical, and doing it here means the rest of the product
+ * only ever sees the write-schema name.
+ *
+ * Some catalog defaults have no write-schema counterpart at all
+ * (`defaultStrategyTimeframe`, `defaultRegimeAutoDerive`) — those are the read
+ * shape's extra fields, which create rejects. They are carried anyway and
+ * simply never asked for: filtering here would put knowledge of the write
+ * schema in a mapper.
+ */
+function mapDefaults(raw: unknown): Readonly<Record<string, unknown>> {
+  const declared = ((raw ?? {}) as Record<string, unknown>)['tradingDefaults'];
+  const values = ((declared ?? {}) as Record<string, unknown>)['defaults'];
+  if (typeof values !== 'object' || values === null) return {};
+
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
+    if (!key.startsWith('default')) continue;
+    const field = key.slice('default'.length);
+    out[field.charAt(0).toLowerCase() + field.slice(1)] = value;
+  }
+  // The catalog spells the slippage default `defaultEntrySlippageBps` and the
+  // write schema calls it `maxSlippageBps`. One rename, stated rather than
+  // pattern-matched, because guessing at the pairing is how a value lands in a
+  // field it does not belong to.
+  if (out['entrySlippageBps'] !== undefined) out['maxSlippageBps'] = out['entrySlippageBps'];
+  return out;
 }
 
 function mapModels(raw: unknown): readonly ApprovedModel[] {
@@ -241,4 +281,235 @@ function str(v: unknown): string | null {
 
 function num(v: unknown): number | undefined {
   return typeof v === 'number' ? v : undefined;
+}
+
+/**
+ * A thought-log entry, from the payload the live server returns.
+ *
+ * Written against an observed response, not the declared schema — the field
+ * names, and crucially their *types*, come from calling
+ * `get_agent_thought_log` and `get_user_thought_log` and recording what came
+ * back. `confidenceScore` is a float, `confidenceScorePercent` an int, and the
+ * two are the same number twice; this keeps the float and derives nothing.
+ *
+ * Nulls are preserved rather than defaulted. `thesisDirection` is absent on
+ * roughly a third of the entries observed, and a threshold nobody set is not a
+ * threshold of zero — defaulting either would invent a fact about an agent's
+ * reasoning.
+ */
+export function mapThought(raw: unknown): ThoughtEntry {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const snapshot = t['marketSnapshot'];
+
+  return {
+    id: str(t['id']) ?? '',
+    at: new Date(String(t['createdAt'] ?? 0)),
+    agentId: str(t['agentId']) ?? '',
+    reasoning: str(t['reasoning']) ?? '',
+    snapshot: mapSnapshot(snapshot),
+    confidence: num(t['confidenceScore']) ?? null,
+    threshold: num(t['confidenceThreshold']) ?? null,
+    // Never narrowed and never defaulted to a recognised value: an outcome this
+    // product has not seen must reach the surface as the platform named it.
+    outcome: str(t['outcome']) ?? 'UNKNOWN',
+  };
+}
+
+function mapSnapshot(raw: unknown): MarketSnapshot | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const s = raw as Record<string, unknown>;
+  const coinTicker = str(s['coinTicker']);
+  if (!coinTicker) return null;
+  return {
+    coinTicker,
+    thesisDirection: str(s['thesisDirection']),
+    primaryTimeframe: str(s['primaryTimeframe']),
+  };
+}
+
+/**
+ * An agent's live risk budget, from the payload the server returns.
+ *
+ * The one translation that matters: a gauge the platform reports as
+ * `configured: false` carries `remaining: 0`, and that zero is passed on here
+ * as `null`. Rendering the platform's zero would say "no headroom left" about a
+ * limit that does not exist — the inverse of the truth, on the gauges that
+ * govern loss.
+ *
+ * `fill` is the amount consumed, not a fraction: `fill: 21, remaining: 13`
+ * against a ceiling of 34. Mapped to `used` because `fill` invites a reader to
+ * treat it as a proportion, which is how a 21-of-34 bar gets drawn at 2100%.
+ */
+export function mapBudget(raw: unknown): Budget {
+  const b = ((raw ?? {}) as Record<string, unknown>);
+  const inner = (typeof b['budget'] === 'object' && b['budget'] !== null ? b['budget'] : b) as Record<string, unknown>;
+
+  const gauges: Record<string, Gauge> = {};
+  const rawGauges = inner['gauges'];
+  if (typeof rawGauges === 'object' && rawGauges !== null) {
+    for (const [name, value] of Object.entries(rawGauges as Record<string, unknown>)) {
+      if (typeof value !== 'object' || value === null) continue;
+      const g = value as Record<string, unknown>;
+      const configured = g['configured'] === true;
+      gauges[name] = {
+        used: num(g['fill']) ?? 0,
+        remaining: configured ? (num(g['remaining']) ?? null) : null,
+        ceiling: configured ? ceilingFor(name, inner) : null,
+        breached: g['breached'] === true,
+      };
+    }
+  }
+
+  const haltedAt = str(inner['haltedAt']);
+  return {
+    agentId: str(inner['agentId']) ?? '',
+    gauges,
+    overSubscribed: inner['budgetOverSubscribed'] === true,
+    stopBelowSingleTradeLoss: inner['stopBelowSingleTradeLoss'] === true,
+    stopEffectivelyUnbounded: inner['stopEffectivelyUnbounded'] === true,
+    haltedAt: haltedAt === null ? null : new Date(haltedAt),
+    haltReason: str(inner['haltReason']),
+    capitalAtRiskUsd: num(inner['capitalAtRiskUsd']) ?? null,
+    headroomUsd: num(inner['headroomUsd']) ?? null,
+  };
+}
+
+/**
+ * The ceiling a gauge is measured against.
+ *
+ * Written out rather than derived from the gauge name: `dailyLoss` is capped by
+ * `maxDailyLossUsd` and `exposure` by `maxConcurrentExposureUsd`, and string
+ * surgery on those pairings is how a ceiling lands on the wrong gauge — the
+ * same reasoning as `BOUND_KEYS` above.
+ */
+const GAUGE_CEILINGS: Readonly<Record<string, string>> = {
+  dailyLoss: 'maxDailyLossUsd',
+  dailyTrades: 'maxDailyTrades',
+  drawdown: 'maxCumulativeDrawdownUsd',
+  exposure: 'maxConcurrentExposureUsd',
+};
+
+function ceilingFor(gauge: string, budget: Record<string, unknown>): number | null {
+  const key = GAUGE_CEILINGS[gauge];
+  return key === undefined ? null : (num(budget[key]) ?? null);
+}
+
+/**
+ * An agent's record, from the payload `get_agent_journal` returns.
+ *
+ * The three key names below are the whole point of this function. The adapter
+ * used to read `payload['entries'] ?? payload['journal']`; the response carries
+ * neither, so the lookup missed, the result was `empty`, and every agent's
+ * journal said the agent had recorded nothing. Both of those key names were
+ * invented, as were `at`, `type`, `kind`, `summary` and `title` beneath them.
+ *
+ * These five came from calling the tool. `username` is the sixth and is not
+ * read: it names the account, which every page already states.
+ */
+export function mapRecord(raw: unknown): AgentRecord {
+  const p = (raw ?? {}) as Record<string, unknown>;
+  return {
+    activity: array(p['recentActivity']).map(mapActivity),
+    // The same entries `/thinking` renders, through the same mapper. Two
+    // readings of one payload shape would be two things to keep in step.
+    thoughts: array(p['recentThoughts']).map(mapThought),
+    games: array(p['recentGames']).map(mapGame),
+  };
+}
+
+function array(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+
+function mapActivity(raw: unknown): ActivityEvent {
+  const e = (raw ?? {}) as Record<string, unknown>;
+  const detail = e['metadata'];
+  return {
+    id: str(e['id']) ?? '',
+    at: new Date(String(e['createdAt'] ?? 0)),
+    // Never narrowed to a recognised kind, for the reason `EVENTS` gives.
+    kind: str(e['eventType']) ?? 'UNKNOWN',
+    // Carried whole and unread. What it holds depends on the kind, and one kind
+    // was observed with two different shapes — so the domain reads it, and this
+    // does not decide in advance which fields survive.
+    detail: typeof detail === 'object' && detail !== null ? (detail as Record<string, unknown>) : {},
+  };
+}
+
+/**
+ * One submitted grid.
+ *
+ * `finalScore`, `rank`, `outcome` and every payout field were `null` on all ten
+ * games observed — the account has none that settled. So nothing here defaults
+ * them: a null reaches the domain as a null, `settled()` reads it, and the
+ * surface says "not settled yet" rather than showing a score of zero.
+ *
+ * `cells` is counted rather than carried. It holds the nine picks with their
+ * per-coin reasoning, which is a grid view and not a journal line.
+ */
+function mapGame(raw: unknown): GameResult {
+  const g = (raw ?? {}) as Record<string, unknown>;
+  return {
+    at: new Date(String(g['submittedAt'] ?? 0)),
+    gameType: str(g['gameType']) ?? 'UNKNOWN',
+    confidence: num(g['confidenceScore']) ?? null,
+    reasoning: str(g['reasoning']) ?? '',
+    picks: array(g['cells']).length,
+    score: num(g['finalScore']) ?? null,
+    rank: num(g['rank']) ?? null,
+    payoutUsd: num(g['totalPayout']) ?? null,
+    outcome: str(g['outcome']),
+  };
+}
+
+/**
+ * An agent's record, from the block the roster payload already carries.
+ *
+ * `null` when the block is absent, and a `Performance` full of zeroes when the
+ * agent simply has not played. Those are different facts and the mapper must not
+ * merge them: six of the nine agents observed had a real block reporting zero
+ * games, three of them created that afternoon.
+ *
+ * `winRatePercent` and `avgAccuracyPercent` are read and discarded. They are the
+ * same numbers as `winRate` and `avgAccuracy`, pre-rounded — `0.3917525773195876`
+ * against `39`. Keeping both would put two versions of one fact on one screen,
+ * and the rounded one cannot be recovered from. Same call as `mapThought` makes
+ * for `confidenceScorePercent`.
+ */
+export function mapPerformance(raw: unknown): Performance | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const p = raw as Record<string, unknown>;
+  const games = (p['gameStats'] ?? {}) as Record<string, unknown>;
+  const trades = (p['tradeStats'] ?? {}) as Record<string, unknown>;
+  const winLoss = (trades['winLoss'] ?? {}) as Record<string, unknown>;
+
+  return {
+    games: {
+      played: num(games['gamesPlayed']) ?? 0,
+      // Null rather than 0: a win rate nobody has established is not a win rate
+      // of zero, and an agent with no games reports exactly that.
+      winRate: num(games['winRate']) ?? null,
+      avgAccuracy: num(games['avgAccuracy']) ?? null,
+      earningsUsd: num(games['gameEarnings']) ?? 0,
+      earningsCurve: mapCurve(games['earningsSparkline']),
+    },
+    trades: {
+      trades: num(trades['trades']) ?? 0,
+      open: num(trades['open']) ?? 0,
+      wins: num(winLoss['wins']) ?? 0,
+      losses: num(winLoss['losses']) ?? 0,
+      // The platform itself sends null here on an agent that has not traded —
+      // the one place in this payload it draws the distinction unprompted.
+      avgPnlUsd: num(trades['avgPnl']) ?? null,
+      pnlCurve: mapCurve(trades['pnlSparkline']),
+    },
+  };
+}
+
+function mapCurve(raw: unknown): readonly Point[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((entry) => {
+    const e = (entry ?? {}) as Record<string, unknown>;
+    return { at: new Date(String(e['timestamp'] ?? 0)), value: num(e['value']) ?? 0 };
+  });
 }

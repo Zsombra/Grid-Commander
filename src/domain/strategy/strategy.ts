@@ -50,6 +50,49 @@ export function mustForkToEdit(strategy: Strategy): boolean {
   return strategy.scope === 'SYSTEM';
 }
 
+/**
+ * Whether a private copy is how this strategy changes, and whether one can be
+ * made right now.
+ *
+ * A union rather than a boolean and a reason string, because the invariant is
+ * the point: something offered has nothing to explain, and something withheld
+ * always does. Two fields could hold both at once, and the surface would have to
+ * be trusted not to.
+ */
+export type ForkAffordance =
+  /** Editable directly — a copy is not how this one changes. */
+  | { readonly kind: 'not-needed' }
+  | { readonly kind: 'offered' }
+  /** Platform-owned, and there is no room. `because` goes where the control was. */
+  | { readonly kind: 'withheld'; readonly because: string };
+
+/**
+ * A control that cannot work is not offered, and its absence is explained.
+ *
+ * The rule this product already applies to a delete button it never built and to
+ * a rename input it stopped rendering (AL-2). The strategy roster broke it twelve
+ * times on one screen, directly beneath a sentence stating the constraint that
+ * made every one of them impossible: `fork_strategy` answers
+ * `VALIDATION_ERROR: "Strategy limit reached — you can have at most 25 active
+ * strategies."`
+ *
+ * **Unknown is not at-capacity.** `quota` is `null` when the platform reported
+ * none, and withholding a working control on a fact we do not have is the
+ * opposite mistake — the fork page refuses honestly if BattleGrid declines. Only
+ * a counted refusal withholds anything.
+ */
+export function forkAffordance(
+  strategy: Strategy,
+  quota: StrategyQuota | null,
+): ForkAffordance {
+  if (!mustForkToEdit(strategy)) return { kind: 'not-needed' };
+  if (quota === null || hasCapacity(quota)) return { kind: 'offered' };
+  // Said where the control would have been. A control that simply vanishes reads
+  // as the page forgetting rather than refusing, and the roster's own top-level
+  // sentence says what to do about it — this says why *this row* lost its action.
+  return { kind: 'withheld', because: `No room for a copy — you own all ${quota.limit}.` };
+}
+
 export function isArchivable(strategy: Strategy): boolean {
   return strategy.scope === 'PRIVATE' && strategy.isActive;
 }
@@ -73,4 +116,86 @@ export function describeBlastRadius(count: number): string {
   if (count === 0) return 'No agents are bound to this strategy.';
   if (count === 1) return 'One agent is bound to this strategy and will be reconfigured immediately.';
   return `${count} agents are bound to this strategy and will all be reconfigured immediately.`;
+}
+
+/**
+ * One context source a strategy reads.
+ *
+ * The roster carries a `sectionCount`. This is what the count was counting —
+ * and until `get_strategy` was wired, the number was all the product had.
+ */
+export interface StrategySection {
+  /** `platform` for a source BattleGrid provides. Carried as given, not enumerated. */
+  readonly kind: string;
+  /** e.g. `includeMovingAverages`. The identifier the platform uses. */
+  readonly sectionKey: string;
+}
+
+/**
+ * One signal, and how much it counts.
+ *
+ * A live strategy carries 82 of these. `allocation` is its weight, `required`
+ * means the setup does not fire without it, and `params` is the signal's own
+ * configuration — a threshold, a lookback — whose shape belongs to the signal
+ * rather than to us. Carried opaque on purpose: inventing a union over 82
+ * signals' parameters would be a second opinion on the platform's own schema.
+ */
+export interface SignalRule {
+  readonly signalId: string;
+  readonly allocation: number;
+  readonly required: boolean;
+  readonly params: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * A strategy, whole.
+ *
+ * Separate from `Strategy` rather than replacing it. The roster draws seventeen
+ * rows and needs a name, a scope and a bound-agent count; it does not need 82
+ * signal rules and a page of prose, and widening the summary would make every
+ * list read pay for the detail page. `list_strategies` and `get_strategy` are
+ * two different calls returning two different amounts, and the types say so.
+ */
+export interface StrategyDetail {
+  readonly summary: Strategy;
+  /** What it reads. */
+  readonly sections: readonly StrategySection[];
+  /** How it reasons — the instruction the model is given. */
+  readonly marketReadText: string | null;
+  /** When it acts. */
+  readonly thresholds: StrategyThresholds;
+  /** What it weighs. */
+  readonly signalRules: readonly SignalRule[];
+  /** Positions currently open under it. Part of the cost of changing it. */
+  readonly openPositionCount: number;
+  readonly cadence: string | null;
+  readonly regimeAutoDerive: boolean;
+  readonly regimeTimeframe: string | null;
+}
+
+export interface StrategyThresholds {
+  readonly minAggregateScore: number | null;
+  readonly minRequiredCount: number | null;
+  readonly minAtrPct: number | null;
+}
+
+/**
+ * The signals that must fire for the setup to trigger at all.
+ *
+ * Computed here rather than in a view: it is the difference between "82 signals"
+ * and "82 signals, 3 of which are mandatory", and a surface that counted it
+ * itself would be a second implementation of a rule.
+ */
+export function requiredSignals(detail: StrategyDetail): readonly SignalRule[] {
+  return detail.signalRules.filter((r) => r.required);
+}
+
+/**
+ * The signals carrying any weight at all.
+ *
+ * A rule with zero allocation is present and inert. Showing it beside the ones
+ * that decide something would overstate what the strategy actually uses.
+ */
+export function weightedSignals(detail: StrategyDetail): readonly SignalRule[] {
+  return detail.signalRules.filter((r) => r.allocation > 0);
 }

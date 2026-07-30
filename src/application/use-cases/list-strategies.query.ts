@@ -1,5 +1,5 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
-import { describeBlastRadius, hasCapacity, isEditable, mustForkToEdit } from '@/domain/strategy/strategy.js';
+import type { ForkAffordance, Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import { describeBlastRadius, forkAffordance, hasCapacity, isEditable } from '@/domain/strategy/strategy.js';
 import type { StrategiesPort, StrategyListResult } from '@/ports/strategies.js';
 
 export interface StrategyListing {
@@ -7,7 +7,8 @@ export interface StrategyListing {
   /** Stated for zero as plainly as for five — see `describeBlastRadius`. */
   readonly governs: string;
   readonly editable: boolean;
-  readonly forkToEdit: boolean;
+  /** Withheld at capacity, with the reason — see `forkAffordance`. */
+  readonly fork: ForkAffordance;
 }
 
 export type ForkAvailability =
@@ -30,13 +31,27 @@ export class ListStrategiesQuery {
       return { result, listings: [], forking: { kind: 'unknown' } };
     }
 
+    // An empty catalog and an unreadable one both produce no listings, and they
+    // are different facts about the account — the surface is handed which one it
+    // is rather than inferring it from a length.
+    //
+    // `forking` is `unknown` here rather than `available`: the platform reported
+    // no strategies, so it reported no quota either, and inventing a remaining
+    // count would be the fabrication this product refuses everywhere else.
+    if (result.kind === 'empty') {
+      return { result, listings: [], forking: { kind: 'unknown' } };
+    }
+
     return {
       result,
       listings: result.strategies.map((strategy) => ({
         strategy,
         governs: describeBlastRadius(strategy.boundAgentCount),
         editable: isEditable(strategy),
-        forkToEdit: mustForkToEdit(strategy),
+        // The quota the platform returned with this very roster, not a second
+        // read: the count and the rows have to agree, and two calls could not be
+        // made to.
+        fork: forkAffordance(strategy, result.quota),
       })),
       forking: availability(result.quota),
     };

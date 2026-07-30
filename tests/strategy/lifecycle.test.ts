@@ -54,9 +54,11 @@ describe('a strategy is never presented alone', () => {
     const berlin = res.listings.find((l) => l.strategy.name === 'Berlin');
     const mine = res.listings.find((l) => l.strategy.name === 'Midway (fork)');
     expect(berlin?.editable).toBe(false);
-    expect(berlin?.forkToEdit).toBe(true);
+    expect(berlin?.fork).toEqual({ kind: 'offered' });
     expect(mine?.editable).toBe(true);
-    expect(mine?.forkToEdit).toBe(false);
+    // Not `withheld`: a copy is not how a strategy you already own gets changed,
+    // so there is nothing to explain the absence of.
+    expect(mine?.fork).toEqual({ kind: 'not-needed' });
   });
 
   it('reports an unreadable list as unreadable, not as empty', async () => {
@@ -89,6 +91,75 @@ describe('strategy capacity', () => {
     const h = harness();
     h.port.quota = null;
     expect((await h.list.execute(who)).forking.kind).toBe('unknown');
+  });
+});
+
+/**
+ * A control that cannot work is not offered, and its absence is explained.
+ *
+ * The account this was found on has 25 of 25 strategies. The roster printed
+ * *"You have all 25 of your strategies"* and then rendered **Make my own copy to
+ * edit** on all twelve platform strategies beneath it. `fork_strategy` answers
+ * every one of them with `VALIDATION_ERROR: "Strategy limit reached — you can
+ * have at most 25 active strategies."`
+ *
+ * A warning followed by twelve controls the warning says cannot work is not a
+ * warning; it is a warning the page itself ignores.
+ */
+describe('the copy that cannot be made', () => {
+  const atCapacity = () => {
+    const h = harness();
+    h.port.quota = { used: 25, limit: 25, remaining: 0 };
+    return h;
+  };
+
+  it('withholds the fork on a platform strategy when there is no room', async () => {
+    const res = await atCapacity().list.execute(who);
+    const berlin = res.listings.find((l) => l.strategy.name === 'Berlin');
+    expect(berlin?.fork.kind).toBe('withheld');
+  });
+
+  it('explains the absence where the control would have been', async () => {
+    const res = await atCapacity().list.execute(who);
+    const berlin = res.listings.find((l) => l.strategy.name === 'Berlin');
+    const because = berlin?.fork.kind === 'withheld' ? berlin.fork.because : '';
+    // A control that simply vanishes reads as the page forgetting rather than
+    // refusing, and the row is where the reader is looking.
+    expect(because).toContain('25');
+    expect(because).toMatch(/no room/i);
+  });
+
+  it('leaves a strategy you already own alone', async () => {
+    // Nothing to withhold and nothing to explain: a copy is not how a private
+    // strategy changes. `withheld` here would print a reason beside an Edit link
+    // that works.
+    const res = await atCapacity().list.execute(who);
+    const mine = res.listings.find((l) => l.strategy.name === 'Midway (fork)');
+    expect(mine?.fork).toEqual({ kind: 'not-needed' });
+    expect(mine?.editable).toBe(true);
+  });
+
+  it('offers the fork when the quota could not be read', async () => {
+    // **Unknown is not at-capacity.** Withholding a working control on a fact we
+    // do not have is the opposite mistake, and it is the silent one: the user
+    // simply cannot fork any more and nothing says why.
+    const h = harness();
+    h.port.quota = null;
+    const res = await h.list.execute(who);
+    expect(res.listings.find((l) => l.strategy.name === 'Berlin')?.fork).toEqual({
+      kind: 'offered',
+    });
+  });
+
+  it('offers the fork with one slot left', async () => {
+    // The boundary, stated. `remaining: 1` is room for exactly one copy, and an
+    // off-by-one here reads as a limit of 24.
+    const h = harness();
+    h.port.quota = { used: 24, limit: 25, remaining: 1 };
+    const res = await h.list.execute(who);
+    expect(res.listings.find((l) => l.strategy.name === 'Berlin')?.fork).toEqual({
+      kind: 'offered',
+    });
   });
 });
 

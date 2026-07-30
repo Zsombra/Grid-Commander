@@ -5,6 +5,7 @@ import { CONFIRMATION_TTL_SECONDS } from '@/domain/capability/confirmation.js';
 import type { AgentsPort } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 /**
  * Archiving and reactivating.
@@ -65,7 +66,7 @@ export class DescribeArchiveQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'archive_intelligence_agent',
-      target: agent.id,
+      target: confirmationTarget.agent(agent.id),
       consequence,
       expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
       consumedAt: null,
@@ -122,7 +123,13 @@ export class SetLifecycleCommand {
       // fresher revision would silently paper over a change made in between.
       expectedRevision: req.expectedRevision,
       to: req.to,
-      confirmationToken: req.confirmationToken,
+      // Built here, where the intent is, rather than in the adapter. Archiving
+      // carries no values beyond the agent, so the target is the id — but it
+      // comes from the same construction as the ones that do.
+      confirmation:
+        req.confirmationToken === undefined
+          ? undefined
+          : { token: req.confirmationToken, target: confirmationTarget.agent(req.agentId) },
     });
     return { kind: 'changed', agent: changed };
   }

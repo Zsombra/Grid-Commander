@@ -17,7 +17,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="mx-auto max-w-3xl p-6">
-      <JournalView agentName={agent?.displayName ?? 'This agent'} response={response} />
+      <JournalView agentId={id} agentName={agent?.displayName ?? 'This agent'} response={response} />
     </main>
   );
 }

@@ -32,6 +32,12 @@ export default async function RestoreStrategyPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* The roster, not the strategy. Nothing here can claim the strategy is
+            there to go back to — the read that would have said so is the one
+            that failed. The list explains why. */}
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
       </main>
     );
   }
@@ -59,9 +65,13 @@ export default async function RestoreStrategyPage({
         <p role="status" className="rounded border p-4 text-sm">
           {REPAIR_REQUIRED_GUIDANCE}
         </p>
-        <p className="text-sm">
+        <p className="flex flex-wrap gap-3 text-sm">
           <a href={`/strategies/${strategy.id}/edit`} className="underline">
             Compile a change for it
+          </a>
+          {/* Rebuilding is the way forward, not the only way out. */}
+          <a href={`/strategies/${strategy.id}`} className="underline">
+            Back to {strategy.name}
           </a>
         </p>
       </main>
@@ -74,7 +84,9 @@ export default async function RestoreStrategyPage({
         <h1 className="text-xl font-medium">Cannot restore</h1>
         <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href={`/strategies/${strategy.id}`} className="underline">
+            Back to {strategy.name}
+          </a>
         </p>
       </main>
     );
@@ -97,7 +109,9 @@ export default async function RestoreStrategyPage({
         <button type="submit" className="rounded border px-4 py-2 text-sm">
           Restore {strategy.name}
         </button>
-        <a href="/strategies" className="px-4 py-2 text-sm underline">
+        {/* The strategy, not the roster — declining leaves the user where they
+            were rather than at the top of a list of seventeen. */}
+        <a href={`/strategies/${strategy.id}`} className="px-4 py-2 text-sm underline">
           Leave it archived
         </a>
       </form>

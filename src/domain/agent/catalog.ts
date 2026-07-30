@@ -37,6 +37,106 @@ export interface Catalog {
   readonly positionManagementPresets: readonly PositionManagementPreset[];
   /** Keyed by trading-config field name. Absent means the registry is silent. */
   readonly bounds: Readonly<Record<string, Bound>>;
+  /**
+   * What the platform is willing to default, keyed by trading-config field.
+   *
+   * The absences are the interesting part. BattleGrid declares a default for
+   * leverage, stop loss, trade count, slippage and a dozen other knobs — and
+   * declares **none** for `tradingMode`, `maxDailyLossUsd`,
+   * `maxCumulativeDrawdownUsd`, `maxConcurrentExposureUsd`,
+   * `balanceThresholdUsd` or `minAllocationUsd`.
+   *
+   * Those six are exactly the money questions. The platform will not answer
+   * them on anyone's behalf, so neither may this product: see
+   * `undefaultableFields`.
+   */
+  readonly defaults: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Every field `create_intelligence_agent` requires inside `tradingConfig`.
+ *
+ * All twenty, because the object is all-or-nothing: BattleGrid rejects a
+ * partial one, and sending a subset would reset the fields it omits
+ * (findings-agents F-6). There is no "just set the loss cap" call.
+ */
+/**
+ * The caps BattleGrid reads as *no cap* when they are zero.
+ *
+ * From the platform's own field descriptions, not inferred:
+ *
+ * ```
+ * maxConcurrentExposureUsd   0 = unset
+ * maxCumulativeDrawdownUsd   0 = no stop
+ * maxDailyLossUsd            0 = no daily limit
+ * ```
+ *
+ * This mattered because the form asks "most it may lose in a day" and promises
+ * "trading stops for the day once this is reached". Under that wording `0` is
+ * the most cautious answer available, and it creates an agent with no daily
+ * loss limit at all — the safest input producing the least bounded agent.
+ *
+ * `balanceThresholdUsd` and `minAllocationUsd` are deliberately absent. The
+ * schema carries no `0 = …` note for either, so nothing is established about
+ * what zero means there and nothing is guessed.
+ */
+export const UNBOUNDED_AT_ZERO = [
+  'maxConcurrentExposureUsd',
+  'maxCumulativeDrawdownUsd',
+  'maxDailyLossUsd',
+] as const;
+
+/** Whether this value removes the limit rather than setting it low. */
+export function removesTheLimit(field: string, value: unknown): boolean {
+  return (UNBOUNDED_AT_ZERO as readonly string[]).includes(field) && value === 0;
+}
+
+/**
+ * The caps this configuration leaves unbounded, named.
+ *
+ * `tradingConfig != null` was rendered as "configured". A present object is not
+ * a set limit: the live account's active agent carries a full twenty-field
+ * config in which two of the three caps above are zero, and the agent page
+ * called that "Money limits: configured".
+ */
+export function unboundedCaps(fields: Readonly<Record<string, unknown>>): readonly string[] {
+  return UNBOUNDED_AT_ZERO.filter((field) => removesTheLimit(field, fields[field]));
+}
+
+export const TRADING_CONFIG_FIELDS = [
+  'tradingMode',
+  'minAllocationUsd',
+  'maxDailyTrades',
+  'balanceThresholdUsd',
+  'maxLeverage',
+  'maxSlippageBps',
+  'maxConcurrentExposureUsd',
+  'maxCumulativeDrawdownUsd',
+  'maxDailyLossUsd',
+  'maxStopLossPct',
+  'minStopLossPct',
+  'signalTimeoutMinutes',
+  'maxEntryDeviationAtrMultiple',
+  'minRiskRewardRatio',
+  'minTradeConviction',
+  'gridMinConfidence',
+  'positionSizePresets',
+  'positionManagement',
+  'atrMatchesStrategyTimeframe',
+  'atrTimeframe',
+] as const;
+
+/**
+ * The fields a caller must answer, because the platform will not.
+ *
+ * Derived from the catalog rather than listed, so this stays true when
+ * BattleGrid starts or stops defaulting something. A field with no default is
+ * not a field with a safe implicit value — it is a question nobody has
+ * answered, and creating an agent around it means creating one whose limits
+ * this product cannot state.
+ */
+export function undefaultableFields(catalog: Catalog): readonly string[] {
+  return TRADING_CONFIG_FIELDS.filter((f) => catalog.defaults[f] === undefined);
 }
 
 /**

@@ -4,11 +4,12 @@
   "route": "/agents",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "52ea2b5",
+  "generated_at_commit": "d8c877c",
   "source_files": [
     "app/(app)/agents/page.tsx",
     "src/presentation/components/agent-roster.tsx",
     "src/presentation/components/agent-actions.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -48,10 +49,10 @@
         "creation"
       ],
       "actions": [],
-      "current_implementation": "Unstyled ul of bordered li. Three top-level branches rendered separately \u2014 agents, empty, unreadable. Tailwind class names present but Tailwind is not installed. | agent-row: Bordered li; name and status on one baseline row, then the binding sentence. No truncation handling.",
+      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed \u2014 the classes now render). Three top-level branches rendered separately \u2014 agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name and status on one baseline row, then the binding sentence. No truncation handling.",
       "constraints": [
         "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own \u2014 or concludes something deleted it",
-        "`unreadable` must keep saying nothing can be created or changed until BattleGrid is reachable \u2014 it is a capability statement, not only an error",
+        "`unreadable` must keep stating what is unavailable as its own condition, not as a pronoun pointing at the sentence above it. It read 'nothing can be created or changed until it can' while the preceding clause was always 'could not reach BattleGrid'; once that clause started varying by cause, the antecedent disappeared. It is a capability statement, not only an error",
         "`create-unknown` renders nothing at all. An affordance whose availability we do not know must not be guessed into existence",
         "The capacity notice appears before the form, not after submission",
         "[agent-row] The bound strategy *and its revision* must stay together \u2014 the revision is what tells a user whether this agent has picked up a recent edit",
@@ -59,7 +60,8 @@
         "[agent-row] Long display names must not push the status out of view"
       ],
       "children": [
-        "agent-actions"
+        "agent-actions",
+        "why-not-loaded"
       ]
     },
     {
@@ -110,6 +112,27 @@
       "children": []
     },
     {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell a user their work still exists, and say accurately why it could not be shown.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "result.cause"
+      ],
+      "actions": [],
+      "current_implementation": "One <p> inside the unreadable branch of both the roster and the strategy list. The reassurance clause is fixed and outside the conditional; only the cause clause varies. Takes a `subject` string so the two callers share one sentence rather than holding two copies.",
+      "constraints": [
+        "The reassurance ('this does not mean X are gone') must render in BOTH states. It is the only thing on screen telling a user their work still exists, and it sits outside the branch so neither case can be written without it",
+        "`refused` and `unreachable` must not be collapsed back into one sentence. A refusal means BattleGrid was reached and declined \u2014 waiting changes nothing and the credential is the fix. Unreachable means no usable answer came back \u2014 the credential may be fine and waiting may be exactly right. Naming the wrong one sends a user to wait for an outage that is not happening",
+        "Neither state may be softened into a vague 'something went wrong'. The sentence earns its reassurance by naming a cause that is obviously external and obviously not deletion; a vaguer cause is a weaker reassurance",
+        "The cause arrives as a value on the result. Nothing here may re-derive it by matching on the reason text"
+      ],
+      "children": []
+    },
+    {
       "id": "not-connected",
       "role": "feedback",
       "purpose": "Turn away a request with no authority.",
@@ -125,7 +148,7 @@
           "effect": "Navigates to /connect"
         }
       ],
-      "current_implementation": "Shared component rendered in place of the page body.",
+      "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment: a personal one resolves the acting user from a configured key and never returns not-connected, so this page cannot render there.",
       "constraints": [
         "One page for every cause; they differ in cause and not in remedy (design W-C)"
       ],

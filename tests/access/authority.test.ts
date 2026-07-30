@@ -286,3 +286,34 @@ describe('who this request acts for', () => {
     expect(await q.execute()).toEqual({ kind: 'not-connected', message: NOT_CONNECTED });
   });
 });
+
+/**
+ * The delegated path carries BattleGrid's identity, not only the local one.
+ *
+ * `users.battlegrid_subject` has been stored since the schema was written, with a
+ * comment naming it the natural key, and nothing that needed BattleGrid's identity
+ * ever read it. `refuseLocally` was handed `Authority.userId` instead — which on
+ * this path is `random.token(16)` — so the account check could never pass and
+ * applying a compiled plan was refused in every deployment configuration.
+ *
+ * A wiring change here, not a new fact.
+ */
+describe('the authority carries which account, as well as which rows', () => {
+  it('reports the subject BattleGrid issued, alongside the local id', async () => {
+    const clock = new FakeClock();
+    const q = new ResolveAuthorityQuery(
+      await connected(clock),
+      vaultFor(),
+      battlegrid(async () => {
+        throw new Error('should not refresh');
+      }),
+      clock,
+    );
+    const authority = await q.execute('u1');
+
+    expect(authority.userId, 'the local row id, minted here').toBe('u1');
+    expect(authority.battlegridSubject, 'BattleGrid\'s own, given to us').toBe('sub-u1');
+    // The two are different values, which is the whole reason for two fields.
+    expect(authority.battlegridSubject).not.toBe(authority.userId);
+  });
+});

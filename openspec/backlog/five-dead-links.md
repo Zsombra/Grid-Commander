@@ -2,7 +2,7 @@
 id: five-dead-links
 title: The UI renders five links to routes that do not exist
 type: bug
-status: in-progress
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -83,3 +83,9 @@ Two halves, and the second matters more than the first.
 
 Do not fix this by removing the affordances. The capabilities are real and
 tested; what is missing is the page.
+
+## Closed (2026-07-28)
+
+Closed by `close-the-reachability-gap`, archived 2026-07-28. All five routes exist and were verified serving: `/agents/{id}/edit`, `/agents/{id}/reactivate`, `/strategies/{id}/fork`, `/strategies/{id}/archive`, `/strategies/{id}/restore` each return 200 from a production build against real PostgreSQL.
+
+The guard that stops the next one is `tests/architecture/reachability.test.ts` — demonstrated during the production gate catching a link to a route nothing serves, and naming the file that rendered it.

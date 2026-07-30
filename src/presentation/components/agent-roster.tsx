@@ -1,6 +1,7 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
+import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
  * The roster, in its three states.
@@ -22,9 +23,16 @@ export function AgentRoster({
       <div role="alert" className="rounded border p-4 text-sm">
         <p className="font-medium">Your roster could not be loaded.</p>
         <p className="mt-1">{roster.reason}</p>
+        <WhyNotLoaded cause={roster.cause} subject="your agents are" />
+        {/*
+          States its own condition rather than pointing at the sentence above.
+          It used to read "until it can", whose antecedent was "could not reach
+          BattleGrid" — and the moment that clause started varying, the pronoun
+          referred to nothing. Caught by reading the rendered page, not the diff.
+        */}
         <p className="mt-2">
-          This does not mean your agents are gone — Grid-Commander could not reach
-          BattleGrid to ask. Nothing can be created or changed until it can.
+          Nothing can be created or changed until Grid-Commander can read your
+          account again.
         </p>
       </div>
     );
@@ -44,7 +52,21 @@ export function AgentRoster({
           {roster.agents.map((agent) => (
             <li key={agent.id} className="rounded border p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="font-medium">{agent.displayName}</h3>
+                {/**
+                 * The name is the link to the agent, and it was not one.
+                 *
+                 * The row offered six sub-pages and never `/agents/[id]` — the
+                 * page holding the binding, the brain, the money summary and the
+                 * rename form. The only live route to it was the cancel on
+                 * `archive`, so opening your own agent meant starting to retire
+                 * it. Here rather than in `AgentActions` because a person looks
+                 * for the thing itself under its name, not in a list of verbs.
+                 */}
+                <h3 className="font-medium">
+                  <a href={`/agents/${agent.id}`} className="underline">
+                    {agent.displayName}
+                  </a>
+                </h3>
                 <span className="text-xs uppercase">{agent.status}</span>
               </div>
               <p className="mt-1 text-sm">

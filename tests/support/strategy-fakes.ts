@@ -1,8 +1,10 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
   CompileResult,
   LifecycleResult,
   StrategiesPort,
+  StrategyDetailResult,
   StrategyListResult,
   VocabularyResult,
 } from '@/ports/strategies.js';
@@ -15,7 +17,12 @@ import type {
  * projection and not the compiler's own output.
  */
 export class FakeStrategiesPort implements StrategiesPort {
-  readonly calls: Array<{ op: string; payload?: Readonly<Record<string, unknown>> }> = [];
+  readonly calls: Array<{
+    op: string;
+    payload?: Readonly<Record<string, unknown>> | undefined;
+    /** What the write bound its confirmation to. */
+    target?: string | undefined;
+  }> = [];
 
   strategies: Strategy[];
   quota: StrategyQuota | null = { used: 2, limit: 25, remaining: 23 };
@@ -28,8 +35,19 @@ export class FakeStrategiesPort implements StrategiesPort {
     this.strategies = [...seed];
   }
 
+  /** Set to hand back a detail; `null` means the strategy is not there. */
+  detail: StrategyDetail | null = null;
+  detailReadable = true;
+
+  async readStrategy(): Promise<StrategyDetailResult> {
+    if (!this.detailReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return this.detail ? { kind: 'strategy', detail: this.detail } : { kind: 'missing' };
+  }
+
   async listStrategies(): Promise<StrategyListResult> {
-    if (!this.readable) return { kind: 'unreadable', reason: 'BattleGrid did not respond' };
+    if (!this.readable) return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     return { kind: 'strategies', strategies: this.strategies, quota: this.quota };
   }
 
@@ -46,9 +64,9 @@ export class FakeStrategiesPort implements StrategiesPort {
     strategyId: string;
     plan: Readonly<Record<string, unknown>>;
     planToken: string;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Readonly<Record<string, unknown>>> {
-    this.calls.push({ op: 'apply', payload: params.plan });
+    this.calls.push({ op: 'apply', payload: params.plan, target: params.confirmation.target });
     const current = this.strategies.find((s) => s.id === params.strategyId);
     if (current) {
       this.strategies = this.strategies.map((s) =>
@@ -90,7 +108,7 @@ export class FakeStrategiesPort implements StrategiesPort {
   }
 
   async readVocabulary(): Promise<VocabularyResult> {
-    if (!this.vocabularyReadable) return { kind: 'unreadable', reason: 'catalog unavailable' };
+    if (!this.vocabularyReadable) return { kind: 'unreadable', reason: 'catalog unavailable', cause: 'unreachable' };
     return {
       kind: 'vocabulary',
       categories: [

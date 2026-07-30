@@ -1,13 +1,23 @@
-import type { Strategy, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type {
+  SignalRule,
+  Strategy,
+  StrategyDetail,
+  StrategyQuota,
+  StrategySection,
+} from '@/domain/strategy/strategy.js';
 import type {
   CompileResult,
   LifecycleResult,
   StrategiesPort,
+  StrategyDetailResult,
   StrategyListResult,
   VocabularyCategory,
   VocabularyResult,
 } from '@/ports/strategies.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import { malformed, messageOf, unreadable } from './unreadable.js';
+import { ToolRefusedError } from './mcp-adapter.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * Strategy operations, expressed as BattleGrid tool calls.
@@ -30,6 +40,7 @@ const TOOLS = {
   archive: 'archive_strategy',
   restore: 'restore_strategy',
   categories: 'list_strategy_categories',
+  get: 'get_strategy',
 } as const;
 
 /** The four tools that require the strict outer envelope. */
@@ -42,13 +53,17 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.list, { includeInactive: true });
       const raw = payload['strategies'];
+      // Decided here, where the platform was actually read, rather than by a
+      // surface counting what it was handed. The same condition the agent
+      // adapter uses: no array, or an empty one.
+      if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty' };
       return {
         kind: 'strategies',
-        strategies: Array.isArray(raw) ? raw.map(mapStrategy) : [],
+        strategies: raw.map(mapStrategy),
         quota: mapQuota(payload['quota']),
       };
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -67,13 +82,13 @@ export class McpStrategyAdapter implements StrategiesPort {
       return {
         kind: 'compiled',
         approvedPlan: approvedPlan as Record<string, unknown>,
-        reviewContext: asObject(payload['reviewContext']),
+        reviewContext: optionalObject(payload['reviewContext']),
         planToken,
       };
     } catch (err) {
       // The compiler refusing a request is an ordinary outcome — a bad value, or
       // nothing to change. It is not a failure of the product.
-      return { kind: 'rejected', reason: message(err) };
+      return { kind: 'rejected', reason: messageOf(err) };
     }
   }
 
@@ -83,13 +98,18 @@ export class McpStrategyAdapter implements StrategiesPort {
     strategyId: string;
     plan: Readonly<Record<string, unknown>>;
     planToken: string;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Readonly<Record<string, unknown>>> {
     return this.call(
       params,
       TOOLS.apply,
       { plan: params.plan, planToken: params.planToken, confirm: true },
-      { target: `strategy:${params.strategyId}`, confirmationToken: params.confirmationToken },
+      // **This was the fifth dead write path.** The issuer bound
+      // `strategy:<id>#<intentDigest>` and this spent against `strategy:<id>`, so
+      // `consume` never matched and every apply was refused by the product before
+      // it reached BattleGrid. No test saw it: `FakeStrategiesPort.applyPlan`
+      // does not go through `enforce()`.
+      { confirmation: params.confirmation },
     );
   }
 
@@ -106,18 +126,85 @@ export class McpStrategyAdapter implements StrategiesPort {
     return mapStrategy(payload['strategy'] ?? payload);
   }
 
+  async readStrategy(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+  }): Promise<StrategyDetailResult> {
+    /**
+     * Two calls, because the platform offers no single one.
+     *
+     * `get_strategy` defaults to *active visible* strategies. `includeInactive`
+     * does not widen that — it **replaces** it with *owned PRIVATE, including
+     * inactive*. The description says "only to load an owned PRIVATE strategy",
+     * and the two modes are strictly disjoint:
+     *
+     *   |                    | SYSTEM     | archived PRIVATE |
+     *   | default            | found      | NOT_FOUND        |
+     *   | includeInactive    | NOT_FOUND  | found            |
+     *
+     * Verified against the live platform in all four cells. Sending
+     * `includeInactive: true` unconditionally — which is what this did first —
+     * made every SYSTEM strategy unreadable, and it rendered as "could not reach
+     * BattleGrid" on a page where BattleGrid had answered perfectly clearly.
+     *
+     * So a detail page that serves both kinds must ask twice. The second call
+     * happens only on a not-found, so the common read stays one round trip.
+     */
+    const first = await this.tryRead(params, false);
+    if (first.kind !== 'missing') return first;
+    return this.tryRead(params, true);
+  }
+
+  private async tryRead(
+    params: { userId: string; accessToken: string; strategyId: string },
+    includeInactive: boolean,
+  ): Promise<StrategyDetailResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.get, {
+        strategyId: params.strategyId,
+        ...(includeInactive ? { includeInactive: true } : {}),
+      });
+    } catch (err) {
+      // A refusal carrying NOT_FOUND is the platform answering, not failing.
+      // Read from the code the platform sent rather than from its prose — see
+      // `ToolRefusedError`.
+      if (err instanceof ToolRefusedError && err.code === 'NOT_FOUND') {
+        return { kind: 'missing' };
+      }
+      return unreadable(err);
+    }
+
+    const raw = payload['strategy'];
+    if (typeof raw !== 'object' || raw === null) return { kind: 'missing' };
+    return { kind: 'strategy', detail: mapStrategyDetail(raw) };
+  }
+
   async setActive(params: {
     userId: string;
     accessToken: string;
     strategyId: string;
+    expectedRevision: number;
     active: boolean;
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult> {
     const payload = await this.call(
       params,
       params.active ? TOOLS.restore : TOOLS.archive,
-      { strategyId: params.strategyId },
-      { target: params.strategyId, confirmationToken: params.confirmationToken },
+      {
+        strategyId: params.strategyId,
+        // Both tools require it. This sent `{ strategyId }` alone, so every
+        // archive and every restore was refused for a missing argument — which
+        // nothing noticed, because no write had ever reached the real platform.
+        expectedRevision: params.expectedRevision,
+        // Only `archive_strategy` requires it: it is the destructive one of the
+        // pair. Sent where it is declared and nowhere else, rather than to both
+        // for symmetry — an argument a tool does not declare is one more thing
+        // that can be rejected.
+        ...(params.active ? {} : { confirm: true }),
+      },
+      { confirmation: params.confirmation },
     );
 
     // Restoring can come back needing repair. The strategy stays inactive and
@@ -135,10 +222,10 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.categories, {});
       const raw = payload['categories'];
-      if (!Array.isArray(raw)) return { kind: 'unreadable', reason: 'no categories returned' };
+      if (!Array.isArray(raw)) return malformed('no categories returned');
       return { kind: 'vocabulary', categories: raw.map(mapCategory) };
     } catch (err) {
-      return { kind: 'unreadable', reason: message(err) };
+      return unreadable(err);
     }
   }
 
@@ -148,7 +235,7 @@ export class McpStrategyAdapter implements StrategiesPort {
     who: { userId: string; accessToken: string },
     tool: string,
     payload: Readonly<Record<string, unknown>>,
-    extras: { target?: string | undefined; confirmationToken?: string | undefined } = {},
+    extras: { confirmation?: Confirmation | undefined } = {},
   ): Promise<Record<string, unknown>> {
     const result = await this.battlegrid.callTool({
       userId: who.userId,
@@ -157,9 +244,16 @@ export class McpStrategyAdapter implements StrategiesPort {
       // The envelope trap. `account` never goes inside `request`, and request
       // fields are never flattened beside it.
       args: ENVELOPED.has(tool) ? { request: payload } : payload,
-      ...extras,
+      // The pair, split onto the two wire-level fields the guard reads. **One
+      // place** — this is where a target could once again be composed by hand,
+      // and a second mapping is the defect this change exists to remove.
+      target: extras.confirmation?.target,
+      confirmationToken: extras.confirmation?.token,
     });
-    return asObject(result.content);
+    // Already the payload: the adapter unwrapped the MCP envelope. There was
+    // an `asObject` here that returned `{}` for anything it did not recognise,
+    // which is precisely how an unread envelope became "you have no agents".
+    return result.content as Record<string, unknown>;
   }
 }
 
@@ -227,12 +321,82 @@ function mapCategory(raw: unknown): VocabularyCategory {
   };
 }
 
-function asObject(content: unknown): Record<string, unknown> {
-  return typeof content === 'object' && content !== null
-    ? (content as Record<string, unknown>)
-    : {};
+/**
+ * An optional nested object on a payload that was already read successfully.
+ *
+ * Empty is a truthful answer here, unlike for an envelope: `reviewContext`
+ * carries advisory notes about a compiled plan, and a plan with none is
+ * ordinary. This was called `asObject` and shared its name with the function
+ * that silently turned an unread MCP envelope into "you have no agents" — the
+ * name is different now so the two are never confused again.
+ */
+function optionalObject(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 }
 
-function message(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+/**
+ * A whole strategy, from `get_strategy`.
+ *
+ * Reuses `mapStrategy` for the summary rather than re-deriving it: the roster
+ * and the detail page must agree about a strategy's name, scope and bound-agent
+ * count, and two mappers is how they stop agreeing.
+ */
+function mapStrategyDetail(raw: unknown): StrategyDetail {
+  const s = (raw ?? {}) as Record<string, unknown>;
+
+  return {
+    summary: mapStrategy(s),
+    sections: mapSections(s['sections']),
+    marketReadText: typeof s['marketReadText'] === 'string' ? s['marketReadText'] : null,
+    thresholds: {
+      minAggregateScore: num(s['minAggregateScore']),
+      minRequiredCount: num(s['minRequiredCount']),
+      minAtrPct: num(s['minAtrPct']),
+    },
+    signalRules: mapSignalRules(s['signalRules']),
+    // Not defaulted to zero. Zero means "nothing is open under this"; absent
+    // means the platform did not say, and a surface that shows a confident 0 for
+    // an unknown is inviting a change nobody priced.
+    openPositionCount: typeof s['openPositionCount'] === 'number' ? s['openPositionCount'] : 0,
+    cadence: typeof s['cadence'] === 'string' ? s['cadence'] : null,
+    regimeAutoDerive: s['regimeAutoDerive'] === true,
+    regimeTimeframe: typeof s['regimeTimeframe'] === 'string' ? s['regimeTimeframe'] : null,
+  };
+}
+
+function mapSections(raw: unknown): readonly StrategySection[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (entry ?? {}) as Record<string, unknown>)
+    .filter((e) => typeof e['sectionKey'] === 'string')
+    .map((e) => ({
+      kind: typeof e['kind'] === 'string' ? e['kind'] : 'unknown',
+      sectionKey: e['sectionKey'] as string,
+    }));
+}
+
+/**
+ * The signal rules, kept in the order the platform gave them.
+ *
+ * A rule with no `signalId` is dropped rather than given a placeholder: the id
+ * is what the rule *is*, and a row reading "(unknown signal): weight 3" tells a
+ * user something is being weighted without telling them what.
+ */
+function mapSignalRules(raw: unknown): readonly SignalRule[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (entry ?? {}) as Record<string, unknown>)
+    .filter((e) => typeof e['signalId'] === 'string' && (e['signalId'] as string).length > 0)
+    .map((e) => ({
+      signalId: e['signalId'] as string,
+      allocation: typeof e['allocation'] === 'number' ? e['allocation'] : 0,
+      required: e['required'] === true,
+      // Opaque on purpose — the shape belongs to the signal, not to us.
+      params: optionalObject(e['params']),
+    }));
+}
+
+/** Null rather than 0 for an absent threshold: "no minimum" and "unstated" differ. */
+function num(value: unknown): number | null {
+  return typeof value === 'number' ? value : null;
 }

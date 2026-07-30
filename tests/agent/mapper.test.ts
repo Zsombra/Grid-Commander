@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { VETERAN_PERFORMANCE } from '../support/performance-payloads.js';
 import { AgentPayloadError, mapAgent, mapCatalog, mapSlotUsage } from '@/infrastructure/battlegrid/agent-mapper.js';
 
 /**
@@ -27,7 +28,7 @@ const livePayload = {
   overlayText: 'VOLATILIS — hourly volatility-capture.',
   avatarUrl: 'https://example.invalid/avatar.png',
   last24hCostUsd: 1.23,
-  performance: { winRate: 0.5 },
+  performance: VETERAN_PERFORMANCE,
 };
 
 describe('mapping a live agent payload', () => {
@@ -73,11 +74,33 @@ describe('mapping a live agent payload', () => {
     expect(JSON.stringify(mapAgent(livePayload))).not.toContain('canDelete');
   });
 
+  /**
+   * `performance` used to be on this list, and taking it off was the point of
+   * `performance-was-already-in-the-payload`.
+   *
+   * The rule the list encodes — a field that governs no mutation does not belong
+   * in a domain type — is right, and its conclusion was one step too wide. It
+   * held for avatar urls and telemetry and it does not hold for the agent's
+   * record, because *understanding* an agent is a purpose of this product and
+   * not a side effect of authoring it. The block arrived on every roster read
+   * for the life of the product and was thrown away every time.
+   *
+   * The rest of the list stands, so this still guards something. Widening it by
+   * deleting the assertion would have been the easy way through.
+   */
   it('drops presentation and telemetry the rules never consult', () => {
     const json = JSON.stringify(mapAgent(livePayload));
-    for (const noise of ['avatarUrl', 'last24hCostUsd', 'performance', 'userId']) {
+    for (const noise of ['avatarUrl', 'last24hCostUsd', 'userId']) {
       expect(json, `${noise} should not reach the domain`).not.toContain(noise);
     }
+  });
+
+  it('keeps the record the payload carries', () => {
+    // The reversal, asserted rather than merely permitted by the absence above.
+    // Against the real block, so this cannot pass on an invented shape — the
+    // fixture it replaced was `{ winRate: 0.5 }`, which the mapper would have
+    // read as an agent with no record at all.
+    expect(mapAgent(livePayload).performance?.games.played).toBe(97);
   });
 
   it('treats an absent permission as withheld, not as granted', () => {

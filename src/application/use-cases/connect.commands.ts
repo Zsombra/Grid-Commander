@@ -149,7 +149,7 @@ export class DisconnectCommand {
 
   async execute(userId: string): Promise<void> {
     const connection = await this.connections.findByUserId(userId);
-    if (!connection || connection.status === 'revoked') throw new ConnectionRevokedError();
+    if (!connection || connection.status === 'revoked') throw new ConnectionRevokedError('reconnect');
 
     const accessToken = await this.tokens.accessTokenFor(userId);
     // Revoke upstream first. If it fails, the local record stays active and

@@ -78,6 +78,19 @@ Where Grid-Commander can determine that a compiled plan will not be accepted, it
 SHALL refuse it locally and say why. It MUST NOT treat its own determination as
 evidence that a plan *will* be accepted.
 
+**A local refusal SHALL rest on a fact the product actually holds.** *"Where
+Grid-Commander can determine"* is the load-bearing clause and it was not honoured:
+the account check compared BattleGrid's claim about which account compiled a plan
+against an identifier that was never BattleGrid's — the string `'owner'` in one
+deployment mode, a random sixteen-byte local id in the other. That is not a
+determination. It made the product's headline capability, applying a compiled plan,
+unreachable in every configuration from the day it was built.
+
+**Where the product cannot establish the fact, it SHALL NOT refuse on that
+ground.** Unknown is not mismatched. The platform holds the authoritative answer
+and refuses a foreign plan itself; a local check exists to give a better message
+sooner, never to invent a reason the user cannot act on.
+
 #### Scenario: The plan has expired
 - **WHEN** a user applies a plan whose window has passed
 - **THEN** they are told it expired and invited to compile again
@@ -93,6 +106,15 @@ evidence that a plan *will* be accepted.
 - **WHEN** a plan appears valid by every check Grid-Commander can make
 - **THEN** it is submitted
 - **AND** the platform's judgement decides the outcome, not Grid-Commander's
+
+#### Scenario: A plan compiled with this deployment's own credential
+- **WHEN** a user applies a plan compiled by this deployment
+- **THEN** it is not refused on the grounds of which account compiled it
+
+#### Scenario: The acting account is not known
+- **WHEN** the product cannot establish which account it is acting as
+- **THEN** it does not refuse on that ground
+- **AND** the platform decides
 
 ### Requirement: Applying Requires Confirmation Naming The Blast Radius
 Before a strategy change is applied, Grid-Commander SHALL present the platform's
@@ -146,6 +168,19 @@ list of platform vocabulary fixed at build time.
 Where a strategy belongs to the platform rather than the user, Grid-Commander
 SHALL offer to make a private copy rather than presenting it as editable.
 
+**Where the copy cannot be made, it SHALL NOT be offered.** Telling a user they
+are at capacity and then rendering the control twelve times on the same screen
+is not a warning, it is a warning ignored by its own page. The platform refuses
+the call — *"Strategy limit reached — you can have at most 25 active
+strategies"* — so every one of those controls leads to a refusal the page could
+have made unnecessary.
+
+This is the rule the product already applies to a delete button it never built
+and to a rename input it stopped rendering: a control that cannot work is not
+offered, and its absence is explained where it would have been. Explaining the
+absence is the half that matters — a control that simply vanishes reads as the
+page forgetting rather than refusing.
+
 #### Scenario: A platform strategy
 - **WHEN** a user wants to change a strategy the platform owns
 - **THEN** they are offered a private copy to change instead
@@ -155,16 +190,95 @@ SHALL offer to make a private copy rather than presenting it as editable.
 - **WHEN** a user has no room for another strategy
 - **THEN** they are told before they begin, and what governs the limit
 
+#### Scenario: The copy that cannot be made
+- **WHEN** a user is at capacity
+- **THEN** the control that would make a copy is not offered
+- **AND** its absence is explained where it would have been
+
 ### Requirement: Retiring A Strategy Accounts For What Depends On It
 Grid-Commander SHALL state, before a strategy is archived, what is bound to it.
 Restoring MUST NOT be presented as guaranteed where the platform may refuse it.
+
+**Declining SHALL return the user to what they were looking at.** Someone who
+opens an archive confirmation and decides against it has not finished with the
+strategy — sending them to the list loses their place and makes the safe choice
+the more costly one.
 
 #### Scenario: Archiving a strategy
 - **WHEN** a user archives a strategy
 - **THEN** they are first told how many agents are bound to it
 - **AND** archiving is described as reversible
 
+#### Scenario: Declining to archive
+- **WHEN** a user decides not to archive
+- **THEN** they are returned to the strategy rather than to the list
+
 #### Scenario: Restoring is refused
 - **WHEN** the platform will not restore a strategy as it stands
 - **THEN** the user is told it needs rebuilding rather than being told it failed
 - **AND** they are directed to the path that can rebuild it
+
+### Requirement: An Empty Catalog Says So
+Where the catalog contains nothing, the product SHALL say so. It MUST NOT
+present an empty catalog as though it could not be read, MUST NOT present a
+failed read as though the catalog were empty, and MUST NOT offer an action
+against strategies that were not returned.
+
+The two states are indistinguishable as blank space, and only one of them is
+true of the account. Telling someone their catalog is empty when the platform
+simply did not answer is how they conclude their work is gone — the same reason
+`agent-authoring` distinguishes them for the roster.
+
+#### Scenario: The catalog comes back with nothing in it
+- **WHEN** the platform returns no strategies
+- **THEN** the user is told that nothing is listed
+- **AND** this is not presented as a failure to read
+
+#### Scenario: Told apart from a failure
+- **WHEN** the catalog cannot be read from BattleGrid
+- **THEN** the user is told it could not be read, not that it is empty
+- **AND** nothing on the page suggests the strategies no longer exist
+
+#### Scenario: No action is offered against what was not returned
+- **WHEN** nothing is listed
+- **THEN** the product does not offer to fork, edit, or archive anything
+- **AND** it does not describe a next step that depends on a strategy the
+  platform did not return
+
+#### Scenario: Which case it is, is not decided by the surface
+- **WHEN** the product determines that a catalog is empty
+- **THEN** that is carried from where the platform was read
+- **AND** a surface cannot arrive at it by counting what it was handed
+
+### Requirement: A Strategy Can Be Read In Full
+Grid-Commander SHALL be able to present everything a strategy is made of — what
+it reads, how it reasons, when it acts, and what it weighs — and MUST NOT
+present a summary as though it were the whole.
+
+A roster row is a summary by design: it carries a count of sections rather than
+the sections. Treating that as the complete picture is how a product ends up
+offering to edit a strategy while holding nothing but its name, which is both
+useless and misleading about what a change would do.
+
+#### Scenario: Looking at a strategy
+- **WHEN** a user opens a strategy
+- **THEN** they see its identity, the context sources it reads, the instruction
+  it reasons with, the thresholds that decide when it acts, and the signals it
+  weighs
+- **AND** they see how many agents it governs and how many positions are open
+  under it
+
+#### Scenario: A strategy that is archived
+- **WHEN** a user opens a private strategy that is not active
+- **THEN** it is still readable
+- **AND** its inactive state is shown rather than being reported as missing
+
+#### Scenario: A strategy that cannot be read
+- **WHEN** the strategy cannot be read from BattleGrid
+- **THEN** the user is told it could not be loaded
+- **AND** this is distinguished from a strategy that does not exist
+
+#### Scenario: What the summary is for
+- **WHEN** the roster is drawn
+- **THEN** it uses the summary it already has
+- **AND** reading one strategy in full does not become the cost of listing them

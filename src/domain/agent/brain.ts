@@ -48,6 +48,21 @@ export function isConviction(v: unknown): v is Conviction {
 }
 
 /**
+ * The discriminator BattleGrid's schema pins, per variant.
+ *
+ * `const: "PRESET"` and `const: "CUSTOM"` — uppercase, and not an enum that
+ * might grow. The domain's own discriminator is lowercase because it is the
+ * domain's, and translating between the two is exactly the boundary's job.
+ *
+ * It was not translated. `brainToArgument` passed `'preset'` straight through,
+ * so every `create_intelligence_agent` this product could ever have made was
+ * rejected at the door with `Invalid discriminator value`. Nothing noticed for
+ * the life of the product, because nothing had ever checked a value the
+ * operator did not choose against what the platform would accept.
+ */
+const WIRE_KIND = { preset: 'PRESET', custom: 'CUSTOM' } as const;
+
+/**
  * Render a brain as the `brain` argument BattleGrid expects.
  *
  * The union collapses to exactly one variant here, which is the point: there is
@@ -55,6 +70,6 @@ export function isConviction(v: unknown): v is Conviction {
  */
 export function brainToArgument(brain: Brain): Record<string, unknown> {
   return brain.kind === 'preset'
-    ? { kind: 'preset', preset: brain.preset }
-    : { kind: 'custom', modelId: brain.modelId, behavior: { ...brain.behavior } };
+    ? { kind: WIRE_KIND.preset, preset: brain.preset }
+    : { kind: WIRE_KIND.custom, modelId: brain.modelId, behavior: { ...brain.behavior } };
 }

@@ -145,6 +145,21 @@ jobs:
         env:
           DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
 
+      # The build proves the application can be assembled. This proves it can be
+      # *started* from what .env.example documents, which is a different claim
+      # and the one that has failed twice — a malformed encryption key, then a
+      # SESSION_SECRET the example never mentioned. Both returned 500 on every
+      # authenticated route with every other gate on this job green.
+      #
+      # The variable list comes from .env.example, never from the script, so a
+      # variable the application requires and the example omits is never set and
+      # this step fails. Deliberately carries only DATABASE_URL: everything else
+      # must be documented to be supplied.
+      - name: Serving is gated
+        run: ./scripts/check-serving.sh
+        env:
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
+
       # `npm test` above needs no database and does not run these. This step is
       # the only place they run, and it fails rather than skips when
       # DATABASE_URL is missing — so there is no configuration under which these

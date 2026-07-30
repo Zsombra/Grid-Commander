@@ -3,8 +3,8 @@
   "title": "Edit a strategy \u2014 compose, compile, review, apply",
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "52ea2b5",
+  "status": "designed",
+  "generated_at_commit": "dc7b5d4",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/plan-review.tsx",
@@ -66,7 +66,7 @@
           "effect": "Server action: applies the reviewed plan, reconfigures bound agents, redirects to /strategies"
         }
       ],
-      "current_implementation": "Server component with five mutually exclusive render branches, each a full-page <main>. The compose branch is a method=get form with a single tagline input \u2014 only the tagline is editable today (backlog `strategy-section-editor`). Blast radius is stated above the field. Tailwind class names present throughout but Tailwind is not installed, so every branch renders as unstyled HTML.",
+      "current_implementation": "Server component with seven render branches, each a full-page <main> on the shared shell from DT-0001. Page headings at type.size.2xl \u2014 raised from xl when rendering DT-0002 showed h1 and the panel h2 were the same size. The compose branch is a method=get form with a single tagline input; only the tagline is editable today (backlog `strategy-section-editor`). | Form controls now take their treatment from src/presentation/components/control.ts (one token-based constant, imported everywhere) rather than the stock `w-full rounded border p-2` they carried \u2014 which had no background, so the browser supplied white and every control was a white box in dark mode. Closed by `forms-that-work-in-the-dark`; the treatment has one source and must keep it.",
       "constraints": [
         "The compile control must keep saying what it does and does not do \u2014 'Compile \u2014 see what this would do, without doing it'. Compiling is effect-free by platform design precisely so a human can look first; a label that reads like a save button gives that back",
         "The bound-agent count must appear above the field on the compose branch, before the user edits \u2014 not only on the review",
@@ -128,7 +128,7 @@
           "effect": "Link back to the compose form"
         }
       ],
-      "current_implementation": "Unstyled section, `space-y-6`. Opens with the heading 'Nothing has changed yet'. Tailwind class names present but Tailwind is not installed. | concerns-panel: Bordered block, heading counts the concerns with correct pluralisation, followed by an explicit disclaimer and a disc list. | apply-confirmation: form with three hidden inputs (strategyId, confirmationToken, plan-as-JSON) and a submit button beside a plain 'Go back and change it' link.",
+      "current_implementation": "Styled per DT-0002. Consequence-toned blast radius with a 4px left border, notice-toned concerns block that shares no colour with danger, quiet-toned summary, accent (not danger) apply button with 'Go back and change it' as a bordered peer. Refusal states render no control at all.",
       "constraints": [
         "There must be no control on this surface that applies without a review having been rendered first. Applying is an act performed *from* a review, never a button beside a compile button \u2014 two similar controls side by side make the mistake one click wide with a fleet-sized consequence (design S-G)",
         "'Nothing has changed yet' must remain the first thing read. It is the sentence that makes an effect-free compile legible as effect-free",
@@ -161,7 +161,7 @@
         "review.boundAgentCount"
       ],
       "actions": [],
-      "current_implementation": "Own block, role=alert when the count is non-zero or unknown. Singular and plural phrasings differ.",
+      "current_implementation": "Three visually distinct treatments. reaches-agents: consequence block, count at type.size.xl/semibold on its own line. reaches-none: a single quiet line, no border, no fill. unknown: notice block, deliberately block-shaped so it cannot be mistaken for zero.",
       "constraints": [
         "Must stay its own block. Five bound agents is a different act from zero and must not have to be read for \u2014 folding it into a sentence is the specific failure this component exists to prevent",
         "`null` (BattleGrid did not report) must remain visibly distinct from `0` (nothing is bound). Rendering the unknown case as zero would understate the risk",

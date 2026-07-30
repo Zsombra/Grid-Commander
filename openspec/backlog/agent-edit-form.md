@@ -2,10 +2,10 @@
 id: agent-edit-form
 title: The agent edit surface is a rename, not a form
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-07-30
 change: ""
 capability: agent-authoring
 blocked_by: []
@@ -34,3 +34,16 @@ live catalog the same way the create form is. The interesting part is already
 solved: `applyEdit` merges onto the current config and `validateTradingConfig`
 checks the merged result, so the form sends changed fields and the command does
 the rest.
+
+## Closed 2026-07-30 — done
+
+`the-edit-path-cannot-succeed-either` made the write work and
+`money-limits-are-editable` built the surface. `/agents/[id]/edit` now renders
+`displayName` and every money field, proposes on review, and applies from a
+second request the user initiated. Driven end to end in a real browser against a
+live account: the form reached the review, the review named the consequence, and
+the apply landed — verified by re-reading the agent.
+
+What this item asked for and did **not** get: nothing. What it did not ask for
+and matters more — the confirmation binds to the agent, not to the amounts. Filed
+separately as `confirmation-is-not-bound-to-values`.

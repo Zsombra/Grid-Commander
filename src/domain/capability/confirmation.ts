@@ -1,3 +1,5 @@
+import { digestOf } from './digest.js';
+
 /**
  * Evidence that a human was shown what a destructive operation would do.
  *
@@ -18,6 +20,21 @@ export interface ConfirmationToken {
   readonly consumedAt: Date | null;
 }
 
+/**
+ * A confirmation as it travels to a write, and what it authorises.
+ *
+ * One value rather than two parameters, because a token and the target it is
+ * bound to are one fact. They used to travel separately — the token from the
+ * command, the target composed by the adapter — so the adapter decided what a
+ * user had agreed to. Four adapters happened to include the operation's values;
+ * the one for `update_intelligence_agent` did not, and that is the whole defect.
+ */
+export interface Confirmation {
+  readonly token: string;
+  /** Built with `confirmationTarget`. Never composed at a call site. */
+  readonly target: string;
+}
+
 export interface ConfirmationStore {
   issue(token: ConfirmationToken): Promise<void>;
   /** Single-use. Returns null if unknown, expired, already used, or mismatched. */
@@ -27,6 +44,66 @@ export interface ConfirmationStore {
 export function isValid(token: ConfirmationToken, now: Date): boolean {
   return token.consumedAt === null && token.expiresAt.getTime() > now.getTime();
 }
+
+/**
+ * What a confirmation is bound to — built here, and nowhere else.
+ *
+ * `consume` matches the user, the tool, the target and the token. **Not the
+ * values.** So the values have to be *in* the target, or an agreement about $25
+ * authorises a submission carrying $25,000: same user, same tool, same agent.
+ *
+ * Four of five flows already did this, each composing the string itself, and the
+ * fifth was written without it — the one carrying money. Five construction sites
+ * where four happened to be right is the whole causal story of that defect, so
+ * the fix is that there is one site, and it takes the values as arguments.
+ *
+ * That is the load-bearing property: `agentEdit` **cannot be called without the
+ * intent**. The compiler enforces the binding; `confirmation-binds-values.test.ts`
+ * enforces that nothing bypasses the compiler by composing a string inline.
+ *
+ * The two identity cases are here deliberately. Leaving a bare id inline would
+ * mean the shared construction covers only *some* flows, and the guard would need
+ * to know which — and a guard with an exception is a guard that gets exceptions
+ * added instead of defects fixed.
+ */
+export const confirmationTarget = {
+  /** Archive, reactivate. The operation carries no values beyond the agent. */
+  agent: (agentId: string): string => agentId,
+
+  /**
+   * An edit, bound to the change that was described.
+   *
+   * `intent` is what the user submitted, **not what reaches the wire**.
+   * `UpdateAgentCommand` merges the typed fields onto the agent's current config
+   * and sends all twenty, because a partial `tradingConfig` does not error on
+   * BattleGrid — it resets what it omits. Digesting the merge would bind the
+   * agreement to an object the proposal never described. See DL-6.
+   */
+  agentEdit: (agentId: string, intent: Readonly<Record<string, unknown>>): string =>
+    `agent:${agentId}#${digestOf(intent)}`,
+
+  /**
+   * Bound to the *pair* — this agent, that destination — not to the verb.
+   * A token meaning only "a rebind was confirmed" could carry agreement about one
+   * agent onto another. See DL-5.
+   */
+  agentRebind: (agentId: string, toStrategyId: string): string =>
+    `agent:${agentId}->strategy:${toStrategyId}`,
+
+  /** Archive, restore. The revision comes from a re-read, not from the form. */
+  strategy: (strategyId: string): string => strategyId,
+
+  /**
+   * Bound to the plan, not to the strategy: two plans for one strategy are two
+   * different acts, and a confirmation for one must not authorise the other.
+   *
+   * Takes the digest rather than computing it, because BattleGrid's compile step
+   * issues it and the plan carries it. Digesting the plan again here would be a
+   * second opinion on which bytes constitute the intent.
+   */
+  strategyPlan: (strategyId: string, intentDigest: string): string =>
+    `strategy:${strategyId}#${intentDigest}`,
+};
 
 /** Long enough to read the consequence, short enough not to be left lying around. */
 export const CONFIRMATION_TTL_SECONDS = 300;
