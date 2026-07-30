@@ -41,7 +41,12 @@
       byte-identical would have preserved the break. `rebindTarget` was deleted
       rather than repointed: a second construction is the duplication being removed
 - [x] 2.4 `compile-plan.command.ts` imports `digestOf` rather than defining it;
-      its existing key-ordering tests stay where they are
+      its existing key-ordering tests stay where they are.
+
+      **Ticked before it was true.** The domain copy was added and the original
+      left in place, so `digestOf` and `canonicalise` existed twice — caught by the
+      production gate (PG-001/PG-002), not by any test. Now one definition, and
+      `confirmation-binds-values.test.ts` fails on a re-injected second copy
 
 ## 3. Bind the edit
 
@@ -87,5 +92,5 @@
 
 ## 5. Production gate
 
-- [ ] 5.1 Verifier
-- [ ] 5.2 Auditor — `full` track, and the reason is DL-4 rather than the diff size
+- [x] 5.1 Verifier — 2 warnings, both closed before the gate
+- [x] 5.2 Auditor — BLOCKED on 1 CRITICAL + 3 MAJOR, then PASS on re-audit — `full` track, and the reason is DL-4 rather than the diff size

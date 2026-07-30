@@ -49,7 +49,11 @@ Read before anything was written, because the shape of the fix depends on it:
 | `src/application/use-cases/strategy-lifecycle.command.ts` | Builds its target | modified |
 | `src/application/use-cases/rebind-agent.command.ts` | Builds its target | modified |
 | `src/application/use-cases/apply-plan.command.ts` | Uses the shared construction | modified |
-| `src/application/use-cases/compile-plan.command.ts` | `digestOf` moves to the domain | modified |
+| `src/application/use-cases/compile-plan.command.ts` | Imports `digestOf`; stops defining it | modified |
+| `src/application/use-cases/apply-plan.command.ts` | Imports `digestOf` from the domain too | modified |
+| `src/presentation/components/agent-edit.tsx` | Hidden-field props widen to `string \| number` | modified |
+| `tests/agent/{concurrency,rebind}.test.ts` | Call sites for the new port shape | modified |
+| `tests/live/write-probe.test.ts`, `tests/strategy/mapper.test.ts` | Same; `mapper` also stops asserting the broken target | modified |
 | `src/domain/capability/digest.ts` | `digestOf` — domain, not a use case | added |
 | `src/domain/agent/rebind.ts` | `rebindTarget` **removed** — it was a second construction of the same string | modified |
 | `src/presentation/form.ts` | `editIntent` + `MONEY_FIELDS`: one reader for both requests (DL-8) | modified |
@@ -62,6 +66,12 @@ Read before anything was written, because the shape of the fix depends on it:
 `digestOf` moving out of `compile-plan.command.ts` is not tidying: a domain rule
 about what a confirmation covers cannot import from an application use case, and
 `boundaries.test.ts` enforces that direction.
+
+**This inventory drifted, in both directions, and that is how PG-001 hid.** It
+listed `compile-plan.command.ts` as modified while the file was untouched — the
+move was half done, the new copy added and the old one left — and it omitted five
+files the diff touched. The gate reads this table against
+`git diff --name-status` for exactly that reason. Reconciled above.
 
 ## Constraints
 
@@ -109,3 +119,5 @@ about what a confirmation covers cannot import from an application use case, and
 - A column on the confirmations table. See the decision log.
 - `expectedRevision` on the archive flows — BattleGrid refuses a mismatch.
 - Rebind's strategy *revision* — a real and different gap. → backlog.
+
+EXECUTION READY FOR PRODUCTION GATE

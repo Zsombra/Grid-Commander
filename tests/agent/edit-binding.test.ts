@@ -8,7 +8,9 @@ import {
   liveTradingConfig,
   SequentialRandom,
 } from '../support/agent-fakes.js';
-import { FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { beginGuardedCall } from '@/infrastructure/battlegrid/call-path.js';
+import { ConfirmationRequiredError } from '@/domain/errors.js';
 import { digestOf } from '@/domain/capability/digest.js';
 import { editIntent, MONEY_FIELDS } from '@/presentation/form.js';
 
@@ -122,6 +124,67 @@ describe('the change performed is the change described', () => {
 
     expect(spent, 'a token for $25 must not authorise $25,000').toBeNull();
     expect(boundTo, 'the write bound the amount it was about to send').toMatch(/^agent:a1#/);
+  });
+
+  it('builds no request at all when the amount was altered', async () => {
+    /**
+     * The scenario's second clause, joined up.
+     *
+     * The test above proves the token cannot be spent — which is the *precondition*
+     * for the refusal, not the refusal. `FakeAgentsPort` does not run `enforce()`,
+     * so in that test the fake agent is happily modified. Two facts were each
+     * tested and never composed: that differing values produce differing targets
+     * (above), and that `enforce()` refuses a differing target (`call-path.test.ts`).
+     *
+     * This drives the guard with the target the write actually bound, so the
+     * refusal is demonstrated rather than inferred. `enforce()` consumes at step 3,
+     * before the audit entry at step 4 and before any HTTP — so a refusal here is
+     * "no request was built", not "the request failed".
+     */
+    const h = harness();
+    const proposal = await h.propose.execute({
+      ...who,
+      agentId: 'a1',
+      changes: { tradingConfig: { maxDailyLossUsd: 25 } },
+    });
+    if (proposal.kind !== 'proposal') throw new Error('expected a proposal');
+
+    await h.apply.execute({
+      ...who,
+      agentId: 'a1',
+      changes: {},
+      tradingConfigChanges: { maxDailyLossUsd: 25000 },
+      confirmationToken: proposal.proposal.confirmationToken,
+    });
+    const boundTo = h.port.calls.find((c) => c.op === 'update')?.target as string;
+
+    const audit = new FakeAuditStore(new FakeClock());
+    await expect(
+      beginGuardedCall(
+        {
+          audit,
+          confirmations: h.confirmations,
+          heldScopes: ['mcp:read'],
+        },
+        {
+          userId: who.userId,
+          tool: 'update_intelligence_agent',
+          classification: {
+            mutating: true,
+            destructive: true,
+            requiredScope: 'mcp:read',
+            basis: 'annotations',
+          },
+          confirmationToken: proposal.proposal.confirmationToken,
+          target: boundTo,
+        },
+      ),
+      'the guard must refuse the altered submission',
+    ).rejects.toBeInstanceOf(ConfirmationRequiredError);
+
+    // And nothing was recorded as attempted, because the refusal precedes the
+    // audit entry. A recorded attempt would mean a request had been built.
+    expect(audit.entries, 'refused before anything was attempted').toEqual([]);
   });
 
   it('refuses a submission carrying a different name', async () => {

@@ -183,3 +183,73 @@ page's readers. The property needed its own coverage: `the two requests agree on
 what was submitted`, plus a source check that the page has one reader rather than
 two. That gap between *fixed* and *guarded* is what the re-injection discipline is
 for.
+
+## AUDIT — 2026-07-30 — BLOCKED, then PASS on re-audit
+
+**Production gate: BLOCKED.** 1 CRITICAL, 3 MAJOR, 1 MINOR. Tracker at
+`plan/production-gate.md`.
+
+**Every quality gate passed.** 770 tests, typecheck, lint, build, `check.sh`,
+`check-serving.sh`, `validate` — all clean. The CRITICAL was found by comparing
+the master plan's file inventory against `git diff --name-status`, which is the
+one check no command runs.
+
+**PG-001, and why it is CRITICAL rather than tidiness.** `digestOf` and
+`canonicalise` exist twice: moved into `src/domain/capability/digest.ts` and left
+in place in `compile-plan.command.ts`. Two implementations of the function that
+makes a confirmation binding meaningful. If they drift, a plan digested by one and
+verified against the other mismatches and `apply_strategy_plan` dies silently —
+the exact defect DL-7 found. **The change duplicated the thing it exists to
+consolidate.**
+
+**Three MAJORs, all the same shape as each other and as DL-7.** Task 2.4 is ticked
+and claims the import happened (PG-002). `architecture-review.md:69` asserts *"one
+definition"* and names the import as verified (PG-003). The plan inventory lists
+`compile-plan.command.ts` as modified when it is not, and omits five files that
+were (PG-004). Three artifacts describing work that did not happen — a ticked box,
+a review claim, and an inventory row — which is why the gate reads inventory
+against diff rather than trusting any of them.
+
+**PG-005 records why nothing caught it.** The guard checks confirmation *targets*
+and not the digest beneath them, so the requirement's "one mechanism" clause is
+enforced for half its mechanism. Filed as `the-digest-has-no-uniqueness-guard`;
+the executor may reasonably close it while fixing PG-001, since a re-injection is
+the natural proof either way.
+
+**Spec parity is clean** — 2/2 requirements delivered, 0 of 9 scenarios uncovered,
+no regression, no unspecified behaviour, scope held. That is worth stating
+plainly: the change does what it set out to do. It is blocked on how it did it.
+
+**Not verified:** live behaviour against BattleGrid. No key on disk, so the revived
+apply path is proven locally spendable and not platform-accepted.
+
+### Re-audit — PASS
+
+All five findings FIXED and re-verified.
+
+- **PG-001**: `digestOf` and `canonicalise` now have one definition each, in
+  `src/domain/capability/digest.ts`. `compile-plan.command.ts` and
+  `apply-plan.command.ts` import it.
+- **PG-005 closed rather than deferred**, because the re-injection needed for it is
+  the proof for PG-001 anyway: `confirmation-binds-values.test.ts` asserts one
+  definition each, and putting a second `digestOf` back fails it. The backlog item
+  stays filed with the history.
+- **PG-002/003/004** corrected in place and kept as corrections. The false review
+  claim was not deleted — an artifact that quietly starts being right teaches
+  nothing, and this is the third in this project to state a rule and describe its
+  opposite.
+- Inventory reconciled by script: 26 files touched, 26 listed, empty in both
+  directions.
+
+**Gates at re-audit**: 771 tests (765 passed, 6 skipped), typecheck 0, lint 0,
+`check.sh` clean, `next build` clean, `check-serving.sh` against a real migrated
+database, `validate` clean.
+
+**Gate rationale**: zero open violations. Spec parity was clean throughout — the
+CRITICAL was a redundancy, not a wrong runtime path, so the risk was drift between
+two copies rather than a defect in behaviour. Fit to archive.
+
+**The one thing this gate cannot say**: the revived `apply_strategy_plan` path is
+proven locally spendable and **not** platform-accepted. No key on disk. The most
+consequential fix in this change is unproven end to end, and the next live session
+should exercise a compile-and-apply before anything else.

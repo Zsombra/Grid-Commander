@@ -1,5 +1,72 @@
 # Journal
 
+## 2026-07-30 — a confirmation authorises what it described, and a fifth dead write path
+
+**Did**: Archived `a-confirmation-binds-to-what-was-agreed` (full track). 771
+tests. 7 capabilities, 76 requirements — both deltas MODIFIED, so the count holds
+and five scenarios were added. Backlog triaged 38 → 34 before starting.
+
+A token issued against *"sets the most it may lose in a day to $25"* was accepted
+by a submission carrying **$25,000**. `consume` matches who, which tool, which
+agent and the token — not the values. The consequence is stored, so the mismatch
+was recorded in the audit log and prevented nowhere, and the audit log is what this
+product offers in place of trust.
+
+**The interesting finding was that the product already had the answer, four times
+out of five.** `apply_strategy_plan` and `rebind` bound their values into `target`;
+the agent edit did not, and it is the one carrying money. So the defect was never a
+missing mechanism — it was **five places composing the same string by hand**, four
+of which happened to be right, which is precisely what made the exception
+invisible. There is now one construction, `confirmationTarget`, in the domain
+beside `ConfirmationToken`, and `agentEdit` cannot be called without the intent.
+
+**The write ports now carry `confirmation: { token, target }`.** A token and the
+target it is bound to are one fact, and they travelled as two independent
+parameters with every adapter composing its own target — so the adapter decided
+what the user had agreed to. That is the root cause, not the symptom.
+
+**Then the guard found a fifth dead write path.** Writing the *spender* half — I
+had read the issuer and concluded the flow was fine —
+
+```
+issued:  strategy:<id>#<intentDigest>     DescribeApplyQuery
+spent:   strategy:<id>                    McpStrategyAdapter.applyPlan
+```
+
+`consume` never matched, so **every `apply_strategy_plan` was refused by the
+product before it reached BattleGrid** — the call that reconfigures every agent
+bound to a strategy, dead for the life of the feature, through two production
+gates. `FakeStrategiesPort.applyPlan` does not go through `enforce()`, and
+`mapper.test.ts` asserted the broken string as *correct*. A guard pinning the
+defect, for the third time here. My own plan called this flow "already correct and
+the control group"; the plan's byte-identical constraint would have locked the
+break in.
+
+**And the failure mode the plan predicted was already present.** DL-5 said the
+danger was a binding that refuses honest edits too. The review read a query string
+and kept `"25"`; the apply read a form and produced `25`. Those digest
+differently — every honest edit would have been refused, and the obvious fix would
+have been to loosen the binding. Found by comparing the two readers before writing
+anything. `editIntent` is now the one reader; `pick` and `numberish` are gone.
+
+**The production gate earned its keep.** Every quality gate was green — 770 tests,
+typecheck, lint, build, `check.sh`, `check-serving.sh` — and the change had
+shipped **two** definitions of `digestOf`: added to the domain, left in place in
+`compile-plan.command.ts`. It duplicated the one thing it exists to consolidate.
+Found by reading the plan's file inventory against `git diff --name-status`, the
+one check no command runs. Three artifacts said otherwise: a ticked task, a review
+line asserting *"one definition"*, and an inventory row for a file that was never
+touched. BLOCKED on 1 CRITICAL + 3 MAJOR, fixed, PASS on re-audit. The guard now
+asserts digest uniqueness and fails on a re-injected copy.
+
+**What is not proven**: the revived apply path is locally spendable, not
+platform-accepted. No key on disk. **The next live session should compile and apply
+a real strategy plan before anything else** — it is the most consequential fix here
+and the only one untested against BattleGrid.
+
+**Next**: OAuth Part B — consent, code exchange, refresh. Needs the operator's own
+browser; this container is not reachable from it.
+
 ## 2026-07-29 (later) — twelve controls that cannot work, and four pages with no way back
 
 **Did**: Archived `the-strategies-walk`. 741 tests. 7 capabilities, **76

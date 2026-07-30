@@ -12,8 +12,9 @@ import { describeRefusal, parsePlanToken, refuseLocally } from '@/domain/strateg
 import type { StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
-import { digestOf } from './compile-plan.command.js';
+import {  } from './compile-plan.command.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
+import { digestOf } from '@/domain/capability/digest.js';
 
 export interface DescribeApplyRequest {
   readonly userId: string;

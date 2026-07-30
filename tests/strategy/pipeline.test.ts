@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ApplyPlanCommand, DescribeApplyQuery } from '@/application/use-cases/apply-plan.command.js';
-import { CompilePlanCommand, digestOf } from '@/application/use-cases/compile-plan.command.js';
+import { CompilePlanCommand } from '@/application/use-cases/compile-plan.command.js';
 import { FIELDS_APPLY_REJECTS } from '@/domain/strategy/compiled-plan.js';
 import { anApprovedPlan, aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { digestOf } from '@/domain/capability/digest.js';
 
 const USER = 'u1';
 const who = { userId: USER, accessToken: 'at' };

@@ -436,6 +436,19 @@ This has now been got wrong twice, in the same operation, one layer apart: first
 inside the command, then inside the action that calls it. The property to hold is
 not "a token exists" but "a human saw this sentence and then acted".
 
+**And the change performed SHALL be the change described.** *When* the token is
+spent was the first half; *what it authorises* is the second, and the two are
+independent. An agreement carried across two requests, correctly, still authorised
+any amount at all: the token bound to the agent, so a submission that named the
+same agent consumed it whatever the numbers said. An edit that alters money is the
+one place in this product where the difference between the described change and
+the performed change is measured in the operator's own funds.
+
+The values SHALL be those the platform will accept — the ones surviving the
+partition that drops fields BattleGrid rejects — so that what was agreed to and
+what reaches the wire are the same set, rather than the agreement covering fields
+that are silently discarded on the way.
+
 #### Scenario: Changing an agent
 - **WHEN** a change to an agent is submitted
 - **THEN** the consequence is shown and the change is not yet made
@@ -448,3 +461,13 @@ not "a token exists" but "a human saw this sentence and then acted".
 #### Scenario: A change that changes nothing
 - **WHEN** a submission would alter nothing
 - **THEN** no confirmation is sought and the user is told why
+
+#### Scenario: An amount altered after it was agreed to
+- **WHEN** an edit is submitted carrying a money value other than the one whose
+  consequence was shown
+- **THEN** the change is refused before any request is built
+- **AND** the agent is unchanged
+
+#### Scenario: Two agreements for one agent
+- **WHEN** a user proposes one edit, then proposes a second, and submits the first
+- **THEN** each agreement authorises only the change it described

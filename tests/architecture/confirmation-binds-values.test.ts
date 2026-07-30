@@ -212,6 +212,34 @@ describe('every confirmation is bound through one construction', () => {
     expect(sources).toContain(join(SRC, 'application', 'use-cases', 'update-agent.command.ts'));
   });
 
+  it('keeps one definition of the digest the binding rests on', () => {
+    /**
+     * PG-005, and it was not hypothetical.
+     *
+     * This file checked that no *target* is composed by hand and said nothing
+     * about `digestOf`, which is what makes those targets mean anything. So the
+     * change that introduced `confirmationTarget` shipped **two** definitions of
+     * `digestOf` and `canonicalise` — moved into the domain and left in place in
+     * `compile-plan.command.ts` — and 770 tests, typecheck, lint, build and every
+     * gate command passed. The production gate caught it by reading the plan's
+     * file inventory against the diff.
+     *
+     * Two implementations can drift, and if they do a plan digested by one and
+     * verified against the other produces different targets: `consume` misses, and
+     * `apply_strategy_plan` dies silently. That is the fifth dead write path this
+     * change fixed, arriving back through the door it came in.
+     */
+    const defined = (name: string) =>
+      sources.filter((f) => new RegExp(`function ${name}\\(`).test(read(f)));
+
+    expect(defined('digestOf'), 'one digest, or targets can disagree').toEqual([
+      join(SRC, 'domain', 'capability', 'digest.ts'),
+    ]);
+    expect(defined('canonicalise'), 'and one canonical form beneath it').toEqual([
+      join(SRC, 'domain', 'capability', 'digest.ts'),
+    ]);
+  });
+
   it('accepts a forward and refuses a composition', () => {
     // Asserted against the function the check uses, because the distinction is
     // the whole point: an adapter may carry a target it was given and may not
