@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-07-30 — the apply path was dead twice, and the second one is still open
+
+**Did**: Archived `a-confirmation-binds-to-what-was-agreed` (full track, gate
+BLOCKED then PASS). Triaged the backlog 38 → 36. 765 tests. 7 capabilities, 76
+requirements, 45 archived changes.
+
+**A confirmation authorised any amount.** A token issued against *"sets the most it
+may lose in a day to $25"* was accepted by a submission carrying **$25,000** —
+`consume` matches who, which tool, which agent and the token, never the values. Four
+of five destructive flows already bound their values into `target`; the agent edit
+did not, and it is the one carrying money. So the defect was five places composing
+one string by hand, four of which happened to be right. Now one construction that
+cannot be called without the values.
+
+**Writing the spender half of the guard found a fifth dead write path.**
+`apply_strategy_plan` issued `strategy:<id>#<intentDigest>` and the adapter spent
+`strategy:<id>`. Never matched. The call that reconfigures every agent bound to a
+strategy had been refused by the product, for the life of the feature, through two
+production gates. `FakeStrategiesPort.applyPlan` does not go through `enforce()`,
+and `mapper.test.ts` asserted the broken string as correct. My own plan called that
+flow *"already correct and the control group"* — from reading the issuer alone.
+
+**Reading the two coercions before writing the binding caught the failure the plan
+had predicted.** The review kept `"25"`, the apply produced `25`; those digest
+differently, so every honest edit would have been refused and the obvious fix would
+have restored the defect. One reader now. The first re-injection of that defect
+failed nothing, so the property got its own tests — the gap between *fixed* and
+*guarded*.
+
+**The production gate blocked my own change on a CRITICAL.** `digestOf` existed
+twice: moved to the domain and left in place. The change duplicated the one thing it
+exists to consolidate. Every quality gate was green — 770 tests, typecheck, lint,
+build, `check.sh`, `check-serving.sh`. It was found by reading the master plan's
+file inventory against `git diff --name-status`, which no command runs. Three
+artifacts claimed the work had happened: a ticked task, a review line asserting
+*"one definition"*, and an inventory row.
+
+**Then the live walk found a sixth dead path on the same call.** With the operator's
+key, driving the served application in a browser: the review renders, names the
+blast radius, and offers **no Apply button** —
+
+> This plan was compiled for a different account. Compile it again on yours.
+
+It was compiled on that account. The plan token carries
+`userId = bb334a1e-2ac2-4956-8dea-7c7cf01097b9`; `OwnerOnlyUser` hands down the
+literal `'owner'`. In personal-key mode they can never match, so **every apply is
+refused unconditionally in the only mode this operator runs.** Fixing the inner
+block revealed the outer one. Filed P1 as
+`apply-is-refused-for-every-personal-deployment` — it needs a deliberate answer for
+audit rows already written as `'owner'`, so it is a change, not an edit. **Do not
+weaken `refuseLocally`**: a plan compiled for one account must not apply to another.
+
+Compiling is effect-free, so nothing on the account moved — the strategy is still
+revision 2 with its original tagline, verified after. Key deleted from disk.
+
+**Next**: `apply-is-refused-for-every-personal-deployment` is now the highest-value
+work and it is fully doable here. OAuth Part B still needs the operator's own
+browser.
+
 ## 2026-07-30 — a confirmation authorises what it described, and a fifth dead write path
 
 **Did**: Archived `a-confirmation-binds-to-what-was-agreed` (full track). 771
