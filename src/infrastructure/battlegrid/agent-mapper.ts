@@ -97,7 +97,9 @@ function mapBrain(a: RawAgent): Brain {
   const preset = str(a.brainPreset);
   if (preset) return { kind: 'preset', preset };
 
-  const modelId = str(a.modelId) ?? '';
+  const modelId = str(a.modelId);
+  if (!modelId) return { kind: 'unknown' };
+
   const b = (a.behavior ?? {}) as Record<string, unknown>;
   return {
     kind: 'custom',
