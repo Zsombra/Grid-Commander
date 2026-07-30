@@ -2,7 +2,7 @@
 id: image-never-built
 title: The Dockerfile has never been built
 type: debt
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -79,3 +79,9 @@ switching without evidence trades a known size for an unknown reason.
 
 Record the result in the journal either way. A build that worked is worth as much
 as one that did not, because right now neither is known.
+
+## Resolution
+
+- **Build**: Successfully built on `node:22-alpine` without musl-libc incompatibility issues for `sharp` or `swc`. The final optimized production image compiles cleanly.
+- **Defect fixed**: `docker-entrypoint.sh` contained Windows CRLF line endings which caused the `migrate` entrypoint to fail with `no such file or directory` under Alpine's `/bin/sh`. Converted to LF.
+- **Run**: Verified container database migrations succeed (`schema ok — 1 migration(s) applied`) and Next.js boots cleanly on port 3000, serving full routes and assets.
