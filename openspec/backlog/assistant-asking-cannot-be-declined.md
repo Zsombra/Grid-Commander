@@ -2,10 +2,10 @@
 id: assistant-asking-cannot-be-declined
 title: A user who does not want their data sent has only one option — not asking
 type: question
-status: open
+status: wontfix
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-07-30
 change: ""
 capability: assistant
 blocked_by: []
@@ -49,3 +49,16 @@ more honestly.
 
 Investigate before proposing. The likely outcome is that this closes as
 "already answered by the disclosure".
+
+## Closed 2026-07-30 — the capability was removed
+
+`only-mcp-control` removed the assistant entirely, on the operator's instruction
+that Grid-Commander is MCP control and nothing else: eight requirements, sixteen
+files, seventy-seven tests, the route, the nav entry, `@anthropic-ai/sdk`, and
+`ANTHROPIC_API_KEY` from `config.ts`, `.env.example` and `check-serving.sh`.
+`openspec/specs/assistant/` no longer exists, which is why `validate` reports
+this item's capability as having no spec.
+
+Closed as won't-do rather than deleted. If an assistant ever returns, this is one
+of the two questions it arrives with already answered once — and a question
+answered and thrown away has to be discovered again.

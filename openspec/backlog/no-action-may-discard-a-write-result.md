@@ -5,7 +5,7 @@ type: debt
 status: open
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-07-30
 change: renaming-an-agent-is-offered-and-cannot-work
 capability: app-access
 blocked_by: []
@@ -57,3 +57,16 @@ check at the call site.
   filed the class
 - `A Field Offered Reaches The Operation It Configures` — the sibling rule, about
   inputs rather than outcomes
+
+## Still open 2026-07-30 — what is left
+
+`renaming-an-agent-is-offered-and-cannot-work` archived, which is why the linked
+change reads as done. **The general guard was never written.** `rename.test.ts`
+asserts that one action reads its result; every other server action is unchecked,
+and two have been added since this was filed (`applyEdit` on
+`/agents/[id]/edit`, `apply` on `/strategies/[id]/edit`).
+
+The requirement — *The Outcome Of A Write Reaches The Person Who Asked For It* —
+is stated generally and guarded specifically, which is the shape of gap this
+project has now been bitten by four times. A derived check over every
+`'use server'` export is the fix, not another per-action assertion.
