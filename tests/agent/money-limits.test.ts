@@ -242,7 +242,7 @@ describe('the safe answer is the default answer', () => {
 
   it('requires every money field it renders', () => {
     const matches = form().match(/type="number"/g) ?? [];
-    const required = form().match(/\n\s*required\n/g) ?? [];
+    const required = form().match(/\r?\n\s*required\r?\n/g) ?? [];
     expect(required.length).toBe(matches.length);
   });
 

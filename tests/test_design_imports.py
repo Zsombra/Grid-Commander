@@ -19,12 +19,14 @@ class SurfaceImportTest(ProjectTestCase):
 
     def survey(self, *sources: str):
         """Re-write the surface with this source list and re-validate."""
-        self.project.surface(source_files=list(sources), components=[COMPONENT])
+        self.project.surface(source_files=list(sources), capability="agent-authoring", components=[COMPONENT])
         return self.project.validate()
+
 
     def imports_reported(self, result) -> str:
         found = [d for d in result.diagnostics() if d["code"] == CODE]
-        return found[0]["message"] if found else ""
+        return found[0]["message"].replace("\\", "/") if found else ""
+
 
     # -- what it catches ---------------------------------------------------
 

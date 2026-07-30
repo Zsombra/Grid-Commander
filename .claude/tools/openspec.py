@@ -707,7 +707,8 @@ def local_ui_imports(root: Path, source_files: list) -> set:
                 target = _resolve_import(path, spec)
                 if target and _is_ui_file(target):
                     try:
-                        found.add(str(target.relative_to(root)))
+                        found.add(str(target.relative_to(root)).replace("\\", "/"))
+
                     except ValueError:
                         pass       # import escaped the repo
     return found

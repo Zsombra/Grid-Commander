@@ -197,6 +197,7 @@ class ArchiveAbortTest(ProjectTestCase):
         self.assertTrue(payload["dry_run"])
         self.assertFalse(payload["archived"])
         self.assertEqual(payload["operations"], ["widgets: + Delta"])
-        self.assertEqual(payload["specs_updated"], ["openspec/specs/widgets/spec.md"])
+        self.assertEqual([p.replace("\\", "/") for p in payload["specs_updated"]], ["openspec/specs/widgets/spec.md"])
+
         self.assertEqual(self.project.read(SPEC), MAIN_SPEC)
         self.assertTrue(self.project.exists("openspec/changes/a-change/proposal.md"))

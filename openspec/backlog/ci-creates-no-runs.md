@@ -2,7 +2,7 @@
 id: ci-creates-no-runs
 title: GitHub Actions stopped creating workflow runs entirely on 2026-07-28
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
@@ -184,3 +184,10 @@ finds a red board here later: query any job and look at `runner_id`. Zero means
 the answer is not in the repository, and no amount of reading a diff will find
 it. The probe job proved the same thing and cost a commit and a workflow edit;
 this costs one API call.
+
+## Resolution / Local CI Runner (2026-07-30)
+
+Since GitHub-hosted runners remain blocked at the organization/account level, local quality gates are fully automated via:
+- `powershell -ExecutionPolicy Bypass -File scripts/check-local.ps1` (Windows PowerShell master runner covering Python unit tests, OpenSpec validation, TypeScript typecheck, ESLint, Vitest, and Next.js build).
+- `./scripts/check.sh` (POSIX Bash runner for Linux/macOS).
+

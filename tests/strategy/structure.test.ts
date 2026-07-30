@@ -10,10 +10,11 @@ import { describe, expect, it } from 'vitest';
 function filesUnder(dir: string, ext = '.ts'): string[] {
   let out: string[] = [];
   for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
+    const full = join(dir, entry).replace(/\\/g, '/');
     if (statSync(full).isDirectory()) out = out.concat(filesUnder(full, ext));
     else if (full.endsWith(ext)) out.push(full);
   }
+
   return out;
 }
 

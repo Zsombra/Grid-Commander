@@ -64,9 +64,10 @@ describe('the application has one outbound destination', () => {
     const distinct = [...new Set(hosts.map((h) => h.host))].sort();
 
     expect(
-      distinct.map((h) => `${h}  (${hosts.filter((x) => x.host === h).map((x) => x.file).join(', ')})`),
+      distinct.map((h) => `${h}  (${hosts.filter((x) => x.host === h).map((x) => x.file.replace(/\\/g, '/')).join(', ')})`),
       'every host the application can reach',
     ).toEqual(['mcp.battlegrid.trade  (src/config.ts)']);
+
   });
 
   it('is looking at the source it thinks it is', () => {

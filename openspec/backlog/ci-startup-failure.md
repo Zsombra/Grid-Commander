@@ -2,7 +2,7 @@
 id: ci-startup-failure
 title: Every workflow run since 7f1cb28 is a startup_failure, and the diff did not cause it
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-07-28
 updated: 2026-07-28
