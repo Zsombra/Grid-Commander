@@ -4,7 +4,6 @@ import { compiledPlan, requiredText } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { CONTROL } from '@/presentation/components/control.js';
-
 /**
  * Compose a change, compile it, and review what applying would do.
  *
@@ -18,37 +17,68 @@ export default async function EditStrategyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tagline?: string }>;
+  searchParams: Promise<{
+    compile?: string;
+    tagline?: string;
+    sections?: string | string[];
+    unknownSections?: string | string[];
+  }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { tagline } = await searchParams;
+  const sp = await searchParams;
+  const compile = sp.compile;
+  const tagline = sp.tagline ?? '';
+  const selectedKeys = toArray(sp.sections);
+  const unknownSectionParams = toArray(sp.unknownSections);
 
-  /**
-   * The strategy first, the vocabulary second.
-   *
-   * Reversed on purpose. The vocabulary check used to run before the roster was
-   * read, so its refusal had no name to show and no strategy to return to — a
-   * page that reports something is wrong, identifies no subject, and offers no
-   * next step. It also meant a nonexistent id on a day BattleGrid's vocabulary
-   * was down reported the wrong problem.
-   */
-  const { result } = await app.listStrategies.execute(user.authority);
-  const strategy = result.kind === 'strategies' ? result.strategies.find((s) => s.id === id) : undefined;
-  if (!strategy) {
+  const result = await app.readSectionOptions.execute({ ...user.authority, strategyId: id });
+
+  if (result.kind === 'strategy-missing') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
-        {/* The roster is the honest destination here, and the only one: there is
-            no strategy to go back to. */}
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
       </main>
     );
   }
+
+  if (result.kind === 'strategy-unreadable') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-2xl font-medium text-text-primary">Strategy could not be read</h1>
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to your strategies</a>
+        </p>
+      </main>
+    );
+  }
+
+  if (result.kind === 'vocabulary-unreadable') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-2xl font-medium text-text-primary">
+          Cannot edit this strategy right now
+        </h1>
+        <p role="alert" className="text-sm">
+          The vocabulary a strategy is composed from comes from BattleGrid, and it
+          could not be read. Composing a change without it would mean guessing at
+          values the platform will reject.
+        </p>
+        <p className="text-sm">
+          <a href={`/strategies/${id}`} className="underline">Back to strategy</a>
+        </p>
+      </main>
+    );
+  }
+
+  // TypeScript now knows result.kind === 'ready'.
+  const detail = result.detail;
+  const strategy = detail.summary;
 
   /**
    * The way back, on every state this page can render.
@@ -64,24 +94,16 @@ export default async function EditStrategyPage({
     </a>
   );
 
-  const vocabulary = await app.readVocabulary.execute(user.authority);
-  if (!vocabulary.composable) {
-    return (
-      <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-2xl font-medium text-text-primary">
-          Cannot edit {strategy.name} right now
-        </h1>
-        <p role="alert" className="text-sm">
-          The vocabulary a strategy is composed from comes from BattleGrid, and it
-          could not be read. Composing a change without it would mean guessing at
-          values the platform will reject.
-        </p>
-        <p className="text-sm">{back}</p>
-      </main>
+  if (compile !== '1') {
+    // Sections in the current strategy that have no matching template are kept as
+    // hidden inputs so a compile round-trips them unchanged.
+    const platformKeys = new Set(
+      result.templates.flatMap((t) => (t.kind === 'platform' ? [t.sectionKey] : [])),
     );
-  }
+    const unknownSections = detail.sections.filter(
+      (s) => !platformKeys.has(s.sectionKey),
+    );
 
-  if (!tagline) {
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
         <div>
@@ -92,15 +114,100 @@ export default async function EditStrategyPage({
               : `${strategy.boundAgentCount} agent${strategy.boundAgentCount === 1 ? '' : 's'} would be reconfigured by an applied change.`}
           </p>
         </div>
-        <form method="get" className="space-y-3">
-          <label htmlFor="tagline" className="block text-sm font-medium">Tagline</label>
-          <input
-            id="tagline"
-            name="tagline"
-            type="text"
-            defaultValue={strategy.tagline ?? ''}
-            className={CONTROL}
-          />
+        <form method="get" className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="tagline" className="block text-sm font-medium">Tagline</label>
+            <input
+              id="tagline"
+              name="tagline"
+              type="text"
+              defaultValue={strategy.tagline ?? ''}
+              className={CONTROL}
+            />
+          </div>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium">Sections</legend>
+            {result.categories.map((cat) => {
+              const catTemplates = result.templates.filter((t) => t.category === cat.category);
+              if (catTemplates.length === 0) return null;
+              return (
+                <fieldset key={cat.category} className="space-y-1">
+                  <legend className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                    {cat.label}
+                  </legend>
+                  <div className="space-y-1 pl-2">
+                    {catTemplates.map((template) => {
+                      const key =
+                        template.kind === 'platform' ? template.sectionKey : template.templateKey;
+                      const checked =
+                        template.kind === 'platform' &&
+                        detail.sections.some(
+                          (s) => s.sectionKey === template.sectionKey,
+                        );
+                      return (
+                        <label key={key} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            name="sections"
+                            value={key}
+                            defaultChecked={checked}
+                          />
+                          {template.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              );
+            })}
+            {/* Templates the platform returned without a category. */}
+            {(() => {
+              const ungrouped = result.templates.filter((t) => !t.category);
+              if (ungrouped.length === 0) return null;
+              return (
+                <div className="space-y-1">
+                  {ungrouped.map((template) => {
+                    const key =
+                      template.kind === 'platform' ? template.sectionKey : template.templateKey;
+                    const checked =
+                      template.kind === 'platform' &&
+                      detail.sections.some(
+                        (s) => s.sectionKey === template.sectionKey,
+                      );
+                    return (
+                      <label key={key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="sections"
+                          value={key}
+                          defaultChecked={checked}
+                        />
+                        {template.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </fieldset>
+
+          {/* Sections the strategy contains that the vocabulary does not recognise.
+              Round-tripped as hidden inputs so they survive a compile without
+              being silently dropped. */}
+          {unknownSections.map((s) => (
+            <input
+              key={s.sectionKey}
+              type="hidden"
+              name="unknownSections"
+              value={`${s.kind}:${s.sectionKey}`}
+            />
+          ))}
+
+          {/* Present on every submit so the handler knows this is a compile, not
+              a page load. */}
+          <input type="hidden" name="compile" value="1" />
+
           <button type="submit" className="rounded border px-4 py-2 text-sm">
             Compile — see what this would do, without doing it
           </button>
@@ -110,16 +217,67 @@ export default async function EditStrategyPage({
     );
   }
 
+  // compile === '1': reconstruct sections from form params and compile.
+  const knownSections: Array<{ kind: string; sectionKey: string }> = [];
+  for (const key of selectedKeys) {
+    const template = result.templates.find(
+      (t) =>
+        (t.kind === 'platform' && t.sectionKey === key) ||
+        (t.kind === 'custom' && t.templateKey === key),
+    );
+    if (!template) continue;
+    knownSections.push(
+      template.kind === 'platform'
+        ? { kind: 'platform', sectionKey: template.sectionKey }
+        : { kind: 'custom', sectionKey: template.templateKey },
+    );
+  }
+
+  const parsedUnknownSections: Array<{ kind: string; sectionKey: string }> = [];
+  for (const param of unknownSectionParams) {
+    const colon = param.indexOf(':');
+    if (colon < 1) continue;
+    parsedUnknownSections.push({ kind: param.slice(0, colon), sectionKey: param.slice(colon + 1) });
+  }
+
+  const sections: Array<{ kind: string; sectionKey: string }> = [
+    ...knownSections,
+    ...parsedUnknownSections,
+  ];
+
+  const taglineChanged = tagline !== (strategy.tagline ?? '');
+  const currentSectionKeys = new Set(detail.sections.map((s) => s.sectionKey));
+  const newSectionKeys = new Set(sections.map((s) => s.sectionKey));
+  const sectionsChanged =
+    currentSectionKeys.size !== newSectionKeys.size ||
+    [...newSectionKeys].some((k) => !currentSectionKeys.has(k)) ||
+    [...currentSectionKeys].some((k) => !newSectionKeys.has(k));
+
+  const intentSummary =
+    taglineChanged && sectionsChanged
+      ? `Edit ${strategy.name}`
+      : taglineChanged
+        ? `Change the tagline of ${strategy.name}`
+        : `Change the sections of ${strategy.name}`;
+
+  const assumptions =
+    taglineChanged && sectionsChanged
+      ? ['Tagline and sections change']
+      : taglineChanged
+        ? ['Only the tagline changes']
+        : ['Only the sections change'];
+
   // Held in one place: it is both what is compiled and what `describeApply`
   // digests to check the screen still matches the plan.
   const intent = {
     operation: 'UPDATE' as const,
     strategyId: id,
     expectedRevision: strategy.revision,
-    intentSummary: `Change the tagline of ${strategy.name}`,
-    assumptions: ['Only the tagline changes'],
+    intentSummary,
+    assumptions,
     coinSelection: { mode: 'ranked' as const, limit: 9 },
     tagline,
+    sections,
   };
 
   const compiled = await app.compilePlan.execute({ ...user.authority, request: intent });
@@ -176,8 +334,8 @@ export default async function EditStrategyPage({
       <PlanReviewPanel
         review={compiled.review}
         action={apply}
-        // The compose form, which is what "change it" means. Without the tagline
-        // in the query it renders the field again at the strategy's current value.
+        // The compose form, which is what "change it" means. Without compile in
+        // the query it renders the section checklist at the strategy's current state.
         changeIt={`/strategies/${strategy.id}/edit`}
         confirmation={{
           strategyId: id,
@@ -218,4 +376,9 @@ export async function apply(formData: FormData) {
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
   redirect('/strategies');
+}
+
+function toArray(val: string | string[] | undefined): string[] {
+  if (!val) return [];
+  return Array.isArray(val) ? val : [val];
 }
