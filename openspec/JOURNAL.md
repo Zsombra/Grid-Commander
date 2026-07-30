@@ -1,5 +1,13 @@
 # Journal
 
+## 2026-07-30 — Repo reconciliation: all branches merged, main is current
+
+**Did**: Audited all open branches. Merged PR #5 (`claude/tool-review-budget-s46qk0`) into `main` — 62 commits, 775 tests, 46 archived changes, live BattleGrid round trips proven. Added `HANDOFF.md` at the repo root. Deleted all stale branches.
+
+**State**: `main` is now the authoritative, most-current state of the project. No active changes. See `HANDOFF.md` for a full orientation.
+
+**Next**: Wire the assistant model (`wire-an-assistant-model`, P2). Apply DT-0002 (strategy editor). Resolve CI (account billing or self-hosted runner).
+
 ## 2026-07-30 (later) — the apply was dead a second way, and the delegated path too
 
 **Did**: Archived `a-plan-is-checked-against-the-account-that-compiled-it` (full
