@@ -1,5 +1,74 @@
 # Journal
 
+## 2026-07-30 (later) — the apply was dead a second way, and the delegated path too
+
+**Did**: Archived `a-plan-is-checked-against-the-account-that-compiled-it` (full
+track, gate PASS). 775 tests. 7 capabilities, 76 requirements, 46 archived changes.
+
+**A check that could never pass.** `refuseLocally` compares BattleGrid's claim about
+which account compiled a plan against `Authority.userId` — which is `'owner'` on a
+personal deployment and `random.token(16)` on a delegated one. Neither can equal a
+BattleGrid account id, so **applying a compiled plan was refused in every deployment
+configuration since the feature was written.** The review rendered, named the blast
+radius, and offered no Apply button:
+
+> This plan was compiled for a different account. Compile it again on yours.
+
+It was compiled on that account. Found by driving the served application in a browser
+against a live account, then decoding the token: `userId =
+bb334a1e-2ac2-4956-8dea-7c7cf01097b9`.
+
+**Wider than the backlog item said.** I filed it as personal-mode-only. The delegated
+path is equally dead — `connect.commands.ts` mints the local id randomly and stores
+`grant.subject` in a separate column — and OAuth has never been completed, which is
+why nobody noticed.
+
+**Two identities were doing one job.** `users.id` and `users.battlegrid_subject` have
+been separate columns since the schema was authored, with the subject commented as
+the natural key, and nothing that needed BattleGrid's identity ever read it. The fix
+separates them in the application layer too. **Nothing stored changes** — the other
+reading, replacing the local id with BattleGrid's, would relabel every audit row
+already written as `'owner'`, which is the opposite of the `AuditActor` decision.
+
+**`null` skips the check.** Unknown is not mismatched — the same rule as
+`forkAffordance`, and precisely the rule this defect broke: a substituted identity
+read as a mismatch and the user was told their own plan belonged to someone else.
+
+**The fixture was part of the defect.** `context` reused the same constant as the
+token's claim, so both sides agreed by construction. The test proved the comparison
+works and could never show that nothing supplies a comparable value. Third fixture
+this week modelling a world that cannot exist.
+
+**A decision log asserted a verification it had not run — again.** DL-2 claimed
+renaming the field to `battlegridSubject` made passing the local id a compile error.
+It does not: `battlegridSubject: req.userId` type-checks when both are `string`. The
+re-injection caught it — four behaviour tests failed and typecheck said nothing. Now
+a **branded** type, so the claim is true and reads
+`TS2322: Type 'string' is not assignable to type 'BattlegridSubject'`. That is the
+second decision log in two changes to do this, so it is a pattern and not an
+incident: **a claim about a guard is worth nothing until the defect has been put
+back.**
+
+**The verifier then found the brand itself unguarded** — widen it to `string` and
+every call site silently compiles again. Closed with `@ts-expect-error`, which `tsc`
+enforces; removing the brand now yields `TS2578`.
+
+**What the gate does not say.** It does not say applying works. It says the product
+no longer refuses it. The last two changes here each removed one block and revealed
+another — a confirmation target that never matched, then an account check that never
+matched. A third is possible, and only a live apply against a strategy the operator
+will let change would find it.
+
+**CI is still allocating no runner.** `runner_id: 0`, one-second jobs, on every
+commit including a fresh run at 04:58. Reproduces on `main`. The operator's billing
+hypothesis matches the signature. If they have registered a self-hosted runner, note
+that `validate.yml` says `runs-on: ubuntu-latest` at all four jobs and will not claim
+it without a matching label.
+
+**Next**: a live apply is the highest-value thing and it needs the operator — a key,
+and a strategy they will let change. `restore-has-never-been-walked` is the same
+shape. OAuth Part B still needs their browser.
+
 ## 2026-07-30 — the apply path was dead twice, and the second one is still open
 
 **Did**: Archived `a-confirmation-binds-to-what-was-agreed` (full track, gate

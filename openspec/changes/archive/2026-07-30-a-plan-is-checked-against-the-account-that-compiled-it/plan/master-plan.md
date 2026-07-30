@@ -38,6 +38,7 @@ each line names how:
 | `src/infrastructure/battlegrid/account-adapter.ts` | `list_user_active_positions`, read for one field | added |
 | `src/domain/connection/subject.ts` | `BattlegridSubject`, branded. **Not in the first plan** — added after re-injection showed a rename does not enforce the property (DL-2) | added |
 | `tests/access/authority.test.ts` | The delegated path carries the subject. Not in the first plan; that half was uncovered | modified |
+| `tests/access/subject-brand.test.ts` | Guards the brand with `@ts-expect-error`. Added by the verifier: the type was the guard and nothing guarded the type | added |
 | `src/composition.ts` | Wires the discovery | modified |
 | `tests/strategy/plan-token.test.ts` | Stop equating the two sides | modified |
 | `tests/strategy/pipeline.test.ts` | The apply is reachable end to end | modified |
@@ -77,3 +78,5 @@ disproved a claim this plan made.
 | A second identity field is confused for the first | The type makes it impossible at the check; naming (`battlegridSubject`) matches the column |
 | Inventory drift, as last time | Reconcile against `git diff --name-status` before the gate |
 | The apply still fails at BattleGrid | Out of scope and stated; this removes the *local* refusal only |
+
+EXECUTION READY FOR PRODUCTION GATE

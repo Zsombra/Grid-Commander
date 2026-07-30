@@ -1,7 +1,7 @@
 ---
 id: apply-is-refused-for-every-personal-deployment
 type: bug
-status: open
+status: done
 priority: P1
 capability: strategy-authoring
 created: 2026-07-30
@@ -83,3 +83,30 @@ would remove a real guard to paper over a wrong identity.
 P1 because it is the product's headline capability — *tuning* a strategy — dead in
 the deployment mode the operator actually uses, and because it is a **behavioural**
 P1 rather than an infrastructure one, unlike the other three.
+
+## Closed 2026-07-30 — and it was wider than this item said
+
+`a-plan-is-checked-against-the-account-that-compiled-it` fixed it. Two corrections to
+what is written above:
+
+**Not personal-mode-only.** This item said "for every personal deployment". The
+delegated path is equally dead: `connect.commands.ts:117` mints
+`existingUserId ?? this.random.token(16)` as the local id and stores
+`grant.subject` in a separate column, so `refuseLocally` compared BattleGrid's
+account id against a random sixteen-byte string there too. OAuth has never been
+completed, which is why nobody had noticed.
+
+**The fix was not the one proposed here.** This item suggested making
+`OwnerOnlyUser` discover BattleGrid's id and use it as `userId`, and flagged the
+audit-row problem that creates. The change instead **separated the two identities** —
+`Authority.battlegridSubject` beside `Authority.userId` — so nothing stored changes
+and no row is relabelled. The database had modelled the distinction since it was
+written; only the application layer had collapsed it.
+
+`BattlegridSubject` is a branded type, so routing the local id there is now a compile
+error rather than a convention. That took two attempts: a rename was claimed
+sufficient in a decision log and was not.
+
+**Still true, and still open elsewhere:** whether BattleGrid accepts the applied
+call. This removed the product's own refusal only. → the gate's "Not verified"
+section, and it needs a live apply.

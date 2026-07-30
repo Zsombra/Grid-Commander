@@ -54,5 +54,6 @@
 
 ## 4. Production gate
 
-- [ ] 4.1 Verifier
-- [ ] 4.2 Auditor
+- [x] 4.1 Verifier — one warning: the brand was unguarded. Closed with a
+      `@ts-expect-error` assertion in `tests/access/subject-brand.test.ts`, re-injected
+- [x] 4.2 Auditor — PASS, zero open violations

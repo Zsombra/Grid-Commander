@@ -89,3 +89,24 @@ Third fixture in a week that modelled an impossible world: `defaultCatalog()`
 defaulted three fields where the live catalog defaults fifteen, and a
 four-field `tradingConfig` was unconstructible against a twenty-field schema.
 Worth naming as a pattern rather than a coincidence.
+
+## AUDIT — 2026-07-30 — PASS
+
+Zero open violations. Tracker at `plan/production-gate.md`.
+
+**Inventory against diff, and a duplication scan, ran first** — the two checks that
+found the previous change's CRITICAL after every quality gate had passed. Nothing
+touched went unlisted; the one planned-and-untouched file was already recorded as a
+divergence with its reason. Everything introduced has exactly one definition:
+`BattlegridSubject`, `asSubject`, and one `AccountPort` implementation.
+
+**Two findings, both raised and closed before the gate.** DL-2 asserted a
+verification that had never been run — the second decision log in two changes to do
+that, and worth naming as a pattern rather than an incident. It was caught by
+re-injecting the defect and watching typecheck stay silent while four behaviour tests
+failed. The verifier then found that the brand which fixed it was itself unguarded,
+closed with a `@ts-expect-error` assertion that `tsc` enforces.
+
+**The gate does not say applying works.** It says the product no longer refuses it.
+The last two changes here each removed one block and revealed another; only a live
+apply against a strategy the operator will let change would find a third.

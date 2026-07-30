@@ -37,26 +37,39 @@ paste, or upload a BattleGrid credential, and MUST NOT accept one if offered.
 - **AND** retrying starts a fresh authorization
 
 ### Requirement: The Connection Is The Identity
-A user's BattleGrid connection SHALL be their Grid-Commander identity. The
-system MUST NOT maintain a separate password for a Grid-Commander account. One
-BattleGrid account MUST resolve to exactly one Grid-Commander identity, however
-many times its authorization is completed.
+A connection to BattleGrid SHALL be the identity Grid-Commander acts under, and
+the product SHALL NOT invent an identity of its own to act with.
 
-#### Scenario: Returning user
-- **WHEN** a user who has connected before returns
-- **THEN** authorizing with BattleGrid signs them in to their existing workspace
+**The local identifier and BattleGrid's are distinct, and SHALL NOT be
+interchanged.** `users.id` names a row in this product's database; the subject
+BattleGrid issues names an account on the platform. They are stored as separate
+columns precisely because they are different facts — one is minted here, the other
+is given to us — and a value the platform issued MUST be compared only against the
+platform's own.
 
-#### Scenario: A connection is removed
-- **WHEN** a user disconnects their BattleGrid account
-- **THEN** they can no longer act on that account through Grid-Commander
-- **AND** their recorded history remains readable to them
+Every comparison against a platform-issued claim SHALL be typed so that supplying
+the local identifier is not possible, rather than guarded by convention. A
+convention was in force and produced a check that could never pass: BattleGrid's
+account id compared against a random sixteen-byte local id in one mode and the
+string `'owner'` in the other.
 
-#### Scenario: One authorization completed twice at once
-- **WHEN** two authorization callbacks for the same BattleGrid account complete
-  at the same time, and that account has never connected before
-- **THEN** one identity exists for it afterwards
-- **AND** both callbacks resolve to that identity
-- **AND** neither reports a storage-level failure to the user
+**Where the platform's identity for the acting account is unknown, it SHALL be
+represented as unknown** rather than substituted. A substituted identity reads as
+a mismatch, and a mismatch reads as a refusal the user cannot act on.
+
+#### Scenario: Acting under a delegated connection
+- **WHEN** the product acts for a user who connected by authorization
+- **THEN** the identity it presents to a platform-issued check is the subject
+  BattleGrid issued, not the local row id
+
+#### Scenario: Acting under the owner's own credential
+- **WHEN** the deployment holds the owner's own key
+- **THEN** the platform's identity for that account is established from the
+  platform, or reported as unknown
+
+#### Scenario: The two identifiers are not interchangeable
+- **WHEN** code compares a platform-issued claim about an account
+- **THEN** the local identifier cannot be supplied in its place
 
 ### Requirement: Read Scope Is Requested And Wager Scope Is Not
 Grid-Commander SHALL request only the scope required to read and configure. It
