@@ -1,5 +1,7 @@
 import type { Scope } from '@/domain/connection/scope.js';
 import type { ActingUser, CurrentUserResult } from './current-user.query.js';
+import type { BattlegridSubject } from '@/domain/connection/subject.js';
+import type { AccountPort } from '@/ports/account.js';
 import type { Authority } from './resolve-authority.query.js';
 
 /**
@@ -19,11 +21,42 @@ import type { Authority } from './resolve-authority.query.js';
 export const OWNER_USER_ID = 'owner';
 
 export class OwnerOnlyUser implements ActingUser {
-  constructor(private readonly apiKey: string) {}
+  /**
+   * Asked once, then remembered.
+   *
+   * The account behind a `bg_live_` key cannot change without the key changing,
+   * and the key is fixed at boot — so this is a constant the product has to
+   * discover rather than a value to re-read. Caching it keeps an identity lookup
+   * off every request.
+   */
+  private subject: BattlegridSubject | null | undefined;
+
+  constructor(
+    private readonly apiKey: string,
+    private readonly account: AccountPort,
+  ) {}
 
   async execute(): Promise<CurrentUserResult> {
-    const authority: Authority = { userId: OWNER_USER_ID, accessToken: this.apiKey };
+    const authority: Authority = {
+      userId: OWNER_USER_ID,
+      battlegridSubject: await this.battlegridSubject(),
+      accessToken: this.apiKey,
+    };
     return { kind: 'acting', authority };
+  }
+
+  /**
+   * BattleGrid's id for this key's account, or `null`.
+   *
+   * `null` is cached as deliberately as a value would be: a deployment whose
+   * account read is unavailable must keep working, and asking again on every
+   * request would put a failing call in front of every page. The one thing that
+   * must never happen is a refusal built on this being `null` — see the port.
+   */
+  private async battlegridSubject(): Promise<BattlegridSubject | null> {
+    if (this.subject !== undefined) return this.subject;
+    this.subject = await this.account.subjectFor(this.apiKey).catch(() => null);
+    return this.subject;
   }
 }
 

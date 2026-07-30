@@ -15,9 +15,12 @@ import type { Randomness } from './connect.commands.js';
 import {  } from './compile-plan.command.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import { digestOf } from '@/domain/capability/digest.js';
+import type { BattlegridSubject } from '@/domain/connection/subject.js';
 
 export interface DescribeApplyRequest {
   readonly userId: string;
+  /** BattleGrid's identity for the acting account. `null` when unknown. */
+  readonly battlegridSubject: BattlegridSubject | null;
   readonly accessToken: string;
   readonly strategyId: string;
   readonly plan: CompiledPlan;
@@ -77,7 +80,13 @@ export class DescribeApplyQuery {
 
     const refusal = refuseLocally(
       parsePlanToken(plan.planToken),
-      { userId: req.userId, strategyId: req.strategyId, currentRevision: req.currentRevision },
+      {
+        // BattleGrid's identity for the acting account, not our local row id. See
+        // DL-1: they are two facts, and this check is about theirs.
+        battlegridSubject: req.battlegridSubject,
+        strategyId: req.strategyId,
+        currentRevision: req.currentRevision,
+      },
       this.clock.now(),
     );
     if (refusal) return { kind: 'refused', reason: describeRefusal(refusal) };

@@ -1,3 +1,4 @@
+import type { BattlegridSubject } from '../connection/subject.js';
 /**
  * The token BattleGrid issues alongside a compiled plan.
  *
@@ -86,7 +87,23 @@ export type LocalRefusal =
  */
 export function refuseLocally(
   token: ParsedToken,
-  context: { userId: string; strategyId: string; currentRevision?: number | undefined },
+  /**
+   * **`battlegridSubject`, never the product's own `userId`.**
+   *
+   * The token's `userId` claim is BattleGrid's account id. This parameter used to
+   * be named `userId` too and was handed the product's *local* row id, which is
+   * `'owner'` on a personal deployment and `random.token(16)` on a delegated one.
+   * Neither can ever equal a BattleGrid account id, so every apply was refused
+   * with "this plan was compiled for a different account" — on a plan compiled for
+   * exactly that account.
+   *
+   * The type is the guard: supplying the local id no longer compiles.
+   */
+  context: {
+    battlegridSubject: BattlegridSubject | null;
+    strategyId: string;
+    currentRevision?: number | undefined;
+  },
   now: Date,
 ): LocalRefusal | null {
   if (token.kind === 'unknown') return null;
@@ -95,7 +112,12 @@ export function refuseLocally(
   if (c.expiresAt.getTime() <= now.getTime()) {
     return { kind: 'expired', expiredAt: c.expiresAt };
   }
-  if (c.userId !== context.userId) return { kind: 'different-user' };
+  // Unknown is not mismatched. A `null` subject means the product could not
+  // establish which account it is acting as, and refusing on a fact we do not hold
+  // is what produced this defect in the first place — see DL-3.
+  if (context.battlegridSubject !== null && c.userId !== context.battlegridSubject) {
+    return { kind: 'different-user' };
+  }
   if (c.strategyId !== context.strategyId) {
     return { kind: 'different-strategy', compiledFor: c.strategyId };
   }

@@ -3,6 +3,8 @@ import type {
   ConnectionReader,
   ConnectionWriter,
 } from '@/domain/connection/connection-repository.js';
+import type { BattlegridSubject } from '@/domain/connection/subject.js';
+import { asSubject } from '@/domain/connection/subject.js';
 import { ConnectionRevokedError } from '@/domain/errors.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import type { Clock } from '@/ports/clock.js';
@@ -13,7 +15,26 @@ export interface TokenVault {
 }
 
 export interface Authority {
+  /**
+   * Which rows in **our** database. Minted here — `random.token(16)` on connect,
+   * or the constant `'owner'` on a personal deployment.
+   */
   readonly userId: string;
+  /**
+   * Which account on **BattleGrid**. Given to us, never minted.
+   *
+   * A separate field because it is a separate fact, and the database has said so
+   * since it was written: `users.id` and `users.battlegrid_subject` are two
+   * columns, with the subject commented as the natural key. One field carried both
+   * jobs anyway, and the result was a plan-token check comparing BattleGrid's
+   * account id against `'owner'` in one mode and a random local id in the other —
+   * so applying a compiled plan was refused in every deployment configuration
+   * since it was built.
+   *
+   * `null` means unknown, and unknown is **not** mismatched. Nothing may refuse on
+   * the strength of a `null` here; the platform holds the authoritative answer.
+   */
+  readonly battlegridSubject: BattlegridSubject | null;
   readonly accessToken: string;
 }
 
@@ -52,7 +73,15 @@ export class ResolveAuthorityQuery {
     if (!stored) throw new ConnectionRevokedError('reconnect');
 
     if (!needsRefresh(connection, this.clock.now())) {
-      return { userId, accessToken: stored.accessToken };
+      // The subject is stored on the connection — this is a wiring change here,
+      // not a new fact. It has been sitting in `users.battlegrid_subject` unused by
+      // anything that needed BattleGrid's identity.
+      return {
+        userId,
+        // From the connection BattleGrid issued, which is what makes the assertion true.
+        battlegridSubject: asSubject(connection.battlegridSubject),
+        accessToken: stored.accessToken,
+      };
     }
 
     if (!stored.refreshToken) {
@@ -79,6 +108,11 @@ export class ResolveAuthorityQuery {
       accessTokenExpiresAt: expiryFromResponse(grant.expiresIn, this.clock.now()),
     });
 
-    return { userId, accessToken: grant.accessToken };
+    return {
+      userId,
+      // From the connection BattleGrid issued, which is what makes the assertion true.
+        battlegridSubject: asSubject(connection.battlegridSubject),
+      accessToken: grant.accessToken,
+    };
   }
 }

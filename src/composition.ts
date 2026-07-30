@@ -38,6 +38,7 @@ import {
 } from './application/use-cases/rebind-agent.command.js';
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
+import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -161,7 +162,7 @@ export function app(cookies: CookieStore) {
    * `currentUser` and cannot tell which it got, which is the point.
    */
   const currentUser: ActingUser = i.personal
-    ? new OwnerOnlyUser(i.personal.apiKey)
+    ? new OwnerOnlyUser(i.personal.apiKey, new McpAccountAdapter(i.battlegrid))
     : new CurrentUserQuery(sessions, i.connections, authority);
 
   return {

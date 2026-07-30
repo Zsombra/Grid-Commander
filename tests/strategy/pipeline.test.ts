@@ -6,9 +6,18 @@ import { anApprovedPlan, aStrategy, FakeStrategiesPort } from '../support/strate
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { digestOf } from '@/domain/capability/digest.js';
+import { asSubject } from '@/domain/connection/subject.js';
 
 const USER = 'u1';
-const who = { userId: USER, accessToken: 'at' };
+/**
+ * `userId` is the product's local row id; `battlegridSubject` is BattleGrid's.
+ *
+ * The plan token's `userId` claim is BattleGrid's, so `USER` — which the token
+ * fixture also uses — belongs in `battlegridSubject`. It used to be passed as
+ * `userId`, which agreed by construction and hid that nothing ever supplies a
+ * comparable value.
+ */
+const who = { userId: 'local-row-id', battlegridSubject: asSubject(USER), accessToken: 'at' };
 const INTENT = { operation: 'UPDATE', strategyId: 's1', tagline: 'Changed' };
 
 /** A token whose claims match the fixtures, valid at the fake clock's now. */

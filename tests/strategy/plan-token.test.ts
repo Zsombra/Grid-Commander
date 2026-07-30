@@ -5,8 +5,24 @@ import {
   refuseLocally,
   type ParsedToken,
 } from '@/domain/strategy/plan-token.js';
+import { asSubject } from '@/domain/connection/subject.js';
 
-const USER = '0eccbf37-d90b-4933-88f2-d120627b23f7';
+/**
+ * BattleGrid's account id, as it appears in a real plan token — and the product's
+ * own local row id, which is a different value.
+ *
+ * **They were one constant, and that is why this file could not see the defect.**
+ * `context` reused `USER`, so the two sides of the account comparison agreed by
+ * construction. The test proved `refuseLocally` compares correctly and could never
+ * show that nothing ever supplied it a comparable value: `'owner'` on a personal
+ * deployment, `random.token(16)` on a delegated one. Applying a compiled plan was
+ * refused in every configuration from the day it was built.
+ *
+ * Kept distinct, and asserted distinct below.
+ */
+const SUBJECT = '0eccbf37-d90b-4933-88f2-d120627b23f7';
+/** What `Authority.userId` actually holds. Never comparable to the above. */
+const LOCAL_ID = 'owner';
 const STRATEGY = '9fc7be37-8330-4d60-a28f-287dd695187f';
 const EXPIRES = 1785200930257;
 
@@ -21,7 +37,7 @@ function tokenWith(overrides: Record<string, unknown> = {}): string {
     postStateDigest: 'fee760f6',
     proposedRevision: 2,
     strategyId: STRATEGY,
-    userId: USER,
+    userId: SUBJECT,
     version: 1,
     ...overrides,
   };
@@ -31,7 +47,7 @@ function tokenWith(overrides: Record<string, unknown> = {}): string {
 
 const before = new Date(EXPIRES - 60_000);
 const after = new Date(EXPIRES + 1);
-const context = { userId: USER, strategyId: STRATEGY };
+const context = { battlegridSubject: asSubject(SUBJECT), strategyId: STRATEGY };
 
 /** F-1: the claims are readable without a key. */
 describe('reading a plan token', () => {
@@ -39,7 +55,7 @@ describe('reading a plan token', () => {
     const parsed = parsePlanToken(tokenWith());
     expect(parsed.kind).toBe('claims');
     if (parsed.kind !== 'claims') return;
-    expect(parsed.claims.userId).toBe(USER);
+    expect(parsed.claims.userId).toBe(SUBJECT);
     expect(parsed.claims.strategyId).toBe(STRATEGY);
     expect(parsed.claims.expectedRevision).toBe(1);
     expect(parsed.claims.proposedRevision).toBe(2);
@@ -73,7 +89,7 @@ describe('refusing locally, with a reason', () => {
   });
 
   it('refuses a plan compiled for another account', () => {
-    const refusal = refuseLocally(parsePlanToken(tokenWith()), { ...context, userId: 'someone-else' }, before);
+    const refusal = refuseLocally(parsePlanToken(tokenWith()), { ...context, battlegridSubject: asSubject('someone-else') }, before);
     expect(refusal?.kind).toBe('different-user');
   });
 
@@ -107,7 +123,55 @@ describe('refusing locally, with a reason', () => {
   it('never refuses on the strength of a token it could not read', () => {
     const unknown: ParsedToken = { kind: 'unknown' };
     expect(refuseLocally(unknown, context, after)).toBeNull();
-    expect(refuseLocally(unknown, { userId: 'x', strategyId: 'y' }, after)).toBeNull();
+    expect(refuseLocally(unknown, { battlegridSubject: asSubject('x'), strategyId: 'y' }, after)).toBeNull();
+  });
+
+  /**
+   * The two identifiers are not the same value, and the product's own is never
+   * comparable to BattleGrid's.
+   *
+   * Asserted rather than assumed, because assuming it is exactly what happened:
+   * one constant stood for both and the comparison looked sound.
+   */
+  it('never accepts the product’s own id as the account BattleGrid means', () => {
+    expect(LOCAL_ID).not.toBe(SUBJECT);
+    const refusal = refuseLocally(
+      parsePlanToken(tokenWith()),
+      // The cast is the point: this is what the product used to pass, and it had
+      // to be forced past the type to write the test at all.
+      { battlegridSubject: asSubject(LOCAL_ID), strategyId: STRATEGY },
+      before,
+    );
+    // If a future change ever routes `Authority.userId` here again, this fails.
+    expect(refusal?.kind).toBe('different-user');
+  });
+
+  /**
+   * Unknown is not mismatched — DL-3, and the same rule as `forkAffordance`.
+   *
+   * A deployment that cannot establish its own account id must still be able to
+   * apply a plan. Refusing on a fact we do not hold is what this whole change is
+   * correcting, so it must not be reintroduced through the null case.
+   */
+  it('does not refuse when the acting account is unknown', () => {
+    expect(
+      refuseLocally(
+        parsePlanToken(tokenWith()),
+        { battlegridSubject: null, strategyId: STRATEGY, currentRevision: 1 },
+        before,
+      ),
+      'a null subject is unknown, not foreign',
+    ).toBeNull();
+  });
+
+  it('still refuses a foreign strategy when the account is unknown', () => {
+    // The other checks keep working. `null` disables exactly one of them.
+    const refusal = refuseLocally(
+      parsePlanToken(tokenWith()),
+      { battlegridSubject: null, strategyId: 's-other' },
+      before,
+    );
+    expect(refusal?.kind).toBe('different-strategy');
   });
 
   it('does not treat the absence of a refusal as validity', () => {

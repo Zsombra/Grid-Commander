@@ -6,6 +6,8 @@ import { OWNER_USER_ID, OwnerOnlyUser } from '@/application/use-cases/owner-only
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 import type { ConnectionReader } from '@/domain/connection/connection-repository.js';
+import type { AccountPort } from '@/ports/account.js';
+import { asSubject } from '@/domain/connection/subject.js';
 
 /**
  * A deployment holding the owner's own credential.
@@ -147,26 +149,93 @@ describe('scopes come from whichever source is entitled to answer', () => {
   });
 });
 
+/**
+ * A stand-in for the one read that answers "which account is this key".
+ *
+ * `null` is a first-class answer here, not an error case — see `AccountPort`. The
+ * tests below use both, because a deployment whose account read is unavailable
+ * must keep working.
+ */
+const knows = (subject: string | null): AccountPort => ({
+  subjectFor: async () => (subject === null ? null : asSubject(subject)),
+});
+
+const SUBJECT = 'bb334a1e-2ac2-4956-8dea-7c7cf01097b9';
+
 describe('the owner, on a deployment that authenticates nobody', () => {
   it('acts without a session', async () => {
-    const { kind } = await new OwnerOnlyUser('bg_live_abc').execute();
+    const { kind } = await new OwnerOnlyUser('bg_live_abc', knows(SUBJECT)).execute();
     expect(kind).toBe('acting');
   });
 
   it('acts with the configured key', async () => {
-    const result = await new OwnerOnlyUser('bg_live_abc').execute();
+    const result = await new OwnerOnlyUser('bg_live_abc', knows(SUBJECT)).execute();
     expect(result.kind === 'acting' && result.authority.accessToken).toBe('bg_live_abc');
   });
 
   it('uses a stable identity, so the audit log has something to key on', async () => {
-    const result = await new OwnerOnlyUser('bg_live_abc').execute();
+    const result = await new OwnerOnlyUser('bg_live_abc', knows(SUBJECT)).execute();
     expect(result.kind === 'acting' && result.authority.userId).toBe(OWNER_USER_ID);
+  });
+
+  /**
+   * The local id and BattleGrid's are both carried, and they are different values.
+   *
+   * `userId` is `'owner'` — what the audit log keys on, and what it has always
+   * said. `battlegridSubject` is the platform's, and it is what a platform-issued
+   * claim is compared against. Collapsing the two is what made applying a compiled
+   * plan impossible in every deployment configuration.
+   */
+  it('carries BattleGrid’s identity beside the local one, not instead of it', async () => {
+    const result = await new OwnerOnlyUser('bg_live_abc', knows(SUBJECT)).execute();
+    if (result.kind !== 'acting') throw new Error('expected to be acting');
+    expect(result.authority.userId, 'the audit log keeps keying on this').toBe(OWNER_USER_ID);
+    expect(result.authority.battlegridSubject).toBe(SUBJECT);
+    expect(result.authority.battlegridSubject).not.toBe(result.authority.userId);
+  });
+
+  it('reports the account as unknown rather than substituting one', async () => {
+    // The whole point of `string | null`. A deployment that cannot establish its
+    // account id must say so, because the alternative — putting `'owner'` there —
+    // is precisely the substitution that read as a mismatch and refused every
+    // apply.
+    const result = await new OwnerOnlyUser('bg_live_abc', knows(null)).execute();
+    expect(result.kind === 'acting' && result.authority.battlegridSubject).toBeNull();
+  });
+
+  it('keeps acting when the account read fails outright', async () => {
+    const broken: AccountPort = {
+      subjectFor: async () => {
+        throw new Error('positions read unavailable');
+      },
+    };
+    const result = await new OwnerOnlyUser('bg_live_abc', broken).execute();
+    expect(result.kind, 'a failed identity read must not stop the product').toBe('acting');
+    expect(result.kind === 'acting' && result.authority.battlegridSubject).toBeNull();
+  });
+
+  it('asks once, then remembers', async () => {
+    // The account behind a key cannot change without the key changing, and the key
+    // is fixed at boot. An identity lookup on every request would be a call in
+    // front of every page.
+    let asked = 0;
+    const counting: AccountPort = {
+      subjectFor: async () => {
+        asked += 1;
+        return asSubject(SUBJECT);
+      },
+    };
+    const user = new OwnerOnlyUser('bg_live_abc', counting);
+    await user.execute();
+    await user.execute();
+    await user.execute();
+    expect(asked).toBe(1);
   });
 
   it('never reports not-connected — there is nothing to disconnect from', async () => {
     // The delegated path's "not connected" means a grant was lost. A key that
     // stops working surfaces from the call, not from resolving who is acting.
-    const result = await new OwnerOnlyUser('bg_live_abc').execute();
+    const result = await new OwnerOnlyUser('bg_live_abc', knows(SUBJECT)).execute();
     expect(result.kind).not.toBe('not-connected');
   });
 
