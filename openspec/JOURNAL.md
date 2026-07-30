@@ -1,5 +1,22 @@
 # Journal
 
+## 2026-07-30 — strategy-section-editor: execution complete
+
+**Did**: Implemented the full `strategy-section-editor` change (standard track, 31/31 tasks). Users can now compose which report sections a strategy includes, not just its tagline.
+
+**What landed**:
+- `SectionTemplate` discriminated union (`platform` / `custom`) in domain
+- `listVocabularyTemplates` on `StrategiesPort`; `VocabularyTemplatesResult`, `SectionOptionsResult` types; `VocabularyCategory` extended with optional guidance fields
+- `McpStrategyAdapter.listVocabularyTemplates`: calls `list_strategy_categories` first for a valid key, then `list_strategy_vocabulary` once; maps defensively, skipping entries with neither `sectionKey` nor `templateKey`; `ToolRefusedError` → `unreadable`
+- `ReadSectionOptionsQuery`: concurrent `Promise.all` over `readStrategy` + `readVocabulary` + `listVocabularyTemplates`
+- Composition root wired (`readSectionOptions`)
+- Edit page refactored: `readSectionOptions` replaces `listStrategies`+`readVocabulary`; section checklist grouped by vocabulary category; current sections pre-checked; unknown sections round-tripped as hidden inputs; `compile=1` param triggers compile (not tagline presence); `intentSummary`/`assumptions` reflect what actually changed
+- 17 new tests; 792 total passing; typecheck 0 errors; lint clean
+
+**Branch**: `claude/hand-off-file-review-3gpveo` — PR #7 (draft, updated). CI shows 7 pre-existing failures that also appear on `main` run 30520930429; not caused by this change.
+
+**Next**: `/verify` → `/archive` for `strategy-section-editor`. Then: wire the assistant model (`brain-with-no-model`, P3), or a live apply test (needs operator key + strategy they will let change).
+
 ## 2026-07-30 — Repo reconciliation: all branches merged, main is current
 
 **Did**: Audited all open branches. Merged PR #5 (`claude/tool-review-budget-s46qk0`) into `main` — 62 commits, 775 tests, 46 archived changes, live BattleGrid round trips proven. Added `HANDOFF.md` at the repo root. Deleted all stale branches.

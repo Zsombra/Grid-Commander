@@ -43,7 +43,7 @@
       4. Return `{ kind: 'ready', detail, categories: CategoryOptions[] }`
 
 ## 5. Composition root
-- [ ] 5.1 In `src/composition.ts`, instantiate `ReadSectionOptionsQuery` and
+- [x] 5.1 In `src/composition.ts`, instantiate `ReadSectionOptionsQuery` and
       expose it on the `app` object as `readSectionOptions`
 
 ## 6. Edit page — section checklist and compile trigger
