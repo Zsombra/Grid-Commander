@@ -29,6 +29,7 @@ import {
   ForkStrategyCommand,
   SetStrategyActiveCommand,
 } from './application/use-cases/strategy-lifecycle.command.js';
+import { ReadSectionOptionsQuery } from './application/use-cases/read-section-options.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
@@ -208,6 +209,7 @@ export function app(cookies: CookieStore) {
     listStrategies: new ListStrategiesQuery(i.strategies),
     readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
+    readSectionOptions: new ReadSectionOptionsQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
     compilePlan: new CompilePlanCommand(i.strategies),

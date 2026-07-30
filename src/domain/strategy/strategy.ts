@@ -132,6 +132,31 @@ export interface StrategySection {
 }
 
 /**
+ * One section the platform's vocabulary advertises.
+ *
+ * Two variants, discriminated by which key is present:
+ * - `platform` — a named section (e.g. `includeRsi`) the platform provides natively.
+ * - `custom` — a composite template (e.g. `momentum-composite`) that bundles several sections.
+ *
+ * Both are discovered at runtime from `list_strategy_vocabulary`. Neither is
+ * enumerated in Grid-Commander — the platform's list is the list.
+ */
+export type SectionTemplate =
+  | {
+      readonly kind: 'platform';
+      readonly sectionKey: string;
+      readonly label: string;
+      /** Category this template belongs to, as reported by the platform. Optional — absent templates are ungrouped. */
+      readonly category?: string | undefined;
+    }
+  | {
+      readonly kind: 'custom';
+      readonly templateKey: string;
+      readonly label: string;
+      readonly category?: string | undefined;
+    };
+
+/**
  * One signal, and how much it counts.
  *
  * A live strategy carries 82 of these. `allocation` is its weight, `required`

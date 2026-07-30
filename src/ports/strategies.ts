@@ -1,4 +1,4 @@
-import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { SectionTemplate, Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { FailureCause } from './failure.js';
 
@@ -64,6 +64,14 @@ export interface StrategiesPort {
   }): Promise<LifecycleResult>;
 
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;
+
+  /**
+   * All section templates the platform's vocabulary advertises.
+   *
+   * A single call returns the full list regardless of which category is passed.
+   * The adapter handles that detail — the use case sees one call.
+   */
+  listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult>;
 }
 
 /**
@@ -131,8 +139,45 @@ export interface VocabularyCategory {
   readonly label: string;
   readonly purpose: string;
   readonly metricCount: number;
+  /** Guidance fields from the platform — optional, surfaces in UI as tooltips or help copy. */
+  readonly whenToUse?: string | undefined;
+  readonly bestPractices?: string | undefined;
+  readonly commonMisuses?: string | undefined;
+  readonly examples?: string | undefined;
 }
 
 export type VocabularyResult =
   | { readonly kind: 'vocabulary'; readonly categories: readonly VocabularyCategory[] }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+export type VocabularyTemplatesResult =
+  | { readonly kind: 'templates'; readonly templates: readonly SectionTemplate[] }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Sections available for each category, ready for the edit-page checklist.
+ *
+ * `templates` is flat — the edit page groups by `template.category` when rendering.
+ * `categories` carries metadata (label, guidance) for group headers.
+ */
+export interface CategoryOptions {
+  readonly category: string;
+  readonly label: string;
+  readonly purpose: string;
+  readonly templates: readonly SectionTemplate[];
+}
+
+export type SectionOptionsResult =
+  | {
+      readonly kind: 'ready';
+      readonly detail: StrategyDetail;
+      /** All available templates, flat. Group by `template.category` for display. */
+      readonly templates: readonly SectionTemplate[];
+      /** Category metadata for group headers. */
+      readonly categories: readonly VocabularyCategory[];
+    }
+  | { readonly kind: 'strategy-missing' }
+  | { readonly kind: 'strategy-unreadable' }
+  | { readonly kind: 'vocabulary-unreadable' };
+
+export type { SectionTemplate };

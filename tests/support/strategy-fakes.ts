@@ -7,6 +7,7 @@ import type {
   StrategyDetailResult,
   StrategyListResult,
   VocabularyResult,
+  VocabularyTemplatesResult,
 } from '@/ports/strategies.js';
 
 /**
@@ -28,6 +29,7 @@ export class FakeStrategiesPort implements StrategiesPort {
   quota: StrategyQuota | null = { used: 2, limit: 25, remaining: 23 };
   readable = true;
   vocabularyReadable = true;
+  vocabularyTemplatesReadable = true;
   compileResult: CompileResult | null = null;
   restoreNeedsRepair = false;
 
@@ -114,6 +116,20 @@ export class FakeStrategiesPort implements StrategiesPort {
       categories: [
         { category: 'momentum', label: 'Momentum', purpose: 'Directional impulse.', metricCount: 10 },
         { category: 'trend', label: 'Trend', purpose: 'Direction and persistence.', metricCount: 10 },
+      ],
+    };
+  }
+
+  async listVocabularyTemplates(): Promise<VocabularyTemplatesResult> {
+    if (!this.vocabularyTemplatesReadable) {
+      return { kind: 'unreadable', reason: 'vocabulary unavailable', cause: 'unreachable' };
+    }
+    return {
+      kind: 'templates',
+      templates: [
+        { kind: 'platform', sectionKey: 'includeRsi', label: 'RSI', category: 'momentum' },
+        { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
+        { kind: 'platform', sectionKey: 'includeMovingAverages', label: 'Moving Averages', category: 'trend' },
       ],
     };
   }

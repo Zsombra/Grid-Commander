@@ -13,7 +13,9 @@ import type {
   StrategyListResult,
   VocabularyCategory,
   VocabularyResult,
+  VocabularyTemplatesResult,
 } from '@/ports/strategies.js';
+import type { SectionTemplate } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { ToolRefusedError } from './mcp-adapter.js';
@@ -41,6 +43,7 @@ const TOOLS = {
   restore: 'restore_strategy',
   categories: 'list_strategy_categories',
   get: 'get_strategy',
+  vocabulary: 'list_strategy_vocabulary',
 } as const;
 
 /** The four tools that require the strict outer envelope. */
@@ -229,6 +232,30 @@ export class McpStrategyAdapter implements StrategiesPort {
     }
   }
 
+  /**
+   * All section templates the platform's vocabulary advertises.
+   *
+   * `list_strategy_vocabulary` requires a category argument but returns the same
+   * 24 templates regardless of which category is passed — verified against the
+   * live platform. We fetch categories first to get a valid key, then fetch
+   * templates once with that key.
+   */
+  async listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult> {
+    try {
+      const catPayload = await this.call(params, TOOLS.categories, {});
+      const cats = Array.isArray(catPayload['categories']) ? catPayload['categories'] : [];
+      const firstCat = cats.length > 0 ? String((cats[0] as Record<string, unknown>)['category'] ?? '') : '';
+      if (!firstCat) return malformed('no categories available to fetch vocabulary');
+
+      const vocabPayload = await this.call(params, TOOLS.vocabulary, { category: firstCat });
+      const raw = Array.isArray(vocabPayload['templates']) ? vocabPayload['templates'] : [];
+      const templates = raw.map(mapSectionTemplate).filter((t): t is SectionTemplate => t !== null);
+      return { kind: 'templates', templates };
+    } catch (err) {
+      return unreadable(err);
+    }
+  }
+
   // -- internals ---------------------------------------------------------
 
   private async call(
@@ -318,7 +345,32 @@ function mapCategory(raw: unknown): VocabularyCategory {
     label: String(c['label'] ?? category),
     purpose: String(c['purpose'] ?? ''),
     metricCount: typeof c['metricCount'] === 'number' ? c['metricCount'] : 0,
+    ...(typeof c['whenToUse'] === 'string' ? { whenToUse: c['whenToUse'] } : {}),
+    ...(typeof c['bestPractices'] === 'string' ? { bestPractices: c['bestPractices'] } : {}),
+    ...(typeof c['commonMisuses'] === 'string' ? { commonMisuses: c['commonMisuses'] } : {}),
+    ...(typeof c['examples'] === 'string' ? { examples: c['examples'] } : {}),
   };
+}
+
+/**
+ * Maps one raw vocabulary template entry to a `SectionTemplate`.
+ *
+ * Two variants: entries with `sectionKey` are platform-native sections; entries
+ * with `templateKey` are custom composites. Entries with neither are skipped —
+ * they have no identity the edit page could use.
+ */
+function mapSectionTemplate(raw: unknown): SectionTemplate | null {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const label = typeof t['label'] === 'string' ? t['label'] : '';
+  const category = typeof t['category'] === 'string' ? t['category'] : undefined;
+
+  if (typeof t['sectionKey'] === 'string' && t['sectionKey'].length > 0) {
+    return { kind: 'platform', sectionKey: t['sectionKey'], label, ...(category ? { category } : {}) };
+  }
+  if (typeof t['templateKey'] === 'string' && t['templateKey'].length > 0) {
+    return { kind: 'custom', templateKey: t['templateKey'], label, ...(category ? { category } : {}) };
+  }
+  return null;
 }
 
 /**

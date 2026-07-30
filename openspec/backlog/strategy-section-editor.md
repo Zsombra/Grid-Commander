@@ -2,11 +2,11 @@
 id: strategy-section-editor
 title: A strategy can be edited only by its tagline
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-07-27
-updated: 2026-07-27
-change: ""
+updated: 2026-07-30
+change: "strategy-section-editor"
 capability: strategy-authoring
 blocked_by: []
 tags: [ui]

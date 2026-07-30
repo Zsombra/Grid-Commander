@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-07-30 — strategy-section-editor: verified and archived
+
+**Did**: Verified and archived the `strategy-section-editor` change. `/verify` passed with no critical issues (7/7 scenarios covered, 792 tests green, 0 typecheck errors). `/archive` merged 2 requirements into `openspec/specs/strategy-authoring/spec.md` — ADDED "Report Sections Can Be Composed When Editing" (4 scenarios) and MODIFIED "Vocabulary Is Discovered, Never Written Down" (added section vocab fetch scenario). Change folder moved to `archive/2026-07-30-strategy-section-editor/`. Backlog item `strategy-section-editor` closed (`status: done`). Committed and pushed `1c36975` to `claude/hand-off-file-review-3gpveo`; PR #7 draft still open.
+
+**State**: 0 active changes · 37 open backlog items · PR #7 (draft) on `claude/hand-off-file-review-3gpveo`. 12 pre-existing `backlog_change_archived` warnings (backlog items referencing changes archived in prior sessions, items not yet swept to `done`) — no new errors introduced this session. `design_surface_stale: strategy-editor` is also now flagged; the edit page changed, so the surface manifest hash is stale.
+
+**Next**: `/propose brain-with-no-model` to wire the assistant model (P3 — the next product-facing capability). Or sweep the 12 stale backlog items first to clear the warnings.
+
+**Watch out**: `design_surface_stale: strategy-editor` — run `/surface` on the edit page before any design work; the old manifest targets the pre-checklist version of the form. CI is still fully broken at the account level (all 7 jobs fail on `main` too, run 30520930429) — nothing in this codebase caused it.
+
+## 2026-07-30 — strategy-section-editor: execution complete
+
+**Did**: Implemented the full `strategy-section-editor` change (standard track, 31/31 tasks). Users can now compose which report sections a strategy includes, not just its tagline.
+
+**What landed**:
+- `SectionTemplate` discriminated union (`platform` / `custom`) in domain
+- `listVocabularyTemplates` on `StrategiesPort`; `VocabularyTemplatesResult`, `SectionOptionsResult` types; `VocabularyCategory` extended with optional guidance fields
+- `McpStrategyAdapter.listVocabularyTemplates`: calls `list_strategy_categories` first for a valid key, then `list_strategy_vocabulary` once; maps defensively, skipping entries with neither `sectionKey` nor `templateKey`; `ToolRefusedError` → `unreadable`
+- `ReadSectionOptionsQuery`: concurrent `Promise.all` over `readStrategy` + `readVocabulary` + `listVocabularyTemplates`
+- Composition root wired (`readSectionOptions`)
+- Edit page refactored: `readSectionOptions` replaces `listStrategies`+`readVocabulary`; section checklist grouped by vocabulary category; current sections pre-checked; unknown sections round-tripped as hidden inputs; `compile=1` param triggers compile (not tagline presence); `intentSummary`/`assumptions` reflect what actually changed
+- 17 new tests; 792 total passing; typecheck 0 errors; lint clean
+
+**Branch**: `claude/hand-off-file-review-3gpveo` — PR #7 (draft, updated). CI shows 7 pre-existing failures that also appear on `main` run 30520930429; not caused by this change.
+
+**Next**: `/verify` → `/archive` for `strategy-section-editor`. Then: wire the assistant model (`brain-with-no-model`, P3), or a live apply test (needs operator key + strategy they will let change).
+
 ## 2026-07-30 — Repo reconciliation: all branches merged, main is current
 
 **Did**: Audited all open branches. Merged PR #5 (`claude/tool-review-budget-s46qk0`) into `main` — 62 commits, 775 tests, 46 archived changes, live BattleGrid round trips proven. Added `HANDOFF.md` at the repo root. Deleted all stale branches.
