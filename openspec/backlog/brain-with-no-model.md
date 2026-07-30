@@ -2,7 +2,7 @@
 id: brain-with-no-model
 title: An agent with neither preset nor model maps to a custom brain with an empty model id
 type: bug
-status: in-progress
+status: done
 priority: p3
 created: 2026-07-27
 updated: 2026-07-30
