@@ -17,6 +17,7 @@ import type {
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { ToolRefusedError } from './mcp-adapter.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * Strategy operations, expressed as BattleGrid tool calls.
@@ -97,13 +98,18 @@ export class McpStrategyAdapter implements StrategiesPort {
     strategyId: string;
     plan: Readonly<Record<string, unknown>>;
     planToken: string;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Readonly<Record<string, unknown>>> {
     return this.call(
       params,
       TOOLS.apply,
       { plan: params.plan, planToken: params.planToken, confirm: true },
-      { target: `strategy:${params.strategyId}`, confirmationToken: params.confirmationToken },
+      // **This was the fifth dead write path.** The issuer bound
+      // `strategy:<id>#<intentDigest>` and this spent against `strategy:<id>`, so
+      // `consume` never matched and every apply was refused by the product before
+      // it reached BattleGrid. No test saw it: `FakeStrategiesPort.applyPlan`
+      // does not go through `enforce()`.
+      { confirmation: params.confirmation },
     );
   }
 
@@ -181,7 +187,7 @@ export class McpStrategyAdapter implements StrategiesPort {
     strategyId: string;
     expectedRevision: number;
     active: boolean;
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult> {
     const payload = await this.call(
       params,
@@ -198,7 +204,7 @@ export class McpStrategyAdapter implements StrategiesPort {
         // that can be rejected.
         ...(params.active ? {} : { confirm: true }),
       },
-      { target: params.strategyId, confirmationToken: params.confirmationToken },
+      { confirmation: params.confirmation },
     );
 
     // Restoring can come back needing repair. The strategy stays inactive and
@@ -229,7 +235,7 @@ export class McpStrategyAdapter implements StrategiesPort {
     who: { userId: string; accessToken: string },
     tool: string,
     payload: Readonly<Record<string, unknown>>,
-    extras: { target?: string | undefined; confirmationToken?: string | undefined } = {},
+    extras: { confirmation?: Confirmation | undefined } = {},
   ): Promise<Record<string, unknown>> {
     const result = await this.battlegrid.callTool({
       userId: who.userId,
@@ -238,7 +244,11 @@ export class McpStrategyAdapter implements StrategiesPort {
       // The envelope trap. `account` never goes inside `request`, and request
       // fields are never flattened beside it.
       args: ENVELOPED.has(tool) ? { request: payload } : payload,
-      ...extras,
+      // The pair, split onto the two wire-level fields the guard reads. **One
+      // place** — this is where a target could once again be composed by hand,
+      // and a second mapping is the defect this change exists to remove.
+      target: extras.confirmation?.target,
+      confirmationToken: extras.confirmation?.token,
     });
     // Already the payload: the adapter unwrapped the MCP envelope. There was
     // an `asObject` here that returned `{}` for anything it did not recognise,

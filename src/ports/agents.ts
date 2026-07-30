@@ -5,6 +5,7 @@ import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -51,8 +52,12 @@ export interface AgentsPort {
      * demands one. This parameter did not exist, which meant no caller could
      * satisfy the guard and every rename was refused by the product before it
      * reached the platform — the sibling of the 23-vs-20 defect one layer out.
+     *
+     * It is now the pair rather than the bare token: this is the write that
+     * carries money, and the target is what makes the amounts part of what was
+     * agreed to.
      */
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent>;
 
   rebindAgent(params: {
@@ -62,7 +67,7 @@ export interface AgentsPort {
     strategyId: string;
     expectedRevision: number;
     /** Issued against the (agent, target strategy) pair. Never a boolean. */
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent>;
 
   setLifecycle(params: {
@@ -72,7 +77,7 @@ export interface AgentsPort {
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
     /** Archiving is destructive by classification; reactivating is not. */
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent>;
 
   /**

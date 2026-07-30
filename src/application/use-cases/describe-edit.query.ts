@@ -3,6 +3,7 @@ import { removesTheLimit } from '@/domain/agent/catalog.js';
 import type { RejectedField } from '@/domain/agent/field-ownership.js';
 import { partitionEdit } from '@/domain/agent/field-ownership.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import { CONFIRMATION_TTL_SECONDS } from '@/domain/capability/confirmation.js';
 import type { AgentsPort } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
@@ -41,8 +42,9 @@ export type DescribeEditResult =
  * proceed, which was never in question; the guard exists so a *person* saw what
  * would happen and agreed to it. Mirrors `DescribeRebindQuery` — see DL-5.
  *
- * Bound to the agent, not to the verb, so agreement about one agent cannot be
- * carried onto another.
+ * Bound to the agent **and to the change**, so neither agreement about one agent
+ * nor agreement about one amount can be carried onto another. Binding to the
+ * agent alone was the whole of `confirmation-is-not-bound-to-values`.
  */
 export class DescribeEditQuery {
   constructor(
@@ -81,7 +83,15 @@ export class DescribeEditQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'update_intelligence_agent',
-      target: agent.id,
+      /**
+       * The change that was described, not the agent alone.
+       *
+       * `agent.id` on its own made an agreement about $25 authorise a submission
+       * carrying $25,000: same user, same tool, same agent. `accepted` is the
+       * submitted intent after the fields BattleGrid rejects are dropped, so what
+       * was agreed to and what may be spent are the same set.
+       */
+      target: confirmationTarget.agentEdit(agent.id, accepted),
       // Stored as shown, so the audit proves what was agreed to rather than what
       // a later version of the copy happens to say.
       consequence,

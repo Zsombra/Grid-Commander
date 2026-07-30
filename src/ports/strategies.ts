@@ -1,4 +1,5 @@
 import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -30,7 +31,7 @@ export interface StrategiesPort {
     strategyId: string;
     plan: Readonly<Record<string, unknown>>;
     planToken: string;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Readonly<Record<string, unknown>>>;
 
   forkStrategy(params: {
@@ -59,7 +60,7 @@ export interface StrategiesPort {
     /** The revision the intent was formed against. BattleGrid requires it. */
     expectedRevision: number;
     active: boolean;
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult>;
 
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;

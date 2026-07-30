@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Agent } from '@/domain/agent/agent.js';
-import { describeRebind, isNoOp, planRebind, rebindTarget } from '@/domain/agent/rebind.js';
+import { describeRebind, isNoOp, planRebind } from '@/domain/agent/rebind.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 const agent: Agent = {
   id: 'a1',
@@ -62,28 +63,38 @@ describe('names_the_replacement', () => {
   });
 });
 
-/** A5 — a confirmation issued for one pair cannot be used for another. */
+/**
+ * A5 — a confirmation issued for one pair cannot be used for another.
+ *
+ * These asserted a `rebindTarget` in the agent domain. It produced the same
+ * string as `confirmationTarget.agentRebind` and was therefore a second
+ * construction of a confirmation target, which is what let a fifth flow be
+ * written without its values. Same assertions, one construction.
+ */
 describe('refuses_a_token_for_another_pair', () => {
+  const target_ = (r: { agentId: string; toStrategyId: string }) =>
+    confirmationTarget.agentRebind(r.agentId, r.toStrategyId);
+
   it('binds the target to both the agent and the destination strategy', () => {
-    const t = rebindTarget(planRebind(agent, target));
+    const t = target_(planRebind(agent, target));
     expect(t).toContain('a1');
     expect(t).toContain('s-new');
   });
 
   it('produces a different target for a different agent', () => {
-    const other = rebindTarget(planRebind({ ...agent, id: 'a2' }, target));
-    expect(other).not.toBe(rebindTarget(planRebind(agent, target)));
+    const other = target_(planRebind({ ...agent, id: 'a2' }, target));
+    expect(other).not.toBe(target_(planRebind(agent, target)));
   });
 
   it('produces a different target for a different destination', () => {
-    const elsewhere = rebindTarget(planRebind(agent, { id: 's-other', name: 'Other' }));
-    expect(elsewhere).not.toBe(rebindTarget(planRebind(agent, target)));
+    const elsewhere = target_(planRebind(agent, { id: 's-other', name: 'Other' }));
+    expect(elsewhere).not.toBe(target_(planRebind(agent, target)));
   });
 
   it('is not merely the verb', () => {
     // A token identified as "rebind" would carry consent about one agent onto
     // any other. That is the failure the token design exists to prevent.
-    expect(rebindTarget(planRebind(agent, target))).not.toBe('rebind');
+    expect(target_(planRebind(agent, target))).not.toBe('rebind');
   });
 });
 

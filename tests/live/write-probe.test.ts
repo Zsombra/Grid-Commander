@@ -144,7 +144,7 @@ live('a write reaches the real platform', () => {
           strategyId: fork.id,
           expectedRevision: fork.revision,
           active: false,
-          confirmationToken: token,
+          confirmation: { token: token, target: 't' },
         });
         // eslint-disable-next-line no-console
         console.log(`  archive: ${archived.kind}`);
@@ -441,7 +441,7 @@ live('an agent can be created with limits the product can state', () => {
           agentId: agent.id,
           expectedRevision: current.revision,
           to: 'ARCHIVED',
-          confirmationToken: token,
+          confirmation: { token: token, target: 't' },
         });
         // eslint-disable-next-line no-console
         console.log(`  archive: ${archived.status}`);

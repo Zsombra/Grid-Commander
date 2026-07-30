@@ -4,6 +4,7 @@ import type { RejectedField } from '@/domain/agent/field-ownership.js';
 import { partitionEdit } from '@/domain/agent/field-ownership.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { applyEdit, validateTradingConfig } from '@/domain/agent/trading-config.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import type { AgentsPort } from '@/ports/agents.js';
 
 export interface UpdateAgentRequest {
@@ -121,8 +122,38 @@ export class UpdateAgentCommand {
       agentId: req.agentId,
       expectedRevision: agent.revision,
       changes,
-      confirmationToken: req.confirmationToken,
+      /**
+       * Bound to the **submitted intent**, not to `changes`.
+       *
+       * `changes` is the merge — all twenty config fields, because a partial
+       * `tradingConfig` resets what it omits. The proposal described the three
+       * the user typed, so digesting the merge would compare an agreement against
+       * an object it never saw. Reconstructed here in the same canonical form
+       * `DescribeEditQuery` used: the accepted fields, with the typed config
+       * fields under `tradingConfig`. See DL-6.
+       */
+      confirmation: {
+        token: req.confirmationToken,
+        target: confirmationTarget.agentEdit(req.agentId, intent(accepted, req.tradingConfigChanges)),
+      },
     });
     return { kind: 'updated', agent: updated };
   }
+}
+
+/**
+ * The intent as the proposal formed it, rebuilt from the two parts the apply
+ * receives.
+ *
+ * The propose request carries `{ displayName?, tradingConfig: <typed fields> }`;
+ * the apply carries those two as separate arguments. One canonical shape, or the
+ * digests differ and every honest edit is refused.
+ */
+function intent(
+  accepted: Readonly<Record<string, unknown>>,
+  tradingConfigChanges: Readonly<Record<string, unknown>> | undefined,
+): Readonly<Record<string, unknown>> {
+  return tradingConfigChanges && Object.keys(tradingConfigChanges).length > 0
+    ? { ...accepted, tradingConfig: tradingConfigChanges }
+    : accepted;
 }

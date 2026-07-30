@@ -179,8 +179,17 @@ export function AgentEditConfirm({
   agent: Agent;
   consequence: string;
   confirmationToken: string;
-  changes: Readonly<Record<string, string>>;
-  tradingConfigChanges: Readonly<Record<string, string>>;
+  /**
+   * The intent, carried back so the apply posts exactly what was proposed.
+   *
+   * `string | number` because the money fields are numbers by the time they get
+   * here — one coercion now forms the intent for both requests, so what the
+   * confirmation was issued against and what this form posts are the same values.
+   * Typing them as `string` would mean re-coercing on the way out and digesting
+   * something else.
+   */
+  changes: Readonly<Record<string, string | number>>;
+  tradingConfigChanges: Readonly<Record<string, string | number>>;
   action: (formData: FormData) => Promise<void>;
 }) {
   return (

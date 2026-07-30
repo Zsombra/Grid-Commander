@@ -5,6 +5,7 @@ import { describeBlastRadius, isArchivable, isRestorable, mustForkToEdit } from 
 import type { LifecycleResult, StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 export interface ForkStrategyRequest {
   readonly userId: string;
@@ -88,7 +89,7 @@ export class DescribeArchiveStrategyQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'archive_strategy',
-      target: strategy.id,
+      target: confirmationTarget.strategy(strategy.id),
       consequence,
       expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
       consumedAt: null,
@@ -145,7 +146,16 @@ export class SetStrategyActiveCommand {
       // the user never saw. See architecture policy P4.
       expectedRevision: req.strategy.revision,
       active: req.active,
-      confirmationToken: req.confirmationToken,
+      // Only archiving is destructive, so only archiving carries one. Built
+      // through the shared construction either way — a flow that opts out of
+      // it is a flow the guard cannot see.
+      confirmation:
+        req.confirmationToken === undefined
+          ? undefined
+          : {
+              token: req.confirmationToken,
+              target: confirmationTarget.strategy(req.strategy.id),
+            },
     });
   }
 }

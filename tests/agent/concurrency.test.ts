@@ -25,14 +25,26 @@ describe('conflict_names_the_agent', () => {
     // The caller formed its intent at revision 1; the agent is now at 4.
     const port = new FakeAgentsPort([anAgent({ revision: 4 })]);
     await expect(
-      port.updateAgent({ ...who, agentId: 'a1', expectedRevision: 1, changes: {} }),
+      port.updateAgent({
+        ...who,
+        agentId: 'a1',
+        expectedRevision: 1,
+        changes: {},
+        confirmation: { token: 'c', target: 'a1' },
+      }),
     ).rejects.toThrow(/revision/i);
   });
 
   it('does not reapply the intent against the new state', async () => {
     const port = new FakeAgentsPort([anAgent({ revision: 4 })]);
     await port
-      .updateAgent({ ...who, agentId: 'a1', expectedRevision: 1, changes: { displayName: 'x' } })
+      .updateAgent({
+        ...who,
+        agentId: 'a1',
+        expectedRevision: 1,
+        changes: { displayName: 'x' },
+        confirmation: { token: 'c', target: 'a1' },
+      })
       .catch(() => undefined);
     // One attempt, no silent second one at the fresher revision.
     expect(port.calls.filter((c) => c.op === 'update')).toHaveLength(1);

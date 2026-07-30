@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
-import { requiredText } from '@/presentation/form.js';
+import { editIntent, MONEY_FIELDS, requiredText } from '@/presentation/form.js';
 
 /**
  * Change what an agent owns, in two requests.
@@ -101,13 +101,20 @@ export default async function EditAgentPage({
    * `describeEdit` refuses a field the agent does not own, so a parameter added
    * to the URL by hand is rejected here rather than sent to BattleGrid.
    */
-  const changes = pick(query, ['displayName']);
-  const money = pick(query, MONEY_FIELDS);
+  const intent = editIntent(
+    { get: (name) => query[name] ?? null },
+    { name: ['displayName'], money: MONEY_FIELDS },
+  );
+  const { tradingConfig: proposedConfig, ...proposedChanges } = intent;
 
   const proposed = await app.describeEdit.execute({
     ...user.authority,
     agentId: id,
-    changes: { ...changes, ...(Object.keys(money).length > 0 ? { tradingConfig: money } : {}) },
+    // The same coercion the apply uses. These were two — this kept `"25"` and the
+    // apply produced `25` — which was harmless while nothing compared them and
+    // would refuse every honest edit now that the confirmation is bound to the
+    // values. See DL-5.
+    changes: intent,
   });
 
   if (proposed.kind !== 'proposal') {
@@ -127,44 +134,14 @@ export default async function EditAgentPage({
         agent={agent}
         consequence={proposed.proposal.consequence}
         confirmationToken={proposed.proposal.confirmationToken}
-        changes={changes}
-        tradingConfigChanges={money}
+        changes={proposedChanges as Record<string, string | number>}
+        tradingConfigChanges={(proposedConfig ?? {}) as Record<string, string | number>}
         action={applyEdit}
       />
     </main>
   );
 }
 
-/**
- * The six BattleGrid declines to default.
- *
- * Written down here rather than read from the catalog because this is a *query
- * string* filter: it decides which URL parameters are trusted enough to forward
- * into a proposal, and that decision must not widen because a catalog response
- * changed. The form that renders the fields still asks the catalog, so one the
- * platform starts defaulting stops being shown while staying forwardable —
- * which is the safe direction for the two to disagree in.
- */
-const MONEY_FIELDS = [
-  'tradingMode',
-  'maxDailyLossUsd',
-  'maxCumulativeDrawdownUsd',
-  'maxConcurrentExposureUsd',
-  'balanceThresholdUsd',
-  'minAllocationUsd',
-] as const;
-
-function pick(
-  query: Record<string, string | undefined>,
-  names: readonly string[],
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const name of names) {
-    const v = query[name];
-    if (v !== undefined && v !== '') out[name] = v;
-  }
-  return out;
-}
 
 /**
  * Apply what was agreed to.
@@ -195,23 +172,28 @@ export async function applyEdit(formData: FormData) {
    * refused it rather than sending it, which is the layered defence working, but
    * a denylist of framework internals can never be complete. An allowlist can.
    */
-  const changes: Record<string, unknown> = {};
-  const displayName = formData.get('displayName');
-  if (typeof displayName === 'string' && displayName !== '') changes['displayName'] = displayName;
+  const intent = editIntent(
+    {
+      // `tc.` marks a trading-config field, so the two sets cannot be confused by
+      // a name that appears in both. Stripped here, because the digest is over
+      // the intent's own field names — the prefix is transport.
+      get: (name) => {
+        const value = formData.get(
+          (MONEY_FIELDS as readonly string[]).includes(name) ? `tc.${name}` : name,
+        );
+        return typeof value === 'string' ? value : null;
+      },
+    },
+    { name: ['displayName'], money: MONEY_FIELDS },
+  );
 
-  const tradingConfigChanges: Record<string, unknown> = {};
-  for (const field of MONEY_FIELDS) {
-    // `tc.` marks a trading-config field, so the two sets cannot be confused by
-    // a name that appears in both.
-    const value = formData.get(`tc.${field}`);
-    if (typeof value === 'string' && value !== '') tradingConfigChanges[field] = numberish(value);
-  }
+  const { tradingConfig, ...changes } = intent;
 
   const result = await app.updateAgent.execute({
     ...user.authority,
     agentId,
     changes,
-    ...(Object.keys(tradingConfigChanges).length > 0 ? { tradingConfigChanges } : {}),
+    ...(tradingConfig ? { tradingConfigChanges: tradingConfig as Record<string, unknown> } : {}),
     confirmationToken,
   });
 
@@ -227,14 +209,3 @@ export async function applyEdit(formData: FormData) {
   redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(reasons.join(' · '))}`);
 }
 
-/**
- * A form sends strings; the schema wants numbers for the money fields.
- *
- * `tradingMode` is an enum and must stay a string, so this converts only what
- * parses cleanly as a number rather than consulting a field list that would need
- * keeping in step with the schema.
- */
-function numberish(value: string): string | number {
-  const n = Number(value);
-  return value.trim() !== '' && Number.isFinite(n) ? n : value;
-}

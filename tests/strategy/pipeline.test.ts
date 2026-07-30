@@ -307,3 +307,79 @@ describe('the confirmation carries the platform’s account and the blast radius
     expect(h.port.strategies[0]?.revision).toBe(1);
   });
 });
+
+/**
+ * The token the proposal issued is the token the apply can spend.
+ *
+ * **This was a fifth dead write path, and nothing had ever noticed.**
+ * `DescribeApplyQuery` issued against `strategy:<id>#<intentDigest>`;
+ * `McpStrategyAdapter.applyPlan` composed its own `strategy:<id>` and spent
+ * against that. `consume` matches the target, so it never matched — and
+ * `apply_strategy_plan`, the call that reconfigures every agent bound to a
+ * strategy, was refused by the product before it reached BattleGrid.
+ *
+ * Every test passed the whole time, because `FakeStrategiesPort.applyPlan` does
+ * not go through `enforce()`. The two ends were checked separately and never
+ * against each other. This checks them against each other.
+ */
+describe('what was issued is what can be spent', () => {
+  async function readyToApply(h = harness()) {
+    const compiled = await h.compile.execute({ ...who, request: INTENT });
+    if (compiled.kind !== 'review') throw new Error('expected a review');
+    return { h, plan: compiled.review.plan };
+  }
+
+  it('spends the apply token against the target it was issued for', async () => {
+    const { h, plan } = await readyToApply();
+
+    const proposal = await h.describe.execute({
+      ...who,
+      strategyId: 's1',
+      plan,
+      currentIntent: INTENT,
+    });
+    if (proposal.kind !== 'proposal') throw new Error(`expected a proposal, got ${proposal.kind}`);
+
+    await h.apply.execute({
+      ...who,
+      strategyId: 's1',
+      plan,
+      confirmationToken: proposal.proposal.confirmationToken,
+    });
+
+    const boundTo = h.port.calls.find((c) => c.op === 'apply')?.target;
+    // The store's own matching, which is what `enforce()` calls in production.
+    const spent = await h.confirmations.consume(
+      proposal.proposal.confirmationToken,
+      who.userId,
+      'apply_strategy_plan',
+      boundTo ?? '(the write bound nothing)',
+    );
+
+    expect(spent, 'a token no apply can spend means every apply is refused').not.toBeNull();
+    // And it is the plan's target, not the strategy's: two plans for one strategy
+    // are two acts, and one must not authorise the other.
+    expect(boundTo).toMatch(/^strategy:s1#.+/);
+  });
+
+  it('does not let a token for one plan authorise another', async () => {
+    const { h, plan } = await readyToApply();
+    const proposal = await h.describe.execute({
+      ...who,
+      strategyId: 's1',
+      plan,
+      currentIntent: INTENT,
+    });
+    if (proposal.kind !== 'proposal') throw new Error('expected a proposal');
+
+    const spent = await h.confirmations.consume(
+      proposal.proposal.confirmationToken,
+      who.userId,
+      'apply_strategy_plan',
+      // The bare strategy id — what the adapter used to compose. If this were
+      // ever accepted again, the binding would be back to naming the strategy.
+      'strategy:s1',
+    );
+    expect(spent, 'the strategy alone must not authorise a plan').toBeNull();
+  });
+});

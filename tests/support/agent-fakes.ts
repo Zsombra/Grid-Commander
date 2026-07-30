@@ -5,6 +5,7 @@ import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * An in-memory agent platform.
@@ -22,6 +23,8 @@ export class FakeAgentsPort implements AgentsPort {
     agentId?: string | undefined;
     revision?: number | undefined;
     token?: string | undefined;
+    /** What the write bound its confirmation to. The pair is the point. */
+    target?: string | undefined;
   }> = [];
 
   catalog: Catalog = defaultCatalog();
@@ -102,8 +105,19 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
+    confirmation: Confirmation;
   }): Promise<Agent> {
-    this.calls.push({ op: 'update', agentId: params.agentId, revision: params.expectedRevision });
+    this.calls.push({
+      op: 'update',
+      agentId: params.agentId,
+      revision: params.expectedRevision,
+      token: params.confirmation.token,
+      // Recorded rather than checked here. This fake is not the guard — the guard
+      // is `enforce()`, and a fake that quietly accepted any target would be the
+      // fixture-modelling-an-impossible-platform mistake that hid the apply-plan
+      // defect for the life of the project.
+      target: params.confirmation.target,
+    });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = {
       ...current,
@@ -123,13 +137,13 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     strategyId: string;
     expectedRevision: number;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     this.calls.push({
       op: 'rebind',
       agentId: params.agentId,
       revision: params.expectedRevision,
-      token: params.confirmationToken,
+      token: params.confirmation?.token,
     });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = {
@@ -150,13 +164,13 @@ export class FakeAgentsPort implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent> {
     this.calls.push({
       op: `lifecycle:${params.to}`,
       agentId: params.agentId,
       revision: params.expectedRevision,
-      token: params.confirmationToken,
+      token: params.confirmation?.token,
     });
     const current = this.expect(params.agentId, params.expectedRevision);
     const next: Agent = { ...current, revision: current.revision + 1, status: params.to };

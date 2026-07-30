@@ -13,6 +13,7 @@ import type { StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
 import { digestOf } from './compile-plan.command.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 
 export interface DescribeApplyRequest {
   readonly userId: string;
@@ -104,10 +105,7 @@ export class DescribeApplyQuery {
       token: confirmationToken,
       userId: req.userId,
       tool: 'apply_strategy_plan',
-      // Bound to the plan, not to the strategy: two plans for one strategy are
-      // two different acts, and a confirmation for one must not authorise the
-      // other.
-      target: `strategy:${req.strategyId}#${plan.intentDigest}`,
+      target: confirmationTarget.strategyPlan(req.strategyId, plan.intentDigest),
       consequence,
       expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
       consumedAt: null,
@@ -155,7 +153,12 @@ export class ApplyPlanCommand {
       strategyId: req.strategyId,
       plan: toApplyPlan(req.plan.approvedPlan),
       planToken: req.plan.planToken,
-      confirmationToken: req.confirmationToken,
+      confirmation: {
+        token: req.confirmationToken,
+        // The same construction the proposal used. These two were
+        // `strategy:<id>#<digest>` and `strategy:<id>` — see the adapter comment.
+        target: confirmationTarget.strategyPlan(req.strategyId, req.plan.intentDigest),
+      },
     });
     return { applied };
   }

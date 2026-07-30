@@ -116,3 +116,70 @@ is a guard that gets exceptions added instead of defects fixed.
 commands, and the fakes and tests that construct them. Mechanical, and larger than
 the diff the first plan implied. The alternative — changing `updateAgent` alone —
 is smaller and leaves the asymmetry that caused this.
+
+## DL-7 — A fifth dead write path, and the plan's "control group" was wrong
+
+**Executor.** The plan opened by stating what was already true, and put
+`apply_strategy_plan` first:
+
+> `DescribeApplyQuery` issues `target: strategy:<id>#<intentDigest>` and
+> `ApplyPlanCommand` consumes against the same. **This flow is already correct
+> and is the control group.**
+
+**It does not consume against the same.** `ApplyPlanCommand` passed only the
+token; `McpStrategyAdapter.applyPlan` composed its own target:
+
+```
+issued:  strategy:<id>#<intentDigest>     DescribeApplyQuery
+spent:   strategy:<id>                    McpStrategyAdapter.applyPlan
+```
+
+`consume` matches the target, so it never matched. **Every `apply_strategy_plan`
+was refused by the product before it reached BattleGrid** — the call that
+reconfigures every agent bound to a strategy, dead for the life of the feature.
+That is a fifth dead write path, the same family as the four in
+`four-dead-write-paths`, and it survived two production gates.
+
+Nothing saw it because `FakeStrategiesPort.applyPlan` does not go through
+`enforce()`. Both ends were tested — the issuer's target in `pipeline.test.ts`,
+the adapter's in `mapper.test.ts`, and `mapper.test.ts` *asserted the wrong
+string as correct*: `expect(calls[0]?.target).toBe('strategy:s1')`. A guard was
+pinning the defect, which is the third time that has happened in this project.
+
+**How it was found:** by writing the second half of the guard — the spender side —
+rather than by reading. I had read `apply-plan.command.ts` and concluded the flow
+was correct from the issuer alone. The lesson is the plan's own: *both ends, or
+neither*. Confirmed with a direct `issue`-then-`consume` before changing anything.
+
+**Fixed as a side effect**, because there is now one construction and the command
+supplies the target: `confirmationTarget.strategyPlan(strategyId, intentDigest)`
+at both ends. Regression tests in `pipeline.test.ts` drive issue-then-spend
+through the store rather than comparing strings, and re-injecting the bare
+strategy id fails them.
+
+## DL-8 — Two coercions would have refused every honest edit
+
+**Executor.** DL-5 named the failure mode: a binding that refuses tampered *and*
+honest submissions, presenting as "the edit form stopped working". It was already
+present, and would have shipped:
+
+```
+review (query string):  { maxDailyLossUsd: "25" }   pick()
+apply  (FormData):      { maxDailyLossUsd: 25 }     numberish()
+```
+
+`digestOf` canonicalises through `JSON.stringify`, so `"25"` and `25` digest
+differently. Harmless while nothing compared the two; fatal the moment the
+confirmation is bound to the values.
+
+Found by comparing the two readers before writing the binding — not by running
+anything. `editIntent` in `src/presentation/form.ts` is now the one reader for
+both requests, and `MONEY_FIELDS` moved beside it because the fields to read and
+how to read them are one rule. `pick` and `numberish` are gone.
+
+**And the first re-injection of this defect did not fail any test**, because
+`edit-binding.test.ts` builds both intents directly and never goes through the
+page's readers. The property needed its own coverage: `the two requests agree on
+what was submitted`, plus a source check that the page has one reader rather than
+two. That gap between *fixed* and *guarded* is what the re-injection discipline is
+for.

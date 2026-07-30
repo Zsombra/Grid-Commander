@@ -8,6 +8,7 @@ import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
 import { mapAgent, mapBudget, mapCatalog, mapRecord, mapSlotUsage, mapThought } from './agent-mapper.js';
 import { unreadable } from './unreadable.js';
+import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
  * Agent operations, expressed as BattleGrid tool calls.
@@ -134,7 +135,7 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
@@ -144,9 +145,10 @@ export class McpAgentAdapter implements AgentsPort {
         expectedRevision: params.expectedRevision,
         ...params.changes,
       },
-      // `target` alone was supplied here, and the guard needs both. A
-      // destructive tool with a target and no token is refused every time.
-      { target: params.agentId, confirmationToken: params.confirmationToken },
+      // Forwarded, not composed. `target` alone was supplied here once, and the
+      // guard needs both; then both were supplied and the target was the bare
+      // agent id, which is what let an agreement about $25 authorise $25,000.
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
@@ -157,7 +159,7 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     strategyId: string;
     expectedRevision: number;
-    confirmationToken: string;
+    confirmation: Confirmation;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
@@ -168,12 +170,10 @@ export class McpAgentAdapter implements AgentsPort {
         expectedRevision: params.expectedRevision,
         confirm: true,
       },
-      {
-        // Bound to the pair, not to the verb — a confirmation for one agent must
-        // not carry onto another. See domain `rebindTarget`.
-        target: `agent:${params.agentId}->strategy:${params.strategyId}`,
-        confirmationToken: params.confirmationToken,
-      },
+      // Built by the command with `confirmationTarget.agentRebind`. It was
+      // composed here, correctly, and being correct in four adapters out of five
+      // is what made the fifth invisible.
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
@@ -184,13 +184,13 @@ export class McpAgentAdapter implements AgentsPort {
     agentId: string;
     expectedRevision: number;
     to: 'ACTIVE' | 'ARCHIVED';
-    confirmationToken?: string | undefined;
+    confirmation?: Confirmation | undefined;
   }): Promise<Agent> {
     const payload = await this.call(
       params,
       params.to === 'ARCHIVED' ? TOOLS.archive : TOOLS.activate,
       { agentId: params.agentId, expectedRevision: params.expectedRevision },
-      { target: params.agentId, confirmationToken: params.confirmationToken },
+      { confirmation: params.confirmation },
     );
     return mapAgent(payload['agent'] ?? payload);
   }
@@ -287,8 +287,7 @@ export class McpAgentAdapter implements AgentsPort {
     tool: string,
     args: Record<string, unknown>,
     extras: {
-      target?: string | undefined;
-      confirmationToken?: string | undefined;
+      confirmation?: Confirmation | undefined;
       idempotencyKey?: string | undefined;
     } = {},
   ): Promise<Record<string, unknown>> {
@@ -297,7 +296,12 @@ export class McpAgentAdapter implements AgentsPort {
       accessToken: who.accessToken,
       tool,
       args,
-      ...extras,
+      // The pair, split onto the two wire-level fields the guard reads. **One
+      // place** — this is where a target could once again be composed by hand,
+      // and a second mapping is the defect this change exists to remove.
+      target: extras.confirmation?.target,
+      confirmationToken: extras.confirmation?.token,
+      idempotencyKey: extras.idempotencyKey,
     });
     // Already the payload: the adapter unwrapped the MCP envelope. There was
     // an `asObject` here that returned `{}` for anything it did not recognise,

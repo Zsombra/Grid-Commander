@@ -10,9 +10,14 @@ place so a fifth flow cannot be written without it.
 
 Read before anything was written, because the shape of the fix depends on it:
 
-- `DescribeApplyQuery` issues `target: strategy:<id>#<intentDigest>` and
+- ~~`DescribeApplyQuery` issues `target: strategy:<id>#<intentDigest>` and
   `ApplyPlanCommand` consumes against the same. **This flow is already correct
-  and is the control group** — if a change here breaks it, the guard should say so.
+  and is the control group.**~~
+
+  **False, and the correction is the largest thing this change found.** The
+  adapter composed `strategy:<id>` and spent against that, so `consume` never
+  matched and **every `apply_strategy_plan` was refused by the product** — a fifth
+  dead write path. I concluded "correct" from reading the issuer alone. See DL-7.
 - `rebindTarget` produces `agent:<id>->strategy:<sid>`. The destination is the only
   value a rebind carries, so it is already bound.
 - `enforce()` in `call-path.ts` consumes on `(token, userId, tool, target)` where
@@ -46,7 +51,11 @@ Read before anything was written, because the shape of the fix depends on it:
 | `src/application/use-cases/apply-plan.command.ts` | Uses the shared construction | modified |
 | `src/application/use-cases/compile-plan.command.ts` | `digestOf` moves to the domain | modified |
 | `src/domain/capability/digest.ts` | `digestOf` — domain, not a use case | added |
-| `src/domain/agent/rebind.ts` | `rebindTarget` uses the shared construction | modified |
+| `src/domain/agent/rebind.ts` | `rebindTarget` **removed** — it was a second construction of the same string | modified |
+| `src/presentation/form.ts` | `editIntent` + `MONEY_FIELDS`: one reader for both requests (DL-8) | modified |
+| `app/(app)/agents/[id]/edit/page.tsx` | Uses the one reader; `pick` and `numberish` gone | modified |
+| `tests/strategy/pipeline.test.ts` | Issue-then-spend regression for the dead apply path | modified |
+| `tests/support/{agent,strategy}-fakes.ts` | Record the bound target | modified |
 | `tests/architecture/confirmation-binds-values.test.ts` | The derived guard | added |
 | `tests/agent/edit-binding.test.ts` | The behaviour, both directions | added |
 
@@ -56,8 +65,9 @@ about what a confirmation covers cannot import from an application use case, and
 
 ## Constraints
 
-- **The apply-plan flow must be behaviourally unchanged.** It is the reference
-  implementation; the same target string must come out of the shared construction.
+- ~~**The apply-plan flow must be behaviourally unchanged.**~~ Withdrawn: the flow
+  was broken (DL-7), so preserving its behaviour would have preserved a dead write
+  path. It must instead become *spendable* — issue and consume against one target.
 - **No signature change to `ConfirmationStore.consume`.** A fifth parameter would
   be a migration and a second mechanism, and the composite target already exists.
 - **The digest anchors on the submitted intent, not on what ships.** The command
@@ -79,6 +89,9 @@ about what a confirmation covers cannot import from an application use case, and
 | — *one mechanism, in one place* | `confirmationTarget` in the domain | `confirmation-binds-values.test.ts`, derived |
 | A Destructive Change Is Agreed To By A Person — *amount altered after agreement* | digest mismatch → `ConfirmationRequiredError` | `edit-binding.test.ts` |
 | — *two agreements for one agent* | distinct digests → distinct targets | `edit-binding.test.ts` |
+| — *a destination written relatively* (n/a here) | — | covered by `reachability.test.ts` |
+| **DL-7**: what was issued is what can be spent | one construction, command-side | `pipeline.test.ts` ×2, re-injected |
+| **DL-8**: both requests form the same intent | `editIntent`, one reader | `edit-binding.test.ts` ×7, re-injected |
 
 ## Risks
 
@@ -87,7 +100,7 @@ about what a confirmation covers cannot import from an application use case, and
 | **A correct edit is refused** because issuer and consumer digest different inputs | The same function on the same `accepted` set, called from both. Asserted directly: propose then apply with no tampering must succeed. This is the failure that would look like a working guard |
 | The guard passes vacuously | Two vacuity checks: it must find the flows it compares, and it must fail when the binding is removed from *either* side |
 | A list of flows rather than a derivation | Derived from the issuers, so a fifth flow is covered on the day it is written. A list is how this defect happened |
-| `digestOf` moving breaks the strategy flow | The apply target must be byte-identical before and after; asserted |
+| `digestOf` moving breaks the strategy flow | Asserted through issue-then-spend rather than by comparing strings. The byte-identical check I first planned would have **locked in** the dead path, because the string it preserved was the broken one |
 | Key ordering changes the digest | `canonicalise` already sorts keys; the existing tests for it stay |
 | Scope creep into a schema change | Explicitly out of scope, with the revisit condition in the decision log |
 
