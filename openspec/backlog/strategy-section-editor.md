@@ -2,7 +2,7 @@
 id: strategy-section-editor
 title: A strategy can be edited only by its tagline
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-07-27
 updated: 2026-07-30
