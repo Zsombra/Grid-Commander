@@ -40,11 +40,16 @@ silently because that would cause a compile request that strips sections the
 user never intended to remove, and the platform has the authoritative view of
 what a section key means.
 
-### Decision: `ReadSectionOptionsQuery` fetches vocabulary concurrently per category
-After `list_strategy_categories` resolves, vocabulary for all categories is
-fetched concurrently. A single failed category does not fail the whole query —
-its templates are omitted and logged. Rejected: fetching sequentially because
-with 8–10 categories the page load would be unacceptably slow.
+### Decision: One `list_strategy_vocabulary` call for all templates
+Live probing confirms `list_strategy_vocabulary` returns the same 24 templates
+regardless of which category key is passed — the platform does not partition
+templates by category. A single call (with any category key) returns the full
+template list. `ReadSectionOptionsQuery` calls it once and associates every
+template with the category that best describes it via the `category` field in
+the response rather than inferring it from which category was requested.
+Rejected: concurrent per-category fetch (original design) because it issues N
+redundant HTTP round-trips and makes the code appear to assume templates differ
+per category when they do not.
 
 ### Decision: Edit page switches from `listStrategies` to `readStrategy`
 `readStrategy` returns the full `StrategyDetail` including `sections[]`, which
@@ -53,10 +58,27 @@ summary (`sectionCount: number`). The cost is one additional BattleGrid call,
 acceptable for an edit page. Rejected: calling both and merging because that
 adds complexity with no benefit.
 
+### Decision: `SectionTemplate` is a discriminated union on `kind`
+Live probing found two template variants in the vocabulary: 22 platform
+sections with a `sectionKey` field (e.g. `includeRsi`) and 2 custom templates
+with a `templateKey` field (e.g. `momentum-composite`). The domain type is a
+discriminated union: `{ kind: 'platform'; sectionKey: string; label: string } |
+{ kind: 'custom'; templateKey: string; label: string }`. The adapter sets `kind`
+from whichever key is present. Rejected: a flat type with both fields optional
+because it loses the discriminant at the call site and requires null-checks
+at every use.
+
 ### Decision: Domain boundary respected — `SectionTemplate` in domain, not adapter
 The template type lives in `src/domain/strategy/strategy.ts` so use cases can
 refer to it without importing from infrastructure. The adapter maps the raw
 BattleGrid payload to `SectionTemplate`; the domain type is the stable surface.
+
+### Decision: `mapCategory` surfaces guidance fields
+Live `list_strategy_categories` returns `whenToUse`, `bestPractices`,
+`commonMisuses`, and `examples` on each category object. `mapCategory` maps
+these to optional string fields on `StrategyCategory` so the edit page can show
+a tooltip or guidance copy. Previously mapped only `category`, `label`,
+`purpose`, and `metricCount`.
 
 ## Data Flow
 
@@ -64,11 +86,12 @@ BattleGrid payload to `SectionTemplate`; the domain type is the stable surface.
 Edit page load (no compile param)
   │
   ├─► ReadSectionOptionsQuery.execute({ authority, strategyId })
-  │     ├─[concurrent]─► readStrategy  → StrategyDetail (has sections[])
-  │     └─[concurrent]─► readVocabulary → categories[]
-  │           └─[concurrent, per category]─► listCategoryVocabulary
-  │                       → { templates: SectionTemplate[] }
+  │     ├─[concurrent]─► readStrategy       → StrategyDetail (has sections[])
+  │     └─[concurrent]─► readVocabulary     → categories[]
+  │     └─[concurrent]─► listVocabularyTemplates (single call, any category key)
+  │                         → SectionTemplate[] (24 templates, same for all cats)
   │     └─► returns { kind: 'ready', detail, categories: CategoryOptions[] }
+  │           (CategoryOptions groups templates by category field on each template)
   │
   └─► Server renders:
         - section checklist (pre-checked = detail.sections ∩ vocabulary)
@@ -87,10 +110,11 @@ Form submit (GET) → URL: ?compile=1&tagline=X&sections=k1&sections=k2&unknownS
 ## File Changes
 
 - `src/domain/strategy/strategy.ts` (modified) — add `SectionTemplate` type
-- `src/ports/strategies.ts` (modified) — add `listCategoryVocabulary` method +
-  `CategoryVocabularyResult`, `SectionTemplate`, `CategoryOptions` types
+- `src/ports/strategies.ts` (modified) — add `listVocabularyTemplates` method +
+  `VocabularyTemplatesResult`, `SectionTemplate` (discriminated union), `CategoryOptions` types
 - `src/infrastructure/battlegrid/strategy-adapter.ts` (modified) — implement
-  `listCategoryVocabulary`; add `list_strategy_vocabulary` to `TOOLS`
+  `listVocabularyTemplates` (single call); add `list_strategy_vocabulary` to `TOOLS`;
+  update `mapCategory` to surface guidance fields
 - `src/application/use-cases/read-section-options.query.ts` (new) —
   `ReadSectionOptionsQuery`: concurrent fetch, returns `SectionOptionsResult`
 - `src/composition.ts` (modified) — wire `ReadSectionOptionsQuery`
