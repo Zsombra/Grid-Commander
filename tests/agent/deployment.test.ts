@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { deploymentsFor } from '@/domain/agent/deployment.js';
 import type { RadarDeployment } from '@/domain/agent/deployment.js';
+import { deploymentsByAgent } from '@/domain/agent/deployment.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { mapDeployments } from '@/infrastructure/battlegrid/radar-adapter.js';
@@ -184,5 +185,53 @@ describe('the platform record backs the read', () => {
     expect(tool?.classification).toBe('read');
     expect(tool?.input_required).toEqual([]);
     expect(tool?.declared_output).toContain('policies');
+  });
+});
+
+describe('the roster asks for everyone at once', () => {
+  it('deploymentsByAgent agrees with deploymentsFor, for every involved agent', () => {
+    const ds = [
+      deployment(),
+      deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a3' }),
+    ];
+    const byAgent = deploymentsByAgent(ds);
+    expect(Object.keys(byAgent).sort()).toEqual(['a1', 'a2', 'a3']);
+    for (const id of ['a1', 'a2', 'a3']) {
+      expect(byAgent[id]).toEqual(deploymentsFor(ds, id));
+    }
+  });
+
+  it('summary answers with the map, or carries unreadable through', async () => {
+    const ok = await new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+    ).summary(who);
+    expect(ok.kind).toBe('summary');
+    if (ok.kind === 'summary') expect(ok.byAgent['a1']?.[0]?.standing).toBe('on-duty');
+
+    const bad = await new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'unreadable', reason: 'nope', cause: 'unreachable' }),
+    ).summary(who);
+    expect(bad.kind).toBe('unreadable');
+  });
+});
+
+describe('the roster renders the deployment line honestly', () => {
+  const component = readFileSync('src/presentation/components/agent-roster.tsx', 'utf8');
+  const page = readFileSync('app/(app)/agents/page.tsx', 'utf8');
+
+  it('the page fetches the summary and hands it to the roster', () => {
+    expect(page).toMatch(/await app\.readDeployments\.summary/);
+    expect(page).toMatch(/deployments=\{deployments\}/);
+  });
+
+  it('a row says acting or waiting, in the detail page\'s words', () => {
+    expect(component).toMatch(/Scanning \$\{d\.coinTicker\}/);
+    expect(component).toMatch(/Holding the position on/);
+    expect(component).toMatch(/Not deployed — scanning no market/);
+  });
+
+  it('unreadable is one notice, and then no row claims either way', () => {
+    expect(component).toMatch(/could not be read/);
+    expect(component).toMatch(/deployments\.kind === 'summary' &&/);
   });
 });

@@ -64,3 +64,22 @@ export function deploymentsFor(
             : 'in-rotation',
     }));
 }
+
+/**
+ * Every agent's deployments at once — the roster's question. Built from the
+ * same membership-and-standing rules as `deploymentsFor`, so the roster and
+ * the detail page cannot disagree about whether an agent is acting.
+ */
+export function deploymentsByAgent(
+  deployments: readonly RadarDeployment[],
+): Readonly<Record<string, readonly AgentDeployment[]>> {
+  const involved = new Set<string>();
+  for (const d of deployments) {
+    for (const id of d.slotAgentIds) involved.add(id);
+    if (d.onDutyAgentId) involved.add(d.onDutyAgentId);
+    if (d.openPositionAgentId) involved.add(d.openPositionAgentId);
+  }
+  const byAgent: Record<string, readonly AgentDeployment[]> = {};
+  for (const id of involved) byAgent[id] = deploymentsFor(deployments, id);
+  return byAgent;
+}
