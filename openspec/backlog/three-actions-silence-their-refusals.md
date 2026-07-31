@@ -2,11 +2,11 @@
 id: three-actions-silence-their-refusals
 title: Reactivate, agent archive, and strategy archive drop their refusal arms
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-31
 updated: 2026-07-31
-change: ""
+change: three-actions-silence-their-refusals
 capability: agent-authoring
 blocked_by: []
 tags: [server-actions, refusals]

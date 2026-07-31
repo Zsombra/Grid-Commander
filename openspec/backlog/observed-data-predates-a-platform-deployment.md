@@ -2,7 +2,7 @@
 id: observed-data-predates-a-platform-deployment
 title: Re-probe live — the artifact's observed data predates a schema-changing deployment
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-31
 updated: 2026-07-31
@@ -44,3 +44,7 @@ constants) but only a live call can say what the responses look like now.
 re-probe instruction. Needs the operator: this environment holds no key, by
 design. One run regenerates declared and observed together and closes the
 generation gap.
+
+## Closed 2026-07-31
+
+The operator supplied a key and the live probe ran: 43 of 110 tools called (21 argument-free + 22 via harvested ids), 66 writes skipped by the safety filter, 1 failed (`get_market_context`, see `two-read-tools-do-not-answer`). Declared and observed are one generation again; no key material in the artifact; tool set unchanged vs the capabilities dump.

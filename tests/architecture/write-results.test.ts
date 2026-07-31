@@ -60,13 +60,14 @@ function executeSites(): ExecuteSite[] {
 /**
  * Every currently-dropped result, with the verdict it earned.
  *
- * Three of these are live defects — a refusal arm that silently vanishes —
- * tracked as `three-actions-silence-their-refusals`; fixing a site means
- * deleting its row here, and this file fails until the row is gone. Two are
- * recorded as benign: the result union has a single success arm and every
- * refusal throws, so there is nothing on the value to branch on. They stay
- * listed rather than exempted invisibly, because "benign" is a claim about
- * the current result type, and the row is where that claim is auditable.
+ * Five rows on day one; the three that were live defects — refusal arms that
+ * silently vanished on reactivate, agent-archive, and strategy-archive — were
+ * fixed by `three-actions-silence-their-refusals` and their rows deleted, as
+ * this file demands. The two that remain are benign: the result union has a
+ * single success arm and every refusal throws, so there is nothing on the
+ * value to branch on. They stay listed rather than exempted invisibly,
+ * because "benign" is a claim about the current result type, and the row is
+ * where that claim is auditable.
  */
 const KNOWN_DROPPED: ReadonlyArray<{ file: string; tool: string; verdict: string }> = [
   {
@@ -76,28 +77,10 @@ const KNOWN_DROPPED: ReadonlyArray<{ file: string; tool: string; verdict: string
       'benign today: RebindAgentResult has the single arm {kind:"rebound"}; refusals throw and surface via the error boundary',
   },
   {
-    file: 'app/(app)/agents/[id]/reactivate/page.tsx',
-    tool: 'setLifecycle',
-    verdict:
-      'DEFECT — SetLifecycleResult carries {kind:"not-permitted", reason} and this drops it; three-actions-silence-their-refusals',
-  },
-  {
-    file: 'app/(app)/agents/[id]/archive/page.tsx',
-    tool: 'setLifecycle',
-    verdict:
-      'DEFECT — same not-permitted arm dropped on archive; three-actions-silence-their-refusals',
-  },
-  {
     file: 'app/(app)/strategies/[id]/edit/page.tsx',
     tool: 'applyPlan',
     verdict:
       'benign today: ApplyPlanResult is {applied} with no refusal arm; refusals throw. The applied payload goes unread by design — the page re-reads',
-  },
-  {
-    file: 'app/(app)/strategies/[id]/archive/page.tsx',
-    tool: 'setStrategyActive',
-    verdict:
-      'DEFECT — SetStrategyActiveResult carries refused and repair-required arms and this drops them; three-actions-silence-their-refusals',
   },
 ];
 

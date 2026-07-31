@@ -4,11 +4,18 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 
 /** Archiving is reversible, and the copy the token was issued against says so. */
-export default async function ArchivePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ArchivePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ problem?: string }>;
+}) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
+  const { problem } = await searchParams;
   const result = await app.describeArchive.execute({ ...user.authority, agentId: id });
 
   if (result.kind !== 'proposal') {
@@ -24,6 +31,9 @@ export default async function ArchivePage({ params }: { params: Promise<{ id: st
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {proposal.agentName}?</h1>
+      {problem ? (
+        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+      ) : null}
       <p role="alert" className="rounded border p-4 text-sm">{proposal.consequence}</p>
       <form action={performArchive} className="flex flex-wrap gap-3">
         <input type="hidden" name="agentId" value={proposal.agentId} />
@@ -46,12 +56,18 @@ export async function performArchive(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const agentId = requiredText(formData, 'agentId');
-  await app.setLifecycle.execute({
+  const result = await app.setLifecycle.execute({
     ...user.authority,
     agentId,
     to: 'ARCHIVED',
     expectedRevision: requiredInteger(formData, 'expectedRevision'),
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
+  // A not-permitted archive that redirects to the roster looks exactly like a
+  // successful one until the row fails to move. The reason returns to the
+  // page that asked, where the person who clicked is still standing.
+  if (result.kind === 'not-permitted') {
+    redirect(`/agents/${agentId}/archive?problem=${encodeURIComponent(result.reason)}`);
+  }
   redirect('/agents');
 }

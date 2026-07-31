@@ -18,13 +18,13 @@ export default async function RestoreStrategyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ outcome?: string }>;
+  searchParams: Promise<{ outcome?: string; problem?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { outcome } = await searchParams;
+  const { outcome, problem } = await searchParams;
   const { result, listings } = await app.listStrategies.execute(user.authority);
 
   if (result.kind === 'unreadable') {
@@ -95,6 +95,9 @@ export default async function RestoreStrategyPage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Restore {strategy.name}?</h1>
+      {problem ? (
+        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+      ) : null}
       <p className="text-sm">
         It returns to your strategies, editable, at revision {strategy.revision}.
         No agent is bound to an archived strategy, so nothing is reconfigured by
@@ -136,10 +139,14 @@ export async function restoreStrategy(formData: FormData) {
   });
 
   // `repair-required` comes back as its own case rather than an error, and is
-  // carried to the page so it can be explained rather than thrown away.
+  // carried to the page so it can be explained rather than thrown away. The
+  // `refused` arm was not: it redirected to the roster exactly as success
+  // does, discarding the one reason the platform gave. Both arms return now.
   redirect(
     result.kind === 'repair-required'
       ? `/strategies/${strategyId}/restore?outcome=repair-required`
-      : '/strategies',
+      : result.kind === 'refused'
+        ? `/strategies/${strategyId}/restore?problem=${encodeURIComponent(result.reason)}`
+        : '/strategies',
   );
 }

@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-07-31 — the operator's key: live probe, live writes, and what they flushed out
+
+**Did**: The operator supplied a live key and delegated the CI verdict, the PR
+decision, and the P2 work. Everything below ran against the real platform;
+the key lives in env only and appears in no artifact (verified by grep).
+
+**Live probe**: 43 of 110 tools observed (21 argument-free + 22 via harvested
+ids — the pass the first generation could not make), 66 writes skipped by the
+code-level safety filter, 1 failed. Declared and observed are one generation
+again. Closed `observed-data-predates-a-platform-deployment` and
+`probe-skips-every-read-that-needs-an-id`. `get_open_orders` recovered (its
+INTERNAL_ERROR was transient); `get_market_context` still fails identically —
+its declared schema (nothing required) understates the live server (demands
+`sessionId` or `primaryTimeframe`); `two-read-tools-do-not-answer` narrowed
+to that one tool and kept as its record.
+
+**`three-actions-silence-their-refusals` fixed and archived** (lite):
+reactivate, agent-archive, and strategy-archive now read their results and
+send a refusal's reason back to the surface acted from as `?problem=`,
+rendered role=alert — the rename-fix pattern. A fourth instance found on the
+way: restore read its result but silently treated `refused` as success; fixed
+in the same change. The three ledger rows left `write-results.test.ts` as the
+guard demands; `tests/agent/refusals-reach-the-operator.test.ts` (17 tests)
+pins the shapes, including that repair-required stays guidance, not an alert.
+
+**Live writes**: the write-probe's spend-side confirmations still carried the
+`'t'` placeholder target from before `a-confirmation-binds-to-what-was-agreed`
+hardened the binding — the guard refused them, which is the guard being right
+and the test being stale. Fixed both spends (`agent.id`, `fork.id`). Two runs
+before the fix left two throwaway agents ACTIVE on the account; both archived
+same-session through the product's own guarded path (which is itself live
+proof the archive path works). Account verified clean: the operator's five
+real agents, nothing else. Create → read-back → rename → limits-edit →
+archive all succeeded live. Two account-state assumptions became runtime
+skips (no unbound SYSTEM strategy to fork; a thought log with no decisions
+yet). One flake remains — the fake-confirmation wiring trips inconsistently
+across two describe→update cycles — filed as
+`live-write-probe-confirmation-flake` (P3) with suspects named.
+
+**Harness**: `test_probe_id_sources` failed on the fresh artifact because
+`list_entry_decisions.entries` is legitimately empty on this account — the
+assert conflated a wrong row (the defect it guards) with an empty account
+(a state). Split: field-exists still fails, empty-list is recorded, rows that
+exist must carry ids.
+
+**State**: 0 active changes · 32 open backlog items (3 closed, 1 filed today
+on top of the morning's work) · 54 archived changes · 827 vitest + 217
+harness green · validation 0 errors / 16 warnings. PR #10 merged (delegated).
+
+**Next**: the fork→compile→apply live walk needs a SYSTEM strategy with
+nothing bound — none was visible to the key today. Restore and
+repair-required remain unwalked. CI: the runner registration and `CI_RUNNER`
+flip are still the operator's two steps.
+
+**Watch out**: the key reaches an account whose agents have made no entry
+decisions — `decisionId`-gated tools stay unobserved until they have. And the
+live tests create real (trading-off) agents; a failed run can orphan one, so
+check `list_intelligence_agents` for `GC probe` names after any red run.
+
 ## 2026-07-31 — quality gates made real; a dropped write result now fails the gate
 
 **Did**: Two lite changes, both archived same-session, continuing down the P2

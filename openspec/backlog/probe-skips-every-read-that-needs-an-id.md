@@ -2,10 +2,10 @@
 id: probe-skips-every-read-that-needs-an-id
 title: The probe skips every read that needs an id, which is most of them
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-07-31
 change: an-agent-can-be-read-thinking
 capability: battlegrid-connection
 blocked_by: []
@@ -63,3 +63,7 @@ so the artifact distinguishes "observed" from "observable but not observed".
   by hand
 - `two-read-tools-do-not-answer` — found by the argument-free pass; the same
   class of finding is waiting behind every skipped read
+
+## Closed 2026-07-31
+
+The id-discovery pass exists and worked against the live server: round one harvested agentId and strategyId, and 22 id-gated reads were called that the first-generation probe could not reach (43 called total, up from 21). `decisionId`/`logId` went unharvested only because the account had no entry decisions that day — recorded per-tool as 'no <arg> available on this account'.

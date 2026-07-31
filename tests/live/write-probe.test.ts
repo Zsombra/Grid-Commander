@@ -72,7 +72,7 @@ live('a write reaches the real platform', () => {
   it(
     'forks, compiles, and archives — the whole write path, on a throwaway object',
     { timeout: 120_000 },
-    async () => {
+    async (ctx) => {
       const { strategies, confirmations, clock, audit } = wire();
 
       // --- pick a target that harms nothing ---------------------------------
@@ -81,8 +81,14 @@ live('a write reaches the real platform', () => {
       if (listing.kind !== 'strategies') return;
 
       const source = listing.strategies.find((s) => s.scope === 'SYSTEM' && s.boundAgentCount === 0);
-      expect(source, 'need a SYSTEM strategy with nothing bound to it').toBeDefined();
-      if (!source) return;
+      if (!source) {
+        // An account state, not a defect: on 2026-07-31 every SYSTEM strategy
+        // visible to the key had agents bound. The sequence needs a source
+        // that harms nothing; without one it must not run, and a skip says so
+        // where a silent pass would claim coverage that did not happen.
+        ctx.skip();
+        return;
+      }
       // eslint-disable-next-line no-console
       console.log(`  source: ${source.name} (SYSTEM, r${source.revision}, ${source.boundAgentCount} bound)`);
 
@@ -144,7 +150,7 @@ live('a write reaches the real platform', () => {
           strategyId: fork.id,
           expectedRevision: fork.revision,
           active: false,
-          confirmation: { token: token, target: 't' },
+          confirmation: { token, target: fork.id },
         });
         // eslint-disable-next-line no-console
         console.log(`  archive: ${archived.kind}`);
@@ -441,7 +447,7 @@ live('an agent can be created with limits the product can state', () => {
           agentId: agent.id,
           expectedRevision: current.revision,
           to: 'ARCHIVED',
-          confirmation: { token: token, target: 't' },
+          confirmation: { token, target: agent.id },
         });
         // eslint-disable-next-line no-console
         console.log(`  archive: ${archived.status}`);
@@ -466,7 +472,7 @@ live('an agent can be created with limits the product can state', () => {
 live('an agent can be read thinking', () => {
   const who = { userId: 'owner', accessToken: KEY as string };
 
-  it('reads real decisions, including the ones the agent declined', { timeout: 120_000 }, async () => {
+  it('reads real decisions, including the ones the agent declined', { timeout: 120_000 }, async (ctx) => {
     const { battlegrid } = wire();
     const agents = new McpAgentAdapter(battlegrid);
     const read = new ReadThoughtLogQuery(agents);
@@ -480,7 +486,14 @@ live('an agent can be read thinking', () => {
     const log = await read.execute({ ...who, agentId: target.id, limit: 20 });
     // eslint-disable-next-line no-console
     console.log(`  thinking: ${log.kind}${log.kind === 'decisions' ? ` ${log.decisions.length} of ${log.total}` : ''}`);
-    expect(log.kind, 'the account has hundreds of entries').toBe('decisions');
+    if (log.kind === 'none') {
+      // Written when the operator's account had hundreds of entries; the key
+      // in use on 2026-07-31 reaches an account whose agents have decided
+      // nothing yet. Nothing to read is not a failed read.
+      ctx.skip();
+      return;
+    }
+    expect(log.kind, 'a non-empty log must arrive as decisions').toBe('decisions');
     if (log.kind !== 'decisions') return;
 
     for (const d of log.decisions.slice(0, 3)) {
