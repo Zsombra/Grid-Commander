@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-07-30  
-**State**: All branches merged. `main` is current. No active changes. 36 open backlog items.
+**Date**: 2026-07-31  
+**State**: `main` is current and green (792 vitest + 124 harness tests, typecheck clean). No active changes. 36 open backlog items. One draft PR open: #8 (`brain-with-no-model` fix), merges clean.
 
 ---
 
@@ -20,12 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 46 |
-| Vitest tests | 775 |
+| Changes (archived) | 47 |
+| Vitest tests | 792 |
 | Harness tests (Python) | 124 |
 | Active changes | 0 |
 | Open backlog items | 36 |
 | Design tickets open | 0 |
+| Open draft PRs | 1 — #8, `brain-with-no-model` fix |
 
 ---
 
@@ -50,9 +51,10 @@ Against a real connected BattleGrid account a user can:
 - **Connect** their account (OAuth/DCR/PKCE, no raw credential ever touches the browser)
 - **Agents**: view roster, create, rename, update trading limits, rebind to a strategy, archive, reactivate
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk
-- **Strategies**: fork a system strategy, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
+- **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
-- **Assistant**: read-only BattleGrid assistant; the tool set is filtered structurally (no mutating tool is ever offered, regardless of what the model is told)
+
+There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
 **Proven live**: an agent was created, renamed, had its limits updated, and was archived. A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
 
@@ -74,19 +76,18 @@ These were bugs that existed in the application that sessions discovered and fix
 
 | Item | Type | Notes |
 |---|---|---|
-| `brain-with-no-model` | P3 bug | The assistant has no model wired; it tells the user so |
-| `strategy-section-editor` | P2 feature | Only tagline editing; section editing unbuilt |
+| `brain-with-no-model` | P3 bug | Mapper bug: an agent with neither `brainPreset` nor `modelId` maps to `{kind: 'custom', modelId: ''}`. Display-only. **Fix is open as draft PR #8** — maps to `unknown` instead; merges clean into `main`. Not an assistant issue (the assistant is gone; `wire-an-assistant-model` closed before its removal). |
 | `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
-| `assistant-unverified-against-live-api` | (from journal) | Needs a real Anthropic key; not proven against the actual model API |
 | `confirmation-is-not-bound-to-values` | P2 risk | Confirmation tokens authorise the *intent* but not the specific payload values |
 | `rebind-is-not-bound-to-the-revision-it-read` | P3 risk | Rebind can clobber a concurrent change |
+
+Resolved since this table was first written: `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
 
 **Hard limits** (not bugs — these are constraints imposed by BattleGrid's API):
 
 - Agent edit form only exposes rename and trading limits — the read and write schemas for `tradingConfig` differ (3 fields come back on read, are rejected on write with `additionalProperties: false`)
 - Position-management preset is a label alongside 14 independent values, not a shorthand — a preset dropdown cannot be the edit surface
-- The assistant is structurally read-only; no write-capable version was built or designed
 
 ---
 
@@ -95,17 +96,19 @@ These were bugs that existed in the application that sessions discovered and fix
 | Item | What | Fix path |
 |---|---|---|
 | `ci-creates-no-runs` | GitHub Actions not running (account billing block) | Settle the account, or register a self-hosted runner. Not fixable by code. |
-| `ci-startup-failure` | Old framing of the CI issue | Superseded; can be closed. |
 | `image-never-built` | Docker image build never proven | Needs a Docker daemon; not resolvable in this environment. |
+
+(`ci-startup-failure` — the old framing of the CI issue — was closed 2026-07-31 as superseded by `ci-creates-no-runs`.)
 
 ---
 
 ## Immediate Next Steps
 
-1. **Wire the assistant model** (`brain-with-no-model`, P3 — but blocks the assistant being useful). Standard-track change.
-2. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`).
-3. **Strategy section editor** (`strategy-section-editor`, P2) — only tagline editing exists; the section editor was deliberately deferred.
-4. **Sweep conformance** (`conformance-sweep-for-required-and-accepted-params`, P2) — the live-probe found two read tools that always return empty; there may be more gaps.
+1. **Merge draft PR #8** (`brain-with-no-model`) — 3 commits on `claude/hand-off-file-review-3gpveo`: propose, fix (mapper falls back to `unknown` instead of `custom` with an empty model id), archive. Verified to merge into `main` with zero conflicts. Closing it takes the backlog to 35 open.
+2. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`). `validate.yml` pins `runs-on: ubuntu-latest` on all four jobs, so a self-hosted runner needs a matching label.
+3. **Sweep conformance** (`conformance-sweep-for-required-and-accepted-params`, P2) — the live-probe found two read tools that always return empty; there may be more gaps.
+4. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
+5. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.
 
 ---
 

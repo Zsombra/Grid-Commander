@@ -1,6 +1,18 @@
 # Journal
 
-## 2026-07-30 — strategy-section-editor: verified and archived
+## 2026-07-31 — reconciliation review: main is authoritative, one draft PR ahead
+
+**Did**: Full reconciliation of the clone, the handoff artifacts, and the backlog against the live repo. Answer to "who's ahead": **`origin/main` (`3a115fd`) is the authoritative tip — everything through PR #7 is merged — and the only work ahead of it is draft PR #8** (`claude/hand-off-file-review-3gpveo`, 3 commits: propose / fix / archive for `brain-with-no-model`), which merges into `main` with zero conflicts (`git merge-tree` verified). All other remote branches are fully contained in `main`. Verified `main` green locally: 792 vitest tests passing (6 skipped), typecheck clean, `./scripts/check.sh` both gates ok.
+
+**Reconciled**:
+- `HANDOFF.md` had gone stale three ways and was wrong at birth on a fourth: (1) counts updated 46→47 archived changes, 775→792 tests; (2) `strategy-section-editor` was listed as unbuilt — it shipped and archived in PR #7; (3) `brain-with-no-model` was described as "the assistant has no model wired" — it is actually the mapper fallback bug (PR #8 fixes it), and (4) the assistant it referred to **was removed entirely in `3d54fab` (2026-07-29, PR #5)** — yet HANDOFF.md, written a day later, still advertised it as a live capability. All four corrected; PR #8 recorded as the open head.
+- Closed `ci-startup-failure` (P1) as superseded by `ci-creates-no-runs` — HANDOFF.md had already said "can be closed" and the sharper framing lives on the other item. Backlog: 37 → 36 open.
+
+**State**: 0 active changes · 36 open backlog items · 1 open draft PR (#8). Validation: 0 errors, 21 warnings, all known — ~11 `backlog_change_archived` (deferrals from archived changes, legitimately open but each needs a "what is left" note or a close), 4 stale design surfaces (`strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog`), 2 `backlog_capability_not_found` on wontfix assistant items.
+
+**Next**: Merge PR #8 (takes the backlog to 35). Then the CI account fix, the conformance sweep, or the operator-gated live apply — per HANDOFF.md's next steps.
+
+**Watch out**: The stale remote-tracking refs — a fresh clone shows `origin/main` at "Initial commit" until `git fetch --prune`; don't diagnose from an unfetched clone. And the `backlog_change_archived` sweep needs per-item judgement (most are genuine deferrals, not forgotten closes) — don't bulk-close them to silence the validator.
 
 **Did**: Verified and archived the `strategy-section-editor` change. `/verify` passed with no critical issues (7/7 scenarios covered, 792 tests green, 0 typecheck errors). `/archive` merged 2 requirements into `openspec/specs/strategy-authoring/spec.md` — ADDED "Report Sections Can Be Composed When Editing" (4 scenarios) and MODIFIED "Vocabulary Is Discovered, Never Written Down" (added section vocab fetch scenario). Change folder moved to `archive/2026-07-30-strategy-section-editor/`. Backlog item `strategy-section-editor` closed (`status: done`). Committed and pushed `1c36975` to `claude/hand-off-file-review-3gpveo`; PR #7 draft still open.
 
