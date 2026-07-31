@@ -72,7 +72,11 @@ finally.
 It did not run to completion today: BattleGrid's MCP endpoint began hanging
 on every call (~17:10Z) — even `tools/list` times out at 35s while the OAuth
 discovery document answers in ~1s. Same-day earlier probes (radar walk,
-15:2xZ) worked, so this is a platform stall, not the probe. Run it when the
+15:2xZ) worked, so this is a platform stall, not the probe. Corroborated by
+the operator (~18:45Z): battlegrid.trade's front end is up but its database
+appears down — which fits the signature exactly (edge answers in ~1s, every
+MCP call hangs to timeout instead of refusing: an app tier waiting on a dead
+database). Run it when the
 platform answers:
 
     BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/restore-probe.test.ts
