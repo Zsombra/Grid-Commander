@@ -104,7 +104,7 @@ Resolved since this table was first written: `confirmation-is-not-bound-to-value
 
 ## Immediate Next Steps
 
-1. **Fix the CI** — settle the GitHub account billing. That is the whole remaining step: the operator chose GitHub-hosted (2026-07-31), the workflow already targets `ubuntu-latest` with the routing vars unset, and execution resumes with no commit (`ci-creates-no-runs`). `docs/SELF_HOSTED_RUNNER.md` stays as reference only.
+1. **Fix the CI** — the bill will not be paid (operator, 2026-07-31), so the route is around the account, not through it: **`docs/CI_WITHOUT_BILLING.md`** is the decision sheet. Recommended: transfer the repo to a clean GitHub account (zero cost, zero commits — the workflow already targets `ubuntu-latest`, and `workflow_dispatch` exists for the first proving run). Owner action only; `ci-creates-no-runs` stays open until an option is picked.
 2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
 3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
 4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.

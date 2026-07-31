@@ -219,3 +219,22 @@ signature, unchanged.
 No repository content, workflow edit, or agent session can do it.
 `docs/SELF_HOSTED_RUNNER.md` stays in the tree as reference but is no
 longer the plan.
+
+## The bill will not be paid (2026-07-31, operator) — decision sheet written
+
+Settling the account is off the table entirely. The workaround options are
+documented, ranked, and step-by-stepped in **`docs/CI_WITHOUT_BILLING.md`**:
+
+- **A. Transfer the repository to a clean GitHub account** (recommended —
+  zero cost, zero commits, the workflow already targets `ubuntu-latest`,
+  `workflow_dispatch` exists for the first proving run).
+- **B. Third-party CI** (Cirrus/CircleCI free tiers; small port because
+  every job wraps committed scripts).
+- **C. Self-hosted runner** (already declined — no machine; repo side stays
+  wired if that changes).
+- **D. Local-only as explicit policy** (today's reality; if chosen, this
+  item closes as "accepted risk").
+
+Every option needs an owner action (account creation/transfer, app install,
+or a policy decision); none is executable from a session. This item stays
+open until the operator picks one.
