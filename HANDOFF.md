@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (883 vitest + 60 db + 217 harness tests, typecheck clean; 8 further vitest are key-gated live probes). No active changes. 32 open backlog items. #8–#11 merged 2026-07-31; open PRs carry the roster deployment line and the deploy/undeploy flows.
+**State**: green (888 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 29 open backlog items. #8–#12 merged 2026-07-31.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 59 |
-| Vitest tests | 883 (+8 key-gated live) + 60 db |
+| Changes (archived) | 61 |
+| Vitest tests | 888 (+9 key-gated live) + 60 db |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 32 |
+| Open backlog items | 29 |
 | Design tickets open | 0 |
-| Open draft PRs | 2 — roster deployment line; deploy/undeploy flows |
+| Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
 ---
 
@@ -104,7 +104,7 @@ Resolved since this table was first written: `confirmation-is-not-bound-to-value
 
 ## Immediate Next Steps
 
-1. **Fix the CI** — settle the account billing, or go self-hosted: the repo side is done (`validate.yml` routes `runs-on` through the `CI_RUNNER` repository variable; `docs/SELF_HOSTED_RUNNER.md` is the setup handout). Operator steps remaining: register the runner, set `CI_RUNNER=self-hosted` (`ci-creates-no-runs`).
+1. **Fix the CI** — settle the GitHub account billing. That is the whole remaining step: the operator chose GitHub-hosted (2026-07-31), the workflow already targets `ubuntu-latest` with the routing vars unset, and execution resumes with no commit (`ci-creates-no-runs`). `docs/SELF_HOSTED_RUNNER.md` stays as reference only.
 2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
 3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
 4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.

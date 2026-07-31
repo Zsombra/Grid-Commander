@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-07-31 — the P2 sweep: two bugs fixed, two questions closed, one walk armed
+
+**Did**: Worked the P1/P2 backlog down under the operator's "move this
+forward" (CI stays GitHub-hosted — self-hosted plan dropped; key stays live;
+Docker stays parked).
+
+- **`repair-required-can-actually-fire`** (lite, archived): the
+  REPAIR_REQUIRED branch read `payload['status']` — a key the declared
+  output never carries — so the whole repair-required surface was
+  unreachable. Detection moved to the refusal channel (`ToolRefusedError`
+  code, message fallback), carrying the platform's words. Found on the way:
+  every other platform refusal from archive/restore *threw*, crashing the
+  server action — `LifecycleResult` gained a `refused` case so the page's
+  `?problem=` finally receives what the platform said.
+- **`a-stale-session-cannot-500-every-page`** (standard, archived): built
+  the authenticated serving probe `no-route-exercises-the-database` asked
+  for (`tools/check-route-queries.mjs` — mints a signed cookie, requests
+  `/audit`, asserts a `pg_stat_database` transaction delta, self-poll
+  arithmetic corrected). **Its first run caught a real outage-shaped bug**:
+  a stale session made `CurrentUserQuery` clear the cookie during render,
+  which Next.js forbids — 500 on every page for anyone holding one. Reads
+  no longer mutate; the spec scenario now says so. check-serving green
+  end-to-end: "every session-resolving route answered, and one queried".
+- **`cannot-verify-what-a-key-grants`** closed *not knowable*: no
+  introspection endpoint (discovery + /introspect 404), no scope-reporting
+  tool in all 110; nearest fact is `get_account_state.mcpWagerEnabled`, an
+  account-level upper bound that cannot verify a declaration.
+- **`a-preset-does-not-constrain-its-config`** closed (answered; create
+  path shipped earlier; edit-surface remainder filed as
+  `position-management-can-be-edited`, P3 — `positionManagement` confirmed
+  writable on update). **`performance-and-allocation-are-unmodelled`**
+  re-triaged P3 (tripwire in place; the P&L discrepancy waits on evidence).
+- **`restore-has-never-been-walked`** → in-progress: the full walk is built
+  (`tests/live/restore-probe.test.ts` — fork→archive→roster-check→restore→
+  cleanup) but BattleGrid's MCP endpoint began hanging on every call
+  (~17:10Z; discovery answers, tools/list times out) after answering the
+  radar probes fine at 15:2xZ. Run it when the platform recovers.
+- **`ci-creates-no-runs`** updated: operator direction is GitHub-hosted;
+  repo side verified done (vars unset → ubuntu-latest); the one remaining
+  step is settling the account billing.
+
+**State**: 0 active changes · 29 open backlog items · 61 archived changes ·
+888 vitest (+9 key-gated skips) + 60 db + 217 harness green · validation 0
+errors.
+
 ## 2026-07-31 — deploy and undeploy are offered; the create path turned out not to exist
 
 **Did**: `deploy-and-undeploy-are-offered` (full track, proposed → planned →

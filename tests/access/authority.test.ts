@@ -262,15 +262,22 @@ describe('who this request acts for', () => {
    * A signed cookie is evidence of a previous session, not of a BattleGrid
    * grant. Treating an unknown user as a first visit would make the cookie,
    * rather than the grant, the thing that decides who someone is.
+   *
+   * And refusing is ALL that happens: this runs during a server-component
+   * render, where clearing a cookie is a write Next.js refuses with a thrown
+   * error. The clear that used to live here 500'd every page for anyone
+   * holding a stale cookie — caught by check-serving's authenticated probe
+   * on its first run.
    */
-  it('refuses a session naming a user who does not exist, and discards it', async () => {
+  it('refuses a session naming a user who does not exist, without touching the cookie', async () => {
     const clock = new FakeClock();
     const connections = new FakeConnectionStore(clock);
     const sessions = new RecordingSession('ghost');
     const q = new CurrentUserQuery(sessions, connections, await authorityFor(clock, connections));
 
     expect((await q.execute()).kind).toBe('not-connected');
-    expect(sessions.cleared).toBe(1);
+    // A read does not mutate: the stale cookie is left to its TTL.
+    expect(sessions.cleared).toBe(0);
     // No user was created from the session.
     expect(await connections.findByUserId('ghost')).toBeNull();
   });
