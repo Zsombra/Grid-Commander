@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (792 vitest + 124 harness tests, typecheck clean). No active changes. 36 open backlog items. One draft PR open: #8 (`brain-with-no-model` fix), merges clean.
+**State**: `main` is current and green (795 vitest + 124 harness tests, typecheck clean). No active changes. 35 open backlog items. No open PRs — #8 (`brain-with-no-model` fix) merged 2026-07-31.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 47 |
-| Vitest tests | 792 |
+| Changes (archived) | 48 |
+| Vitest tests | 795 |
 | Harness tests (Python) | 124 |
 | Active changes | 0 |
-| Open backlog items | 36 |
+| Open backlog items | 35 |
 | Design tickets open | 0 |
-| Open draft PRs | 1 — #8, `brain-with-no-model` fix |
+| Open draft PRs | 0 — #8 (`brain-with-no-model` fix) merged |
 
 ---
 
@@ -76,7 +76,6 @@ These were bugs that existed in the application that sessions discovered and fix
 
 | Item | Type | Notes |
 |---|---|---|
-| `brain-with-no-model` | P3 bug | Mapper bug: an agent with neither `brainPreset` nor `modelId` maps to `{kind: 'custom', modelId: ''}`. Display-only. **Fix is open as draft PR #8** — maps to `unknown` instead; merges clean into `main`. Not an assistant issue (the assistant is gone; `wire-an-assistant-model` closed before its removal). |
 | `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
 | `confirmation-is-not-bound-to-values` | P2 risk | Confirmation tokens authorise the *intent* but not the specific payload values |
@@ -104,11 +103,12 @@ Resolved since this table was first written: `strategy-section-editor` (built an
 
 ## Immediate Next Steps
 
-1. **Merge draft PR #8** (`brain-with-no-model`) — 3 commits on `claude/hand-off-file-review-3gpveo`: propose, fix (mapper falls back to `unknown` instead of `custom` with an empty model id), archive. Verified to merge into `main` with zero conflicts. Closing it takes the backlog to 35 open.
-2. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`). `validate.yml` pins `runs-on: ubuntu-latest` on all four jobs, so a self-hosted runner needs a matching label.
-3. **Sweep conformance** (`conformance-sweep-for-required-and-accepted-params`, P2) — the live-probe found two read tools that always return empty; there may be more gaps.
-4. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
-5. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.
+1. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`). `validate.yml` pins `runs-on: ubuntu-latest` on all four jobs, so a self-hosted runner needs a matching label.
+2. **Sweep conformance** (`conformance-sweep-for-required-and-accepted-params`, P2) — the live-probe found two read tools that always return empty; there may be more gaps.
+3. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
+4. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.
+
+(PR #8, `brain-with-no-model`, merged 2026-07-31 — was step 1 of this list.)
 
 ---
 

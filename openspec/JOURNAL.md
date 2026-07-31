@@ -14,6 +14,79 @@
 
 **Watch out**: The stale remote-tracking refs — a fresh clone shows `origin/main` at "Initial commit" until `git fetch --prune`; don't diagnose from an unfetched clone. And the `backlog_change_archived` sweep needs per-item judgement (most are genuine deferrals, not forgotten closes) — don't bulk-close them to silence the validator.
 
+## 2026-07-30 — brain-with-no-model: proposed, executed, verified, archived
+
+**Did**: Full pipeline in one pass for `brain-with-no-model` (lite track, a
+P3 bug from the `strategy-section-editor` production gate, PG-104).
+
+**The bug**: `mapBrain` in `agent-mapper.ts` fell through to the `custom` arm
+when a BattleGrid payload carried neither `brainPreset` nor `modelId`,
+producing `{kind: 'custom', modelId: ''}` — a fabricated custom brain with no
+model, rather than reporting that the brain was undescribed.
+
+**What landed**:
+- `Brain` (`src/domain/agent/brain.ts`) gained a third variant:
+  `{ readonly kind: 'unknown' }`.
+- `mapBrain` (`src/infrastructure/battlegrid/agent-mapper.ts:96-111`) now
+  returns `{ kind: 'unknown' }` when both fields are absent; the `?? ''`
+  fallback on `modelId` is gone.
+- `brainToArgument` throws if called with an `unknown` brain — a
+  programming-error guard, since the create form never produces one.
+- `app/(app)/agents/[id]/page.tsx:78-82` renders "Not configured" for an
+  unknown brain instead of a blank model name.
+- 3 new tests (795 total, up from 792): two in `mapper.test.ts` (unknown case,
+  custom-without-preset still works), one in `brain.test.ts` (throw guard).
+- Delta merged into `openspec/specs/agent-authoring/spec.md` — MODIFIED
+  "Agent Fields Are Offered Only From Values The Platform Confirms", new
+  scenario "A brain the platform did not describe".
+
+**Verification**: 13/13 tasks, 1/1 requirement implemented, 4/4 scenarios
+covered, no critical or warning findings. `pnpm typecheck` / `pnpm lint` /
+`pnpm test` all green.
+
+**Archive**: Change folder moved to
+`archive/2026-07-30-brain-with-no-model/`. Backlog item `brain-with-no-model`
+closed (`status: done`). `validate --all` — 0 errors, 24 warnings (pre-existing
+drift, no new ones introduced).
+
+**Branch/PR**: Pushed to `claude/hand-off-file-review-3gpveo`
+(commits `d63d66e` proposal, `120919a` implementation). PR
+[#8](https://github.com/Zsombra/Grid-Commander/pull/8) open as draft,
+subscribed to activity, a 60-minute check-in is scheduled.
+
+**CI**: All 7 checks fail on PR #8 — `checks (py3.10/11/12/13)`, `app`,
+`tests`, `validate`. Confirmed pre-existing: the same 7 jobs fail on `main`
+itself (run 30520930429). Account-level CI infrastructure issue, not caused by
+any code in this repo. Tracked as backlog items `ci-startup-failure` and
+`ci-creates-no-runs` (both P1, both open) — that is the right place for a next
+agent to pick this up, not this PR.
+
+**State**: 0 active changes · 37 open backlog items (1 moved to done this
+session, net still 37 as no others were swept) · PR #8 (draft) open, watched.
+
+**Next for another agent picking this up**:
+1. If continuing product work: next candidates are the P2 backlog items —
+   `confirmation-is-not-bound-to-values` (money confirmation not bound to
+   specific values), `preset-configs-are-discarded` /
+   `conformance-sweep-for-required-and-accepted-params` (edit path can't fully
+   succeed), `no-action-may-discard-a-write-result`. Run `/propose <item-id>`
+   on whichever is prioritized.
+2. If continuing infra work: `ci-startup-failure` and `ci-creates-no-runs`
+   (P1) are the account-level CI breakage — worth escalating outside this
+   repo's code, since nothing here is the cause.
+3. `design_surface_stale: strategy-editor` still needs a `/surface` re-run
+   before any design work on the strategy edit page (flagged since the prior
+   session's `strategy-section-editor` change).
+4. 12 pre-existing `backlog_change_archived` warnings remain unswept — backlog
+   items whose linked change is archived but `status` was never set to `done`.
+   Not blocking, but worth a cleanup pass.
+
+**Watch out**: PR #8 is subscribed for activity; a check-in Routine fires in
+~60 minutes to re-verify CI/mergeability. Don't re-run the same CI diagnosis —
+it's confirmed pre-existing infrastructure, not this change.
+
+## 2026-07-30 — strategy-section-editor: verified and archived
+
 **Did**: Verified and archived the `strategy-section-editor` change. `/verify` passed with no critical issues (7/7 scenarios covered, 792 tests green, 0 typecheck errors). `/archive` merged 2 requirements into `openspec/specs/strategy-authoring/spec.md` — ADDED "Report Sections Can Be Composed When Editing" (4 scenarios) and MODIFIED "Vocabulary Is Discovered, Never Written Down" (added section vocab fetch scenario). Change folder moved to `archive/2026-07-30-strategy-section-editor/`. Backlog item `strategy-section-editor` closed (`status: done`). Committed and pushed `1c36975` to `claude/hand-off-file-review-3gpveo`; PR #7 draft still open.
 
 **State**: 0 active changes · 37 open backlog items · PR #7 (draft) on `claude/hand-off-file-review-3gpveo`. 12 pre-existing `backlog_change_archived` warnings (backlog items referencing changes archived in prior sessions, items not yet swept to `done`) — no new errors introduced this session. `design_surface_stale: strategy-editor` is also now flagged; the edit page changed, so the surface manifest hash is stale.

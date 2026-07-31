@@ -54,6 +54,17 @@ describe('mapping a live agent payload', () => {
     expect(brain.kind === 'preset' && brain.preset).toBe('ROMMEL');
   });
 
+  it('maps unknown as unknown when payload carries neither preset nor modelId', () => {
+    const brain = mapAgent({ ...livePayload, modelId: undefined, brainPreset: undefined }).brain;
+    expect(brain.kind).toBe('unknown');
+  });
+
+  it('still maps custom when only modelId is present and brainPreset is absent', () => {
+    const brain = mapAgent({ ...livePayload, modelId: 'anthropic/claude-opus-5', brainPreset: undefined }).brain;
+    expect(brain.kind).toBe('custom');
+    expect(brain.kind === 'custom' && brain.modelId).toBe('anthropic/claude-opus-5');
+  });
+
   it('keeps the trading config whole, because the way back needs every field', () => {
     // F-6: a partial config does not error, it resets the omitted fields.
     expect(mapAgent(livePayload).tradingConfig?.fields).toEqual({
