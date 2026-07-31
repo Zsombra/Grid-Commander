@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-07-31 — the pages are finally rendered: naming is enforced, not walked
+
+**Did**: `pages-name-what-they-render` (standard, archived) while BattleGrid's
+database outage blocks the restore walk. The project's first
+component-rendering test layer: `tests/rendering/support/render.ts` resolves
+a server component's returned tree into text + headings, expanding
+everything and throwing on anything it cannot expand (a walker that skips is
+the vacuity the item warned about); `support/fake-acting.ts` wires the real
+use-case classes over the suite's fakes into the `{app, user}` shape
+`acting()` returns, mocking exactly one seam (`@/presentation/session.js`).
+Sixteen per-branch assertions: agent detail/limits/archive/reactivate/
+deploy/undeploy + strategy detail/archive/restore each name their entity in
+the rendered heading, per branch — including the branch that historically
+said "Nothing will stop this agent" naming nobody — and the
+legitimately-anonymous branches assert their required copy instead.
+`vitest.config.ts` gains `esbuild: { jsx: 'automatic' }` (Next's JSX
+runtime). Closes `naming-an-entity-is-held-by-the-walk-only` — the last
+buildable P2.
+
+**State**: 0 active changes · 28 open backlog items · 62 archived changes ·
+904 vitest (+9 key-gated skips) + 60 db + 217 harness green · validation 0
+errors. Restore walk still armed, still waiting out BattleGrid's outage
+(operator-corroborated: front end up, database down).
+
 ## 2026-07-31 — the P2 sweep: two bugs fixed, two questions closed, one walk armed
 
 **Did**: Worked the P1/P2 backlog down under the operator's "move this

@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (888 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 29 open backlog items. #8–#12 merged 2026-07-31.
+**State**: green (904 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 28 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 61 |
-| Vitest tests | 888 (+9 key-gated live) + 60 db |
+| Changes (archived) | 62 |
+| Vitest tests | 904 (+9 key-gated live) + 60 db |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 29 |
+| Open backlog items | 28 |
 | Design tickets open | 0 |
 | Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
