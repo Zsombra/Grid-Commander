@@ -304,6 +304,13 @@ def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
                 resolved_branches.append((branch, branch_active))
 
         object_branches = [(b, a) for b, a in resolved_branches if b.get("properties")]
+        if len(object_branches) == 1:
+            # One object shape among non-object alternatives — a nullable
+            # object, typically. It IS the object at this path; a variant
+            # record with nothing to discriminate against would hide it.
+            lone, _ = object_branches[0]
+            if lone.get("additionalProperties") is False:
+                record_closed(path, (lone.get("properties") or {}).keys())
         if len(object_branches) >= 2 and path not in out:
             out[path] = {
                 "variants": [

@@ -171,6 +171,29 @@ class Accepts(unittest.TestCase):
         # branch-conditional half that input_required_paths deliberately omits.
         assert update["required"] == ["operation", "strategyId", "sub.deep"]
 
+    def test_a_nullable_closed_object_is_recorded_at_its_path(self):
+        # `anyOf: [closed object, null]` — one object shape among non-object
+        # alternatives. It is the object at this path, not a variant of one.
+        schema = {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {"mode": {}},
+                        },
+                        {"type": "null"},
+                    ]
+                }
+            },
+        }
+        assert input_accepts(tool(schema))["config"] == {
+            "closed": True,
+            "accepts": ["mode"],
+        }
+
     def test_closed_object_inside_a_union_branch_is_still_recorded(self):
         schema = {
             "type": "object",
