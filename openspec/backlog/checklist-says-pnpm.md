@@ -2,11 +2,11 @@
 id: checklist-says-pnpm
 title: The architecture checklist's quality gate names a package manager this project does not use
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-31
+change: quality-gates-are-real
 capability: ""
 blocked_by: []
 tags: [checklists, tooling]

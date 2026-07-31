@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-07-31
 change: every-value-sent-is-one-the-platform-accepts
 capability: battlegrid-connection
 blocked_by: []
@@ -69,3 +69,7 @@ the roadmap: `get_open_orders` belongs to the nine unused positions/orders tools
   re-probing after the outage
 - `confirm-agent-write-response-shape` — the other open declared-vs-observed
   question
+
+## Re-observed 2026-07-31
+
+One of the two recovered: `get_open_orders` answered normally (its INTERNAL_ERROR was transient). `get_market_context` failed identically again — `VALIDATION_ERROR: Provide sessionId or primaryTimeframe` — so its declared schema (no required arguments) persistently understates what the live server demands. A platform-side declared-vs-actual mismatch; the product does not call this tool. Narrowed to one tool, kept open as the record of it.

@@ -655,7 +655,7 @@ if (!connection.scopes.includes('mcp:wager')) {
 | **Concurrency** | `expectedRevision` always; surface conflicts, never retry |
 | **Logging** | Structured, contextual, and never a token |
 | **Queries** | Drizzle builder only, always scoped by `userId` |
-| **Quality Gate** | `pnpm typecheck` and `pnpm lint` pass before every commit |
+| **Quality Gate** | The `quality_gates` list in `openspec/config.yaml` passes — `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, the drizzle schema check, `npm run test:db` |
 
 ---
 

@@ -45,7 +45,19 @@ class ProbeIdSources(unittest.TestCase):
 
 
     def test_every_id_source_field_exists_and_carries_an_id(self):
-        """The check that would have caught the three wrong rows."""
+        """The check that would have caught the three wrong rows.
+
+        A wrong row names a field the tool does not return — that must fail,
+        it is the silently-empty-lookup defect this file exists for. An empty
+        *list* under the right name is different: it is the account's state on
+        the day of the probe, not a defect in the row. The 2026-07-31 probe
+        recorded `list_entry_decisions.entries` as `[]` because the account's
+        agent had made no entry decisions — the field, the tool and the row
+        were all correct, and failing on it would teach people to re-probe
+        until the account looks busier. Where rows exist, they must carry an
+        `id`; where none do, the artifact already records which arguments went
+        unanswered.
+        """
         tools = by_name()
         for argument, (tool, field) in ID_SOURCES.items():
             shape = tools[tool].get("observed_shape") or {}
@@ -53,7 +65,9 @@ class ProbeIdSources(unittest.TestCase):
                 f"{argument}: {tool} returns {sorted(shape)}, not '{field}'"
             )
             rows = shape[field]
-            assert isinstance(rows, list) and rows, f"{argument}: {tool}.{field} was empty"
+            assert isinstance(rows, list), f"{argument}: {tool}.{field} is not a list"
+            if not rows:
+                continue  # the account had no rows that day — a state, not a wrong row
             assert isinstance(rows[0], dict) and "id" in rows[0], (
                 f"{argument}: rows of {tool}.{field} carry no 'id'"
             )

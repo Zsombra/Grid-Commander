@@ -12,11 +12,18 @@ import { requiredText } from '@/presentation/form.js';
  * are one string rather than three that drift. Follows the agent archive page
  * rather than inventing a second confirmation shape.
  */
-export default async function ArchiveStrategyPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ArchiveStrategyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ problem?: string }>;
+}) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
+  const { problem } = await searchParams;
   const { result, listings } = await app.listStrategies.execute(user.authority);
 
   if (result.kind === 'unreadable') {
@@ -67,6 +74,9 @@ export default async function ArchiveStrategyPage({ params }: { params: Promise<
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {listing.strategy.name}?</h1>
+      {problem ? (
+        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+      ) : null}
       {/* BattleGrid's count of what depends on this, not ours. */}
       <p role="alert" className="rounded border p-4 text-sm">
         {proposal.proposal.consequence}
@@ -103,11 +113,17 @@ export async function archiveStrategy(formData: FormData) {
   const listing = listings.find((l) => l.strategy.id === strategyId);
   if (!listing) redirect('/strategies');
 
-  await app.setStrategyActive.execute({
+  const result = await app.setStrategyActive.execute({
     ...user.authority,
     strategy: listing.strategy,
     active: false,
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
+  // Both non-changed arms carry a reason, and both were being discarded — on
+  // the one action whose refusal (`repair-required` included, if the platform
+  // ever surfaces it here) most needs explaining. Back to the page acted from.
+  if (result.kind === 'refused' || result.kind === 'repair-required') {
+    redirect(`/strategies/${strategyId}/archive?problem=${encodeURIComponent(result.reason)}`);
+  }
   redirect('/strategies');
 }

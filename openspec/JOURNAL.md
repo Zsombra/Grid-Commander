@@ -1,5 +1,203 @@
 # Journal
 
+## 2026-07-31 — the operator's key: live probe, live writes, and what they flushed out
+
+**Did**: The operator supplied a live key and delegated the CI verdict, the PR
+decision, and the P2 work. Everything below ran against the real platform;
+the key lives in env only and appears in no artifact (verified by grep).
+
+**Live probe**: 43 of 110 tools observed (21 argument-free + 22 via harvested
+ids — the pass the first generation could not make), 66 writes skipped by the
+code-level safety filter, 1 failed. Declared and observed are one generation
+again. Closed `observed-data-predates-a-platform-deployment` and
+`probe-skips-every-read-that-needs-an-id`. `get_open_orders` recovered (its
+INTERNAL_ERROR was transient); `get_market_context` still fails identically —
+its declared schema (nothing required) understates the live server (demands
+`sessionId` or `primaryTimeframe`); `two-read-tools-do-not-answer` narrowed
+to that one tool and kept as its record.
+
+**`three-actions-silence-their-refusals` fixed and archived** (lite):
+reactivate, agent-archive, and strategy-archive now read their results and
+send a refusal's reason back to the surface acted from as `?problem=`,
+rendered role=alert — the rename-fix pattern. A fourth instance found on the
+way: restore read its result but silently treated `refused` as success; fixed
+in the same change. The three ledger rows left `write-results.test.ts` as the
+guard demands; `tests/agent/refusals-reach-the-operator.test.ts` (17 tests)
+pins the shapes, including that repair-required stays guidance, not an alert.
+
+**Live writes**: the write-probe's spend-side confirmations still carried the
+`'t'` placeholder target from before `a-confirmation-binds-to-what-was-agreed`
+hardened the binding — the guard refused them, which is the guard being right
+and the test being stale. Fixed both spends (`agent.id`, `fork.id`). Two runs
+before the fix left two throwaway agents ACTIVE on the account; both archived
+same-session through the product's own guarded path (which is itself live
+proof the archive path works). Account verified clean: the operator's five
+real agents, nothing else. Create → read-back → rename → limits-edit →
+archive all succeeded live. Two account-state assumptions became runtime
+skips (no unbound SYSTEM strategy to fork; a thought log with no decisions
+yet). One flake remains — the fake-confirmation wiring trips inconsistently
+across two describe→update cycles — filed as
+`live-write-probe-confirmation-flake` (P3) with suspects named.
+
+**Harness**: `test_probe_id_sources` failed on the fresh artifact because
+`list_entry_decisions.entries` is legitimately empty on this account — the
+assert conflated a wrong row (the defect it guards) with an empty account
+(a state). Split: field-exists still fails, empty-list is recorded, rows that
+exist must carry ids.
+
+**State**: 0 active changes · 32 open backlog items (3 closed, 1 filed today
+on top of the morning's work) · 54 archived changes · 827 vitest + 217
+harness green · validation 0 errors / 16 warnings. PR #10 merged (delegated).
+
+**Next**: the fork→compile→apply live walk needs a SYSTEM strategy with
+nothing bound — none was visible to the key today. Restore and
+repair-required remain unwalked. CI: the runner registration and `CI_RUNNER`
+flip are still the operator's two steps.
+
+**Watch out**: the key reaches an account whose agents have made no entry
+decisions — `decisionId`-gated tools stay unobserved until they have. And the
+live tests create real (trading-off) agents; a failed run can orphan one, so
+check `list_intelligence_agents` for `GC probe` names after any red run.
+
+## 2026-07-31 — quality gates made real; a dropped write result now fails the gate
+
+**Did**: Two lite changes, both archived same-session, continuing down the P2
+backlog after the CI routing work.
+
+**`quality-gates-are-real`**: `openspec/config.yaml` carried the template's
+bracketed example `quality_gates` since day one, and named pnpm as the package
+manager while the repo is npm (`package-lock.json`, `npm ci` in CI, no pnpm
+lockfile — a third instance of the same inconsistency the backlog described).
+Now: the six real gates (typecheck, lint, test, build, drizzle-schema check,
+test:db) in config.yaml, and the two checklist lines corrected from pnpm to
+npm. Closed `config-quality-gates-are-placeholders` (P2) and
+`checklist-says-pnpm` (P3).
+
+**`a-dropped-write-result-fails-the-gate`**: the requirement "The Outcome Of A
+Write Reaches The Person Who Asked For It" always carried the scenario that an
+unread result must fail a gating check — the check now exists.
+`tests/architecture/write-results.test.ts` scans `app/**/*.tsx` for
+statement-position `await app.<name>.execute(` and holds every hit against a
+two-way `KNOWN_DROPPED` ledger (new drop fails; fixed-but-listed fails, so the
+ledger only shrinks). It found **five** drops on day one: two benign
+(`rebindAgent`, `applyPlan` — single-arm results, refusals throw), **three
+real** — `setLifecycle` on reactivate and agent-archive drops its
+`not-permitted` arm, `setStrategyActive` on strategy-archive drops `refused`
+and the repair arms. Filed as `three-actions-silence-their-refusals` (P2 bug);
+the fix pattern is the rename action, and each fix must delete its ledger row.
+Closed `no-action-may-discard-a-write-result` (P2).
+
+**Also checked**: `repair-required-cannot-be-detected` (P2) is not actionable
+offline — its own text requires one live observation; it stays open on the
+operator list. Note the strategy-archive drop above would swallow that branch
+even after it becomes reachable — the two items are now cross-linked.
+
+**State**: 0 active changes · 34 open backlog items (4 closed, 1 filed today)
+· 53 archived changes · 810 vitest + 217 harness green, typecheck/lint clean,
+validation 0 errors / 18 warnings.
+
+**Next**: `three-actions-silence-their-refusals` is the natural next change
+(pattern exists, guard enforces completion). Then the remaining P2s. The
+operator list (runner + CI_RUNNER variable, account billing, live key for
+re-probe/apply/repair-observation) is unchanged.
+
+## 2026-07-31 — CI routed to a self-hosted runner behind a repo variable
+
+**Did**: The operator chose the self-hosted route for `ci-creates-no-runs`
+(P1). Lite change `route-ci-to-a-self-hosted-runner`, archived same-session:
+all four `runs-on: ubuntu-latest` pins in `validate.yml` became
+`${{ vars.CI_RUNNER || 'ubuntu-latest' }}` — unset, byte-identical behavior;
+set to `self-hosted`, every job routes to a registered runner with no further
+commit. `docs/SELF_HOSTED_RUNNER.md` is the operator handout: registration,
+machine needs (Docker for the `app` job's postgres service), the public-repo
+fork-PR security controls, verification via `workflow_dispatch`, revert.
+
+**Checked first**: the operator believed a runner might already be registered
+by an earlier agent. Searched the repo and their mail — no registration
+evidence anywhere; the "self-hosted checker a previous agent built" is
+`scripts/check.sh` (local gates, cannot green the board). The Runners settings
+page (admin-only) is the single source of truth; the handout says exactly what
+to look for.
+
+**Remaining, operator-only**: register the runner, set `CI_RUNNER=self-hosted`.
+
+**Also this session — stale design surfaces re-surveyed** (`agent-roster`,
+`strategy-catalog`, `audit-log`; `strategy-editor` was already fresh): the
+roster and catalog rows' names became links to their detail pages (recorded
+as actions + must-keep constraints), `agent-actions` gained the two
+always-offered read links (thinking, limits), `strategy-list` gained the
+per-row fork-withheld state (reason rendered where the control would be),
+and `actor-assistant` on the audit log is recorded as historical-only but
+must-keep. Validation: 3 `design_surface_stale` warnings cleared (22 → 19),
+import cross-check quiet. Design work is unblocked.
+
+**Amended same-session** (`dockerless-runner-still-greens-six-jobs`, lite):
+the operator's machine has no Docker, which only the `app` job needs (its
+postgres service container). `app` now routes through its own
+`CI_APP_RUNNER` variable — with only `CI_RUNNER` set, six of seven jobs
+green on the Docker-less runner and `app` stays GitHub-hosted, no worse
+than today. Handout documents the path and that the machine need not be
+always-on (jobs queue while it is offline).
+
+## 2026-07-31 — PRs #8 and #9 merged; conformance sweep built, verified, archived
+
+**Did**: Un-wedged the repository and shipped the sweep, in that order.
+
+**Merges**: Marked draft PRs #8 (`brain-with-no-model`, squash `7e4b772`) and
+#9 (reconciliation docs, squash `a739f98`) ready and merged them, accepting the
+red checks — every failure was the account-level CI outage
+(`ci-creates-no-runs`), verified identical on `main` itself. The JOURNAL.md
+conflict between the two (both added a top entry) was resolved keeping both,
+newest first; #9's HANDOFF.md was updated in the same merge so it landed
+already knowing #8 was in.
+
+**The sweep** (`conformance-sweep-for-required-and-accepted-params`, standard
+track, proposed → executed → verified → archived this session):
+- `tools/probe_mcp_surface.py` now derives `input_required_paths` (nested
+  required as dotted paths) and `input_accepts` (closed accepted sets; union
+  paths as per-branch variants keyed by discriminator const — `operation=…`,
+  `kind=…`) from declared input schemas, resolving the dump's 370 local `$ref`
+  pointers with a cycle guard. `input_constants` resolves refs now too.
+- `--refresh-declared` regenerates the artifact's declared fields offline from
+  `docs/battlegrid-mcp-capabilities.json` — no key needed for facts the server
+  declares; observed data byte-untouched; refuses on mismatched tool sets.
+- `tests/architecture/payload-conformance.test.ts` builds every
+  product-constructed payload through the product's own builders and fails on
+  a missing required path at any depth or a key outside a closed accepted set.
+  `apply_strategy_plan`'s `request.plan` is a named pass-through. The
+  historical defect is replayed as a test: the raw 23-field read must fail for
+  exactly the three non-writable fields.
+- Verifier found one real gap (a lone closed object branch of a union —
+  nullable objects — went unrecorded); fixed in-session, zero instances today.
+- Deltas merged: 2 ADDED requirements into `battlegrid-connection` (now 20).
+
+**Found on the way**: the artifact's declared fields were **stale against the
+committed capabilities dump** — a BattleGrid deployment dropped
+`conditions`/`conditionVerdicts` and `entryStrategy` after the last live
+probe. The refresh corrected 12 stale constant paths; observed data is still
+the older generation. Filed `observed-data-predates-a-platform-deployment`
+(P3, needs the operator's key). Also filed
+`compile-intent-shape-lives-in-two-places` (P3): the edit page's compile
+`UPDATE` intent has no exported builder, so the guard mirrors its literal.
+And the "124 harness tests" figure carried by HANDOFF.md was itself stale —
+`check.sh` discovery runs 217 today (201 before this session's 16).
+
+**State**: 0 active changes · 36 open backlog items (sweep closed, two filed)
+· 0 open PRs · 49 archived changes. Gates: 806 vitest green, 217 harness
+green, typecheck and lint clean, spec validation 0 errors (23 warnings — the
+21 known plus `backlog_change_archived` on the two new items, both carrying
+full context by design).
+
+**Next**: CI account fix (P1, not fixable by code), live re-probe + live apply
+test (both need the operator), stale design surfaces (`/surface` before design
+work). Per HANDOFF.md's next steps, which are current as of this entry.
+
+**Watch out**: CI on the PR for this session's branch will be red for the same
+outage reason — same signature, all 7 jobs, pre-existing on `main`. Don't
+re-diagnose it. And the surface artifact is now mixed-generation (declared
+fields newer than observed) — deliberate, recorded, and closed by one live
+probe run.
+
 ## 2026-07-31 — reconciliation review: main is authoritative, one draft PR ahead
 
 **Did**: Full reconciliation of the clone, the handoff artifacts, and the backlog against the live repo. Answer to "who's ahead": **`origin/main` (`3a115fd`) is the authoritative tip — everything through PR #7 is merged — and the only work ahead of it is draft PR #8** (`claude/hand-off-file-review-3gpveo`, 3 commits: propose / fix / archive for `brain-with-no-model`), which merges into `main` with zero conflicts (`git merge-tree` verified). All other remote branches are fully contained in `main`. Verified `main` green locally: 792 vitest tests passing (6 skipped), typecheck clean, `./scripts/check.sh` both gates ok.
