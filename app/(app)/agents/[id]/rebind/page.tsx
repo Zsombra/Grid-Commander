@@ -16,13 +16,13 @@ export default async function RebindPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ to?: string; name?: string }>;
+  searchParams: Promise<{ to?: string; problem?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { to, name } = await searchParams;
+  const { to, problem } = await searchParams;
   if (!to) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
@@ -34,11 +34,16 @@ export default async function RebindPage({
     );
   }
 
+  /**
+   * The id is all the query supplies. The destination's name and revision
+   * come back from the platform inside the proposal — a consequence printing
+   * a caller-supplied name would let the URL decide what the user believes
+   * they are binding to.
+   */
   const result = await app.describeRebind.execute({
     ...user.authority,
     agentId: id,
     toStrategyId: to,
-    toStrategyName: name ?? to,
   });
 
   if (result.kind !== 'proposal') {
@@ -51,7 +56,10 @@ export default async function RebindPage({
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <main className="mx-auto max-w-2xl space-y-4 p-6">
+      {problem ? (
+        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+      ) : null}
       <RebindConfirm proposal={result.proposal} action={performRebind} />
     </main>
   );
@@ -63,12 +71,21 @@ export async function performRebind(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const agentId = requiredText(formData, 'agentId');
-  await app.rebindAgent.execute({
+  const toStrategyId = requiredText(formData, 'toStrategyId');
+  const result = await app.rebindAgent.execute({
     ...user.authority,
     agentId,
-    toStrategyId: requiredText(formData, 'toStrategyId'),
+    toStrategyId,
+    toStrategyRevision: requiredInteger(formData, 'toStrategyRevision'),
     expectedRevision: requiredInteger(formData, 'expectedRevision'),
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
+  // A moved destination returns to this page: the describe re-runs against
+  // what the platform holds now, so the fresh proposal and the reason it was
+  // needed arrive together.
+  if (result.kind === 'destination-moved') {
+    const query = new URLSearchParams({ to: toStrategyId, problem: result.reason });
+    redirect(`/agents/${agentId}/rebind?${query.toString()}`);
+  }
   redirect(`/agents/${agentId}`);
 }

@@ -77,6 +77,33 @@ describe('recording an operation', () => {
   });
 });
 
+describe('what a completion may not do', () => {
+  it('completing an id that matches nothing raises instead of reporting success', async () => {
+    // An UPDATE matching zero rows used to return normally: a completion
+    // aimed at the wrong id was indistinguishable from one that landed,
+    // while the record stayed `attempted` (prove-it-runs F-7).
+    const { repo: r } = repo();
+    await expect(r.complete('audit-ghost', 'succeeded')).rejects.toThrow('audit-ghost');
+  });
+});
+
+describe('two entries in one millisecond', () => {
+  it('come back in one stable order, twice', async () => {
+    // `systemClock` has millisecond resolution and one request can write two
+    // entries inside it. The id tiebreak does not make the order true — two
+    // entries at one instant have no true order — but it makes it repeatable,
+    // which is what a reader comparing two page loads needs (F-6).
+    const { repo: r } = repo();
+    await r.begin(attempt({ tool: 'first' }));
+    await r.begin(attempt({ tool: 'second' }));
+
+    const once = await r.listForUser('u1', 10);
+    const twice = await r.listForUser('u1', 10);
+    expect(once.map((e) => e.id)).toEqual(twice.map((e) => e.id));
+    expect(once).toHaveLength(2);
+  });
+});
+
 describe('reading the record back', () => {
   it('shows a user only their own entries', async () => {
     const { repo: r } = repo();

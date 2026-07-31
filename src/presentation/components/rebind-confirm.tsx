@@ -34,6 +34,7 @@ export function RebindConfirm({
 
       <input type="hidden" name="confirmationToken" value={confirmationToken} />
       <input type="hidden" name="toStrategyId" value={rebind.toStrategyId} />
+      <input type="hidden" name="toStrategyRevision" value={rebind.toStrategyRevision} />
       <input type="hidden" name="expectedRevision" value={rebind.expectedRevision} />
 
       <div className="flex flex-wrap gap-3">

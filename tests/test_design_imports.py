@@ -113,3 +113,34 @@ class SurfaceImportTest(ProjectTestCase):
         result = self.survey("src/Gone.tsx")
 
         self.assertCode(result, "design_source_file_missing", "error")
+
+
+class UncheckedStackTest(ProjectTestCase):
+    """A stack the cross-check cannot read says so instead of staying silent."""
+
+    UNCHECKED = "design_surface_sources_unchecked"
+
+    def test_a_surface_with_no_js_family_sources_reports_the_gap(self):
+        self.project.write("app/views/panel.html.erb", "<h1>Rows</h1>\n")
+        self.project.surface(
+            source_files=["app/views/panel.html.erb"], components=[COMPONENT]
+        )
+        result = self.project.validate()
+        self.assertCode(result, self.UNCHECKED, "info")
+
+    def test_a_js_surface_stays_silent_about_the_gap(self):
+        self.project.write("src/Panel.tsx", "export const Panel = () => null;\n")
+        self.project.surface(source_files=["src/Panel.tsx"], components=[COMPONENT])
+        result = self.project.validate()
+        codes = [d["code"] for d in result.diagnostics()]
+        self.assertNotIn(self.UNCHECKED, codes)
+
+    def test_a_missing_source_is_the_louder_fact(self):
+        # When the file does not exist at all, the error owns the story; the
+        # info about an unchecked stack would just be noise beside it.
+        self.project.surface(
+            source_files=["app/views/gone.html.erb"], components=[COMPONENT]
+        )
+        result = self.project.validate()
+        codes = [d["code"] for d in result.diagnostics()]
+        self.assertNotIn(self.UNCHECKED, codes)

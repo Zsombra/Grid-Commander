@@ -825,6 +825,17 @@ def validate_design(root: Path, strict: bool) -> list:
                               f"{', '.join(gone[:3])}", rel(path),
                               "re-run the ui-surveyor skill; the surface has moved or been deleted"))
 
+        # A stack this check cannot read must say so: silence is
+        # indistinguishable from "the list is complete", which is worse than
+        # an honest "not supported here" (import-check-js-only).
+        if sources and not gone and not any((root / s).suffix in UI_EXTS for s in sources):
+            found.append(diag(
+                "info", "design_surface_sources_unchecked",
+                f"{path.stem}: no JS-family source files — the import "
+                "cross-check did not run on this surface", rel(path),
+                "completeness of source_files is unverified on this stack; "
+                "review it by hand when the surface changes"))
+
         missing_imports = sorted(local_ui_imports(root, sources) - set(sources))
         if missing_imports:
             found.append(diag(

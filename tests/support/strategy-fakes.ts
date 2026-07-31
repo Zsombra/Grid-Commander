@@ -151,6 +151,21 @@ export function aStrategy(overrides: Partial<Strategy> = {}): Strategy {
   };
 }
 
+/** A detail wrapping a summary — what `readStrategy` answers with. */
+export function aDetail(summary: Strategy = aStrategy()): StrategyDetail {
+  return {
+    summary,
+    sections: [],
+    marketReadText: null,
+    thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
+    signalRules: [],
+    openPositionCount: 0,
+    cadence: null,
+    regimeAutoDerive: false,
+    regimeTimeframe: null,
+  };
+}
+
 /** Shaped from the real compile response. */
 export function anApprovedPlan(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {

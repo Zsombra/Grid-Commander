@@ -2,11 +2,11 @@
 id: audit-complete-unknown-id
 title: Completing an audit entry that does not exist succeeds silently
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-31
+change: the-small-debts-sweep
 capability: battlegrid-connection
 blocked_by: []
 tags: [database, audit]
@@ -39,3 +39,7 @@ Check the affected row count and raise when it is zero. Do not fall back to
 inserting a replacement entry — a completion is evidence about an operation that
 began, and manufacturing the beginning to justify the end is worse than the
 failure it hides.
+
+## Closed
+
+Fixed in `the-small-debts-sweep` (2026-07-31): `complete()` checks the affected row count and throws on zero, naming the id; no replacement row is manufactured. db test pins the rejection.

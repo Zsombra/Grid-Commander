@@ -217,8 +217,8 @@ export function app(cookies: CookieStore) {
     // purpose: the thing that performs the write must not be the thing that
     // authorises it.
     describeEdit: new DescribeEditQuery(i.agents, i.confirmations, random, systemClock),
-    describeRebind: new DescribeRebindQuery(i.agents, i.confirmations, random, systemClock),
-    rebindAgent: new RebindAgentCommand(i.agents),
+    describeRebind: new DescribeRebindQuery(i.agents, i.strategies, i.confirmations, random, systemClock),
+    rebindAgent: new RebindAgentCommand(i.agents, i.strategies),
     describeArchive: new DescribeArchiveQuery(i.agents, i.confirmations, random, systemClock),
     setLifecycle: new SetLifecycleCommand(i.agents),
     readJournal: new ReadAgentJournalQuery(i.agents),

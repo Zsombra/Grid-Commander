@@ -189,3 +189,37 @@ export function proposedRevision(approvedPlan: Readonly<Record<string, unknown>>
   const revision = approvedPlan['proposedRevision'];
   return typeof revision === 'number' ? revision : null;
 }
+
+/**
+ * The compile UPDATE request, assembled in one place.
+ *
+ * This literal lived inline on the edit page, and the conformance guard —
+ * with nothing to import — mirrored it, with a comment admitting the mirror.
+ * A drift in the page's shape would have left the guard checking yesterday's
+ * payload and passing. Now the page (through its presentation wrapper) and
+ * the guard both call this, so what is checked is what is sent
+ * (`compile-intent-shape-lives-in-two-places`).
+ *
+ * `coinSelection` is pinned here deliberately: ranked, limit 9 — the one
+ * composition the platform was observed to accept, not an operator choice
+ * this product offers yet.
+ */
+export function compileUpdateIntent(input: {
+  readonly strategyId: string;
+  readonly expectedRevision: number;
+  readonly intentSummary: string;
+  readonly assumptions: readonly string[];
+  readonly tagline: string;
+  readonly sections: ReadonlyArray<{ readonly kind: string; readonly sectionKey: string }>;
+}): Readonly<Record<string, unknown>> {
+  return {
+    operation: 'UPDATE' as const,
+    strategyId: input.strategyId,
+    expectedRevision: input.expectedRevision,
+    intentSummary: input.intentSummary,
+    assumptions: input.assumptions,
+    coinSelection: { mode: 'ranked' as const, limit: 9 },
+    tagline: input.tagline,
+    sections: input.sections,
+  };
+}
