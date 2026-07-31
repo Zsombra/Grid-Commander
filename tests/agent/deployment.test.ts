@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { deploymentsFor } from '@/domain/agent/deployment.js';
 import type { RadarDeployment } from '@/domain/agent/deployment.js';
+import { deploymentsByAgent } from '@/domain/agent/deployment.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { mapDeployments } from '@/infrastructure/battlegrid/radar-adapter.js';
@@ -22,6 +23,7 @@ function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
   return {
     policyId: 'p1',
     coinTicker: 'HYPE',
+    revision: 3,
     timeframe: '15m',
     enabled: true,
     slotAgentIds: ['a1'],
@@ -32,9 +34,23 @@ function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
 }
 
 class FakeRadarPort implements RadarPort {
+  timeframes: readonly string[] = ['15m', '1h'];
+  readonly upserts: Array<Record<string, unknown>> = [];
+  readonly deletes: Array<Record<string, unknown>> = [];
   constructor(private readonly result: RadarReadResult) {}
   async listDeployments(): Promise<RadarReadResult> {
     return this.result;
+  }
+  async deploymentTimeframes(): Promise<readonly string[]> {
+    return this.timeframes;
+  }
+  async upsertDeployment(params: Record<string, unknown>): Promise<{ revision: number }> {
+    this.upserts.push(params);
+    return { revision: 2 };
+  }
+  async deleteDeployment(params: Record<string, unknown>): Promise<{ deleted: boolean }> {
+    this.deletes.push(params);
+    return { deleted: true };
   }
 }
 
@@ -45,6 +61,7 @@ describe('the mapper carries the observed shape and repairs nothing', () => {
         policyId: 'p1',
         coinId: 'HYPE',
         coinTicker: 'HYPE',
+        revision: 4,
         deploymentTimeframe: '15m',
         enabled: true,
         slots: [{ id: 's1', agentId: 'a1', agentDisplayName: 'VELOCITY' }],
@@ -54,6 +71,7 @@ describe('the mapper carries the observed shape and repairs nothing', () => {
     expect(d).toEqual({
       policyId: 'p1',
       coinTicker: 'HYPE',
+      revision: 4,
       timeframe: '15m',
       enabled: true,
       slotAgentIds: ['a1'],
@@ -69,13 +87,17 @@ describe('the mapper carries the observed shape and repairs nothing', () => {
 
   it('refuses a slot without its agent, and a payload that is not a list', () => {
     expect(() =>
-      mapDeployments([{ policyId: 'p1', coinTicker: 'X', slots: [{ id: 's1' }] }]),
+      mapDeployments([{ policyId: 'p1', coinTicker: 'X', revision: 1, slots: [{ id: 's1' }] }]),
     ).toThrow(/agentId/);
     expect(() => mapDeployments(undefined)).toThrow(/policies/);
   });
 
+  it('refuses a policy without its revision — a fabricated 0 would feed a blind write', () => {
+    expect(() => mapDeployments([{ policyId: 'p1', coinTicker: 'X' }])).toThrow(/revision/);
+  });
+
   it('resolvesNow is optional refinement and never fails the row', () => {
-    const [d] = mapDeployments([{ policyId: 'p1', coinTicker: 'X' }]);
+    const [d] = mapDeployments([{ policyId: 'p1', coinTicker: 'X', revision: 1 }]);
     expect(d?.onDutyAgentId).toBeNull();
     expect(d?.enabled).toBe(false);
   });
@@ -155,9 +177,12 @@ describe('the page renders the three states distinctly', () => {
     expect(page).toMatch(/radar\.kind === 'not-deployed'/);
   });
 
-  it('says where deployment happens when the agent is idle', () => {
+  it('offers the deploy act where the agent is idle — it lives here now', () => {
     expect(page).toMatch(/not\s+scanning any market/);
-    expect(page).toMatch(/Radar/);
+    // The copy used to point at battlegrid.trade's Radar. Deploying is the
+    // product's own act since `deploy-and-undeploy-are-offered`.
+    expect(page).toMatch(/\/deploy/);
+    expect(page).toMatch(/\/undeploy\//);
   });
 
   it('an unreadable radar admits it instead of claiming idle', () => {
@@ -184,5 +209,53 @@ describe('the platform record backs the read', () => {
     expect(tool?.classification).toBe('read');
     expect(tool?.input_required).toEqual([]);
     expect(tool?.declared_output).toContain('policies');
+  });
+});
+
+describe('the roster asks for everyone at once', () => {
+  it('deploymentsByAgent agrees with deploymentsFor, for every involved agent', () => {
+    const ds = [
+      deployment(),
+      deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a3' }),
+    ];
+    const byAgent = deploymentsByAgent(ds);
+    expect(Object.keys(byAgent).sort()).toEqual(['a1', 'a2', 'a3']);
+    for (const id of ['a1', 'a2', 'a3']) {
+      expect(byAgent[id]).toEqual(deploymentsFor(ds, id));
+    }
+  });
+
+  it('summary answers with the map, or carries unreadable through', async () => {
+    const ok = await new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+    ).summary(who);
+    expect(ok.kind).toBe('summary');
+    if (ok.kind === 'summary') expect(ok.byAgent['a1']?.[0]?.standing).toBe('on-duty');
+
+    const bad = await new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'unreadable', reason: 'nope', cause: 'unreachable' }),
+    ).summary(who);
+    expect(bad.kind).toBe('unreadable');
+  });
+});
+
+describe('the roster renders the deployment line honestly', () => {
+  const component = readFileSync('src/presentation/components/agent-roster.tsx', 'utf8');
+  const page = readFileSync('app/(app)/agents/page.tsx', 'utf8');
+
+  it('the page fetches the summary and hands it to the roster', () => {
+    expect(page).toMatch(/await app\.readDeployments\.summary/);
+    expect(page).toMatch(/deployments=\{deployments\}/);
+  });
+
+  it('a row says acting or waiting, in the detail page\'s words', () => {
+    expect(component).toMatch(/Scanning \$\{d\.coinTicker\}/);
+    expect(component).toMatch(/Holding the position on/);
+    expect(component).toMatch(/Not deployed — scanning no market/);
+  });
+
+  it('unreadable is one notice, and then no row claims either way', () => {
+    expect(component).toMatch(/could not be read/);
+    expect(component).toMatch(/deployments\.kind === 'summary' &&/);
   });
 });

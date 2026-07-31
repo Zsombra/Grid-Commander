@@ -2,11 +2,11 @@
 id: the-app-authors-agents-it-cannot-deploy
 title: An agent created here is configured, not acting — the deployment surface is missing
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-07-31
 updated: 2026-07-31
-change: an-agent-says-whether-it-is-acting
+change: deploy-and-undeploy-are-offered
 capability: ""
 blocked_by: []
 tags: [battlegrid, radar, deployment]
@@ -52,7 +52,21 @@ deployment happens today), and renders an unreadable radar as unknown — never
 as idle. Live-proven same day: VELOCITY → deployed/on-duty/HYPE/15m,
 Fade Master → not-deployed.
 
-Left on this item: the roster indicator (a glanceable deployed/idle mark per
-row), and step 2 — the guarded deploy/undeploy writes
-(`upsert_radar_deployment` / `delete_radar_deployment` with a confirmation
-naming the agent, the coin, and what starts or stops happening).
+The roster indicator shipped too (`the-roster-says-who-is-acting`,
+2026-07-31).
+
+## Step 2 done 2026-07-31
+
+The guarded writes shipped (`deploy-and-undeploy-are-offered`): deploy and
+undeploy flows on the agent page, describe→confirm→perform, tokens bound to
+the agent+coin pair and the verb, timeframes from the runtime declaration,
+occupied-coin replacement named before agreement, refusals returned to the
+surface acted from. Live-proven: HYPE replaced-in-place through the product
+commands (r1→r2, read back).
+
+One platform limit discovered doing it, filed separately: a market's *first*
+deployment cannot be created through the MCP surface at all
+(`radar-first-deployment-not-creatable-over-mcp`, with the verbatim
+evidence). Deploy here means replacing an existing market's deployment;
+undeploy is composition-proven but deliberately not live-walked (nothing
+deletable that could be recreated).

@@ -828,11 +828,16 @@ describe('a page about one thing can get back to it', () => {
 
   /**
    * **Derived, never listed.** A route is one entity when its last segment is
-   * dynamic: `/agents/[id]`, `/strategies/[id]`. Writing the two down would pass
-   * while a third entity was added with the same hole — the mistake every check
-   * in this file carries a comment about.
+   * dynamic and nothing above it is: `/agents/[id]`, `/strategies/[id]`.
+   * Writing the two down would pass while a third entity was added with the
+   * same hole — the mistake every check in this file carries a comment about.
+   *
+   * The second clause arrived with `/agents/[id]/undeploy/[coin]`: a dynamic
+   * segment *under* an entity parameterizes an operation on that entity — the
+   * page is about the agent, and it is `scoped` to it below, not an entity of
+   * its own.
    */
-  const entityRoutes = served.filter((r) => /\/\[[^\]]+\]$/.test(r));
+  const entityRoutes = served.filter((r) => /\/\[[^\]]+\]$/.test(r) && !/\[[^\]]+\]\//.test(r));
 
   /** A page is scoped to an entity when an entity route is a strict prefix. */
   const scoped = pageFiles.flatMap((file) => {
@@ -957,9 +962,11 @@ describe('a page about one thing can get back to it', () => {
     );
     expect(withForms.map((w) => w.route).sort()).toEqual([
       '/agents/[id]/archive',
+      '/agents/[id]/deploy',
       '/agents/[id]/edit',
       '/agents/[id]/reactivate',
       '/agents/[id]/rebind',
+      '/agents/[id]/undeploy/[coin]',
       '/strategies/[id]/archive',
       '/strategies/[id]/edit',
       '/strategies/[id]/fork',

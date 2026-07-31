@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (857 vitest + 217 harness tests, typecheck clean). No active changes. 32 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
+**State**: green (883 vitest + 60 db + 217 harness tests, typecheck clean; 8 further vitest are key-gated live probes). No active changes. 32 open backlog items. #8–#11 merged 2026-07-31; open PRs carry the roster deployment line and the deploy/undeploy flows.
 
 ---
 
@@ -19,21 +19,22 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | 7 |
-| Changes (archived) | 57 |
-| Vitest tests | 857 |
+| Capabilities (archived) | 8 |
+| Changes (archived) | 59 |
+| Vitest tests | 883 (+8 key-gated live) + 60 db |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
 | Open backlog items | 32 |
 | Design tickets open | 0 |
-| Open draft PRs | 1 — position presets (see PR list) |
+| Open draft PRs | 2 — roster deployment line; deploy/undeploy flows |
 
 ---
 
-## Seven Capabilities
+## Eight Capabilities
 
 | Capability | What it covers |
 |---|---|
+| `agent-deployment` | Deploy/undeploy an agent's radar presence (guarded writes) |
 | `spec-validation` | Automated spec layer validation in CI |
 | `harness-integrity` | The `openspec.py` tooling itself (124 tests) |
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
@@ -51,12 +52,13 @@ Against a real connected BattleGrid account a user can:
 - **Connect** their account (OAuth/DCR/PKCE, no raw credential ever touches the browser)
 - **Agents**: view roster, create, rename, update trading limits, rebind to a strategy, archive, reactivate
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
+- **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
-**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
+**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. A radar deployment was replaced-in-place through the deploy flow (HYPE r1→r2, describe→confirm→perform). All against a real BattleGrid account. Key-gated live probes live in `tests/live/` (`BATTLEGRID_API_KEY=… npx vitest run tests/live/`).
 
 ---
 

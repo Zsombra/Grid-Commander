@@ -1,4 +1,5 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
+import type { DeploymentSummaryResult } from '@/application/use-cases/read-deployments.query.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
@@ -14,9 +15,11 @@ import { WhyNotLoaded } from './why-not-loaded.js';
 export function AgentRoster({
   roster,
   creation,
+  deployments,
 }: {
   roster: RosterResult;
   creation: CreationAvailability;
+  deployments: DeploymentSummaryResult;
 }) {
   if (roster.kind === 'unreadable') {
     return (
@@ -48,6 +51,14 @@ export function AgentRoster({
           choosing the strategy it will read and reason with.
         </p>
       ) : (
+        <>
+          {/* One notice for the list, and then no row claims either way — a
+              radar hiccup must not relabel a scanning agent as idle. */}
+          {deployments.kind === 'unreadable' && (
+            <p role="status" className="text-sm">
+              Whether these agents are deployed could not be read: {deployments.reason}
+            </p>
+          )}
         <ul className="space-y-3">
           {roster.agents.map((agent) => (
             <li key={agent.id} className="rounded border p-4">
@@ -73,10 +84,29 @@ export function AgentRoster({
                 Bound to <span className="font-medium">{agent.binding.strategyName}</span>{' '}
                 at revision {agent.binding.strategyRevision}
               </p>
+              {/* Acting, or configured-and-waiting — the fact the ACTIVE badge
+                  hides. Same words as the detail page, so the two surfaces
+                  cannot disagree about what an agent is doing. */}
+              {deployments.kind === 'summary' && (
+                <p className="mt-1 text-sm">
+                  {(deployments.byAgent[agent.id] ?? []).length > 0
+                    ? (deployments.byAgent[agent.id] ?? [])
+                        .map((d) =>
+                          d.standing === 'holding-position'
+                            ? `Holding the position on ${d.coinTicker} (${d.timeframe})`
+                            : d.standing === 'on-duty'
+                              ? `Scanning ${d.coinTicker} (${d.timeframe})`
+                              : `In the rotation for ${d.coinTicker} (${d.timeframe})`,
+                        )
+                        .join(' · ')
+                    : 'Not deployed — scanning no market'}
+                </p>
+              )}
               <AgentActions agent={agent} />
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   );

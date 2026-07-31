@@ -192,11 +192,13 @@ nothing, so the two can never disagree on a surface.
 
 ### Requirement: Whether An Agent Is Acting Is Stated Where The Agent Is Read
 Where the platform can say which markets an agent is deployed to scan,
-Grid-Commander SHALL state it on the agent's own page: each deployment's
-market and timeframe, and whether the agent is holding the position, on duty,
-or in the rotation. An agent deployed nowhere SHALL be described as configured
-but not acting, naming where deployment happens. Where the deployment state
-cannot be read, the page MUST say so rather than render either certainty.
+Grid-Commander SHALL state it on the agent's own page and on the roster: each
+deployment's market and timeframe, and whether the agent is holding the
+position, on duty, or in the rotation. An agent deployed nowhere SHALL be
+described as configured but not acting, naming where deployment happens.
+Where the deployment state cannot be read, the surface MUST say so rather
+than render either certainty, and the roster MUST NOT make a per-agent claim
+it cannot back.
 
 An agent's lifecycle status says "ACTIVE" while the platform's own radar
 counts only deployed agents as active. Two agents on the operator's account
@@ -219,3 +221,9 @@ waiting, and nothing in this product would ever have said so.
 - **WHEN** the deployment state cannot be read
 - **THEN** the page says the deployment state is unknown, with the cause
 - **AND** does not claim the agent is deployed, nor that it is not
+
+#### Scenario: The roster, at a glance
+- **WHEN** the roster lists agents and the deployment state is readable
+- **THEN** each row states its agent's deployments or that it is not deployed
+- **AND** when the state is unreadable, one notice covers the list and no row
+  claims either
