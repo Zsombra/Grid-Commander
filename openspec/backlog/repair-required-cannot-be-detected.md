@@ -2,11 +2,11 @@
 id: repair-required-cannot-be-detected
 title: The REPAIR_REQUIRED branch reads keys neither tool returns
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
-change: ""
+updated: 2026-07-31
+change: repair-required-can-actually-fire
 capability: strategy-authoring
 blocked_by: []
 tags: [mcp-conformance, dead-branch]
@@ -74,3 +74,17 @@ may need a strategy deliberately left in that condition.
 
 Until then the branch stays, documented, rather than being deleted: it is
 unreachable, not wrong.
+
+## Fixed 2026-07-31 — `repair-required-can-actually-fire`
+
+The detection moved to the only channel the declared output leaves possible:
+the refusal. `setActive` now maps a `ToolRefusedError` with code
+`REPAIR_REQUIRED` (message-text fallback) to the `repair-required` outcome,
+carrying the platform's own words. The dead `payload['status']` read is gone,
+and the payload that used to fake the outcome now fails loudly as
+unreadable. Found on the way: every *other* platform refusal from
+archive/restore was thrown, crashing the server action — `LifecycleResult`
+gained a `refused` case so the page's `?problem=` arm finally receives what
+the platform said. Where REPAIR_REQUIRED surfaces live remains unobserved
+(needs a degraded strategy); `tests/live/restore-probe.test.ts` is where it
+would show.

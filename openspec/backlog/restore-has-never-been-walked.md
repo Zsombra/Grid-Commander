@@ -1,7 +1,7 @@
 ---
 id: restore-has-never-been-walked
 type: risk
-status: open
+status: in-progress
 priority: P2
 capability: strategy-authoring
 created: 2026-07-29
@@ -58,3 +58,25 @@ the bound-agent count on every row, and the walk found one with nine.
 Until then the honest statement is that restore is implemented and unobserved,
 which is what `the-strategies-walk` put in its Out of Scope section rather than
 claiming coverage.
+
+## The walk is built and armed (2026-07-31)
+
+`tests/live/restore-probe.test.ts` (key-gated, committed): fork a SYSTEM
+strategy → archive the fork through describe→confirm→perform → **assert the
+roster still lists it** (the reachability question this item turned on — the
+restore action looks the strategy up in `list_strategies` before calling
+anything; note the adapter already passes `includeInactive: true`) → restore
+through the product command → read back active → archive again in the
+finally.
+
+It did not run to completion today: BattleGrid's MCP endpoint began hanging
+on every call (~17:10Z) — even `tools/list` times out at 35s while the OAuth
+discovery document answers in ~1s. Same-day earlier probes (radar walk,
+15:2xZ) worked, so this is a platform stall, not the probe. Run it when the
+platform answers:
+
+    BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/restore-probe.test.ts
+
+Also armed in the same file's territory: `repair-required-can-actually-fire`
+moved REPAIR_REQUIRED detection to the refusal channel, so if the platform
+answers a restore that way, this walk is where it shows.

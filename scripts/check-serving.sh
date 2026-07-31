@@ -173,4 +173,18 @@ if [[ $failed -ne 0 ]]; then
   exit 1
 fi
 
-echo "serving ok — every session-resolving route answered"
+# The routes above answered without touching the database — an anonymous
+# request resolves no session and renders "Not connected" queryless. This one
+# request carries a signed session cookie, so the route looks the user up
+# through the application's own pool, and the helper asserts the database saw
+# that transaction. Two different failures become loud here: a query path
+# that is broken (route 500s), and a cookie signature that drifted from
+# `cookie-session.ts` (no transaction — see the helper's header).
+if ! PORT="$PORT" node tools/check-route-queries.mjs; then
+  echo
+  echo "The application boots and its schema is current, but a request that"
+  echo "resolves a session could not query the database through the pool."
+  exit 1
+fi
+
+echo "serving ok — every session-resolving route answered, and one queried"

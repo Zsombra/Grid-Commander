@@ -132,7 +132,14 @@ export type CompileResult =
  */
 export type LifecycleResult =
   | { readonly kind: 'changed'; readonly strategy: Strategy }
-  | { readonly kind: 'repair-required'; readonly reason: string };
+  | { readonly kind: 'repair-required'; readonly reason: string }
+  /**
+   * The platform said no, with its reason — a revision that moved, a refusal
+   * code. Its own case because the alternative was observed: a thrown
+   * refusal crashed the server action, and the page's `?problem=` arm only
+   * ever received the command's own pre-checks.
+   */
+  | { readonly kind: 'refused'; readonly reason: string };
 
 export interface VocabularyCategory {
   readonly category: string;

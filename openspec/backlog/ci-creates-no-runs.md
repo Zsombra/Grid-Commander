@@ -199,3 +199,23 @@ already-registered runner: none found — the "self-hosted checker a previous
 agent built" is `scripts/check.sh`, which verifies locally and cannot green
 the board. What remains is operator-only: register the runner (Settings →
 Actions → Runners) and set the `CI_RUNNER` repository variable.
+
+## Direction change (2026-07-31, operator): GitHub-hosted, not self-hosted
+
+The operator has dropped the self-hosted-runner route ("we ain't gonna be
+doing the CI locally — make it in a way GitHub can understand"). What that
+means by side:
+
+**Repo side: there is nothing left to do, and that is verified.** The
+workflow is plain GitHub Actions — 7 jobs covering every local gate;
+`runs-on` reads `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`, so with the
+variables unset (they are unset) every job targets GitHub-hosted runners
+exactly as before the routing change. The moment execution is restored,
+CI is green-able with no commit. Re-verified today on PR #12's head: all
+jobs still die in ~2s with empty check-run output — the account-level
+signature, unchanged.
+
+**Account side: the one remaining step is settling the GitHub billing.**
+No repository content, workflow edit, or agent session can do it.
+`docs/SELF_HOSTED_RUNNER.md` stays in the tree as reference but is no
+longer the plan.

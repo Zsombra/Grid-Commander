@@ -18,6 +18,7 @@ import type {
 import type { SectionTemplate } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
+import { RevisionConflictError } from '@/domain/errors.js';
 import { ToolRefusedError } from './mcp-adapter.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 
@@ -192,30 +193,50 @@ export class McpStrategyAdapter implements StrategiesPort {
     active: boolean;
     confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult> {
-    const payload = await this.call(
-      params,
-      params.active ? TOOLS.restore : TOOLS.archive,
-      {
-        strategyId: params.strategyId,
-        // Both tools require it. This sent `{ strategyId }` alone, so every
-        // archive and every restore was refused for a missing argument — which
-        // nothing noticed, because no write had ever reached the real platform.
-        expectedRevision: params.expectedRevision,
-        // Only `archive_strategy` requires it: it is the destructive one of the
-        // pair. Sent where it is declared and nowhere else, rather than to both
-        // for symmetry — an argument a tool does not declare is one more thing
-        // that can be rejected.
-        ...(params.active ? {} : { confirm: true }),
-      },
-      { confirmation: params.confirmation },
-    );
-
-    // Restoring can come back needing repair. The strategy stays inactive and
-    // the way forward is the RESTORE arm of the compile pipeline — a distinct
-    // outcome, not an error.
-    const status = payload['status'] ?? payload['result'];
-    if (status === 'REPAIR_REQUIRED') {
-      return { kind: 'repair-required', reason: 'REPAIR_REQUIRED' };
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(
+        params,
+        params.active ? TOOLS.restore : TOOLS.archive,
+        {
+          strategyId: params.strategyId,
+          // Both tools require it. This sent `{ strategyId }` alone, so every
+          // archive and every restore was refused for a missing argument — which
+          // nothing noticed, because no write had ever reached the real platform.
+          expectedRevision: params.expectedRevision,
+          // Only `archive_strategy` requires it: it is the destructive one of the
+          // pair. Sent where it is declared and nowhere else, rather than to both
+          // for symmetry — an argument a tool does not declare is one more thing
+          // that can be rejected.
+          ...(params.active ? {} : { confirm: true }),
+        },
+        { confirmation: params.confirmation },
+      );
+    } catch (err) {
+      /**
+       * Restoring can come back needing repair — the strategy stays inactive
+       * and the way forward is the RESTORE arm of the compile pipeline. A
+       * distinct outcome, not an error, and it arrives on the refusal
+       * channel: both tools declare an output whose only property is
+       * `strategy`, so this used to be read from `payload['status']` — a key
+       * that could never exist, leaving the whole repair-required surface
+       * unreachable. The platform refuses as `{"code": …, "message": …}`,
+       * which `ToolRefusedError` parses; the reason carried is the
+       * platform's own words, not a constant.
+       */
+      if (
+        err instanceof ToolRefusedError &&
+        (err.code === 'REPAIR_REQUIRED' || err.message.includes('REPAIR_REQUIRED'))
+      ) {
+        return { kind: 'repair-required', reason: err.message };
+      }
+      // Any other answer the platform gave — a moved revision, a refusal
+      // code — reaches the person as its reason instead of crashing the
+      // action. Transport failures still throw: "no answer" is not "no".
+      if (err instanceof ToolRefusedError || err instanceof RevisionConflictError) {
+        return { kind: 'refused', reason: err.message };
+      }
+      throw err;
     }
 
     return { kind: 'changed', strategy: mapStrategy(payload['strategy'] ?? payload) };

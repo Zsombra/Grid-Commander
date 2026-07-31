@@ -3,9 +3,9 @@ id: performance-and-allocation-are-unmodelled
 title: get_agent_performance and get_agent_fund_allocation have never returned a figure
 type: question
 status: open
-priority: p2
+priority: p3
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-07-31
 change: performance-was-already-in-the-payload
 capability: agent-understanding
 blocked_by: []
@@ -72,3 +72,13 @@ presenting a reconciled number nobody has reconciled.
   declared these out of scope, with this evidence
 - `the-journal-can-never-show-anything` — where this item was first filed, under
   a premise the older account disproved
+
+## Re-triaged P3, 2026-07-31
+
+Everything buildable here shipped or stands guard: the roster block is
+modelled (`performance-was-already-in-the-payload`), the product captions
+its figure with its source, and `tests/agent/performance.test.ts` is the
+tripwire that fires the day either tool returns a populated value. The P&L
+discrepancy stays a real question, but it waits on evidence no session can
+fabricate — a populated account or platform documentation. Nothing P2-sized
+remains to do.
