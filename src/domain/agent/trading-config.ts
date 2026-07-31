@@ -336,6 +336,75 @@ export function positionManagementForPreset(
   return { positionManagementPreset: found.preset, ...found.config };
 }
 
+/**
+ * The fourteen behavioural fields a position-management object carries,
+ * beside its label. One list, exported, because the edit transport, the
+ * drift comparison, and the tests all need the same answer to "which
+ * fields" — a second list is a drift of its own.
+ */
+export const POSITION_MANAGEMENT_FIELDS = [
+  'enabled',
+  'breakEvenEnabled',
+  'breakEvenTriggerTpProgressPct',
+  'trailingEnabled',
+  'trailingType',
+  'trailingAtrMultiple',
+  'trailingFixedPct',
+  'trailingBufferPct',
+  'timeDecayEnabled',
+  'timeDecayGracePeriodMinutes',
+  'timeDecayIntervalMinutes',
+  'timeDecayTightenPct',
+  'timeDecayMaxTightenPct',
+  'timeDecayStaleThresholdTpProgressPct',
+] as const;
+
+/**
+ * What kind of value each field carries — the form's control types and the
+ * transport's coercion both read this, so they cannot disagree about what
+ * `"true"` or `"3"` means on the way in versus the way out.
+ */
+export function positionFieldKind(field: string): 'boolean' | 'text' | 'number' {
+  if (
+    field === 'enabled' ||
+    field === 'breakEvenEnabled' ||
+    field === 'trailingEnabled' ||
+    field === 'timeDecayEnabled'
+  ) {
+    return 'boolean';
+  }
+  if (field === 'trailingType' || field === 'positionManagementPreset') return 'text';
+  return 'number';
+}
+
+/**
+ * Whether an agent's values still are what its label claims.
+ *
+ * A preset is a label beside fourteen independent values — nothing on the
+ * platform makes them agree (`a-preset-does-not-constrain-its-config`,
+ * answered live). So a surface showing the label alone would lie
+ * confidently the day they diverge. `null` when there is no claim to check:
+ * the agent is `CUSTOM` (its values are deliberately its own), names no
+ * preset, or the catalog cannot say what the preset means.
+ */
+export function positionDrift(
+  current: Readonly<Record<string, unknown>> | null | undefined,
+  catalog: Catalog,
+): { readonly preset: string; readonly differing: readonly string[] } | null {
+  if (!current) return null;
+  const preset = current['positionManagementPreset'];
+  if (typeof preset !== 'string' || preset === '' || preset === 'CUSTOM') return null;
+  const claimed = catalog.positionManagementPresets.find((p) => p.preset === preset);
+  if (!claimed || claimed.config === null) return null;
+
+  const differing = POSITION_MANAGEMENT_FIELDS.filter(
+    // Strict inequality on the raw values: both sides are platform JSON, so
+    // 3 and "3" differing is a fact worth surfacing, not noise to coerce away.
+    (field) => current[field] !== claimed.config?.[field],
+  );
+  return { preset, differing };
+}
+
 /** The three size percentages and the strategy that picks between them. */
 export function positionSizePresetsFrom(catalog: Catalog): Readonly<Record<string, unknown>> {
   const d = catalog.defaults;

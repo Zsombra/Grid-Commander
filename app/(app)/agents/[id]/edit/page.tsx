@@ -2,7 +2,13 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
-import { editIntent, MONEY_FIELDS, requiredText } from '@/presentation/form.js';
+import {
+  editIntent,
+  MONEY_FIELDS,
+  positionFromTransport,
+  presetPosition,
+  requiredText,
+} from '@/presentation/form.js';
 
 /**
  * Change what an agent owns, in two requests.
@@ -105,7 +111,54 @@ export default async function EditAgentPage({
     { get: (name) => query[name] ?? null },
     { name: ['displayName'], money: MONEY_FIELDS },
   );
+
+  /**
+   * The position choice, resolved to values *here*, before anything is
+   * described. A preset resolves to the catalog's own fourteen values (a
+   * preset the catalog cannot answer for is refused); CUSTOM reads the
+   * fields as typed, through the same coercion the apply will use; no
+   * choice contributes nothing. The confirmation is bound to the resolved
+   * values, so what the person agrees to is what will be sent — the label
+   * is never sent alone.
+   */
+  const pmChoice = query['pmPreset'] ?? '';
+  let position: Record<string, unknown> | null = null;
+  if (pmChoice === 'CUSTOM') {
+    position = positionFromTransport({
+      get: (name) =>
+        name === 'pm.positionManagementPreset' ? 'CUSTOM' : (query[name] ?? null),
+    });
+  } else if (pmChoice !== '') {
+    const resolved = presetPosition(catalog.catalog, pmChoice);
+    if (!resolved) {
+      return (
+        <main className="mx-auto max-w-3xl space-y-6 p-6">
+          <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+          <AgentEditForm
+            agent={agent}
+            catalog={catalog.catalog}
+            problem={`The catalog does not carry a configuration for "${pmChoice}", so choosing it would send values nobody stated.`}
+          />
+        </main>
+      );
+    }
+    position = { ...resolved };
+  }
+
+  if (position) {
+    intent['tradingConfig'] = {
+      ...((intent['tradingConfig'] ?? {}) as Record<string, unknown>),
+      positionManagement: position,
+    };
+  }
   const { tradingConfig: proposedConfig, ...proposedChanges } = intent;
+  // The flat money fields ride as tc.* hidden inputs; the position object has
+  // its own pm.* transport, so it is split out rather than stringified flat.
+  const flatConfig = Object.fromEntries(
+    Object.entries((proposedConfig ?? {}) as Record<string, unknown>).filter(
+      ([key]) => key !== 'positionManagement',
+    ),
+  );
 
   const proposed = await app.describeEdit.execute({
     ...user.authority,
@@ -135,7 +188,8 @@ export default async function EditAgentPage({
         consequence={proposed.proposal.consequence}
         confirmationToken={proposed.proposal.confirmationToken}
         changes={proposedChanges as Record<string, string | number>}
-        tradingConfigChanges={(proposedConfig ?? {}) as Record<string, string | number>}
+        tradingConfigChanges={flatConfig as Record<string, string | number>}
+        positionChanges={position}
         action={applyEdit}
       />
     </main>
@@ -189,11 +243,27 @@ export async function applyEdit(formData: FormData) {
 
   const { tradingConfig, ...changes } = intent;
 
+  /**
+   * The position object, off the same `pm.*` transport and through the same
+   * coercion the review used — so the digest this request recomputes is the
+   * digest the token was issued for. Merged under `tradingConfig` exactly as
+   * the review merged it.
+   */
+  const position = positionFromTransport({
+    get: (name) => {
+      const value = formData.get(name);
+      return typeof value === 'string' ? value : null;
+    },
+  });
+  const fullConfig = position
+    ? { ...((tradingConfig ?? {}) as Record<string, unknown>), positionManagement: position }
+    : (tradingConfig as Record<string, unknown> | undefined);
+
   const result = await app.updateAgent.execute({
     ...user.authority,
     agentId,
     changes,
-    ...(tradingConfig ? { tradingConfigChanges: tradingConfig as Record<string, unknown> } : {}),
+    ...(fullConfig ? { tradingConfigChanges: fullConfig } : {}),
     confirmationToken,
   });
 
