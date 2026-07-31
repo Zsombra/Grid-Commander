@@ -58,8 +58,8 @@ export function isValid(token: ConfirmationToken, now: Date): boolean {
  * the fix is that there is one site, and it takes the values as arguments.
  *
  * That is the load-bearing property: `agentEdit` **cannot be called without the
- * intent**. The compiler enforces the binding; `confirmation-binds-values.test.ts`
- * enforces that nothing bypasses the compiler by composing a string inline.
+ * intent**. The compiler enforces the binding; `edit-binding.test.ts` enforces
+ * that nothing bypasses the compiler by composing a string inline.
  *
  * The two identity cases are here deliberately. Leaving a bare id inline would
  * mean the shared construction covers only *some* flows, and the guard would need

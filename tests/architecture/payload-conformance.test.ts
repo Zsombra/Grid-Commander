@@ -5,6 +5,7 @@ import type { Brain } from '@/domain/agent/brain.js';
 import {
   applyEdit,
   buildTradingConfig,
+  positionManagementForPreset,
   positionManagementFrom,
   positionSizePresetsFrom,
 } from '@/domain/agent/trading-config.js';
@@ -262,6 +263,33 @@ describe('every payload the product constructs can succeed', () => {
       );
     });
   }
+
+  it('create_intelligence_agent — a catalog preset, sent as the platform stated it', () => {
+    // The preset path bypasses the product's assembly: the fourteen values are
+    // the catalog's own. They must still satisfy the closed fifteen-key
+    // positionManagement object and every required path beneath it.
+    const catalog = defaultCatalog();
+    const preset = positionManagementForPreset(catalog, 'COLT');
+    expect(preset, 'the fake catalog must carry a fully-described preset').not.toBeNull();
+    const built = buildTradingConfig(catalog, {
+      tradingMode: 'OFF',
+      minAllocationUsd: 10,
+      balanceThresholdUsd: 10,
+      maxConcurrentExposureUsd: 10,
+      maxCumulativeDrawdownUsd: 10,
+      maxDailyLossUsd: 10,
+      positionManagement: preset as Readonly<Record<string, unknown>>,
+      positionSizePresets: positionSizePresetsFrom(catalog),
+    });
+    if (built.kind !== 'config') throw new Error(`incomplete: ${built.missing.join(', ')}`);
+    const payload = {
+      displayName: 'probe',
+      brain: brainToArgument(PRESET),
+      strategyId: 's1',
+      tradingConfig: built.config.fields,
+    };
+    expect(violations(toolOrThrow('create_intelligence_agent'), payload)).toEqual([]);
+  });
 
   it('update_intelligence_agent — an edit assembled from a 23-field read', () => {
     const edited = applyEdit({ fields: readBackConfig() }, { maxDailyLossUsd: 25 });

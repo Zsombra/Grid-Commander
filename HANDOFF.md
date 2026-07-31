@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (827 vitest + 217 harness tests, typecheck clean). No active changes. 32 open backlog items. One draft PR open: #10 (conformance sweep + CI runner routing); #8 and #9 merged 2026-07-31.
+**State**: `main` is current and green (857 vitest + 217 harness tests, typecheck clean). No active changes. 32 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 54 |
-| Vitest tests | 827 |
+| Changes (archived) | 57 |
+| Vitest tests | 857 |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
 | Open backlog items | 32 |
 | Design tickets open | 0 |
-| Open draft PRs | 1 — #10 (conformance sweep + CI runner routing) |
+| Open draft PRs | 1 — position presets (see PR list) |
 
 ---
 
@@ -50,13 +50,13 @@ Against a real connected BattleGrid account a user can:
 
 - **Connect** their account (OAuth/DCR/PKCE, no raw credential ever touches the browser)
 - **Agents**: view roster, create, rename, update trading limits, rebind to a strategy, archive, reactivate
-- **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk
+- **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
-**Proven live**: an agent was created, renamed, had its limits updated, and was archived. A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
+**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
 
 ---
 
@@ -78,10 +78,9 @@ These were bugs that existed in the application that sessions discovered and fix
 |---|---|---|
 | `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
-| `confirmation-is-not-bound-to-values` | P2 risk | Confirmation tokens authorise the *intent* but not the specific payload values |
 | `rebind-is-not-bound-to-the-revision-it-read` | P3 risk | Rebind can clobber a concurrent change |
 
-Resolved since this table was first written: `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
+Resolved since this table was first written: `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
 
 **Hard limits** (not bugs — these are constraints imposed by BattleGrid's API):
 
@@ -105,7 +104,7 @@ Resolved since this table was first written: `strategy-section-editor` (built an
 
 1. **Fix the CI** — settle the account billing, or go self-hosted: the repo side is done (`validate.yml` routes `runs-on` through the `CI_RUNNER` repository variable; `docs/SELF_HOSTED_RUNNER.md` is the setup handout). Operator steps remaining: register the runner, set `CI_RUNNER=self-hosted` (`ci-creates-no-runs`).
 2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
-3. **Live writes partially proven 2026-07-31** — create, rename, limits-edit and archive of a throwaway agent all succeeded live through the product path. Still unwalked: the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
+3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
 4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.
 
 (PR #8, `brain-with-no-model`, merged 2026-07-31 — was step 1 of this list.)

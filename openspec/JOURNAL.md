@@ -1,5 +1,131 @@
 # Journal
 
+## 2026-07-31 — an agent now says whether it is acting
+
+**Did**: `an-agent-says-whether-it-is-acting` (standard, proposed → executed →
+archived): the read-only half of the deployment gap found this morning. New
+radar read path — `RadarPort` / `McpRadarAdapter` over
+`list_radar_deployments` (mapped against the same-day observed shape),
+`ReadDeploymentsQuery` answering per agent — and a Deployment section on the
+agent detail page with three distinct states: each deployment's market,
+timeframe and standing (holding the position / on duty / in the rotation);
+"configured but scanning nothing", naming battlegrid.trade's Radar as where
+deployment happens today; and unreadable-as-unknown, never dressed as idle.
+
+**The guard that improved the design**: the identifiers scan refused the first
+mapper, which silently dropped malformed policies — and it was right for a
+deeper reason than identifiers: a dropped policy would render its slotted
+agent as "not deployed", the exact lie the unreadable state exists to prevent,
+one level down. The mapper now refuses the whole read (`RadarPayloadError` →
+unreadable) rather than dropping rows.
+
+**Live-proven on day one**: VELOCITY → deployed / on-duty / HYPE / 15m;
+Fade Master → not-deployed. Same facts the morning's raw investigation found,
+now spoken by the product path.
+
+**Spec**: 1 ADDED requirement in `agent-understanding`. 17 new tests.
+
+**State**: 0 active changes · 32 open backlog items · 57 archived changes ·
+857 vitest + 217 harness green · validation 0 errors. Left on the item: the
+roster indicator, and the guarded deploy/undeploy writes (step 2).
+
+## 2026-07-31 — the operator's product model, and the go button the app doesn't have
+
+**Did**: The operator described BattleGrid as they use it — four modules:
+Agents (risk + strategy + LLM assignment), Strategies (signal/data tables +
+market-data reads), Radar (deployment: per token, one agent per slot), and
+Market Grid (a nine-coin prediction game a configured agent plays). Recorded
+as `docs/BATTLEGRID_PRODUCT_MODEL.md` (hand-maintained — the generated
+surface map lists tools; this says what they are for). The "87 unused tools"
+now have semantics: two of the four modules are entirely unmodelled.
+
+**The question that fell out, answered the same hour, read-only**: does an
+agent act without a radar deployment? No. Live account: three per-coin
+policies (FARTCOIN/HYPE/PURR, 15m, one slot each — "per token, one agent at a
+time", verbatim) filled by CONFLUENCE, VELOCITY, CONTRARIAN, all scanning;
+the two undeployed lifecycle-ACTIVE agents (Fade Master I/II) hold zero
+positions; the radar summary counts agentsActive: 3, not 5. **Radar is the go
+button** — an agent Grid-Commander creates is configured, not acting, and no
+surface says so.
+
+**Filed**: `the-app-authors-agents-it-cannot-deploy` (P2 feature — say where
+an agent is deployed first, read-only; then the guarded upsert/delete writes)
+and `market-grid-is-an-unmodelled-module` (P3).
+`does-an-agent-act-without-a-radar-deployment` opened and closed with the
+evidence in one session.
+
+**State**: 32 open backlog items · validation 0 errors / 14 warnings ·
+PR #11 open, watched.
+
+## 2026-07-31 — the values-binding risk closed, and its claimed guard made real
+
+**Did**: Re-triaged `confirmation-is-not-bound-to-values` (P2 risk) against
+`a-confirmation-binds-to-what-was-agreed`, which landed the day after the item
+was filed and never came back to close it. Verified flow by flow: every flow
+carrying agreed values binds them into the token's target (edit: intent
+digest, recomputed from the submitted values at spend; rebind: the
+agent→strategy pair; apply: the compiler's plan digest); the two lifecycle
+flows are identity-only by documented design. The item's headline case —
+agreed $25, submitted $25,000 — is `edit-binding.test.ts`'s own scenario,
+refused. Item closed with the evidence table.
+
+**The gap the re-triage found**: `confirmation.ts` cited
+`confirmation-binds-values.test.ts` — a file that does not exist — for the
+claim that no caller composes a target string inline. The claim is now true:
+`edit-binding.test.ts` scans `src/` for target-shaped template literals and
+requires exactly one composer, the builder itself (lite change
+`the-binding-guard-that-was-claimed-exists`, archived).
+
+**State**: 0 active changes · 30 open backlog items · 56 archived changes ·
+840 vitest + 217 harness green · validation 0 errors. PR #11 (position
+presets) still open, watched.
+
+**Also — reactivate live-proven** (same session, operator's yes): one of the
+archived probe agents went ARCHIVED r3 → ACTIVE r4 → ARCHIVED r5 through the
+product path — no confirmation on activate (non-destructive by annotation,
+matching the page's design), a bound confirmation on the re-archive. Account
+restored exactly. Of the write surface the app uses, only rebind and
+apply/restore now lack live proof; rebind deliberately waits for a real
+agent+strategy choice.
+
+**Next**: remaining code-ready P2s are `naming-an-entity-is-held-by-the-walk-only`
+and `no-route-exercises-the-database` (debt), plus the answerable questions
+(`oauth-path-may-be-dead-weight`, `performance-and-allocation-are-unmodelled`).
+
+## 2026-07-31 — an operator can finally say "manage positions like a COLT"
+
+**Did**: `preset-configs-are-discarded` (standard track, proposed → executed →
+verified → archived). The catalog states each position-management preset's
+complete fourteen-field configuration and `mapPositionPresets` discarded it at
+the boundary — so the create form had removed its preset select (a control the
+action dropped was worse than none) and every agent was created CUSTOM under
+values nobody picked deliberately.
+
+**What landed**: `PositionManagementPreset` carries `config` (platform's
+values or null — never invented), `tagline`, `cardSummary`;
+`positionManagementForPreset` answers with the label beside the fourteen
+values or null; the create command takes `positionPreset` and refuses a name
+the catalog cannot answer for (the unknown-brain-preset shape); the form's
+fieldset is back, offering CUSTOM (default — today's behavior, named as a
+choice) plus every preset whose configuration actually arrived. De-risked by
+the same-day live probe: the observed catalog carries the config blocks, and
+the schema's closed fifteen-key `positionManagement` object is exactly a
+preset's config plus its label.
+
+**OURS**: kept, scope narrowed — the three product-answered booleans apply to
+the CUSTOM path only; a chosen preset answers all three itself.
+
+**Spec**: 1 ADDED requirement merged into `agent-authoring` (now 21).
+12 new tests (mapper carry-through, preset-or-refusal, CUSTOM unchanged,
+enum-conformance against the live artifact, payload-conformance preset case).
+
+**State**: 0 active changes · 31 open backlog items · 55 archived changes ·
+839 vitest + 217 harness green · validation 0 errors / 15 warnings.
+
+**Next**: `confirmation-is-not-bound-to-values` re-triage against the landed
+binding change is the top code candidate. The edit surface (fourteen-field
+editor with preset-drift display) stays with `a-preset-does-not-constrain-its-config`.
+
 ## 2026-07-31 — the operator's key: live probe, live writes, and what they flushed out
 
 **Did**: The operator supplied a live key and delegated the CI verdict, the PR
