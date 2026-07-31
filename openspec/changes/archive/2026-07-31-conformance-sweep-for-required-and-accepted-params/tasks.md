@@ -60,5 +60,5 @@
       installed (`./scripts/check.sh` gates).
 - [x] 3.3 `python3 .claude/tools/openspec.py validate
       conformance-sweep-for-required-and-accepted-params` — zero errors.
-- [ ] 3.4 Backlog item updated: `status: in-progress → done` at archive,
+- [x] 3.4 Backlog item updated: `status: in-progress → done` at archive,
       `change:` linked.

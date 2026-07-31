@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-07-31 — PRs #8 and #9 merged; conformance sweep built, verified, archived
+
+**Did**: Un-wedged the repository and shipped the sweep, in that order.
+
+**Merges**: Marked draft PRs #8 (`brain-with-no-model`, squash `7e4b772`) and
+#9 (reconciliation docs, squash `a739f98`) ready and merged them, accepting the
+red checks — every failure was the account-level CI outage
+(`ci-creates-no-runs`), verified identical on `main` itself. The JOURNAL.md
+conflict between the two (both added a top entry) was resolved keeping both,
+newest first; #9's HANDOFF.md was updated in the same merge so it landed
+already knowing #8 was in.
+
+**The sweep** (`conformance-sweep-for-required-and-accepted-params`, standard
+track, proposed → executed → verified → archived this session):
+- `tools/probe_mcp_surface.py` now derives `input_required_paths` (nested
+  required as dotted paths) and `input_accepts` (closed accepted sets; union
+  paths as per-branch variants keyed by discriminator const — `operation=…`,
+  `kind=…`) from declared input schemas, resolving the dump's 370 local `$ref`
+  pointers with a cycle guard. `input_constants` resolves refs now too.
+- `--refresh-declared` regenerates the artifact's declared fields offline from
+  `docs/battlegrid-mcp-capabilities.json` — no key needed for facts the server
+  declares; observed data byte-untouched; refuses on mismatched tool sets.
+- `tests/architecture/payload-conformance.test.ts` builds every
+  product-constructed payload through the product's own builders and fails on
+  a missing required path at any depth or a key outside a closed accepted set.
+  `apply_strategy_plan`'s `request.plan` is a named pass-through. The
+  historical defect is replayed as a test: the raw 23-field read must fail for
+  exactly the three non-writable fields.
+- Verifier found one real gap (a lone closed object branch of a union —
+  nullable objects — went unrecorded); fixed in-session, zero instances today.
+- Deltas merged: 2 ADDED requirements into `battlegrid-connection` (now 20).
+
+**Found on the way**: the artifact's declared fields were **stale against the
+committed capabilities dump** — a BattleGrid deployment dropped
+`conditions`/`conditionVerdicts` and `entryStrategy` after the last live
+probe. The refresh corrected 12 stale constant paths; observed data is still
+the older generation. Filed `observed-data-predates-a-platform-deployment`
+(P3, needs the operator's key). Also filed
+`compile-intent-shape-lives-in-two-places` (P3): the edit page's compile
+`UPDATE` intent has no exported builder, so the guard mirrors its literal.
+And the "124 harness tests" figure carried by HANDOFF.md was itself stale —
+`check.sh` discovery runs 217 today (201 before this session's 16).
+
+**State**: 0 active changes · 36 open backlog items (sweep closed, two filed)
+· 0 open PRs · 49 archived changes. Gates: 806 vitest green, 217 harness
+green, typecheck and lint clean, spec validation 0 errors (23 warnings — the
+21 known plus `backlog_change_archived` on the two new items, both carrying
+full context by design).
+
+**Next**: CI account fix (P1, not fixable by code), live re-probe + live apply
+test (both need the operator), stale design surfaces (`/surface` before design
+work). Per HANDOFF.md's next steps, which are current as of this entry.
+
+**Watch out**: CI on the PR for this session's branch will be red for the same
+outage reason — same signature, all 7 jobs, pre-existing on `main`. Don't
+re-diagnose it. And the surface artifact is now mixed-generation (declared
+fields newer than observed) — deliberate, recorded, and closed by one live
+probe run.
+
 ## 2026-07-31 — reconciliation review: main is authoritative, one draft PR ahead
 
 **Did**: Full reconciliation of the clone, the handoff artifacts, and the backlog against the live repo. Answer to "who's ahead": **`origin/main` (`3a115fd`) is the authoritative tip — everything through PR #7 is merged — and the only work ahead of it is draft PR #8** (`claude/hand-off-file-review-3gpveo`, 3 commits: propose / fix / archive for `brain-with-no-model`), which merges into `main` with zero conflicts (`git merge-tree` verified). All other remote branches are fully contained in `main`. Verified `main` green locally: 792 vitest tests passing (6 skipped), typecheck clean, `./scripts/check.sh` both gates ok.

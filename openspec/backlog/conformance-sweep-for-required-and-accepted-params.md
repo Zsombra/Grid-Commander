@@ -2,7 +2,7 @@
 id: conformance-sweep-for-required-and-accepted-params
 title: Check every payload against required and accepted params, not just top-level names
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-07-29
 updated: 2026-07-31

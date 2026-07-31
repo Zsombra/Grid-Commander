@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (795 vitest + 124 harness tests, typecheck clean). No active changes. 35 open backlog items. No open PRs — #8 (`brain-with-no-model` fix) merged 2026-07-31.
+**State**: `main` is current and green (806 vitest + 217 harness tests, typecheck clean). No active changes. 36 open backlog items. No open PRs — #8 and #9 merged 2026-07-31.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 48 |
-| Vitest tests | 795 |
-| Harness tests (Python) | 124 |
+| Changes (archived) | 49 |
+| Vitest tests | 806 |
+| Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 35 |
+| Open backlog items | 36 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 — #8 (`brain-with-no-model` fix) merged |
+| Open draft PRs | 0 — #8 and #9 merged 2026-07-31 |
 
 ---
 
@@ -104,7 +104,7 @@ Resolved since this table was first written: `strategy-section-editor` (built an
 ## Immediate Next Steps
 
 1. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`). `validate.yml` pins `runs-on: ubuntu-latest` on all four jobs, so a self-hosted runner needs a matching label.
-2. **Sweep conformance** (`conformance-sweep-for-required-and-accepted-params`, P2) — the live-probe found two read tools that always return empty; there may be more gaps.
+2. **Re-probe live when the operator has a key** (`observed-data-predates-a-platform-deployment`, P3) — the conformance sweep (done 2026-07-31) found the declared schemas had drifted past the artifact's observed data; one live run closes the generation gap. `two-read-tools-do-not-answer` (P2) is the other declared-vs-actual gap.
 3. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
 4. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.
 
