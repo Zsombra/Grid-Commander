@@ -1,5 +1,33 @@
 # Journal
 
+## 2026-07-31 — the operator's product model, and the go button the app doesn't have
+
+**Did**: The operator described BattleGrid as they use it — four modules:
+Agents (risk + strategy + LLM assignment), Strategies (signal/data tables +
+market-data reads), Radar (deployment: per token, one agent per slot), and
+Market Grid (a nine-coin prediction game a configured agent plays). Recorded
+as `docs/BATTLEGRID_PRODUCT_MODEL.md` (hand-maintained — the generated
+surface map lists tools; this says what they are for). The "87 unused tools"
+now have semantics: two of the four modules are entirely unmodelled.
+
+**The question that fell out, answered the same hour, read-only**: does an
+agent act without a radar deployment? No. Live account: three per-coin
+policies (FARTCOIN/HYPE/PURR, 15m, one slot each — "per token, one agent at a
+time", verbatim) filled by CONFLUENCE, VELOCITY, CONTRARIAN, all scanning;
+the two undeployed lifecycle-ACTIVE agents (Fade Master I/II) hold zero
+positions; the radar summary counts agentsActive: 3, not 5. **Radar is the go
+button** — an agent Grid-Commander creates is configured, not acting, and no
+surface says so.
+
+**Filed**: `the-app-authors-agents-it-cannot-deploy` (P2 feature — say where
+an agent is deployed first, read-only; then the guarded upsert/delete writes)
+and `market-grid-is-an-unmodelled-module` (P3).
+`does-an-agent-act-without-a-radar-deployment` opened and closed with the
+evidence in one session.
+
+**State**: 32 open backlog items · validation 0 errors / 14 warnings ·
+PR #11 open, watched.
+
 ## 2026-07-31 — the values-binding risk closed, and its claimed guard made real
 
 **Did**: Re-triaged `confirmation-is-not-bound-to-values` (P2 risk) against

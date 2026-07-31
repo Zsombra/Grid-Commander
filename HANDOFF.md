@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (840 vitest + 217 harness tests, typecheck clean). No active changes. 30 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
+**State**: `main` is current and green (840 vitest + 217 harness tests, typecheck clean). No active changes. 32 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
 
 ---
 
@@ -24,7 +24,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Vitest tests | 840 |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 30 |
+| Open backlog items | 32 |
 | Design tickets open | 0 |
 | Open draft PRs | 1 — position presets (see PR list) |
 
