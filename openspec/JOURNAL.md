@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-07-31 — the values-binding risk closed, and its claimed guard made real
+
+**Did**: Re-triaged `confirmation-is-not-bound-to-values` (P2 risk) against
+`a-confirmation-binds-to-what-was-agreed`, which landed the day after the item
+was filed and never came back to close it. Verified flow by flow: every flow
+carrying agreed values binds them into the token's target (edit: intent
+digest, recomputed from the submitted values at spend; rebind: the
+agent→strategy pair; apply: the compiler's plan digest); the two lifecycle
+flows are identity-only by documented design. The item's headline case —
+agreed $25, submitted $25,000 — is `edit-binding.test.ts`'s own scenario,
+refused. Item closed with the evidence table.
+
+**The gap the re-triage found**: `confirmation.ts` cited
+`confirmation-binds-values.test.ts` — a file that does not exist — for the
+claim that no caller composes a target string inline. The claim is now true:
+`edit-binding.test.ts` scans `src/` for target-shaped template literals and
+requires exactly one composer, the builder itself (lite change
+`the-binding-guard-that-was-claimed-exists`, archived).
+
+**State**: 0 active changes · 30 open backlog items · 56 archived changes ·
+840 vitest + 217 harness green · validation 0 errors. PR #11 (position
+presets) still open, watched.
+
+**Next**: remaining code-ready P2s are `naming-an-entity-is-held-by-the-walk-only`
+and `no-route-exercises-the-database` (debt), plus the answerable questions
+(`oauth-path-may-be-dead-weight`, `performance-and-allocation-are-unmodelled`).
+
 ## 2026-07-31 — an operator can finally say "manage positions like a COLT"
 
 **Did**: `preset-configs-are-discarded` (standard track, proposed → executed →

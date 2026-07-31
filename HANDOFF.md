@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (839 vitest + 217 harness tests, typecheck clean). No active changes. 31 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
+**State**: `main` is current and green (840 vitest + 217 harness tests, typecheck clean). No active changes. 30 open backlog items. #8, #9 and #10 merged 2026-07-31; a new PR carries the preset feature.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 55 |
-| Vitest tests | 839 |
+| Changes (archived) | 56 |
+| Vitest tests | 840 |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 31 |
+| Open backlog items | 30 |
 | Design tickets open | 0 |
 | Open draft PRs | 1 — position presets (see PR list) |
 
@@ -78,10 +78,9 @@ These were bugs that existed in the application that sessions discovered and fix
 |---|---|---|
 | `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
-| `confirmation-is-not-bound-to-values` | P2 risk | Confirmation tokens authorise the *intent* but not the specific payload values |
 | `rebind-is-not-bound-to-the-revision-it-read` | P3 risk | Rebind can clobber a concurrent change |
 
-Resolved since this table was first written: `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
+Resolved since this table was first written: `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
 
 **Hard limits** (not bugs — these are constraints imposed by BattleGrid's API):
 

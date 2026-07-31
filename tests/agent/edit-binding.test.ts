@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
@@ -360,5 +361,38 @@ describe('the two requests agree on what was submitted', () => {
     expect(digestOf(fromQuery({ maxDailyLossUsd: '25' }))).not.toBe(
       digestOf(fromQuery({ maxDailyLossUsd: '25000' })),
     );
+  });
+});
+
+describe('no caller composes a target inline', () => {
+  /**
+   * The guard `confirmation.ts` has claimed since the binding landed, written
+   * down at last. `agentEdit` cannot be called without the intent — that is
+   * what makes the binding load-bearing — but only while every target goes
+   * through the builders. A caller composing `agent:${id}#${digest}` by hand
+   * re-opens the seam: it can compose the string from values the person never
+   * saw, and the compiler has no opinion about string contents.
+   */
+  const TARGET_SHAPES = [/agent:\$\{/, /->strategy:\$\{/, /strategy:\$\{[^}]*\}#\$\{/];
+
+  function tsFilesUnder(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return tsFilesUnder(path);
+      return entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+
+  it('every target-shaped template literal lives in the builder file', () => {
+    const composers = tsFilesUnder('src').filter((file) => {
+      const source = readFileSync(file, 'utf8');
+      return TARGET_SHAPES.some((shape) => shape.test(source));
+    });
+    expect(
+      composers,
+      'targets are built with confirmationTarget, never composed at a call site',
+    ).toEqual(['src/domain/capability/confirmation.ts']);
+    // The builder itself must register — an empty match list would mean the
+    // shapes drifted and this scan went blind, not that the code got cleaner.
   });
 });

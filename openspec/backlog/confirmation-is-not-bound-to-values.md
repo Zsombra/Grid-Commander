@@ -2,11 +2,11 @@
 id: confirmation-is-not-bound-to-values
 title: A confirmation binds to the operation and target, not to what was agreed
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
-change: money-limits-are-editable
+updated: 2026-07-31
+change: the-binding-guard-that-was-claimed-exists
 capability: battlegrid-connection
 blocked_by: []
 tags: [confirmation, guard, security]
@@ -75,3 +75,26 @@ Either way `ConfirmationToken`, the guard, and three flows move together.
 
 - `money-limits-are-editable` — the change that made this worth writing down,
   because it put money amounts behind the confirmation
+
+## Closed 2026-07-31 — resolved by `a-confirmation-binds-to-what-was-agreed`, re-triaged and verified
+
+Filed 2026-07-29; the binding change landed 2026-07-30 and nobody came back to
+close this. Re-triage evidence, flow by flow:
+
+| Flow | Issue target | Spend target | Values bound? |
+|---|---|---|---|
+| agent edit | `agentEdit(id, accepted)` (describe-edit:94) | recomputed from the **submitted** values (update-agent:137) | ✓ intent digest — the $25/$25,000 case is `edit-binding.test.ts`'s own scenario, refused |
+| rebind | `agentRebind(id, toStrategyId)` | recomputed from the request | ✓ the pair |
+| apply plan | `strategyPlan(id, intentDigest)` | recomputed from the request | ✓ the compiler's digest |
+| agent archive/reactivate | `agent(id)` | `agent(id)` | identity-only **by documented design** — the operation carries no agreed values beyond the agent; revision is concurrency, platform-checked |
+| strategy archive/restore | `strategy(id)` | `strategy(id)` | identity-only; the revision comes from a re-read, not the form |
+
+Fix candidate 1 (values bound into what the token matches) is what landed,
+via digested targets rather than consequence re-derivation. The one residual
+shard — rebind not bound to the revision it read — was already its own item
+(`rebind-is-not-bound-to-the-revision-it-read`, P3).
+
+The re-triage found one real gap and closed it: `confirmation.ts` cited a
+guard file that did not exist for the claim that no caller composes a target
+inline. That scan now exists in `edit-binding.test.ts` and passes with
+exactly one composer: the builder itself.
