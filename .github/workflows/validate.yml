@@ -16,7 +16,11 @@ jobs:
   # maintained — a script nothing exercises is not a fallback.
   matrix:
     name: checks (py${{ matrix.python }})
-    runs-on: ubuntu-latest
+    # `CI_RUNNER` (Settings > Secrets and variables > Actions > Variables) routes
+    # every job to a self-hosted runner when set (e.g. `self-hosted`). Unset, the
+    # expression falls back to GitHub-hosted — byte-identical to the old pin.
+    # See docs/SELF_HOSTED_RUNNER.md for registration and machine requirements.
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +37,7 @@ jobs:
 
   tests:
     name: tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +69,7 @@ jobs:
 
   app:
     name: app
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
 
     # The repositories had never executed a statement. Everything they promise —
     # single-use confirmations, single-use OAuth state, the uniqueness one
@@ -171,7 +175,7 @@ jobs:
 
   validate:
     name: validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 

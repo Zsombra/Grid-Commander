@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-07-31 — CI routed to a self-hosted runner behind a repo variable
+
+**Did**: The operator chose the self-hosted route for `ci-creates-no-runs`
+(P1). Lite change `route-ci-to-a-self-hosted-runner`, archived same-session:
+all four `runs-on: ubuntu-latest` pins in `validate.yml` became
+`${{ vars.CI_RUNNER || 'ubuntu-latest' }}` — unset, byte-identical behavior;
+set to `self-hosted`, every job routes to a registered runner with no further
+commit. `docs/SELF_HOSTED_RUNNER.md` is the operator handout: registration,
+machine needs (Docker for the `app` job's postgres service), the public-repo
+fork-PR security controls, verification via `workflow_dispatch`, revert.
+
+**Checked first**: the operator believed a runner might already be registered
+by an earlier agent. Searched the repo and their mail — no registration
+evidence anywhere; the "self-hosted checker a previous agent built" is
+`scripts/check.sh` (local gates, cannot green the board). The Runners settings
+page (admin-only) is the single source of truth; the handout says exactly what
+to look for.
+
+**Remaining, operator-only**: register the runner, set `CI_RUNNER=self-hosted`.
+
 ## 2026-07-31 — PRs #8 and #9 merged; conformance sweep built, verified, archived
 
 **Did**: Un-wedged the repository and shipped the sweep, in that order.

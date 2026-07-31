@@ -20,7 +20,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 49 |
+| Changes (archived) | 50 |
 | Vitest tests | 806 |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
@@ -103,7 +103,7 @@ Resolved since this table was first written: `strategy-section-editor` (built an
 
 ## Immediate Next Steps
 
-1. **Fix the CI** — either settle the account billing or register a self-hosted runner (`ci-creates-no-runs`). `validate.yml` pins `runs-on: ubuntu-latest` on all four jobs, so a self-hosted runner needs a matching label.
+1. **Fix the CI** — settle the account billing, or go self-hosted: the repo side is done (`validate.yml` routes `runs-on` through the `CI_RUNNER` repository variable; `docs/SELF_HOSTED_RUNNER.md` is the setup handout). Operator steps remaining: register the runner, set `CI_RUNNER=self-hosted` (`ci-creates-no-runs`).
 2. **Re-probe live when the operator has a key** (`observed-data-predates-a-platform-deployment`, P3) — the conformance sweep (done 2026-07-31) found the declared schemas had drifted past the artifact's observed data; one live run closes the generation gap. `two-read-tools-do-not-answer` (P2) is the other declared-vs-actual gap.
 3. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
 4. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.

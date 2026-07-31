@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-07-31
 change: ""
 capability: ""
 blocked_by: []
@@ -184,3 +184,18 @@ finds a red board here later: query any job and look at `runner_id`. Zero means
 the answer is not in the repository, and no amount of reading a diff will find
 it. The probe job proved the same thing and cost a commit and a workflow edit;
 this costs one API call.
+
+## Repo side done (2026-07-31)
+
+The operator chose the self-hosted route. `validate.yml` now reads
+`runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}` on all jobs — unset, the
+behavior is exactly the old pin; set to `self-hosted`, every job routes to a
+registered runner with no further commit. Setup handout (registration, machine
+requirements, the public-repo security controls, verification, revert):
+`docs/SELF_HOSTED_RUNNER.md`.
+
+Searched the repo and the operator's mail for evidence of an
+already-registered runner: none found — the "self-hosted checker a previous
+agent built" is `scripts/check.sh`, which verifies locally and cannot green
+the board. What remains is operator-only: register the runner (Settings →
+Actions → Runners) and set the `CI_RUNNER` repository variable.
