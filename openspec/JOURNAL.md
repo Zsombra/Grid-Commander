@@ -23,6 +23,14 @@ requires exactly one composer, the builder itself (lite change
 840 vitest + 217 harness green · validation 0 errors. PR #11 (position
 presets) still open, watched.
 
+**Also — reactivate live-proven** (same session, operator's yes): one of the
+archived probe agents went ARCHIVED r3 → ACTIVE r4 → ARCHIVED r5 through the
+product path — no confirmation on activate (non-destructive by annotation,
+matching the page's design), a bound confirmation on the re-archive. Account
+restored exactly. Of the write surface the app uses, only rebind and
+apply/restore now lack live proof; rebind deliberately waits for a real
+agent+strategy choice.
+
 **Next**: remaining code-ready P2s are `naming-an-entity-is-held-by-the-walk-only`
 and `no-route-exercises-the-database` (debt), plus the answerable questions
 (`oauth-path-may-be-dead-weight`, `performance-and-allocation-are-unmodelled`).

@@ -56,7 +56,7 @@ Against a real connected BattleGrid account a user can:
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
-**Proven live**: an agent was created, renamed, had its limits updated, and was archived. A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
+**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. All against a real BattleGrid account.
 
 ---
 
@@ -104,7 +104,7 @@ Resolved since this table was first written: `confirmation-is-not-bound-to-value
 
 1. **Fix the CI** — settle the account billing, or go self-hosted: the repo side is done (`validate.yml` routes `runs-on` through the `CI_RUNNER` repository variable; `docs/SELF_HOSTED_RUNNER.md` is the setup handout). Operator steps remaining: register the runner, set `CI_RUNNER=self-hosted` (`ci-creates-no-runs`).
 2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
-3. **Live writes partially proven 2026-07-31** — create, rename, limits-edit and archive of a throwaway agent all succeeded live through the product path. Still unwalked: the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
+3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
 4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.
 
 (PR #8, `brain-with-no-model`, merged 2026-07-31 — was step 1 of this list.)
