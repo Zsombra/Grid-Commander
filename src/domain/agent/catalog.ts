@@ -20,6 +20,16 @@ export interface PositionManagementPreset {
   readonly preset: string;
   readonly label: string;
   readonly description: string;
+  /**
+   * The complete configuration this preset stands for, as the platform states
+   * it — fourteen behavioural values. `null` when the catalog did not supply
+   * one, and a preset without its configuration is not offerable: the label is
+   * sent alongside the values, never instead of them, and this product does
+   * not invent the values a complete payload needs.
+   */
+  readonly config: Readonly<Record<string, unknown>> | null;
+  readonly tagline: string;
+  readonly cardSummary: string;
 }
 
 /**

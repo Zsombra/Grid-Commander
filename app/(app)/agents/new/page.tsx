@@ -76,6 +76,9 @@ export async function create(formData: FormData) {
     // The six questions BattleGrid refuses to default. The command assembles
     // the rest from the catalog and refuses if any of these is unanswered.
     money: moneyAnswers(formData),
+    // A catalog preset's own values, or CUSTOM for the assembled set. The
+    // command refuses a name the catalog cannot answer for.
+    positionPreset: optionalText(formData, 'positionPreset') ?? undefined,
   });
 
   if (result.kind === 'created') redirect(`/agents/${result.agent.id}`);

@@ -88,23 +88,38 @@ export function AgentForm({
       </fieldset>
 
       {/*
-        Position management is deliberately not offered here.
+        Position management, offered from the platform's own catalog.
 
-        This fieldset used to render a preset select. The create action sends
-        `tradingConfig: null`, so whatever the user chose was discarded and the
-        agent was created with BattleGrid's defaults — with nothing on the screen
-        saying so. Offering a setting and dropping it is worse than not offering
-        it: the user leaves believing they configured something they did not.
-
-        Wiring the select instead is not available. `tradingConfig.positionManagement`
-        requires fifteen fields — fourteen behavioural values *and* the preset
-        label beside them — and `PositionManagementPreset` carries only `preset`,
-        `label` and `description`. This product does not hold the values a
-        complete payload needs, and inventing them is the fabrication it refuses
-        everywhere else. See `a-preset-does-not-constrain-its-config`, which
-        establishes that against the live server, and `agent-edit-form`, which is
-        the feature that would build the real editor.
+        This select existed once before, wired to nothing — the action sent
+        `tradingConfig: null` and the choice was discarded — and was removed,
+        because offering a setting and dropping it is worse than not asking.
+        It returns now that the values exist to send: the catalog states each
+        preset's complete fourteen-field configuration, `mapPositionPresets`
+        carries it to the domain, and choosing COLT sends BattleGrid's COLT
+        values with the label beside them. Only presets whose configuration
+        actually arrived are offered — a label with no values behind it is the
+        old defect wearing a new control. CUSTOM stays first and default: it is
+        today's behavior, named as a choice instead of imposed as the only one.
       */}
+      <fieldset className="space-y-3">
+        <legend className="font-medium">Position management</legend>
+        <p className="text-sm">
+          A preset is BattleGrid&apos;s own fourteen values for how positions are
+          tightened, trailed and timed out. CUSTOM uses the assembled defaults.
+        </p>
+        <Field label="Preset" name="positionPreset" error={issueFor('positionPreset')}>
+          <select id="positionPreset" name="positionPreset" className={CONTROL}>
+            <option value="CUSTOM">CUSTOM — the assembled defaults</option>
+            {catalog.positionManagementPresets
+              .filter((p) => p.config !== null)
+              .map((p) => (
+                <option key={p.preset} value={p.preset}>
+                  {p.label} — {p.description}
+                </option>
+              ))}
+          </select>
+        </Field>
+      </fieldset>
 
       <MoneyLimits catalog={catalog} />
 

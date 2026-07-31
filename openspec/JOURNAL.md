@@ -1,5 +1,39 @@
 # Journal
 
+## 2026-07-31 — an operator can finally say "manage positions like a COLT"
+
+**Did**: `preset-configs-are-discarded` (standard track, proposed → executed →
+verified → archived). The catalog states each position-management preset's
+complete fourteen-field configuration and `mapPositionPresets` discarded it at
+the boundary — so the create form had removed its preset select (a control the
+action dropped was worse than none) and every agent was created CUSTOM under
+values nobody picked deliberately.
+
+**What landed**: `PositionManagementPreset` carries `config` (platform's
+values or null — never invented), `tagline`, `cardSummary`;
+`positionManagementForPreset` answers with the label beside the fourteen
+values or null; the create command takes `positionPreset` and refuses a name
+the catalog cannot answer for (the unknown-brain-preset shape); the form's
+fieldset is back, offering CUSTOM (default — today's behavior, named as a
+choice) plus every preset whose configuration actually arrived. De-risked by
+the same-day live probe: the observed catalog carries the config blocks, and
+the schema's closed fifteen-key `positionManagement` object is exactly a
+preset's config plus its label.
+
+**OURS**: kept, scope narrowed — the three product-answered booleans apply to
+the CUSTOM path only; a chosen preset answers all three itself.
+
+**Spec**: 1 ADDED requirement merged into `agent-authoring` (now 21).
+12 new tests (mapper carry-through, preset-or-refusal, CUSTOM unchanged,
+enum-conformance against the live artifact, payload-conformance preset case).
+
+**State**: 0 active changes · 31 open backlog items · 55 archived changes ·
+839 vitest + 217 harness green · validation 0 errors / 15 warnings.
+
+**Next**: `confirmation-is-not-bound-to-values` re-triage against the landed
+binding change is the top code candidate. The edit surface (fourteen-field
+editor with preset-drift display) stays with `a-preset-does-not-constrain-its-config`.
+
 ## 2026-07-31 — the operator's key: live probe, live writes, and what they flushed out
 
 **Did**: The operator supplied a live key and delegated the CI verdict, the PR

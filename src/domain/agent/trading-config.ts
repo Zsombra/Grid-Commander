@@ -318,6 +318,24 @@ export function positionManagementFrom(
   };
 }
 
+/**
+ * The platform's own values for a named preset, with its label beside them.
+ *
+ * Exactly what the catalog stated and nothing else: choosing "COLT" means
+ * BattleGrid's fourteen COLT values, not this product's recollection of them,
+ * and not the assembled defaults with a COLT sticker. Returns null when the
+ * catalog cannot answer — the preset is unknown, or arrived without its
+ * configuration — and the caller refuses rather than substituting.
+ */
+export function positionManagementForPreset(
+  catalog: Catalog,
+  preset: string,
+): Readonly<Record<string, unknown>> | null {
+  const found = catalog.positionManagementPresets.find((p) => p.preset === preset);
+  if (!found || found.config === null) return null;
+  return { positionManagementPreset: found.preset, ...found.config };
+}
+
 /** The three size percentages and the strategy that picks between them. */
 export function positionSizePresetsFrom(catalog: Catalog): Readonly<Record<string, unknown>> {
   const d = catalog.defaults;

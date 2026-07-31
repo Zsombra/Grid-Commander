@@ -4,6 +4,7 @@ import { isApprovedModel, isKnownBrainPreset } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import {
   buildTradingConfig,
+  positionManagementForPreset,
   positionManagementFrom,
   positionSizePresetsFrom,
   validateTradingConfig,
@@ -22,6 +23,12 @@ export interface CreateAgentRequest {
    * the catalog — and this command already has it.
    */
   readonly money: Readonly<Record<string, unknown>>;
+  /**
+   * A position-management preset from the catalog, or `CUSTOM`, or absent —
+   * the last two both mean the product-assembled values. A named preset means
+   * the platform's own fourteen values for it, never a substitute.
+   */
+  readonly positionPreset?: string | undefined;
   readonly arenaChallengeEnabled?: boolean | undefined;
   readonly idempotencyKey?: string | undefined;
 }
@@ -109,9 +116,32 @@ export class CreateAgentCommand {
      * whatever a partial send omits, so this either produces a complete one or
      * refuses and says which questions have no answer.
      */
+    /**
+     * A named preset is the platform's values or a refusal — never a fallback.
+     *
+     * `positionManagementForPreset` answers only when the catalog carried the
+     * preset *and* its configuration; anything else is a validation issue in
+     * the same shape as an unknown brain preset. Falling back to the CUSTOM
+     * assembly here would create an agent labeled COLT carrying values that
+     * are not COLT's — the exact lie the requirement forbids.
+     */
+    const preset = req.positionPreset;
+    let positionManagement = positionManagementFrom(catalog, 'CUSTOM');
+    if (preset !== undefined && preset !== 'CUSTOM') {
+      const fromCatalog = positionManagementForPreset(catalog, preset);
+      if (fromCatalog === null) {
+        issues.push({
+          field: 'positionPreset',
+          reason: `"${preset}" is not a position-management preset the catalog describes.`,
+        });
+      } else {
+        positionManagement = fromCatalog;
+      }
+    }
+
     const built = buildTradingConfig(catalog, {
       ...req.money,
-      positionManagement: positionManagementFrom(catalog, 'CUSTOM'),
+      positionManagement,
       positionSizePresets: positionSizePresetsFrom(catalog),
     });
 

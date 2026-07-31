@@ -16,11 +16,11 @@ const catalog: Catalog = {
   ],
   brainPresets: ['MONTGOMERY', 'ROMMEL', 'PATTON'],
   positionManagementPresets: [
-    { preset: 'COLT', label: 'Colt', description: 'Patient / wide' },
-    { preset: 'WEBLEY', label: 'Webley', description: 'Defensive / measured' },
-    { preset: 'BERETTA', label: 'Beretta', description: 'Balanced' },
-    { preset: 'LUGER', label: 'Luger', description: 'Aggressive / tight' },
-    { preset: 'WALTHER', label: 'Walther', description: 'Hair-trigger' },
+    { preset: 'COLT', label: 'Colt', description: 'Patient / wide', config: null, tagline: '', cardSummary: '' },
+    { preset: 'WEBLEY', label: 'Webley', description: 'Defensive / measured', config: null, tagline: '', cardSummary: '' },
+    { preset: 'BERETTA', label: 'Beretta', description: 'Balanced', config: null, tagline: '', cardSummary: '' },
+    { preset: 'LUGER', label: 'Luger', description: 'Aggressive / tight', config: null, tagline: '', cardSummary: '' },
+    { preset: 'WALTHER', label: 'Walther', description: 'Hair-trigger', config: null, tagline: '', cardSummary: '' },
   ],
   bounds: {
     maxStopLossPct: { min: 0.1, max: 25 },

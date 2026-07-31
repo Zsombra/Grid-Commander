@@ -301,8 +301,41 @@ export function defaultCatalog(): Catalog {
     ],
     brainPresets: ['MONTGOMERY', 'ROMMEL', 'PATTON'],
     positionManagementPresets: [
-      { preset: 'COLT', label: 'Colt', description: 'Patient / wide' },
-      { preset: 'WEBLEY', label: 'Webley', description: 'Defensive / measured' },
+      {
+        preset: 'COLT',
+        label: 'Colt',
+        description: 'Patient / wide',
+        // The complete configuration the live catalog states for COLT — the
+        // fourteen values choosing it actually sends.
+        config: {
+          enabled: true,
+          breakEvenEnabled: true,
+          breakEvenTriggerTpProgressPct: 70,
+          trailingEnabled: true,
+          trailingType: 'ATR',
+          trailingAtrMultiple: 4,
+          trailingFixedPct: 2,
+          trailingBufferPct: 0.5,
+          timeDecayEnabled: true,
+          timeDecayGracePeriodMinutes: 120,
+          timeDecayIntervalMinutes: 30,
+          timeDecayTightenPct: 5,
+          timeDecayMaxTightenPct: 40,
+          timeDecayStaleThresholdTpProgressPct: 30,
+        },
+        tagline: 'Let winners breathe',
+        cardSummary: 'Wide trailing, patient decay',
+      },
+      // Deliberately config-less: the catalog listed it and did not describe
+      // it, so it must not be offered — the withhold branch under test.
+      {
+        preset: 'WEBLEY',
+        label: 'Webley',
+        description: 'Defensive / measured',
+        config: null,
+        tagline: '',
+        cardSummary: '',
+      },
     ],
     bounds: {
       maxStopLossPct: { min: 0.1, max: 25 },
