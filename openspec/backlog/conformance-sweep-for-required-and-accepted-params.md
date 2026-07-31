@@ -2,11 +2,11 @@
 id: conformance-sweep-for-required-and-accepted-params
 title: Check every payload against required and accepted params, not just top-level names
 type: feature
-status: open
+status: in-progress
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
-change: the-edit-path-cannot-succeed-either
+updated: 2026-07-31
+change: conformance-sweep-for-required-and-accepted-params
 capability: battlegrid-connection
 blocked_by: []
 tags: [battlegrid, conformance, probe]
