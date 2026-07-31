@@ -29,6 +29,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "decisionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "decisionId"
+          ]
+        }
+      },
       "declared_output": [
         "accepted",
         "decisionId"
@@ -52,6 +63,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "expectedRevision"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "expectedRevision"
+          ]
+        }
+      },
       "declared_output": [
         "agent"
       ],
@@ -76,34 +100,25 @@
         "request.confirm": [
           true
         ],
-        "request.plan.conditionVerdicts[].then": [
-          "UP",
-          "DOWN",
-          "NEITHER",
-          "UNRESOLVED"
-        ],
-        "request.plan.conditions[].definition.kind": [
-          "clause",
-          "conditionRef",
-          "group"
-        ],
-        "request.plan.conditions[].definition.op": [
-          "lt",
-          "lte",
-          "gte",
-          "gt",
-          "between",
-          "is",
-          "in",
-          "ALL",
-          "ANY",
-          "NOT",
-          "N_OF"
-        ],
         "request.plan.operation": [
           "CREATE",
           "UPDATE",
           "RESTORE"
+        ],
+        "request.plan.regimeTimeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
         ],
         "request.plan.rules[].signalId": [
           "rsi_oversold",
@@ -189,6 +204,69 @@
           "mtf_pullback_long",
           "mtf_pullback_short"
         ],
+        "request.plan.sections[].columns[].inputs[].metric": [
+          "RSI14",
+          "RSI7",
+          "MACD",
+          "STOCH_K",
+          "STOCH_D",
+          "MFI14",
+          "PPO",
+          "ROC12",
+          "CCI20",
+          "CLOSE_CHANGE",
+          "ADX",
+          "SMA20",
+          "SMA50",
+          "SMA200",
+          "EMA5",
+          "EMA13",
+          "EMA20",
+          "EMA_SPREAD",
+          "EMA_CROSS",
+          "MA_ALIGN",
+          "ATR",
+          "BB_WIDTH",
+          "HIGH_DEV",
+          "LOW_DEV",
+          "BB_PCT_B",
+          "SWING_HIGH",
+          "SWING_LOW",
+          "VWAP",
+          "VWAP_DEV",
+          "PRICE_ZONE",
+          "BB_TOUCH",
+          "CLOSE",
+          "STRUCT_ZONES",
+          "VOLUME_RATIO",
+          "OBV",
+          "CVD",
+          "BUY_PRESSURE",
+          "BUY_TRADES",
+          "SELL_TRADES",
+          "FUNDING_RATE",
+          "FUNDING_ANN",
+          "FUNDING_LABEL",
+          "OI",
+          "OI_CHG",
+          "OI_VELOCITY",
+          "OI_PX_REGIME",
+          "MARK_PREMIUM",
+          "REGIME_TREND",
+          "REGIME_VOL",
+          "REGIME_MOM",
+          "CHANGE_RANK",
+          "VOLUME_RANK",
+          "CROWD_PICK",
+          "CROWD_UPBIAS",
+          "CROWD_ACC",
+          "CROWD_CAPT",
+          "SETTLED_AT",
+          "FLOW_ALIGN",
+          "SMART_RETAIL",
+          "CAPTAIN_CONF",
+          "CONFIDENCE"
+        ],
         "request.plan.sections[].columns[].metric": [
           "RSI14",
           "RSI7",
@@ -256,6 +334,21 @@
           "support",
           "resistance"
         ],
+        "request.plan.sections[].columns[].timeframe.abs": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "request.plan.sections[].columns[].timeframe.rel": [
           "anchor",
           "lower",
@@ -303,7 +396,300 @@
           "1d",
           "3d",
           "1w"
+        ],
+        "request.plan.timeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
         ]
+      },
+      "input_required_paths": [
+        "request",
+        "request.confirm",
+        "request.plan",
+        "request.plan.description",
+        "request.plan.expiresAt",
+        "request.plan.marketReadText",
+        "request.plan.minAggregateScore",
+        "request.plan.minAtrPct",
+        "request.plan.minRequiredCount",
+        "request.plan.name",
+        "request.plan.operation",
+        "request.plan.regimeAutoDerive",
+        "request.plan.regimeTimeframe",
+        "request.plan.rules",
+        "request.plan.rules[].allocation",
+        "request.plan.rules[].required",
+        "request.plan.rules[].signalId",
+        "request.plan.sections",
+        "request.plan.sections[].kind",
+        "request.plan.sections[].sectionKey",
+        "request.plan.strategyId",
+        "request.plan.tagline",
+        "request.plan.timeframe",
+        "request.planToken"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "confirm",
+            "plan",
+            "planToken"
+          ]
+        },
+        "request.plan": {
+          "variants": [
+            {
+              "when": {
+                "operation": "CREATE"
+              },
+              "closed": true,
+              "accepts": [
+                "description",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "description",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections",
+                "sections[].kind",
+                "sections[].sectionKey",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ]
+            },
+            {
+              "when": {
+                "operation": "UPDATE"
+              },
+              "closed": true,
+              "accepts": [
+                "description",
+                "expectedRevision",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "description",
+                "expectedRevision",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections",
+                "sections[].kind",
+                "sections[].sectionKey",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ]
+            },
+            {
+              "when": {
+                "operation": "RESTORE"
+              },
+              "closed": true,
+              "accepts": [
+                "description",
+                "expectedRevision",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "description",
+                "expectedRevision",
+                "expiresAt",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections",
+                "sections[].kind",
+                "sections[].sectionKey",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ]
+            }
+          ]
+        },
+        "request.plan.rules[]": {
+          "closed": true,
+          "accepts": [
+            "allocation",
+            "params",
+            "required",
+            "signalId"
+          ]
+        },
+        "request.plan.sections[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "platform"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "sectionKey"
+              ],
+              "required": [
+                "kind",
+                "sectionKey"
+              ]
+            },
+            {
+              "when": {
+                "kind": "custom"
+              },
+              "closed": true,
+              "accepts": [
+                "columns",
+                "kind",
+                "sectionKey",
+                "timeframe",
+                "title"
+              ],
+              "required": [
+                "columns",
+                "columns[].inputs[].metric",
+                "columns[].metric",
+                "columns[].timeframe",
+                "columns[].transformId",
+                "kind",
+                "sectionKey",
+                "timeframe",
+                "title"
+              ]
+            }
+          ]
+        },
+        "request.plan.sections[].columns[]": {
+          "closed": true,
+          "accepts": [
+            "inputs",
+            "metric",
+            "offset",
+            "side",
+            "timeframe",
+            "transformId",
+            "window"
+          ]
+        },
+        "request.plan.sections[].columns[].inputs[]": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        },
+        "request.plan.sections[].columns[].timeframe": {
+          "variants": [
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "rel"
+              ],
+              "required": [
+                "rel"
+              ]
+            },
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "abs"
+              ],
+              "required": [
+                "abs"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "appliedImpact",
@@ -328,6 +714,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "expectedRevision"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "expectedRevision"
+          ]
+        }
+      },
       "declared_output": [
         "agent"
       ],
@@ -355,6 +754,21 @@
           true
         ]
       },
+      "input_required_paths": [
+        "confirm",
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confirm",
+            "expectedRevision",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "strategy"
       ],
@@ -376,6 +790,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "decisionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "decisionId"
+          ]
+        }
+      },
       "declared_output": [
         "cancelled",
         "decisionId"
@@ -398,6 +823,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "hasSubmitted",
         "submissionId",
@@ -424,6 +860,19 @@
         "confirm": [
           true
         ]
+      },
+      "input_required_paths": [
+        "confirm",
+        "decisionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confirm",
+            "decisionId"
+          ]
+        }
       },
       "declared_output": [
         "closeOrderAccepted",
@@ -463,34 +912,25 @@
           "ranked",
           "explicit"
         ],
-        "request.conditionVerdicts[].then": [
-          "UP",
-          "DOWN",
-          "NEITHER",
-          "UNRESOLVED"
-        ],
-        "request.conditions[].definition.kind": [
-          "clause",
-          "conditionRef",
-          "group"
-        ],
-        "request.conditions[].definition.op": [
-          "lt",
-          "lte",
-          "gte",
-          "gt",
-          "between",
-          "is",
-          "in",
-          "ALL",
-          "ANY",
-          "NOT",
-          "N_OF"
-        ],
         "request.operation": [
           "CREATE",
           "UPDATE",
           "RESTORE"
+        ],
+        "request.regimeTimeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
         ],
         "request.rules[].signalId": [
           "rsi_oversold",
@@ -576,6 +1016,69 @@
           "mtf_pullback_long",
           "mtf_pullback_short"
         ],
+        "request.sections[].columns[].inputs[].metric": [
+          "RSI14",
+          "RSI7",
+          "MACD",
+          "STOCH_K",
+          "STOCH_D",
+          "MFI14",
+          "PPO",
+          "ROC12",
+          "CCI20",
+          "CLOSE_CHANGE",
+          "ADX",
+          "SMA20",
+          "SMA50",
+          "SMA200",
+          "EMA5",
+          "EMA13",
+          "EMA20",
+          "EMA_SPREAD",
+          "EMA_CROSS",
+          "MA_ALIGN",
+          "ATR",
+          "BB_WIDTH",
+          "HIGH_DEV",
+          "LOW_DEV",
+          "BB_PCT_B",
+          "SWING_HIGH",
+          "SWING_LOW",
+          "VWAP",
+          "VWAP_DEV",
+          "PRICE_ZONE",
+          "BB_TOUCH",
+          "CLOSE",
+          "STRUCT_ZONES",
+          "VOLUME_RATIO",
+          "OBV",
+          "CVD",
+          "BUY_PRESSURE",
+          "BUY_TRADES",
+          "SELL_TRADES",
+          "FUNDING_RATE",
+          "FUNDING_ANN",
+          "FUNDING_LABEL",
+          "OI",
+          "OI_CHG",
+          "OI_VELOCITY",
+          "OI_PX_REGIME",
+          "MARK_PREMIUM",
+          "REGIME_TREND",
+          "REGIME_VOL",
+          "REGIME_MOM",
+          "CHANGE_RANK",
+          "VOLUME_RANK",
+          "CROWD_PICK",
+          "CROWD_UPBIAS",
+          "CROWD_ACC",
+          "CROWD_CAPT",
+          "SETTLED_AT",
+          "FLOW_ALIGN",
+          "SMART_RETAIL",
+          "CAPTAIN_CONF",
+          "CONFIDENCE"
+        ],
         "request.sections[].columns[].metric": [
           "RSI14",
           "RSI7",
@@ -643,6 +1146,21 @@
           "support",
           "resistance"
         ],
+        "request.sections[].columns[].timeframe.abs": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "request.sections[].columns[].timeframe.rel": [
           "anchor",
           "lower",
@@ -676,6 +1194,21 @@
           "includeCvdCrowdConvergence",
           "includeStructureZones"
         ],
+        "request.sections[].timeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "request.timeframe": [
           "1m",
           "3m",
@@ -691,6 +1224,271 @@
           "3d",
           "1w"
         ]
+      },
+      "input_required_paths": [
+        "request",
+        "request.assumptions",
+        "request.coinSelection",
+        "request.coinSelection.mode",
+        "request.intentSummary",
+        "request.operation",
+        "request.rules[].allocation",
+        "request.rules[].required",
+        "request.rules[].signalId",
+        "request.sections[].kind"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "request"
+          ]
+        },
+        "request": {
+          "variants": [
+            {
+              "when": {
+                "operation": "CREATE"
+              },
+              "closed": true,
+              "accepts": [
+                "assumptions",
+                "coinSelection",
+                "description",
+                "intentSummary",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "assumptions",
+                "coinSelection",
+                "coinSelection.mode",
+                "intentSummary",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections",
+                "sections[].kind",
+                "timeframe"
+              ]
+            },
+            {
+              "when": {
+                "operation": "UPDATE"
+              },
+              "closed": true,
+              "accepts": [
+                "assumptions",
+                "coinSelection",
+                "description",
+                "expectedRevision",
+                "intentSummary",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "assumptions",
+                "coinSelection",
+                "coinSelection.mode",
+                "expectedRevision",
+                "intentSummary",
+                "operation",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections[].kind",
+                "strategyId"
+              ]
+            },
+            {
+              "when": {
+                "operation": "RESTORE"
+              },
+              "closed": true,
+              "accepts": [
+                "assumptions",
+                "coinSelection",
+                "description",
+                "expectedRevision",
+                "intentSummary",
+                "marketReadText",
+                "minAggregateScore",
+                "minAtrPct",
+                "minRequiredCount",
+                "name",
+                "operation",
+                "regimeAutoDerive",
+                "regimeTimeframe",
+                "rules",
+                "sections",
+                "strategyId",
+                "tagline",
+                "timeframe"
+              ],
+              "required": [
+                "assumptions",
+                "coinSelection",
+                "coinSelection.mode",
+                "expectedRevision",
+                "intentSummary",
+                "operation",
+                "rules[].allocation",
+                "rules[].required",
+                "rules[].signalId",
+                "sections[].kind",
+                "strategyId"
+              ]
+            }
+          ]
+        },
+        "request.coinSelection": {
+          "variants": [
+            {
+              "when": {
+                "mode": "ranked"
+              },
+              "closed": true,
+              "accepts": [
+                "category",
+                "limit",
+                "mode"
+              ],
+              "required": [
+                "limit",
+                "mode"
+              ]
+            },
+            {
+              "when": {
+                "mode": "explicit"
+              },
+              "closed": true,
+              "accepts": [
+                "mode",
+                "tickers"
+              ],
+              "required": [
+                "mode",
+                "tickers"
+              ]
+            }
+          ]
+        },
+        "request.rules[]": {
+          "closed": true,
+          "accepts": [
+            "allocation",
+            "params",
+            "required",
+            "signalId"
+          ]
+        },
+        "request.sections[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "platform"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "sectionKey"
+              ],
+              "required": [
+                "kind",
+                "sectionKey"
+              ]
+            },
+            {
+              "when": {
+                "kind": "custom"
+              },
+              "closed": true,
+              "accepts": [
+                "columns",
+                "kind",
+                "sectionKey",
+                "timeframe",
+                "title"
+              ],
+              "required": [
+                "columns",
+                "columns[].inputs[].metric",
+                "columns[].metric",
+                "columns[].timeframe",
+                "columns[].transformId",
+                "kind",
+                "title"
+              ]
+            }
+          ]
+        },
+        "request.sections[].columns[]": {
+          "closed": true,
+          "accepts": [
+            "inputs",
+            "metric",
+            "offset",
+            "side",
+            "timeframe",
+            "transformId",
+            "window"
+          ]
+        },
+        "request.sections[].columns[].inputs[]": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        },
+        "request.sections[].columns[].timeframe": {
+          "variants": [
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "rel"
+              ],
+              "required": [
+                "rel"
+              ]
+            },
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "abs"
+              ],
+              "required": [
+                "abs"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "approvedPlan",
@@ -794,6 +1592,163 @@
           "FULL_EXECUTION"
         ]
       },
+      "input_required_paths": [
+        "brain",
+        "brain.kind",
+        "displayName",
+        "strategyId",
+        "tradingConfig.atrMatchesStrategyTimeframe",
+        "tradingConfig.atrTimeframe",
+        "tradingConfig.balanceThresholdUsd",
+        "tradingConfig.gridMinConfidence",
+        "tradingConfig.maxConcurrentExposureUsd",
+        "tradingConfig.maxCumulativeDrawdownUsd",
+        "tradingConfig.maxDailyLossUsd",
+        "tradingConfig.maxDailyTrades",
+        "tradingConfig.maxEntryDeviationAtrMultiple",
+        "tradingConfig.maxLeverage",
+        "tradingConfig.maxSlippageBps",
+        "tradingConfig.maxStopLossPct",
+        "tradingConfig.minAllocationUsd",
+        "tradingConfig.minRiskRewardRatio",
+        "tradingConfig.minStopLossPct",
+        "tradingConfig.minTradeConviction",
+        "tradingConfig.positionManagement",
+        "tradingConfig.positionManagement.breakEvenEnabled",
+        "tradingConfig.positionManagement.breakEvenTriggerTpProgressPct",
+        "tradingConfig.positionManagement.enabled",
+        "tradingConfig.positionManagement.positionManagementPreset",
+        "tradingConfig.positionManagement.timeDecayEnabled",
+        "tradingConfig.positionManagement.timeDecayGracePeriodMinutes",
+        "tradingConfig.positionManagement.timeDecayIntervalMinutes",
+        "tradingConfig.positionManagement.timeDecayMaxTightenPct",
+        "tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct",
+        "tradingConfig.positionManagement.timeDecayTightenPct",
+        "tradingConfig.positionManagement.trailingAtrMultiple",
+        "tradingConfig.positionManagement.trailingBufferPct",
+        "tradingConfig.positionManagement.trailingEnabled",
+        "tradingConfig.positionManagement.trailingFixedPct",
+        "tradingConfig.positionManagement.trailingType",
+        "tradingConfig.positionSizePresets",
+        "tradingConfig.positionSizePresets.largePct",
+        "tradingConfig.positionSizePresets.mediumPct",
+        "tradingConfig.positionSizePresets.sizingStrategy",
+        "tradingConfig.positionSizePresets.smallPct",
+        "tradingConfig.signalTimeoutMinutes",
+        "tradingConfig.tradingMode"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "arenaChallengeEnabled",
+            "brain",
+            "displayName",
+            "idempotencyKey",
+            "strategyId",
+            "tradingConfig"
+          ]
+        },
+        "brain": {
+          "variants": [
+            {
+              "when": {
+                "kind": "PRESET"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "preset"
+              ],
+              "required": [
+                "kind",
+                "preset"
+              ]
+            },
+            {
+              "when": {
+                "kind": "CUSTOM"
+              },
+              "closed": true,
+              "accepts": [
+                "behavior",
+                "kind",
+                "modelId"
+              ],
+              "required": [
+                "behavior",
+                "behavior.conviction",
+                "behavior.outlook",
+                "behavior.risk",
+                "kind",
+                "modelId"
+              ]
+            }
+          ]
+        },
+        "brain.behavior": {
+          "closed": true,
+          "accepts": [
+            "conviction",
+            "outlook",
+            "risk"
+          ]
+        },
+        "tradingConfig": {
+          "closed": true,
+          "accepts": [
+            "atrMatchesStrategyTimeframe",
+            "atrTimeframe",
+            "balanceThresholdUsd",
+            "gridMinConfidence",
+            "maxConcurrentExposureUsd",
+            "maxCumulativeDrawdownUsd",
+            "maxDailyLossUsd",
+            "maxDailyTrades",
+            "maxEntryDeviationAtrMultiple",
+            "maxLeverage",
+            "maxSlippageBps",
+            "maxStopLossPct",
+            "minAllocationUsd",
+            "minRiskRewardRatio",
+            "minStopLossPct",
+            "minTradeConviction",
+            "positionManagement",
+            "positionSizePresets",
+            "signalTimeoutMinutes",
+            "tradingMode"
+          ]
+        },
+        "tradingConfig.positionManagement": {
+          "closed": true,
+          "accepts": [
+            "breakEvenEnabled",
+            "breakEvenTriggerTpProgressPct",
+            "enabled",
+            "positionManagementPreset",
+            "timeDecayEnabled",
+            "timeDecayGracePeriodMinutes",
+            "timeDecayIntervalMinutes",
+            "timeDecayMaxTightenPct",
+            "timeDecayStaleThresholdTpProgressPct",
+            "timeDecayTightenPct",
+            "trailingAtrMultiple",
+            "trailingBufferPct",
+            "trailingEnabled",
+            "trailingFixedPct",
+            "trailingType"
+          ]
+        },
+        "tradingConfig.positionSizePresets": {
+          "closed": true,
+          "accepts": [
+            "largePct",
+            "mediumPct",
+            "sizingStrategy",
+            "smallPct"
+          ]
+        }
+      },
       "declared_output": [
         "agent",
         "slotUsage"
@@ -822,6 +1777,21 @@
           true
         ]
       },
+      "input_required_paths": [
+        "confirm",
+        "expectedRevision",
+        "presetId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confirm",
+            "expectedRevision",
+            "presetId"
+          ]
+        }
+      },
       "declared_output": [
         "deleted",
         "presetId"
@@ -849,6 +1819,21 @@
         "confirm": [
           true
         ]
+      },
+      "input_required_paths": [
+        "coinId",
+        "confirm",
+        "expectedRevision"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "confirm",
+            "expectedRevision"
+          ]
+        }
       },
       "declared_output": [
         "coinId",
@@ -958,6 +1943,69 @@
           "mtf_pullback_long",
           "mtf_pullback_short"
         ],
+        "sections[].columns[].inputs[].metric": [
+          "RSI14",
+          "RSI7",
+          "MACD",
+          "STOCH_K",
+          "STOCH_D",
+          "MFI14",
+          "PPO",
+          "ROC12",
+          "CCI20",
+          "CLOSE_CHANGE",
+          "ADX",
+          "SMA20",
+          "SMA50",
+          "SMA200",
+          "EMA5",
+          "EMA13",
+          "EMA20",
+          "EMA_SPREAD",
+          "EMA_CROSS",
+          "MA_ALIGN",
+          "ATR",
+          "BB_WIDTH",
+          "HIGH_DEV",
+          "LOW_DEV",
+          "BB_PCT_B",
+          "SWING_HIGH",
+          "SWING_LOW",
+          "VWAP",
+          "VWAP_DEV",
+          "PRICE_ZONE",
+          "BB_TOUCH",
+          "CLOSE",
+          "STRUCT_ZONES",
+          "VOLUME_RATIO",
+          "OBV",
+          "CVD",
+          "BUY_PRESSURE",
+          "BUY_TRADES",
+          "SELL_TRADES",
+          "FUNDING_RATE",
+          "FUNDING_ANN",
+          "FUNDING_LABEL",
+          "OI",
+          "OI_CHG",
+          "OI_VELOCITY",
+          "OI_PX_REGIME",
+          "MARK_PREMIUM",
+          "REGIME_TREND",
+          "REGIME_VOL",
+          "REGIME_MOM",
+          "CHANGE_RANK",
+          "VOLUME_RANK",
+          "CROWD_PICK",
+          "CROWD_UPBIAS",
+          "CROWD_ACC",
+          "CROWD_CAPT",
+          "SETTLED_AT",
+          "FLOW_ALIGN",
+          "SMART_RETAIL",
+          "CAPTAIN_CONF",
+          "CONFIDENCE"
+        ],
         "sections[].columns[].metric": [
           "RSI14",
           "RSI7",
@@ -1025,6 +2073,21 @@
           "support",
           "resistance"
         ],
+        "sections[].columns[].timeframe.abs": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "sections[].columns[].timeframe.rel": [
           "anchor",
           "lower",
@@ -1074,6 +2137,113 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "rules[].allocation",
+        "rules[].required",
+        "rules[].signalId",
+        "sections",
+        "sections[].kind"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "rules",
+            "sections"
+          ]
+        },
+        "rules[]": {
+          "closed": true,
+          "accepts": [
+            "allocation",
+            "params",
+            "required",
+            "signalId"
+          ]
+        },
+        "sections[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "platform"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "sectionKey"
+              ],
+              "required": [
+                "kind",
+                "sectionKey"
+              ]
+            },
+            {
+              "when": {
+                "kind": "custom"
+              },
+              "closed": true,
+              "accepts": [
+                "columns",
+                "kind",
+                "sectionKey",
+                "timeframe",
+                "title"
+              ],
+              "required": [
+                "columns",
+                "columns[].inputs[].metric",
+                "columns[].metric",
+                "columns[].timeframe",
+                "columns[].transformId",
+                "kind",
+                "title"
+              ]
+            }
+          ]
+        },
+        "sections[].columns[]": {
+          "closed": true,
+          "accepts": [
+            "inputs",
+            "metric",
+            "offset",
+            "side",
+            "timeframe",
+            "transformId",
+            "window"
+          ]
+        },
+        "sections[].columns[].inputs[]": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        },
+        "sections[].columns[].timeframe": {
+          "variants": [
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "rel"
+              ],
+              "required": [
+                "rel"
+              ]
+            },
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "abs"
+              ],
+              "required": [
+                "abs"
+              ]
+            }
+          ]
+        }
+      },
       "declared_output": [
         "rules"
       ],
@@ -1097,6 +2267,20 @@
         "name"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "sourceRevision",
+        "strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "name",
+            "sourceRevision",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "strategy"
       ],
@@ -1119,6 +2303,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "agentDisplayName",
         "confidence",
@@ -1144,6 +2341,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "agentSlots",
         "balance",
@@ -1220,6 +2424,19 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "events",
         "limit",
@@ -1278,6 +2495,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "assignablePresets",
         "assignments",
@@ -1345,6 +2573,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "budget"
       ],
@@ -1425,6 +2664,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "coinTickers"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "coinTickers"
+          ]
+        }
+      },
       "declared_output": [
         "verdicts"
       ],
@@ -1445,6 +2697,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "coinTicker"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinTicker"
+          ]
+        }
+      },
       "declared_output": [
         "context"
       ],
@@ -1479,6 +2742,18 @@
           "MONTHLY",
           "ALL_TIME"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "limit",
+            "search",
+            "sortBy",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "aggregations",
@@ -1712,6 +2987,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "allocation"
       ],
@@ -1762,6 +3048,20 @@
           "30D",
           "LIFETIME"
         ]
+      },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "entries",
@@ -1854,6 +3154,18 @@
         "limit"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit"
+          ]
+        }
+      },
       "declared_output": [
         "recentActivity",
         "recentGames",
@@ -1986,6 +3298,18 @@
         "coinTicker"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "coinTicker"
+          ]
+        }
+      },
       "declared_output": [
         "positions"
       ],
@@ -2018,6 +3342,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "performance"
       ],
@@ -2073,6 +3408,21 @@
           "1d"
         ]
       },
+      "input_required_paths": [
+        "agentId",
+        "gameType"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "gameType",
+            "primaryTimeframe",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "preview"
       ],
@@ -2096,6 +3446,19 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "entries",
         "limit",
@@ -2180,6 +3543,20 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "interval",
+        "ticker"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "interval",
+            "limit",
+            "ticker"
+          ]
+        }
+      },
       "declared_output": [
         "candles"
       ],
@@ -2242,6 +3619,20 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "strategyTimeframe",
+        "tickers"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "modules",
+            "strategyTimeframe",
+            "tickers"
+          ]
+        }
+      },
       "declared_output": [
         "coins",
         "strategyTimeframe"
@@ -2261,6 +3652,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "coins"
       ],
@@ -2329,6 +3727,20 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "interval",
+        "ticker"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "count",
+            "interval",
+            "ticker"
+          ]
+        }
+      },
       "declared_output": [
         "history"
       ],
@@ -2367,6 +3779,20 @@
           "3d",
           "1w"
         ]
+      },
+      "input_required_paths": [
+        "interval",
+        "ticker"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "interval",
+            "ticker"
+          ]
+        }
       },
       "declared_output": [
         "aggregateScorePercent",
@@ -2438,6 +3864,21 @@
           "sessionContext"
         ]
       },
+      "input_required_paths": [
+        "gameType",
+        "sourceKey"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "gameType",
+            "primaryTimeframe",
+            "sessionId",
+            "sourceKey"
+          ]
+        }
+      },
       "declared_output": [
         "coinCount",
         "content",
@@ -2480,6 +3921,21 @@
           "1d"
         ]
       },
+      "input_required_paths": [
+        "agentId",
+        "gameType"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "gameType",
+            "primaryTimeframe",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "coinCount",
         "primaryTimeframe",
@@ -2502,6 +3958,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "attributions"
       ],
@@ -2545,6 +4008,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "presetId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "presetId"
+          ]
+        }
+      },
       "declared_output": [
         "authoringContext",
         "policy"
@@ -2566,6 +4040,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "decisionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "decisionId"
+          ]
+        }
+      },
       "declared_output": [
         "decision"
       ],
@@ -2646,6 +4131,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "agent"
       ],
@@ -2832,6 +4328,21 @@
           "ALL_TIME"
         ]
       },
+      "input_required_paths": [
+        "metric",
+        "timeframe"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "gameType",
+            "limit",
+            "metric",
+            "timeframe"
+          ]
+        }
+      },
       "declared_output": [
         "currentUser",
         "filter",
@@ -2867,6 +4378,17 @@
           "4h",
           "1d"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "exchange",
+            "limit",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "aggregates",
@@ -2975,6 +4497,17 @@
           "1d"
         ]
       },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "modules",
+            "primaryTimeframe",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "coins",
         "gridSize",
@@ -3002,6 +4535,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "accuracyPercent",
         "agentAvatarUrl",
@@ -3043,6 +4587,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "avgNetChangeCapture",
         "captureEfficiency",
@@ -3085,6 +4640,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "chartIntervalMs",
         "coinCaptainBadges",
@@ -3138,6 +4704,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "entry"
       ],
@@ -3222,6 +4799,17 @@
           "CONFIDENCE"
         ]
       },
+      "input_required_paths": [
+        "metric"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        }
+      },
       "declared_output": [
         "metric"
       ],
@@ -3240,6 +4828,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "orders"
       ],
@@ -3272,6 +4867,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "orderId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "orderId"
+          ]
+        }
+      },
       "declared_output": [
         "order"
       ],
@@ -3293,6 +4899,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "positionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "positionId"
+          ]
+        }
+      },
       "declared_output": [
         "events",
         "positionId"
@@ -3324,6 +4943,20 @@
           "30D",
           "LIFETIME"
         ]
+      },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "entries",
@@ -3486,6 +5119,37 @@
           "LIFETIME"
         ]
       },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "filter",
+            "limit",
+            "page",
+            "timeframe"
+          ]
+        },
+        "filter": {
+          "closed": true,
+          "accepts": [
+            "closeReason",
+            "closedBy",
+            "coinTicker",
+            "direction",
+            "dominantBias",
+            "expiryReason",
+            "gateReason",
+            "rejectionReason",
+            "signalSource",
+            "terminalStatus",
+            "tradeOutcome"
+          ]
+        }
+      },
       "declared_output": [
         "limit",
         "page",
@@ -3550,6 +5214,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "logId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "logId"
+          ]
+        }
+      },
       "declared_output": [
         "log"
       ],
@@ -3657,6 +5334,36 @@
           "LOSS"
         ]
       },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "filter",
+            "limit",
+            "page"
+          ]
+        },
+        "filter": {
+          "closed": true,
+          "accepts": [
+            "closeReason",
+            "closedBy",
+            "coinTicker",
+            "direction",
+            "dominantBias",
+            "expiryReason",
+            "gateReason",
+            "rejectionReason",
+            "signalSource",
+            "terminalStatus",
+            "tradeOutcome"
+          ]
+        }
+      },
       "declared_output": [
         "entries",
         "total"
@@ -3719,6 +5426,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "avgAggregateScore",
         "avgAggregateScorePercent",
@@ -3833,6 +5551,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "logId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "logId"
+          ]
+        }
+      },
       "declared_output": [
         "result"
       ],
@@ -3877,6 +5608,18 @@
           "RADAR"
         ]
       },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "signalSource"
+          ]
+        }
+      },
       "declared_output": [
         "snapshot"
       ],
@@ -3914,6 +5657,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "coinId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinId"
+          ]
+        }
+      },
       "declared_output": [
         "policy"
       ],
@@ -3951,6 +5705,17 @@
           "3d",
           "1w"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "bars",
+            "symbol",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "points",
@@ -4013,6 +5778,16 @@
           "3d",
           "1w"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "symbol",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "snapshot",
@@ -4088,6 +5863,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "logId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "logId"
+          ]
+        }
+      },
       "declared_output": [
         "log"
       ],
@@ -4405,6 +6193,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "avgAggregateScore",
         "avgAggregateScorePercent",
@@ -4520,6 +6319,18 @@
         "includeInactive"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "includeInactive",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "strategy"
       ],
@@ -4623,6 +6434,69 @@
         "sectionTimeframe"
       ],
       "input_constants": {
+        "column.inputs[].metric": [
+          "RSI14",
+          "RSI7",
+          "MACD",
+          "STOCH_K",
+          "STOCH_D",
+          "MFI14",
+          "PPO",
+          "ROC12",
+          "CCI20",
+          "CLOSE_CHANGE",
+          "ADX",
+          "SMA20",
+          "SMA50",
+          "SMA200",
+          "EMA5",
+          "EMA13",
+          "EMA20",
+          "EMA_SPREAD",
+          "EMA_CROSS",
+          "MA_ALIGN",
+          "ATR",
+          "BB_WIDTH",
+          "HIGH_DEV",
+          "LOW_DEV",
+          "BB_PCT_B",
+          "SWING_HIGH",
+          "SWING_LOW",
+          "VWAP",
+          "VWAP_DEV",
+          "PRICE_ZONE",
+          "BB_TOUCH",
+          "CLOSE",
+          "STRUCT_ZONES",
+          "VOLUME_RATIO",
+          "OBV",
+          "CVD",
+          "BUY_PRESSURE",
+          "BUY_TRADES",
+          "SELL_TRADES",
+          "FUNDING_RATE",
+          "FUNDING_ANN",
+          "FUNDING_LABEL",
+          "OI",
+          "OI_CHG",
+          "OI_VELOCITY",
+          "OI_PX_REGIME",
+          "MARK_PREMIUM",
+          "REGIME_TREND",
+          "REGIME_VOL",
+          "REGIME_MOM",
+          "CHANGE_RANK",
+          "VOLUME_RANK",
+          "CROWD_PICK",
+          "CROWD_UPBIAS",
+          "CROWD_ACC",
+          "CROWD_CAPT",
+          "SETTLED_AT",
+          "FLOW_ALIGN",
+          "SMART_RETAIL",
+          "CAPTAIN_CONF",
+          "CONFIDENCE"
+        ],
         "column.metric": [
           "RSI14",
           "RSI7",
@@ -4710,7 +6584,80 @@
           "lower",
           "higher",
           "regime"
+        ],
+        "sectionTimeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
         ]
+      },
+      "input_required_paths": [
+        "column",
+        "column.inputs[].metric",
+        "column.metric",
+        "column.timeframe",
+        "column.transformId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "column",
+            "sectionTimeframe"
+          ]
+        },
+        "column": {
+          "closed": true,
+          "accepts": [
+            "inputs",
+            "metric",
+            "offset",
+            "side",
+            "timeframe",
+            "transformId",
+            "window"
+          ]
+        },
+        "column.inputs[]": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        },
+        "column.timeframe": {
+          "variants": [
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "rel"
+              ],
+              "required": [
+                "rel"
+              ]
+            },
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "abs"
+              ],
+              "required": [
+                "abs"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "contract"
@@ -4759,6 +6706,50 @@
           "includeCvdCrowdConvergence",
           "includeStructureZones"
         ]
+      },
+      "input_required_paths": [
+        "request",
+        "request.kind"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "request"
+          ]
+        },
+        "request": {
+          "variants": [
+            {
+              "when": {
+                "kind": "platform"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "sectionKey"
+              ],
+              "required": [
+                "kind",
+                "sectionKey"
+              ]
+            },
+            {
+              "when": {
+                "kind": "custom"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "templateKey"
+              ],
+              "required": [
+                "kind",
+                "templateKey"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "template"
@@ -4882,6 +6873,18 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "signalId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "signalId",
+            "timeframe"
+          ]
+        }
+      },
       "declared_output": [
         "signal"
       ],
@@ -4926,6 +6929,20 @@
           "volume"
         ]
       },
+      "input_required_paths": [
+        "interval",
+        "metric"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "interval",
+            "limit",
+            "metric"
+          ]
+        }
+      },
       "declared_output": [
         "coins"
       ],
@@ -4947,6 +6964,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "logId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "logId"
+          ]
+        }
+      },
       "declared_output": [
         "result"
       ],
@@ -4982,6 +7012,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "decisionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "decisionId"
+          ]
+        }
+      },
       "declared_output": [
         "outcome"
       ],
@@ -5013,6 +7054,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "positionManagementPresets",
         "tradingDefaults"
@@ -5125,6 +7173,16 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "events",
         "limit",
@@ -5191,6 +7249,17 @@
           "30D",
           "LIFETIME"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "limit",
+            "page",
+            "timeframe"
+          ]
+        }
       },
       "declared_output": [
         "entries",
@@ -5282,6 +7351,16 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "entries",
         "limit",
@@ -5347,6 +7426,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "allocation"
       ],
@@ -5366,6 +7456,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "models"
       ],
@@ -5440,6 +7537,23 @@
           "EXPIRED",
           "CANCELLED"
         ]
+      },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "coinTicker",
+            "decision",
+            "direction",
+            "limit",
+            "page",
+            "status"
+          ]
+        }
       },
       "declared_output": [
         "entries",
@@ -5524,6 +7638,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "presets"
       ],
@@ -5601,6 +7722,19 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "entries",
         "total"
@@ -5658,6 +7792,15 @@
           "ACTIVE",
           "ARCHIVED"
         ]
+      },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "statuses"
+          ]
+        }
       },
       "declared_output": [
         "agents",
@@ -5850,6 +7993,16 @@
           "SETTLEMENT_QUARANTINED"
         ]
       },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "limit",
+            "status"
+          ]
+        }
+      },
       "declared_output": [
         "sessions"
       ],
@@ -5973,6 +8126,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "approvals"
       ],
@@ -6003,6 +8163,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "policies",
         "summary"
@@ -6098,6 +8265,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "marketGridSessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "marketGridSessionId"
+          ]
+        }
+      },
       "declared_output": [
         "activeCoinTickers",
         "agents",
@@ -6159,6 +8337,24 @@
           "CANCELLED",
           "PASS"
         ]
+      },
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "coinTicker",
+            "direction",
+            "dominantBias",
+            "limit",
+            "page",
+            "signalSource",
+            "terminalStatus"
+          ]
+        }
       },
       "declared_output": [
         "entries",
@@ -6222,6 +8418,15 @@
         "includeInactive"
       ],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "includeInactive"
+          ]
+        }
+      },
       "declared_output": [
         "quota",
         "strategies"
@@ -6280,6 +8485,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "categories"
       ],
@@ -6369,6 +8581,16 @@
           "CONFLUENCE"
         ]
       },
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "module",
+            "query"
+          ]
+        }
+      },
       "declared_output": [
         "signals"
       ],
@@ -6429,6 +8651,17 @@
           "derived"
         ]
       },
+      "input_required_paths": [
+        "category"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "category"
+          ]
+        }
+      },
       "declared_output": [
         "budgets",
         "category",
@@ -6458,6 +8691,19 @@
         "page"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "limit",
+            "page"
+          ]
+        }
+      },
       "declared_output": [
         "outcomes",
         "total"
@@ -6521,6 +8767,13 @@
       "input_required": [],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
       "declared_output": [
         "activeCoinTickers",
         "agents",
@@ -6583,6 +8836,21 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "decisionId",
+        "effectiveStopLoss",
+        "effectiveStopLossOrderId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "decisionId",
+            "effectiveStopLoss",
+            "effectiveStopLossOrderId"
+          ]
+        }
+      },
       "declared_output": [
         "decisionId",
         "result"
@@ -6621,6 +8889,15 @@
           "3d",
           "1w"
         ],
+        "request.simulatedRegime": [
+          "bull_expansion",
+          "bear_expansion",
+          "bull_ranging",
+          "bear_ranging",
+          "contraction",
+          "volatile",
+          "fallback"
+        ],
         "request.slots[].conditions[].kind": [
           "session_start",
           "session_occurrence",
@@ -6641,11 +8918,120 @@
           "contraction",
           "volatile",
           "fallback"
-        ],
-        "request.slots[].entryStrategy": [
-          "STANDARD",
-          "TWO_LOOK"
         ]
+      },
+      "input_required_paths": [
+        "presetId",
+        "request",
+        "request.slots",
+        "request.slots[].agentId",
+        "request.slots[].challengeEnabled",
+        "request.slots[].coinRules",
+        "request.slots[].coinRules[].challengeEnabled",
+        "request.slots[].coinRules[].coinId",
+        "request.slots[].coinRules[].minConviction",
+        "request.slots[].coinRules[].tradeEnabled",
+        "request.slots[].conditions",
+        "request.slots[].conditions[].kind",
+        "request.slots[].earlyEntryEnabled",
+        "request.slots[].isDefault",
+        "request.slots[].minConfidence",
+        "request.slots[].minConviction",
+        "request.slots[].priority",
+        "request.slots[].reassessmentEnabled",
+        "request.slots[].tradingEnabled"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "presetId",
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "regimeReferenceCoinId",
+            "regimeTimeframe",
+            "simulatedRegime",
+            "slots"
+          ]
+        },
+        "request.slots[]": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "challengeEnabled",
+            "coinRules",
+            "conditions",
+            "earlyEntryEnabled",
+            "isDefault",
+            "minConfidence",
+            "minConviction",
+            "priority",
+            "reassessmentEnabled",
+            "tradingEnabled"
+          ]
+        },
+        "request.slots[].coinRules[]": {
+          "closed": true,
+          "accepts": [
+            "challengeEnabled",
+            "coinId",
+            "minConviction",
+            "tradeEnabled"
+          ]
+        },
+        "request.slots[].conditions[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "session_start"
+              },
+              "closed": true,
+              "accepts": [
+                "days",
+                "kind",
+                "startTimes"
+              ],
+              "required": [
+                "days",
+                "kind",
+                "startTimes"
+              ]
+            },
+            {
+              "when": {
+                "kind": "session_occurrence"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "scheduledStartAt"
+              ],
+              "required": [
+                "kind",
+                "scheduledStartAt"
+              ]
+            },
+            {
+              "when": {
+                "kind": "regime"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "minConviction",
+                "regimes"
+              ],
+              "required": [
+                "kind",
+                "regimes"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "resolution"
@@ -6702,7 +9088,92 @@
           "medium",
           "low",
           "uncertain"
+        ],
+        "request.slots[].conditions[].regimes[]": [
+          "bull_expansion",
+          "bear_expansion",
+          "bull_ranging",
+          "bear_ranging",
+          "contraction",
+          "volatile",
+          "fallback"
         ]
+      },
+      "input_required_paths": [
+        "coinId",
+        "request",
+        "request.deploymentTimeframe",
+        "request.slots",
+        "request.slots[].agentId",
+        "request.slots[].conditions",
+        "request.slots[].conditions[].kind",
+        "request.slots[].isDefault",
+        "request.slots[].minConviction",
+        "request.slots[].priority"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "deploymentTimeframe",
+            "simulatedRegime",
+            "slots"
+          ]
+        },
+        "request.slots[]": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "conditions",
+            "isDefault",
+            "minConviction",
+            "priority"
+          ]
+        },
+        "request.slots[].conditions[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "time_window"
+              },
+              "closed": true,
+              "accepts": [
+                "days",
+                "fromHour",
+                "kind",
+                "toHour"
+              ],
+              "required": [
+                "days",
+                "fromHour",
+                "kind",
+                "toHour"
+              ]
+            },
+            {
+              "when": {
+                "kind": "regime"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "minConviction",
+                "regimes"
+              ],
+              "required": [
+                "kind",
+                "regimes"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "resolvesNow"
@@ -6726,8 +9197,6 @@
         "timeframe"
       ],
       "input_optional": [
-        "conditionVerdicts",
-        "conditions",
         "regimeTimeframe"
       ],
       "input_constants": {
@@ -6746,29 +9215,83 @@
           "ranked",
           "explicit"
         ],
-        "conditionVerdicts[].then": [
-          "UP",
-          "DOWN",
-          "NEITHER",
-          "UNRESOLVED"
+        "regimeTimeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
         ],
-        "conditions[].definition.kind": [
-          "clause",
-          "conditionRef",
-          "group"
-        ],
-        "conditions[].definition.op": [
-          "lt",
-          "lte",
-          "gte",
-          "gt",
-          "between",
-          "is",
-          "in",
-          "ALL",
-          "ANY",
-          "NOT",
-          "N_OF"
+        "sections[].columns[].inputs[].metric": [
+          "RSI14",
+          "RSI7",
+          "MACD",
+          "STOCH_K",
+          "STOCH_D",
+          "MFI14",
+          "PPO",
+          "ROC12",
+          "CCI20",
+          "CLOSE_CHANGE",
+          "ADX",
+          "SMA20",
+          "SMA50",
+          "SMA200",
+          "EMA5",
+          "EMA13",
+          "EMA20",
+          "EMA_SPREAD",
+          "EMA_CROSS",
+          "MA_ALIGN",
+          "ATR",
+          "BB_WIDTH",
+          "HIGH_DEV",
+          "LOW_DEV",
+          "BB_PCT_B",
+          "SWING_HIGH",
+          "SWING_LOW",
+          "VWAP",
+          "VWAP_DEV",
+          "PRICE_ZONE",
+          "BB_TOUCH",
+          "CLOSE",
+          "STRUCT_ZONES",
+          "VOLUME_RATIO",
+          "OBV",
+          "CVD",
+          "BUY_PRESSURE",
+          "BUY_TRADES",
+          "SELL_TRADES",
+          "FUNDING_RATE",
+          "FUNDING_ANN",
+          "FUNDING_LABEL",
+          "OI",
+          "OI_CHG",
+          "OI_VELOCITY",
+          "OI_PX_REGIME",
+          "MARK_PREMIUM",
+          "REGIME_TREND",
+          "REGIME_VOL",
+          "REGIME_MOM",
+          "CHANGE_RANK",
+          "VOLUME_RANK",
+          "CROWD_PICK",
+          "CROWD_UPBIAS",
+          "CROWD_ACC",
+          "CROWD_CAPT",
+          "SETTLED_AT",
+          "FLOW_ALIGN",
+          "SMART_RETAIL",
+          "CAPTAIN_CONF",
+          "CONFIDENCE"
         ],
         "sections[].columns[].metric": [
           "RSI14",
@@ -6837,6 +9360,21 @@
           "support",
           "resistance"
         ],
+        "sections[].columns[].timeframe.abs": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "sections[].columns[].timeframe.rel": [
           "anchor",
           "lower",
@@ -6870,6 +9408,21 @@
           "includeCvdCrowdConvergence",
           "includeStructureZones"
         ],
+        "sections[].timeframe": [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "8h",
+          "12h",
+          "1d",
+          "3d",
+          "1w"
+        ],
         "timeframe": [
           "1m",
           "3m",
@@ -6886,9 +9439,143 @@
           "1w"
         ]
       },
+      "input_required_paths": [
+        "coinSelection",
+        "coinSelection.mode",
+        "regimeAutoDerive",
+        "sections",
+        "sections[].kind",
+        "timeframe"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinSelection",
+            "regimeAutoDerive",
+            "regimeTimeframe",
+            "sections",
+            "timeframe"
+          ]
+        },
+        "coinSelection": {
+          "variants": [
+            {
+              "when": {
+                "mode": "ranked"
+              },
+              "closed": true,
+              "accepts": [
+                "category",
+                "limit",
+                "mode"
+              ],
+              "required": [
+                "limit",
+                "mode"
+              ]
+            },
+            {
+              "when": {
+                "mode": "explicit"
+              },
+              "closed": true,
+              "accepts": [
+                "mode",
+                "tickers"
+              ],
+              "required": [
+                "mode",
+                "tickers"
+              ]
+            }
+          ]
+        },
+        "sections[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "platform"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "sectionKey"
+              ],
+              "required": [
+                "kind",
+                "sectionKey"
+              ]
+            },
+            {
+              "when": {
+                "kind": "custom"
+              },
+              "closed": true,
+              "accepts": [
+                "columns",
+                "kind",
+                "sectionKey",
+                "timeframe",
+                "title"
+              ],
+              "required": [
+                "columns",
+                "columns[].inputs[].metric",
+                "columns[].metric",
+                "columns[].timeframe",
+                "columns[].transformId",
+                "kind",
+                "title"
+              ]
+            }
+          ]
+        },
+        "sections[].columns[]": {
+          "closed": true,
+          "accepts": [
+            "inputs",
+            "metric",
+            "offset",
+            "side",
+            "timeframe",
+            "transformId",
+            "window"
+          ]
+        },
+        "sections[].columns[].inputs[]": {
+          "closed": true,
+          "accepts": [
+            "metric"
+          ]
+        },
+        "sections[].columns[].timeframe": {
+          "variants": [
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "rel"
+              ],
+              "required": [
+                "rel"
+              ]
+            },
+            {
+              "when": {},
+              "closed": true,
+              "accepts": [
+                "abs"
+              ],
+              "required": [
+                "abs"
+              ]
+            }
+          ]
+        }
+      },
       "declared_output": [
         "budgetUsage",
-        "conditionOutcomes",
         "estimatedTokenCount",
         "rankScopingNote",
         "renderedSections",
@@ -6915,6 +9602,20 @@
         "reasoning"
       ],
       "input_constants": {},
+      "input_required_paths": [
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confidenceScore",
+            "modelName",
+            "reasoning",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "message",
         "submissionId"
@@ -6946,6 +9647,24 @@
           true
         ]
       },
+      "input_required_paths": [
+        "agentId",
+        "confirm",
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "confirm",
+            "expectedRevision",
+            "idempotencyKey",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "agent"
       ],
@@ -6967,6 +9686,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "budget"
       ],
@@ -6989,6 +9719,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "expectedRevision",
+        "strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "expectedRevision",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "strategy"
       ],
@@ -7010,6 +9753,17 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
       "declared_output": [
         "allocation"
       ],
@@ -7032,6 +9786,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "enabled"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "enabled"
+          ]
+        }
+      },
       "declared_output": [
         "allocation"
       ],
@@ -7054,6 +9821,30 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "gate",
+        "signals",
+        "signals[].allocation",
+        "signals[].label",
+        "signals[].score"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "gate",
+            "signals"
+          ]
+        },
+        "signals[]": {
+          "closed": true,
+          "accepts": [
+            "allocation",
+            "label",
+            "score"
+          ]
+        }
+      },
       "declared_output": [
         "aggregateScore",
         "aggregateScorePercent",
@@ -7080,6 +9871,19 @@
       ],
       "input_optional": [],
       "input_constants": {},
+      "input_required_paths": [
+        "agentId",
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "sessionId"
+          ]
+        }
+      },
       "declared_output": [
         "message",
         "submissionId"
@@ -7111,6 +9915,51 @@
           "UP",
           "DOWN"
         ]
+      },
+      "input_required_paths": [
+        "confidenceScore",
+        "grid",
+        "grid[].coinId",
+        "grid[].isCaptain",
+        "grid[].position",
+        "grid[].prediction",
+        "modelName",
+        "pickReasoning",
+        "pickReasoning[].coinId",
+        "pickReasoning[].confidence",
+        "pickReasoning[].reasoning",
+        "reasoning",
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confidenceScore",
+            "grid",
+            "modelName",
+            "pickReasoning",
+            "reasoning",
+            "sessionId"
+          ]
+        },
+        "grid[]": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "isCaptain",
+            "position",
+            "prediction"
+          ]
+        },
+        "pickReasoning[]": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "confidence",
+            "reasoning"
+          ]
+        }
       },
       "declared_output": [
         "message",
@@ -7150,6 +9999,15 @@
           "3d",
           "1w"
         ],
+        "request.simulatedRegime": [
+          "bull_expansion",
+          "bear_expansion",
+          "bull_ranging",
+          "bear_ranging",
+          "contraction",
+          "volatile",
+          "fallback"
+        ],
         "request.slots[].conditions[].kind": [
           "session_start",
           "session_occurrence",
@@ -7170,11 +10028,120 @@
           "contraction",
           "volatile",
           "fallback"
-        ],
-        "request.slots[].entryStrategy": [
-          "STANDARD",
-          "TWO_LOOK"
         ]
+      },
+      "input_required_paths": [
+        "presetId",
+        "request",
+        "request.slots",
+        "request.slots[].agentId",
+        "request.slots[].challengeEnabled",
+        "request.slots[].coinRules",
+        "request.slots[].coinRules[].challengeEnabled",
+        "request.slots[].coinRules[].coinId",
+        "request.slots[].coinRules[].minConviction",
+        "request.slots[].coinRules[].tradeEnabled",
+        "request.slots[].conditions",
+        "request.slots[].conditions[].kind",
+        "request.slots[].earlyEntryEnabled",
+        "request.slots[].isDefault",
+        "request.slots[].minConfidence",
+        "request.slots[].minConviction",
+        "request.slots[].priority",
+        "request.slots[].reassessmentEnabled",
+        "request.slots[].tradingEnabled"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "presetId",
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "regimeReferenceCoinId",
+            "regimeTimeframe",
+            "simulatedRegime",
+            "slots"
+          ]
+        },
+        "request.slots[]": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "challengeEnabled",
+            "coinRules",
+            "conditions",
+            "earlyEntryEnabled",
+            "isDefault",
+            "minConfidence",
+            "minConviction",
+            "priority",
+            "reassessmentEnabled",
+            "tradingEnabled"
+          ]
+        },
+        "request.slots[].coinRules[]": {
+          "closed": true,
+          "accepts": [
+            "challengeEnabled",
+            "coinId",
+            "minConviction",
+            "tradeEnabled"
+          ]
+        },
+        "request.slots[].conditions[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "session_start"
+              },
+              "closed": true,
+              "accepts": [
+                "days",
+                "kind",
+                "startTimes"
+              ],
+              "required": [
+                "days",
+                "kind",
+                "startTimes"
+              ]
+            },
+            {
+              "when": {
+                "kind": "session_occurrence"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "scheduledStartAt"
+              ],
+              "required": [
+                "kind",
+                "scheduledStartAt"
+              ]
+            },
+            {
+              "when": {
+                "kind": "regime"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "minConviction",
+                "regimes"
+              ],
+              "required": [
+                "kind",
+                "regimes"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "result"
@@ -7274,6 +10241,126 @@
           "FULL_EXECUTION"
         ]
       },
+      "input_required_paths": [
+        "agentId",
+        "expectedRevision",
+        "tradingConfig.atrMatchesStrategyTimeframe",
+        "tradingConfig.atrTimeframe",
+        "tradingConfig.balanceThresholdUsd",
+        "tradingConfig.gridMinConfidence",
+        "tradingConfig.maxConcurrentExposureUsd",
+        "tradingConfig.maxCumulativeDrawdownUsd",
+        "tradingConfig.maxDailyLossUsd",
+        "tradingConfig.maxDailyTrades",
+        "tradingConfig.maxEntryDeviationAtrMultiple",
+        "tradingConfig.maxLeverage",
+        "tradingConfig.maxSlippageBps",
+        "tradingConfig.maxStopLossPct",
+        "tradingConfig.minAllocationUsd",
+        "tradingConfig.minRiskRewardRatio",
+        "tradingConfig.minStopLossPct",
+        "tradingConfig.minTradeConviction",
+        "tradingConfig.positionManagement",
+        "tradingConfig.positionManagement.breakEvenEnabled",
+        "tradingConfig.positionManagement.breakEvenTriggerTpProgressPct",
+        "tradingConfig.positionManagement.enabled",
+        "tradingConfig.positionManagement.positionManagementPreset",
+        "tradingConfig.positionManagement.timeDecayEnabled",
+        "tradingConfig.positionManagement.timeDecayGracePeriodMinutes",
+        "tradingConfig.positionManagement.timeDecayIntervalMinutes",
+        "tradingConfig.positionManagement.timeDecayMaxTightenPct",
+        "tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct",
+        "tradingConfig.positionManagement.timeDecayTightenPct",
+        "tradingConfig.positionManagement.trailingAtrMultiple",
+        "tradingConfig.positionManagement.trailingBufferPct",
+        "tradingConfig.positionManagement.trailingEnabled",
+        "tradingConfig.positionManagement.trailingFixedPct",
+        "tradingConfig.positionManagement.trailingType",
+        "tradingConfig.positionSizePresets",
+        "tradingConfig.positionSizePresets.largePct",
+        "tradingConfig.positionSizePresets.mediumPct",
+        "tradingConfig.positionSizePresets.sizingStrategy",
+        "tradingConfig.positionSizePresets.smallPct",
+        "tradingConfig.signalTimeoutMinutes",
+        "tradingConfig.tradingMode"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "arenaChallengeEnabled",
+            "behavior",
+            "brainPreset",
+            "displayName",
+            "expectedRevision",
+            "modelId",
+            "tradingConfig"
+          ]
+        },
+        "behavior": {
+          "closed": true,
+          "accepts": [
+            "conviction",
+            "outlook",
+            "risk"
+          ]
+        },
+        "tradingConfig": {
+          "closed": true,
+          "accepts": [
+            "atrMatchesStrategyTimeframe",
+            "atrTimeframe",
+            "balanceThresholdUsd",
+            "gridMinConfidence",
+            "maxConcurrentExposureUsd",
+            "maxCumulativeDrawdownUsd",
+            "maxDailyLossUsd",
+            "maxDailyTrades",
+            "maxEntryDeviationAtrMultiple",
+            "maxLeverage",
+            "maxSlippageBps",
+            "maxStopLossPct",
+            "minAllocationUsd",
+            "minRiskRewardRatio",
+            "minStopLossPct",
+            "minTradeConviction",
+            "positionManagement",
+            "positionSizePresets",
+            "signalTimeoutMinutes",
+            "tradingMode"
+          ]
+        },
+        "tradingConfig.positionManagement": {
+          "closed": true,
+          "accepts": [
+            "breakEvenEnabled",
+            "breakEvenTriggerTpProgressPct",
+            "enabled",
+            "positionManagementPreset",
+            "timeDecayEnabled",
+            "timeDecayGracePeriodMinutes",
+            "timeDecayIntervalMinutes",
+            "timeDecayMaxTightenPct",
+            "timeDecayStaleThresholdTpProgressPct",
+            "timeDecayTightenPct",
+            "trailingAtrMultiple",
+            "trailingBufferPct",
+            "trailingEnabled",
+            "trailingFixedPct",
+            "trailingType"
+          ]
+        },
+        "tradingConfig.positionSizePresets": {
+          "closed": true,
+          "accepts": [
+            "largePct",
+            "mediumPct",
+            "sizingStrategy",
+            "smallPct"
+          ]
+        }
+      },
       "declared_output": [
         "agent"
       ],
@@ -7304,6 +10391,51 @@
           "UP",
           "DOWN"
         ]
+      },
+      "input_required_paths": [
+        "confidenceScore",
+        "grid",
+        "grid[].coinId",
+        "grid[].isCaptain",
+        "grid[].position",
+        "grid[].prediction",
+        "modelName",
+        "pickReasoning",
+        "pickReasoning[].coinId",
+        "pickReasoning[].confidence",
+        "pickReasoning[].reasoning",
+        "reasoning",
+        "sessionId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "confidenceScore",
+            "grid",
+            "modelName",
+            "pickReasoning",
+            "reasoning",
+            "sessionId"
+          ]
+        },
+        "grid[]": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "isCaptain",
+            "position",
+            "prediction"
+          ]
+        },
+        "pickReasoning[]": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "confidence",
+            "reasoning"
+          ]
+        }
       },
       "declared_output": [
         "message",
@@ -7413,6 +10545,33 @@
           "mtf_pullback_short"
         ]
       },
+      "input_required_paths": [
+        "request",
+        "request.allocation",
+        "request.expectedRevision",
+        "request.required",
+        "request.signalId",
+        "request.strategyId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "allocation",
+            "expectedRevision",
+            "params",
+            "required",
+            "signalId",
+            "strategyId"
+          ]
+        }
+      },
       "declared_output": [
         "strategy"
       ],
@@ -7470,11 +10629,121 @@
           "contraction",
           "volatile",
           "fallback"
-        ],
-        "request.slots[].entryStrategy": [
-          "STANDARD",
-          "TWO_LOOK"
         ]
+      },
+      "input_required_paths": [
+        "presetId",
+        "request",
+        "request.expectedRevision",
+        "request.slots",
+        "request.slots[].agentId",
+        "request.slots[].challengeEnabled",
+        "request.slots[].coinRules",
+        "request.slots[].coinRules[].challengeEnabled",
+        "request.slots[].coinRules[].coinId",
+        "request.slots[].coinRules[].minConviction",
+        "request.slots[].coinRules[].tradeEnabled",
+        "request.slots[].conditions",
+        "request.slots[].conditions[].kind",
+        "request.slots[].earlyEntryEnabled",
+        "request.slots[].isDefault",
+        "request.slots[].minConfidence",
+        "request.slots[].minConviction",
+        "request.slots[].priority",
+        "request.slots[].reassessmentEnabled",
+        "request.slots[].tradingEnabled"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "presetId",
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "expectedRevision",
+            "regimeReferenceCoinId",
+            "regimeTimeframe",
+            "slots"
+          ]
+        },
+        "request.slots[]": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "challengeEnabled",
+            "coinRules",
+            "conditions",
+            "earlyEntryEnabled",
+            "isDefault",
+            "minConfidence",
+            "minConviction",
+            "priority",
+            "reassessmentEnabled",
+            "tradingEnabled"
+          ]
+        },
+        "request.slots[].coinRules[]": {
+          "closed": true,
+          "accepts": [
+            "challengeEnabled",
+            "coinId",
+            "minConviction",
+            "tradeEnabled"
+          ]
+        },
+        "request.slots[].conditions[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "session_start"
+              },
+              "closed": true,
+              "accepts": [
+                "days",
+                "kind",
+                "startTimes"
+              ],
+              "required": [
+                "days",
+                "kind",
+                "startTimes"
+              ]
+            },
+            {
+              "when": {
+                "kind": "session_occurrence"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "scheduledStartAt"
+              ],
+              "required": [
+                "kind",
+                "scheduledStartAt"
+              ]
+            },
+            {
+              "when": {
+                "kind": "regime"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "minConviction",
+                "regimes"
+              ],
+              "required": [
+                "kind",
+                "regimes"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "presetId",
@@ -7535,6 +10804,85 @@
           "volatile",
           "fallback"
         ]
+      },
+      "input_required_paths": [
+        "coinId",
+        "request",
+        "request.deploymentTimeframe",
+        "request.enabled",
+        "request.expectedRevision",
+        "request.slots",
+        "request.slots[].agentId",
+        "request.slots[].conditions",
+        "request.slots[].conditions[].kind",
+        "request.slots[].isDefault",
+        "request.slots[].minConviction",
+        "request.slots[].priority"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "request"
+          ]
+        },
+        "request": {
+          "closed": true,
+          "accepts": [
+            "deploymentTimeframe",
+            "enabled",
+            "expectedRevision",
+            "slots"
+          ]
+        },
+        "request.slots[]": {
+          "closed": true,
+          "accepts": [
+            "agentId",
+            "conditions",
+            "isDefault",
+            "minConviction",
+            "priority"
+          ]
+        },
+        "request.slots[].conditions[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "time_window"
+              },
+              "closed": true,
+              "accepts": [
+                "days",
+                "fromHour",
+                "kind",
+                "toHour"
+              ],
+              "required": [
+                "days",
+                "fromHour",
+                "kind",
+                "toHour"
+              ]
+            },
+            {
+              "when": {
+                "kind": "regime"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "minConviction",
+                "regimes"
+              ],
+              "required": [
+                "kind",
+                "regimes"
+              ]
+            }
+          ]
+        }
       },
       "declared_output": [
         "revision"

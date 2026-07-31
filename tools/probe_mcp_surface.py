@@ -58,6 +58,7 @@ from typing import Any
 
 MCP_URL = "https://mcp.battlegrid.trade/mcp"
 OUT = "docs/battlegrid-mcp-surface.json"
+CAPABILITIES = "docs/battlegrid-mcp-capabilities.json"
 
 # One run makes 30+ sequential requests to a live server, and a single timeout
 # used to abandon the whole probe — including `tools/list`, which every other
@@ -145,9 +146,13 @@ def input_constants(tool: dict[str, Any]) -> dict[str, list[Any]]:
 
     Permitted values only. Nothing here comes from the account.
     """
+    root = tool.get("inputSchema") or {}
     found: dict[str, list[Any]] = {}
 
-    def walk(node: Any, path: str) -> None:
+    def walk(node: Any, path: str, active: frozenset[str]) -> None:
+        # Refs are followed — a constant behind a `$ref` was invisible to the
+        # first version of this walk, the same blindness at one remove.
+        node, active = _resolve(node, root, active)
         if not isinstance(node, dict):
             return
         if "enum" in node and isinstance(node["enum"], list):
@@ -160,16 +165,175 @@ def input_constants(tool: dict[str, Any]) -> dict[str, list[Any]]:
             if node["const"] not in found[path]:
                 found[path].append(node["const"])
         for key, child in (node.get("properties") or {}).items():
-            walk(child, f"{path}.{key}" if path else key)
+            walk(child, f"{path}.{key}" if path else key, active)
         if isinstance(node.get("items"), dict):
-            walk(node["items"], f"{path}[]")
+            walk(node["items"], f"{path}[]", active)
         # A union contributes to the *same* path — see `brain.kind`, which is
         # `const: "PRESET"` on one branch and `const: "CUSTOM"` on the other.
         for branch in (node.get("anyOf") or []) + (node.get("oneOf") or []):
-            walk(branch, path)
+            walk(branch, path, active)
 
-    walk(tool.get("inputSchema") or {}, "")
+    walk(root, "", frozenset())
     return {k: v for k, v in sorted(found.items()) if k}
+
+
+def _jump(root: Any, pointer: str) -> Any:
+    """The node a local JSON pointer names, or None."""
+    node = root
+    for raw in pointer[2:].split("/"):
+        part = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(node, list):
+            node = node[int(part)] if part.isdigit() and int(part) < len(node) else None
+        elif isinstance(node, dict):
+            node = node.get(part)
+        else:
+            return None
+        if node is None:
+            return None
+    return node
+
+
+def _resolve(node: Any, root: Any, active: frozenset[str]) -> tuple[Any, frozenset[str]]:
+    """Follow a chain of local `$ref` pointers to the node they name.
+
+    The dump carries 370 of these — zod's dedup output, every one a `#/`-rooted
+    pointer into the same tool's schema. A walk that does not follow them
+    records nothing where a ref stands; `apply_strategy_plan`'s `plan` subtree
+    is reachable no other way.
+
+    `active` is the set of pointers already being expanded on this walk path.
+    Meeting one again means the schema recurses through itself; the branch ends
+    there rather than looping. Returns the resolved node and the widened set.
+    """
+    seen = active
+    while isinstance(node, dict) and isinstance(node.get("$ref"), str):
+        pointer = node["$ref"]
+        if not pointer.startswith("#/") or pointer in seen:
+            return None, seen
+        seen = seen | {pointer}
+        node = _jump(root, pointer)
+    return node, seen
+
+
+def _required_paths(node: Any, root: Any, path: str, active: frozenset[str]) -> set[str]:
+    """Every required parameter beneath `node`, as paths from `path`.
+
+    A field required in only some branches of a union is *conditionally*
+    required, so unions contribute the intersection of their branches here.
+    Branch-specific requirements are carried per variant by `input_accepts`,
+    where a check can hold a payload against the branch it actually uses.
+    """
+    node, active = _resolve(node, root, active)
+    if not isinstance(node, dict):
+        return set()
+    out: set[str] = set()
+    for name in node.get("required") or []:
+        out.add(f"{path}.{name}" if path else name)
+    for key, child in (node.get("properties") or {}).items():
+        out |= _required_paths(child, root, f"{path}.{key}" if path else key, active)
+    if isinstance(node.get("items"), dict):
+        out |= _required_paths(node["items"], root, f"{path}[]", active)
+    branches = (node.get("anyOf") or []) + (node.get("oneOf") or [])
+    if branches:
+        per_branch = [_required_paths(b, root, path, active) for b in branches]
+        out |= set.intersection(*per_branch)
+    return out
+
+
+def input_required_paths(tool: dict[str, Any]) -> list[str]:
+    """Every required parameter as a path from the argument root, at any depth.
+
+    `input_required` stops at the top level, which checks that a slot is filled
+    and never what fills it: a payload can satisfy every top-level requirement
+    and omit a required field three levels down. Dotted paths, `[]` for array
+    items — the grammar `input_constants` already uses.
+    """
+    root = tool.get("inputSchema") or {}
+    return sorted(_required_paths(root, root, "", frozenset()))
+
+
+def _discriminator(branch: dict[str, Any]) -> dict[str, Any]:
+    """The const-pinned properties that tell one union branch from another."""
+    return {
+        key: prop["const"]
+        for key, prop in (branch.get("properties") or {}).items()
+        if isinstance(prop, dict) and "const" in prop
+    }
+
+
+def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
+    """Per object path: what the schema will accept there, and whether it is closed.
+
+    `additionalProperties: false` rejects the *whole* payload for one unaccepted
+    key — which is exactly how `update_intelligence_agent` came to be
+    impossible: `tradingConfig` reads back with 23 keys, the write accepts 20,
+    and the object is closed. The record carried none of that, so nothing could
+    say so before the platform did.
+
+    A plain closed object records `{"closed": true, "accepts": [...]}`. A path
+    declared as a union of object shapes records `{"variants": [...]}` instead,
+    each variant keyed by the const-pinned properties that discriminate it
+    (`operation=UPDATE`, `kind=PRESET`), with its own accepted set, closed flag,
+    and required paths relative to that object — because merging branches either
+    demands too much or accepts too little, and the branch a payload uses is
+    knowable from the payload itself.
+
+    The empty path is the argument root. Where two union branches record the
+    same deeper path, the records merge conservatively: accepted names union,
+    so a merged record can miss a violation but never invent one.
+    """
+    root = tool.get("inputSchema") or {}
+    out: dict[str, Any] = {}
+
+    def record_closed(path: str, accepts: Any) -> None:
+        current = out.get(path)
+        if current is None:
+            out[path] = {"closed": True, "accepts": sorted(accepts)}
+        elif "accepts" in current:
+            current["accepts"] = sorted(set(current["accepts"]) | set(accepts))
+
+    def walk(node: Any, path: str, active: frozenset[str]) -> None:
+        node, active = _resolve(node, root, active)
+        if not isinstance(node, dict):
+            return
+
+        resolved_branches: list[tuple[dict[str, Any], frozenset[str]]] = []
+        for raw in (node.get("anyOf") or []) + (node.get("oneOf") or []):
+            branch, branch_active = _resolve(raw, root, active)
+            if isinstance(branch, dict):
+                resolved_branches.append((branch, branch_active))
+
+        object_branches = [(b, a) for b, a in resolved_branches if b.get("properties")]
+        if len(object_branches) >= 2 and path not in out:
+            out[path] = {
+                "variants": [
+                    {
+                        "when": _discriminator(branch),
+                        "closed": branch.get("additionalProperties") is False,
+                        "accepts": sorted((branch.get("properties") or {}).keys()),
+                        "required": sorted(
+                            _required_paths(branch, root, "", branch_active)
+                        ),
+                    }
+                    for branch, branch_active in object_branches
+                ]
+            }
+        elif node.get("additionalProperties") is False:
+            record_closed(path, (node.get("properties") or {}).keys())
+
+        for branch, branch_active in resolved_branches:
+            for key, child in (branch.get("properties") or {}).items():
+                walk(child, f"{path}.{key}" if path else key, branch_active)
+            if isinstance(branch.get("items"), dict):
+                walk(branch["items"], f"{path}[]", branch_active)
+
+        for key, child in (node.get("properties") or {}).items():
+            walk(child, f"{path}.{key}" if path else key, active)
+        if isinstance(node.get("items"), dict):
+            walk(node["items"], f"{path}[]", active)
+
+    walk(root, "", frozenset())
+    return {k: out[k] for k in sorted(out)}
 
 
 def unwrap(result: dict[str, Any]) -> tuple[Any, str | None]:
@@ -285,7 +449,87 @@ def arguments_for(required: list[str], ids: dict[str, str]) -> tuple[dict[str, A
     return args, ""
 
 
+DECLARED_FIELDS = (
+    "input_required",
+    "input_optional",
+    "input_constants",
+    "input_required_paths",
+    "input_accepts",
+    "declared_output",
+)
+
+
+def refresh_declared(capabilities_path: str = CAPABILITIES, out_path: str = OUT) -> int:
+    """Recompute the artifact's declared fields from the committed dump. No network.
+
+    Both files come from the same `tools/list`; the declared fields are pure
+    derivations of it, so refreshing them needs no credential and calls
+    nothing. Everything observed — responses, shapes, failure reasons — is left
+    exactly as it was: a refresh MUST NOT invent an observation, and a value it
+    cannot derive it does not touch.
+
+    Refuses when the two files disagree about which tools exist. That means
+    they are snapshots of different deployments, and the honest fix is a live
+    re-probe, not a merge of two generations of the truth.
+    """
+    with open(capabilities_path) as f:
+        dump = {t["name"]: t for t in json.load(f)["tools"]}
+    with open(out_path) as f:
+        surface = json.load(f)
+
+    artifact_names = {e["name"] for e in surface["tools"]}
+    if artifact_names != set(dump):
+        missing = sorted(artifact_names - set(dump))
+        extra = sorted(set(dump) - artifact_names)
+        print(
+            "tool sets differ — these are snapshots of different deployments; "
+            f"re-probe live instead. only in artifact: {missing or 'none'}; "
+            f"only in capabilities dump: {extra or 'none'}",
+            file=sys.stderr,
+        )
+        return 2
+
+    for entry in surface["tools"]:
+        tool = dump[entry["name"]]
+        required = required_input(tool)
+        computed = {
+            "input_required": required,
+            "input_optional": sorted(
+                set((tool.get("inputSchema") or {}).get("properties", {}).keys())
+                - set(required)
+            ),
+            "input_constants": input_constants(tool),
+            "input_required_paths": input_required_paths(tool),
+            "input_accepts": input_accepts(tool),
+            "declared_output": declared_output_keys(tool),
+        }
+        # Rebuilt rather than updated in place, so the new fields land in the
+        # same position a live probe writes them — a refresh and a probe must
+        # not produce two orderings of the same artifact.
+        rebuilt: dict[str, Any] = {}
+        for key, value in entry.items():
+            if key == "input_constants":
+                for field in ("input_constants", "input_required_paths", "input_accepts"):
+                    rebuilt[field] = computed[field]
+            elif key in DECLARED_FIELDS:
+                if key not in rebuilt:
+                    rebuilt[key] = computed[key]
+            else:
+                rebuilt[key] = value
+        entry.clear()
+        entry.update(rebuilt)
+
+    with open(out_path, "w") as f:
+        json.dump(surface, f, indent=2, sort_keys=False)
+        f.write("\n")
+    print(f"refreshed declared fields for {len(surface['tools'])} tools in {out_path}")
+    return 0
+
+
 def main() -> int:
+    if "--refresh-declared" in sys.argv[1:]:
+        return refresh_declared()
+
     key = os.environ.get("BATTLEGRID_API_KEY")
     if not key:
         print("BATTLEGRID_API_KEY is not set.", file=sys.stderr)
@@ -352,6 +596,8 @@ def main() -> int:
                 set((tool.get("inputSchema") or {}).get("properties", {}).keys()) - set(required)
             ),
             "input_constants": input_constants(tool),
+            "input_required_paths": input_required_paths(tool),
+            "input_accepts": input_accepts(tool),
             "declared_output": declared_output_keys(tool),
         }
         entries.append(entry)
