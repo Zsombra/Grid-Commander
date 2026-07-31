@@ -2,6 +2,10 @@ import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  // The rendering suite imports page components. Next compiles JSX with the
+  // automatic runtime (no `import React`), so vitest must transform it the
+  // same way or every element expression is a ReferenceError.
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
