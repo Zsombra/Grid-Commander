@@ -20,6 +20,14 @@ to look for.
 
 **Remaining, operator-only**: register the runner, set `CI_RUNNER=self-hosted`.
 
+**Amended same-session** (`dockerless-runner-still-greens-six-jobs`, lite):
+the operator's machine has no Docker, which only the `app` job needs (its
+postgres service container). `app` now routes through its own
+`CI_APP_RUNNER` variable — with only `CI_RUNNER` set, six of seven jobs
+green on the Docker-less runner and `app` stays GitHub-hosted, no worse
+than today. Handout documents the path and that the machine need not be
+always-on (jobs queue while it is offline).
+
 ## 2026-07-31 — PRs #8 and #9 merged; conformance sweep built, verified, archived
 
 **Did**: Un-wedged the repository and shipped the sweep, in that order.

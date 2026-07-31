@@ -9,9 +9,10 @@ unpaid bill, documented in `openspec/backlog/ci-creates-no-runs.md`. No commit
 to this repository can fix it.
 
 Self-hosted runners are not billed, so they are unaffected by the block.
-`.github/workflows/validate.yml` is already wired for one: every job's
-`runs-on` reads the repository variable **`CI_RUNNER`** and falls back to
-`ubuntu-latest` when it is unset. Nothing changes until you flip the variable.
+`.github/workflows/validate.yml` is already wired for one: six jobs read the
+repository variable **`CI_RUNNER`**, and the Docker-dependent `app` job reads
+**`CI_APP_RUNNER`** — each falling back to `ubuntu-latest` when unset.
+Nothing changes until you flip a variable.
 
 > **Not the same thing**: `scripts/check.sh` runs every gate locally and is the
 > current verification story. It proves the code; it cannot green the GitHub
@@ -21,7 +22,7 @@ Self-hosted runners are not billed, so they are unaffected by the block.
 
 ### 1. Register the runner
 
-On a Linux x64 machine that stays up:
+On a Linux x64 machine (always-on not required — see below):
 
 1. GitHub → repository → **Settings → Actions → Runners → New self-hosted
    runner** → pick Linux/x64.
@@ -37,7 +38,24 @@ On a Linux x64 machine that stays up:
 **Settings → Secrets and variables → Actions → Variables → New repository
 variable**: name `CI_RUNNER`, value `self-hosted`.
 
-Every subsequent run routes all seven jobs to your runner. No commit needed.
+Every subsequent run routes **six of the seven jobs** to your runner — the
+four Python check jobs, `tests`, and `validate`. No commit needed.
+
+The seventh, `app`, has its own variable (`CI_APP_RUNNER`) because it is the
+one job that needs **Docker** (a `postgres:16` service container). See the
+next section.
+
+### 2b. No Docker on the machine? That's fine
+
+Set only `CI_RUNNER`. Six jobs go green on your runner; `app` stays on
+GitHub-hosted — red while the account block lasts, which is exactly today's
+state, so nothing gets worse. Its full gate sequence still runs locally via
+`scripts/check.sh` plus `npm run typecheck / lint / test / build`.
+
+To bring `app` over later, either install Docker on the runner machine or
+register a second runner somewhere Docker-capable (give it an extra label,
+e.g. `docker`), then set `CI_APP_RUNNER` to route to it. Or simply leave it
+hosted and let it recover when the account is settled.
 
 ### 3. Verify
 
@@ -49,9 +67,13 @@ on `main`. Watch a job — the runner name should be yours, not `ubuntu-latest`.
 | Requirement | Why |
 |---|---|
 | Linux x64 | The workflow's toolchain downloads assume it |
-| **Docker** (daemon running, runner user in `docker` group) | The `app` job runs a `postgres:16` **service container** — no Docker, no `app` job |
 | ~5 GB free disk | `setup-node`/`setup-python` tool caches, npm cache, checkouts |
 | Outbound HTTPS | github.com, registry.npmjs.org, python toolchain downloads |
+| Docker — **only if routing the `app` job** (`CI_APP_RUNNER`) | Its `postgres:16` **service container**. The six `CI_RUNNER` jobs need no Docker. |
+
+The machine does not need to be always-on: jobs queue while the runner is
+offline and run when it reconnects. A laptop that is usually awake works;
+runs just wait for it.
 
 `setup-python` downloads 3.10–3.13 on first run per version; the matrix job
 will be slow once, then cached.
@@ -80,7 +102,9 @@ To retire the runner: Settings → Actions → Runners → remove; or
 
 ## Current state (2026-07-31)
 
-- Repo side: **done** — `runs-on` routed through `CI_RUNNER` on all jobs.
+- Repo side: **done** — six jobs route through `CI_RUNNER`; `app` (the one
+  Docker-dependent job) through `CI_APP_RUNNER`. Each falls back to
+  GitHub-hosted when its variable is unset.
 - Runner registration: **not detectable from the repo**; no notes or email
   found recording one. If you believe one was registered, the Runners settings
   page is the single source of truth — if it shows a runner Idle, only step 2

@@ -69,7 +69,11 @@ jobs:
 
   app:
     name: app
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    # Routed separately from CI_RUNNER: this is the one job that needs Docker
+    # (the postgres service below). A Docker-less self-hosted runner greens the
+    # other six via CI_RUNNER while this stays GitHub-hosted; point
+    # CI_APP_RUNNER at a Docker-capable runner to bring it over too.
+    runs-on: ${{ vars.CI_APP_RUNNER || 'ubuntu-latest' }}
 
     # The repositories had never executed a statement. Everything they promise —
     # single-use confirmations, single-use OAuth state, the uniqueness one
