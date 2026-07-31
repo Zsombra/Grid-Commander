@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: `main` is current and green (806 vitest + 217 harness tests, typecheck clean). No active changes. 36 open backlog items. One draft PR open: #10 (conformance sweep + CI runner routing); #8 and #9 merged 2026-07-31.
+**State**: `main` is current and green (810 vitest + 217 harness tests, typecheck clean). No active changes. 34 open backlog items. One draft PR open: #10 (conformance sweep + CI runner routing); #8 and #9 merged 2026-07-31.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 7 |
-| Changes (archived) | 51 |
-| Vitest tests | 806 |
+| Changes (archived) | 53 |
+| Vitest tests | 810 |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 36 |
+| Open backlog items | 34 |
 | Design tickets open | 0 |
 | Open draft PRs | 1 — #10 (conformance sweep + CI runner routing) |
 

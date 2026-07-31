@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-07-31 — quality gates made real; a dropped write result now fails the gate
+
+**Did**: Two lite changes, both archived same-session, continuing down the P2
+backlog after the CI routing work.
+
+**`quality-gates-are-real`**: `openspec/config.yaml` carried the template's
+bracketed example `quality_gates` since day one, and named pnpm as the package
+manager while the repo is npm (`package-lock.json`, `npm ci` in CI, no pnpm
+lockfile — a third instance of the same inconsistency the backlog described).
+Now: the six real gates (typecheck, lint, test, build, drizzle-schema check,
+test:db) in config.yaml, and the two checklist lines corrected from pnpm to
+npm. Closed `config-quality-gates-are-placeholders` (P2) and
+`checklist-says-pnpm` (P3).
+
+**`a-dropped-write-result-fails-the-gate`**: the requirement "The Outcome Of A
+Write Reaches The Person Who Asked For It" always carried the scenario that an
+unread result must fail a gating check — the check now exists.
+`tests/architecture/write-results.test.ts` scans `app/**/*.tsx` for
+statement-position `await app.<name>.execute(` and holds every hit against a
+two-way `KNOWN_DROPPED` ledger (new drop fails; fixed-but-listed fails, so the
+ledger only shrinks). It found **five** drops on day one: two benign
+(`rebindAgent`, `applyPlan` — single-arm results, refusals throw), **three
+real** — `setLifecycle` on reactivate and agent-archive drops its
+`not-permitted` arm, `setStrategyActive` on strategy-archive drops `refused`
+and the repair arms. Filed as `three-actions-silence-their-refusals` (P2 bug);
+the fix pattern is the rename action, and each fix must delete its ledger row.
+Closed `no-action-may-discard-a-write-result` (P2).
+
+**Also checked**: `repair-required-cannot-be-detected` (P2) is not actionable
+offline — its own text requires one live observation; it stays open on the
+operator list. Note the strategy-archive drop above would swallow that branch
+even after it becomes reachable — the two items are now cross-linked.
+
+**State**: 0 active changes · 34 open backlog items (4 closed, 1 filed today)
+· 53 archived changes · 810 vitest + 217 harness green, typecheck/lint clean,
+validation 0 errors / 18 warnings.
+
+**Next**: `three-actions-silence-their-refusals` is the natural next change
+(pattern exists, guard enforces completion). Then the remaining P2s. The
+operator list (runner + CI_RUNNER variable, account billing, live key for
+re-probe/apply/repair-observation) is unchanged.
+
 ## 2026-07-31 — CI routed to a self-hosted runner behind a repo variable
 
 **Did**: The operator chose the self-hosted route for `ci-creates-no-runs`

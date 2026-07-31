@@ -2,11 +2,11 @@
 id: config-quality-gates-are-placeholders
 title: openspec/config.yaml still carries placeholder quality_gates
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-31
+change: quality-gates-are-real
 capability: ""
 blocked_by: []
 tags: [config, pipeline]

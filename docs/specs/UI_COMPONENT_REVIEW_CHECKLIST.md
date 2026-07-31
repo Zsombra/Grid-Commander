@@ -367,7 +367,7 @@ A UI change is done when:
 - [ ] Every destructive action names its consequence before it happens
 - [ ] Blast radius is visible before any apply control
 - [ ] No value on screen was computed by the client
-- [ ] `pnpm typecheck` and `pnpm lint` pass
+- [ ] `npm run typecheck` and `npm run lint` pass
 
 ---
 
