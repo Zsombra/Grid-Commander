@@ -106,7 +106,7 @@ Resolved since this table was first written: `strategy-section-editor` (built an
 1. **Fix the CI** — settle the account billing, or go self-hosted: the repo side is done (`validate.yml` routes `runs-on` through the `CI_RUNNER` repository variable; `docs/SELF_HOSTED_RUNNER.md` is the setup handout). Operator steps remaining: register the runner, set `CI_RUNNER=self-hosted` (`ci-creates-no-runs`).
 2. **Re-probe live when the operator has a key** (`observed-data-predates-a-platform-deployment`, P3) — the conformance sweep (done 2026-07-31) found the declared schemas had drifted past the artifact's observed data; one live run closes the generation gap. `two-read-tools-do-not-answer` (P2) is the other declared-vs-actual gap.
 3. **Live apply test** — needs the operator: a real key and a strategy they will let change. `restore-has-never-been-walked` (P2) is the same shape.
-4. **Refresh stale design surfaces** — `strategy-editor`, `agent-roster`, `audit-log`, `strategy-catalog` all changed since their manifests were surveyed; run `/surface` before any design work.
+4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.
 
 (PR #8, `brain-with-no-model`, merged 2026-07-31 — was step 1 of this list.)
 

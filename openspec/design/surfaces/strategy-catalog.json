@@ -1,10 +1,10 @@
 {
   "id": "strategy-catalog",
-  "title": "Strategies \u2014 the roster and what each one governs",
+  "title": "Strategies — the roster and what each one governs",
   "route": "/strategies",
   "capability": "strategy-authoring",
   "status": "functional",
-  "generated_at_commit": "d8c877c",
+  "generated_at_commit": "485342f",
   "source_files": [
     "app/(app)/strategies/page.tsx",
     "src/presentation/components/strategy-list.tsx",
@@ -19,11 +19,11 @@
     {
       "name": "result",
       "shape": "StrategyListResult ('strategies' | 'empty' | 'unreadable')",
-      "source": "app.listStrategies.execute() \u2192 BattleGrid MCP"
+      "source": "app.listStrategies.execute() → BattleGrid MCP"
     },
     {
       "name": "listings",
-      "shape": "StrategyListing[] \u2014 { strategy, governs, editable, forkToEdit }",
+      "shape": "StrategyListing[] — { strategy, governs, editable, fork: {kind:'offered'} | {kind:'withheld', because} }",
       "source": "app.listStrategies.execute()"
     },
     {
@@ -52,25 +52,34 @@
         "strategy-row:inactive",
         "strategy-row:overflow-long-name",
         "fork-capacity-notice:visible",
-        "fork-capacity-notice:hidden"
+        "fork-capacity-notice:hidden",
+        "strategy-row:fork-offered",
+        "strategy-row:fork-withheld"
       ],
       "data": [
         "result",
         "listings",
         "forking"
       ],
-      "actions": [],
-      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed \u2014 the classes now render). The `empty` branch exists now and is its own render, not a length check: it says nothing is listed \u2014 not even BattleGrid's own catalog \u2014 and deliberately offers no next action, because an empty result means there is nothing to fork from either. (`strategy-list-has-no-empty-state` is closed.) The unreadable branch is role=alert with a heading, the raw reason, and the why-not-loaded sentence. | strategy-row: Bordered li; name and a scope/revision caption on one baseline row, optional tagline, then the governs line. No truncation handling for long names or taglines. | fork-capacity-notice: role=status bordered paragraph above the list.",
+      "actions": [
+        {
+          "id": "open-strategy",
+          "effect": "The strategy's name links to /strategies/<id> — the detail page (exists since get_strategy landed)"
+        }
+      ],
+      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). The `empty` branch exists now and is its own render, not a length check: it says nothing is listed — not even BattleGrid's own catalog — and deliberately offers no next action, because an empty result means there is nothing to fork from either. (`strategy-list-has-no-empty-state` is closed.) The unreadable branch is role=alert with a heading, the raw reason, and the why-not-loaded sentence. | strategy-row: Bordered li; name (an underlined link to the strategy detail page) and a scope/revision caption on one baseline row, optional tagline, then the governs line. No truncation handling for long names or taglines. | fork-capacity-notice: role=status bordered paragraph above the list. | fork-withheld: the row renders the reason (fork.because) as plain secondary text in the actions list, where the fork control would have been.",
       "constraints": [
-        "The bound-agent count ('governs') must stay visible on the roster row itself, not behind a hover or a detail click \u2014 a strategy is never an isolated object here, and the count belongs where the user first meets it rather than only in the confirmation, by which point they have already decided",
-        "`unreadable` must keep saying the strategies are not gone. *Why* they could not be shown now varies by cause and must keep varying \u2014 a platform that refused is not a platform that could not be reached, and the distinction between 'you have none', 'we were refused' and 'we could not ask' must survive any redesign",
+        "The bound-agent count ('governs') must stay visible on the roster row itself, not behind a hover or a detail click — a strategy is never an isolated object here, and the count belongs where the user first meets it rather than only in the confirmation, by which point they have already decided",
+        "`unreadable` must keep saying the strategies are not gone. *Why* they could not be shown now varies by cause and must keep varying — a platform that refused is not a platform that could not be reached, and the distinction between 'you have none', 'we were refused' and 'we could not ask' must survive any redesign",
         "Rows with boundAgentCount > 0 are currently emphasised relative to zero-bound rows; that difference must remain perceivable without relying on font-weight alone",
-        "[strategy-row] 'BattleGrid' vs 'Yours' (scope) must remain distinguishable at a glance \u2014 it decides whether the row offers Edit or Fork, and a user who misreads it will try an action the platform refuses",
+        "[strategy-row] 'BattleGrid' vs 'Yours' (scope) must remain distinguishable at a glance — it decides whether the row offers Edit or Fork, and a user who misreads it will try an action the platform refuses",
         "[strategy-row] Revision number must stay attached to the strategy it belongs to; it is the identity users track across edits",
-        "[strategy-row] Long names and taglines must not push the actions out of reach \u2014 currently untested and unhandled",
-        "[fork-capacity-notice] Must stay non-blocking \u2014 it explains a limit, it does not stop the user browsing or editing what they already have",
+        "[strategy-row] Long names and taglines must not push the actions out of reach — currently untested and unhandled",
+        "[fork-capacity-notice] Must stay non-blocking — it explains a limit, it does not stop the user browsing or editing what they already have",
         "[fork-capacity-notice] Announced via role=status; it appears without a user action and must not steal focus",
-        "`empty` is a third branch, distinct from both `default` and `unreadable`, and it offers no action on purpose. `list_strategies` returns BattleGrid's visible catalog alongside the user's own, so an empty result means there is nothing to fork from \u2014 a 'start by forking one of BattleGrid's' affordance would point at something that was not returned, and would read as reassurance"
+        "`empty` is a third branch, distinct from both `default` and `unreadable`, and it offers no action on purpose. `list_strategies` returns BattleGrid's visible catalog alongside the user's own, so an empty result means there is nothing to fork from — a 'start by forking one of BattleGrid's' affordance would point at something that was not returned, and would read as reassurance",
+        "[strategy-row] The name must remain the link to the strategy itself — every row once offered four verbs and no way to look at the thing they act on. The name holds the noun; the actions list holds the verbs",
+        "[strategy-row] A withheld fork must render its reason in the row, where the control would have been — not only as a page-level notice. Twelve rows each saying why read as a screen that knows why it is offering nothing; twelve bare gaps read as one that forgot"
       ],
       "children": [
         "why-not-loaded"
@@ -91,7 +100,7 @@
       "current_implementation": "One <p> inside the unreadable branch of both the roster and the strategy list. The reassurance clause is fixed and outside the conditional; only the cause clause varies. Takes a `subject` string so the two callers share one sentence rather than holding two copies.",
       "constraints": [
         "The reassurance ('this does not mean X are gone') must render in BOTH states. It is the only thing on screen telling a user their work still exists, and it sits outside the branch so neither case can be written without it",
-        "`refused` and `unreachable` must not be collapsed back into one sentence. A refusal means BattleGrid was reached and declined \u2014 waiting changes nothing and the credential is the fix. Unreachable means no usable answer came back \u2014 the credential may be fine and waiting may be exactly right. Naming the wrong one sends a user to wait for an outage that is not happening",
+        "`refused` and `unreachable` must not be collapsed back into one sentence. A refusal means BattleGrid was reached and declined — waiting changes nothing and the credential is the fix. Unreachable means no usable answer came back — the credential may be fine and waiting may be exactly right. Naming the wrong one sends a user to wait for an outage that is not happening",
         "Neither state may be softened into a vague 'something went wrong'. The sentence earns its reassurance by naming a cause that is obviously external and obviously not deletion; a vaguer cause is a weaker reassurance",
         "The cause arrives as a value on the result. Nothing here may re-derive it by matching on the reason text"
       ],
@@ -115,7 +124,7 @@
       ],
       "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment: a personal one resolves the acting user from a configured key and never returns not-connected, so this page cannot render there.",
       "constraints": [
-        "Every cause \u2014 no session, forged cookie, unknown user, revoked connection, unrefreshable token, 401 from BattleGrid \u2014 arrives here and must keep producing one page. They differ in cause and not in remedy, and splitting them visually would imply actions the user does not have (design W-C)",
+        "Every cause — no session, forged cookie, unknown user, revoked connection, unrefreshable token, 401 from BattleGrid — arrives here and must keep producing one page. They differ in cause and not in remedy, and splitting them visually would imply actions the user does not have (design W-C)",
         "Must not imply the user's data is lost"
       ],
       "children": []
@@ -151,6 +160,6 @@
       "fork-capacity-notice",
       "strategy-row actions in list order"
     ],
-    "notes": "Per-row nav is labelled `Actions for <strategy name>`. Load failure is role=alert; fork capacity is role=status. No live region for the list itself \u2014 it is server-rendered and does not update in place."
+    "notes": "Per-row nav is labelled `Actions for <strategy name>`. Load failure is role=alert; fork capacity is role=status. No live region for the list itself — it is server-rendered and does not update in place."
   }
 }

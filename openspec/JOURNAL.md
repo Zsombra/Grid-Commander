@@ -20,6 +20,16 @@ to look for.
 
 **Remaining, operator-only**: register the runner, set `CI_RUNNER=self-hosted`.
 
+**Also this session — stale design surfaces re-surveyed** (`agent-roster`,
+`strategy-catalog`, `audit-log`; `strategy-editor` was already fresh): the
+roster and catalog rows' names became links to their detail pages (recorded
+as actions + must-keep constraints), `agent-actions` gained the two
+always-offered read links (thinking, limits), `strategy-list` gained the
+per-row fork-withheld state (reason rendered where the control would be),
+and `actor-assistant` on the audit log is recorded as historical-only but
+must-keep. Validation: 3 `design_surface_stale` warnings cleared (22 → 19),
+import cross-check quiet. Design work is unblocked.
+
 **Amended same-session** (`dockerless-runner-still-greens-six-jobs`, lite):
 the operator's machine has no Docker, which only the `app` job needs (its
 postgres service container). `app` now routes through its own
