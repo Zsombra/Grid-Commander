@@ -2,11 +2,11 @@
 id: position-management-can-be-edited
 title: Offer the fourteen position-management fields on the edit page, with drift said plainly
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-31
 updated: 2026-07-31
-change: ""
+change: position-management-is-editable
 capability: agent-authoring
 blocked_by: []
 tags: [battlegrid, ui, agent-edit-form]
@@ -44,3 +44,27 @@ this product.
 - The 23-vs-20 projection (`applyEdit`) already handles the read/write
   asymmetry; `positionManagement` is on the writable side.
 - Filed from the close of `a-preset-does-not-constrain-its-config`.
+
+## Closed 2026-07-31 — `position-management-is-editable`
+
+Both pieces shipped through the existing describe→confirm→edit flow:
+
+- **Editing**: the edit page's Position management section — a preset select
+  (catalog presets offered only when their config arrived; choosing one
+  sends the platform's own fourteen values wholesale), CUSTOM (the fourteen
+  fields as edited), or no choice (nothing sent — the object is replaced
+  wholesale, so there is no field-at-a-time). One typed coercion
+  (`positionFromTransport`, field kinds from the domain) serves both the
+  review and the apply, so the value digest the confirmation binds survives
+  the round-trip — the DL-5 lesson applied before it could bite.
+- **Drift**: `positionDrift` (domain) compares the agent's values against
+  the catalog's config for the label it names; the section says "matches"
+  or names exactly the differing fields. CUSTOM and an unanswerable catalog
+  draw no claim.
+- The consequence names what position management becomes; the AL-1 guard
+  caught a preset name in a comment on the way (vocabulary stays read, not
+  written down).
+
+Live proof deferred with the platform outage; the command path is the same
+one the limits edit proved live, and the payload stays inside the shapes
+payload-conformance holds.

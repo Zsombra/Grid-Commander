@@ -1,5 +1,25 @@
 # Journal
 
+## 2026-07-31 — position management: editable, and the label stops lying
+
+**Did**: `position-management-is-editable` (standard, archived) — the second
+offline feature while BattleGrid's outage holds. The edit page gains a
+Position management section: preset select (platform's own fourteen values,
+wholesale), CUSTOM (the fields as edited), or leave-alone (nothing sent);
+the fourteen fields prefilled from the agent's current values. Drift is a
+domain fact now — `positionDrift` names exactly the fields on which an
+agent differs from the preset it claims, and the section says so before
+offering anything. One typed coercion (`positionFromTransport`) serves the
+review and the apply, so the digest-bound confirmation survives the
+round-trip; the consequence names what position management becomes. The
+AL-1 vocabulary guard caught a preset name in a comment mid-build. Closes
+`position-management-can-be-edited`. ADDED requirement in
+`agent-authoring` (4 scenarios), 12 new tests.
+
+**State**: 0 active changes · 27 open backlog items · 63 archived changes ·
+916 vitest (+9 key-gated skips) + 60 db + 217 harness green · validation
+clean. Restore walk still waiting out the platform outage.
+
 ## 2026-07-31 — the pages are finally rendered: naming is enforced, not walked
 
 **Did**: `pages-name-what-they-render` (standard, archived) while BattleGrid's

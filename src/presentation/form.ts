@@ -1,6 +1,25 @@
 import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
 import type { Behavior } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
+import type { Catalog } from '@/domain/agent/catalog.js';
+import {
+  POSITION_MANAGEMENT_FIELDS,
+  positionFieldKind,
+  positionManagementForPreset,
+} from '@/domain/agent/trading-config.js';
+
+/**
+ * The catalog's own values for a named preset, for the route layer — which
+ * may not import the domain (W-D) and so reaches the one rule it needs
+ * through here, exactly as it reaches `editIntent`. Null when the catalog
+ * cannot answer, and the caller refuses rather than substituting.
+ */
+export function presetPosition(
+  catalog: Catalog,
+  preset: string,
+): Readonly<Record<string, unknown>> | null {
+  return positionManagementForPreset(catalog, preset);
+}
 
 /**
  * Reading a submitted form without inventing what it did not contain.
@@ -155,6 +174,58 @@ export const MONEY_FIELDS = [
   'balanceThresholdUsd',
   'minAllocationUsd',
 ] as const;
+
+/**
+ * The position-management object, off its `pm.*` transport fields.
+ *
+ * One typed coercion for both requests that read it — the review (query
+ * string) and the apply (FormData) — because the confirmation is bound to a
+ * digest of the values, and two coercions that disagree about `"3"` versus
+ * `3` refuse every honest edit (DL-5, applied before it can bite here).
+ *
+ * All-or-nothing: absent entirely means "no position change" and returns
+ * null; present but missing a field is a malformed submission and refuses.
+ * A partial object must never reach the platform — `positionManagement` is
+ * replaced wholesale, so an omission is a silent reset.
+ */
+const PM_KEYS = ['positionManagementPreset', ...POSITION_MANAGEMENT_FIELDS] as const;
+
+export function positionFromTransport(
+  source: { get(name: string): string | null | undefined },
+): Record<string, unknown> | null {
+  const raw = new Map<string, string>();
+  for (const key of PM_KEYS) {
+    const value = source.get(`pm.${key}`);
+    if (typeof value === 'string' && value !== '') raw.set(key, value);
+  }
+  if (raw.size === 0) return null;
+
+  const out: Record<string, unknown> = {};
+  for (const key of PM_KEYS) {
+    const value = raw.get(key);
+    const kind = positionFieldKind(key);
+    if (kind === 'boolean') {
+      // A checkbox submits nothing when unchecked; the confirm form writes
+      // 'true'/'false' explicitly. Both spellings land here, and 'false' —
+      // like absence — is false.
+      out[key] = value === 'true' || value === 'on';
+      continue;
+    }
+    if (value === undefined) {
+      throw new FormError(`pm.${key}`, `position management arrived without "${key}"`);
+    }
+    if (kind === 'text') {
+      out[key] = value;
+      continue;
+    }
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      throw new FormError(`pm.${key}`, `"${key}" must be a number`);
+    }
+    out[key] = parsed;
+  }
+  return out;
+}
 
 export function editIntent(
   source: { get(name: string): string | null | undefined },

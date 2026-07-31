@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (904 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 28 open backlog items. #8–#15 merged 2026-07-31.
+**State**: green (916 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 27 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 62 |
-| Vitest tests | 904 (+9 key-gated live) + 60 db |
+| Changes (archived) | 63 |
+| Vitest tests | 916 (+9 key-gated live) + 60 db |
 | Harness tests (Python) | 217 |
 | Active changes | 0 |
-| Open backlog items | 28 |
+| Open backlog items | 27 |
 | Design tickets open | 0 |
 | Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
@@ -50,7 +50,7 @@ All development branches have been merged. `main` is the single source of truth.
 Against a real connected BattleGrid account a user can:
 
 - **Connect** their account (OAuth/DCR/PKCE, no raw credential ever touches the browser)
-- **Agents**: view roster, create, rename, update trading limits, rebind to a strategy, archive, reactivate
+- **Agents**: view roster, create, rename, update trading limits, edit position management (a preset with the platform's own values or fourteen custom fields, drift between label and values said plainly), rebind to a strategy, archive, reactivate
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
 - **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
@@ -87,7 +87,7 @@ Resolved since this table was first written: `confirmation-is-not-bound-to-value
 **Hard limits** (not bugs — these are constraints imposed by BattleGrid's API):
 
 - Agent edit form only exposes rename and trading limits — the read and write schemas for `tradingConfig` differ (3 fields come back on read, are rejected on write with `additionalProperties: false`)
-- Position-management preset is a label alongside 14 independent values, not a shorthand — a preset dropdown cannot be the edit surface
+- Position-management preset is a label alongside 14 independent values, not a shorthand — the edit surface therefore offers the fourteen fields and says when the label and values disagree (shipped 2026-07-31)
 
 ---
 

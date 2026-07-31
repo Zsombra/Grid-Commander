@@ -1,6 +1,11 @@
 import type { Agent } from '@/domain/agent/agent.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { isEditable, isReactivatable } from '@/domain/agent/agent.js';
+import {
+  POSITION_MANAGEMENT_FIELDS,
+  positionDrift,
+  positionFieldKind,
+} from '@/domain/agent/trading-config.js';
 import { CONTROL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
@@ -132,6 +137,8 @@ export function AgentEditForm({
          */}
         <MoneyLimits catalog={catalog} current={agent.tradingConfig?.fields} />
 
+        <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} />
+
         <div className="flex flex-wrap gap-3">
           <button type="submit" className="rounded border px-4 py-2 text-sm">
             Review the change
@@ -155,6 +162,97 @@ export function AgentEditForm({
 }
 
 /**
+ * How an agent exits its positions, with the truth about the label.
+ *
+ * The drift line comes first because it is the fact the label hides: a
+ * preset is a name beside fourteen independent values and nothing on the
+ * platform makes them agree, so an agent may name one preset and carry
+ * values that are not that preset's. The choice semantics are stated on the control:
+ * a preset sends BattleGrid's own values wholesale, CUSTOM sends the
+ * fields below as edited, and no choice sends nothing at all — position
+ * management is replaced as one object, so there is no field-at-a-time.
+ */
+export function PositionManagement({
+  catalog,
+  current,
+}: {
+  catalog: Catalog;
+  current: Readonly<Record<string, unknown>> | undefined;
+}) {
+  const pm = (current?.['positionManagement'] ?? null) as Readonly<
+    Record<string, unknown>
+  > | null;
+  const drift = pm ? positionDrift(pm, catalog) : null;
+  const label = typeof pm?.['positionManagementPreset'] === 'string'
+    ? (pm['positionManagementPreset'] as string)
+    : null;
+  const offerable = catalog.positionManagementPresets.filter((p) => p.config !== null);
+
+  return (
+    <section className="space-y-3">
+      <h2 className="font-medium">Position management</h2>
+
+      {drift && drift.differing.length > 0 ? (
+        <p role="status" className="rounded border p-3 text-sm">
+          This agent names {drift.preset}, but its values differ from the
+          catalog&apos;s {drift.preset} on: {drift.differing.join(', ')}. The
+          label is not the truth here — the fields below are.
+        </p>
+      ) : drift ? (
+        <p className="text-sm">Matches the catalog&apos;s {drift.preset} exactly.</p>
+      ) : label === 'CUSTOM' ? (
+        <p className="text-sm">CUSTOM — these fourteen values are this agent&apos;s own.</p>
+      ) : null}
+
+      <label className="block text-sm">
+        Manage like
+        <select name="pmPreset" defaultValue="" className={CONTROL}>
+          <option value="">Leave it as it is</option>
+          {offerable.map((p) => (
+            <option key={p.preset} value={p.preset}>
+              {p.label} — BattleGrid&apos;s own values
+            </option>
+          ))}
+          <option value="CUSTOM">CUSTOM — the fields below, as edited</option>
+        </select>
+      </label>
+      <p className="text-sm text-text-secondary">
+        Picking a preset sends BattleGrid&apos;s fourteen values for it and the
+        fields below are ignored. Picking CUSTOM sends the fields below exactly
+        as edited. Leaving the choice alone changes nothing here.
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {POSITION_MANAGEMENT_FIELDS.map((field) => {
+          const kind = positionFieldKind(field);
+          const value = pm?.[field];
+          if (kind === 'boolean') {
+            return (
+              <label key={field} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name={`pm.${field}`} defaultChecked={value === true} />
+                {field}
+              </label>
+            );
+          }
+          return (
+            <label key={field} className="block text-sm">
+              {field}
+              <input
+                type={kind === 'number' ? 'number' : 'text'}
+                step="any"
+                name={`pm.${field}`}
+                defaultValue={value === undefined ? '' : String(value)}
+                className={CONTROL}
+              />
+            </label>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/**
  * What the confirmation was issued against, rendered so a person reads it.
  *
  * The consequence is passed in rather than composed here: it is the same string
@@ -162,11 +260,11 @@ export function AgentEditForm({
  * the audit can later prove are one thing rather than three that drift. Same
  * reasoning as `RebindConfirm`.
  *
- * The submitted values ride along as hidden fields. Note the limit of that:
- * `consume(token, userId, tool, target)` matches on the agent, not on the
- * values, so a token issued for one set would be accepted with another if these
- * fields were edited. That is a product-wide property — `rebind` carries
- * `toStrategyId` the same way — and it is filed rather than half-fixed here.
+ * The submitted values ride along as hidden fields — and editing them buys
+ * nothing: the confirmation's target digests the proposed values, so a form
+ * posting different ones fails to consume the token. That property arrived
+ * with `a-confirmation-binds-to-what-was-agreed`; an earlier version of this
+ * comment predates it.
  */
 export function AgentEditConfirm({
   agent,
@@ -174,6 +272,7 @@ export function AgentEditConfirm({
   confirmationToken,
   changes,
   tradingConfigChanges,
+  positionChanges,
   action,
 }: {
   agent: Agent;
@@ -190,6 +289,13 @@ export function AgentEditConfirm({
    */
   changes: Readonly<Record<string, string | number>>;
   tradingConfigChanges: Readonly<Record<string, string | number>>;
+  /**
+   * The resolved position-management object, when the proposal carries one.
+   * Serialized as `pm.*` fields and read back by the same typed coercion the
+   * review used — String→Number and 'true'→true round-trip losslessly, so
+   * the digest the apply recomputes is the digest the token was issued for.
+   */
+  positionChanges?: Readonly<Record<string, unknown>> | null;
   action: (formData: FormData) => Promise<void>;
 }) {
   return (
@@ -207,6 +313,9 @@ export function AgentEditConfirm({
       ))}
       {Object.entries(tradingConfigChanges).map(([k, v]) => (
         <input key={k} type="hidden" name={`tc.${k}`} value={v} />
+      ))}
+      {Object.entries(positionChanges ?? {}).map(([k, v]) => (
+        <input key={`pm.${k}`} type="hidden" name={`pm.${k}`} value={String(v)} />
       ))}
 
       <div className="flex flex-wrap gap-3">
