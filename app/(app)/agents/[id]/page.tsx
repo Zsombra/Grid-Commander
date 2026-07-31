@@ -105,22 +105,38 @@ export default async function AgentPage({
       <section className="space-y-1">
         <h2 className="font-medium">Deployment</h2>
         {radar.kind === 'deployed' ? (
-          <ul className="space-y-1 text-sm">
-            {radar.deployments.map((d) => (
-              <li key={`${d.coinTicker}-${d.timeframe}`}>
-                {d.standing === 'holding-position'
-                  ? `Holding the position on ${d.coinTicker} (${d.timeframe} radar).`
-                  : d.standing === 'on-duty'
-                    ? `On duty: scanning ${d.coinTicker} on the ${d.timeframe} radar.`
-                    : `In the rotation for ${d.coinTicker} (${d.timeframe} radar), not on duty right now.`}
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="space-y-1 text-sm">
+              {radar.deployments.map((d) => (
+                <li key={`${d.coinTicker}-${d.timeframe}`}>
+                  {d.standing === 'holding-position'
+                    ? `Holding the position on ${d.coinTicker} (${d.timeframe} radar).`
+                    : d.standing === 'on-duty'
+                      ? `On duty: scanning ${d.coinTicker} on the ${d.timeframe} radar.`
+                      : `In the rotation for ${d.coinTicker} (${d.timeframe} radar), not on duty right now.`}{' '}
+                  <a
+                    href={`/agents/${agent.id}/undeploy/${encodeURIComponent(d.coinTicker)}`}
+                    className="underline"
+                  >
+                    Undeploy
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm">
+              <a href={`/agents/${agent.id}/deploy`} className="underline">
+                Deploy to another market
+              </a>
+            </p>
+          </>
         ) : radar.kind === 'not-deployed' ? (
           <p className="text-sm">
             Not deployed on the radar. This agent is configured, but it is not
-            scanning any market — deploying it to a coin happens on
-            battlegrid.trade&apos;s Radar for now.
+            scanning any market.{' '}
+            <a href={`/agents/${agent.id}/deploy`} className="underline">
+              Deploy it to a market
+            </a>
+            .
           </p>
         ) : (
           <p role="status" className="text-sm">

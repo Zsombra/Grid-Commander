@@ -11,6 +11,12 @@
 export interface RadarDeployment {
   readonly policyId: string;
   readonly coinTicker: string;
+  /**
+   * The platform's optimistic-concurrency counter for this policy. Every
+   * write must present it as `expectedRevision`; a stale value is refused by
+   * BattleGrid, which is the protection working.
+   */
+  readonly revision: number;
   readonly timeframe: string;
   readonly enabled: boolean;
   /** Every agent slotted into this deployment's rotation. */

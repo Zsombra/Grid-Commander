@@ -22,6 +22,12 @@ import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js'
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
 import { ReadDeploymentsQuery } from './application/use-cases/read-deployments.query.js';
+import {
+  DescribeDeployQuery,
+  DescribeUndeployQuery,
+  PerformDeployCommand,
+  PerformUndeployCommand,
+} from './application/use-cases/deploy-agent.command.js';
 import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
@@ -201,6 +207,12 @@ export function app(cookies: CookieStore) {
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar),
+    // Deploy and undeploy follow the same split: the describe reads the radar
+    // fresh, states the consequence, and mints the token the perform spends.
+    describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
+    performDeploy: new PerformDeployCommand(i.radar),
+    describeUndeploy: new DescribeUndeployQuery(i.radar, i.confirmations, random, systemClock),
+    performUndeploy: new PerformUndeployCommand(i.radar),
     // Mints the confirmation `updateAgent` consumes. Separate objects on
     // purpose: the thing that performs the write must not be the thing that
     // authorises it.

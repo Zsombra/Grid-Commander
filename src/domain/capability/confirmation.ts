@@ -90,6 +90,19 @@ export const confirmationTarget = {
   agentRebind: (agentId: string, toStrategyId: string): string =>
     `agent:${agentId}->strategy:${toStrategyId}`,
 
+  /**
+   * Deploying binds the *pair* — this agent, that market — and the verb.
+   * Deploy and undeploy are opposite acts on the same pair, so they must not
+   * share a target: a token agreeing to stop an agent could otherwise be
+   * spent starting it. The timeframe and revision are deliberately not bound;
+   * the platform's own `expectedRevision` check refuses a stale submission.
+   */
+  agentDeploy: (agentId: string, coinId: string): string =>
+    `agent:${agentId}=>coin:${coinId}`,
+
+  agentUndeploy: (agentId: string, coinId: string): string =>
+    `agent:${agentId}=/=coin:${coinId}`,
+
   /** Archive, restore. The revision comes from a re-read, not from the form. */
   strategy: (strategyId: string): string => strategyId,
 

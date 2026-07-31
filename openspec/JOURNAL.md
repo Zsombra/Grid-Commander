@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-07-31 — deploy and undeploy are offered; the create path turned out not to exist
+
+**Did**: `deploy-and-undeploy-are-offered` (full track, proposed → planned →
+executed → gated PASS → archived): step 2 of the deployment gap, the first
+destructive radar surface. New capability `agent-deployment`. RadarPort gains
+`upsertDeployment` / `deleteDeployment` / `deploymentTimeframes` (the enum
+read from the runtime-discovered upsert schema, never compiled in);
+`confirmationTarget.agentDeploy/agentUndeploy` bind the agent+coin pair AND
+the verb; describe→confirm→perform pairs mint and spend tokens the performs
+recompute from submitted values — a tampered coin spends nothing. Pages:
+`/agents/[id]/deploy` (coin + runtime timeframe chooser → consequence →
+confirm) and `/agents/[id]/undeploy/[coin]` (coin as a path segment so the
+reachability walk sees a plain link), wired from the agent page's deployment
+rows. `RadarDeployment` now carries `revision`; the mapper refuses a policy
+without one — a defaulted 0 would feed a blind write.
+
+**The unknown resolved against everyone's expectation**: the proposal's plan
+was to verify the first-deploy `expectedRevision` with an enabled:false
+probe. The live answer (AAVE, verbatim payloads in DL-3): the schema demands
+`expectedRevision > 0`, and a coin with no policy answers every value with
+`CONFLICT … actualRevision: null`. **The MCP surface cannot create a
+market's first deployment — only replace or remove existing ones.** The
+describe now refuses unoccupied coins with that reason; filed as
+`radar-first-deployment-not-creatable-over-mcp` (the create-refusal live
+test fails the day BattleGrid changes this). Live proof of the path that
+does exist: HYPE replaced-in-place through the product commands (r1→r2, read
+back). Undeploy is composition-proven, deliberately not live-walked — the
+only deletable deployments are the operator's real ones (DL-4).
+
+**Guards that shaped it**: concurrency (no `?? 0` on a revision),
+reachability (query-string links are invisible → the `[coin]` segment),
+controls (CONTROL treatment), the entity heuristic refined (a dynamic
+segment under an entity is scoped, not an entity). `tests/live/radar-probe.test.ts`
+joins write-probe as a key-gated live gate.
+
+**State**: 0 active changes · 32 open backlog items · 59 archived changes ·
+8 capabilities · 883 vitest (+8 key-gated skips) + 60 db + 217 harness green ·
+validation 0 errors. `the-app-authors-agents-it-cannot-deploy` closed (both
+steps shipped).
+
 ## 2026-07-31 — PR #11 merged; the roster says who is acting
 
 **Did**: Merged PR #11 (presets, deployment visibility, binding guard, product
