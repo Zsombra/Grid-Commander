@@ -1,5 +1,34 @@
 # Journal
 
+## 2026-07-31 — an agent now says whether it is acting
+
+**Did**: `an-agent-says-whether-it-is-acting` (standard, proposed → executed →
+archived): the read-only half of the deployment gap found this morning. New
+radar read path — `RadarPort` / `McpRadarAdapter` over
+`list_radar_deployments` (mapped against the same-day observed shape),
+`ReadDeploymentsQuery` answering per agent — and a Deployment section on the
+agent detail page with three distinct states: each deployment's market,
+timeframe and standing (holding the position / on duty / in the rotation);
+"configured but scanning nothing", naming battlegrid.trade's Radar as where
+deployment happens today; and unreadable-as-unknown, never dressed as idle.
+
+**The guard that improved the design**: the identifiers scan refused the first
+mapper, which silently dropped malformed policies — and it was right for a
+deeper reason than identifiers: a dropped policy would render its slotted
+agent as "not deployed", the exact lie the unreadable state exists to prevent,
+one level down. The mapper now refuses the whole read (`RadarPayloadError` →
+unreadable) rather than dropping rows.
+
+**Live-proven on day one**: VELOCITY → deployed / on-duty / HYPE / 15m;
+Fade Master → not-deployed. Same facts the morning's raw investigation found,
+now spoken by the product path.
+
+**Spec**: 1 ADDED requirement in `agent-understanding`. 17 new tests.
+
+**State**: 0 active changes · 32 open backlog items · 57 archived changes ·
+857 vitest + 217 harness green · validation 0 errors. Left on the item: the
+roster indicator, and the guarded deploy/undeploy writes (step 2).
+
 ## 2026-07-31 — the operator's product model, and the go button the app doesn't have
 
 **Did**: The operator described BattleGrid as they use it — four modules:

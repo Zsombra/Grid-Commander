@@ -46,6 +46,8 @@ export default async function AgentPage({
     );
   }
 
+  const radar = await app.readDeployments.execute({ ...user.authority, agentId: agent.id });
+
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
@@ -90,6 +92,41 @@ export default async function AgentPage({
           */}
           Money limits: <MoneySummary agent={agent} />
         </p>
+      </section>
+
+      {/**
+       * Whether this agent is doing anything, from the radar — the fact its
+       * lifecycle status hides. ACTIVE means configured; only a radar
+       * deployment means scanning. The operator's account proved it: two
+       * ACTIVE agents, zero positions, absent from every slot, and nothing on
+       * this page said so. Three states, rendered distinctly — an unreadable
+       * radar must never dress up as "not deployed".
+       */}
+      <section className="space-y-1">
+        <h2 className="font-medium">Deployment</h2>
+        {radar.kind === 'deployed' ? (
+          <ul className="space-y-1 text-sm">
+            {radar.deployments.map((d) => (
+              <li key={`${d.coinTicker}-${d.timeframe}`}>
+                {d.standing === 'holding-position'
+                  ? `Holding the position on ${d.coinTicker} (${d.timeframe} radar).`
+                  : d.standing === 'on-duty'
+                    ? `On duty: scanning ${d.coinTicker} on the ${d.timeframe} radar.`
+                    : `In the rotation for ${d.coinTicker} (${d.timeframe} radar), not on duty right now.`}
+              </li>
+            ))}
+          </ul>
+        ) : radar.kind === 'not-deployed' ? (
+          <p className="text-sm">
+            Not deployed on the radar. This agent is configured, but it is not
+            scanning any market — deploying it to a coin happens on
+            battlegrid.trade&apos;s Radar for now.
+          </p>
+        ) : (
+          <p role="status" className="text-sm">
+            Whether this agent is deployed could not be read: {radar.reason}
+          </p>
+        )}
       </section>
 
       {problem ? (

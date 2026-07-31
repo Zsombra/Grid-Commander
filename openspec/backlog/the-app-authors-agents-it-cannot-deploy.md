@@ -6,7 +6,7 @@ status: open
 priority: p2
 created: 2026-07-31
 updated: 2026-07-31
-change: ""
+change: an-agent-says-whether-it-is-acting
 capability: ""
 blocked_by: []
 tags: [battlegrid, radar, deployment]
@@ -41,3 +41,18 @@ Live account 2026-07-31: 3 policies (FARTCOIN/HYPE/PURR, 15m, one slot each)
 filled by the 3 agents the platform counts as active; the 2 undeployed
 lifecycle-ACTIVE agents hold zero positions. `docs/BATTLEGRID_PRODUCT_MODEL.md`
 carries the operator's module model this confirms.
+
+## Step 1 done 2026-07-31 — what is left
+
+The read-only half shipped (`an-agent-says-whether-it-is-acting`): the agent
+detail page states each deployment's market, timeframe and standing (holding
+the position / on duty / in the rotation), says plainly when an agent is
+configured but scanning nothing (naming battlegrid.trade's Radar as where
+deployment happens today), and renders an unreadable radar as unknown — never
+as idle. Live-proven same day: VELOCITY → deployed/on-duty/HYPE/15m,
+Fade Master → not-deployed.
+
+Left on this item: the roster indicator (a glanceable deployed/idle mark per
+row), and step 2 — the guarded deploy/undeploy writes
+(`upsert_radar_deployment` / `delete_radar_deployment` with a confirmation
+naming the agent, the coin, and what starts or stops happening).

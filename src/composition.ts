@@ -21,6 +21,7 @@ import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journa
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
+import { ReadDeploymentsQuery } from './application/use-cases/read-deployments.query.js';
 import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
@@ -40,6 +41,7 @@ import {
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
+import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -87,6 +89,7 @@ interface Infrastructure {
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
+  readonly radar: McpRadarAdapter;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
@@ -130,6 +133,7 @@ function infrastructure(): Infrastructure {
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
+    radar: new McpRadarAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
@@ -196,6 +200,7 @@ export function app(cookies: CookieStore) {
     updateAgent: new UpdateAgentCommand(i.agents),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
+    readDeployments: new ReadDeploymentsQuery(i.radar),
     // Mints the confirmation `updateAgent` consumes. Separate objects on
     // purpose: the thing that performs the write must not be the thing that
     // authorises it.
