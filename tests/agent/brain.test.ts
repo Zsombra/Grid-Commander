@@ -60,4 +60,9 @@ describe('rendering a brain for BattleGrid', () => {
     expect(argument['behavior']).toEqual(CUSTOM.behavior);
     expect(argument['behavior']).not.toBe(CUSTOM.behavior);
   });
+
+  it('throws when called with an unknown brain — it must never reach a write', () => {
+    const unknown: Brain = { kind: 'unknown' };
+    expect(() => brainToArgument(unknown)).toThrow();
+  });
 });

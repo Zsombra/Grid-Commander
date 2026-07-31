@@ -57,9 +57,15 @@ wait for an outage that is not happening.
 - **AND** is not re-derived by inspecting the message text
 
 ### Requirement: Agent Fields Are Offered Only From Values The Platform Confirms
+
 Where a field has a set of valid values or a permitted range, Grid-Commander
 SHALL obtain it from BattleGrid at the time of use. It MUST NOT offer a value,
 or accept one, on the basis of a list fixed at build time.
+
+Where the platform returns an agent whose brain cannot be described — neither a
+named preset nor a model identifier is present — Grid-Commander SHALL record
+and present it as undescribed. It MUST NOT fabricate a brain variant from
+absent data.
 
 #### Scenario: Choosing a brain
 - **WHEN** a user chooses the model an agent reasons with
@@ -77,6 +83,14 @@ or accept one, on the basis of a list fixed at build time.
 - **THEN** creation is not offered
 - **AND** the user is told why, rather than shown a form whose submission will
   fail
+
+#### Scenario: A brain the platform did not describe
+- **WHEN** BattleGrid returns an agent carrying neither a brain preset nor a
+  model identifier
+- **THEN** the brain is mapped as undescribed, not as a custom brain with an
+  empty model
+- **AND** it is shown to the user as undescribed rather than blank or
+  defaulted to any particular model
 
 ### Requirement: Capacity Limits Are Explained Before The Work, Not After
 Where the platform limits how many agents a user may have, Grid-Commander SHALL

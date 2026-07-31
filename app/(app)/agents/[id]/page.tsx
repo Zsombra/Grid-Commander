@@ -75,7 +75,11 @@ export default async function AgentPage({
         <h2 className="font-medium">Owned by the agent</h2>
         <p className="text-sm">
           Brain:{' '}
-          {agent.brain.kind === 'preset' ? agent.brain.preset : agent.brain.modelId}
+          {agent.brain.kind === 'preset'
+            ? agent.brain.preset
+            : agent.brain.kind === 'custom'
+            ? agent.brain.modelId
+            : 'Not configured'}
         </p>
         <p className="text-sm">
           {/*
