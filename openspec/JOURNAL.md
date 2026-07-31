@@ -1,5 +1,23 @@
 # Journal
 
+## 2026-07-31 — PR #11 merged; the roster says who is acting
+
+**Did**: Merged PR #11 (presets, deployment visibility, binding guard, product
+model — squash `b43acba`) under the operator's standing delegation, restarted
+the branch, and shipped the roster half of deployment visibility
+(`the-roster-says-who-is-acting`, lite, archived): every roster row now
+carries its agent's deployment line — same words as the detail page, produced
+by the same domain derivation (`deploymentsByAgent`), so the two surfaces
+cannot disagree — or "Not deployed — scanning no market". An unreadable radar
+is one notice above the list and no per-row claim. MODIFIED requirement in
+`agent-understanding` gains the roster scenario. agent-roster surface
+manifest refreshed at 4ea8f4b.
+
+**State**: 0 active changes · 32 open backlog items · 58 archived changes ·
+862 vitest + 217 harness green · validation 0 errors. Left on the deployment
+item: step 2 only — the guarded deploy/undeploy writes, recommended for a
+fresh session (first destructive radar surface; wants full ceremony).
+
 ## 2026-07-31 — an agent now says whether it is acting
 
 **Did**: `an-agent-says-whether-it-is-acting` (standard, proposed → executed →

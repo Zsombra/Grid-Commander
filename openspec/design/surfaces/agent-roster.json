@@ -4,7 +4,7 @@
   "route": "/agents",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "485342f",
+  "generated_at_commit": "4ea8f4b",
   "source_files": [
     "app/(app)/agents/page.tsx",
     "src/presentation/components/agent-roster.tsx",
@@ -42,11 +42,15 @@
         "create-unknown",
         "agent-row:active",
         "agent-row:archived",
-        "agent-row:overflow-long-name"
+        "agent-row:overflow-long-name",
+        "agent-row:deployment-acting",
+        "agent-row:deployment-waiting",
+        "deployment-unavailable"
       ],
       "data": [
         "roster",
-        "creation"
+        "creation",
+        "deployments"
       ],
       "actions": [
         {
@@ -54,7 +58,7 @@
           "effect": "The agent's name links to /agents/<id> — the detail page holding the binding, the brain, the money summary and the rename form"
         }
       ],
-      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). Three top-level branches rendered separately — agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name (an underlined link to the agent detail page) and status on one baseline row, then the binding sentence. No truncation handling.",
+      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). Three top-level branches rendered separately — agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name (an underlined link to the agent detail page) and status on one baseline row, then the binding sentence. No truncation handling. | deployment line (added 4ea8f4b): each row states the agent's radar deployments (market, timeframe, standing) or 'Not deployed — scanning no market'; when the radar is unreadable, one role=status notice covers the list and rows carry no deployment line.",
       "constraints": [
         "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own — or concludes something deleted it",
         "`unreadable` must keep stating what is unavailable as its own condition, not as a pronoun pointing at the sentence above it. It read 'nothing can be created or changed until it can' while the preceding clause was always 'could not reach BattleGrid'; once that clause started varying by cause, the antecedent disappeared. It is a capability statement, not only an error",
@@ -63,7 +67,9 @@
         "[agent-row] The bound strategy *and its revision* must stay together — the revision is what tells a user whether this agent has picked up a recent edit",
         "[agent-row] Status must not be signalled by colour alone",
         "[agent-row] Long display names must not push the status out of view",
-        "[agent-row] The name must remain the link to the agent itself. The row once offered six sub-pages and no way to open /agents/<id> — the only live route to an agent was the cancel link on its own archive page. The name holds the noun; the actions list holds the verbs"
+        "[agent-row] The name must remain the link to the agent itself. The row once offered six sub-pages and no way to open /agents/<id> — the only live route to an agent was the cancel link on its own archive page. The name holds the noun; the actions list holds the verbs",
+        "[agent-row] The deployment line uses the same words as the detail page's Deployment section — the two surfaces must not disagree about what an agent is doing",
+        "An unreadable radar renders as one notice for the whole list and NO per-row claim. A hiccup must never relabel a scanning agent as idle, nor an idle one as scanning"
       ],
       "children": [
         "agent-actions",

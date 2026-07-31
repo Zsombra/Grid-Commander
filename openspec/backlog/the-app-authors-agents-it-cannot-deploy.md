@@ -52,7 +52,7 @@ deployment happens today), and renders an unreadable radar as unknown — never
 as idle. Live-proven same day: VELOCITY → deployed/on-duty/HYPE/15m,
 Fade Master → not-deployed.
 
-Left on this item: the roster indicator (a glanceable deployed/idle mark per
-row), and step 2 — the guarded deploy/undeploy writes
+The roster indicator shipped too (`the-roster-says-who-is-acting`,
+2026-07-31). Left on this item: step 2 — the guarded deploy/undeploy writes
 (`upsert_radar_deployment` / `delete_radar_deployment` with a confirmation
 naming the agent, the coin, and what starts or stops happening).
