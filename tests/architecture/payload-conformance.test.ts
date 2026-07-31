@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { Brain } from '@/domain/agent/brain.js';
+import { compileUpdateIntent } from '@/domain/strategy/compiled-plan.js';
 import {
   applyEdit,
   buildTradingConfig,
@@ -304,20 +305,18 @@ describe('every payload the product constructs can succeed', () => {
   });
 
   it('compile_strategy_plan — the UPDATE request the edit page composes', () => {
-    // Mirrors the `intent` literal in app/(app)/strategies/[id]/edit/page.tsx —
-    // there is no exported builder for it, deliberately (it is page state). If
-    // the page's shape drifts from this one, that drift is invisible here; the
-    // shape lives in two places and both say so.
-    const intent = {
-      operation: 'UPDATE' as const,
+    // The same builder the page calls (`compileUpdateIntent`), so a drift in
+    // the page's shape is a drift in this payload — the mirror this used to
+    // be could keep checking yesterday's shape and pass
+    // (`compile-intent-shape-lives-in-two-places`).
+    const intent = compileUpdateIntent({
       strategyId: 's1',
       expectedRevision: 4,
       intentSummary: 'Change the sections of Momentum',
       assumptions: ['Only the sections change'],
-      coinSelection: { mode: 'ranked' as const, limit: 9 },
       tagline: 'Ride the wave',
       sections: [{ kind: 'platform', sectionKey: 'includeRsi' }],
-    };
+    });
     // The adapter's call() wraps ENVELOPED tools as { request: payload }.
     expect(violations(toolOrThrow('compile_strategy_plan'), { request: intent })).toEqual([]);
   });

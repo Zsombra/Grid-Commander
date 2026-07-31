@@ -14,12 +14,14 @@ export interface Rebind {
   readonly fromStrategyName: string;
   readonly toStrategyId: string;
   readonly toStrategyName: string;
+  /** The destination as it was when described. Bound into the confirmation. */
+  readonly toStrategyRevision: number;
   readonly expectedRevision: number;
 }
 
 export function planRebind(
   agent: Agent,
-  target: { id: string; name: string },
+  target: { id: string; name: string; revision: number },
 ): Rebind {
   return {
     agentId: agent.id,
@@ -27,6 +29,7 @@ export function planRebind(
     fromStrategyName: agent.binding.strategyName,
     toStrategyId: target.id,
     toStrategyName: target.name,
+    toStrategyRevision: target.revision,
     expectedRevision: agent.revision,
   };
 }
@@ -52,7 +55,8 @@ export function planRebind(
 export function describeRebind(rebind: Rebind): string {
   return (
     `${rebind.agentName} will be rebound from "${rebind.fromStrategyName}" to ` +
-    `"${rebind.toStrategyName}". Everything ${rebind.agentName} inherited from ` +
+    `"${rebind.toStrategyName}" at revision ${rebind.toStrategyRevision}. ` +
+    `Everything ${rebind.agentName} inherited from ` +
     `"${rebind.fromStrategyName}" — its context sources, signal rules, prose and ` +
     `timeframe — will be replaced by "${rebind.toStrategyName}"'s, not merged with ` +
     `them. Its name, brain and money limits are not affected.`

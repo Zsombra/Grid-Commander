@@ -1,6 +1,9 @@
 import type { AuditActor } from '@/domain/audit/audit-entry.js';
 import type { AuditWriter } from '@/domain/audit/audit-repository.js';
-import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
+import type {
+  ConfirmationRefusalCause,
+  ConfirmationStore,
+} from '@/domain/capability/confirmation.js';
 import type { ToolClass } from '@/domain/capability/tool-class.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import {
@@ -69,17 +72,28 @@ export async function beginGuardedCall(
     if (!call.confirmationToken || !call.target) {
       throw new ConfirmationRequiredError(call.tool, 'no confirmation was supplied');
     }
+    const { confirmationToken, target } = call;
     const confirmed = await deps.confirmations.consume(
-      call.confirmationToken,
+      confirmationToken,
       call.userId,
       call.tool,
-      call.target,
+      target,
     );
     if (!confirmed) {
-      throw new ConfirmationRequiredError(
+      /**
+       * Which way it failed, because each cause has a different next step.
+       * One composite sentence stood here for four situations, and the most
+       * informative thing the page could say — "the values changed since you
+       * agreed" — was unavailable. The diagnosis is a read-only post-mortem;
+       * `consume` above stays the single atomic spender.
+       */
+      const cause = await deps.confirmations.diagnose(
+        confirmationToken,
+        call.userId,
         call.tool,
-        'the confirmation was invalid, expired, already used, or issued for something else',
+        target,
       );
+      throw new ConfirmationRequiredError(call.tool, CONFIRMATION_REFUSALS[cause]);
     }
   }
 
@@ -92,6 +106,17 @@ export async function beginGuardedCall(
     idempotencyKey: call.idempotencyKey ?? null,
   });
 }
+
+/** What to say for each way a confirmation can fail — each names a next step. */
+const CONFIRMATION_REFUSALS: Readonly<Record<ConfirmationRefusalCause, string>> = {
+  expired:
+    'the confirmation expired — nothing is wrong; review the change and agree to it again',
+  'already-used':
+    'this confirmation was already used — the change may have landed; check its state before retrying',
+  mismatched:
+    'what was submitted is not what was agreed to — the values changed since the consequence was read; review it again',
+  unknown: 'the confirmation is not recognised — start the change again',
+};
 
 /** BattleGrid's way of saying the state moved on. */
 const CONFLICT_MARKERS = ['expectedrevision', 'revision mismatch', 'revision drift', 'conflict'];

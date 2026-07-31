@@ -110,6 +110,44 @@ describe('beginGuardedCall', () => {
       ).rejects.toBeInstanceOf(ConfirmationRequiredError);
     });
 
+    it('names which way a confirmation failed — each cause has a different next step', async () => {
+      const issue = (over: Partial<Parameters<typeof confirmations.issue>[0]> = {}) =>
+        confirmations.issue({
+          token: 't-cause',
+          userId: 'u1',
+          tool: 'archive_strategy',
+          target: 's-1',
+          consequence: 'Archives it.',
+          expiresAt: new Date(clock.now().getTime() + 300_000),
+          consumedAt: null,
+          ...over,
+        });
+      const attempt = () =>
+        beginGuardedCall(deps(), {
+          userId: 'u1',
+          tool: 'archive_strategy',
+          classification: DESTRUCTIVE,
+          target: 's-1',
+          confirmationToken: 't-cause',
+        }).then(() => null).catch((e: unknown) => e as Error);
+
+      // Expired: nothing is wrong; review again.
+      await issue({ expiresAt: new Date(clock.now().getTime() - 1) });
+      expect(((await attempt()) as Error).message).toContain('expired');
+
+      // Already used: the change may have landed.
+      await issue({ consumedAt: clock.now() });
+      expect(((await attempt()) as Error).message).toContain('already used');
+
+      // Mismatched: the values changed since the consequence was read.
+      await issue({ target: 's-other' });
+      expect(((await attempt()) as Error).message).toContain('not what was agreed to');
+
+      // Unknown: something is broken, not stale.
+      confirmations.tokens.clear();
+      expect(((await attempt()) as Error).message).toContain('not recognised');
+    });
+
     it('distinguishes "none supplied" from "invalid", so the user can act on it', async () => {
       // The first guard is also enforced by the type checker — the mutation
       // that removes it does not compile. This pins the behaviour anyway,
@@ -129,7 +167,7 @@ describe('beginGuardedCall', () => {
         target: 's-1',
         confirmationToken: 'not-a-real-token',
       }).then(() => null).catch((e: unknown) => e as Error);
-      expect((bad as Error).message).toContain('invalid, expired, already used');
+      expect((bad as Error).message).toContain('not recognised');
     });
 
     it('accepts a valid confirmation bound to that operation and target', async () => {

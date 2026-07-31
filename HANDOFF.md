@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (916 vitest + 60 db + 217 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 27 open backlog items. #8–#15 merged 2026-07-31.
+**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 21 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 63 |
-| Vitest tests | 916 (+9 key-gated live) + 60 db |
-| Harness tests (Python) | 217 |
+| Changes (archived) | 66 |
+| Vitest tests | 923 (+9 key-gated live) + 62 db |
+| Harness tests (Python) | 221 |
 | Active changes | 0 |
-| Open backlog items | 27 |
+| Open backlog items | 21 |
 | Design tickets open | 0 |
 | Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
@@ -80,9 +80,8 @@ These were bugs that existed in the application that sessions discovered and fix
 |---|---|---|
 | `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
-| `rebind-is-not-bound-to-the-revision-it-read` | P3 risk | Rebind can clobber a concurrent change |
 
-Resolved since this table was first written: `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
+Resolved since this table was first written: `rebind-is-not-bound-to-the-revision-it-read` (closed 2026-07-31 — the confirmation binds agent+destination+revision, and the perform re-reads the destination), `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
 
 **Hard limits** (not bugs — these are constraints imposed by BattleGrid's API):
 

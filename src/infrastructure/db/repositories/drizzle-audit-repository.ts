@@ -2,7 +2,11 @@ import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { AuditEntry, AuditOutcome } from '@/domain/audit/audit-entry.js';
 import type { AuditReader, AuditWriter, NewAuditEntry } from '@/domain/audit/audit-repository.js';
-import type { ConfirmationStore, ConfirmationToken } from '@/domain/capability/confirmation.js';
+import type {
+  ConfirmationRefusalCause,
+  ConfirmationStore,
+  ConfirmationToken,
+} from '@/domain/capability/confirmation.js';
 import type { Clock } from '@/ports/clock.js';
 import { auditEntries, confirmationTokens } from '../schema/index.js';
 
@@ -43,14 +47,23 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
     outcome: Exclude<AuditOutcome, 'attempted'>,
     failureReason?: string,
   ): Promise<void> {
-    await this.db
+    const updated = await this.db
       .update(auditEntries)
       .set({
         outcome,
         completedAt: this.clock.now(),
         failureReason: failureReason ?? null,
       })
-      .where(eq(auditEntries.id, id));
+      .where(eq(auditEntries.id, id))
+      .returning({ id: auditEntries.id });
+    // A completion aimed at nothing must not report success: the caller would
+    // believe the record closed while it still reads `attempted`. No
+    // replacement row is manufactured — a completion is evidence about an
+    // operation that began, and inventing the beginning to justify the end
+    // is worse than the failure it hides.
+    if (updated.length === 0) {
+      throw new Error(`no audit entry "${id}" to complete`);
+    }
   }
 
   async listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]> {
@@ -58,7 +71,10 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
       .select()
       .from(auditEntries)
       .where(eq(auditEntries.userId, userId))
-      .orderBy(desc(auditEntries.createdAt))
+      // The id tiebreak does not make same-instant order *true* — two entries
+      // in one millisecond have no true order — but it makes it stable, which
+      // is what a reader comparing two page loads actually needs.
+      .orderBy(desc(auditEntries.createdAt), desc(auditEntries.id))
       .limit(limit);
     return rows.map(toDomain);
   }
@@ -158,5 +174,26 @@ export class DrizzleConfirmationStore implements ConfirmationStore {
       expiresAt: row.expiresAt,
       consumedAt: row.consumedAt,
     };
+  }
+
+  async diagnose(
+    token: string,
+    userId: string,
+    tool: string,
+    target: string,
+  ): Promise<ConfirmationRefusalCause> {
+    const [row] = await this.db
+      .select()
+      .from(confirmationTokens)
+      .where(eq(confirmationTokens.token, token));
+    if (!row) return 'unknown';
+    // Mismatch outranks the states below: a token spent or expired *for a
+    // different action* would otherwise tell the user about a lifecycle they
+    // never touched.
+    if (row.userId !== userId || row.tool !== tool || row.target !== target) return 'mismatched';
+    if (row.consumedAt !== null) return 'already-used';
+    if (row.expiresAt.getTime() <= this.clock.now().getTime()) return 'expired';
+    // Everything matches and it looks spendable — the consume lost a race.
+    return 'already-used';
   }
 }

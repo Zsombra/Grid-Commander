@@ -1,11 +1,11 @@
 ---
 id: rebind-is-not-bound-to-the-revision-it-read
 type: risk
-status: open
+status: done
 priority: P3
 capability: agent-authoring
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-07-31
 change: a-confirmation-binds-to-what-was-agreed
 ---
 
@@ -59,3 +59,22 @@ target to come from that one place.
 - `a-confirmation-binds-to-what-was-agreed` — declared this out of scope
   explicitly rather than half-fixing it, and found a fifth dead write path on the
   way (DL-7).
+
+## Closed 2026-07-31 — `rebind-binds-the-destination-it-described`
+
+Exactly the fix this item sketched, plus the honesty gap found taking it:
+
+- `confirmationTarget.agentRebind(agentId, toStrategyId, toRevision)` — the
+  trio, `@r<revision>` in the target. A token agreed at revision 7 cannot
+  spend at revision 8 (guard-held).
+- The describe now **reads the destination live** — its name and revision
+  come from the platform, not the query string (`toStrategyName` left the
+  request shape; a URL could previously decide what the user believed they
+  were binding to). Unreadable/missing destination refuses before any token
+  exists.
+- The perform re-reads the destination and refuses a moved one with both
+  revisions named — "changed while you were reading" — attempting nothing;
+  the page returns the reason beside a fresh proposal, exactly the honest
+  answer this item asked for.
+- The write-results ledger's rebind row expired on schedule: the result
+  union grew its refusal arm and the page reads it.

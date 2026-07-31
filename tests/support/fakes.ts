@@ -1,6 +1,10 @@
 import type { AuditEntry, AuditOutcome } from '@/domain/audit/audit-entry.js';
 import type { AuditReader, AuditWriter, NewAuditEntry } from '@/domain/audit/audit-repository.js';
-import type { ConfirmationStore, ConfirmationToken } from '@/domain/capability/confirmation.js';
+import type {
+  ConfirmationRefusalCause,
+  ConfirmationStore,
+  ConfirmationToken,
+} from '@/domain/capability/confirmation.js';
 import type { Connection } from '@/domain/connection/connection.js';
 import type {
   ConnectionReader,
@@ -78,7 +82,10 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
   async listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]> {
     return this.entries
       .filter((e) => e.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .sort(
+        // Same tiebreak as the real repository: stable within one millisecond.
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+      )
       .slice(0, limit);
   }
 
@@ -110,6 +117,22 @@ export class FakeConfirmationStore implements ConfirmationStore {
     const consumed = { ...found, consumedAt: this.clock.now() };
     this.tokens.set(token, consumed);
     return consumed;
+  }
+
+  async diagnose(
+    token: string,
+    userId: string,
+    tool: string,
+    target: string,
+  ): Promise<ConfirmationRefusalCause> {
+    const found = this.tokens.get(token);
+    if (!found) return 'unknown';
+    if (found.userId !== userId || found.tool !== tool || found.target !== target) {
+      return 'mismatched';
+    }
+    if (found.consumedAt !== null) return 'already-used';
+    if (found.expiresAt.getTime() <= this.clock.now().getTime()) return 'expired';
+    return 'already-used';
   }
 }
 

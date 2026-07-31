@@ -70,12 +70,10 @@ function executeSites(): ExecuteSite[] {
  * where that claim is auditable.
  */
 const KNOWN_DROPPED: ReadonlyArray<{ file: string; tool: string; verdict: string }> = [
-  {
-    file: 'app/(app)/agents/[id]/rebind/page.tsx',
-    tool: 'rebindAgent',
-    verdict:
-      'benign today: RebindAgentResult has the single arm {kind:"rebound"}; refusals throw and surface via the error boundary',
-  },
+  // rebindAgent's row left 2026-07-31: RebindAgentResult grew a
+  // destination-moved arm (`rebind-binds-the-destination-it-described`) and
+  // the page reads it — exactly the "benign today" expiry the old verdict
+  // predicted.
   {
     file: 'app/(app)/strategies/[id]/edit/page.tsx',
     tool: 'applyPlan',

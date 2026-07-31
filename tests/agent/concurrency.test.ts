@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { SetLifecycleCommand } from '@/application/use-cases/lifecycle.command.js';
 import { RebindAgentCommand } from '@/application/use-cases/rebind-agent.command.js';
+import { aDetail, aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
 
 const who = { userId: 'u1', accessToken: 'at' };
@@ -65,10 +66,13 @@ describe('conflict_names_the_agent', () => {
 
   it('carries the revision through a rebind too', async () => {
     const port = new FakeAgentsPort([anAgent({ revision: 5 })]);
-    await new RebindAgentCommand(port).execute({
+    const strategies = new FakeStrategiesPort();
+    strategies.detail = aDetail(aStrategy({ id: 's-new', revision: 7 }));
+    await new RebindAgentCommand(port, strategies).execute({
       ...who,
       agentId: 'a1',
       toStrategyId: 's-new',
+      toStrategyRevision: 7,
       expectedRevision: 5,
       confirmationToken: 'tok',
     });

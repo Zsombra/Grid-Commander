@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
-import { compiledPlan, requiredText } from '@/presentation/form.js';
+import { compiledPlan, requiredText, updateCompileIntent } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { CONTROL } from '@/presentation/components/control.js';
@@ -267,18 +267,17 @@ export default async function EditStrategyPage({
         ? ['Only the tagline changes']
         : ['Only the sections change'];
 
-  // Held in one place: it is both what is compiled and what `describeApply`
-  // digests to check the screen still matches the plan.
-  const intent = {
-    operation: 'UPDATE' as const,
+  // Held in one place — the domain builder the conformance guard also calls,
+  // so what is checked is what is sent. It is both what is compiled and what
+  // `describeApply` digests to check the screen still matches the plan.
+  const intent = updateCompileIntent({
     strategyId: id,
     expectedRevision: strategy.revision,
     intentSummary,
     assumptions,
-    coinSelection: { mode: 'ranked' as const, limit: 9 },
     tagline,
     sections,
-  };
+  });
 
   const compiled = await app.compilePlan.execute({ ...user.authority, request: intent });
 

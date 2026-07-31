@@ -1,5 +1,34 @@
 # Journal
 
+## 2026-07-31 — the rebind race closed, and five debts swept
+
+**Did**: Two changes while the outage holds, both archived.
+
+**`rebind-binds-the-destination-it-described`** (standard): the last flow
+whose confirmation did not cover everything it described.
+`confirmationTarget.agentRebind` binds the trio (`@r<revision>`); the
+describe reads the destination live — real name, real revision; the
+caller-supplied `toStrategyName` left the request shape, so a URL can no
+longer decide what the user believes they are binding to — and the perform
+re-reads it, refusing a moved destination with both revisions named and
+nothing attempted. The write-results ledger's rebind row expired exactly as
+its "benign today" verdict predicted, and the file demanded its deletion.
+Closes `rebind-is-not-bound-to-the-revision-it-read`.
+
+**`the-small-debts-sweep`** (standard): five filed P3s in one pass —
+audit list id-tiebreak (stable same-millisecond order, db-tested);
+`complete()` throws on zero rows instead of reporting success against
+nothing; `ConfirmationStore.diagnose()` gives the guard four distinct
+refusal messages, each naming its next step (expired / already used /
+values changed / not recognised); `compileUpdateIntent` becomes the one
+home of the compile UPDATE shape (page and conformance guard both call
+it); and the surface import cross-check says so on stacks it cannot read
+(`design_surface_sources_unchecked`, info) instead of passing silently.
+
+**State**: 0 active changes · 21 open backlog items · 66 archived changes ·
+923 vitest (+9 key-gated skips) + 62 db + 221 harness green · validation
+clean. Restore walk still parked on BattleGrid's outage.
+
 ## 2026-07-31 — position management: editable, and the label stops lying
 
 **Did**: `position-management-is-editable` (standard, archived) — the second

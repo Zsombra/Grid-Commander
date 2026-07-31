@@ -2,7 +2,7 @@
 id: compile-intent-shape-lives-in-two-places
 title: The compile UPDATE intent literal is mirrored in the conformance guard
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-31
 updated: 2026-07-31
@@ -33,3 +33,7 @@ Extract the intent assembly into a domain builder (it is pure data assembly —
 no MCP import needed), have the page and the guard both call it. Product-code
 refactor, hence out of the sweep change's declared scope; verifier SUGGESTION
 from that change, filed rather than dropped.
+
+## Closed
+
+Fixed in `the-small-debts-sweep` (2026-07-31): `compileUpdateIntent` in the domain; the edit page (via the W-D presentation wrapper) and payload-conformance both call it. The mirror and its confession comment are gone.

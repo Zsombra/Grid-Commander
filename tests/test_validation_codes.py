@@ -417,6 +417,14 @@ def _(p, t):
                            "states": ["default"]}])
 
 
+@case("design_surface_sources_unchecked", "info")
+def _(p, t):
+    p.write("app/views/panel.html.erb", "<h1>Rows</h1>\n")
+    p.surface(source_files=["app/views/panel.html.erb"],
+              components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
+                           "states": ["default"]}])
+
+
 @case("design_component_not_found", "warning")
 def _(p, t):
     p.write("src/Panel.tsx", "export const Panel = () => null;\n")

@@ -1,4 +1,11 @@
 import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
+import { compileUpdateIntent } from '@/domain/strategy/compiled-plan.js';
+
+/**
+ * The compile UPDATE request, for the route layer (which may not import the
+ * domain — W-D). One re-export, same reasoning as `presetPosition`.
+ */
+export const updateCompileIntent = compileUpdateIntent;
 import type { Behavior } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { Catalog } from '@/domain/agent/catalog.js';

@@ -35,10 +35,25 @@ export interface Confirmation {
   readonly target: string;
 }
 
+/**
+ * Why a consume refused — each cause has a different next step for the
+ * person who hit it: expired means review again, nothing is wrong;
+ * already-used means the change may have landed; mismatched means the values
+ * changed since they agreed; unknown means something is broken, not stale.
+ */
+export type ConfirmationRefusalCause = 'unknown' | 'mismatched' | 'already-used' | 'expired';
+
 export interface ConfirmationStore {
   issue(token: ConfirmationToken): Promise<void>;
   /** Single-use. Returns null if unknown, expired, already used, or mismatched. */
   consume(token: string, userId: string, tool: string, target: string): Promise<ConfirmationToken | null>;
+  /**
+   * The post-mortem for a failed consume: read-only, called only after
+   * `consume` returned null, so `consume` stays the single atomic spender.
+   * A benign race between the two reads mis-names the cause at worst; it
+   * never spends anything.
+   */
+  diagnose(token: string, userId: string, tool: string, target: string): Promise<ConfirmationRefusalCause>;
 }
 
 export function isValid(token: ConfirmationToken, now: Date): boolean {
@@ -83,12 +98,15 @@ export const confirmationTarget = {
     `agent:${agentId}#${digestOf(intent)}`,
 
   /**
-   * Bound to the *pair* — this agent, that destination — not to the verb.
-   * A token meaning only "a rebind was confirmed" could carry agreement about one
-   * agent onto another. See DL-5.
+   * Bound to the trio — this agent, that destination, *at the revision that
+   * was described* — not to the verb. A token meaning only "a rebind was
+   * confirmed" could carry agreement about one agent onto another (DL-5);
+   * one bound to the pair alone could carry agreement about one revision of
+   * the destination onto a configuration the user never saw described
+   * (`rebind-is-not-bound-to-the-revision-it-read`).
    */
-  agentRebind: (agentId: string, toStrategyId: string): string =>
-    `agent:${agentId}->strategy:${toStrategyId}`,
+  agentRebind: (agentId: string, toStrategyId: string, toRevision: number): string =>
+    `agent:${agentId}->strategy:${toStrategyId}@r${toRevision}`,
 
   /**
    * Deploying binds the *pair* — this agent, that market — and the verb.
