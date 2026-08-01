@@ -1,5 +1,28 @@
 # Journal
 
+## 2026-08-01 — the arena is watchable: the ninth capability
+
+**Did**: `the-arena-is-watchable` (standard, archived) — the read-only
+Market Grid surface, built to the shapes recorded in the observation.
+`MarketGridPort` (list/detail/hasSubmitted/results), `McpMarketGridAdapter`
+(refuse-whole-read on an unusable row, the same rule as the radar mapper;
+the pre-settle CONFLICT mapped to a `not-settled` *state*), `WatchArenaQuery`
+(arena/empty/unreadable — an unreadable list never renders as an empty
+arena), `/arena` page + nav section. Two platform facts are now code and
+spec: the played fact comes from `check_market_grid_submission` alone
+(`get_market_grid_player_grid` 500s for "not played" and is never called),
+and the settled-results payload stays opaque until one is observed. The
+submit tools (entry fee 10 — a real stake) stay out of scope; remaining
+tail recorded in the backlog item.
+
+**New capability**: `market-grid` — the ninth. 19 new tests (11 mapper,
+3 query, 5 rendering); the reachability walker picked `/arena` up as a
+top-level section on its own.
+
+**State**: 0 active changes · 19 open backlog items · 68 archived changes ·
+942 vitest (+10 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
 ## 2026-08-01 — the Market Grid observed: the arena's shapes are recorded
 
 **Did**: The read-only first step of `market-grid-is-an-unmodelled-module`
