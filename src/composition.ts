@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
@@ -113,6 +114,8 @@ interface Infrastructure {
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
   readonly personal: PersonalConfig | undefined;
+  /** One trivial database round trip; resolves nothing else. */
+  readonly health: () => Promise<void>;
 }
 
 function infrastructure(): Infrastructure {
@@ -157,8 +160,20 @@ function infrastructure(): Infrastructure {
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
+    health: async () => {
+      await db.execute(sql`select 1`);
+    },
   };
   return cached;
+}
+
+/**
+ * The health probe's whole world: is the process up, and does its database
+ * answer. Deliberately not part of `app()` — a health check that resolves a
+ * session fails for the wrong reason, so this path never touches cookies.
+ */
+export async function checkHealth(): Promise<void> {
+  await infrastructure().health();
 }
 
 /**

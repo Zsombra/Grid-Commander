@@ -1,5 +1,34 @@
 # Journal
 
+## 2026-08-01 — outage filler: the health check that checks, and the turbopack answer
+
+**Context**: the table-authoring campaign (operator-requested: create and
+modify custom tables across the mathematical families, map the grammar) is
+paused on BattleGrid's third and longest outage of the day — authenticated
+calls time out while the edge answers 401, 3+ hours and counting. Recovery
+watch + restart-proof scheduled check-ins armed; campaign assets
+(grammar-sweep script, five-table preview script, create/modify probe,
+`docs/REPORT_TABLE_GRAMMAR.md` frame) committed. Meanwhile, two non-live
+items closed rather than idling.
+
+**`a-health-check-that-checks`** (lite, archived): `GET /api/health` — no
+session, no cookie, one `select 1` through the application's own pool;
+200 ok / 503 unavailable, nothing else in the body. Probed by the serving
+gate on every run — deliberately *after* the transaction-accounting helper,
+because probing it first hands that helper a pool it did not expect to be
+driven (found by the gate's own failure on the first run; the helper's
+"owns its environment" assumption is now stated in the script).
+`no-health-endpoint` closed done.
+
+**`turbopack-build-unproven`** answered: `next dev --turbopack` (Next 15.1)
+cannot resolve the `.js` specifiers through the `@/` alias and Turbopack
+has no `extensionAlias` equivalent — webpack is the supported path, dev and
+build alike, recorded beside the webpack option. Closed done.
+
+**State**: 0 active changes · 20 open backlog items · 73 archived changes ·
+1019 vitest (+18 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green · campaign resumes on platform recovery.
+
 ## 2026-08-01 — the draft is previewable: Phase 1 is complete
 
 **Did**: `the-draft-is-previewable` (standard, archived) — the phase's
