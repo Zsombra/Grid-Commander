@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { Brain } from '@/domain/agent/brain.js';
-import { compileUpdateIntent } from '@/domain/strategy/compiled-plan.js';
+import { compileUpdateIntent, toApplyPlan } from '@/domain/strategy/compiled-plan.js';
+import { anApprovedPlan } from '../support/strategy-fakes.js';
 import {
   applyEdit,
   buildTradingConfig,
@@ -62,13 +63,16 @@ const toolOrThrow = (name: string): Tool => {
  * Objects the platform supplied and the product passes through unaltered.
  *
  * Named here, not skipped quietly: removing an entry is a decision with a
- * diff, never an accident. `apply_strategy_plan`'s `plan` is the server's own
- * `approvedPlan` handed straight back — the product never constructs its 22
- * required internal paths, so the check must not demand them of it.
+ * diff, never an accident. **Empty since 2026-07-31, and the one entry it
+ * ever held is a cautionary tale**: `apply_strategy_plan`'s `plan` was
+ * exempted as "the server's own approvedPlan handed straight back" — but the
+ * product constructs that plan through `toApplyPlan`, and the projection was
+ * missing three required fields. Every apply was rejected by input
+ * validation, and this exemption is precisely where the guard could not see
+ * it (`apply-sends-the-plan-the-platform-requires`). An exemption is a claim
+ * about the code, and claims about the code belong in checks.
  */
-const PASS_THROUGH: Readonly<Record<string, readonly string[]>> = {
-  apply_strategy_plan: ['request.plan'],
-};
+const PASS_THROUGH: Readonly<Record<string, readonly string[]>> = {};
 
 /** Every value at `path`, using the record's grammar: dots and `[]`. */
 function nodesAt(root: unknown, path: string): unknown[] {
@@ -346,13 +350,15 @@ describe('every payload the product constructs can succeed', () => {
     expect(violations(toolOrThrow('delete_radar_deployment'), payload)).toEqual([]);
   });
 
-  it('apply_strategy_plan — the plan is pass-through, the rest is checked', () => {
-    expect(PASS_THROUGH['apply_strategy_plan']).toEqual(['request.plan']);
+  it('apply_strategy_plan — the projected plan satisfies every declared demand', () => {
+    // The real projection over the realistic fixture — NOT a pass-through
+    // exemption. The exemption is how the sixth dead write path stayed
+    // invisible: `toApplyPlan` omitted expectedRevision, conditions and
+    // conditionVerdicts, every apply was rejected by input validation, and
+    // the guard had been told not to look inside the plan.
     const payload = {
       request: {
-        // The server's own approvedPlan, handed straight back. Opaque here on
-        // purpose: if the check ever demands its internals, pass-through broke.
-        plan: { serverOwned: true },
+        plan: toApplyPlan(anApprovedPlan()),
         planToken: 'tok-1',
         confirm: true,
       },

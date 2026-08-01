@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 20 open backlog items. #8–#15 merged 2026-07-31.
+**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 10 further vitest are key-gated live probes). No active changes. 20 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -20,8 +20,8 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 66 |
-| Vitest tests | 923 (+9 key-gated live) + 62 db |
+| Changes (archived) | 67 |
+| Vitest tests | 923 (+10 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 20 |
@@ -58,7 +58,7 @@ Against a real connected BattleGrid account a user can:
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
-**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, archived, and restored (restore walked 2026-07-31: archived strategies ARE listed, so the flow is reachable; r3→r5 round trip on an unbound strategy, account left as found). The agent's thought log and budget gauges were read. A radar deployment was replaced-in-place through the deploy flow (HYPE r1→r2, describe→confirm→perform). All against a real BattleGrid account. Key-gated live probes live in `tests/live/` (`BATTLEGRID_API_KEY=… npx vitest run tests/live/`).
+**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, archived, restored, and — 2026-08-01 — APPLIED: the full fork→compile→apply pipeline ran live (the first apply found and fixed the sixth dead write path: toApplyPlan omitted expectedRevision/conditions/conditionVerdicts, and the conformance pass-through exemption that hid it is deleted). Every write the product offers is now live-proven. The agent's thought log and budget gauges were read. A radar deployment was replaced-in-place through the deploy flow (HYPE r1→r2, describe→confirm→perform). All against a real BattleGrid account. Key-gated live probes live in `tests/live/` (`BATTLEGRID_API_KEY=… npx vitest run tests/live/`).
 
 ---
 
@@ -71,6 +71,7 @@ These were bugs that existed in the application that sessions discovered and fix
 3. **Budget gauges** — `remaining: 0` on an unconfigured gauge means "no cap", not "at the limit". `fill` is an amount consumed, not a fraction. Displaying them naively misstates the truth exactly where being wrong costs money.
 4. **Agent create** — `brain.kind` was `'preset'` where the schema pins `const: "PRESET"`; `sizingStrategy` used a catalog key that doesn't exist so the fallback fired every time.
 5. **Agent update** — the read returns 23 `tradingConfig` keys; the write accepts 20 with `additionalProperties: false`. Sending all 23 back fails every time.
+6. **`apply_strategy_plan` could never succeed (again)** — `toApplyPlan` omitted three fields the live schema requires; the conformance guard's pass-through exemption for `request.plan` is exactly where it hid. Found by the first live apply (2026-08-01), fixed, and the exemption deleted.
 
 ---
 

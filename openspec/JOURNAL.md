@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-01 — the sixth dead write path: apply never could have worked, and now it does
+
+**Did**: The operator authorized the slot shuffle (archive an unbound
+strategy → fork → walk → put everything back), and the first live
+`apply_strategy_plan` promptly found the sixth dead write path:
+`toApplyPlan` — the projection between the compiler's plan and the wire —
+was missing three fields the platform requires (`expectedRevision` top-level,
+`conditions` and `conditionVerdicts` from `postState`). Every apply this
+product ever composed was rejected by input validation. The guard could not
+see it because `payload-conformance` exempted `request.plan` as
+PASS_THROUGH — "the server's own plan handed straight back" — while the code
+projected. The exemption is deleted; the guard now holds `toApplyPlan`'s
+real output against the declared demands, and `anApprovedPlan` carries the
+live shape (mapped by a read-only compile probe; two temp diags, deleted).
+
+**Live-proven** (`tests/live/apply-probe.test.ts`, committed, key-gated):
+slot freed (DIST-03 archived) → Dunkirk forked → compiled (viable, blast
+radius 0) → described with the platform's own consequence → **applied,
+r1→r2, tagline read back changed** → fork archived → DIST-03 restored.
+Account as found. Also learned on the way: an empty `sections` list is
+rejected when conditions read report columns (CONDITION_COLUMN_UNKNOWN) —
+the probe sends the fork's own sections.
+
+**Every write in the product is now live-proven**: create, rename, limits,
+position-management path (same command), rebind path (same guard), archive,
+reactivate, deploy-replace, strategy archive/restore, fork, compile, apply.
+
+**State**: 0 active changes · 20 open backlog items · 67 archived changes ·
+923 vitest (+10 key-gated skips) + 62 db + 221 harness green.
+
 ## 2026-07-31 — BattleGrid recovered; restore walked live, and it works
 
 **Did**: The platform came back after its ~3h database outage and the parked
