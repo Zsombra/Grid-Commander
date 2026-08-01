@@ -1,8 +1,15 @@
 import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
+  ColumnCheckOutcome,
+  ColumnContract,
+  ColumnProposal,
+  ColumnRefusal,
   CompileResult,
   LifecycleResult,
+  MetricHints,
+  MetricListResult,
+  MetricSummary,
   SignalDefinition,
   SignalListResult,
   SignalSummary,
@@ -66,6 +73,36 @@ export class FakeStrategiesPort implements StrategiesPort {
   stageSignal(definition: SignalDefinition) {
     this.signals.push(definition.summary);
     this.signalDefinitions.set(definition.summary.id, definition);
+  }
+
+  metrics: MetricSummary[] = [];
+  metricsReadable = true;
+  /** Keyed by metric id; a listed id with no entry makes the hints read throw. */
+  hints = new Map<string, MetricHints>();
+  columnOutcome: ColumnCheckOutcome = { kind: 'refused', refusal: aColumnRefusal() };
+
+  async listMetrics(): Promise<MetricListResult> {
+    if (!this.metricsReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return { kind: 'metrics', metrics: this.metrics };
+  }
+
+  async metricHints(params: { metric: string }): Promise<MetricHints> {
+    const staged = this.hints.get(params.metric);
+    if (!staged) throw new Error(`no hints staged for ${params.metric}`);
+    return staged;
+  }
+
+  async columnContract(params: { column: ColumnProposal }): Promise<ColumnCheckOutcome> {
+    this.calls.push({ op: 'column-contract', payload: { ...params.column } });
+    return this.columnOutcome;
+  }
+
+  /** Stage a metric in both the index and the hints store. */
+  stageMetric(hints: MetricHints) {
+    this.metrics.push(hints.summary);
+    this.hints.set(hints.summary.id, hints);
   }
 
   async readStrategy(): Promise<StrategyDetailResult> {
@@ -266,6 +303,100 @@ export function aSignalDefinition(overrides: Partial<SignalDefinition> = {}): Si
       },
     ],
     indicators: ['RSI(14)'],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live vocabulary `metrics` entry of 2026-08-01. */
+export function aMetric(overrides: Partial<MetricSummary> = {}): MetricSummary {
+  return {
+    id: 'RSI14',
+    label: 'RSI (14)',
+    family: 'momentum',
+    unit: 'oscillator',
+    precision: 1,
+    range: [0, 100],
+    timeframeMode: 'candle',
+    transformIds: ['value', 'trajectory', 'classifyZone', 'spread', 'rank'],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `get_metric_construction_hints` payload of 2026-08-01. */
+export function aMetricHints(overrides: Partial<MetricHints> = {}): MetricHints {
+  return {
+    summary: aMetric(),
+    transforms: [
+      {
+        id: 'value',
+        label: 'Value',
+        parameters: [
+          {
+            key: 'offset',
+            required: false,
+            defaultValue: '0',
+            description: 'Bars before the latest value; 0 selects the current resolved value.',
+          },
+        ],
+        calculationSummary: 'Select one value at the requested offset.',
+        formula: 'output = base[t - offset]',
+        nullBehavior: 'Returns null when the requested slot is absent or the source value is null.',
+        operandRequired: false,
+        chainSuccessors: [],
+      },
+      {
+        id: 'spread',
+        label: 'Spread vs metric',
+        parameters: [
+          {
+            key: 'inputs',
+            required: true,
+            defaultValue: null,
+            description: 'Exactly one candle-backed operand metric.',
+          },
+        ],
+        calculationSummary: 'Measure the signed percentage gap between the base and one operand metric.',
+        formula: 'output = (base - inputs[0]) / inputs[0] × 100',
+        nullBehavior: 'Returns null when either operand is null or the second operand is zero.',
+        operandRequired: true,
+        chainSuccessors: ['trajectory', 'aggregate'],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live column contract of 2026-08-01 (RSI14/value/anchor). */
+export function aColumnContract(overrides: Partial<ColumnContract> = {}): ColumnContract {
+  return {
+    formula: 'output = RSI14[t - 0]',
+    calculationSummary: 'Select one value at the requested offset.',
+    nullBehavior: 'Returns null when the requested slot is absent or the source value is null.',
+    nullSentinel: '—',
+    outputs: [
+      {
+        header: 'RSI14',
+        meaning: 'RSI14: latest value.',
+        unit: 'oscillator',
+        nullable: true,
+      },
+    ],
+    effectiveParameters: { offset: 0, window: null },
+    requiresSectionTimeframe: true,
+    ...overrides,
+  };
+}
+
+/** Shaped from the live teaching refusal of 2026-08-01 (spread with a CLOSE operand). */
+export function aColumnRefusal(overrides: Partial<ColumnRefusal> = {}): ColumnRefusal {
+  return {
+    message:
+      "spread operand 'CLOSE' is not a legal relational operand for base 'RSI14' — it must declare a numeric output in the base's OWN unit",
+    authoringCode: 'REPORT_COLUMN_OPERAND_UNSUPPORTED',
+    path: ['column', 'inputs', 0, 'metric'],
+    received: '"CLOSE"',
+    allowedValues: ['ADX', 'CCI20', 'MFI14', 'RSI7', 'STOCH_D', 'STOCH_K'],
+    allowedRule: null,
     ...overrides,
   };
 }

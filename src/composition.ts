@@ -39,6 +39,9 @@ import {
 import { ReadSectionOptionsQuery } from './application/use-cases/read-section-options.query.js';
 import { ReadSignalLibraryQuery } from './application/use-cases/read-signal-library.query.js';
 import { ReadSignalQuery } from './application/use-cases/read-signal.query.js';
+import { CheckColumnQuery } from './application/use-cases/check-column.query.js';
+import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
+import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
@@ -235,6 +238,9 @@ export function app(cookies: CookieStore) {
     readSectionOptions: new ReadSectionOptionsQuery(i.strategies),
     readSignalLibrary: new ReadSignalLibraryQuery(i.strategies),
     readSignal: new ReadSignalQuery(i.strategies),
+    readMetricIndex: new ReadMetricIndexQuery(i.strategies),
+    readMetric: new ReadMetricQuery(i.strategies),
+    checkColumn: new CheckColumnQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
     compilePlan: new CompilePlanCommand(i.strategies),

@@ -74,6 +74,34 @@ export interface StrategiesPort {
   listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult>;
 
   /**
+   * The vocabulary's full metric index. Read fresh each time — the metric
+   * list is platform vocabulary and goes stale after a deployment like
+   * everything else.
+   */
+  listMetrics(params: { userId: string; accessToken: string }): Promise<MetricListResult>;
+
+  /**
+   * One metric's transform-authoring detail. Callers establish the key
+   * exists via `listMetrics` first — the platform enum-rejects unknown keys.
+   */
+  metricHints(params: {
+    userId: string;
+    accessToken: string;
+    metric: string;
+  }): Promise<MetricHints>;
+
+  /**
+   * Compile a candidate column against the platform's contract — a read;
+   * no market values, no writes. A refusal is a *result* here: the
+   * validator's structured teaching is the surface's content, not a failure.
+   */
+  columnContract(params: {
+    userId: string;
+    accessToken: string;
+    column: ColumnProposal;
+  }): Promise<ColumnCheckOutcome>;
+
+  /**
    * Every strategy signal the platform publishes, as compact summaries.
    * Read fresh each time — the signal list is platform vocabulary and goes
    * stale after a deployment like everything else.
@@ -178,6 +206,105 @@ export type VocabularyResult =
 export type VocabularyTemplatesResult =
   | { readonly kind: 'templates'; readonly templates: readonly SectionTemplate[] }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * One metric as the vocabulary's index lists it — shaped from the live
+ * `list_strategy_vocabulary` payload of 2026-08-01, whose `metrics` key this
+ * product had been dropping.
+ */
+export interface MetricSummary {
+  readonly id: string;
+  readonly label: string;
+  readonly family: string;
+  readonly unit: string | null;
+  readonly precision: number | null;
+  /** Declared only for bounded outputs (oscillators); null is "unbounded". */
+  readonly range: readonly [number, number] | null;
+  readonly timeframeMode: string | null;
+  readonly transformIds: readonly string[];
+}
+
+export type MetricListResult =
+  | { readonly kind: 'metrics'; readonly metrics: readonly MetricSummary[] }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+export interface TransformParameter {
+  readonly key: string;
+  readonly required: boolean;
+  /** Rendered as declared — defaults arrive as numbers or words. */
+  readonly defaultValue: string | null;
+  readonly description: string | null;
+}
+
+/** One transform's authoring detail, in the platform's words. */
+export interface MetricTransform {
+  readonly id: string;
+  readonly label: string;
+  readonly parameters: readonly TransformParameter[];
+  readonly calculationSummary: string | null;
+  readonly formula: string | null;
+  readonly nullBehavior: string | null;
+  readonly operandRequired: boolean;
+  readonly chainSuccessors: readonly string[];
+}
+
+export interface MetricHints {
+  readonly summary: MetricSummary;
+  readonly transforms: readonly MetricTransform[];
+}
+
+/** A candidate column as the check form composes it. */
+export interface ColumnProposal {
+  readonly metric: string;
+  readonly transformId: string;
+  readonly chainedTransformId?: string | undefined;
+  readonly timeframe: { readonly rel: string } | { readonly abs: string };
+  readonly window?: number | undefined;
+  readonly offset?: number | undefined;
+  readonly side?: string | undefined;
+  /** Operand metric keys, in order. */
+  readonly inputs?: readonly string[] | undefined;
+  readonly bars?: string | undefined;
+  readonly ordering?: string | undefined;
+}
+
+export interface ColumnOutput {
+  readonly header: string;
+  readonly meaning: string | null;
+  readonly unit: string | null;
+  readonly nullable: boolean;
+}
+
+/** What a valid column compiles to — the platform's own contract for it. */
+export interface ColumnContract {
+  readonly formula: string | null;
+  readonly calculationSummary: string | null;
+  readonly nullBehavior: string | null;
+  readonly nullSentinel: string | null;
+  readonly outputs: readonly ColumnOutput[];
+  /** As normalized by the platform — rendered verbatim, key by key. */
+  readonly effectiveParameters: Readonly<Record<string, unknown>>;
+  readonly requiresSectionTimeframe: boolean;
+}
+
+/**
+ * A refusal that teaches. The platform's column validator names the
+ * offending path, the value it received, and — for enum-domain refusals —
+ * exactly what is legal in its place. Flattening this to "invalid" would
+ * discard the most instructive dataset the authoring surface has.
+ */
+export interface ColumnRefusal {
+  readonly message: string;
+  readonly authoringCode: string | null;
+  readonly path: readonly (string | number)[];
+  readonly received: string | null;
+  readonly allowedValues: readonly string[];
+  readonly allowedRule: string | null;
+}
+
+export type ColumnCheckOutcome =
+  | { readonly kind: 'contract'; readonly contract: ColumnContract }
+  | { readonly kind: 'refused'; readonly refusal: ColumnRefusal };
 
 /** One signal as the library lists it — shaped from the live payload of 2026-08-01. */
 export interface SignalSummary {
