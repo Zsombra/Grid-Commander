@@ -1,6 +1,7 @@
 import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
+  CoinSelection,
   ColumnCheckOutcome,
   ColumnContract,
   ColumnProposal,
@@ -10,6 +11,9 @@ import type {
   MetricHints,
   MetricListResult,
   MetricSummary,
+  ReportPreview,
+  ReportPreviewOutcome,
+  RuleMembership,
   SignalDefinition,
   SignalListResult,
   SignalSummary,
@@ -103,6 +107,28 @@ export class FakeStrategiesPort implements StrategiesPort {
   stageMetric(hints: MetricHints) {
     this.metrics.push(hints.summary);
     this.hints.set(hints.summary.id, hints);
+  }
+
+  previewOutcome: ReportPreviewOutcome = {
+    kind: 'preview',
+    preview: aReportPreview(),
+  };
+  membership: RuleMembership[] = [];
+
+  async previewReport(params: {
+    timeframe: string;
+    sections: readonly { kind: string; sectionKey: string }[];
+    coinSelection: CoinSelection;
+  }): Promise<ReportPreviewOutcome> {
+    this.calls.push({
+      op: 'preview',
+      payload: { timeframe: params.timeframe, coinSelection: { ...params.coinSelection } },
+    });
+    return this.previewOutcome;
+  }
+
+  async deriveRuleView(): Promise<readonly RuleMembership[]> {
+    return this.membership;
   }
 
   /** Set to make the rule write refuse with this message. */
@@ -431,6 +457,42 @@ export function aColumnRefusal(overrides: Partial<ColumnRefusal> = {}): ColumnRe
     received: '"CLOSE"',
     allowedValues: ['ADX', 'CCI20', 'MFI14', 'RSI7', 'STOCH_D', 'STOCH_K'],
     allowedRule: null,
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `preview_strategy_report` payload of 2026-08-01 (Dunkirk). */
+export function aReportPreview(overrides: Partial<ReportPreview> = {}): ReportPreview {
+  return {
+    sections: [
+      {
+        sectionKey: 'includePriceAction',
+        title: 'Price Action',
+        text: 'Schema: 1h candles. last: the last traded price (live, not a bar close).',
+      },
+      {
+        sectionKey: 'includeRsi',
+        title: 'RSI',
+        text: 'RSI(14) on 1h closes. rsi14: latest value.',
+      },
+    ],
+    estimatedTokenCount: 1393,
+    tokenCountModel: 'o200k_base',
+    budget: [
+      { name: 'sections', used: 5, cap: 32 },
+      { name: 'distinctTimeframes', used: 3, cap: 8 },
+    ],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `derive_strategy_rule_view` row of 2026-08-01. */
+export function aMembership(overrides: Partial<RuleMembership> = {}): RuleMembership {
+  return {
+    signalId: 'rsi_oversold',
+    inReport: true,
+    status: 'IN_REPORT',
+    defaultAllocation: 2,
     ...overrides,
   };
 }
