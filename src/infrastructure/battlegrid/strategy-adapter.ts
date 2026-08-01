@@ -6,8 +6,17 @@ import type {
   StrategySection,
 } from '@/domain/strategy/strategy.js';
 import type {
+  ColumnCheckOutcome,
+  ColumnContract,
+  ColumnOutput,
+  ColumnProposal,
+  ColumnRefusal,
   CompileResult,
   LifecycleResult,
+  MetricHints,
+  MetricListResult,
+  MetricSummary,
+  MetricTransform,
   SignalDefinition,
   SignalExample,
   SignalListResult,
@@ -16,6 +25,7 @@ import type {
   StrategiesPort,
   StrategyDetailResult,
   StrategyListResult,
+  TransformParameter,
   VocabularyCategory,
   VocabularyResult,
   VocabularyTemplatesResult,
@@ -52,6 +62,8 @@ const TOOLS = {
   vocabulary: 'list_strategy_vocabulary',
   signals: 'list_strategy_signals',
   signalDefinition: 'get_strategy_signal_definition',
+  metricHints: 'get_metric_construction_hints',
+  columnContract: 'get_strategy_column_contract',
 } as const;
 
 /** The four tools that require the strict outer envelope. */
@@ -284,6 +296,102 @@ export class McpStrategyAdapter implements StrategiesPort {
     }
   }
 
+  async listMetrics(params: { userId: string; accessToken: string }): Promise<MetricListResult> {
+    try {
+      // Unlike `templates` (identical for every category), the vocabulary's
+      // `metrics` key IS narrowed by the category argument — established live
+      // 2026-08-01: ten categories, 75 distinct metrics between them. The
+      // full index is the union, read category by category.
+      const catPayload = await this.call(params, TOOLS.categories, {});
+      const cats = Array.isArray(catPayload['categories']) ? catPayload['categories'] : [];
+      const keys = cats
+        .map((c) => String(((c ?? {}) as Record<string, unknown>)['category'] ?? ''))
+        .filter((k) => k.length > 0);
+      if (keys.length === 0) return malformed('no categories available to fetch vocabulary');
+
+      // Ten independent reads, merged in category order so the index is
+      // deterministic. Concurrency is capped at four: fully sequential was
+      // measured at ~35s live, and a ten-wide burst drew intermittent 504s
+      // from the platform's gateway (2026-08-01) — this is the width that
+      // did neither.
+      const payloads: Record<string, unknown>[] = new Array<Record<string, unknown>>(keys.length);
+      for (let start = 0; start < keys.length; start += 4) {
+        const chunk = keys.slice(start, start + 4);
+        const answers = await Promise.all(
+          chunk.map((category) => this.call(params, TOOLS.vocabulary, { category })),
+        );
+        answers.forEach((payload, i) => {
+          payloads[start + i] = payload;
+        });
+      }
+      const seen = new Set<string>();
+      const metrics = [];
+      for (const payload of payloads) {
+        const raw = Array.isArray(payload['metrics']) ? payload['metrics'] : [];
+        for (const entry of raw) {
+          const metric = mapMetricSummary(entry);
+          if (seen.has(metric.id)) continue;
+          seen.add(metric.id);
+          metrics.push(metric);
+        }
+      }
+      if (metrics.length === 0) return malformed('no metrics in the vocabulary');
+      return { kind: 'metrics', metrics };
+    } catch (err) {
+      return unreadable(err);
+    }
+  }
+
+  async metricHints(params: {
+    userId: string;
+    accessToken: string;
+    metric: string;
+  }): Promise<MetricHints> {
+    const payload = await this.call(params, TOOLS.metricHints, { metric: params.metric });
+    const m = payload['metric'];
+    if (typeof m !== 'object' || m === null) throw new StrategyPayloadError('metric');
+    const metric = m as Record<string, unknown>;
+    const transforms = (Array.isArray(metric['transforms']) ? metric['transforms'] : []).map(
+      mapMetricTransform,
+    );
+    return { summary: mapMetricSummary(metric), transforms };
+  }
+
+  async columnContract(params: {
+    userId: string;
+    accessToken: string;
+    column: ColumnProposal;
+  }): Promise<ColumnCheckOutcome> {
+    const c = params.column;
+    const args = {
+      column: {
+        metric: c.metric,
+        transformId: c.transformId,
+        timeframe: c.timeframe,
+        ...(c.chainedTransformId !== undefined ? { chainedTransformId: c.chainedTransformId } : {}),
+        ...(c.window !== undefined ? { window: c.window } : {}),
+        ...(c.offset !== undefined ? { offset: c.offset } : {}),
+        ...(c.side !== undefined ? { side: c.side } : {}),
+        ...(c.inputs !== undefined ? { inputs: c.inputs.map((metric) => ({ metric })) } : {}),
+        ...(c.bars !== undefined ? { bars: c.bars } : {}),
+        ...(c.ordering !== undefined ? { ordering: c.ordering } : {}),
+      },
+    };
+    try {
+      const payload = await this.call(params, TOOLS.columnContract, args);
+      const contract = payload['contract'];
+      if (typeof contract !== 'object' || contract === null) throw new StrategyPayloadError('contract');
+      return { kind: 'contract', contract: mapColumnContract(contract as Record<string, unknown>) };
+    } catch (err) {
+      // The validator's refusal is this surface's content — a structured
+      // lesson in the column grammar, never flattened into a failure.
+      if (err instanceof ToolRefusedError) {
+        return { kind: 'refused', refusal: mapColumnRefusal(err.message) };
+      }
+      throw err;
+    }
+  }
+
   async listSignals(params: { userId: string; accessToken: string }): Promise<SignalListResult> {
     try {
       const payload = await this.call(params, TOOLS.signals, {});
@@ -501,6 +609,125 @@ function mapSignalRules(raw: unknown): readonly SignalRule[] {
 /** Null rather than 0 for an absent threshold: "no minimum" and "unstated" differ. */
 function num(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
+}
+
+/**
+ * A metric as the vocabulary's index lists it, and as the hints tool heads
+ * its answer — the two payloads share this shape (live, 2026-08-01).
+ */
+function mapMetricSummary(raw: unknown): MetricSummary {
+  const m = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof m['metric'] === 'string' && m['metric'].length > 0 ? m['metric'] : null;
+  if (id === null) throw new StrategyPayloadError('metric');
+  const native = (m['nativeOutput'] ?? {}) as Record<string, unknown>;
+  const range = Array.isArray(native['range']) && native['range'].length === 2 ? native['range'] : null;
+  const transformIds = Array.isArray(m['transformIds'])
+    ? m['transformIds'].filter((t): t is string => typeof t === 'string')
+    : Array.isArray(m['transforms'])
+      ? m['transforms']
+          .map((t) => ((t ?? {}) as Record<string, unknown>)['id'])
+          .filter((t): t is string => typeof t === 'string')
+      : [];
+  return {
+    id,
+    label: typeof m['label'] === 'string' ? m['label'] : id,
+    family: String(m['family'] ?? 'other'),
+    unit: typeof native['unit'] === 'string' ? native['unit'] : null,
+    precision: num(native['precision']),
+    range: range ? [num(range[0]) ?? 0, num(range[1]) ?? 0] : null,
+    timeframeMode: typeof m['timeframeMode'] === 'string' ? m['timeframeMode'] : null,
+    transformIds,
+  };
+}
+
+function mapMetricTransform(raw: unknown): MetricTransform {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof t['id'] === 'string' && t['id'].length > 0 ? t['id'] : null;
+  if (id === null) throw new StrategyPayloadError('transform id');
+  const authoring = (t['authoring'] ?? {}) as Record<string, unknown>;
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+
+  const params = (authoring['parameters'] ?? {}) as Record<string, unknown>;
+  const parameters: TransformParameter[] = Object.entries(params).map(([key, prop]) => {
+    const p = (prop ?? {}) as Record<string, unknown>;
+    return {
+      key,
+      required: p['required'] === true,
+      defaultValue: p['defaultValue'] !== undefined && p['defaultValue'] !== null ? String(p['defaultValue']) : null,
+      description: text(p['description']),
+    };
+  });
+
+  return {
+    id,
+    label: text(t['label']) ?? id,
+    parameters,
+    calculationSummary: text(authoring['calculationSummary']),
+    formula: text(authoring['formula']),
+    nullBehavior: text(authoring['nullBehavior']),
+    operandRequired: t['operandRequired'] === true,
+    chainSuccessors: Array.isArray(t['chainSuccessors'])
+      ? t['chainSuccessors'].filter((s): s is string => typeof s === 'string')
+      : [],
+  };
+}
+
+function mapColumnContract(raw: Record<string, unknown>): ColumnContract {
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  const outputs: ColumnOutput[] = (Array.isArray(raw['outputs']) ? raw['outputs'] : []).map(
+    (entry) => {
+      const o = (entry ?? {}) as Record<string, unknown>;
+      const outputType = (o['outputType'] ?? {}) as Record<string, unknown>;
+      return {
+        header: text(o['header']) ?? '(unnamed)',
+        meaning: text(o['meaning']),
+        unit: text(outputType['unit']),
+        nullable: o['nullable'] === true,
+      };
+    },
+  );
+  const timeframe = (raw['timeframe'] ?? {}) as Record<string, unknown>;
+  return {
+    formula: text(raw['formula']),
+    calculationSummary: text(raw['calculationSummary']),
+    nullBehavior: text(raw['nullBehavior']),
+    nullSentinel: text(raw['nullSentinel']),
+    outputs,
+    effectiveParameters:
+      typeof raw['effectiveParameters'] === 'object' && raw['effectiveParameters'] !== null
+        ? (raw['effectiveParameters'] as Record<string, unknown>)
+        : {},
+    requiresSectionTimeframe: timeframe['requiresSectionTimeframe'] === true,
+  };
+}
+
+/**
+ * The validator's refusal, structure preserved. The detail arrives as the
+ * refusal's JSON text; a refusal that does not parse still keeps its
+ * message — degraded, never discarded.
+ */
+function mapColumnRefusal(detail: string): ColumnRefusal {
+  let body: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(detail);
+    if (typeof parsed === 'object' && parsed !== null) body = parsed as Record<string, unknown>;
+  } catch {
+    /* keep the raw text as the message below */
+  }
+  const details = (body['details'] ?? {}) as Record<string, unknown>;
+  const domain = (details['allowedDomain'] ?? {}) as Record<string, unknown>;
+  return {
+    message: typeof body['message'] === 'string' ? body['message'] : detail,
+    authoringCode: typeof details['authoringCode'] === 'string' ? details['authoringCode'] : null,
+    path: Array.isArray(details['path'])
+      ? details['path'].filter((p): p is string | number => typeof p === 'string' || typeof p === 'number')
+      : [],
+    received: details['receivedValue'] !== undefined ? JSON.stringify(details['receivedValue']) : null,
+    allowedValues: Array.isArray(domain['values'])
+      ? domain['values'].filter((v): v is string => typeof v === 'string')
+      : [],
+    allowedRule: typeof domain['rule'] === 'string' ? domain['rule'] : null,
+  };
 }
 
 /**

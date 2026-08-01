@@ -1,5 +1,40 @@
 # Journal
 
+## 2026-08-01 — the column grammar is learnable: the platform teaches through its refusals
+
+**Did**: `the-column-grammar-is-learnable` (standard, archived) — Phase 1
+change 2. Discovery first: the vocabulary payload's `metrics` key (which
+this product had been dropping) IS narrowed by category — ten categories,
+75 distinct metrics, the union read at concurrency four (sequential ≈35s
+live; a ten-wide burst drew gateway 504s). `get_metric_construction_hints`
+carries per-transform authoring detail (parameters/defaults, formula, null
+behavior, chain successors); `get_strategy_column_contract` compiles a
+candidate column without market data — and **its refusal is structured
+teaching**: authoring code, offending path, received value, and an
+`allowedDomain` naming exactly what is legal (spread on RSI14 → the six
+unit-commensurable oscillators, with the reason). Built: three port reads,
+`ReadMetricIndexQuery`/`ReadMetricQuery`/`CheckColumnQuery` (membership
+gates the metric only — everything else goes to the platform so its
+teaching comes back), `/strategies/metrics` + `/strategies/metrics/[metric]`
+with a GET-form column workbench that renders the contract or the lesson,
+never a flattened "invalid".
+
+**Found and fixed on the way**: `CapabilityCache.load` ran a full
+`tools/list` discovery on every tool call, so the first fan-out surface
+turned ten reads into twenty concurrent requests and one failed discovery
+degraded the whole read. Discovery is now single-flight — concurrent calls
+share one read; sequential calls still rediscover (freshness per burst).
+Three new discovery tests pin it.
+
+**Live**: every probe case passed repeatedly through the product path
+(75-metric index, RSI14 card, valid contract, the teaching refusal intact);
+the platform also served intermittent gateway 504s all hour — rendered
+honestly as unreadable-with-reason, noted in the probe header.
+
+**State**: 0 active changes · 23 open backlog items · 70 archived changes ·
+983 vitest (+15 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
 ## 2026-08-01 — the signal vocabulary is readable: Phase 1 of the assistant roadmap begins
 
 **Did**: `the-signal-vocabulary-is-readable` (standard, archived) — the

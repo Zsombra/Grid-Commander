@@ -20,7 +20,12 @@ export default async function StrategiesPage() {
           Browse the signal library
         </a>{' '}
         — every signal a strategy&apos;s rules can reference, in the
-        platform&apos;s own words.
+        platform&apos;s own words. Or{' '}
+        <a href="/strategies/metrics" className="underline">
+          the metric index
+        </a>{' '}
+        — the raw material report columns are built from, with a contract
+        check for any column you compose.
       </p>
       <StrategyList result={result} listings={listings} forking={forking} />
     </main>

@@ -887,6 +887,7 @@ describe('a page about one thing can get back to it', () => {
     expect([...entityRoutes].sort()).toEqual([
       '/agents/[id]',
       '/strategies/[id]',
+      '/strategies/metrics/[metric]',
       '/strategies/signals/[id]',
     ]);
     // An entity's own page is the destination, never in the set that must reach
