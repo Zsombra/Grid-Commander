@@ -2,10 +2,10 @@
 id: ci-creates-no-runs
 title: GitHub Actions stopped creating workflow runs entirely on 2026-07-28
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-07-31
+updated: 2026-08-01
 change: ""
 capability: ""
 blocked_by: []
@@ -238,3 +238,17 @@ documented, ranked, and step-by-stepped in **`docs/CI_WITHOUT_BILLING.md`**:
 Every option needs an owner action (account creation/transfer, app install,
 or a policy decision); none is executable from a session. This item stays
 open until the operator picks one.
+
+## Closed 2026-08-01 — by decision, not by fix (`ci-is-local-by-policy`)
+
+The operator chose local-only verification as policy (option D of
+`docs/CI_WITHOUT_BILLING.md`): the bill stays unpaid, the repo stays put,
+and CI is `./scripts/ci.sh` — every gate the workflow ran, one command,
+loud skips. `validate.yml` is `workflow_dispatch`-only now, ending the
+seven-red-crosses noise on every PR while keeping the jobs provable the day
+the account is ever unblocked.
+
+Accepted residual, stated plainly: green means "green where ci.sh was run".
+The session journal records each run; nothing enforces it but discipline.
+That is the trade the decision makes, and it is recorded here rather than
+implied.

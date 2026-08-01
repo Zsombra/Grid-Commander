@@ -104,7 +104,7 @@ without moving anything and without a new service — if a machine ever
 exists. Caveat: self-hosted runners on public repos need the fork-PR
 protections the handout describes.
 
-## Option D — stay local-only, deliberately
+## Option D — stay local-only, deliberately  ← **CHOSEN (operator, 2026-08-01)**
 
 What is true today, made policy: `scripts/check.sh` + the npm gates + 
 `check-serving.sh` are the verification story, run before every merge (the
@@ -115,7 +115,24 @@ than stay open implying somebody will fix it.
 
 ---
 
-## Recommendation
+## The decision (2026-08-01)
+
+The operator chose **D**: everything stays local. What that made concrete:
+
+- **`./scripts/ci.sh`** is the whole CI in one command — the same gates the
+  workflow's seven jobs ran (harness+validate, typecheck, lint, vitest,
+  drizzle check, migrate+db suite when `DATABASE_URL` is set, build, and the
+  serving check with `CI_SERVING=1`). A gate that cannot run is SKIPPED
+  loudly, never silently.
+- **`validate.yml` fires on `workflow_dispatch` only** — no more automatic
+  runs dying in 2 seconds and painting every PR with seven meaningless red
+  crosses. The job definitions stay one click away if the account is ever
+  unblocked.
+- `ci-creates-no-runs` is closed as a decision, not a fix: the accepted
+  residual is that green means "green where `ci.sh` was run", enforced by
+  habit and the session journal rather than by a machine nobody trusts less.
+
+## Recommendation (pre-decision, kept for the record)
 
 **A**, then D as the standing floor. A transfer is one afternoon, costs
 nothing, changes no code, and restores the thing CI is actually for —

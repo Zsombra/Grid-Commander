@@ -1,5 +1,21 @@
 # Journal
 
+## 2026-08-01 — CI is local, by decision
+
+**Did**: The operator chose option D of the decision sheet: everything stays
+local. `ci-is-local-by-policy` (lite, archived): **`./scripts/ci.sh`** runs
+every gate the workflow's seven jobs ran — harness+validate, typecheck,
+lint, vitest, drizzle check, migrate+db (when DATABASE_URL set, loud skip
+otherwise), build, serving (CI_SERVING=1) — one command, per-gate table,
+proven green end-to-end including the serving probe. `validate.yml` is
+`workflow_dispatch`-only: no more seven ~2s failures painting every PR red.
+`ci-creates-no-runs` (P1) closed as a decision with its residual stated:
+green means "green where ci.sh was run", recorded per-session here.
+
+**State**: 0 active changes · 19 open backlog items · 68 archived changes ·
+one P1 left (`image-never-built`, needs Docker) · 923 vitest (+10 key-gated)
++ 62 db + 221 harness green.
+
 ## 2026-08-01 — the sixth dead write path: apply never could have worked, and now it does
 
 **Did**: The operator authorized the slot shuffle (archive an unbound
