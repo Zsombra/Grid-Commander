@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 10 further vitest are key-gated live probes). No active changes. 20 open backlog items. #8–#15 merged 2026-07-31.
+**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 10 further vitest are key-gated live probes). No active changes. 19 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -20,11 +20,11 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 8 |
-| Changes (archived) | 67 |
+| Changes (archived) | 68 |
 | Vitest tests | 923 (+10 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
-| Open backlog items | 20 |
+| Open backlog items | 19 |
 | Design tickets open | 0 |
 | Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
@@ -79,7 +79,6 @@ These were bugs that existed in the application that sessions discovered and fix
 
 | Item | Type | Notes |
 |---|---|---|
-| `ci-creates-no-runs` | P1 risk | GitHub Actions blocked at account level (billing). `./scripts/check.sh` is the local path. |
 | `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
 
 Resolved since this table was first written: `rebind-is-not-bound-to-the-revision-it-read` (closed 2026-07-31 — the confirmation binds agent+destination+revision, and the perform re-reads the destination), `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
@@ -95,7 +94,6 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 | Item | What | Fix path |
 |---|---|---|
-| `ci-creates-no-runs` | GitHub Actions not running (account billing block) | Settle the account, or register a self-hosted runner. Not fixable by code. |
 | `image-never-built` | Docker image build never proven | Needs a Docker daemon; not resolvable in this environment. |
 
 (`ci-startup-failure` — the old framing of the CI issue — was closed 2026-07-31 as superseded by `ci-creates-no-runs`.)
@@ -104,7 +102,7 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 ## Immediate Next Steps
 
-1. **Fix the CI** — the bill will not be paid (operator, 2026-07-31), so the route is around the account, not through it: **`docs/CI_WITHOUT_BILLING.md`** is the decision sheet. Recommended: transfer the repo to a clean GitHub account (zero cost, zero commits — the workflow already targets `ubuntu-latest`, and `workflow_dispatch` exists for the first proving run). Owner action only; `ci-creates-no-runs` stays open until an option is picked.
+1. **CI is local, by decision (2026-08-01)** — `./scripts/ci.sh` is the whole CI in one command (option D of `docs/CI_WITHOUT_BILLING.md`, chosen); `validate.yml` is dispatch-only, so PRs stop collecting meaningless red crosses. `ci-creates-no-runs` closed as a decision.
 2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
 3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
 4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.
@@ -148,7 +146,10 @@ cp .env.example .env  # fill in DATABASE_URL and encryption secrets
 npx drizzle-kit generate
 npx drizzle-kit migrate
 
-# Local verification (replaces CI)
+# The whole CI, locally (the verification story — see docs/CI_WITHOUT_BILLING.md)
+DATABASE_URL=… ./scripts/ci.sh          # add CI_SERVING=1 for the serving probe
+
+# Just the python harness + spec validation
 ./scripts/check.sh
 
 # Dev server

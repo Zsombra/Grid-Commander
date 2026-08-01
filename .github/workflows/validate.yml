@@ -1,10 +1,13 @@
 name: Spec Layer
 
+# Manual trigger only, by the operator's decision (2026-08-01): the
+# account's Actions are billing-blocked and will stay that way, so automatic
+# runs produced seven ~2s failures on every push and PR — red noise that
+# meant nothing. Verification is `./scripts/ci.sh`, locally, as policy
+# (docs/CI_WITHOUT_BILLING.md, option D). The jobs stay defined so a single
+# dispatch proves them the day the account is ever unblocked.
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
