@@ -46,7 +46,9 @@ import {
 } from './application/use-cases/rebind-agent.command.js';
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
+import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
 import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
+import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
 import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
@@ -96,6 +98,7 @@ interface Infrastructure {
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
   readonly radar: McpRadarAdapter;
+  readonly grid: McpMarketGridAdapter;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
@@ -140,6 +143,7 @@ function infrastructure(): Infrastructure {
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
     radar: new McpRadarAdapter(battlegrid),
+    grid: new McpMarketGridAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
@@ -235,6 +239,8 @@ export function app(cookies: CookieStore) {
     forkStrategy: new ForkStrategyCommand(i.strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
+
+    watchArena: new WatchArenaQuery(i.grid),
   };
 }
 

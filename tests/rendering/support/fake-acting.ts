@@ -9,12 +9,14 @@ import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.que
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
+import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
 import type { CurrentUserResult } from '@/application/use-cases/current-user.query.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import { NOT_CONNECTED } from '@/domain/session/session.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { FakeAgentsPort } from '../../support/agent-fakes.js';
 import { SequentialRandom } from '../../support/agent-fakes.js';
+import { FakeMarketGridPort } from '../../support/grid-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
 
@@ -49,10 +51,12 @@ export function actingWith({
   agents = new FakeAgentsPort([]),
   strategies = new FakeStrategiesPort(),
   radar = new RenderRadarPort(),
+  grid = new FakeMarketGridPort(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
   radar?: RenderRadarPort;
+  grid?: FakeMarketGridPort;
 } = {}) {
   const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
@@ -68,6 +72,7 @@ export function actingWith({
     readStrategy: new ReadStrategyQuery(strategies),
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
+    watchArena: new WatchArenaQuery(grid),
   };
 
   const user: CurrentUserResult = {
@@ -75,7 +80,7 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, confirmations };
+  return { app, user, agents, strategies, radar, grid, confirmations };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */

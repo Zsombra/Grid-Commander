@@ -31,6 +31,7 @@ import { usePathname } from 'next/navigation';
 const SECTIONS = [
   { href: '/agents', label: 'Agents' },
   { href: '/strategies', label: 'Strategies' },
+  { href: '/arena', label: 'Arena' },
   { href: '/audit', label: 'Activity' },
 ] as const;
 

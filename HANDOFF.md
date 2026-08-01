@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-07-31  
-**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 10 further vitest are key-gated live probes). No active changes. 19 open backlog items. #8–#15 merged 2026-07-31.
+**Date**: 2026-08-01  
+**State**: green (942 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 10 further vitest are key-gated live probes). No active changes. 19 open backlog items. PRs #8–#22 merged.
 
 ---
 
@@ -19,21 +19,22 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | 8 |
+| Capabilities (archived) | 9 |
 | Changes (archived) | 68 |
-| Vitest tests | 923 (+10 key-gated live) + 62 db |
+| Vitest tests | 942 (+10 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 19 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#12 merged) |
+| Open draft PRs | 0 (see PR list; #8–#22 merged) |
 
 ---
 
-## Eight Capabilities
+## Nine Capabilities
 
 | Capability | What it covers |
 |---|---|
+| `market-grid` | The Market Grid arena, watched — sessions, schedules, entered state (reads only) |
 | `agent-deployment` | Deploy/undeploy an agent's radar presence (guarded writes) |
 | `spec-validation` | Automated spec layer validation in CI |
 | `harness-integrity` | The `openspec.py` tooling itself (124 tests) |
@@ -54,6 +55,7 @@ Against a real connected BattleGrid account a user can:
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
 - **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore
+- **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.

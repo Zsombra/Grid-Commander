@@ -7,7 +7,7 @@ priority: p3
 created: 2026-07-31
 updated: 2026-08-01
 change: ""
-capability: ""
+capability: "market-grid"
 blocked_by: []
 tags: [battlegrid, market-grid, product-model]
 ---
@@ -73,3 +73,19 @@ rendering tests per state, refusal-honest throughout. The submit tools
 (`submit_market_grid`, `random_submit_market_grid` — entry fee 10 means
 REAL STAKE) stay out of scope until consequence wording and classification
 are settled through the full ceremony.
+
+## The arena slice shipped (2026-08-01)
+
+`the-arena-is-watchable` (archived, capability `market-grid`): `/arena`
+lists every session with schedule, coin pool and the entered fact — the
+entered fact from `check_market_grid_submission` alone, the player-grid
+tool never called (the 500 rule, now a spec scenario). What remains of this
+item:
+
+- **The writes** — `submit_market_grid` / `random_submit_market_grid`
+  stake a real entry fee; consequence wording + classification through the
+  full ceremony before either is offered.
+- **`get_leaderboard` / `get_top_ranked_coins`** — declared arg shapes
+  still need the discovery read before any surface uses them.
+- **The settled-results payload** — still never observed on this account;
+  the port carries it opaque until one settles with a submission in.
