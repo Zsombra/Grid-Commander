@@ -187,6 +187,10 @@ export function anApprovedPlan(overrides: Record<string, unknown> = {}): Record<
       minAggregateScore: 0.5,
       minRequiredCount: 0,
       minAtrPct: 0.5,
+      // Required by the live apply schema; observed in the real postState
+      // 2026-07-31 (empty on a strategy with no conditions authored).
+      conditions: [],
+      conditionVerdicts: [],
       isActive: true,
     },
     explicitRuleOverrides: [],

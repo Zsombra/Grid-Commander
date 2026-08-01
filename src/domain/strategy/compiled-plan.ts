@@ -42,6 +42,13 @@ const PLAN_FIELDS_FROM_POST_STATE = [
   'minAggregateScore',
   'minRequiredCount',
   'minAtrPct',
+  // Required by the live schema since (at latest) 2026-07-31 — their absence
+  // was the sixth dead write path: every apply this product composed was
+  // rejected by input validation, and the conformance guard could not see it
+  // because `request.plan` was exempted as pass-through. Mapped against the
+  // real compile response: both live in `postState`.
+  'conditions',
+  'conditionVerdicts',
 ] as const;
 
 /**
@@ -57,7 +64,8 @@ export const FIELDS_APPLY_REJECTS = [
   'mismatches',
   'diff',
   'authoringCatalogDigest',
-  'expectedRevision',
+  // `expectedRevision` left this list 2026-07-31: the live UPDATE/RESTORE
+  // schema *requires* it — its absence was part of the sixth dead write path.
   'bindingImpact',
   'reviewContext',
   'signalRules',
@@ -104,6 +112,12 @@ export function toApplyPlan(
     // differ because they mean different things to the two sides; the rename is
     // not cosmetic.
     rules: approvedPlan['explicitRuleOverrides'] ?? [],
+    // Top-level on the approved plan, not in postState. UPDATE and RESTORE
+    // plans require it; a CREATE plan does not accept it, and the compiler
+    // omits it there — copied only when present, never invented.
+    ...(approvedPlan['expectedRevision'] !== undefined
+      ? { expectedRevision: approvedPlan['expectedRevision'] }
+      : {}),
   };
 
   for (const field of PLAN_FIELDS_FROM_POST_STATE) {
