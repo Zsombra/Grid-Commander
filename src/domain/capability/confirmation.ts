@@ -134,6 +134,22 @@ export const confirmationTarget = {
    */
   strategyPlan: (strategyId: string, intentDigest: string): string =>
     `strategy:${strategyId}#${intentDigest}`,
+
+  /**
+   * Retuning one signal rule: bound to the strategy *at the revision that
+   * was described*, the signal, and a digest of the exact values proposed.
+   * Value-carrying and fleet-wide, so it gets both precedents at once —
+   * `agentEdit`'s value digest and the rebind trio's revision. A tampered
+   * hidden field, values or `expectedRevision` alike, fails the recomputed
+   * target here before the platform is ever asked; the platform's own
+   * CONFLICT check remains behind it. See DL-1.
+   */
+  strategyRule: (
+    strategyId: string,
+    revision: number,
+    signalId: string,
+    intent: Readonly<Record<string, unknown>>,
+  ): string => `strategy:${strategyId}@r${revision}/rule:${signalId}#${digestOf(intent)}`,
 };
 
 /** Long enough to read the consequence, short enough not to be left lying around. */

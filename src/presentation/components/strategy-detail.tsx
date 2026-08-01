@@ -107,6 +107,9 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
                   <th className="p-2 font-medium text-text-primary">Weight</th>
                   <th className="p-2 font-medium text-text-primary">Required</th>
                   <th className="p-2 font-medium text-text-primary">Parameters</th>
+                  <th className="p-2 font-medium text-text-primary">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -119,6 +122,14 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
                         would hide that. */}
                     <td className="p-2 text-text-primary">{rule.required ? 'required' : '—'}</td>
                     <td className="p-2 text-text-secondary">{describeParams(rule.params)}</td>
+                    <td className="p-2">
+                      <a
+                        href={`/strategies/${summary.id}/rules/${rule.signalId}`}
+                        className="underline"
+                      >
+                        Retune
+                      </a>
+                    </td>
                   </tr>
                 ))}
               </tbody>

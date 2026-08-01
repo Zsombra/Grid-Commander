@@ -105,6 +105,40 @@ export class FakeStrategiesPort implements StrategiesPort {
     this.hints.set(hints.summary.id, hints);
   }
 
+  /** Set to make the rule write refuse with this message. */
+  ruleWriteRefusal: string | null = null;
+
+  async updateSignalRule(params: {
+    strategyId: string;
+    expectedRevision: number;
+    signalId: string;
+    allocation: number;
+    required: boolean;
+    ruleParams?: Readonly<Record<string, unknown>> | undefined;
+    confirmation: Confirmation;
+  }): Promise<Readonly<Record<string, unknown>>> {
+    this.calls.push({
+      op: 'update-rule',
+      payload: {
+        strategyId: params.strategyId,
+        expectedRevision: params.expectedRevision,
+        signalId: params.signalId,
+        allocation: params.allocation,
+        required: params.required,
+        ...(params.ruleParams !== undefined ? { params: params.ruleParams } : {}),
+      },
+      target: params.confirmation.target,
+    });
+    if (this.ruleWriteRefusal) throw new Error(this.ruleWriteRefusal);
+    const current = this.strategies.find((s) => s.id === params.strategyId);
+    if (current) {
+      this.strategies = this.strategies.map((s) =>
+        s.id === params.strategyId ? { ...s, revision: s.revision + 1 } : s,
+      );
+    }
+    return { strategy: { id: params.strategyId, revision: (current?.revision ?? 0) + 1 } };
+  }
+
   async readStrategy(): Promise<StrategyDetailResult> {
     if (!this.detailReadable) {
       return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };

@@ -114,33 +114,36 @@ describe('the product sends what BattleGrid requires', () => {
   }
 });
 
-describe('the two enveloped tools are wrapped, not built', () => {
+describe('the enveloped tools are wrapped, not built', () => {
   /**
-   * `compile_strategy_plan` and `apply_strategy_plan` each require exactly one
-   * argument, `request`, and neither method constructs it — the private `call()`
-   * helper wraps the payload for the tools in `ENVELOPED`. So the thing to check
-   * is that the set still contains them, not that the key appears at the call
-   * site. Getting this wrong in the checker reported two working calls as
-   * broken, which is how a guard earns its way into being ignored.
+   * `compile_strategy_plan`, `apply_strategy_plan` and
+   * `update_strategy_signal_rule` each require exactly one argument,
+   * `request`, and no method constructs it — the private `call()` helper
+   * wraps the payload for the tools in `ENVELOPED`. So the thing to check
+   * is that the set still contains them, not that the key appears at the
+   * call site. Getting this wrong in the checker reported two working calls
+   * as broken, which is how a guard earns its way into being ignored.
    */
   it('requires exactly the one argument the wrapper supplies', () => {
-    for (const tool of ['compile_strategy_plan', 'apply_strategy_plan']) {
+    for (const tool of ['compile_strategy_plan', 'apply_strategy_plan', 'update_strategy_signal_rule']) {
       expect(byName.get(tool)?.input_required, tool).toEqual(['request']);
     }
   });
 
-  it('still wraps both of them', () => {
-    expect(STRATEGIES).toMatch(/ENVELOPED\s*=\s*new Set<string>\(\[TOOLS\.compile, TOOLS\.apply\]\)/);
+  it('still wraps all of them', () => {
+    expect(STRATEGIES).toMatch(
+      /ENVELOPED\s*=\s*new Set<string>\(\[TOOLS\.compile, TOOLS\.apply, TOOLS\.updateRule\]\)/,
+    );
     expect(STRATEGIES).toMatch(/ENVELOPED\.has\(tool\) \? \{ request: payload \}/);
   });
 
   it('wraps every tool it calls that needs wrapping', () => {
     /**
-     * Four tools take a bare `request` envelope, not two: the pair above plus
-     * `get_strategy_section_template` and `update_strategy_signal_rule`, neither
-     * of which the product calls today. The first version of this assertion
-     * claimed only two existed and failed on the truth — a checker asserting a
-     * fact about the platform it had not looked up.
+     * Four tools take a bare `request` envelope: the pair above plus
+     * `update_strategy_signal_rule` (called since the-scorecard-is-tunable)
+     * and `get_strategy_section_template` (still uncalled). The first version
+     * of this assertion claimed only two existed and failed on the truth — a
+     * checker asserting a fact about the platform it had not looked up.
      *
      * The invariant that matters is narrower and survives: any enveloped tool
      * the product *calls* must be in `ENVELOPED`. Adding a call to either of the
@@ -165,7 +168,9 @@ describe('the two enveloped tools are wrapped, not built', () => {
     const called = needsWrapping.filter((name) => (AGENTS + STRATEGIES).includes(`'${name}'`));
     const unwrapped = called.filter((name) => !enveloped.has(alias.get(name) ?? ''));
 
-    expect(called, 'the product should still be calling the two it wraps').toHaveLength(2);
+    // Three since the-scorecard-is-tunable took up update_strategy_signal_rule
+    // — the moment the comment above anticipated.
+    expect(called, 'the product should still be calling the three it wraps').toHaveLength(3);
     expect(unwrapped, 'these are called but never wrapped as { request }').toEqual([]);
   });
 });

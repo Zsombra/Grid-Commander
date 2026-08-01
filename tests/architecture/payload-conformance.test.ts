@@ -350,6 +350,23 @@ describe('every payload the product constructs can succeed', () => {
     expect(violations(toolOrThrow('delete_radar_deployment'), payload)).toEqual([]);
   });
 
+  it('update_strategy_signal_rule — the retune the ceremony composes', () => {
+    // Mirrors McpStrategyAdapter.updateSignalRule: the ENVELOPED wrap, the
+    // revision the describe read (schema demands ≥ 1 — never 0), the closed
+    // allocation range, and params present only when the signal declares them.
+    const payload = {
+      request: {
+        strategyId: '3c17584c-ede7-4aca-ba02-045489868a25',
+        expectedRevision: 2,
+        signalId: 'rsi_oversold',
+        allocation: 2,
+        required: true,
+        params: { threshold: 25 },
+      },
+    };
+    expect(violations(toolOrThrow('update_strategy_signal_rule'), payload)).toEqual([]);
+  });
+
   it('apply_strategy_plan — the projected plan satisfies every declared demand', () => {
     // The real projection over the realistic fixture — NOT a pass-through
     // exemption. The exemption is how the sixth dead write path stayed

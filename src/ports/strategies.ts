@@ -63,6 +63,26 @@ export interface StrategiesPort {
     confirmation?: Confirmation | undefined;
   }): Promise<LifecycleResult>;
 
+  /**
+   * Change one signal rule's allocation, Required flag, and declared strict
+   * parameters. Destructive on the platform's own annotation: the change
+   * propagates to every bound agent immediately and open positions do not
+   * block it — which is why it only ever runs with a confirmation. The
+   * response passes through opaque; its shape has not been observed live.
+   */
+  updateSignalRule(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+    /** The revision the describe read. BattleGrid refuses a stale one. */
+    expectedRevision: number;
+    signalId: string;
+    allocation: number;
+    required: boolean;
+    ruleParams?: Readonly<Record<string, unknown>> | undefined;
+    confirmation: Confirmation;
+  }): Promise<Readonly<Record<string, unknown>>>;
+
   readVocabulary(params: { userId: string; accessToken: string }): Promise<VocabularyResult>;
 
   /**

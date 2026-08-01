@@ -1,5 +1,34 @@
 # Journal
 
+## 2026-08-01 — the scorecard is tunable: Phase 1's first write, walked live same-day
+
+**Did**: `the-scorecard-is-tunable` (**full track**, archived, gate PASS) —
+`update_strategy_signal_rule` behind the complete ceremony. The token binds
+strategy **at the revision read**, the signal, and a digest of the exact
+values (DL-1: agentEdit's digest + the rebind trio's revision — a tampered
+hidden field, values or expectedRevision alike, dies on the recomputed
+target in the guard). Membership before minting (only a rule the strategy
+carries; adding stays with compile→apply). Declared params always sent when
+declared (the agentEdit merge lesson). The consequence carries the real
+bound-agent count and the platform's own stakes: propagates immediately,
+open positions do not block. `/strategies/[id]/rules/[signalId]` two-step
+page, params prefilled from the rule with the signal definition's bounds;
+rule rows on the strategy page link in.
+
+**Live (DL-5), first attempt**: slot shuffle — DIST-03 parked → Dunkirk
+forked → `bollinger_cci_overbought` retuned 0→1 through
+describe→confirm→perform → read back at allocation 1, r1→r2 → fork parked,
+DIST-03 restored. Account as found. **Phase 1's write path is proven.**
+
+**Guards that moved**: ENVELOPED now wraps three tools (the mcp-conformance
+comment that predicted this moment updated to the new truth);
+payload-conformance carries the retune case; reachability pinned the new
+scoped form route.
+
+**State**: 0 active changes · 23 open backlog items · 71 archived changes ·
+1002 vitest (+16 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green. Phase 1 remaining: draft preview (`strategy-draft-preview`).
+
 ## 2026-08-01 — the column grammar is learnable: the platform teaches through its refusals
 
 **Did**: `the-column-grammar-is-learnable` (standard, archived) — Phase 1

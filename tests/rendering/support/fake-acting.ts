@@ -9,6 +9,7 @@ import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.que
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
+import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
 import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-library.query.js';
@@ -83,6 +84,8 @@ export function actingWith({
     readMetricIndex: new ReadMetricIndexQuery(strategies),
     readMetric: new ReadMetricQuery(strategies),
     checkColumn: new CheckColumnQuery(strategies),
+    describeRetune: new DescribeRetuneQuery(strategies, confirmations, random, clock),
+    retuneRule: new RetuneRuleCommand(strategies),
   };
 
   const user: CurrentUserResult = {

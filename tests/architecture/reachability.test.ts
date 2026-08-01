@@ -976,6 +976,7 @@ describe('a page about one thing can get back to it', () => {
       '/strategies/[id]/edit',
       '/strategies/[id]/fork',
       '/strategies/[id]/restore',
+      '/strategies/[id]/rules/[signalId]',
     ]);
   });
 });
