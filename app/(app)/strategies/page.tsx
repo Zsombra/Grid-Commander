@@ -15,6 +15,13 @@ export default async function StrategiesPage() {
         A strategy decides what an agent reads and how it reasons. Changing one
         reaches every agent bound to it, immediately.
       </p>
+      <p className="text-sm">
+        <a href="/strategies/signals" className="underline">
+          Browse the signal library
+        </a>{' '}
+        — every signal a strategy&apos;s rules can reference, in the
+        platform&apos;s own words.
+      </p>
       <StrategyList result={result} listings={listings} forking={forking} />
     </main>
   );

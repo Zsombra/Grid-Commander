@@ -884,7 +884,11 @@ describe('a page about one thing can get back to it', () => {
   it('derived the entities, and the pages scoped to them', () => {
     // The derivation must find the real ones. Empty passes the check above
     // vacuously; everything fails it for a reason unrelated to getting back.
-    expect([...entityRoutes].sort()).toEqual(['/agents/[id]', '/strategies/[id]']);
+    expect([...entityRoutes].sort()).toEqual([
+      '/agents/[id]',
+      '/strategies/[id]',
+      '/strategies/signals/[id]',
+    ]);
     // An entity's own page is the destination, never in the set that must reach
     // it. Getting this wrong would demand every entity page link to itself.
     for (const entity of entityRoutes) {

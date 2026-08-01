@@ -8,6 +8,11 @@ import type {
 import type {
   CompileResult,
   LifecycleResult,
+  SignalDefinition,
+  SignalExample,
+  SignalListResult,
+  SignalParameter,
+  SignalSummary,
   StrategiesPort,
   StrategyDetailResult,
   StrategyListResult,
@@ -45,6 +50,8 @@ const TOOLS = {
   categories: 'list_strategy_categories',
   get: 'get_strategy',
   vocabulary: 'list_strategy_vocabulary',
+  signals: 'list_strategy_signals',
+  signalDefinition: 'get_strategy_signal_definition',
 } as const;
 
 /** The four tools that require the strict outer envelope. */
@@ -277,6 +284,28 @@ export class McpStrategyAdapter implements StrategiesPort {
     }
   }
 
+  async listSignals(params: { userId: string; accessToken: string }): Promise<SignalListResult> {
+    try {
+      const payload = await this.call(params, TOOLS.signals, {});
+      const raw = payload['signals'];
+      if (!Array.isArray(raw)) return malformed('no signals returned');
+      return { kind: 'signals', signals: raw.map(mapSignalSummary) };
+    } catch (err) {
+      return unreadable(err);
+    }
+  }
+
+  async signalDefinition(params: {
+    userId: string;
+    accessToken: string;
+    signalId: string;
+  }): Promise<SignalDefinition> {
+    const payload = await this.call(params, TOOLS.signalDefinition, { signalId: params.signalId });
+    const sig = payload['signal'];
+    if (typeof sig !== 'object' || sig === null) throw new StrategyPayloadError('signal');
+    return mapSignalDefinition(sig as Record<string, unknown>);
+  }
+
   // -- internals ---------------------------------------------------------
 
   private async call(
@@ -472,4 +501,73 @@ function mapSignalRules(raw: unknown): readonly SignalRule[] {
 /** Null rather than 0 for an absent threshold: "no minimum" and "unstated" differ. */
 function num(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
+}
+
+/**
+ * A signal as the library lists it — shaped from the live payload of
+ * 2026-08-01. The id is what a rule references and what the detail route
+ * takes; a row without one is the refuse-whole-read case, same rule as
+ * everywhere else in this file.
+ */
+function mapSignalSummary(raw: unknown): SignalSummary {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof s['signalId'] === 'string' && s['signalId'].length > 0 ? s['signalId'] : null;
+  if (id === null) throw new StrategyPayloadError('signalId');
+  const display = (s['display'] ?? {}) as Record<string, unknown>;
+  return {
+    id,
+    module: String(s['module'] ?? 'OTHER'),
+    direction: String(s['direction'] ?? ''),
+    name: typeof display['displayName'] === 'string' ? display['displayName'] : id,
+    description: String(display['description'] ?? ''),
+  };
+}
+
+function mapSignalDefinition(sig: Record<string, unknown>): SignalDefinition {
+  const moduleDisplay = (sig['moduleDisplay'] ?? {}) as Record<string, unknown>;
+  const info = (sig['info'] ?? {}) as Record<string, unknown>;
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+
+  const examples: SignalExample[] = (Array.isArray(info['examples']) ? info['examples'] : [])
+    .map((entry) => (entry ?? {}) as Record<string, unknown>)
+    .filter((e) => typeof e['scenario'] === 'string' && typeof e['outcome'] === 'string')
+    .map((e) => ({ scenario: e['scenario'] as string, outcome: e['outcome'] as string }));
+
+  // The parameter list is the schema's properties joined with `defaultParams`.
+  // Empty is a real state — some signals take no parameters at all.
+  const schema = (sig['paramSchemaJson'] ?? {}) as Record<string, unknown>;
+  const properties = (schema['properties'] ?? {}) as Record<string, unknown>;
+  const defaults = (sig['defaultParams'] ?? {}) as Record<string, unknown>;
+  const parameters: SignalParameter[] = Object.entries(properties).map(([key, prop]) => {
+    const p = (prop ?? {}) as Record<string, unknown>;
+    return {
+      key,
+      description: text(p['description']),
+      min: num(p['minimum']),
+      max: num(p['maximum']),
+      defaultValue: num(defaults[key]),
+    };
+  });
+
+  const indicators = (Array.isArray(sig['indicators']) ? sig['indicators'] : [])
+    .map((entry) => {
+      const i = (entry ?? {}) as Record<string, unknown>;
+      const meta = (i['meta'] ?? {}) as Record<string, unknown>;
+      return text(meta['label']) ?? text(i['key']);
+    })
+    .filter((label): label is string => label !== null);
+
+  return {
+    summary: mapSignalSummary(sig),
+    moduleName: text(moduleDisplay['displayName']) ?? String(sig['module'] ?? ''),
+    moduleDescription: text(moduleDisplay['description']),
+    detects: text(info['detects']),
+    fires: text(info['fires']),
+    exampleSetup: text(info['exampleSetup']),
+    examples,
+    bestFor: text(info['bestFor']),
+    watchOut: text(info['watchOut']),
+    parameters,
+    indicators,
+  };
 }

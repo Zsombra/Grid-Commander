@@ -3,6 +3,9 @@ import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
   CompileResult,
   LifecycleResult,
+  SignalDefinition,
+  SignalListResult,
+  SignalSummary,
   StrategiesPort,
   StrategyDetailResult,
   StrategyListResult,
@@ -40,6 +43,30 @@ export class FakeStrategiesPort implements StrategiesPort {
   /** Set to hand back a detail; `null` means the strategy is not there. */
   detail: StrategyDetail | null = null;
   detailReadable = true;
+
+  signals: SignalSummary[] = [];
+  signalsReadable = true;
+  /** Keyed by signal id; a listed id with no entry makes the definition read throw. */
+  signalDefinitions = new Map<string, SignalDefinition>();
+
+  async listSignals(): Promise<SignalListResult> {
+    if (!this.signalsReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return { kind: 'signals', signals: this.signals };
+  }
+
+  async signalDefinition(params: { signalId: string }): Promise<SignalDefinition> {
+    const definition = this.signalDefinitions.get(params.signalId);
+    if (!definition) throw new Error(`no definition staged for ${params.signalId}`);
+    return definition;
+  }
+
+  /** Stage a signal in both the list and the definition store. */
+  stageSignal(definition: SignalDefinition) {
+    this.signals.push(definition.summary);
+    this.signalDefinitions.set(definition.summary.id, definition);
+  }
 
   async readStrategy(): Promise<StrategyDetailResult> {
     if (!this.detailReadable) {
@@ -198,6 +225,47 @@ export function anApprovedPlan(overrides: Record<string, unknown> = {}): Record<
     mismatches: [{ code: 'ACTIVE_SIGNAL_MODULE_NOT_IN_REPORT', message: 'advisory' }],
     diff: { changedAxes: ['IDENTITY'] },
     bindingImpact: { boundAgentCount: 0 },
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `list_strategy_signals` entry of 2026-08-01. */
+export function aSignal(overrides: Partial<SignalSummary> = {}): SignalSummary {
+  return {
+    id: 'rsi_oversold',
+    module: 'RSI',
+    direction: 'LONG',
+    name: 'Oversold',
+    description: 'RSI-14 falls below 30 — price in oversold territory',
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `get_strategy_signal_definition` payload of 2026-08-01. */
+export function aSignalDefinition(overrides: Partial<SignalDefinition> = {}): SignalDefinition {
+  return {
+    summary: aSignal(),
+    moduleName: 'RSI',
+    moduleDescription: 'Relative Strength Index — momentum oscillator on 0–100.',
+    detects: 'RSI has fallen into oversold territory.',
+    fires: 'Triggers when RSI(14) drops below the threshold.',
+    exampleSetup: 'Threshold = 30',
+    examples: [
+      { scenario: 'RSI = 27', outcome: 'fires, Bullish, score 0.10' },
+      { scenario: 'RSI = 32', outcome: 'does not fire' },
+    ],
+    bestFor: 'Mean-reversion entries inside ranges.',
+    watchOut: 'In strong downtrends RSI can stay <30 for many bars.',
+    parameters: [
+      {
+        key: 'threshold',
+        description: 'RSI oversold boundary in 0–100 index points.',
+        min: 1,
+        max: 50,
+        defaultValue: 30,
+      },
+    ],
+    indicators: ['RSI(14)'],
     ...overrides,
   };
 }
