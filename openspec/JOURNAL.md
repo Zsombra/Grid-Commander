@@ -1,5 +1,22 @@
 # Journal
 
+## 2026-08-01 — the Market Grid observed: the arena's shapes are recorded
+
+**Did**: The read-only first step of `market-grid-is-an-unmodelled-module`
+(the last unmodelled module), live: presets carry the game's economics
+(entry fee 10, multipliers, jackpot rule, 3×3 of 9 on a 1H cadence);
+sessions list/detail/lock/settle/coin-pool observed; results-before-settle
+is an honest CONFLICT the surface must render; submission check is clean;
+per-session agent-position totals answer with zeros. One platform mismatch
+found and recorded: `get_market_grid_player_grid` answers **500** for "you
+have not played", so a surface may only read that state through
+`check_market_grid_submission`. Leaderboard/top-coins arg shapes still need
+the discovery read. All recorded in the item — the read-only arena slice is
+ready to take as a fresh change.
+
+**State**: 0 active changes · 19 open backlog items · 68 archived changes ·
+all suites green · CI = ./scripts/ci.sh by policy.
+
 ## 2026-08-01 — CI is local, by decision
 
 **Did**: The operator chose option D of the decision sheet: everything stays
