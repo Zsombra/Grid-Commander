@@ -1,4 +1,10 @@
-import type { SectionTemplate, Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type {
+  SectionTemplate,
+  Strategy,
+  StrategyDetail,
+  StrategyQuota,
+  StrategySection,
+} from '@/domain/strategy/strategy.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { FailureCause } from './failure.js';
 
@@ -92,6 +98,32 @@ export interface StrategiesPort {
    * The adapter handles that detail — the use case sees one call.
    */
   listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult>;
+
+  /**
+   * Render a draft composition as the report text an agent would receive,
+   * over a bounded live coin selection — saving nothing, changing nothing.
+   * A platform refusal of the draft is a result here, in its words.
+   */
+  previewReport(params: {
+    userId: string;
+    accessToken: string;
+    timeframe: string;
+    regimeAutoDerive: boolean;
+    regimeTimeframe?: string | null | undefined;
+    sections: readonly StrategySection[];
+    coinSelection: CoinSelection;
+  }): Promise<ReportPreviewOutcome>;
+
+  /**
+   * Which signals a draft composition can feed — per-signal membership,
+   * status, and the platform's default allocation. Reads no persisted
+   * strategy; writes nothing.
+   */
+  deriveRuleView(params: {
+    userId: string;
+    accessToken: string;
+    sections: readonly StrategySection[];
+  }): Promise<readonly RuleMembership[]>;
 
   /**
    * The vocabulary's full metric index. Read fresh each time — the metric
@@ -325,6 +357,45 @@ export interface ColumnRefusal {
 export type ColumnCheckOutcome =
   | { readonly kind: 'contract'; readonly contract: ColumnContract }
   | { readonly kind: 'refused'; readonly refusal: ColumnRefusal };
+
+/** How a preview bounds its live coin selection — the platform's two modes. */
+export type CoinSelection =
+  | { readonly mode: 'ranked'; readonly limit: number; readonly category?: string | undefined }
+  | { readonly mode: 'explicit'; readonly tickers: readonly string[] };
+
+export interface RenderedSection {
+  readonly sectionKey: string;
+  readonly title: string;
+  /** The literal report text an agent would receive. The platform's words. */
+  readonly text: string;
+}
+
+export interface BudgetGauge {
+  readonly name: string;
+  readonly used: number;
+  readonly cap: number;
+}
+
+/** What `preview_strategy_report` renders — shaped live 2026-08-01. */
+export interface ReportPreview {
+  readonly sections: readonly RenderedSection[];
+  readonly estimatedTokenCount: number | null;
+  readonly tokenCountModel: string | null;
+  readonly budget: readonly BudgetGauge[];
+}
+
+export type ReportPreviewOutcome =
+  | { readonly kind: 'preview'; readonly preview: ReportPreview }
+  /** The platform refused the draft — its words are the content. */
+  | { readonly kind: 'refused'; readonly reason: string };
+
+/** One signal's membership against a draft — from `derive_strategy_rule_view`. */
+export interface RuleMembership {
+  readonly signalId: string;
+  readonly inReport: boolean;
+  readonly status: string;
+  readonly defaultAllocation: number | null;
+}
 
 /** One signal as the library lists it — shaped from the live payload of 2026-08-01. */
 export interface SignalSummary {

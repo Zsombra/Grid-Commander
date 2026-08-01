@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-08-01 — the draft is previewable: Phase 1 is complete
+
+**Did**: `the-draft-is-previewable` (standard, archived) — the phase's
+closing change, and the strategy maker's missing answer: *what does the
+agent actually read?* `previewReport` renders a composition as the literal
+report text over a bounded coin selection (ranked top-N or explicit
+tickers) with the token estimate, its counting model, and every budget
+gauge the platform declares (names pass through, never enumerated);
+`deriveRuleView` answers report membership for all 82 signals — which
+weights would do something. `/strategies/[id]/preview`, linked from the
+strategy page beside its sections; a refused draft renders in the
+platform's words with membership still shown (the two reads are
+independent). Nothing is written by previewing, and the rendering suite
+proves it.
+
+**Live**: Dunkirk through the product path — 5 sections rendered, ~1393
+tokens (`o200k_base`), four gauges, 12/82 signals in report.
+`strategy-draft-preview` closed done (the draft-*composer* slice recorded
+as its residual).
+
+**Phase 1 of the assistant roadmap is complete**: signal vocabulary →
+metric/column grammar (with the platform's teaching refusals) → the
+scorecard write (live-proven, full ceremony) → the agent's-eye preview.
+The strategy maker now closes its loop: learn, compose, check, retune,
+preview. Phase 2 (reporting/EV: `trading-telemetry-is-unread`,
+`entry-decisions-have-a-read-side`) is next.
+
+**State**: 0 active changes · 22 open backlog items · 72 archived changes ·
+1016 vitest (+17 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
 ## 2026-08-01 — the scorecard is tunable: Phase 1's first write, walked live same-day
 
 **Did**: `the-scorecard-is-tunable` (**full track**, archived, gate PASS) —

@@ -6,6 +6,8 @@ import type {
   StrategySection,
 } from '@/domain/strategy/strategy.js';
 import type {
+  BudgetGauge,
+  CoinSelection,
   ColumnCheckOutcome,
   ColumnContract,
   ColumnOutput,
@@ -17,6 +19,9 @@ import type {
   MetricListResult,
   MetricSummary,
   MetricTransform,
+  RenderedSection,
+  ReportPreviewOutcome,
+  RuleMembership,
   SignalDefinition,
   SignalExample,
   SignalListResult,
@@ -65,6 +70,8 @@ const TOOLS = {
   metricHints: 'get_metric_construction_hints',
   columnContract: 'get_strategy_column_contract',
   updateRule: 'update_strategy_signal_rule',
+  preview: 'preview_strategy_report',
+  ruleView: 'derive_strategy_rule_view',
 } as const;
 
 /** The tools that require the strict outer `{request: …}` envelope. */
@@ -295,6 +302,64 @@ export class McpStrategyAdapter implements StrategiesPort {
     } catch (err) {
       return unreadable(err);
     }
+  }
+
+  async previewReport(params: {
+    userId: string;
+    accessToken: string;
+    timeframe: string;
+    regimeAutoDerive: boolean;
+    regimeTimeframe?: string | null | undefined;
+    sections: readonly StrategySection[];
+    coinSelection: CoinSelection;
+  }): Promise<ReportPreviewOutcome> {
+    try {
+      const payload = await this.call(params, TOOLS.preview, {
+        timeframe: params.timeframe,
+        regimeAutoDerive: params.regimeAutoDerive,
+        ...(params.regimeTimeframe !== undefined ? { regimeTimeframe: params.regimeTimeframe } : {}),
+        sections: params.sections.map((s) => ({ kind: s.kind, sectionKey: s.sectionKey })),
+        coinSelection:
+          params.coinSelection.mode === 'ranked'
+            ? {
+                mode: 'ranked',
+                limit: params.coinSelection.limit,
+                ...(params.coinSelection.category !== undefined
+                  ? { category: params.coinSelection.category }
+                  : {}),
+              }
+            : { mode: 'explicit', tickers: [...params.coinSelection.tickers] },
+      });
+      return { kind: 'preview', preview: mapReportPreview(payload) };
+    } catch (err) {
+      // A refused draft is this surface's content — the platform's words,
+      // never flattened. Anything else keeps its nature.
+      if (err instanceof ToolRefusedError) return { kind: 'refused', reason: err.message };
+      throw err;
+    }
+  }
+
+  async deriveRuleView(params: {
+    userId: string;
+    accessToken: string;
+    sections: readonly StrategySection[];
+  }): Promise<readonly RuleMembership[]> {
+    const payload = await this.call(params, TOOLS.ruleView, {
+      sections: params.sections.map((s) => ({ kind: s.kind, sectionKey: s.sectionKey })),
+    });
+    const raw = payload['rules'];
+    if (!Array.isArray(raw)) throw new StrategyPayloadError('rules');
+    return raw.map((entry) => {
+      const r = (entry ?? {}) as Record<string, unknown>;
+      const signalId = typeof r['signalId'] === 'string' && r['signalId'] ? r['signalId'] : null;
+      if (signalId === null) throw new StrategyPayloadError('signalId');
+      return {
+        signalId,
+        inReport: r['inReport'] === true,
+        status: String(r['status'] ?? 'UNKNOWN'),
+        defaultAllocation: num(r['reportDefaultAllocation']),
+      };
+    });
   }
 
   async updateSignalRule(params: {
@@ -638,6 +703,38 @@ function mapSignalRules(raw: unknown): readonly SignalRule[] {
 /** Null rather than 0 for an absent threshold: "no minimum" and "unstated" differ. */
 function num(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
+}
+
+/** The preview payload, shaped live 2026-08-01 on Dunkirk's composition. */
+function mapReportPreview(payload: Record<string, unknown>) {
+  const sections: RenderedSection[] = (
+    Array.isArray(payload['renderedSections']) ? payload['renderedSections'] : []
+  ).map((entry) => {
+    const s = (entry ?? {}) as Record<string, unknown>;
+    const sectionKey = typeof s['sectionKey'] === 'string' && s['sectionKey'] ? s['sectionKey'] : null;
+    if (sectionKey === null) throw new StrategyPayloadError('sectionKey');
+    return {
+      sectionKey,
+      title: typeof s['title'] === 'string' && s['title'] ? s['title'] : sectionKey,
+      text: String(s['text'] ?? ''),
+    };
+  });
+  // `budgetUsage` is a record of platform-named gauges. Names pass through
+  // as given — enumerating them here would go stale the day one is added.
+  const budgetRaw = (payload['budgetUsage'] ?? {}) as Record<string, unknown>;
+  const budget: BudgetGauge[] = Object.entries(budgetRaw)
+    .map(([name, gauge]) => {
+      const g = (gauge ?? {}) as Record<string, unknown>;
+      return { name, used: num(g['used']), cap: num(g['cap']) };
+    })
+    .filter((g): g is BudgetGauge => g.used !== null && g.cap !== null);
+  return {
+    sections,
+    estimatedTokenCount: num(payload['estimatedTokenCount']),
+    tokenCountModel:
+      typeof payload['tokenCountModel'] === 'string' ? payload['tokenCountModel'] : null,
+    budget,
+  };
 }
 
 /**

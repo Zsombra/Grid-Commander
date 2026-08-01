@@ -63,6 +63,13 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
             ))}
           </ul>
         )}
+        <p className="text-sm">
+          <a href={`/strategies/${summary.id}/preview`} className="underline">
+            Preview what an agent reads
+          </a>{' '}
+          — the report rendered live from this composition, without saving
+          anything.
+        </p>
       </section>
 
       <section className="space-y-2">

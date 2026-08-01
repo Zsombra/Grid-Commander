@@ -2,11 +2,11 @@
 id: strategy-draft-preview
 title: A draft section selection cannot be previewed against live market data
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-30
-updated: 2026-07-30
-change: ""
+updated: 2026-08-01
+change: "the-draft-is-previewable"
 capability: strategy-authoring
 blocked_by: [strategy-section-editor]
 tags: [ui]
@@ -50,3 +50,15 @@ compiling.
 
 Both calls are effect-free and can be made as many times as the user wants
 before committing to a compile.
+
+## Done (2026-08-01)
+
+`the-draft-is-previewable` (archived): `/strategies/[id]/preview` renders
+the strategy's current composition as the report text an agent receives —
+live, bounded coin selection, token estimate with the counting model,
+budget gauges, and `derive_strategy_rule_view`'s membership summary (which
+signals the composition feeds). Live-proven on Dunkirk: 5 sections, ~1393
+tokens (o200k_base), 12/82 signals in report. The remaining slice — a
+*draft-composer* preview for not-yet-applied section selections — needs the
+edit page to carry a draft in the URL and is recorded in the change's
+out-of-scope note.
