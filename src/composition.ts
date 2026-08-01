@@ -40,6 +40,10 @@ import { ReadSectionOptionsQuery } from './application/use-cases/read-section-op
 import { ReadSignalLibraryQuery } from './application/use-cases/read-signal-library.query.js';
 import { ReadSignalQuery } from './application/use-cases/read-signal.query.js';
 import { CheckColumnQuery } from './application/use-cases/check-column.query.js';
+import {
+  DescribeRetuneQuery,
+  RetuneRuleCommand,
+} from './application/use-cases/retune-rule.command.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
@@ -241,6 +245,10 @@ export function app(cookies: CookieStore) {
     readMetricIndex: new ReadMetricIndexQuery(i.strategies),
     readMetric: new ReadMetricQuery(i.strategies),
     checkColumn: new CheckColumnQuery(i.strategies),
+    // The scorecard write follows the same split as every other: the
+    // describe states the blast radius and mints; the perform spends.
+    describeRetune: new DescribeRetuneQuery(i.strategies, i.confirmations, random, systemClock),
+    retuneRule: new RetuneRuleCommand(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
     compilePlan: new CompilePlanCommand(i.strategies),

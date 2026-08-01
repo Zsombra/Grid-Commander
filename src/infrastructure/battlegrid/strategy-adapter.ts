@@ -64,10 +64,11 @@ const TOOLS = {
   signalDefinition: 'get_strategy_signal_definition',
   metricHints: 'get_metric_construction_hints',
   columnContract: 'get_strategy_column_contract',
+  updateRule: 'update_strategy_signal_rule',
 } as const;
 
-/** The four tools that require the strict outer envelope. */
-const ENVELOPED = new Set<string>([TOOLS.compile, TOOLS.apply]);
+/** The tools that require the strict outer `{request: …}` envelope. */
+const ENVELOPED = new Set<string>([TOOLS.compile, TOOLS.apply, TOOLS.updateRule]);
 
 export class McpStrategyAdapter implements StrategiesPort {
   constructor(private readonly battlegrid: BattleGridPort) {}
@@ -294,6 +295,34 @@ export class McpStrategyAdapter implements StrategiesPort {
     } catch (err) {
       return unreadable(err);
     }
+  }
+
+  async updateSignalRule(params: {
+    userId: string;
+    accessToken: string;
+    strategyId: string;
+    expectedRevision: number;
+    signalId: string;
+    allocation: number;
+    required: boolean;
+    ruleParams?: Readonly<Record<string, unknown>> | undefined;
+    confirmation: Confirmation;
+  }): Promise<Readonly<Record<string, unknown>>> {
+    return this.call(
+      params,
+      TOOLS.updateRule,
+      {
+        strategyId: params.strategyId,
+        expectedRevision: params.expectedRevision,
+        signalId: params.signalId,
+        allocation: params.allocation,
+        required: params.required,
+        // Declared optional; sent only when the signal declares parameters —
+        // an argument a tool does not expect is one more thing to reject.
+        ...(params.ruleParams !== undefined ? { params: params.ruleParams } : {}),
+      },
+      { confirmation: params.confirmation },
+    );
   }
 
   async listMetrics(params: { userId: string; accessToken: string }): Promise<MetricListResult> {

@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-01  
-**State**: green (983 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 15 further vitest are key-gated live probes). No active changes. 23 open backlog items. PRs #8–#26 merged. The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; Phase 1 (strategy-maker) is underway — signal vocabulary and metric/column workbench shipped, the signal-rule write and draft preview remain.
+**State**: green (1002 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 16 further vitest are key-gated live probes). No active changes. 23 open backlog items. PRs #8–#27 merged. The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; Phase 1 (strategy-maker): signal vocabulary, metric/column workbench, and the signal-rule write (live-proven) shipped — draft preview remains.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 9 |
-| Changes (archived) | 70 |
-| Vitest tests | 983 (+15 key-gated live) + 62 db |
+| Changes (archived) | 71 |
+| Vitest tests | 1002 (+16 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 23 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#26 merged) |
+| Open draft PRs | 0 (see PR list; #8–#27 merged) |
 
 ---
 
@@ -54,7 +54,7 @@ Against a real connected BattleGrid account a user can:
 - **Agents**: view roster, create, rename, update trading limits, edit position management (a preset with the platform's own values or fourteen custom fields, drift between label and values said plainly), rebind to a strategy, archive, reactivate
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
 - **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
-- **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain)
+- **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain); **retune any signal rule the strategy carries** (allocation, Required, declared params) through the full describe→confirm→perform ceremony, the token digest-bound to the exact values at the revision read (live-proven 2026-08-01: allocation 0→1 on a zero-bound fork, r1→r2 read back)
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
