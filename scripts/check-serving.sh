@@ -187,4 +187,15 @@ if ! PORT="$PORT" node tools/check-route-queries.mjs; then
   exit 1
 fi
 
-echo "serving ok — every session-resolving route answered, and one queried"
+# The health route, after the transaction accounting above — it drives the
+# application's pool (`select 1`), and probing it first hands the helper a
+# counter it did not expect to move. 200 here proves the whole promise:
+# process up AND database answering, with nothing but the status word back.
+health_code="$(curl -s -o /dev/null -w '%{http_code}' --noproxy '*' "http://127.0.0.1:$PORT/api/health")"
+if [[ "$health_code" != "200" ]]; then
+  echo "the health check answered $health_code with the database up — /api/health is broken."
+  exit 1
+fi
+printf '  %-14s %s\n' "/api/health" "$health_code"
+
+echo "serving ok — every session-resolving route answered, one queried, and the health check checks"

@@ -22,8 +22,12 @@ const nextConfig: NextConfig = {
    * do. Next's webpack does not, so without this it looks for a `.js` file that
    * was never emitted and the whole application fails to resolve.
    *
-   * Webpack only. Whether `next dev --turbopack` needs the equivalent is
-   * unproven — filed as `turbopack-build-unproven`.
+   * Webpack only, and webpack is the supported path — dev and build alike.
+   * Proven 2026-08-01: `next dev --turbopack` (Next 15.1) cannot resolve
+   * these specifiers through the `@/` alias (`Module not found:
+   * '@/…/describe-grant.query.js'`, /connect answers 500), and Turbopack's
+   * configuration offers no `extensionAlias` equivalent to teach it. Use
+   * `next dev` without the flag. (`turbopack-build-unproven`, closed.)
    */
   webpack: (config) => {
     config.resolve.extensionAlias = {
