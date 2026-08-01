@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-07-31  
-**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 21 open backlog items. #8–#15 merged 2026-07-31.
+**State**: green (923 vitest + 62 db + 221 harness tests, typecheck clean; 9 further vitest are key-gated live probes). No active changes. 20 open backlog items. #8–#15 merged 2026-07-31.
 
 ---
 
@@ -24,7 +24,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Vitest tests | 923 (+9 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
-| Open backlog items | 21 |
+| Open backlog items | 20 |
 | Design tickets open | 0 |
 | Open draft PRs | 0 (see PR list; #8–#12 merged) |
 
@@ -58,7 +58,7 @@ Against a real connected BattleGrid account a user can:
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
-**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, and archived. The agent's thought log and budget gauges were read. A radar deployment was replaced-in-place through the deploy flow (HYPE r1→r2, describe→confirm→perform). All against a real BattleGrid account. Key-gated live probes live in `tests/live/` (`BATTLEGRID_API_KEY=… npx vitest run tests/live/`).
+**Proven live**: an agent was created, renamed, had its limits updated, archived, and reactivated (reactivate proven 2026-07-31 on a throwaway: ARCHIVED→ACTIVE→ARCHIVED through the guarded path). A strategy was forked, compiled, archived, and restored (restore walked 2026-07-31: archived strategies ARE listed, so the flow is reachable; r3→r5 round trip on an unbound strategy, account left as found). The agent's thought log and budget gauges were read. A radar deployment was replaced-in-place through the deploy flow (HYPE r1→r2, describe→confirm→perform). All against a real BattleGrid account. Key-gated live probes live in `tests/live/` (`BATTLEGRID_API_KEY=… npx vitest run tests/live/`).
 
 ---
 

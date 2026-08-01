@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Strategy } from '@/domain/strategy/strategy.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import {
@@ -76,44 +77,80 @@ live('restore walks end-to-end through the product commands', () => {
       expect(source, 'need a SYSTEM strategy to fork').toBeDefined();
       if (!source) return;
 
-      // --- a throwaway to archive and bring back ---------------------------
-      const forked = await new ForkStrategyCommand(strategies).execute({
-        ...who,
-        strategy: source,
-      });
-      if (forked.kind !== 'forked') throw new Error('fork refused');
-      let fork = forked.strategy;
-      // eslint-disable-next-line no-console
-      console.log(`  fork: ${fork.name} ${fork.id} r${fork.revision} active=${String(fork.isActive)}`);
+      /**
+       * A subject to archive and bring back, acquired the least invasive way
+       * available. A fork is cleanest — a throwaway that outlives nothing.
+       * At the 25-strategy cap (the account's state 2026-07-31) a fork is
+       * refused, so the walk falls back to the operator's own strategies,
+       * ending each exactly as found: an already-archived PRIVATE one is
+       * restored (the act under test) and re-archived; failing that, an
+       * active PRIVATE one with nothing bound is archived, restored, and
+       * left active.
+       */
+      let fork: Strategy | undefined;
+      let endActive = false;
+      const forked = await new ForkStrategyCommand(strategies)
+        .execute({ ...who, strategy: source })
+        .catch((err: unknown) => {
+          if (err instanceof Error && /limit/i.test(err.message)) return null;
+          throw err;
+        });
+      if (forked && forked.kind === 'forked') {
+        fork = forked.strategy;
+        // eslint-disable-next-line no-console
+        console.log(`  fork: ${fork.name} ${fork.id} r${fork.revision}`);
+      } else {
+        const parked = listing.strategies.find((s) => s.scope === 'PRIVATE' && !s.isActive);
+        const unbound = listing.strategies.find(
+          (s) => s.scope === 'PRIVATE' && s.isActive && s.boundAgentCount === 0,
+        );
+        fork = parked ?? unbound;
+        endActive = !parked && !!unbound;
+        // eslint-disable-next-line no-console
+        console.log(
+          `  at the strategy cap; subject: ${fork ? `${fork.name} ${fork.id} r${fork.revision} active=${String(fork.isActive)}` : 'none available'}`,
+        );
+        expect(
+          fork,
+          'the cap is reached and no PRIVATE strategy is safely walkable — account state, not a defect',
+        ).toBeDefined();
+        if (!fork) return;
+      }
+      if (!fork) return;
 
       try {
-        // --- archive it, the product way (describe mints, perform spends) ---
-        const proposal = await describeArchive.execute({ ...who, strategy: fork });
-        if (proposal.kind !== 'proposal') throw new Error(`no archive proposal: ${proposal.reason}`);
-        const archived = await setActive.execute({
-          ...who,
-          strategy: fork,
-          active: false,
-          confirmationToken: proposal.proposal.confirmationToken,
-        });
-        // eslint-disable-next-line no-console
-        console.log(`  archive: ${archived.kind}`);
-        expect(archived.kind).toBe('changed');
-        if (archived.kind !== 'changed') return;
-        fork = archived.strategy;
-        expect(fork.isActive, 'archived means inactive').toBe(false);
+        if (fork.isActive) {
+          // --- archive it, the product way (describe mints, perform spends) ---
+          const proposal = await describeArchive.execute({ ...who, strategy: fork });
+          if (proposal.kind !== 'proposal') throw new Error(`no archive proposal: ${proposal.reason}`);
+          const archived = await setActive.execute({
+            ...who,
+            strategy: fork,
+            active: false,
+            confirmationToken: proposal.proposal.confirmationToken,
+          });
+          // eslint-disable-next-line no-console
+          console.log(`  archive: ${archived.kind}`);
+          expect(archived.kind).toBe('changed');
+          if (archived.kind !== 'changed') return;
+          fork = archived.strategy;
+          expect(fork.isActive, 'archived means inactive').toBe(false);
+        }
 
         /**
          * THE question this walk exists to answer: does the roster still
          * carry the archived strategy? The restore action looks it up there
          * before calling anything — absent means restore is unreachable.
+         * (A subject that was *found* archived answers it by having been in
+         * the listing at all.)
          */
         const after = await strategies.listStrategies(who);
         if (after.kind !== 'strategies') throw new Error('cannot re-read strategies');
-        const listed = after.strategies.find((s) => s.id === fork.id);
+        const subjectId = fork.id;
+        const listed = after.strategies.find((s) => s.id === subjectId);
         // eslint-disable-next-line no-console
         console.log(
-          `  roster after archive: ${listed ? `listed (isActive=${String(listed.isActive)})` : 'ABSENT — restore unreachable from the roster'}`,
+          `  roster while archived: ${listed ? `listed (isActive=${String(listed.isActive)})` : 'ABSENT — restore unreachable from the roster'}`,
         );
         expect(
           listed,
@@ -142,10 +179,11 @@ live('restore walks end-to-end through the product commands', () => {
         expect(readBack.detail.summary.isActive).toBe(true);
         fork = readBack.detail.summary;
       } finally {
-        // Leave nothing behind: whatever state the walk reached, archive it.
+        // The account ends as it was found: a fork or a parked subject is
+        // archived; a subject that was active stays active.
         const current = await strategies.readStrategy({ ...who, strategyId: fork.id });
         const parting = current.kind === 'strategy' ? current.detail.summary : fork;
-        if (parting.isActive) {
+        if (parting.isActive && !endActive) {
           const proposal = await describeArchive.execute({ ...who, strategy: parting });
           if (proposal.kind === 'proposal') {
             const cleanup = await setActive.execute({

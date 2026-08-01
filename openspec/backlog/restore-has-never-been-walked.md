@@ -1,7 +1,7 @@
 ---
 id: restore-has-never-been-walked
 type: risk
-status: in-progress
+status: done
 priority: P2
 capability: strategy-authoring
 created: 2026-07-29
@@ -84,3 +84,32 @@ platform answers:
 Also armed in the same file's territory: `repair-required-can-actually-fire`
 moved REPAIR_REQUIRED detection to the refusal channel, so if the platform
 answers a restore that way, this walk is where it shows.
+
+## Walked 2026-07-31 — restore works, and the roster question is answered
+
+BattleGrid recovered (~20:1xZ, after a ~3h database outage the operator
+corroborated) and the walk ran through the product commands. The account
+was at the 25-strategy cap, so the fork was refused
+(`VALIDATION_ERROR: Strategy limit reached`) — the probe now acquires its
+subject the least invasive way available and ended the account exactly as
+found. Subject: the operator's unbound PRIVATE strategy "DIST-03: Macro
+200-SMA Rubber-Band" (0 agents bound).
+
+- **archive**: changed (describe minted, perform spent — the guarded path)
+- **THE question: `list_strategies` DOES return archived strategies** —
+  the subject was listed with `isActive=false`, so the restore flow is
+  reachable from the roster (the adapter's `includeInactive: true` is
+  honored)
+- **restore**: changed — `restore_strategy` succeeded live for the first
+  time in this product's history; read back `active=true`, revision 3→5
+  across the two lifecycle writes
+- **repair-required did not surface** on a healthy strategy — the plain
+  confirm is the main path; the refusal-channel detection
+  (`repair-required-can-actually-fire`) stays armed for the day it does
+- audit trail: every mutation recorded, fork honestly recorded as failed
+
+Both "what is not known" questions are answered: (1) archived strategies
+are listed; (2) plain restore is the common answer for a healthy strategy.
+Also discovered on the way: **the account is at its 25-strategy cap**, so
+the still-unwalked fork→compile→apply live sequence now ALSO needs a slot
+freed first — noted here for whoever takes it.

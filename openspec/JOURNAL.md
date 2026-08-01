@@ -1,5 +1,22 @@
 # Journal
 
+## 2026-07-31 — BattleGrid recovered; restore walked live, and it works
+
+**Did**: The platform came back after its ~3h database outage and the parked
+walk ran (`tests/live/restore-probe.test.ts`). The account turned out to be
+at the 25-strategy cap — fork refused — so the probe learned to acquire its
+subject the least invasive way available and end the account exactly as
+found. On the operator's unbound "DIST-03" strategy: archive → **the roster
+lists archived strategies** (THE reachability question — restore is
+reachable, `includeInactive: true` honored) → **restore succeeded live for
+the first time ever** (r3→r5, read back active) → subject left active as
+found. Closes `restore-has-never-been-walked` — the last live-blocked P2.
+Noted for later: the strategy cap now also gates the fork→compile→apply
+walk.
+
+**State**: 0 active changes · 20 open backlog items · 66 archived changes ·
+923 vitest (+9 key-gated skips) + 62 db + 221 harness green.
+
 ## 2026-07-31 — the rebind race closed, and five debts swept
 
 **Did**: Two changes while the outage holds, both archived.
