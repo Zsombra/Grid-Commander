@@ -72,6 +72,24 @@ export interface StrategiesPort {
    * The adapter handles that detail — the use case sees one call.
    */
   listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult>;
+
+  /**
+   * Every strategy signal the platform publishes, as compact summaries.
+   * Read fresh each time — the signal list is platform vocabulary and goes
+   * stale after a deployment like everything else.
+   */
+  listSignals(params: { userId: string; accessToken: string }): Promise<SignalListResult>;
+
+  /**
+   * One signal's full authoring definition. Callers establish the id exists
+   * via `listSignals` first — the platform enum-rejects unknown ids, and a
+   * refusal here is a read failure to surface, not a "no such signal".
+   */
+  signalDefinition(params: {
+    userId: string;
+    accessToken: string;
+    signalId: string;
+  }): Promise<SignalDefinition>;
 }
 
 /**
@@ -160,6 +178,56 @@ export type VocabularyResult =
 export type VocabularyTemplatesResult =
   | { readonly kind: 'templates'; readonly templates: readonly SectionTemplate[] }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/** One signal as the library lists it — shaped from the live payload of 2026-08-01. */
+export interface SignalSummary {
+  readonly id: string;
+  /** Platform module key, e.g. `RSI`, `PRICE_STRUCTURE`. The grouping axis. */
+  readonly module: string;
+  /** `LONG` / `SHORT` as the platform declares it — not interpreted. */
+  readonly direction: string;
+  readonly name: string;
+  readonly description: string;
+}
+
+export type SignalListResult =
+  | { readonly kind: 'signals'; readonly signals: readonly SignalSummary[] }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/** A parameter as the definition's schema declares it. */
+export interface SignalParameter {
+  readonly key: string;
+  readonly description: string | null;
+  readonly min: number | null;
+  readonly max: number | null;
+  /** From the platform's `defaultParams`, rendered as declared. */
+  readonly defaultValue: number | null;
+}
+
+export interface SignalExample {
+  readonly scenario: string;
+  readonly outcome: string;
+}
+
+/**
+ * The full authoring card. Every field is the platform's own copy — this
+ * product explains signals in BattleGrid's words, never its own.
+ */
+export interface SignalDefinition {
+  readonly summary: SignalSummary;
+  readonly moduleName: string;
+  readonly moduleDescription: string | null;
+  readonly detects: string | null;
+  readonly fires: string | null;
+  readonly exampleSetup: string | null;
+  readonly examples: readonly SignalExample[];
+  readonly bestFor: string | null;
+  readonly watchOut: string | null;
+  /** Empty is a real state — some signals take no parameters at all. */
+  readonly parameters: readonly SignalParameter[];
+  /** Indicator labels the signal reads, e.g. `RSI(14)`. */
+  readonly indicators: readonly string[];
+}
 
 /**
  * Sections available for each category, ready for the edit-page checklist.

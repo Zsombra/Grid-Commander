@@ -8,6 +8,8 @@ import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
+import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-library.query.js';
+import { ReadSignalQuery } from '@/application/use-cases/read-signal.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
 import type { CurrentUserResult } from '@/application/use-cases/current-user.query.js';
@@ -73,6 +75,8 @@ export function actingWith({
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
     watchArena: new WatchArenaQuery(grid),
+    readSignalLibrary: new ReadSignalLibraryQuery(strategies),
+    readSignal: new ReadSignalQuery(strategies),
   };
 
   const user: CurrentUserResult = {

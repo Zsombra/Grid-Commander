@@ -1,5 +1,30 @@
 # Journal
 
+## 2026-08-01 — the signal vocabulary is readable: Phase 1 of the assistant roadmap begins
+
+**Did**: `the-signal-vocabulary-is-readable` (standard, archived) — the
+first change of the strategy-maker phase from
+`an-assistant-over-the-use-cases`. Discovery read first (declarations +
+live payloads, three temp diags in scratchpad): 82 signals across 18
+modules; the definition is a full authoring card (detects/fires/worked
+examples/best-for/watch-out, param schema with defaults, indicators);
+an unknown id enum-rejects with -32602. Built: `listSignals` +
+`signalDefinition` on the strategies port/adapter (refuse-whole-read),
+`ReadSignalLibraryQuery` (grouped by module; zero signals renders
+unreadable — the vocabulary is the platform's, "none exist" is not ours to
+claim), `ReadSignalQuery` (membership first, the roster pattern — no
+unlisted id is ever sent onward), `/strategies/signals` +
+`/strategies/signals/[id]`, linked from `/strategies`. The reachability
+walker derived the new entity route on its own (pin updated).
+
+**Live-proven**: `tests/live/signal-vocabulary-probe.test.ts` — the
+library and one card read through the product path against the real
+platform; the ghost id answers no-such-signal without a platform call.
+
+**State**: 0 active changes · 23 open backlog items (4 filed from the
+exploration) · 69 archived changes · 961 vitest (+12 key-gated) + 62 db +
+221 harness · all nine ci.sh gates green.
+
 ## 2026-08-01 — the arena is watchable: the ninth capability
 
 **Did**: `the-arena-is-watchable` (standard, archived) — the read-only
