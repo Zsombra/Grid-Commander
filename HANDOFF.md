@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-01  
-**State**: green (1019 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 18 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#29 merged. The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. Phase 2 is reporting/EV (`trading-telemetry-is-unread`, `entry-decisions-have-a-read-side`).
+**Date**: 2026-08-02  
+**State**: green (1021 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 18 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#30 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. Phase 2 is reporting/EV (`trading-telemetry-is-unread`, `entry-decisions-have-a-read-side`).
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 9 |
-| Changes (archived) | 73 |
-| Vitest tests | 1019 (+18 key-gated live) + 62 db |
+| Changes (archived) | 74 |
+| Vitest tests | 1021 (+18 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#29 merged) |
+| Open draft PRs | 0 (see PR list; #8–#30 merged) |
 
 ---
 

@@ -129,6 +129,20 @@ export interface StrategySection {
   readonly kind: string;
   /** e.g. `includeMovingAverages`. The identifier the platform uses. */
   readonly sectionKey: string;
+  /**
+   * A custom table's own definition, carried whole because the platform
+   * demands it back whole.
+   *
+   * A platform section is fully named by its key, but a custom one is not:
+   * `preview_strategy_report` rejects `{kind:'custom', sectionKey}` and
+   * requires the self-contained `title` + `columns` (live, 2026-08-01 —
+   * which is how the preview surface came to refuse every strategy holding
+   * a custom table). The columns stay opaque here: their grammar belongs to
+   * the platform's column contract, not to this domain.
+   */
+  readonly title?: string | undefined;
+  readonly timeframe?: string | undefined;
+  readonly columns?: readonly Readonly<Record<string, unknown>>[] | undefined;
 }
 
 /**

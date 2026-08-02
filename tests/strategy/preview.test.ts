@@ -180,3 +180,64 @@ describe('the preview query', () => {
     ).toBe('unreadable');
   });
 });
+
+describe('a custom table survives the round trip', () => {
+  /** Exactly what `get_strategy` returns for a saved custom section (live, 2026-08-01). */
+  const LIVE_CUSTOM = {
+    kind: 'custom',
+    sectionKey: 'custom:8b041f05-4eb8-4ff2-b83a-b89eb8934c8e',
+    title: 'Probe Momentum Table',
+    timeframe: '1h',
+    columns: [
+      { metric: 'RSI14', transformId: 'value', timeframe: { rel: 'anchor' } },
+      { metric: 'ADX', transformId: 'value', timeframe: { rel: 'anchor' } },
+    ],
+  };
+
+  it('the mapper keeps the definition, not just the key', async () => {
+    const { adapter } = adapterOver(() => ({
+      strategy: {
+        id: 's1',
+        revision: 2,
+        name: 'Fork',
+        scope: 'PRIVATE',
+        isActive: true,
+        boundAgentCount: 0,
+        sections: [LIVE_CUSTOM, { kind: 'platform', sectionKey: 'includeRsi' }],
+        signalRules: [],
+      },
+    }));
+    const read = await adapter.readStrategy({ ...who, strategyId: 's1' });
+    if (read.kind !== 'strategy') throw new Error(read.kind);
+    const [custom, platform] = read.detail.sections;
+    expect(custom?.title).toBe('Probe Momentum Table');
+    expect(custom?.timeframe).toBe('1h');
+    expect(custom?.columns).toHaveLength(2);
+    // A platform section is fully named by its key and carries nothing else.
+    expect(platform?.title).toBeUndefined();
+    expect(platform?.columns).toBeUndefined();
+  });
+
+  it('the preview sends a custom table back whole — a key alone is refused', async () => {
+    const { adapter, calls } = adapterOver(() => LIVE_PREVIEW);
+    await adapter.previewReport({
+      ...who,
+      timeframe: '1h',
+      regimeAutoDerive: true,
+      sections: [
+        {
+          kind: 'custom',
+          sectionKey: LIVE_CUSTOM.sectionKey,
+          title: LIVE_CUSTOM.title,
+          timeframe: LIVE_CUSTOM.timeframe,
+          columns: LIVE_CUSTOM.columns,
+        },
+        { kind: 'platform', sectionKey: 'includeRsi' },
+      ],
+      coinSelection: { mode: 'ranked', limit: 1 },
+    });
+    const sent = (calls[0]?.args as Record<string, unknown>)['sections'] as Record<string, unknown>[];
+    expect(sent[0]).toEqual(LIVE_CUSTOM);
+    expect(sent[1]).toEqual({ kind: 'platform', sectionKey: 'includeRsi' });
+  });
+});
