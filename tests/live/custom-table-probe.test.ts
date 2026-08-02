@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import type { Strategy } from '@/domain/strategy/strategy.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
@@ -153,10 +152,17 @@ live('a custom table can be created and modified on a real strategy', () => {
         console.log(`  fork: ${fork.name} r${fork.revision} · ${baseSections.length} sections`);
 
         // --- create: a two-column momentum table --------------------------
-        const tableKey = `custom:${randomUUID()}`;
+        /**
+         * **The platform mints the key, not the client.** Supplying a
+         * `custom:<uuid>` of our own is refused —
+         * `REPORT_CUSTOM_SECTION_NOT_OWNED`, "does not belong to this
+         * strategy" (observed live 2026-08-01). `sectionKey` is optional in
+         * the schema precisely because a new custom section is *defined*
+         * inline and named by the server; only an existing one is referenced
+         * by key.
+         */
         const tableV1 = {
           kind: 'custom',
-          sectionKey: tableKey,
           title: 'Probe Momentum Table',
           timeframe: '1h',
           columns: [
@@ -167,22 +173,64 @@ live('a custom table can be created and modified on a real strategy', () => {
         await land(fork, 'Add a custom momentum table', [...baseSections, tableV1]);
         const afterCreate = await strategies.readStrategy({ ...who, strategyId: fork.id });
         if (afterCreate.kind !== 'strategy') throw new Error('cannot re-read after create');
-        const created = afterCreate.detail.sections.find((s) => s.sectionKey === tableKey);
+        const baseKeys = new Set(baseSections.map((s) => s.sectionKey));
+        const created = afterCreate.detail.sections.find((s) => !baseKeys.has(s.sectionKey));
         // eslint-disable-next-line no-console
         console.log(
-          `  create: r${afterCreate.detail.summary.revision} sections=${afterCreate.detail.sections.length} table=${String(created?.sectionKey)}`,
+          `  create: r${afterCreate.detail.summary.revision} sections=${afterCreate.detail.sections.length} minted=${String(created?.sectionKey)}`,
         );
+        /**
+         * Does an UPDATE that never mentions the regime settings preserve
+         * them? `compileUpdateIntent` sends sections and tagline only, and a
+         * platform that treated omission as "set to default" would silently
+         * flip a strategy's regime configuration — the `agentEdit` failure
+         * mode, one layer up. Recorded either way.
+         */
+        // eslint-disable-next-line no-console
+        console.log(
+          `  regime: autoDerive ${String(forkDetail.detail.regimeAutoDerive)} -> ${String(afterCreate.detail.regimeAutoDerive)}, timeframe ${String(forkDetail.detail.regimeTimeframe)} -> ${String(afterCreate.detail.regimeTimeframe)}`,
+        );
+
+        /**
+         * What the platform *returns* for a saved custom section — the fact
+         * that decides whether this product can preview a strategy that has
+         * one. Read raw, because the domain's `StrategySection` carries only
+         * `kind` and `sectionKey` and would hide the answer.
+         */
+        const raw = await battlegrid.callTool({
+          userId: who.userId,
+          accessToken: who.accessToken,
+          tool: 'get_strategy',
+          args: { strategyId: fork.id },
+        });
+        const rawSections =
+          ((raw.content as Record<string, unknown>)['strategy'] as Record<string, unknown> | undefined)?.[
+            'sections'
+          ] ?? [];
+        const rawCustom = (Array.isArray(rawSections) ? rawSections : []).find((s: unknown) =>
+          String(((s ?? {}) as Record<string, unknown>)['sectionKey'] ?? '').startsWith('custom:'),
+        );
+        // eslint-disable-next-line no-console
+        console.log(`  saved custom section as read: ${JSON.stringify(rawCustom)}`);
         expect(created, 'the created table must appear on the strategy').toBeDefined();
+        const tableKey = created!.sectionKey;
 
         // --- the table renders as the agent would read it -----------------
         const preview = await strategies.previewReport({
           ...who,
           timeframe: afterCreate.detail.summary.timeframe,
-          regimeAutoDerive: afterCreate.detail.regimeAutoDerive,
-          regimeTimeframe: afterCreate.detail.regimeTimeframe,
-          sections: [tableV1],
+          // Auto-derive, explicitly: `regimeTimeframe` is REQUIRED when
+          // `regimeAutoDerive` is false (live, 2026-08-01), and a preview
+          // is not the place to re-litigate the strategy's regime setting.
+          regimeAutoDerive: true,
+          // The minted key, so the preview describes the table as saved.
+          sections: [{ ...tableV1, sectionKey: tableKey }],
           coinSelection: { mode: 'explicit', tickers: ['BTC'] },
         });
+        if (preview.kind === 'refused') {
+          // eslint-disable-next-line no-console
+          console.log(`  preview REFUSED: ${preview.reason.slice(0, 300)}`);
+        }
         expect(preview.kind).toBe('preview');
         if (preview.kind === 'preview') {
           // eslint-disable-next-line no-console
@@ -193,9 +241,12 @@ live('a custom table can be created and modified on a real strategy', () => {
         }
 
         // --- modify: a third column from another family -------------------
+        // Now the key exists and IS supplied — that is what modifying a
+        // table means: reference the one the strategy owns and restate it.
         fork = await freshOf(fork.id);
         const tableV2 = {
           ...tableV1,
+          sectionKey: tableKey,
           title: 'Probe Momentum Table v2',
           columns: [
             ...tableV1.columns,

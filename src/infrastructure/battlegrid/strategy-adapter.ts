@@ -318,7 +318,17 @@ export class McpStrategyAdapter implements StrategiesPort {
         timeframe: params.timeframe,
         regimeAutoDerive: params.regimeAutoDerive,
         ...(params.regimeTimeframe !== undefined ? { regimeTimeframe: params.regimeTimeframe } : {}),
-        sections: params.sections.map((s) => ({ kind: s.kind, sectionKey: s.sectionKey })),
+        // A custom table goes back whole — key alone is refused (-32602:
+        // `title` and `columns` are required for `kind: 'custom'`). A
+        // platform section is fully named by its key and carries nothing
+        // else to send.
+        sections: params.sections.map((s) => ({
+          kind: s.kind,
+          sectionKey: s.sectionKey,
+          ...(s.title !== undefined ? { title: s.title } : {}),
+          ...(s.timeframe !== undefined ? { timeframe: s.timeframe } : {}),
+          ...(s.columns !== undefined ? { columns: s.columns } : {}),
+        })),
         coinSelection:
           params.coinSelection.mode === 'ranked'
             ? {
@@ -676,6 +686,13 @@ function mapSections(raw: unknown): readonly StrategySection[] {
     .map((e) => ({
       kind: typeof e['kind'] === 'string' ? e['kind'] : 'unknown',
       sectionKey: e['sectionKey'] as string,
+      // A custom table's definition, kept whole — the preview tool needs it
+      // back verbatim and a key alone will not do.
+      ...(typeof e['title'] === 'string' ? { title: e['title'] } : {}),
+      ...(typeof e['timeframe'] === 'string' ? { timeframe: e['timeframe'] } : {}),
+      ...(Array.isArray(e['columns'])
+        ? { columns: e['columns'] as readonly Readonly<Record<string, unknown>>[] }
+        : {}),
     }));
 }
 

@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-02 — the table-authoring campaign: the grammar mapped, a shipped bug found
+
+**Did**: the operator's campaign — author tables across the mathematical
+families, manipulate them, map everything — run live after BattleGrid's
+~10-hour outage lifted. Three phases, all green, plus one real bug caught.
+
+**The grammar** (`docs/REPORT_TABLE_GRAMMAR.md`, 250 lines, every claim
+live): 14 metrics swept across every transform they declare. Three shapes
+named — `trajectory` fans one column into five headers ending in a
+`direction`; `entitySet` metrics (STRUCT_ZONES) have their own transform
+vocabulary and a `priceRange` type no scalar produces; classification/event
+metrics take `value` and little else. **The operand law**: `spread` joins
+only unit-commensurable metrics, and the platform names the legal set in
+every refusal (oscillators↔oscillators, price↔price, percent↔percent, …).
+**The timeframe-inertia law**, found by a refused derivatives table: a
+section containing any *timeless* metric must declare no section timeframe
+— dropping it made the same table compile unchanged. And
+`regimeTimeframe` is required when `regimeAutoDerive` is false.
+
+**Five tables, five families, live against BTC**: momentum (feeds 16
+signals), flow (8), derivatives (6), structure (4), mixed-timeframe (14) —
+each rendering real values with its token cost and budget gauges.
+
+**Create and modify, walked live**: the platform mints custom section keys
+— defining a table inline with no key creates it (`REPORT_CUSTOM_SECTION_NOT_OWNED`
+if you invent one), and restating it *with* that key modifies it. Fork →
+add a momentum table (r2, `custom:8b041f05…`) → preview it → widen it with
+a CVD column (r3) → everything restored. Also settled: an UPDATE that omits
+the regime settings preserves them, and an archived strategy is listed but
+its detail answers NOT_FOUND.
+
+**The bug** (`a-custom-table-survives-the-round-trip`, lite, archived): the
+preview surface shipped hours earlier refused **every strategy holding a
+custom table**. The platform returns a saved custom section whole — title,
+timeframe, columns — but the domain's `StrategySection` carried only kind
+and key, and `preview_strategy_report` rejects `{kind:'custom', sectionKey}`
+outright while accepting a platform section by key alone. The domain now
+carries the definition and sends it back whole; two tests pin it and the
+live walk proves it.
+
+**State**: 0 active changes · 20 open backlog items · 74 archived changes ·
+1021 vitest (+18 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
 ## 2026-08-01 — outage filler: the health check that checks, and the turbopack answer
 
 **Context**: the table-authoring campaign (operator-requested: create and
