@@ -7,6 +7,7 @@ import {
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
+import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
@@ -73,6 +74,7 @@ export function actingWith({
     listAgents: new ListAgentsQuery(agents),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
+    readTradingRecord: new ReadTradingRecordQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),
     describeUndeploy: new DescribeUndeployQuery(radar, confirmations, random, clock),

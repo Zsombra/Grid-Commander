@@ -40,6 +40,7 @@ export function AgentActions({ agent }: { agent: Agent }) {
    * pointing at nothing, and this was a page nothing pointed at.
    */
   actions.push({ href: `/agents/${agent.id}/thinking`, label: 'What it decided' });
+  actions.push({ href: `/agents/${agent.id}/trades`, label: 'What it did with the money' });
   actions.push({ href: `/agents/${agent.id}/limits`, label: 'What would stop it' });
   actions.push({ href: `/agents/${agent.id}/journal`, label: 'Journal' });
 

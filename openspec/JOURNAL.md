@@ -1,5 +1,38 @@
 # Journal
 
+## 2026-08-03 — Phase 2 opens: what the agent did with the money
+
+**Did**: `the-trading-record-is-readable` (standard, archived) — the first
+change of the reporting phase, and the answer to the question an operator
+asks first.
+
+**Discovery settled the design.** `list_trade_outcomes` is rich and real:
+26 fields per closed trade — entry and exit fills, both fees, realized and
+net P&L, slippage on *each* side, effective leverage, the conviction the
+agent held, who closed it and why, duration, and the ids linking back to
+the decision and the signal log. Meanwhile `get_agent_performance` answered
+`realizedPnlUsd: 0` with an empty curve on an agent carrying real closed
+losses — the third such observation across three sessions.
+
+**So the record is derived, and the surface says so.** `/agents/[id]/trades`
+lists the trades whole and computes the summary the platform will not
+publish — closed / won / lost / flat, net after fees, average time in a
+position, and the close-reason spread — under a line stating those totals
+are computed from the trades shown, not published by BattleGrid. Three
+distinctions the types keep alive: a missing figure stays null rather than
+becoming a zero that understates a loss; an agent that never traded says so
+instead of rendering a summary of zeros; and an unstated net is neither a
+win nor a loss nor flat.
+
+**Live**: agent "Apex" — 3 closed trades, 0W/3L, net **−$9.64** after
+$1.34 in fees, all `STOP_LOSS`. The platform's own performance figure for
+that same agent is zero. That gap is exactly why this surface exists.
+
+**State**: 0 active changes · 20 open backlog items · 75 archived changes ·
+1037 vitest (+19 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
+
 ## 2026-08-02 — session close: the handoff refreshed for a clean start
 
 **Did**: wrapped the session. `HANDOFF.md` rewritten where it had gone

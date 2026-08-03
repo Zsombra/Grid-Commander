@@ -107,7 +107,67 @@ export interface AgentsPort {
     agentId: string;
     limit?: number | undefined;
   }): Promise<JournalResult>;
+
+  /**
+   * What the agent actually did with the money: the trades it closed.
+   *
+   * Read rather than derived from `get_agent_performance`, which answers
+   * zeros and an empty curve on agents carrying real closed losses — three
+   * observations across three sessions
+   * (`performance-and-allocation-are-unmodelled`). The outcomes are alive;
+   * the aggregate is not.
+   */
+  readTradeOutcomes(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    page?: number | undefined;
+    limit?: number | undefined;
+  }): Promise<TradeOutcomesResult>;
 }
+
+/**
+ * One closed trade, kept whole.
+ *
+ * Every money figure the platform sends is carried: dropping a fee or one
+ * side's slippage would misstate a loss, and this is the surface an
+ * operator will use to decide whether an agent earns its capital.
+ */
+export interface TradeOutcome {
+  readonly id: string;
+  readonly coinTicker: string;
+  readonly direction: string;
+  /** Why it ended, and who ended it — the platform's own words. */
+  readonly closeReason: string | null;
+  readonly closedBy: string | null;
+  readonly entryFillPrice: number | null;
+  readonly exitFillPrice: number | null;
+  readonly realizedPnl: number | null;
+  readonly totalFees: number | null;
+  /** Realized P&L after fees. What the trade was actually worth. */
+  readonly netPnl: number | null;
+  readonly slippageEntry: number | null;
+  readonly slippageExit: number | null;
+  readonly effectiveLeverage: number | null;
+  /** How sure the agent was when it opened — 0..1 as the platform sends it. */
+  readonly conviction: number | null;
+  readonly openedAt: string | null;
+  readonly closedAt: string | null;
+  readonly durationSeconds: number | null;
+  /** Links back to the reasoning: the decision and the signal log. */
+  readonly decisionId: string | null;
+  readonly signalLogId: string | null;
+}
+
+export type TradeOutcomesResult =
+  | {
+      readonly kind: 'outcomes';
+      readonly outcomes: readonly TradeOutcome[];
+      /** What the platform says exists in total, for paging. */
+      readonly total: number | null;
+    }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * Three states, not an array that might be empty.
