@@ -2,10 +2,11 @@
 id: public-agent-detail-is-unread
 title: A competitor in the field cannot be opened — the seven per-agent public reads are unused
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-03
 updated: 2026-08-03
+change: "a-competitor-can-be-opened"
 capability: agent-comparison
 blocked_by: []
 tags: [battlegrid, explorer, product-model]
@@ -59,3 +60,33 @@ Predator` (`b731d127-3aa4-4fde-baf9-1fc82eef3224`) had 51 trades on
 2026-08-03 — and observe the shapes before modelling any of them. Settle
 the `unrealized_pnl` contradiction first, since it decides whether that
 tool belongs on a competitor's page at all.
+
+## Partly done (2026-08-03)
+
+`a-competitor-can-be-opened` (archived) built `/explorer/[agentId]` from
+four of the seven: `signal_performance`, `realized_trades`, `signal_logs`
+and `unrealized_pnl`. Every row in `/explorer` now opens.
+
+**The contradiction is settled by calling it.** `get_public_agent_unrealized_pnl`
+answers a snapshot for a rival exactly as it does for one of ours, so its
+summary ("any ACTIVE agent") is right and its `agentId` description ("one
+of **your** intelligence agent UUIDs") is stale. Modelled as a public read.
+
+Live 2026-08-03 on `Market Predator` (rank 1): 245 evaluations → 102
+decisions → 73 entered → 51 executed, 9 failed, 13 expired; fill rate 76%,
+average score 63%, 23W/28L, +$50.06.
+
+**Two traps found and handled**: `skipCount` (SKIP decisions, 29) and
+`skippedCount` (SKIPPED terminal status, 0) are different counters with
+similar names and are never summed; and `isWin` is the platform's verdict,
+carried rather than re-derived from `netPnl` — a break-even trade is a loss
+if the platform says so.
+
+**Still open**: `get_public_agent_signal_log_detail` — the per-signal
+scorecard, and the richest payload on this surface: every evaluated signal
+with its module, trigger state, score, bias, the raw indicator values, and
+a written sentence ("RSI(14) at 51.6 — not oversold (threshold 30)"). Plus
+`get_public_agent_trade_chart` (verified live: `READY` only where a trade
+filled, `UNAVAILABLE` otherwise) and `get_public_agent_game_history`
+(Market Grid picks, which belong with the arena). Filed as
+`a-competitors-scorecard-is-unread`.
