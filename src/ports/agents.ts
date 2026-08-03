@@ -6,6 +6,20 @@ import type { Brain } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
+import type { EvaluationScorecard } from '@/domain/agent/scorecard.js';
+
+/**
+ * Re-exported so routes reach these through the port they already depend
+ * on. `app/` may import ports and never the domain (boundaries W-D/W-E),
+ * and `ExplorerPort` does the same for its half of the surface.
+ */
+export type {
+  ConsultedSignal,
+  EvaluationChain,
+  EvaluationScorecard,
+  ScoreAttribution,
+  ThinkingCost,
+} from '@/domain/agent/scorecard.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -153,7 +167,76 @@ export interface AgentsPort {
     agentId: string;
     limit?: number | undefined;
   }): Promise<StageResult<EntryDecision>>;
+
+  /**
+   * One of the user's own evaluations, in full.
+   *
+   * `list_signal_logs` returns 23 keys per row; `get_signal_log` returns
+   * 31 — the difference is the scorecard, the attribution, the chain and
+   * the linked decision. This product read the 23 and showed a stranger's
+   * agent more than the user's own until 2026-08-03.
+   */
+  readOwnEvaluationDetail(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<EvaluationResult>;
+
+  /** How much this agent evaluated against how much it acted on. */
+  readOwnFunnel(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<FunnelResult>;
 }
+
+export type EvaluationResult =
+  | { readonly kind: 'evaluation'; readonly evaluation: EvaluationScorecard }
+  /** The platform lists the evaluation but publishes no detail for it. */
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * What an agent looked at, what it decided, and how it ended.
+ *
+ * `skipDecisions` and `skippedTerminal` are two counters the platform names
+ * similarly and means differently — decisions that were SKIP versus
+ * pipelines whose terminal status was SKIPPED. Never summed, never
+ * substituted. The same shape `ExplorerPort` reads for a competitor,
+ * because it is the same question asked of a different agent.
+ */
+export interface AgentFunnel {
+  readonly totalEvaluations: number | null;
+  readonly totalDecisions: number | null;
+  readonly enterDecisions: number | null;
+  readonly skipDecisions: number | null;
+  readonly skippedTerminal: number | null;
+  readonly executed: number | null;
+  readonly failed: number | null;
+  readonly expired: number | null;
+  readonly cancelled: number | null;
+  readonly blocked: number | null;
+  readonly pending: number | null;
+  readonly fillRatePercent: number | null;
+  readonly avgAggregateScorePercent: number | null;
+  readonly avgConvictionPercent: number | null;
+  readonly avgRiskRewardRatio: number | null;
+  readonly outcomeCount: number | null;
+  readonly winCount: number | null;
+  readonly lossCount: number | null;
+  readonly winRatePercent: number | null;
+  readonly avgNetPnl: number | null;
+  readonly totalNetPnl: number | null;
+  readonly avgDurationSeconds: number | null;
+  readonly topCoins: readonly { readonly coinTicker: string; readonly count: number | null }[];
+}
+
+export type FunnelResult =
+  | { readonly kind: 'funnel'; readonly funnel: AgentFunnel }
+  /** The agent has evaluated nothing. Distinct from a funnel of zeros. */
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * One stage of the decision pipeline.

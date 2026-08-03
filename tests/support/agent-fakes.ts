@@ -2,7 +2,21 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { EntryDecision, GateBlock, SignalEvaluation, StageResult, TradeOutcome, TradeOutcomesResult, AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type {
+  AgentsPort,
+  BudgetResult,
+  EntryDecision,
+  EvaluationResult,
+  FunnelResult,
+  GateBlock,
+  JournalResult,
+  RosterResult,
+  SignalEvaluation,
+  StageResult,
+  ThoughtLogResult,
+  TradeOutcome,
+  TradeOutcomesResult,
+} from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
@@ -218,6 +232,18 @@ export class FakeAgentsPort implements AgentsPort {
 
   async readEntryDecisions(): Promise<StageResult<EntryDecision>> {
     return this.entryDecisions;
+  }
+
+  /** One evaluation in full, and the agent's own funnel. */
+  ownEvaluation: EvaluationResult = { kind: 'none' };
+  ownFunnel: FunnelResult = { kind: 'none' };
+
+  async readOwnEvaluationDetail(): Promise<EvaluationResult> {
+    return this.ownEvaluation;
+  }
+
+  async readOwnFunnel(): Promise<FunnelResult> {
+    return this.ownFunnel;
   }
 
   private expect(agentId: string, revision: number): Agent {
