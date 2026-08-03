@@ -70,6 +70,103 @@ export interface ExplorerPort {
     accessToken: string;
     agentId: string;
   }): Promise<PublicResult<OpenPositions>>;
+
+  /**
+   * One evaluation, in full: everything the agent consulted, how the score
+   * was attributed, and the chain the candidate followed.
+   *
+   * `none` is a real answer here rather than an edge case. Of 20 logs the
+   * list returned on 2026-08-03, four answered `{log: null}` on detail —
+   * every one of them a `FAILED` evaluation, with all other statuses
+   * resolving. A perfect correlation over 20 rows is suggestive, not a
+   * rule, so nothing here refuses to ask.
+   */
+  readCompetitorEvaluationDetail(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<PublicResult<EvaluationDetail>>;
+}
+
+/** One signal the agent consulted, whether or not it fired. */
+export interface ConsultedSignal {
+  readonly signalId: string;
+  /** The family it belongs to, e.g. `RSI`, `FUNDING`, `PRICE_STRUCTURE`. */
+  readonly module: string | null;
+  readonly triggered: boolean;
+  readonly scorePercent: number | null;
+  readonly bias: string | null;
+  readonly direction: string | null;
+  /** Whether the composition treats this one as load-bearing. */
+  readonly isPrimary: boolean;
+  readonly required: boolean;
+  readonly effectiveAllocation: number | null;
+  /**
+   * The platform's own sentence — "RSI(14) at 38.1 — not oversold
+   * (threshold 30)". Carried whole; it states the reading *and* the bar,
+   * which is the thing no derived label could reconstruct.
+   */
+  readonly details: string | null;
+  /** The raw numbers behind that sentence, as the platform grouped them. */
+  readonly indicatorValues: Readonly<Record<string, unknown>>;
+}
+
+/** How much one signal contributed to the aggregate. */
+export interface ScoreAttribution {
+  readonly signalId: string;
+  readonly name: string | null;
+  readonly scorePercent: number | null;
+  readonly attributionPercent: number | null;
+}
+
+/**
+ * The chain a candidate followed.
+ *
+ * Every stage after the attempt is nullable because the chain genuinely
+ * stops: a `SKIP` has a decision and no execution, an `EXPIRED` entry has
+ * an execution and no outcome. A missing stage is omitted, never rendered
+ * as an empty one.
+ */
+export interface EvaluationChain {
+  readonly gateStatus: string | null;
+  readonly gateReason: string | null;
+  /** `LLM_APPROVED`, `LLM_DECLINED`, … — the platform's own vocabulary. */
+  readonly attemptResult: string | null;
+  readonly attemptReasonCodes: readonly string[];
+  readonly decision: string | null;
+  readonly decisionDirection: string | null;
+  readonly convictionPercent: number | null;
+  readonly entryPrice: number | null;
+  readonly stopLoss: number | null;
+  readonly takeProfit: number | null;
+  readonly riskRewardRatio: number | null;
+  readonly executionStatus: string | null;
+  readonly failureReason: string | null;
+  readonly expiryReason: string | null;
+  /**
+   * JSON inside a string, as the platform sends it. Carried verbatim and
+   * never parsed — parsing means modelling a shape observed once, and the
+   * enums above already say what happened in a form the platform commits
+   * to.
+   */
+  readonly executionMessage: string | null;
+  readonly tradeOutcome: string | null;
+  readonly netPnl: number | null;
+}
+
+export interface EvaluationDetail {
+  readonly coinTicker: string | null;
+  readonly evaluatedAt: string | null;
+  readonly timeframesUsed: readonly string[];
+  readonly aggregateScorePercent: number | null;
+  readonly dominantBias: string | null;
+  readonly hasConflictingSignals: boolean;
+  readonly terminalStatus: string | null;
+  /** Every signal consulted — the untriggered ones are half the story. */
+  readonly signals: readonly ConsultedSignal[];
+  readonly attributions: readonly ScoreAttribution[];
+  readonly chain: EvaluationChain;
 }
 
 /** The windows the per-agent public reads accept — not the field's four. */

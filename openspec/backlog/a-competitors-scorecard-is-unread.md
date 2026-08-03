@@ -2,10 +2,11 @@
 id: a-competitors-scorecard-is-unread
 title: The per-signal scorecard — the richest payload on the surface — is still unread
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-03
 updated: 2026-08-03
+change: "the-scorecard-is-legible"
 capability: agent-comparison
 blocked_by: []
 tags: [battlegrid, explorer, scorecard]
@@ -75,3 +76,32 @@ Add a detail route arriving from it, read `signal_log_detail`, and render
 since dropping them would answer a different question. Owner-private
 telemetry (`pipeline.attempt.ownerView`, `llmPartialReasoning`) is nulled
 on this public read and must not render as an agent that said nothing.
+
+## Partly done (2026-08-03)
+
+`the-scorecard-is-legible` (archived) built
+`/explorer/[agentId]/evaluations/[logId]` from
+`get_public_agent_signal_log_detail`: every consulted signal grouped by
+module with the untriggered ones kept, the attribution breakdown, and the
+chain from gate through attempt, decision, execution and outcome.
+
+Live 2026-08-03 across ten of `Market Predator`'s evaluations: **72 signals
+consulted every time**, 8 to 21 of them firing. The counter-example worth
+keeping: `CRV` fired 21 signals and **SKIPPED**, while `APT` fired 8 and
+**ENTERED** — signal count is not the decision.
+
+**A platform behaviour the surface is built around**: a listed evaluation
+can publish no detail. Four of twenty answered `{log: null}` on 2026-08-03,
+every one of them a `FAILED` evaluation, with all other statuses resolving.
+A correlation over twenty rows is a pattern rather than a contract, so
+every row is still linked and the detail page renders the null as its own
+state — distinct from unreadable.
+
+**Still open**: `scorecard.comparison` (peer coins with correlations),
+`tradeAssessment.candidateLevels` and `attempt.setupOptions` (the candidate
+stop/target grid, several methods per evaluation), plus
+`get_public_agent_trade_chart` and `get_public_agent_game_history`.
+
+**And one thing this surfaced**: our own agents' pipeline shows *less* than
+this public read does. Filed as
+`our-own-agents-show-less-than-strangers` (P2).

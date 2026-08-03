@@ -231,6 +231,7 @@ describe('the two reads fail apart', () => {
     readCompetitorTrades: async () => ({ kind: 'none' }),
     readCompetitorEvaluations: async () => ({ kind: 'none' }),
     readCompetitorOpenPositions: async () => ({ kind: 'none' }),
+    readCompetitorEvaluationDetail: async () => ({ kind: 'none' }),
   });
 
   it('an unreadable leaderboard does not blank the field', async () => {

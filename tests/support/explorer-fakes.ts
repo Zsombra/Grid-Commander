@@ -5,6 +5,8 @@ import type {
   FieldAgent,
   FieldResult,
   FieldStats,
+  ConsultedSignal,
+  EvaluationDetail,
   LeaderboardResult,
   OpenPositions,
   PublicEvaluation,
@@ -139,6 +141,87 @@ export function aPublicEvaluation(over: Partial<PublicEvaluation> = {}): PublicE
   };
 }
 
+/** One consulted signal, shaped from the live scorecard of 2026-08-03. */
+export function aConsultedSignal(over: Partial<ConsultedSignal> = {}): ConsultedSignal {
+  return {
+    signalId: 'macd_bull_divergence',
+    module: 'MACD',
+    triggered: true,
+    scorePercent: 100,
+    bias: 'BULLISH',
+    direction: 'LONG',
+    isPrimary: false,
+    required: false,
+    effectiveAllocation: 1,
+    details: 'MACD bull divergence: price lower but histogram rising',
+    indicatorValues: { macd_histogram: -4.45112127, price: 1562.7 },
+    ...over,
+  };
+}
+
+/**
+ * The live ETH / PASS evaluation of 2026-08-03, in miniature.
+ *
+ * Deliberately holds both a triggered and an untriggered signal: 60 of the
+ * real 72 did not fire, and the page exists to show them.
+ */
+export function anEvaluationDetail(over: Partial<EvaluationDetail> = {}): EvaluationDetail {
+  return {
+    coinTicker: 'ETH',
+    evaluatedAt: '2026-06-30T15:27:25.845Z',
+    timeframesUsed: ['1h'],
+    aggregateScorePercent: 57,
+    dominantBias: 'MIXED',
+    hasConflictingSignals: true,
+    terminalStatus: 'PASS',
+    signals: [
+      aConsultedSignal(),
+      aConsultedSignal({
+        signalId: 'rsi_oversold',
+        module: 'RSI',
+        triggered: false,
+        scorePercent: 0,
+        details: 'RSI(14) at 38.1 — not oversold (threshold 30)',
+        indicatorValues: { rsi14: 38.0982344 },
+      }),
+      aConsultedSignal({
+        signalId: 'htf_trend_adx_trending',
+        module: 'TREND_STRENGTH',
+        scorePercent: 30,
+        bias: 'NEUTRAL',
+        isPrimary: true,
+        required: true,
+        details: 'HTF ADX at 32.5 — strong trend on higher timeframe (> 25)',
+        indicatorValues: { htf_adx_value: 32.46065296 },
+      }),
+    ],
+    attributions: [
+      { signalId: 'macd_bull_divergence', name: 'Bull Divergence', scorePercent: 100, attributionPercent: 13 },
+      { signalId: 'stoch_oversold', name: 'Oversold', scorePercent: 43, attributionPercent: 5 },
+    ],
+    chain: {
+      gateStatus: 'ROUTED',
+      gateReason: null,
+      attemptResult: 'LLM_APPROVED',
+      attemptReasonCodes: [],
+      decision: 'ENTER',
+      decisionDirection: 'SHORT',
+      convictionPercent: 62,
+      entryPrice: 1562.7,
+      stopLoss: 1582.44015785,
+      takeProfit: 1503.47952646,
+      riskRewardRatio: 3,
+      executionStatus: 'CLOSED',
+      failureReason: null,
+      expiryReason: null,
+      executionMessage: null,
+      tradeOutcome: 'LOSS',
+      netPnl: -0.402459,
+    },
+    ...over,
+  };
+}
+
 /** A port whose reads are set independently, because they fail apart. */
 export class FakeExplorerPort implements ExplorerPort {
   field: FieldResult = { kind: 'field', field: aField() };
@@ -158,6 +241,11 @@ export class FakeExplorerPort implements ExplorerPort {
     kind: 'value',
     value: [aPublicEvaluation()],
     total: 245,
+  };
+  evaluationDetail: PublicResult<EvaluationDetail> = {
+    kind: 'value',
+    value: anEvaluationDetail(),
+    total: null,
   };
   /** The only shape ever observed: an envelope with nothing in it. */
   open: PublicResult<OpenPositions> = {
@@ -193,5 +281,9 @@ export class FakeExplorerPort implements ExplorerPort {
 
   async readCompetitorOpenPositions(): Promise<PublicResult<OpenPositions>> {
     return this.open;
+  }
+
+  async readCompetitorEvaluationDetail(): Promise<PublicResult<EvaluationDetail>> {
+    return this.evaluationDetail;
   }
 }

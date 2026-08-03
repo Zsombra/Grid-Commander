@@ -1,5 +1,8 @@
 import type {
   CompetitorFunnel,
+  ConsultedSignal,
+  EvaluationChain,
+  EvaluationDetail,
   Field,
   FieldAgent,
   FieldResult,
@@ -16,6 +19,7 @@ import type {
   PublicResult,
   PublicTrade,
   PublicWindow,
+  ScoreAttribution,
   TradeExtreme,
   VendorStanding,
   ExplorerPort,
@@ -43,6 +47,7 @@ const TOOLS = {
   competitorTrades: 'get_public_agent_realized_trades',
   competitorEvaluations: 'get_public_agent_signal_logs',
   competitorOpen: 'get_public_agent_unrealized_pnl',
+  competitorEvaluationDetail: 'get_public_agent_signal_log_detail',
 } as const;
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
@@ -146,6 +151,46 @@ function mapOwnStanding(raw: unknown): OwnStanding | null {
 }
 
 const list = (v: unknown): readonly unknown[] => (Array.isArray(v) ? v : []);
+
+/**
+ * One signal the agent consulted.
+ *
+ * Untriggered rows are kept, not filtered. They are most of the payload —
+ * 60 of 72 on the evaluation this was mapped against — and what an agent
+ * looked at and dismissed is as much its strategy as what fired.
+ */
+function mapConsultedSignal(raw: unknown): ConsultedSignal | null {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const signalId = str(s['id']);
+  if (signalId === null) return null;
+  const values = s['indicatorValues'];
+  return {
+    signalId,
+    module: str(s['module']),
+    triggered: s['triggered'] === true,
+    scorePercent: num(s['scorePercent']),
+    bias: str(s['bias']),
+    direction: str(s['direction']),
+    isPrimary: s['isPrimary'] === true,
+    required: s['required'] === true,
+    effectiveAllocation: num(s['effectiveAllocation']),
+    details: str(s['details']),
+    indicatorValues:
+      typeof values === 'object' && values !== null ? (values as Record<string, unknown>) : {},
+  };
+}
+
+function mapAttribution(raw: unknown): ScoreAttribution | null {
+  const a = (raw ?? {}) as Record<string, unknown>;
+  const signalId = str(a['signalId']);
+  if (signalId === null) return null;
+  return {
+    signalId,
+    name: str(a['name']),
+    scorePercent: num(a['scorePercent']),
+    attributionPercent: num(a['attributionPercent']),
+  };
+}
 
 export class McpExplorerAdapter implements ExplorerPort {
   constructor(private readonly battlegrid: BattleGridPort) {}
@@ -391,6 +436,76 @@ export class McpExplorerAdapter implements ExplorerPort {
         },
         total: null,
       };
+    });
+  }
+
+  async readCompetitorEvaluationDetail(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<PublicResult<EvaluationDetail>> {
+    return this.publicRead(params, TOOLS.competitorEvaluationDetail, { logId: params.logId }, (p) => {
+      const raw = p['log'];
+      // The platform's documented "no public log with that id is visible to
+      // you", and its answer for every FAILED evaluation observed. Nothing
+      // published is not the same as nothing readable.
+      if (typeof raw !== 'object' || raw === null) return null;
+      const log = raw as Record<string, unknown>;
+      const scorecard = (log['scorecard'] ?? {}) as Record<string, unknown>;
+      const pipeline = (log['pipeline'] ?? {}) as Record<string, unknown>;
+      const attempt = (pipeline['attempt'] ?? {}) as Record<string, unknown>;
+      const decision = (pipeline['decision'] ?? {}) as Record<string, unknown>;
+      const execution = (pipeline['execution'] ?? {}) as Record<string, unknown>;
+      const outcome = (pipeline['outcome'] ?? {}) as Record<string, unknown>;
+
+      const chain: EvaluationChain = {
+        gateStatus: str(pipeline['evaluationGateStatus']),
+        gateReason: str(pipeline['evaluationGateReason']),
+        attemptResult: str(attempt['result']),
+        attemptReasonCodes: list(attempt['reasonCodes']).filter(
+          (c): c is string => typeof c === 'string',
+        ),
+        decision: str(decision['decision']),
+        decisionDirection: str(decision['direction']),
+        convictionPercent: num(decision['convictionPercent']),
+        entryPrice: num(decision['entryPrice']),
+        stopLoss: num(decision['stopLoss']),
+        takeProfit: num(decision['takeProfit']),
+        riskRewardRatio: num(decision['riskRewardRatio']),
+        executionStatus: str(execution['status']),
+        failureReason: str(execution['failureReason']),
+        expiryReason: str(execution['expiryReason']),
+        // Verbatim. See the port's note: this is JSON in a string and
+        // parsing it would model a shape seen once.
+        executionMessage: str(execution['executionMessage']),
+        tradeOutcome: str(outcome['tradeOutcome']),
+        netPnl: num(outcome['netPnl']),
+      };
+
+      // `ownerView` and `llmPartialReasoning` are nulled on this public
+      // read and are deliberately not read at all — a field this adapter
+      // never touches cannot leak into a surface by accident.
+      const detail: EvaluationDetail = {
+        coinTicker: str(log['coinTicker']) ?? str(scorecard['coinTicker']),
+        evaluatedAt: str(log['evaluatedAt']) ?? str(scorecard['evaluatedAt']),
+        timeframesUsed: list(scorecard['timeframesUsed']).filter(
+          (t): t is string => typeof t === 'string',
+        ),
+        aggregateScorePercent: num(log['aggregateScorePercent']),
+        dominantBias: str(log['dominantBias']) ?? str(scorecard['dominantBias']),
+        hasConflictingSignals:
+          log['hasConflictingSignals'] === true || scorecard['hasConflictingSignals'] === true,
+        terminalStatus: str(log['terminalStatus']),
+        signals: list(scorecard['allEvaluatedSignals'])
+          .map(mapConsultedSignal)
+          .filter((s): s is ConsultedSignal => s !== null),
+        attributions: list(log['attributions'])
+          .map(mapAttribution)
+          .filter((a): a is ScoreAttribution => a !== null),
+        chain,
+      };
+      return { value: detail, total: null };
     });
   }
 
