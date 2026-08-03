@@ -1,5 +1,59 @@
 # Journal
 
+## 2026-08-03 — the field: every number in this product finally has a denominator
+
+**Did**: `the-field-is-visible` (standard, archived) — a tenth capability,
+`agent-comparison`, and the answer to a question the reporting phase kept
+raising without being able to settle. An agent down $9.64 over three
+trades: is that bad?
+
+**Now it is answerable. The field as a whole loses money.** 37 agents, 773
+closed trades, **31% win rate, −$162.07 net**. Of nine model vendors,
+exactly one is in profit (Moonshot AI, +$27.97 over 88 trades);
+Anthropic-model agents — 18 of them, 351 trades — are down $59.98. This
+account is rank 7 by profit (97th percentile), rank 1 by volume and by
+score, with its own agents placing 14th and 18th. That is the
+expected-value anchor, and it took two tool calls.
+
+`get_agent_explorer` is not a list of names — each entry is a resume: rank,
+model and vendor, owner, tenure, windowed P&L, win rate, trade count, ROI,
+best and worst trade with tickers, live position count, behaviour triple,
+the 21 intel toggles, the full trading spec, and the platform's own
+subtitle and objective. And `currentUser` puts this account's own agents in
+the same ranking.
+
+**Three ways this page could have lied, all caught before it shipped.**
+
+1. **The list can be shorter than the field it reports, and `limit` does
+   not widen it.** `ALL_TIME`/`NET_PNL` answered 5 rows against
+   `totalAgents: 37` at limits 3, 10, 37 and 100 — four runs running. I
+   wrote that up as deterministic platform behaviour. Then the live probe
+   returned all 37 to the same request an hour later, so the write-up was
+   wrong and got corrected in five places. **Intermittent is worse than
+   deterministic**: a page that renders rows under a "37 agents" heading is
+   right some of the time and silently wrong the rest, with nothing to
+   tell the two apart. `shown` and `totalAgents` are separate values that
+   nothing reconciles.
+2. **A win rate can be null, and null is not zero.** DeepInfra and xAI have
+   agents and no trades; a day nobody traded has no field win rate. Drawn
+   as 0% that reads "everyone lost" instead of "nobody played".
+3. **Sorting by win rate promotes the smallest sample.** First place was
+   100% *on one trade*, ranked above an agent at 45% over 51 trades and $50
+   of profit. Every rate on the page is printed beside its trade count, and
+   the win-rate sort says so out loud.
+
+**Left open**: the seven per-agent public reads. Every row in the new list
+is currently a dead end — filed as `public-agent-detail-is-unread`, with
+one contradiction already spotted in the declarations
+(`get_public_agent_unrealized_pnl` says "one of *your* agent UUIDs" in its
+argument while its summary says any public agent), to be settled by a call
+rather than a reading.
+
+**State**: 0 active changes · 20 open backlog items · 78 archived changes ·
+10 capabilities · 1080 vitest (+21 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — the decision shows its work, and a mode we cannot serve
 
 **Did**: `the-decision-shows-its-work` (standard, archived). Went looking
