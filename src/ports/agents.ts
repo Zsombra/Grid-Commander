@@ -199,6 +199,25 @@ export interface SignalEvaluation {
   readonly at: string | null;
 }
 
+/**
+ * One signal's reading, as the agent recorded it while deciding.
+ *
+ * `verdict` stays a string on purpose. The platform sends `CONFIRM`, `WARN`
+ * and `REJECT` today, and a three-state reading collapsed into pass/fail
+ * would lose the middle one entirely — the same class of error as a missing
+ * figure rendered as zero. A vocabulary this port does not recognise is
+ * still shown, because the platform saying something new is not a reason to
+ * hide it.
+ */
+export interface SignalVerdict {
+  readonly signalId: string;
+  /** The platform's display name for the signal, e.g. `RSI(14) Overbought`. */
+  readonly label: string | null;
+  readonly verdict: string | null;
+  /** What this signal saw, in the platform's own words. */
+  readonly interpretation: string | null;
+}
+
 /** A decision the agent reached, in its own words. */
 export interface EntryDecision {
   readonly id: string;
@@ -214,6 +233,31 @@ export interface EntryDecision {
   readonly status: string | null;
   /** The model's own paragraph. Never paraphrased, never truncated here. */
   readonly reasoning: string | null;
+  /**
+   * The evidence the reasoning was drawn from, signal by signal.
+   *
+   * Empty when the platform sent none — which is a decision without
+   * recorded evidence, not a decision whose evidence failed to load.
+   */
+  readonly checklist: readonly SignalVerdict[];
+  /** What it would have staked: percent of allocation, and the preset's name. */
+  readonly positionSizePct: number | null;
+  readonly positionSizePreset: string | null;
+  /** The horizon it reasoned over, e.g. `1h`. */
+  readonly timeHorizon: string | null;
+  /** The volatility it sized the stop against, as a percent. */
+  readonly atrPct: number | null;
+  readonly expiresAt: string | null;
+  readonly executedAt: string | null;
+  /**
+   * What the exchange was actually told, when it was told anything.
+   *
+   * Present on decisions that reached execution; all three are null on a
+   * SKIP. They are the thread from "the agent decided" to "an order exists".
+   */
+  readonly executedOrderId: string | null;
+  readonly stopLossOrderId: string | null;
+  readonly takeProfitOrderId: string | null;
   readonly at: string | null;
 }
 
