@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-03 — the scorecard, and an asymmetry worth fixing
+
+**Did**: `the-scorecard-is-legible` (standard, archived) — the bottom of
+the explorer stack. `/explorer` says the field loses money;
+`/explorer/[agentId]` says how a competitor operates; this says what one
+agent **actually read**, indicator by indicator.
+
+**Seventy-two signals consulted. Twelve fired.** Every evaluation checked
+live carried the same 72, across seventeen modules, each with its module,
+trigger state, score, bias, primary/required flags, the raw indicator
+values, and the platform's own sentence:
+
+> `RSI(14) at 38.1 — not oversold (threshold 30)`
+
+The sentence states the reading *and* the bar it missed, which no derived
+label could reconstruct. **The sixty that did not fire are the point** —
+what an agent looks at and dismisses is as much its strategy as what
+triggers it — so nothing filters them.
+
+Alongside them, `attributions` answers *why that number*:
+`macd_bull_divergence` was worth 13% of the aggregate. And `pipeline` is a
+real state machine — `LLM_APPROVED` → `ENTER` at 62% → `CLOSED` → `LOSS
+−$0.40`, or `LLM_DECLINED` → `SKIP` at 28% and nothing after it. A stage
+the platform did not record is omitted, never rendered empty.
+
+**The counter-example worth keeping**: `CRV` fired **21** signals and
+SKIPPED; `APT` fired **8** and ENTERED. Signal count is not the decision,
+which is exactly why the attribution and the untriggered rows matter.
+
+**A listed evaluation can publish no detail.** Four of twenty answered
+`{log: null}` — every one a `FAILED` evaluation, with all other statuses
+resolving. A perfect correlation over twenty rows is a pattern, not a
+contract, so every row is still linked and the detail page renders the null
+as its own state. Hiding links on a prediction would be guessing on the
+reader's behalf.
+
+**Two things carried rather than interpreted.** `executionMessage` is JSON
+inside a string (`{"kind":"INDICATOR_STATE","indicator":"emaCross",…}`) and
+is shown verbatim — parsing means modelling a shape seen once, and the
+clean enum beside it (`expiryReason: INDICATOR_FLIP`) already says what
+happened. And the owner-private fields are not merely unrendered: the
+adapter never names them, which a test asserts against the source with
+comments stripped, so the file's own explanation of why cannot satisfy the
+check.
+
+**What this surfaced, and it is backwards.** This product now explains a
+*stranger's* agent better than the user's own: the public read gives 72
+consulted signals with attribution, while `/agents/[id]/pipeline` gives a
+verdict for the ones that fired. Either the owner-side tools carry more
+than we read — which would be the eighth instance of the pattern that
+produced a shipped bug this month — or the public projection is genuinely
+richer. Not assumed either way. Filed as
+`our-own-agents-show-less-than-strangers` at **P2**, with the diff recipe
+that found the 35-vs-11 gap.
+
+**State**: 0 active changes · 21 open backlog items · 80 archived changes ·
+10 capabilities · 1130 vitest (+23 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — a competitor can be opened
 
 **Did**: `a-competitor-can-be-opened` (standard, archived). `/explorer`

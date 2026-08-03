@@ -21,6 +21,7 @@ import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.j
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
 import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from '@/application/use-cases/read-competitor.query.js';
+import { ReadEvaluationQuery } from '@/application/use-cases/read-evaluation.query.js';
 import type { CurrentUserResult } from '@/application/use-cases/current-user.query.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import { NOT_CONNECTED } from '@/domain/session/session.js';
@@ -91,6 +92,7 @@ export function actingWith({
     watchArena: new WatchArenaQuery(grid),
     readField: new ReadFieldQuery(explorer),
     readCompetitor: new ReadCompetitorQuery(explorer),
+    readEvaluation: new ReadEvaluationQuery(explorer),
     readSignalLibrary: new ReadSignalLibraryQuery(strategies),
     readSignal: new ReadSignalQuery(strategies),
     readMetricIndex: new ReadMetricIndexQuery(strategies),

@@ -189,8 +189,19 @@ export default async function CompetitorPage({
               {evaluations.value.map((e) => (
                 <li key={e.id} className="rounded border p-3 text-sm space-y-1">
                   <p className="font-medium">
-                    {e.coinTicker ?? 'unnamed market'} · scored{' '}
-                    {pct(e.aggregateScorePercent)} against{' '}
+                    {/*
+                      Every row is offered, including the ones whose detail
+                      the platform may not publish. Hiding a link on a
+                      prediction would be guessing on the reader's behalf;
+                      the detail page says plainly when nothing is there.
+                    */}
+                    <a
+                      href={`/explorer/${agentId}/evaluations/${e.id}`}
+                      className="underline"
+                    >
+                      {e.coinTicker ?? 'unnamed market'}
+                    </a>{' '}
+                    · scored {pct(e.aggregateScorePercent)} against{' '}
                     {pct(e.minAggregateScorePercent)}
                     {e.terminalStatus ? ` → ${e.terminalStatus}` : ''}
                   </p>
