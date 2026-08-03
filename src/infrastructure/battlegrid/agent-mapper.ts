@@ -6,6 +6,7 @@ import type { Budget, Gauge } from '@/domain/agent/budget.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
+import type { TradeOutcome } from '@/ports/agents.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -526,4 +527,52 @@ function mapCurve(raw: unknown): readonly Point[] {
     const e = (entry ?? {}) as Record<string, unknown>;
     return { at: new Date(String(e['timestamp'] ?? 0)), value: num(e['value']) ?? 0 };
   });
+}
+
+/**
+ * One closed trade, mapped whole — shaped from the live
+ * `list_trade_outcomes` row of 2026-08-02.
+ *
+ * Every money figure is carried and none is defaulted to zero: a missing
+ * fee rendered as `0` understates a loss, and this is the surface an
+ * operator uses to decide whether an agent earns its capital. The id and
+ * the market are the two fields a row cannot be read without — a trade
+ * with neither is not a trade anyone can act on, so the read refuses
+ * rather than render a nameless line.
+ */
+export function mapTradeOutcome(raw: unknown): TradeOutcome {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof t['id'] === 'string' && t['id'] ? t['id'] : null;
+  if (id === null) throw new TradeOutcomePayloadError('id');
+  const coinTicker = typeof t['coinTicker'] === 'string' && t['coinTicker'] ? t['coinTicker'] : null;
+  if (coinTicker === null) throw new TradeOutcomePayloadError('coinTicker');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+
+  return {
+    id,
+    coinTicker,
+    direction: text(t['direction']) ?? 'UNKNOWN',
+    closeReason: text(t['closeReason']),
+    closedBy: text(t['closedBy']),
+    entryFillPrice: num(t['entryFillPrice']) ?? null,
+    exitFillPrice: num(t['exitFillPrice']) ?? null,
+    realizedPnl: num(t['realizedPnl']) ?? null,
+    totalFees: num(t['totalFees']) ?? null,
+    netPnl: num(t['netPnl']) ?? null,
+    slippageEntry: num(t['slippageEntry']) ?? null,
+    slippageExit: num(t['slippageExit']) ?? null,
+    effectiveLeverage: num(t['effectiveLeverage']) ?? null,
+    conviction: num(t['conviction']) ?? null,
+    openedAt: text(t['openedAt']),
+    closedAt: text(t['closedAt']),
+    durationSeconds: num(t['durationSeconds']) ?? null,
+    decisionId: text(t['decisionId']),
+    signalLogId: text(t['signalLogId']),
+  };
+}
+
+export class TradeOutcomePayloadError extends Error {
+  constructor(field: string) {
+    super(`BattleGrid returned a trade outcome with no usable "${field}"`);
+  }
 }

@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 change: ""
 capability: agent-understanding
 blocked_by: []
@@ -43,3 +43,19 @@ discovery read should establish.
 Read-only observation with the live key: outcomes + open positions + one
 trade chart on the account's most-played agent; record shapes in this item;
 then an `agent-trading-record` surface the same way the arena was built.
+
+## The outcomes slice shipped (2026-08-02)
+
+`the-trading-record-is-readable` (archived): `/agents/[id]/trades` reads
+`list_trade_outcomes` whole — every fee, both sides' slippage, leverage,
+conviction, close reason, duration, and the ids linking back to the
+decision and signal log — and derives the summary the platform will not
+publish. **Third confirmation that `get_agent_performance` is dead**:
+live 2026-08-02, agent "Apex" carries 3 closed trades netting −$9.64 after
+$1.34 in fees, and the performance tool answers `realizedPnlUsd: 0` with
+an empty curve. The product computes from outcomes and says so on screen.
+
+What remains of this item: open orders (`get_open_orders` — venue-direct
+and slow), `get_order_status`, `get_trade_chart` (frozen candles with the
+entry/exit overlay), `get_position_audit_history`, and the market-context
+reads. None is needed to answer "what did it do"; each is its own surface.

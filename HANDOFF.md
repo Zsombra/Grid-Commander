@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-02  
-**State**: green (1021 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 18 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#30 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. Phase 2 is reporting/EV (`trading-telemetry-is-unread`, `entry-decisions-have-a-read-side`).
+**Date**: 2026-08-03  
+**State**: green (1037 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 19 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#32 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 has begun**: the trading record ships (`/agents/[id]/trades`); `entry-decisions-have-a-read-side` is next.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 9 |
-| Changes (archived) | 74 |
-| Vitest tests | 1021 (+18 key-gated live) + 62 db |
+| Changes (archived) | 75 |
+| Vitest tests | 1037 (+19 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#30 merged) |
+| Open draft PRs | 0 (see PR list; #8–#32 merged) |
 
 ---
 
@@ -40,7 +40,7 @@ All development branches have been merged. `main` is the single source of truth.
 | `harness-integrity` | The `openspec.py` tooling itself (124 tests) |
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
-| `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity |
+| `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity, **the trading record** |
 | `strategy-authoring` | Fork, compile, review, apply; archive, restore |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 
@@ -56,6 +56,7 @@ Against a real connected BattleGrid account a user can:
 - **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain); **retune any signal rule the strategy carries** (allocation, Required, declared params) through the full describe→confirm→perform ceremony, the token digest-bound to the exact values at the revision read (live-proven 2026-08-01: allocation 0→1 on a zero-bound fork, r1→r2 read back); **preview what an agent reads** (`/strategies/[id]/preview`) — the report rendered live over a bounded coin selection with token estimate, budget gauges, and which of the 82 signals the composition can feed, all without saving anything
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
+- **Trading record** (`/agents/[id]/trades`): every trade an agent closed — net P&L, both fees, slippage each side, leverage, the conviction it opened on, why and by whom it closed, how long it was held — with a summary *derived from those trades* and labelled as such, because BattleGrid's own performance figures read zero for accounts with real losses
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
@@ -119,11 +120,12 @@ Run `/board` first; it prints live counts. Then:
 and expected value.** Two filed items, both starting with a discovery read
 the same way every capability this month began:
 
-1. **`trading-telemetry-is-unread`** (P3) — the ~17 unused position /
-   order / outcome reads. This is "what did my agent actually do with the
-   money", the last big unknown in the product. Known risk recorded in the
-   item: `get_agent_performance` has never returned a populated figure, so
-   the outcome tools may be the only real source.
+1. ~~`trading-telemetry-is-unread`~~ — **the outcomes slice shipped
+   2026-08-03** (`/agents/[id]/trades`). The known risk proved real:
+   `get_agent_performance` answers zeros on an agent that lost $9.64, so
+   the record is derived from `list_trade_outcomes` and labelled as
+   derived. What remains of the item is separate surfaces: open orders,
+   order status, trade charts, position audit history.
 2. **`entry-decisions-have-a-read-side`** (P3) — the platform's own
    human-in-the-loop (pending approvals, gate blocks, signal logs). The
    most product-aligned unused group: the read half is safe today; the
@@ -239,6 +241,7 @@ BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
 | Probe | Proves |
 |---|---|
 | `write-probe` | agent create / rename / limits / archive / reactivate |
+| `trading-record-probe` | real closed trades and the derived summary |
 | `radar-probe` | deploy replacement (r1→r2) through describe→confirm→perform |
 | `restore-probe` | archive → roster check → restore |
 | `apply-probe` | fork → compile → **apply** (the widest blast radius write) |

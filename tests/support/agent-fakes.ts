@@ -2,7 +2,7 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { TradeOutcome, TradeOutcomesResult, AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
@@ -194,6 +194,13 @@ export class FakeAgentsPort implements AgentsPort {
 
   async readJournal(): Promise<JournalResult> {
     return this.journalEntries;
+  }
+
+  /** Set to hand back a trading record; `none` is an agent that never traded. */
+  tradeOutcomes: TradeOutcomesResult = { kind: 'none' };
+
+  async readTradeOutcomes(): Promise<TradeOutcomesResult> {
+    return this.tradeOutcomes;
   }
 
   private expect(agentId: string, revision: number): Agent {
@@ -424,4 +431,30 @@ export class SequentialRandom {
   codeChallengeS256(verifier: string): string {
     return `challenge(${verifier})`;
   }
+}
+
+/** Shaped from the live `list_trade_outcomes` row of 2026-08-02. */
+export function aTradeOutcome(overrides: Partial<TradeOutcome> = {}): TradeOutcome {
+  return {
+    id: 't1',
+    coinTicker: 'MOODENG',
+    direction: 'LONG',
+    closeReason: 'STOP_LOSS',
+    closedBy: 'SYSTEM',
+    entryFillPrice: 0.041374,
+    exitFillPrice: 0.041072,
+    realizedPnl: -0.088788,
+    totalFees: 0.031495,
+    netPnl: -0.120283,
+    slippageEntry: 0,
+    slippageExit: 0.00028052,
+    effectiveLeverage: 3,
+    conviction: 0.55,
+    openedAt: '2026-06-21T13:57:42.036Z',
+    closedAt: '2026-06-21T17:40:55.965Z',
+    durationSeconds: 13393,
+    decisionId: 'd1',
+    signalLogId: 'c21c5ccd-ca90-4ffb-82b4-895a9ae21a92',
+    ...overrides,
+  };
 }

@@ -3,11 +3,26 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { brainToArgument } from '@/domain/agent/brain.js';
 import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type {
+  AgentsPort,
+  BudgetResult,
+  JournalResult,
+  RosterResult,
+  ThoughtLogResult,
+  TradeOutcomesResult,
+} from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
-import { mapAgent, mapBudget, mapCatalog, mapRecord, mapSlotUsage, mapThought } from './agent-mapper.js';
-import { unreadable } from './unreadable.js';
+import {
+  mapAgent,
+  mapBudget,
+  mapCatalog,
+  mapRecord,
+  mapSlotUsage,
+  mapThought,
+  mapTradeOutcome,
+} from './agent-mapper.js';
+import { malformed, unreadable } from './unreadable.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
@@ -38,6 +53,7 @@ const TOOLS = {
   thoughts: 'get_agent_thought_log',
   allThoughts: 'get_user_thought_log',
   budget: 'get_agent_budget',
+  tradeOutcomes: 'list_trade_outcomes',
 } as const;
 
 /**
@@ -278,6 +294,34 @@ export class McpAgentAdapter implements AgentsPort {
 
     const record = mapRecord(payload);
     return isSilent(record) ? { kind: 'empty' } : { kind: 'record', record };
+  }
+
+  async readTradeOutcomes(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    page?: number | undefined;
+    limit?: number | undefined;
+  }): Promise<TradeOutcomesResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.tradeOutcomes, {
+        agentId: params.agentId,
+        ...(params.page === undefined ? {} : { page: params.page }),
+        ...(params.limit === undefined ? {} : { limit: params.limit }),
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+
+    const raw = payload['outcomes'];
+    if (!Array.isArray(raw)) return malformed('no outcomes returned');
+    if (raw.length === 0) return { kind: 'none' };
+    return {
+      kind: 'outcomes',
+      outcomes: raw.map(mapTradeOutcome),
+      total: typeof payload['total'] === 'number' ? payload['total'] : null,
+    };
   }
 
   // -- internals ---------------------------------------------------------
