@@ -1,4 +1,5 @@
 import type {
+  CompetitorFunnel,
   Field,
   FieldAgent,
   FieldResult,
@@ -8,8 +9,13 @@ import type {
   Leaderboard,
   LeaderboardMetric,
   LeaderboardResult,
+  OpenPositions,
   OwnAgentStanding,
   OwnStanding,
+  PublicEvaluation,
+  PublicResult,
+  PublicTrade,
+  PublicWindow,
   TradeExtreme,
   VendorStanding,
   ExplorerPort,
@@ -33,6 +39,10 @@ import { unreadable } from './unreadable.js';
 const TOOLS = {
   field: 'get_agent_explorer',
   leaderboard: 'get_leaderboard',
+  competitorPerformance: 'get_public_agent_signal_performance',
+  competitorTrades: 'get_public_agent_realized_trades',
+  competitorEvaluations: 'get_public_agent_signal_logs',
+  competitorOpen: 'get_public_agent_unrealized_pnl',
 } as const;
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
@@ -218,6 +228,195 @@ export class McpExplorerAdapter implements ExplorerPort {
         generatedAt: str(p['generatedAt']),
       };
       return { kind: 'leaderboard', leaderboard };
+    } catch (err) {
+      return unreadable(err);
+    }
+  }
+
+  async readCompetitorPerformance(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PublicResult<CompetitorFunnel>> {
+    return this.publicRead(params, TOOLS.competitorPerformance, {}, (p) => {
+      // An agent the platform has never evaluated answers zeros rather than
+      // a body; nothing to show is `none`, not a funnel of nulls.
+      if (num(p['totalEvaluations']) === null) return null;
+      const funnel: CompetitorFunnel = {
+        totalEvaluations: num(p['totalEvaluations']),
+        totalDecisions: num(p['totalEntryDecisions']),
+        enterDecisions: num(p['enterCount']),
+        // Two counters, two fields. `skipCount` is decisions that were
+        // SKIP; `skippedCount` is pipelines whose terminal status was
+        // SKIPPED. On the rank-1 agent these read 29 and 0.
+        skipDecisions: num(p['skipCount']),
+        skippedTerminal: num(p['skippedCount']),
+        executed: num(p['executedCount']),
+        failed: num(p['failedCount']),
+        expired: num(p['expiredCount']),
+        cancelled: num(p['cancelledCount']),
+        blocked: num(p['blockedCount']),
+        pending: num(p['pendingCount']),
+        fillRatePercent: num(p['fillRatePct']),
+        avgAggregateScorePercent: num(p['avgAggregateScorePercent']),
+        avgConvictionPercent: num(p['avgConvictionPercent']),
+        avgRiskRewardRatio: num(p['avgRiskRewardRatio']),
+        outcomeCount: num(p['outcomeCount']),
+        winCount: num(p['winCount']),
+        lossCount: num(p['lossCount']),
+        winRatePercent: num(p['winRatePercent']),
+        avgNetPnl: num(p['avgNetPnl']),
+        totalNetPnl: num(p['totalNetPnl']),
+        avgDurationSeconds: num(p['avgDurationSeconds']),
+        topCoins: list(p['topCoinsByEvaluation'])
+          .map((raw) => {
+            const c = (raw ?? {}) as Record<string, unknown>;
+            const coinTicker = str(c['coinTicker']);
+            return coinTicker === null ? null : { coinTicker, count: num(c['count']) };
+          })
+          .filter((c): c is { coinTicker: string; count: number | null } => c !== null),
+      };
+      return { value: funnel, total: null };
+    });
+  }
+
+  async readCompetitorTrades(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    timeframe?: PublicWindow | undefined;
+    limit?: number | undefined;
+  }): Promise<PublicResult<PublicTrade[]>> {
+    return this.publicRead(
+      params,
+      TOOLS.competitorTrades,
+      {
+        ...(params.timeframe === undefined ? {} : { timeframe: params.timeframe }),
+        ...(params.limit === undefined ? {} : { limit: params.limit }),
+      },
+      (p) => {
+        const rows = list(p['trades']);
+        if (rows.length === 0) return null;
+        const trades = rows
+          .map((raw): PublicTrade | null => {
+            const t = (raw ?? {}) as Record<string, unknown>;
+            const id = str(t['outcomeId']) ?? str(t['positionId']);
+            if (id === null) return null;
+            return {
+              id,
+              coinTicker: str(t['coinTicker']),
+              direction: str(t['direction']),
+              entryFillPrice: num(t['entryFillPrice']),
+              exitFillPrice: num(t['exitFillPrice']),
+              netPnl: num(t['netPnl']),
+              // The platform's own verdict. Deriving it from netPnl would
+              // call a zero-P&L trade a loss.
+              isWin: typeof t['isWin'] === 'boolean' ? t['isWin'] : null,
+              movePercent: num(t['movePercent']),
+              roePercent: num(t['roePercent']),
+              closeReason: str(t['closeReason']),
+              leverage: num(t['leverage']),
+              conviction: num(t['conviction']),
+              openedAt: str(t['openedAt']),
+              closedAt: str(t['closedAt']),
+              durationSeconds: num(t['durationSeconds']),
+              signalLogId: str(t['signalLogId']),
+            };
+          })
+          .filter((t): t is PublicTrade => t !== null);
+        return { value: trades, total: num(p['total']) };
+      },
+    );
+  }
+
+  async readCompetitorEvaluations(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<PublicResult<PublicEvaluation[]>> {
+    return this.publicRead(
+      params,
+      TOOLS.competitorEvaluations,
+      { ...(params.limit === undefined ? {} : { limit: params.limit }) },
+      (p) => {
+        const rows = list(p['entries']);
+        if (rows.length === 0) return null;
+        const evaluations = rows
+          .map((raw): PublicEvaluation | null => {
+            const e = (raw ?? {}) as Record<string, unknown>;
+            const id = str(e['id']);
+            if (id === null) return null;
+            return {
+              id,
+              coinTicker: str(e['coinTicker']),
+              aggregateScorePercent: num(e['aggregateScorePercent']),
+              // The bar it was actually measured against, as with our own
+              // pipeline read — not the agent's setting today.
+              minAggregateScorePercent: num(e['effectiveMinAggregateScorePercent']),
+              dominantBias: str(e['dominantBias']),
+              assessmentDirection: str(e['assessmentDirection']),
+              hasConflictingSignals: e['hasConflictingSignals'] === true,
+              triggeredSignalCount: num(e['triggeredSignalCount']),
+              gateStatus: str(e['evaluationGateStatus']),
+              terminalStatus: str(e['terminalStatus']),
+              signalSource: str(e['signalSource']),
+              at: str(e['evaluatedAt']) ?? str(e['createdAt']),
+            };
+          })
+          .filter((e): e is PublicEvaluation => e !== null);
+        return { value: evaluations, total: num(p['total']) };
+      },
+    );
+  }
+
+  async readCompetitorOpenPositions(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PublicResult<OpenPositions>> {
+    return this.publicRead(params, TOOLS.competitorOpen, {}, (p) => {
+      const snapshot = p['snapshot'];
+      // Documented as null when the agent has nothing open.
+      if (typeof snapshot !== 'object' || snapshot === null) return null;
+      const s = snapshot as Record<string, unknown>;
+      return {
+        value: {
+          unrealizedPnl: num(s['unrealizedPnl']),
+          openPositionCount: num(s['openPositionCount']),
+          // Carried, never interpreted — see the port's note and
+          // `open-position-rows-are-unobserved`.
+          positionsUnmodelled: list(s['positions']),
+          fetchedAt: str(s['fetchedAt']),
+        },
+        total: null,
+      };
+    });
+  }
+
+  /**
+   * The shape every per-agent public read shares.
+   *
+   * One place that turns a throw into `unreadable` and a mapper's `null`
+   * into `none`, so no individual read can accidentally report an empty
+   * record as a failure or a failure as an empty record.
+   */
+  private async publicRead<T>(
+    params: { userId: string; accessToken: string; agentId: string },
+    tool: string,
+    args: Record<string, unknown>,
+    map: (payload: Record<string, unknown>) => { value: T; total: number | null } | null,
+  ): Promise<PublicResult<T>> {
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool,
+        args: { agentId: params.agentId, ...args },
+      });
+      const mapped = map(result.content as Record<string, unknown>);
+      if (mapped === null) return { kind: 'none' };
+      return { kind: 'value', value: mapped.value, total: mapped.total };
     } catch (err) {
       return unreadable(err);
     }

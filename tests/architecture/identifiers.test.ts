@@ -125,18 +125,54 @@ describe('an identifier is never defaulted at the untyped boundary', () => {
    * The positive half. A scan for known bad shapes only ever catches the shapes
    * already seen; requiring the *right* shape catches the ones that have not
    * been invented yet.
+   *
+   * **There are two ways to refuse, and both are honest.** Throwing is right
+   * where the row *is* the entity: an agent whose id could not be read must
+   * not become an agent, and the whole read fails. Returning null and
+   * filtering the row out is right where the row is one of many and the rest
+   * still answer — dropping one unattributable competitor from a ranking of
+   * 37 loses less than refusing the ranking, and the reader could not have
+   * looked that row up anyway.
+   *
+   * What is banned is neither: producing an entity whose identifier was
+   * invented. So a mapper must show one of the two refusals, and the
+   * drop-and-filter shape must actually filter — `return null` alone would
+   * let a nulled row reach a caller that never checked.
    */
   it('every mapper that produces an entity refuses a payload without one', () => {
     const mappers = boundaryFiles.filter((f) => /mapper|adapter/.test(f));
     const producing = mappers.filter((f) => {
       const code = stripComments(readFileSync(f, 'utf8'));
       // Files that read `id` or `revision` off an untyped payload.
-      return /\b(id|revision)\b['"\]]*\s*(===|!==|\?\?|:)/.test(code) && /\bthrow\b|Error\(/.test(code) === false;
+      const readsAnIdentifier = /\b(id|revision)\b['"\]]*\s*(===|!==|\?\?|:)/.test(code);
+      const refusesByThrowing = /\bthrow\b|Error\(/.test(code);
+      const refusesByDropping = /return null/.test(code) && /\.filter\(/.test(code);
+      return readsAnIdentifier && !refusesByThrowing && !refusesByDropping;
     });
     expect(
       producing,
       'a mapper reading an identifier off an untyped payload must be able to refuse it',
     ).toEqual([]);
+  });
+
+  /**
+   * The drop-and-filter refusal, pinned by name.
+   *
+   * Widening the rule above to admit a second refusal shape is only safe if
+   * the file that prompted it is held to actually using it — otherwise the
+   * widening is a loophole rather than a distinction.
+   */
+  it('the explorer adapter drops unattributable rows rather than naming them', () => {
+    const code = stripComments(
+      readFileSync('src/infrastructure/battlegrid/explorer-adapter.ts', 'utf8'),
+    );
+    // Every id read is followed by a refusal, and every mapped list is filtered.
+    expect(code).toMatch(/if \(agentId === null\) return null/);
+    expect(code).toMatch(/if \(provider === null\) return null/);
+    expect(code).toMatch(/if \(id === null\) return null/);
+    expect(code).toMatch(/\.filter\(/);
+    // And no identifier is ever defaulted into existence.
+    expect(code).not.toMatch(/agentId:\s*str\([^)]*\)\s*\?\?\s*['"]/);
   });
 
   it('the two mappers that exist both throw by name', () => {

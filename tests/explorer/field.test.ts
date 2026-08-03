@@ -225,6 +225,12 @@ describe('the two reads fail apart', () => {
   const fakeExplorer = (field: FieldResult, leaderboard: LeaderboardResult): ExplorerPort => ({
     readField: async () => field,
     readLeaderboard: async () => leaderboard,
+    // Unused by this query; the port is one interface and the compiler
+    // rightly insists the stub be a whole one.
+    readCompetitorPerformance: async () => ({ kind: 'none' }),
+    readCompetitorTrades: async () => ({ kind: 'none' }),
+    readCompetitorEvaluations: async () => ({ kind: 'none' }),
+    readCompetitorOpenPositions: async () => ({ kind: 'none' }),
   });
 
   it('an unreadable leaderboard does not blank the field', async () => {

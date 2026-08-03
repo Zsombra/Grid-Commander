@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-03 — a competitor can be opened
+
+**Did**: `a-competitor-can-be-opened` (standard, archived). `/explorer`
+shipped an hour earlier with every row a dead end — the field could say
+*"you are 7th of 37 and the field loses money"* and nothing about what the
+leaders actually do. Four public reads close that.
+
+**The funnel is the answer, and it is one call.** `Market Predator`, rank 1,
+live 2026-08-03:
+
+```
+245 evaluations → 102 decisions → 73 entered → 51 executed
+                                               9 failed, 13 expired
+   fill 76% · avg score 63% · avg conviction 49% · avg R:R 2.26
+   23W/28L · +$50.06 · held 9.4h on average
+```
+
+143 of 245 evaluations produced no decision at all. How much an agent looks
+at versus how much it acts on is the difference between two agents with the
+same win rate, and it is not visible anywhere else in this product —
+including for our own agents.
+
+**The declaration contradicted itself, and a call settled it.**
+`get_public_agent_unrealized_pnl` says "any ACTIVE agent … the same data an
+anonymous visitor sees" in its summary and "one of **your** intelligence
+agent UUIDs" in its argument description. `public-agent-detail-is-unread`
+flagged it rather than guessing. Called both ways: it answers for a rival
+exactly as for one of ours. The summary is right, the argument text stale.
+
+**Two traps in the payload.** `skipCount` (decisions that were SKIP: 29)
+and `skippedCount` (pipelines ending SKIPPED: 0) are different questions
+with near-identical names — two fields on the port, two labels on the page,
+never summed. And `isWin` is the platform's verdict, carried rather than
+re-derived: a break-even trade is a loss if the platform says so, and
+`netPnl > 0` would have agreed by luck while `netPnl >= 0` would not.
+
+**One shape refused rather than modelled.** No agent anywhere in the field
+holds an open position — `activeTradeCount` is 0 across all 37 — so
+`positions[]` has only ever been seen empty. The declaration promises size,
+entry price, leverage and ROE but not the key names, and inventing key
+names is what produced three of the dead paths in this project's history.
+`positionsUnmodelled: readonly unknown[]` carries the rows through
+untouched; the page states the count and admits it cannot read inside them.
+Filed as `open-position-rows-are-unobserved` with a one-call recipe.
+
+**An architecture guard was right to stop me, and was too narrow.**
+`identifiers.test.ts` requires any mapper reading an id off an untyped
+payload to be able to refuse it — and knew only one refusal: throwing. This
+adapter refuses by returning null and filtering the row out, which is the
+right call where the row is one of many (dropping one unattributable
+competitor from a ranking of 37 loses less than refusing the ranking). The
+guard now admits both, requires the drop shape to actually filter, and
+pins the adapter by name so the widening is a distinction rather than a
+loophole.
+
+**State**: 0 active changes · 21 open backlog items · 79 archived changes ·
+10 capabilities · 1107 vitest (+22 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — the field: every number in this product finally has a denominator
 
 **Did**: `the-field-is-visible` (standard, archived) — a tenth capability,

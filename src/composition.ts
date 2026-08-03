@@ -61,6 +61,7 @@ import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
 import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
+import { ReadCompetitorQuery } from './application/use-cases/read-competitor.query.js';
 import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
 import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
 import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
@@ -285,6 +286,7 @@ export function app(cookies: CookieStore) {
 
     watchArena: new WatchArenaQuery(i.grid),
     readField: new ReadFieldQuery(i.explorer),
+    readCompetitor: new ReadCompetitorQuery(i.explorer),
   };
 }
 

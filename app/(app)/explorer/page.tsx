@@ -208,7 +208,11 @@ export default async function ExplorerPage({
                   <li key={a.agentId} className="rounded border p-3 text-sm space-y-1">
                     <p className="font-medium">
                       {a.rank !== null ? `#${a.rank} ` : ''}
-                      {a.agentName}
+                      {/* Every row opens. A field you can only read totals
+                          from cannot answer what the leaders do. */}
+                      <a href={`/explorer/${a.agentId}`} className="underline">
+                        {a.agentName}
+                      </a>
                       {a.modelDisplayName ? ` · ${a.modelDisplayName}` : ''}
                       {a.ownerDisplayName ? ` · ${a.ownerDisplayName}` : ''}
                     </p>

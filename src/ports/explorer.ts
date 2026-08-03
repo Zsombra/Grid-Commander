@@ -28,6 +28,161 @@ export interface ExplorerPort {
     timeframe: FieldWindow;
     limit?: number | undefined;
   }): Promise<LeaderboardResult>;
+
+  /**
+   * How much one public agent evaluated, how much it acted on, and how
+   * that turned out. The funnel is the answer to "what do the ones doing
+   * well do differently".
+   */
+  readCompetitorPerformance(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PublicResult<CompetitorFunnel>>;
+
+  readCompetitorTrades(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    timeframe?: PublicWindow | undefined;
+    limit?: number | undefined;
+  }): Promise<PublicResult<PublicTrade[]>>;
+
+  readCompetitorEvaluations(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<PublicResult<PublicEvaluation[]>>;
+
+  /**
+   * What a public agent is holding right now.
+   *
+   * Public despite its own argument description. The tool's summary says
+   * "any ACTIVE agent … the same data an anonymous visitor sees" while its
+   * `agentId` description says "one of **your** intelligence agent UUIDs".
+   * Called both ways on 2026-08-03: it answers a snapshot for a rival
+   * exactly as for one of ours, so the summary is right and the argument
+   * text is stale.
+   */
+  readCompetitorOpenPositions(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PublicResult<OpenPositions>>;
+}
+
+/** The windows the per-agent public reads accept — not the field's four. */
+export const PUBLIC_WINDOWS = ['1D', '7D', '30D', 'LIFETIME'] as const;
+export type PublicWindow = (typeof PUBLIC_WINDOWS)[number];
+
+/**
+ * One public read's outcome.
+ *
+ * Generic and per-read because a competitor whose trades will not load
+ * still has a funnel worth showing, and `none` is a finding — an agent
+ * that has closed nothing is a different thing from one whose record could
+ * not be fetched.
+ */
+export type PublicResult<T> =
+  | { readonly kind: 'value'; readonly value: T; readonly total: number | null }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * What an agent looked at, what it decided, and how it ended.
+ *
+ * `skipDecisions` and `skippedTerminal` are two counters the platform
+ * names similarly and means differently — decisions that were SKIP (29 on
+ * the rank-1 agent) versus pipelines whose terminal status was SKIPPED (0
+ * on the same agent). They are never summed and never substituted.
+ */
+export interface CompetitorFunnel {
+  readonly totalEvaluations: number | null;
+  readonly totalDecisions: number | null;
+  readonly enterDecisions: number | null;
+  readonly skipDecisions: number | null;
+  readonly skippedTerminal: number | null;
+  readonly executed: number | null;
+  readonly failed: number | null;
+  readonly expired: number | null;
+  readonly cancelled: number | null;
+  readonly blocked: number | null;
+  readonly pending: number | null;
+  readonly fillRatePercent: number | null;
+  readonly avgAggregateScorePercent: number | null;
+  readonly avgConvictionPercent: number | null;
+  readonly avgRiskRewardRatio: number | null;
+  /** Realized: the record those decisions produced. */
+  readonly outcomeCount: number | null;
+  readonly winCount: number | null;
+  readonly lossCount: number | null;
+  readonly winRatePercent: number | null;
+  readonly avgNetPnl: number | null;
+  readonly totalNetPnl: number | null;
+  readonly avgDurationSeconds: number | null;
+  /** What it watches most, by evaluation count. */
+  readonly topCoins: readonly { readonly coinTicker: string; readonly count: number | null }[];
+}
+
+export interface PublicTrade {
+  readonly id: string;
+  readonly coinTicker: string | null;
+  readonly direction: string | null;
+  readonly entryFillPrice: number | null;
+  readonly exitFillPrice: number | null;
+  readonly netPnl: number | null;
+  /** The platform's own verdict on the trade, not derived from netPnl. */
+  readonly isWin: boolean | null;
+  readonly movePercent: number | null;
+  readonly roePercent: number | null;
+  readonly closeReason: string | null;
+  readonly leverage: number | null;
+  readonly conviction: number | null;
+  readonly openedAt: string | null;
+  readonly closedAt: string | null;
+  readonly durationSeconds: number | null;
+  /** Links a trade back to the evaluation that produced it. */
+  readonly signalLogId: string | null;
+}
+
+export interface PublicEvaluation {
+  readonly id: string;
+  readonly coinTicker: string | null;
+  readonly aggregateScorePercent: number | null;
+  /** The threshold in force when it ran, as with our own pipeline read. */
+  readonly minAggregateScorePercent: number | null;
+  readonly dominantBias: string | null;
+  readonly assessmentDirection: string | null;
+  readonly hasConflictingSignals: boolean;
+  readonly triggeredSignalCount: number | null;
+  readonly gateStatus: string | null;
+  readonly terminalStatus: string | null;
+  readonly signalSource: string | null;
+  readonly at: string | null;
+}
+
+
+/**
+ * What a public agent is holding, as far as it has ever been observed.
+ *
+ * The envelope is real and mapped. The per-position rows are **not
+ * modelled**: on 2026-08-03 no agent anywhere in the field held an open
+ * position, so `positions` has only ever been seen empty. The declaration
+ * promises size, entry price, leverage, price move and return on equity —
+ * but not the key names, and inventing those is what produced three of the
+ * dead write paths in this project's history.
+ *
+ * `positionsUnmodelled` therefore carries the raw rows through untouched,
+ * so the surface can say how many exist and admit it cannot read inside
+ * them yet. See `open-position-rows-are-unobserved`.
+ */
+export interface OpenPositions {
+  readonly unrealizedPnl: number | null;
+  readonly openPositionCount: number | null;
+  /** Length is trustworthy; contents are not interpreted here. */
+  readonly positionsUnmodelled: readonly unknown[];
+  readonly fetchedAt: string | null;
 }
 
 /** The platform's own windows. Not extended, not renamed. */
