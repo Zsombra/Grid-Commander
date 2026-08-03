@@ -60,8 +60,10 @@ import {
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
+import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
 import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
 import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
+import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
 import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
@@ -112,6 +114,7 @@ interface Infrastructure {
   readonly strategies: McpStrategyAdapter;
   readonly radar: McpRadarAdapter;
   readonly grid: McpMarketGridAdapter;
+  readonly explorer: McpExplorerAdapter;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
@@ -159,6 +162,7 @@ function infrastructure(): Infrastructure {
     strategies: new McpStrategyAdapter(battlegrid),
     radar: new McpRadarAdapter(battlegrid),
     grid: new McpMarketGridAdapter(battlegrid),
+    explorer: new McpExplorerAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
@@ -280,6 +284,7 @@ export function app(cookies: CookieStore) {
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
 
     watchArena: new WatchArenaQuery(i.grid),
+    readField: new ReadFieldQuery(i.explorer),
   };
 }
 

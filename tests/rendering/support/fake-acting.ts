@@ -19,6 +19,7 @@ import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-libr
 import { ReadSignalQuery } from '@/application/use-cases/read-signal.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
+import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import type { CurrentUserResult } from '@/application/use-cases/current-user.query.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import { NOT_CONNECTED } from '@/domain/session/session.js';
@@ -26,6 +27,7 @@ import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { FakeAgentsPort } from '../../support/agent-fakes.js';
 import { SequentialRandom } from '../../support/agent-fakes.js';
 import { FakeMarketGridPort } from '../../support/grid-fakes.js';
+import { FakeExplorerPort } from '../../support/explorer-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
 
@@ -61,11 +63,13 @@ export function actingWith({
   strategies = new FakeStrategiesPort(),
   radar = new RenderRadarPort(),
   grid = new FakeMarketGridPort(),
+  explorer = new FakeExplorerPort(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
   radar?: RenderRadarPort;
   grid?: FakeMarketGridPort;
+  explorer?: FakeExplorerPort;
 } = {}) {
   const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
@@ -84,6 +88,7 @@ export function actingWith({
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
     watchArena: new WatchArenaQuery(grid),
+    readField: new ReadFieldQuery(explorer),
     readSignalLibrary: new ReadSignalLibraryQuery(strategies),
     readSignal: new ReadSignalQuery(strategies),
     readMetricIndex: new ReadMetricIndexQuery(strategies),
@@ -99,7 +104,7 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, grid, confirmations };
+  return { app, user, agents, strategies, radar, grid, explorer, confirmations };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */

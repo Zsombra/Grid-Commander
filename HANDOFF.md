@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-03  
-**State**: green (1057 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 20 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#34 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
+**State**: green (1080 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 21 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#35 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
 
 ---
 
@@ -19,18 +19,18 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | 9 |
-| Changes (archived) | 77 |
-| Vitest tests | 1057 (+20 key-gated live) + 62 db |
+| Capabilities (archived) | 10 |
+| Changes (archived) | 78 |
+| Vitest tests | 1080 (+21 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#34 merged) |
+| Open draft PRs | 0 (see PR list; #8–#35 merged) |
 
 ---
 
-## Nine Capabilities
+## Ten Capabilities
 
 | Capability | What it covers |
 |---|---|
@@ -43,6 +43,7 @@ All development branches have been merged. `main` is the single source of truth.
 | `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity, **the trading record**, **the decision pipeline** |
 | `strategy-authoring` | Fork, compile, review, apply; archive, restore |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
+| `agent-comparison` | The public field — other people's agents, the leaderboard, and where this account stands |
 
 ---
 
@@ -58,6 +59,7 @@ Against a real connected BattleGrid account a user can:
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Trading record** (`/agents/[id]/trades`): every trade an agent closed — net P&L, both fees, slippage each side, leverage, the conviction it opened on, why and by whom it closed, how long it was held — with a summary *derived from those trades* and labelled as such, because BattleGrid's own performance figures read zero for accounts with real losses
 - **Decision pipeline** (`/agents/[id]/pipeline`): why an agent did or didn't trade, at each of the three places a candidate can end — stopped before evaluation (the platform's reason code *and* its numbers: `INSUFFICIENT_EQUITY` with `{equityUsd: 2.18, thresholdUsd: 10}`), evaluated and skipped (aggregate score against the threshold **in force at the time**, dominant bias, whether signals disagreed), or decided, carrying the agent's own reasoning paragraph whole **and the per-signal checklist behind it** — each signal named, with the platform's verdict (`CONFIRM` / `WARN` / `REJECT`, three states kept as three) and its written interpretation, plus what the agent would have staked and the exchange order ids it placed. Each stage is independently empty-or-unreadable, so one stage failing hides neither of the other two
+- **The field** (`/explorer`): the population this account competes against — its totals (37 agents, 31% win rate, **−$162.07 net**: the field as a whole loses money), the ranked agent resumes with the platform's own subtitle and objective, a per-model-vendor breakdown of who is actually profiting, and where this account stands from both tools (rank 7 by profit / 97th percentile, and its own agents' places in the field). Three platform behaviours it is built around: the returned list can be shorter than the field it reports and no limit widens it (**intermittently** — 5 of 37 four runs running, then 37 of 37 an hour later), so both counts are always stated; an absent win rate is shown as not measured rather than 0%; and every rate is printed beside its trade count, because sorting by win rate promotes the smallest sample
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
@@ -142,13 +144,19 @@ the way every capability this month began:
    decision's per-signal checklist. Found by reading the raw payload: the
    list row carries 35 fields and the mapper kept 11.
 
+4. ~~`public-explorer-is-unmodelled`~~ — **the field shipped 2026-08-03**
+   (`the-field-is-visible`, a tenth capability). Both entry points, and the
+   denominator every other number in the product was missing.
+
 **Recommended next move:**
 
-- **`public-explorer-is-unmodelled`** — the Explorer the operator named:
-  other people's agents and how they perform, which is where expected value
-  finally gets a comparison class. Nine tools, pure reads, nothing blocking.
-  Start with the arg shapes of `get_agent_explorer` and `get_leaderboard`;
-  both refused guessed args on 2026-08-01.
+- **`public-agent-detail-is-unread`** — every row in `/explorer` is
+  currently a dead end. The seven per-agent public reads are the same
+  shapes this product already renders for its own agents (trades,
+  pipeline), read for a competitor;
+  `get_public_agent_signal_log_detail` carries *more* than our own pipeline
+  read does. One contradiction is already noted in the item and should be
+  settled by a call, not a reading.
 - What remains of `trading-telemetry-is-unread` (open orders, order status,
   trade charts, position audit history).
 
@@ -261,7 +269,7 @@ for dev and build alike. Proven and recorded in `next.config.ts`.
 
 ### The live probes
 
-Twelve key-gated probes in `tests/live/` — each proves one capability
+Thirteen key-gated probes in `tests/live/` — each proves one capability
 against the real platform and skips silently without a key:
 
 ```bash
@@ -273,6 +281,7 @@ BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
 | `write-probe` | agent create / rename / limits / archive / reactivate |
 | `trading-record-probe` | real closed trades and the derived summary |
 | `pipeline-probe` | the three decision stages, a real score-vs-threshold skip, and the per-signal evidence behind it |
+| `field-probe` | the field, the per-vendor breakdown, and this account's rank in it |
 | `radar-probe` | deploy replacement (r1→r2) through describe→confirm→perform |
 | `restore-probe` | archive → roster check → restore |
 | `apply-probe` | fork → compile → **apply** (the widest blast radius write) |
