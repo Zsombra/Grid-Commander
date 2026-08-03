@@ -6,7 +6,7 @@ import type { Budget, Gauge } from '@/domain/agent/budget.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
-import type { TradeOutcome } from '@/ports/agents.js';
+import type { EntryDecision, GateBlock, SignalEvaluation, TradeOutcome } from '@/ports/agents.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -574,5 +574,87 @@ export function mapTradeOutcome(raw: unknown): TradeOutcome {
 export class TradeOutcomePayloadError extends Error {
   constructor(field: string) {
     super(`BattleGrid returned a trade outcome with no usable "${field}"`);
+  }
+}
+
+/**
+ * A candidate stopped before evaluation — shaped from the live
+ * `list_gate_blocks` row of 2026-08-03.
+ *
+ * `reasonDetail` is carried as the platform structured it rather than
+ * flattened to prose: `INSUFFICIENT_EQUITY` is a category, and
+ * `{equityUsd: 2.18, thresholdUsd: 10}` is the answer an operator came
+ * for. `coinTicker` is genuinely nullable — an account-stage block is
+ * about the account, not a market.
+ */
+export function mapGateBlock(raw: unknown): GateBlock {
+  const b = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof b['id'] === 'string' && b['id'] ? b['id'] : null;
+  if (id === null) throw new PipelinePayloadError('gate block id');
+  return {
+    id,
+    coinTicker: typeof b['coinTicker'] === 'string' && b['coinTicker'] ? b['coinTicker'] : null,
+    gateStage: String(b['gateStage'] ?? 'UNKNOWN'),
+    reasonCode: String(b['reasonCode'] ?? 'UNSTATED'),
+    reasonDetail:
+      typeof b['reasonDetail'] === 'object' && b['reasonDetail'] !== null
+        ? (b['reasonDetail'] as Record<string, unknown>)
+        : {},
+    at: typeof b['createdAt'] === 'string' ? b['createdAt'] : null,
+  };
+}
+
+/** One evaluation that ran — live `list_signal_logs` row of 2026-08-03. */
+export function mapSignalEvaluation(raw: unknown): SignalEvaluation {
+  const e = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof e['id'] === 'string' && e['id'] ? e['id'] : null;
+  if (id === null) throw new PipelinePayloadError('signal log id');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  return {
+    id,
+    coinTicker: text(e['coinTicker']),
+    aggregateScore: num(e['aggregateScore']) ?? null,
+    // The threshold *in force when this ran*. Reading today's setting here
+    // would explain an old skip with a rule that did not apply to it.
+    minAggregateScore: num(e['effectiveMinAggregateScore']) ?? null,
+    minRequiredCount: num(e['effectiveMinRequiredCount']) ?? null,
+    triggeredSignalCount: num(e['triggeredSignalCount']) ?? null,
+    dominantBias: text(e['dominantBias']),
+    assessmentDirection: text(e['assessmentDirection']),
+    hasConflictingSignals: e['hasConflictingSignals'] === true,
+    gateStatus: text(e['evaluationGateStatus']),
+    gateReason: text(e['evaluationGateReason']),
+    terminalStatus: text(e['terminalStatus']),
+    at: text(e['evaluatedAt']) ?? text(e['createdAt']),
+  };
+}
+
+/** A decision the agent reached — live `list_entry_decisions` row of 2026-08-03. */
+export function mapEntryDecision(raw: unknown): EntryDecision {
+  const d = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof d['id'] === 'string' && d['id'] ? d['id'] : null;
+  if (id === null) throw new PipelinePayloadError('decision id');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  return {
+    id,
+    coinTicker: text(d['coinTicker']),
+    decision: String(d['decision'] ?? 'UNKNOWN'),
+    direction: text(d['direction']),
+    conviction: num(d['conviction']) ?? null,
+    entryPrice: num(d['entryPrice']) ?? null,
+    stopLoss: num(d['stopLoss']) ?? null,
+    takeProfit: num(d['takeProfit']) ?? null,
+    riskRewardRatio: num(d['riskRewardRatio']) ?? null,
+    status: text(d['status']),
+    // Whole. This is the agent explaining itself, and a truncated
+    // explanation is a different explanation.
+    reasoning: text(d['reasoning']),
+    at: text(d['createdAt']),
+  };
+}
+
+export class PipelinePayloadError extends Error {
+  constructor(field: string) {
+    super(`BattleGrid returned a pipeline row with no usable "${field}"`);
   }
 }

@@ -6,8 +6,12 @@ import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
   BudgetResult,
+  EntryDecision,
+  GateBlock,
   JournalResult,
   RosterResult,
+  SignalEvaluation,
+  StageResult,
   ThoughtLogResult,
   TradeOutcomesResult,
 } from '@/ports/agents.js';
@@ -17,7 +21,10 @@ import {
   mapAgent,
   mapBudget,
   mapCatalog,
+  mapEntryDecision,
+  mapGateBlock,
   mapRecord,
+  mapSignalEvaluation,
   mapSlotUsage,
   mapThought,
   mapTradeOutcome,
@@ -54,6 +61,9 @@ const TOOLS = {
   allThoughts: 'get_user_thought_log',
   budget: 'get_agent_budget',
   tradeOutcomes: 'list_trade_outcomes',
+  gateBlocks: 'list_gate_blocks',
+  signalLogs: 'list_signal_logs',
+  entryDecisions: 'list_entry_decisions',
 } as const;
 
 /**
@@ -320,6 +330,63 @@ export class McpAgentAdapter implements AgentsPort {
     return {
       kind: 'outcomes',
       outcomes: raw.map(mapTradeOutcome),
+      total: typeof payload['total'] === 'number' ? payload['total'] : null,
+    };
+  }
+
+  async readGateBlocks(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<GateBlock>> {
+    return this.stage(params, TOOLS.gateBlocks, mapGateBlock);
+  }
+
+  async readSignalLogs(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<SignalEvaluation>> {
+    return this.stage(params, TOOLS.signalLogs, mapSignalEvaluation);
+  }
+
+  async readEntryDecisions(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<EntryDecision>> {
+    return this.stage(params, TOOLS.entryDecisions, mapEntryDecision);
+  }
+
+  /**
+   * The three pipeline stages share one envelope — `{entries, total}` —
+   * established live 2026-08-03 by reading all three. One helper rather
+   * than three copies, because the shape is the platform's, not ours, and
+   * three copies would be three places to notice it changing.
+   */
+  private async stage<T>(
+    params: { userId: string; accessToken: string; agentId: string; limit?: number | undefined },
+    tool: string,
+    map: (raw: unknown) => T,
+  ): Promise<StageResult<T>> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, tool, {
+        agentId: params.agentId,
+        ...(params.limit === undefined ? {} : { limit: params.limit }),
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+    const raw = payload['entries'];
+    if (!Array.isArray(raw)) return malformed(`no entries returned by ${tool}`);
+    if (raw.length === 0) return { kind: 'none' };
+    return {
+      kind: 'entries',
+      entries: raw.map(map),
       total: typeof payload['total'] === 'number' ? payload['total'] : null,
     };
   }
