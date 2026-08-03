@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-03 — why it did or didn't trade: the decision pipeline
+
+**Did**: `why-it-did-not-trade` (standard, archived) — the second change of
+the reporting phase, and the answer to the question an operator asks second.
+The trading record says what an agent did. This says why it didn't.
+
+**Discovery found three stages, not one surface.** A candidate can die at
+three distinct places, and BattleGrid keeps a separate log for each:
+`list_gate_blocks` (stopped before evaluation), `list_signal_logs`
+(evaluated and skipped), `list_entry_decisions` (decided, with the model's
+own paragraph). All three share an `{entries, total}` envelope, so one
+private `stage<T>()` helper in the adapter serves all three.
+
+**The stages fail independently, and the types make them.** `StageResult<T>`
+is generic for that reason: an agent whose gate blocks cannot be read still
+has evaluations worth showing, and a stage that is *empty* is a finding
+rather than a blank. `/agents/[id]/pipeline` renders all three with a
+`StageNote` component, so every branch says something — "nothing was
+stopped before evaluation" and "we could not ask what was stopped" send an
+operator to different places.
+
+**Two details that would have been easy to get wrong.** Gate blocks carry
+both a reason code and its quantified detail; the code is only the label —
+`INSUFFICIENT_EQUITY` is a category, `{equityUsd: 2.18, thresholdUsd: 10}`
+is the answer, and the page prints the numbers. And `mapSignalEvaluation`
+reads `effectiveMinAggregateScore`, the threshold *in force when the
+evaluation ran*, not the strategy's setting today — reading today's would
+narrate history against a bar it was never measured on.
+
+**Live**: agent "Flow State" evaluated ENA at **0.397 against a 0.55
+threshold → SKIPPED**, explaining "extreme overbought conditions across
+multiple indicators (RSI 76.2, Stochastic…)". The account-wide gate block
+was `INSUFFICIENT_EQUITY` at $2.18 against a $10 floor — the whole account's
+silence, explained in one row.
+
+**Left open deliberately**: `accept_entry_decision` / `cancel_entry_decision`
+(both `mcp:wager`, one destructive — their own change, full ceremony) and
+`list_pending_approvals`, which answers `{approvals: []}` on this account,
+so its row shape has never been observed. Filed rather than modelled from
+the declaration — the seven dead paths above all came from trusting a
+declaration over an observation.
+
+**State**: 0 active changes · 19 open backlog items · 76 archived changes ·
+1049 vitest (+20 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
+
 ## 2026-08-03 — Phase 2 opens: what the agent did with the money
 
 **Did**: `the-trading-record-is-readable` (standard, archived) — the first

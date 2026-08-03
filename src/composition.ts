@@ -52,6 +52,7 @@ import { DescribeEditQuery } from './application/use-cases/describe-edit.query.j
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
+import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import {
   DescribeRebindQuery,
   RebindAgentCommand,
@@ -237,6 +238,7 @@ export function app(cookies: CookieStore) {
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
+    readPipeline: new ReadPipelineQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.

@@ -124,6 +124,97 @@ export interface AgentsPort {
     page?: number | undefined;
     limit?: number | undefined;
   }): Promise<TradeOutcomesResult>;
+
+  /**
+   * Candidates that never reached signal evaluation — the first place a
+   * silent agent's silence is explained. The platform's reason code and
+   * its quantified detail are both carried: "INSUFFICIENT_EQUITY" is a
+   * category, `{equityUsd: 2.18, thresholdUsd: 10}` is the answer.
+   */
+  readGateBlocks(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<GateBlock>>;
+
+  /** Evaluations that ran: score against the threshold that was in force. */
+  readSignalLogs(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<SignalEvaluation>>;
+
+  /** What the agent decided, and the reasoning it wrote for deciding it. */
+  readEntryDecisions(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    limit?: number | undefined;
+  }): Promise<StageResult<EntryDecision>>;
+}
+
+/**
+ * One stage of the decision pipeline.
+ *
+ * Generic because the three stages fail independently and must be allowed
+ * to: an agent whose gate blocks cannot be read still has evaluations
+ * worth showing, and a stage that is empty is a finding rather than a
+ * blank. `total` is what the platform says exists beyond this page.
+ */
+export type StageResult<T> =
+  | { readonly kind: 'entries'; readonly entries: readonly T[]; readonly total: number | null }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/** A candidate stopped before it was ever evaluated. */
+export interface GateBlock {
+  readonly id: string;
+  /** Null when the block was account-wide rather than about one market. */
+  readonly coinTicker: string | null;
+  readonly gateStage: string;
+  readonly reasonCode: string;
+  /** The numbers behind the code, as the platform structured them. */
+  readonly reasonDetail: Readonly<Record<string, unknown>>;
+  readonly at: string | null;
+}
+
+/** One signal evaluation that ran, and how it measured up. */
+export interface SignalEvaluation {
+  readonly id: string;
+  readonly coinTicker: string | null;
+  readonly aggregateScore: number | null;
+  /** The threshold in force when this ran — not today's setting. */
+  readonly minAggregateScore: number | null;
+  readonly minRequiredCount: number | null;
+  readonly triggeredSignalCount: number | null;
+  readonly dominantBias: string | null;
+  readonly assessmentDirection: string | null;
+  readonly hasConflictingSignals: boolean;
+  readonly gateStatus: string | null;
+  readonly gateReason: string | null;
+  /** Where the pipeline ended for this candidate, e.g. `SKIPPED`. */
+  readonly terminalStatus: string | null;
+  readonly at: string | null;
+}
+
+/** A decision the agent reached, in its own words. */
+export interface EntryDecision {
+  readonly id: string;
+  readonly coinTicker: string | null;
+  /** `ENTER` or `SKIP`, as the platform says it. */
+  readonly decision: string;
+  readonly direction: string | null;
+  readonly conviction: number | null;
+  readonly entryPrice: number | null;
+  readonly stopLoss: number | null;
+  readonly takeProfit: number | null;
+  readonly riskRewardRatio: number | null;
+  readonly status: string | null;
+  /** The model's own paragraph. Never paraphrased, never truncated here. */
+  readonly reasoning: string | null;
+  readonly at: string | null;
 }
 
 /**

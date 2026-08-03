@@ -2,7 +2,7 @@ import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
-import type { TradeOutcome, TradeOutcomesResult, AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
+import type { EntryDecision, GateBlock, SignalEvaluation, StageResult, TradeOutcome, TradeOutcomesResult, AgentsPort, BudgetResult, JournalResult, RosterResult, ThoughtLogResult } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
@@ -201,6 +201,23 @@ export class FakeAgentsPort implements AgentsPort {
 
   async readTradeOutcomes(): Promise<TradeOutcomesResult> {
     return this.tradeOutcomes;
+  }
+
+  /** The three pipeline stages, each settable on its own. */
+  gateBlocks: StageResult<GateBlock> = { kind: 'none' };
+  signalLogs: StageResult<SignalEvaluation> = { kind: 'none' };
+  entryDecisions: StageResult<EntryDecision> = { kind: 'none' };
+
+  async readGateBlocks(): Promise<StageResult<GateBlock>> {
+    return this.gateBlocks;
+  }
+
+  async readSignalLogs(): Promise<StageResult<SignalEvaluation>> {
+    return this.signalLogs;
+  }
+
+  async readEntryDecisions(): Promise<StageResult<EntryDecision>> {
+    return this.entryDecisions;
   }
 
   private expect(agentId: string, revision: number): Agent {
