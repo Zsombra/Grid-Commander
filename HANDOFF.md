@@ -74,6 +74,11 @@ These were bugs that existed in the application that sessions discovered and fix
 4. **Agent create** — `brain.kind` was `'preset'` where the schema pins `const: "PRESET"`; `sizingStrategy` used a catalog key that doesn't exist so the fallback fired every time.
 5. **Agent update** — the read returns 23 `tradingConfig` keys; the write accepts 20 with `additionalProperties: false`. Sending all 23 back fails every time.
 6. **`apply_strategy_plan` could never succeed (again)** — `toApplyPlan` omitted three fields the live schema requires; the conformance guard's pass-through exemption for `request.plan` is exactly where it hid. Found by the first live apply (2026-08-01), fixed, and the exemption deleted.
+7. **The preview surface refused every strategy holding a custom table** — the platform returns a saved custom section whole (title, timeframe, columns) but `StrategySection` carried only kind and key, and `preview_strategy_report` rejects a custom section given by key alone while accepting a platform section that way. Found hours after shipping, by building a real table on a real strategy (2026-08-02).
+
+**The pattern in all seven**: none was findable by reading code or schemas.
+Each needed a real call to the real platform. That is why every capability
+here ships with a key-gated probe in `tests/live/`.
 
 ---
 
@@ -89,6 +94,10 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 - Agent edit form only exposes rename and trading limits — the read and write schemas for `tradingConfig` differ (3 fields come back on read, are rejected on write with `additionalProperties: false`)
 - Position-management preset is a label alongside 14 independent values, not a shorthand — the edit surface therefore offers the fourteen fields and says when the label and values disagree (shipped 2026-07-31)
+- A market's **first** radar deployment cannot be created over MCP — every `expectedRevision` is refused when no policy exists (`radar-first-deployment-not-creatable-over-mcp`); that one act still happens on battlegrid.trade
+- Playing a Market Grid session stakes a real entry fee (10), so the submit tools stay unoffered until the full confirmation ceremony covers them; the arena is watch-only by decision
+- **Custom report tables are created by definition, not by key** — the platform mints `custom:<uuid>`; inventing one is refused. Modifying means restating the table *with* the minted key. Full grammar in `docs/REPORT_TABLE_GRAMMAR.md`
+- An archived strategy is listed by `list_strategies` but its detail answers `NOT_FOUND`
 
 ---
 
@@ -102,14 +111,62 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 ---
 
-## Immediate Next Steps
+## Start Here — Where The Next Session Picks Up
 
-1. **CI is local, by decision (2026-08-01)** — `./scripts/ci.sh` is the whole CI in one command (option D of `docs/CI_WITHOUT_BILLING.md`, chosen); `validate.yml` is dispatch-only, so PRs stop collecting meaningless red crosses. `ci-creates-no-runs` closed as a decision.
-2. **Live re-probe: done 2026-07-31** — 43/110 tools observed (up from 21), declared and observed one generation again. `get_market_context` remains the one persistent declared-vs-actual mismatch (`two-read-tools-do-not-answer`, platform-side).
-3. **Live writes mostly proven 2026-07-31** — create, rename, limits-edit, archive and reactivate all succeeded live through the product path on throwaway agents. Still unwalked: rebind (needs a deliberate agent+strategy choice), the fork→compile→apply sequence (needs a SYSTEM strategy with nothing bound — none visible to the key that day), restore (`restore-has-never-been-walked`, P2), and the repair-required observation.
-4. **Design work is unblocked** — all four surface manifests re-surveyed fresh at `485342f` (2026-07-31); `/design` can run against any of them.
+Run `/board` first; it prints live counts. Then:
 
-(PR #8, `brain-with-no-model`, merged 2026-07-31 — was step 1 of this list.)
+**The recommended next move: Phase 2 of the assistant roadmap — reporting
+and expected value.** Two filed items, both starting with a discovery read
+the same way every capability this month began:
+
+1. **`trading-telemetry-is-unread`** (P3) — the ~17 unused position /
+   order / outcome reads. This is "what did my agent actually do with the
+   money", the last big unknown in the product. Known risk recorded in the
+   item: `get_agent_performance` has never returned a populated figure, so
+   the outcome tools may be the only real source.
+2. **`entry-decisions-have-a-read-side`** (P3) — the platform's own
+   human-in-the-loop (pending approvals, gate blocks, signal logs). The
+   most product-aligned unused group: the read half is safe today; the
+   accept/cancel writes are `mcp:wager` and stay behind the ceremony.
+
+**The vision item**, when you want it: `an-assistant-over-the-use-cases`
+(P2) — conversational control over the ~30 use-cases in `composition.ts`.
+Two decisions gate it, both recorded in the item: whose Anthropic key pays
+for conversations, and whether to prototype by exposing Grid-Commander as
+an MCP server first (no second outbound host, no chat UI).
+
+**Operator-side, not mine to close:**
+
+- `image-never-built` (the only P1) — no Docker daemon in these sessions.
+- `prove-token-lifetimes` — needs a human browser session.
+- **The API key is unrotated.** Every write path is now live-proven and the
+  table campaign is finished, so the reason for deferring it is gone.
+  Rotating it is the recommended next operator action.
+
+**Platform weather worth knowing**: 2026-08-01 brought three BattleGrid
+outages, the last roughly ten hours with authenticated calls returning zero
+bytes while the edge answered 401. Every surface renders that honestly as
+unreadable-with-reason, and the live probes say so in their headers — a
+`tools/call failed with 504` in a probe run is the platform, not a
+regression.
+
+---
+
+## The Documentation Map
+
+| Read this | For |
+|---|---|
+| `CLAUDE.md` | Project rules, pipeline commands, the three load-bearing domain facts |
+| `HANDOFF.md` (this file) | Session-start state and what to do next |
+| `openspec/JOURNAL.md` | What happened, newest first — the narrative record |
+| `openspec/specs/<capability>/spec.md` | What the system does today (source of truth, archiver-written) |
+| `docs/BATTLEGRID_MCP_REFERENCE.md` | The full 110-tool surface, regenerable via `tools/generate_mcp_reference.py` |
+| `docs/BATTLEGRID_SURFACE_MAP.md` | Orientation over that surface |
+| `docs/REPORT_TABLE_GRAMMAR.md` | **How report tables are authored** — column grammar, the two laws (unit commensurability, timeframe inertia), the create-by-definition/modify-by-key loop. Every claim live-established 2026-08-02 |
+| `docs/BATTLEGRID_PRODUCT_MODEL.md` | The operator's description of what BattleGrid *is* |
+| `docs/CI_WITHOUT_BILLING.md` | Why CI is local, and the option chosen |
+| `docs/specs/*_REVIEW_CHECKLIST.md` | Engineering standards every change is held to |
+| `openspec/backlog/*.md` | Everything deferred, each with why and the first step when taken |
 
 ---
 
@@ -164,6 +221,38 @@ npm run build && npm run start
 PostgreSQL stops on its own in ephemeral containers — restart with: `pg_ctlcluster 16 main start`
 
 To probe BattleGrid live after connecting an account: `./scripts/check-serving.sh` runs the served-application verification.
+
+**Use `next dev`, not `next dev --turbopack`.** Turbopack (Next 15.1) cannot
+resolve this repo's `.js`→`.ts` specifiers through the `@/` alias and offers
+no `extensionAlias` equivalent to teach it; webpack is the supported path
+for dev and build alike. Proven and recorded in `next.config.ts`.
+
+### The live probes
+
+Ten key-gated probes in `tests/live/` — each proves one capability against
+the real platform and skips silently without a key:
+
+```bash
+BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
+```
+
+| Probe | Proves |
+|---|---|
+| `write-probe` | agent create / rename / limits / archive / reactivate |
+| `radar-probe` | deploy replacement (r1→r2) through describe→confirm→perform |
+| `restore-probe` | archive → roster check → restore |
+| `apply-probe` | fork → compile → **apply** (the widest blast radius write) |
+| `retune-probe` | the scorecard write, digest-bound, on a zero-bound fork |
+| `signal-vocabulary-probe` | the 82-signal library and one authoring card |
+| `column-grammar-probe` | the metric index, a metric card, and a teaching refusal |
+| `preview-probe` | the agent's-eye report with cost and budget gauges |
+| `custom-table-probe` | **create and modify a custom table** end to end |
+| `oauth-metadata` | the connect path's discovery documents |
+
+Several use the operator-authorized **slot shuffle**: the account sits at
+its 25-active-strategy cap, so a probe parks an unbound PRIVATE strategy,
+works on a throwaway fork, then archives the fork and restores what it
+parked. Every one of them restores the account in a `finally`.
 
 ---
 

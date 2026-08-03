@@ -1,5 +1,28 @@
 # Journal
 
+## 2026-08-02 — session close: the handoff refreshed for a clean start
+
+**Did**: wrapped the session. `HANDOFF.md` rewritten where it had gone
+stale — a "Start Here" section naming the recommended next move (Phase 2:
+`trading-telemetry-is-unread`, then `entry-decisions-have-a-read-side`)
+with the operator-side items separated out; a documentation map so the next
+session knows which of the nine docs answers which question; the seventh
+dead-path finding added with the pattern all seven share (none was
+findable without a real call to the real platform); the ten live probes
+tabulated with what each proves and a note on the slot shuffle; the
+hard-limits list extended with what this month established (first radar
+deployment uncreatable, arena watch-only by decision, custom tables created
+by definition not by key, archived strategies unreadable); and the
+turbopack answer recorded where a developer will hit it.
+
+**Open recommendation to the operator**: rotate the API key. Every write
+path is live-proven and the table campaign is finished, so the reason for
+deferring it no longer holds.
+
+**State at close**: 0 active changes · 20 open backlog items · 74 archived
+changes · 9 capabilities · 1021 vitest (+18 key-gated) + 62 db + 221
+harness · all nine ci.sh gates green · main = `3ce217c`.
+
 ## 2026-08-02 — the table-authoring campaign: the grammar mapped, a shipped bug found
 
 **Did**: the operator's campaign — author tables across the mathematical
