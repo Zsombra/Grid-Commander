@@ -2,10 +2,11 @@
 id: our-own-agents-show-less-than-strangers
 title: A stranger's evaluation is more legible in this product than our own
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-08-03
 updated: 2026-08-03
+change: "your-own-agent-is-as-legible"
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, asymmetry, pipeline, scorecard]
@@ -54,3 +55,43 @@ and diff its key set against `get_public_agent_signal_log_detail` on a
 competitor's. Print both key counts side by side — the discipline that
 found the 35-vs-11 gap. Do not assume; the whole point of this item is that
 the answer has not been observed.
+
+## Done (2026-08-03)
+
+**Cause (1) confirmed by calling it.** The owner-side tools carried it all
+along:
+
+| | keys |
+|---|---|
+| `list_signal_logs` row — what `ReadPipelineQuery` read | **23** |
+| `get_signal_log` detail — never called | **31** |
+
+The eight unread: `scorecard`, `attributions`, `pipeline`,
+`linkedEntryDecision`, `challenge`, `agentName`, `agentAvatarUrl`,
+`agentModelName`. The eighth instance of
+`the-payload-carries-more-than-is-read`, and the second this month caught
+after shipping.
+
+`your-own-agent-is-as-legible` (archived) closed it:
+`/agents/[id]/pipeline/[logId]` shows every consulted signal grouped by
+module, the attribution, and the chain — and `/agents/[id]/pipeline` gained
+the funnel from `get_signal_performance`, also unused until now.
+
+**And it went further than parity.** `pipeline.attempt.ownerView` is nulled
+on every public read and **populated on your own**: model, provider,
+billing type, price and duration. Live on "Flow State": one SKIP on ENA
+cost **$0.047775 and 20.7 seconds** of Claude Opus 4.6, over 64 signals
+consulted and 13 fired. No surface in this product had ever shown what a
+decision cost to reach, and no competitor page ever can.
+
+**A shared-shape refactor came with it.** `ConsultedSignal`,
+`ScoreAttribution` and `EvaluationChain` moved to
+`src/domain/agent/scorecard.ts`, and one `mapEvaluationScorecard` serves
+both readers with an `owned` flag deciding whether the cost is reached for
+at all. Two copies would have drifted, and the copy that drifted would have
+been the one nobody was looking at.
+
+**Two guards caught real mistakes on the way**: the boundaries test refused
+a route importing the domain directly (fixed by re-exporting through the
+port, as `ExplorerPort` already did), and the reachability walker refused a
+three-level-deep page that could not get back to the agent it was about.

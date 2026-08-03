@@ -1,5 +1,62 @@
 # Journal
 
+## 2026-08-03 — your own agent is as legible, and now you can see what it cost
+
+**Did**: `your-own-agent-is-as-legible` (standard, archived) — closing the
+asymmetry filed two hours earlier, which asked *which* of two causes it was
+and said not to assume.
+
+**It was the first, and it was not close.**
+
+| | keys |
+|---|---|
+| `list_signal_logs` row — what `ReadPipelineQuery` read | **23** |
+| `get_signal_log` — never called | **31** |
+
+The eight unread: `scorecard`, `attributions`, `pipeline`,
+`linkedEntryDecision`, `challenge`, and three identity fields. The
+**eighth** instance of `the-payload-carries-more-than-is-read`, and the
+second this month caught after shipping. `get_signal_performance` was
+unused too — the same funnel built for competitors, sitting there for the
+user's own agents.
+
+**The part that goes past parity.** `pipeline.attempt.ownerView` is nulled
+on every public read and **populated on your own**:
+
+```json
+{"modelDisplayName": "Claude Opus 4.6", "billingType": "PLATFORM",
+ "costUsd": 0.047775, "durationMs": 20711}
+```
+
+Live on "Flow State": one SKIP on ENA cost **4.8 cents and 20.7 seconds**,
+over 64 signals consulted and 13 fired. No surface in this product had ever
+shown what a decision cost to reach, and no competitor page ever can. Null
+stays null — an unreported price and a price of zero are different facts,
+and only one of them should reassure someone watching their spend.
+
+**One mapper, two readers.** `get_signal_log` and
+`get_public_agent_signal_log_detail` return the *same* `log` shape; the
+public one nulls the owner telemetry and nothing else. So
+`ConsultedSignal`, `ScoreAttribution` and `EvaluationChain` moved to
+`src/domain/agent/scorecard.ts` and one `mapEvaluationScorecard` serves
+both, with `owned` deciding whether the cost is reached for at all rather
+than read and hoped to be null. Two copies would have drifted, and the copy
+that drifted would have been the one nobody was looking at.
+
+**Two guards earned their keep, and a third caught a bug before it
+rendered.** The boundaries test refused a route importing the domain
+directly — fixed by re-exporting through the port, as `ExplorerPort`
+already did. The reachability walker refused a three-level-deep page that
+could not get back to the agent it was about. And the pipeline page's `pct`
+helper takes a 0..1 fraction while the funnel reports `fillRatePct: 76`;
+passing one through the other renders **7600%**. Caught while wiring, fixed
+with a second helper and a test that asserts the wrong one is not used.
+
+**State**: 0 active changes · 20 open backlog items · 81 archived changes ·
+10 capabilities · 1151 vitest (+24 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — the scorecard, and an asymmetry worth fixing
 
 **Did**: `the-scorecard-is-legible` (standard, archived) — the bottom of

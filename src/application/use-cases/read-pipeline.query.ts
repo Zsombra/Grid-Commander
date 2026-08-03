@@ -1,6 +1,7 @@
 import type {
   AgentsPort,
   EntryDecision,
+  FunnelResult,
   GateBlock,
   SignalEvaluation,
   StageResult,
@@ -16,6 +17,14 @@ import type {
  * `RosterResult` was shaped to prevent, one surface out.
  */
 export interface PipelineResult {
+  /**
+   * How much this agent evaluated against how much it acted on.
+   *
+   * A fourth read, and the one that frames the other three: 245
+   * evaluations behind 73 entries says something no list of ten rows can.
+   * It fails independently like the rest.
+   */
+  readonly funnel: FunnelResult;
   readonly blocks: StageResult<GateBlock>;
   readonly evaluations: StageResult<SignalEvaluation>;
   readonly decisions: StageResult<EntryDecision>;
@@ -30,11 +39,12 @@ export class ReadPipelineQuery {
     agentId: string;
     limit?: number | undefined;
   }): Promise<PipelineResult> {
-    const [blocks, evaluations, decisions] = await Promise.all([
+    const [funnel, blocks, evaluations, decisions] = await Promise.all([
+      this.agents.readOwnFunnel(req),
       this.agents.readGateBlocks(req),
       this.agents.readSignalLogs(req),
       this.agents.readEntryDecisions(req),
     ]);
-    return { blocks, evaluations, decisions };
+    return { funnel, blocks, evaluations, decisions };
   }
 }

@@ -26,7 +26,19 @@ function StageNote({ stage, empty }: { stage: StageResult<unknown>; empty: strin
   return null;
 }
 
+/** For a fraction in 0..1, as the stage reads report scores and conviction. */
 const pct = (v: number | null): string => (v === null ? '—' : `${Math.round(v * 100)}%`);
+
+/**
+ * For a value the platform already expressed as a percentage.
+ *
+ * Two helpers rather than one because the platform sends both: the stage
+ * reads give `aggregateScore: 0.397` while the funnel gives
+ * `fillRatePct: 76`. Passing the second through the first renders 7600%,
+ * which is the kind of wrong that looks like a rendering glitch rather
+ * than a lie about money.
+ */
+const already = (v: number | null): string => (v === null ? 'not measured' : `${Math.round(v)}%`);
 
 /**
  * The evidence a decision was drawn from, signal by signal.
@@ -73,7 +85,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
-  const { blocks, evaluations, decisions } = await app.readPipeline.execute({
+  const { funnel, blocks, evaluations, decisions } = await app.readPipeline.execute({
     ...user.authority,
     agentId: id,
     limit: 10,
@@ -86,6 +98,53 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         A candidate can end at three places: stopped before it was evaluated,
         evaluated and skipped, or decided against. Newest first.
       </p>
+
+      {/*
+        The frame around the three stages. Ten rows cannot say what "245
+        evaluations behind 73 entries" says, and this figure existed for
+        competitors before it existed for the user's own agents.
+      */}
+      <section className="space-y-2">
+        <h2 className="text-base font-medium">What it looks at, and what it acts on</h2>
+        {funnel.kind === 'unreadable' ? (
+          <p role="alert" className="text-sm">
+            The record could not be read: {funnel.reason}
+          </p>
+        ) : funnel.kind === 'none' ? (
+          <p className="text-sm">This agent has evaluated nothing yet.</p>
+        ) : (
+          <div className="rounded border p-3 text-sm space-y-1">
+            <p>
+              {funnel.funnel.totalEvaluations ?? '—'} evaluations →{' '}
+              {funnel.funnel.totalDecisions ?? '—'} decisions →{' '}
+              {funnel.funnel.enterDecisions ?? '—'} entered
+            </p>
+            {/* Two counters the platform names alike and means differently. */}
+            <p>
+              Decisions to skip: {funnel.funnel.skipDecisions ?? '—'} · pipelines
+              ending SKIPPED: {funnel.funnel.skippedTerminal ?? '—'}
+            </p>
+            <p>
+              Of what it entered: {funnel.funnel.executed ?? '—'} executed ·{' '}
+              {funnel.funnel.failed ?? '—'} failed · {funnel.funnel.expired ?? '—'} expired
+            </p>
+            <p>
+              Fill rate {already(funnel.funnel.fillRatePercent)} · average score{' '}
+              {already(funnel.funnel.avgAggregateScorePercent)} · average conviction{' '}
+              {already(funnel.funnel.avgConvictionPercent)}
+            </p>
+            {funnel.funnel.topCoins.length > 0 ? (
+              <p>
+                Watches most:{' '}
+                {funnel.funnel.topCoins
+                  .slice(0, 6)
+                  .map((c) => `${c.coinTicker}${c.count === null ? '' : ` (${c.count})`}`)
+                  .join(' · ')}
+              </p>
+            ) : null}
+          </div>
+        )}
+      </section>
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">Stopped before evaluation</h2>
@@ -127,7 +186,12 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
             {evaluations.entries.map((e) => (
               <li key={e.id} className="rounded border p-3 text-sm space-y-1">
                 <p className="font-medium">
-                  {e.coinTicker ?? 'unnamed market'} · scored {pct(e.aggregateScore)} against a{' '}
+                  {/* Opens the full scorecard: every signal consulted, not
+                      only the ones that fired. */}
+                  <a href={`/agents/${id}/pipeline/${e.id}`} className="underline">
+                    {e.coinTicker ?? 'unnamed market'}
+                  </a>{' '}
+                  · scored {pct(e.aggregateScore)} against a{' '}
                   {pct(e.minAggregateScore)} threshold
                   {e.terminalStatus ? ` · ${e.terminalStatus}` : ''}
                 </p>

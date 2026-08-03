@@ -14,6 +14,8 @@ import type {
   StageResult,
   ThoughtLogResult,
   TradeOutcomesResult,
+  EvaluationResult,
+  FunnelResult,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
@@ -30,6 +32,7 @@ import {
   mapTradeOutcome,
 } from './agent-mapper.js';
 import { malformed, unreadable } from './unreadable.js';
+import { mapEvaluationScorecard } from './scorecard-mapper.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 
 /**
@@ -64,6 +67,8 @@ const TOOLS = {
   gateBlocks: 'list_gate_blocks',
   signalLogs: 'list_signal_logs',
   entryDecisions: 'list_entry_decisions',
+  signalLogDetail: 'get_signal_log',
+  signalPerformance: 'get_signal_performance',
 } as const;
 
 /**
@@ -367,6 +372,99 @@ export class McpAgentAdapter implements AgentsPort {
    * than three copies, because the shape is the platform's, not ours, and
    * three copies would be three places to notice it changing.
    */
+  /**
+   * One of this account's own evaluations, in full.
+   *
+   * The same `log` shape the public read returns, mapped by the same
+   * function — with `owned: true`, which is what lets the owner-only cost
+   * be read at all. Until this existed the product read the 23-key list
+   * row and showed a stranger's agent more than the user's own.
+   */
+  async readOwnEvaluationDetail(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<EvaluationResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.signalLogDetail, {
+        agentId: params.agentId,
+        logId: params.logId,
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+    const evaluation = mapEvaluationScorecard(payload, { owned: true });
+    // `log: null` is the platform's documented answer for an evaluation it
+    // will not detail. Nothing published is not nothing readable.
+    if (evaluation === null) return { kind: 'none' };
+    return { kind: 'evaluation', evaluation };
+  }
+
+  async readOwnFunnel(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<FunnelResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.signalPerformance, { agentId: params.agentId });
+    } catch (err) {
+      return unreadable(err);
+    }
+    const n = (k: string): number | null =>
+      typeof payload[k] === 'number' && Number.isFinite(payload[k]) ? (payload[k] as number) : null;
+    // An agent that has evaluated nothing gets `none`, not a funnel of
+    // zeros — the same distinction the roster keeps between empty and
+    // unreadable, one surface in.
+    if (n('totalEvaluations') === null) return { kind: 'none' };
+    const topRaw = Array.isArray(payload['topCoinsByEvaluation'])
+      ? payload['topCoinsByEvaluation']
+      : [];
+    return {
+      kind: 'funnel',
+      funnel: {
+        totalEvaluations: n('totalEvaluations'),
+        totalDecisions: n('totalEntryDecisions'),
+        enterDecisions: n('enterCount'),
+        // Two counters, two fields. `skipCount` is decisions that were
+        // SKIP; `skippedCount` is pipelines whose terminal status was
+        // SKIPPED. Never summed, never substituted.
+        skipDecisions: n('skipCount'),
+        skippedTerminal: n('skippedCount'),
+        executed: n('executedCount'),
+        failed: n('failedCount'),
+        expired: n('expiredCount'),
+        cancelled: n('cancelledCount'),
+        blocked: n('blockedCount'),
+        pending: n('pendingCount'),
+        fillRatePercent: n('fillRatePct'),
+        avgAggregateScorePercent: n('avgAggregateScorePercent'),
+        avgConvictionPercent: n('avgConvictionPercent'),
+        avgRiskRewardRatio: n('avgRiskRewardRatio'),
+        outcomeCount: n('outcomeCount'),
+        winCount: n('winCount'),
+        lossCount: n('lossCount'),
+        winRatePercent: n('winRatePercent'),
+        avgNetPnl: n('avgNetPnl'),
+        totalNetPnl: n('totalNetPnl'),
+        avgDurationSeconds: n('avgDurationSeconds'),
+        topCoins: topRaw
+          .map((raw: unknown) => {
+            const c = (raw ?? {}) as Record<string, unknown>;
+            const coinTicker = typeof c['coinTicker'] === 'string' ? c['coinTicker'] : null;
+            if (!coinTicker) return null;
+            return {
+              coinTicker,
+              count: typeof c['count'] === 'number' ? c['count'] : null,
+            };
+          })
+          .filter((c): c is { coinTicker: string; count: number | null } => c !== null),
+      },
+    };
+  }
+
   private async stage<T>(
     params: { userId: string; accessToken: string; agentId: string; limit?: number | undefined },
     tool: string,

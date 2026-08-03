@@ -208,6 +208,52 @@ describe('the pipeline page, branch by branch', () => {
     expect(r.text).toContain('475192822195');
   });
 
+  it('frames the stages with what the agent looks at versus acts on', async () => {
+    const agents = world();
+    agents.ownFunnel = {
+      kind: 'funnel',
+      funnel: {
+        totalEvaluations: 245,
+        totalDecisions: 102,
+        enterDecisions: 73,
+        skipDecisions: 29,
+        skippedTerminal: 0,
+        executed: 51,
+        failed: 9,
+        expired: 13,
+        cancelled: 0,
+        blocked: 0,
+        pending: 0,
+        fillRatePercent: 76,
+        avgAggregateScorePercent: 63,
+        avgConvictionPercent: 49,
+        avgRiskRewardRatio: 2.26,
+        outcomeCount: 51,
+        winCount: 23,
+        lossCount: 28,
+        winRatePercent: 45.1,
+        avgNetPnl: 0.98,
+        totalNetPnl: 50.06,
+        avgDurationSeconds: 33937,
+        topCoins: [{ coinTicker: 'ENA', count: 21 }],
+      },
+    };
+    const r = await pipelineRendered();
+    expect(r.text).toMatch(/245\s+evaluations/);
+    expect(r.text).toMatch(/73\s+entered/);
+    // A percentage the platform already expressed as one. 7600% would mean
+    // it went through the 0..1 helper the stage reads use.
+    expect(r.text).toContain('76%');
+    expect(r.text).not.toContain('7600%');
+    expect(r.text).toContain('ENA (21)');
+  });
+
+  it('says an agent has evaluated nothing rather than showing zeros', async () => {
+    world();
+    const r = await pipelineRendered();
+    expect(r.text).toContain('evaluated nothing yet');
+  });
+
   it('an empty stage says what its emptiness means', async () => {
     world();
     const r = await pipelineRendered();
