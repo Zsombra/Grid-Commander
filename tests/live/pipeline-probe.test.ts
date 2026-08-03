@@ -78,6 +78,32 @@ live('the decision pipeline answers through the product path', () => {
         // eslint-disable-next-line no-console
         console.log(`    decision: ${d?.decision} ${String(d?.coinTicker)} — ${String(d?.reasoning).slice(0, 90)}…`);
         expect(d?.decision).toBeTruthy();
+
+        // The evidence behind that paragraph, which arrives on this same
+        // row — `get_entry_decision` returns the same keys and is never
+        // called. If the platform ever stops sending it, this says so
+        // rather than the surface quietly going blank.
+        const spread = new Map<string, number>();
+        for (const s of d?.checklist ?? []) {
+          const k = s.verdict ?? 'unstated';
+          spread.set(k, (spread.get(k) ?? 0) + 1);
+        }
+        // eslint-disable-next-line no-console
+        console.log(
+          `    evidence: ${d?.checklist.length ?? 0} signals — ${[...spread]
+            .map(([v, n]) => `${n} ${v}`)
+            .join(' · ')}`,
+        );
+        const first = d?.checklist[0];
+        if (first) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `      ${first.label ?? first.signalId} → ${String(first.verdict)}: ${String(
+              first.interpretation,
+            ).slice(0, 80)}…`,
+          );
+          expect(first.signalId, 'every mapped verdict is attributable').toBeTruthy();
+        }
       }
       if (sawSomething) break;
     }

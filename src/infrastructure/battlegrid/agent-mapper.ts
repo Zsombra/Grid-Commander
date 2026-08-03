@@ -6,7 +6,13 @@ import type { Budget, Gauge } from '@/domain/agent/budget.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
-import type { EntryDecision, GateBlock, SignalEvaluation, TradeOutcome } from '@/ports/agents.js';
+import type {
+  EntryDecision,
+  GateBlock,
+  SignalEvaluation,
+  SignalVerdict,
+  TradeOutcome,
+} from '@/ports/agents.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -629,12 +635,36 @@ export function mapSignalEvaluation(raw: unknown): SignalEvaluation {
   };
 }
 
+/**
+ * One signal's reading inside a decision's checklist.
+ *
+ * An entry with no `signalId` is dropped rather than mapped to a blank: the
+ * checklist is evidence, and an unidentifiable row of evidence cannot be
+ * attributed to a signal the reader could go and look up.
+ */
+function mapSignalVerdict(raw: unknown): SignalVerdict | null {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const signalId = typeof s['signalId'] === 'string' && s['signalId'] ? s['signalId'] : null;
+  if (signalId === null) return null;
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  return {
+    signalId,
+    label: text(s['label']),
+    // Kept as the platform said it. CONFIRM / WARN / REJECT today; a fourth
+    // value tomorrow renders as itself rather than as whichever of two
+    // buckets this mapper guessed.
+    verdict: text(s['verdict']),
+    interpretation: text(s['interpretation']),
+  };
+}
+
 /** A decision the agent reached — live `list_entry_decisions` row of 2026-08-03. */
 export function mapEntryDecision(raw: unknown): EntryDecision {
   const d = (raw ?? {}) as Record<string, unknown>;
   const id = typeof d['id'] === 'string' && d['id'] ? d['id'] : null;
   if (id === null) throw new PipelinePayloadError('decision id');
   const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  const rawChecklist = Array.isArray(d['signalChecklist']) ? d['signalChecklist'] : [];
   return {
     id,
     coinTicker: text(d['coinTicker']),
@@ -649,6 +679,20 @@ export function mapEntryDecision(raw: unknown): EntryDecision {
     // Whole. This is the agent explaining itself, and a truncated
     // explanation is a different explanation.
     reasoning: text(d['reasoning']),
+    // The evidence behind that paragraph. It arrives on the list row —
+    // `get_entry_decision` returns the same 35 keys and is never called.
+    checklist: rawChecklist
+      .map(mapSignalVerdict)
+      .filter((s): s is SignalVerdict => s !== null),
+    positionSizePct: num(d['positionSizePct']) ?? null,
+    positionSizePreset: text(d['positionSizePreset']),
+    timeHorizon: text(d['timeHorizon']),
+    atrPct: num(d['atrPct']) ?? null,
+    expiresAt: text(d['expiresAt']),
+    executedAt: text(d['executedAt']),
+    executedOrderId: text(d['executedOrderId']),
+    stopLossOrderId: text(d['stopLossOrderId']),
+    takeProfitOrderId: text(d['takeProfitOrderId']),
     at: text(d['createdAt']),
   };
 }

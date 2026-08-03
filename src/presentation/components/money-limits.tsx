@@ -75,6 +75,19 @@ export function MoneyLimits({
             You can change this later. Starting at <strong>Off</strong> lets you
             read what the agent decides before any of it costs anything.
           </p>
+          {/*
+            Said here rather than filed as a limitation nobody reads. This
+            product offers a mode whose entire point is that it waits for a
+            human, and the accept and cancel actions are `mcp:wager` and
+            unbuilt (`approvals-have-no-write-side`). Choosing it without
+            being told means proposals that expire unanswered.
+          */}
+          <p className="text-sm text-text-secondary">
+            <strong>Approval required</strong> is not answerable here yet:
+            Grid-Commander can show you what the agent proposes but cannot
+            accept or cancel it. Until it can, answering happens on
+            battlegrid.trade, and unanswered proposals expire.
+          </p>
         </div>
       )}
 

@@ -211,6 +211,22 @@ describe('the safe answer is the default answer', () => {
   });
 
   /**
+   * The mode this product cannot yet serve says so where it is chosen.
+   *
+   * `APPROVAL_REQUIRED` means the agent proposes and waits for a human, and
+   * the accept/cancel tools are `mcp:wager` and unbuilt. Offering it silently
+   * would hand the operator an agent whose proposals expire unanswered — a
+   * dead end the product created and did not mention.
+   */
+  it('says that approval-required is not answerable here yet', () => {
+    const source = form();
+    expect(source).toContain('cannot');
+    expect(source).toMatch(/accept or cancel/);
+    // And names where answering does happen, rather than only refusing.
+    expect(source).toContain('battlegrid.trade');
+  });
+
+  /**
    * Composing and editing want opposite things, and one component now serves
    * both.
    *

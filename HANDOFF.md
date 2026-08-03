@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-03  
-**State**: green (1049 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 20 further vitest are key-gated live probes). No active changes. 19 open backlog items. PRs #8–#33 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
+**State**: green (1057 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 20 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#34 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 9 |
-| Changes (archived) | 76 |
-| Vitest tests | 1049 (+20 key-gated live) + 62 db |
+| Changes (archived) | 77 |
+| Vitest tests | 1057 (+20 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
-| Open backlog items | 19 |
+| Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#33 merged) |
+| Open draft PRs | 0 (see PR list; #8–#34 merged) |
 
 ---
 
@@ -57,7 +57,7 @@ Against a real connected BattleGrid account a user can:
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain); **retune any signal rule the strategy carries** (allocation, Required, declared params) through the full describe→confirm→perform ceremony, the token digest-bound to the exact values at the revision read (live-proven 2026-08-01: allocation 0→1 on a zero-bound fork, r1→r2 read back); **preview what an agent reads** (`/strategies/[id]/preview`) — the report rendered live over a bounded coin selection with token estimate, budget gauges, and which of the 82 signals the composition can feed, all without saving anything
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Trading record** (`/agents/[id]/trades`): every trade an agent closed — net P&L, both fees, slippage each side, leverage, the conviction it opened on, why and by whom it closed, how long it was held — with a summary *derived from those trades* and labelled as such, because BattleGrid's own performance figures read zero for accounts with real losses
-- **Decision pipeline** (`/agents/[id]/pipeline`): why an agent did or didn't trade, at each of the three places a candidate can end — stopped before evaluation (the platform's reason code *and* its numbers: `INSUFFICIENT_EQUITY` with `{equityUsd: 2.18, thresholdUsd: 10}`), evaluated and skipped (aggregate score against the threshold **in force at the time**, dominant bias, whether signals disagreed), or decided, carrying the agent's own reasoning paragraph whole. Each stage is independently empty-or-unreadable, so one stage failing hides neither of the other two
+- **Decision pipeline** (`/agents/[id]/pipeline`): why an agent did or didn't trade, at each of the three places a candidate can end — stopped before evaluation (the platform's reason code *and* its numbers: `INSUFFICIENT_EQUITY` with `{equityUsd: 2.18, thresholdUsd: 10}`), evaluated and skipped (aggregate score against the threshold **in force at the time**, dominant bias, whether signals disagreed), or decided, carrying the agent's own reasoning paragraph whole **and the per-signal checklist behind it** — each signal named, with the platform's verdict (`CONFIRM` / `WARN` / `REJECT`, three states kept as three) and its written interpretation, plus what the agent would have staked and the exchange order ids it placed. Each stage is independently empty-or-unreadable, so one stage failing hides neither of the other two
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
@@ -78,9 +78,14 @@ These were bugs that existed in the application that sessions discovered and fix
 6. **`apply_strategy_plan` could never succeed (again)** — `toApplyPlan` omitted three fields the live schema requires; the conformance guard's pass-through exemption for `request.plan` is exactly where it hid. Found by the first live apply (2026-08-01), fixed, and the exemption deleted.
 7. **The preview surface refused every strategy holding a custom table** — the platform returns a saved custom section whole (title, timeframe, columns) but `StrategySection` carried only kind and key, and `preview_strategy_report` rejects a custom section given by key alone while accepting a platform section that way. Found hours after shipping, by building a real table on a real strategy (2026-08-02).
 
-**The pattern in all seven**: none was findable by reading code or schemas.
-Each needed a real call to the real platform. That is why every capability
-here ships with a key-gated probe in `tests/live/`.
+8. **The pipeline page threw away its best data on the day it shipped** — `list_entry_decisions` returns 35 fields per row and `mapEntryDecision` kept 11. Dropped among them was `signalChecklist`: eight per-signal verdicts with written interpretations, already on the wire. Found hours later by reading a raw payload instead of a type (2026-08-02 → fixed in `the-decision-shows-its-work`). The near-miss is instructive too — the obvious fix was to add a `get_entry_decision` detail fetch, and that tool returns the same 35 keys the list row already sends.
+
+**The pattern in all eight**: none was findable by reading code or schemas.
+Each needed a real call to the real platform — and the eighth needed
+looking at what came *back* from a call the product was already making.
+That is why every capability here ships with a key-gated probe in
+`tests/live/`, and why a new adapter should print the raw payload's key
+count next to the mapper's.
 
 ---
 
@@ -132,20 +137,29 @@ the way every capability this month began:
    independently: gate blocks, signal evaluations, entry decisions. Live:
    "Flow State" scored ENA at 0.397 against a 0.55 threshold → SKIPPED.
 
-**Recommended next move — pick one:**
+3. ~~The decision's evidence~~ — **shipped 2026-08-03**
+   (`the-decision-shows-its-work`). The pipeline page renders each
+   decision's per-signal checklist. Found by reading the raw payload: the
+   list row carries 35 fields and the mapper kept 11.
 
-- **The accept/cancel writes** (`accept_entry_decision`,
-  `cancel_entry_decision`) — the read half now exists, so the human-in-the-
-  loop is one change from complete. Both are `mcp:wager`, one destructive:
-  full track, confirmation digest-bound to the decision and its price
-  levels. `list_pending_approvals` answers `{approvals: []}` on this
-  account, so **observe a real pending approval before modelling the row** —
-  every one of the seven dead paths came from trusting a declaration.
+**Recommended next move:**
+
 - **`public-explorer-is-unmodelled`** — the Explorer the operator named:
   other people's agents and how they perform, which is where expected value
-  gets a comparison class.
+  finally gets a comparison class. Nine tools, pure reads, nothing blocking.
+  Start with the arg shapes of `get_agent_explorer` and `get_leaderboard`;
+  both refused guessed args on 2026-08-01.
 - What remains of `trading-telemetry-is-unread` (open orders, order status,
   trade charts, position audit history).
+
+**Blocked on the operator, not on us**: `approvals-have-no-write-side` (the
+accept/cancel writes). The read half exists and the tool contracts are
+mapped, but `list_pending_approvals` has never returned a row — no agent on
+this account, active or archived, has ever been `APPROVAL_REQUIRED` (9 are
+`OFF`, 6 `FULL_EXECUTION`). Observing one means putting a real agent into
+that mode, which changes how a live trading account behaves. The item says
+exactly what is needed. Until then the mode selector warns that
+Grid-Commander cannot answer what such an agent proposes.
 
 **The vision item**, when you want it: `an-assistant-over-the-use-cases`
 (P2) — conversational control over the ~30 use-cases in `composition.ts`.
@@ -258,7 +272,7 @@ BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
 |---|---|
 | `write-probe` | agent create / rename / limits / archive / reactivate |
 | `trading-record-probe` | real closed trades and the derived summary |
-| `pipeline-probe` | the three decision stages, and a real score-vs-threshold skip |
+| `pipeline-probe` | the three decision stages, a real score-vs-threshold skip, and the per-signal evidence behind it |
 | `radar-probe` | deploy replacement (r1→r2) through describe→confirm→perform |
 | `restore-probe` | archive → roster check → restore |
 | `apply-probe` | fork → compile → **apply** (the widest blast radius write) |

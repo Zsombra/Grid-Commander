@@ -1,5 +1,63 @@
 # Journal
 
+## 2026-08-03 — the decision shows its work, and a mode we cannot serve
+
+**Did**: `the-decision-shows-its-work` (standard, archived). Went looking
+for the accept/cancel writes, found two things that mattered more.
+
+**The surface shipped hours earlier was throwing away its best data.**
+Discovery for the *next* change read the raw `list_entry_decisions` row and
+counted **35 fields**. `mapEntryDecision` kept eleven. Among the twenty-four
+dropped was `signalChecklist` — eight entries per decision, one per signal
+the agent consulted, each with a label, a verdict, and a written
+interpretation. It was already arriving on the wire, on every row, on the
+newest page in the product.
+
+That is `the-payload-carries-more-than-is-read` caught in the act, hours
+after shipping, by reading a payload instead of a type.
+
+**Three verdicts stay three.** The platform sends `CONFIRM`, `WARN` and
+`REJECT`. `SignalVerdict.verdict` is a string, not a boolean, and the page
+prints the spread before any interpretation: *"4 REJECT · 2 CONFIRM · 2
+WARN across 8 signals"*. Collapsing WARN into either edge would have turned
+that live decision into a 4–4 tie or a 6–2 rout — reporting certainty the
+agent did not have. Same discipline as a missing figure that must not
+become a zero.
+
+**`get_entry_decision` was the obvious build and would have been wasted.**
+It returns the same 35 keys the list row already carries — verified across
+four decisions spanning SKIP/SKIPPED, ENTER/EXECUTED, ENTER/FAILED and
+ENTER/EXPIRED. No detail route, no second fetch.
+
+**The second finding is a hole we made ourselves.** `tradingMode` accepts
+`APPROVAL_REQUIRED` over MCP, and `MoneyLimits` has been offering it all
+along — *"Approval required — proposes trades, waits for you"* — while
+`accept_entry_decision` and `cancel_entry_decision` are unbuilt. The
+product could put an agent into a mode whose whole point is waiting for a
+human, then give that human no screen. The option now says so where it is
+chosen, and names where answering still happens. The writes stay filed
+(`approvals-have-no-write-side`) because they need `mcp:wager` and the full
+ceremony.
+
+**What discovery settled about those writes**: both take one argument
+(`decisionId`); cancel is `destructiveHint: true`, accept is not;
+`list_pending_approvals` takes no arguments and returns the whole queue
+unpaginated. It answers `{approvals: []}` because **no agent on this
+account has ever been in that mode** — all 15, active and archived, are
+`OFF` (9) or `FULL_EXECUTION` (6). The queue's row shape is still
+unobserved, and is still not being modelled from its declaration.
+Producing one means changing how a real trading account behaves, which is
+the operator's call.
+
+**Live**: agent "Flow State" skipped ENA — 8 signals read, 4 rejecting, 2
+confirming, 2 warning, the first of them *"RSI well into overbought
+territory above 70, warns against new longs"*.
+
+**State**: 0 active changes · 20 open backlog items · 77 archived changes ·
+1057 vitest (+20 key-gated) + 62 db + 221 harness · all nine ci.sh gates
+green.
+
+
 ## 2026-08-03 — why it did or didn't trade: the decision pipeline
 
 **Did**: `why-it-did-not-trade` (standard, archived) — the second change of

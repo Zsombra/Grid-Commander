@@ -1,6 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import type { StageResult } from '@/ports/agents.js';
+import type { SignalVerdict, StageResult } from '@/ports/agents.js';
 
 /**
  * Why an agent did or did not trade.
@@ -27,6 +27,46 @@ function StageNote({ stage, empty }: { stage: StageResult<unknown>; empty: strin
 }
 
 const pct = (v: number | null): string => (v === null ? '—' : `${Math.round(v * 100)}%`);
+
+/**
+ * The evidence a decision was drawn from, signal by signal.
+ *
+ * The verdict is printed as the platform sent it rather than mapped to a
+ * colour or an icon: `WARN` is a third thing, and a reader who sees only
+ * green and red learns that the agent was certain when it was not. The
+ * counts above the list exist so the disagreement is legible before any of
+ * the interpretations are read — "5 CONFIRM · 2 WARN · 1 REJECT" is the
+ * shape of the decision.
+ */
+function Evidence({ checklist }: { checklist: readonly SignalVerdict[] }) {
+  if (checklist.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  for (const s of checklist) {
+    const k = s.verdict ?? 'unstated';
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+
+  return (
+    <details className="mt-1">
+      <summary className="cursor-pointer">
+        What it read: {[...counts].map(([v, n]) => `${n} ${v}`).join(' · ')} across{' '}
+        {checklist.length} signal{checklist.length === 1 ? '' : 's'}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {checklist.map((s) => (
+          <li key={s.signalId} className="border-l pl-3">
+            <p className="font-medium">
+              {s.label ?? s.signalId} — {s.verdict ?? 'no verdict stated'}
+            </p>
+            {/* The platform's reading of this one signal, unparaphrased. */}
+            {s.interpretation ? <p>{s.interpretation}</p> : null}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
 
 export default async function PipelinePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -132,8 +172,27 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
                     {d.riskRewardRatio !== null ? ` · R:R ${d.riskRewardRatio}` : ''}
                   </p>
                 ) : null}
+                {/* What it would have staked, and what it sized that against. */}
+                {d.positionSizePct !== null || d.timeHorizon || d.atrPct !== null ? (
+                  <p>
+                    {d.positionSizePct !== null
+                      ? `Size ${d.positionSizePct}%${d.positionSizePreset ? ` (${d.positionSizePreset})` : ''}`
+                      : 'Size not stated'}
+                    {d.timeHorizon ? ` · over ${d.timeHorizon}` : ''}
+                    {d.atrPct !== null ? ` · ATR ${d.atrPct}%` : ''}
+                  </p>
+                ) : null}
                 {/* The agent explaining itself, whole and unparaphrased. */}
                 {d.reasoning ? <p className="whitespace-pre-wrap">{d.reasoning}</p> : null}
+                <Evidence checklist={d.checklist} />
+                {/* The thread from "it decided" to "an order exists". */}
+                {d.executedOrderId ? (
+                  <p className="text-text-secondary">
+                    Order {d.executedOrderId}
+                    {d.stopLossOrderId ? ` · stop ${d.stopLossOrderId}` : ''}
+                    {d.takeProfitOrderId ? ` · target ${d.takeProfitOrderId}` : ''}
+                  </p>
+                ) : null}
                 {d.at ? <p className="text-text-secondary">{d.at}</p> : null}
               </li>
             ))}

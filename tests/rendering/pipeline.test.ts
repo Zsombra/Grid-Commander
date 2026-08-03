@@ -55,6 +55,7 @@ const EVAL = {
   at: '2026-06-21T13:52:07.202Z',
 };
 
+/** Shaped after the live `SKIP/SKIPPED` row of 2026-08-03, checklist and all. */
 const DECISION = {
   id: 'd1',
   coinTicker: 'ETH',
@@ -67,8 +68,62 @@ const DECISION = {
   riskRewardRatio: null,
   status: 'SKIPPED',
   reasoning: 'The weight of evidence is overwhelmingly bearish.',
+  // All three verdicts the platform sends, so the middle one cannot be
+  // silently folded into either edge.
+  checklist: [
+    {
+      signalId: 'rsi_overbought',
+      label: 'RSI(14) Overbought',
+      verdict: 'CONFIRM',
+      interpretation: 'RSI deep in overbought territory, pulling back from peak',
+    },
+    {
+      signalId: 'ema_alignment',
+      label: 'EMA Alignment',
+      verdict: 'WARN',
+      interpretation: 'Trend still points up on the higher timeframe',
+    },
+    {
+      signalId: 'cvd_divergence',
+      label: 'CVD Divergence',
+      verdict: 'REJECT',
+      interpretation: 'Spot buyers are absorbing every push down',
+    },
+  ],
+  positionSizePct: null,
+  positionSizePreset: null,
+  timeHorizon: '1h',
+  atrPct: 0.5063,
+  expiresAt: '2026-06-21T13:53:33.397Z',
+  executedAt: null,
+  executedOrderId: null,
+  stopLossOrderId: null,
+  takeProfitOrderId: null,
   at: '2026-06-21T13:52:30.000Z',
 };
+
+/** An ENTER that reached the exchange — the only shape carrying order ids. */
+const EXECUTED = {
+  ...DECISION,
+  id: 'd2',
+  coinTicker: 'MOODENG',
+  decision: 'ENTER',
+  conviction: 0.55,
+  entryPrice: 0.041374,
+  stopLoss: 0.04079148,
+  takeProfit: 0.04312158,
+  riskRewardRatio: 3.831,
+  status: 'EXECUTED',
+  positionSizePct: 30,
+  positionSizePreset: 'SMALL',
+  executedAt: '2026-06-21T13:52:10.793Z',
+  executedOrderId: '475192822193',
+  stopLossOrderId: '475192822195',
+  takeProfitOrderId: '475192822194',
+};
+
+/** The platform sending a decision with nothing recorded behind it. */
+const NO_EVIDENCE = { ...DECISION, id: 'd3', checklist: [] };
 
 beforeEach(() => {
   current = actingWith({ agents: new FakeAgentsPort([AGENT]) });
@@ -105,6 +160,52 @@ describe('the pipeline page, branch by branch', () => {
     expect(r.text).toContain('SKIP');
     expect(r.text).toContain('20% conviction');
     expect(r.text).toContain('overwhelmingly bearish');
+  });
+
+  it('a decision shows the evidence behind it, verdict by verdict', async () => {
+    const agents = world();
+    agents.entryDecisions = { kind: 'entries', entries: [DECISION], total: 1 };
+    const r = await pipelineRendered();
+    // The spread, before any interpretation is read.
+    expect(r.text).toContain('1 CONFIRM');
+    expect(r.text).toContain('1 WARN');
+    expect(r.text).toContain('1 REJECT');
+    // `across`, the count and the noun are three JSX children, and the render
+    // harness joins text nodes with a space — so the assertion splits where
+    // the JSX does rather than pretending the markup is one string.
+    expect(r.text).toContain('across');
+    expect(r.text).toContain('3');
+    // Each signal, named, with the platform's own reading.
+    expect(r.text).toContain('RSI(14) Overbought');
+    expect(r.text).toContain('Spot buyers are absorbing every push down');
+  });
+
+  it('a WARN is shown as itself, not folded into confirm or reject', async () => {
+    const agents = world();
+    agents.entryDecisions = { kind: 'entries', entries: [DECISION], total: 1 };
+    const r = await pipelineRendered();
+    // Same JSX-boundary split: label, dash and verdict are separate children.
+    expect(r.text).toContain('EMA Alignment');
+    expect(r.text).toMatch(/EMA Alignment\s+—\s+WARN/);
+  });
+
+  it('a decision with no recorded evidence still shows its reasoning', async () => {
+    const agents = world();
+    agents.entryDecisions = { kind: 'entries', entries: [NO_EVIDENCE], total: 1 };
+    const r = await pipelineRendered();
+    expect(r.text).toContain('overwhelmingly bearish');
+    // No empty evidence list, and no zero-count summary implying none were read.
+    expect(r.text).not.toContain('What it read');
+  });
+
+  it('an executed decision links to the orders it placed', async () => {
+    const agents = world();
+    agents.entryDecisions = { kind: 'entries', entries: [EXECUTED], total: 1 };
+    const r = await pipelineRendered();
+    expect(r.text).toContain('Size 30%');
+    expect(r.text).toContain('SMALL');
+    expect(r.text).toContain('475192822193');
+    expect(r.text).toContain('475192822195');
   });
 
   it('an empty stage says what its emptiness means', async () => {

@@ -49,6 +49,35 @@ const LIVE_DECISION = {
   takeProfit: null,
   reasoning: 'Despite the pre-validated LONG setup, the weight of evidence is overwhelmingly bearish.',
   status: 'SKIPPED',
+  // The list row carries the checklist already — `get_entry_decision`
+  // returns these same keys and is never called.
+  signalChecklist: [
+    {
+      signalId: 'rsi_overbought',
+      label: 'RSI(14) Overbought',
+      verdict: 'CONFIRM',
+      interpretation: 'RSI deep in overbought territory, now pulling back from peak',
+    },
+    {
+      signalId: 'ema_alignment',
+      label: 'EMA Alignment',
+      verdict: 'WARN',
+      interpretation: 'Higher timeframe trend still points up',
+    },
+    { signalId: 'cvd_divergence', label: 'CVD Divergence', verdict: 'REJECT', interpretation: null },
+    // No signalId — unattributable evidence, dropped rather than blanked.
+    { label: 'mystery', verdict: 'CONFIRM', interpretation: 'from nowhere' },
+  ],
+  signalModulesUsed: ['momentum', 'trend'],
+  timeHorizon: '1h',
+  positionSizePct: null,
+  positionSizePreset: null,
+  atrPct: 0.5063,
+  expiresAt: '2026-06-21T13:53:33.397Z',
+  executedAt: null,
+  executedOrderId: null,
+  stopLossOrderId: null,
+  takeProfitOrderId: null,
   createdAt: '2026-06-21T13:52:30.000Z',
 };
 
@@ -128,6 +157,56 @@ describe('mapping the pipeline stages', () => {
     expect(d?.reasoning).toBe(LIVE_DECISION.reasoning);
     // Absent levels stay absent — a skip has no entry price, and 0 would be one.
     expect(d?.entryPrice).toBeNull();
+  });
+
+  it('a decision carries the evidence it was drawn from', async () => {
+    const { adapter } = adapterOver(() => ({ entries: [LIVE_DECISION] }));
+    const result = await adapter.readEntryDecisions({ ...who, agentId: 'a-1' });
+    if (result.kind !== 'entries') throw new Error(result.kind);
+    const d = result.entries[0];
+    // Four rows in, three out — the one with no signalId cannot be
+    // attributed to a signal anyone could look up, so it is dropped.
+    expect(d?.checklist).toHaveLength(3);
+    expect(d?.checklist[0]?.signalId).toBe('rsi_overbought');
+    expect(d?.checklist[0]?.label).toBe('RSI(14) Overbought');
+    // Three verdicts stay three. Collapsing WARN into either edge would
+    // report certainty the agent did not have.
+    expect(d?.checklist.map((s) => s.verdict)).toEqual(['CONFIRM', 'WARN', 'REJECT']);
+    // An interpretation the platform omitted stays null, not ''.
+    expect(d?.checklist[2]?.interpretation).toBeNull();
+    expect(d?.timeHorizon).toBe('1h');
+    expect(d?.atrPct).toBe(0.5063);
+  });
+
+  it('a decision with no checklist is a decision, not a failure', async () => {
+    const bare = { ...LIVE_DECISION, signalChecklist: undefined };
+    const { adapter } = adapterOver(() => ({ entries: [bare] }));
+    const result = await adapter.readEntryDecisions({ ...who, agentId: 'a-1' });
+    if (result.kind !== 'entries') throw new Error(result.kind);
+    expect(result.entries[0]?.checklist).toEqual([]);
+    expect(result.entries[0]?.reasoning).toBe(LIVE_DECISION.reasoning);
+  });
+
+  it('an executed decision keeps the ids of the orders it placed', async () => {
+    const executed = {
+      ...LIVE_DECISION,
+      decision: 'ENTER',
+      status: 'EXECUTED',
+      positionSizePct: 30,
+      positionSizePreset: 'SMALL',
+      executedOrderId: '475192822193',
+      stopLossOrderId: '475192822195',
+      takeProfitOrderId: '475192822194',
+    };
+    const { adapter } = adapterOver(() => ({ entries: [executed] }));
+    const result = await adapter.readEntryDecisions({ ...who, agentId: 'a-1' });
+    if (result.kind !== 'entries') throw new Error(result.kind);
+    const d = result.entries[0];
+    expect(d?.executedOrderId).toBe('475192822193');
+    expect(d?.stopLossOrderId).toBe('475192822195');
+    expect(d?.takeProfitOrderId).toBe('475192822194');
+    expect(d?.positionSizePct).toBe(30);
+    expect(d?.positionSizePreset).toBe('SMALL');
   });
 
   it('every stage tells empty from unreadable from malformed', async () => {
