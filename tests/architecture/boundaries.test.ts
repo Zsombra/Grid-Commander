@@ -35,14 +35,41 @@ function stripComments(source: string): string {
 const imports = (file: string): string[] =>
   [...readFileSync(file, 'utf8').matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]!);
 
+/**
+ * This product speaks MCP twice, in opposite directions.
+ *
+ *   as a CLIENT of BattleGrid   → src/infrastructure/battlegrid/
+ *   as a SERVER to the operator → src/mcp/
+ *
+ * The rule below named only the first for months, because only the first
+ * existed. Its reason is unchanged and still binds everything: every
+ * guarantee this product makes lives behind `BattleGridPort`, and one file
+ * calling the platform around it makes all of them advisory.
+ *
+ * The server side calls nothing outward — it answers a model that connected
+ * to us — so it cannot bypass anything. Two named directories rather than
+ * one, and a third still fails.
+ */
 describe('P6 — one way in', () => {
-  it('imports the MCP SDK in src/infrastructure/battlegrid/ and nowhere else', () => {
+  it('imports the MCP SDK only where each direction lives', () => {
     const offenders: string[] = [];
     for (const file of filesUnder('src')) {
       if (file.includes('infrastructure/battlegrid')) continue;
+      if (file.includes('src/mcp/')) continue;
       if (imports(file).some((i) => i.startsWith('@modelcontextprotocol/'))) offenders.push(file);
     }
     expect(offenders, 'every guarantee lives behind BattleGridPort; one bypass makes them advisory').toEqual([]);
+  });
+
+  it('lets the server side reach nothing outward', () => {
+    // The permission above is safe only because `src/mcp/` opens no
+    // connection. If it ever builds a URL or touches a port, the widening
+    // has become the loophole it was written not to be.
+    for (const file of filesUnder('src/mcp')) {
+      const source = readFileSync(file, 'utf8');
+      expect(source, file).not.toMatch(/https?:\/\//);
+      expect(imports(file).filter((i) => i.startsWith('@/ports/')), file).toEqual([]);
+    }
   });
 });
 

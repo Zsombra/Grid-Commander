@@ -1,5 +1,71 @@
 # Journal
 
+## 2026-08-03 — Grid-Commander is an MCP server
+
+**Did**: `grid-commander-is-an-mcp-server` (full track, archived) — an
+eleventh capability, `mcp-control`, and the thing the operator has been
+describing since 2026-08-01.
+
+**Both gating questions were settled, and the second dissolved the first.**
+
+The operator asked whether they could install their own model — open
+weights, Hermes, the Claude Code SDK — and separately whether to build the
+MCP server or the chat UI first. Server, decisively: *"the controller is
+the utmost priority… our heart and soul will be the MCP controller
+understanding and creating a data frame for this language model to have
+control over the things of the MCP."*
+
+Which answers the model question by removing it. **An MCP server contains
+no model.** It is driven by whatever client the operator points at it, so
+model choice is theirs per session, and no inference credential exists on
+our side at all. "Whose Anthropic key pays" stopped being a question.
+
+And the codebase already argued for this. `one-destination.test.ts` exists
+because `@anthropic-ai/sdk` once sat in `package.json` powering an assistant
+that could never run — "sixteen files and a nav entry whose whole function
+was to announce their own absence". A chat UI re-adds an outbound host to a
+model provider. An MCP server adds none: it is inbound.
+
+**The use-cases turned out to be the data frame already.** Eighteen tools,
+each calling the same object a web route calls. Nothing new sits between a
+tool and a port, because Clean Architecture had already put the product's
+understanding in a place that does not care who is asking. That is the
+whole change: a second adapter beside the web one.
+
+**What crosses the boundary is what the product knows, not what BattleGrid
+says.** `get_agent_performance` answers zeros on an agent carrying real
+losses, so `read_trading_record` derives the record and says it is derived.
+`unreadable` never becomes an MCP error, because a model reporting a failed
+roster call very often says "you have no agents" — the exact lie
+`RosterResult` was shaped to prevent, one boundary further out. That is the
+single most important assertion in the new test file.
+
+**Reads only, and the reason is structural.** Every write runs describe →
+confirm → perform with a digest-bound token, and that design assumes a
+human reads the consequence. Over MCP a model occupies that seat and
+nothing compels it to show anyone "this will archive Apex and stop three
+deployments". So no writes — enforced by a guard that derives the mutating
+use-cases from `composition.ts` rather than listing them, because an
+allowlist passes while the next one is added. Filed as
+`the-assistant-cannot-be-trusted-with-a-write` with the three ways the seat
+could be provided and the one option ruled out.
+
+**A guard stopped this and was right to.** P6 said the MCP SDK may be
+imported in exactly one directory — a rule written when the SDK had exactly
+one use: being a *client* of BattleGrid. There are now two uses in opposite
+directions. Widened to name both, with a counterweight test asserting
+`src/mcp/` builds no URL and imports no port, so the permission cannot
+become the bypass the rule exists to prevent.
+
+**Live**: spawned as a real subprocess over real stdio, driven by a real
+client. 18 tools, every one annotated read-only; 15 agents read; the field
+at 37 agents and −$162.07; and `archive_agent` refused as no such tool.
+
+**State**: 0 active changes · 20 open backlog items · 83 archived changes ·
+11 capabilities · 1183 vitest (+26 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — the what-if, after checking it was worth building
 
 **Did**: `the-what-if-is-answerable` (standard, archived). Everything this
