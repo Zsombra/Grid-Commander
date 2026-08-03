@@ -1,5 +1,63 @@
 # Journal
 
+## 2026-08-03 — the what-if, after checking it was worth building
+
+**Did**: `the-what-if-is-answerable` (standard, archived). Everything this
+product showed about a strategy was retrospective: the retune ceremony
+lets an operator change a signal's weighting and save it, and nothing said
+what that change would have *done*. They found out by waiting, with real
+money in the loop.
+
+**The check came first, and it decided the change.** The filed item said to
+verify before building, because a simulator that models something other
+than what the pipeline runs is worse than none. Fed five real evaluations'
+triggered signals and effective allocations back in, each with its own
+gate:
+
+| evaluation | fired / consulted | platform | simulator |
+|---|---|---|---|
+| BTC (EXPIRED) | 14 / 72 | 0.647 | 0.64705 |
+| ETH (PASS) | 12 / 72 | 0.566 | 0.56614 |
+| BTC (PASS) | 18 / 72 | 0.636 | 0.63579 |
+| APT (EXPIRED) | 8 / 72 | 0.53 | 0.53 |
+
+Exact to the platform's own rounding, and the attribution percentages
+matched signal-for-signal. It is the pipeline's arithmetic exposed, not an
+approximation. It also settled that the aggregate is built over the
+**triggered** signals only — the ~58 that did not fire contribute nothing,
+which is why showing them was worth doing and why the what-if seeds from
+the fired ones.
+
+**I argued against this placement three changes ago, and answered myself.**
+`the-scorecard-is-legible` said a what-if beside a real outcome "invites
+reading the simulation as the thing that occurred". True — and not a reason
+to keep them apart, because a blank form asking an operator to invent
+scores produces a number about nothing. The whole reason to trust this tool
+is that it reproduces reality. So it seeds from a real evaluation, and the
+honesty is structural rather than tonal: a spec requirement that the
+simulated figure states it did not happen and sits beside the real score,
+with a test.
+
+**Three platform facts it is built around.** The cap is twenty and
+twenty-one is **refused**, not truncated — one real evaluation fired 21, so
+the page says it cannot be re-scored rather than dropping one to fit.
+Allocation 0 contributes nothing, and an all-zero set scores 0 rather than
+erroring. And `wouldRoute` is `>=`, carried from the platform rather than
+recomputed, because a second implementation of the one rule this surface
+exists to report faithfully could disagree with the pipeline.
+
+**The live probe is the guard.** It feeds an evaluation its own weightings
+and asserts the score comes back unchanged — so if BattleGrid ever changes
+the aggregation, this fails. That is the point: a what-if that has quietly
+stopped agreeing with the pipeline looks exactly like one that works. Live:
+ENA, 13 fired, platform 40%, simulator 40%, gate 55%, would not route —
+matching the SKIP that really happened.
+
+**State**: 0 active changes · 20 open backlog items · 82 archived changes ·
+10 capabilities · 1164 vitest (+25 key-gated) + 62 db + 221 harness · all
+nine ci.sh gates green.
+
+
 ## 2026-08-03 — your own agent is as legible, and now you can see what it cost
 
 **Did**: `your-own-agent-is-as-legible` (standard, archived) — closing the

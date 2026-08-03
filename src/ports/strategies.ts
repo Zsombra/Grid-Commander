@@ -126,6 +126,26 @@ export interface StrategiesPort {
   }): Promise<readonly RuleMembership[]>;
 
   /**
+   * What a set of signal weightings would score — stateless, saves nothing.
+   *
+   * Verified against five real evaluations on 2026-08-03: fed each one's
+   * triggered signals and effective allocations with its own gate, the
+   * returned aggregate matched the platform's own `aggregateScore` to its
+   * rounding, and the attribution percentages matched signal-for-signal.
+   * This is the pipeline's arithmetic exposed, not an approximation of it.
+   *
+   * The platform caps `signals` at twenty and **refuses** twenty-one rather
+   * than truncating, so callers check before asking. Allocation 0 means the
+   * signal contributes nothing.
+   */
+  simulateAggregate(params: {
+    userId: string;
+    accessToken: string;
+    signals: readonly SimulationSignal[];
+    gate: number;
+  }): Promise<SimulationResult>;
+
+  /**
    * The vocabulary's full metric index. Read fresh each time — the metric
    * list is platform vocabulary and goes stale after a deployment like
    * everything else.
@@ -474,3 +494,39 @@ export type SectionOptionsResult =
   | { readonly kind: 'vocabulary-unreadable' };
 
 export type { SectionTemplate };
+
+
+/** The most signals the platform's simulator accepts. Twenty-one is refused. */
+export const SIMULATION_SIGNAL_CAP = 20;
+
+export interface SimulationSignal {
+  readonly label: string;
+  /** 0..1, as the scorecard reports a signal's score. */
+  readonly score: number;
+  /** Tier 0..3. Zero contributes nothing to the aggregate. */
+  readonly allocation: number;
+}
+
+export interface SimulatedAttribution {
+  readonly label: string;
+  readonly scorePercent: number | null;
+  readonly allocation: number | null;
+  readonly attributionPercent: number | null;
+}
+
+export interface Simulation {
+  readonly aggregateScorePercent: number | null;
+  readonly gatePercent: number | null;
+  /** The platform's own verdict. `>=` — an aggregate equal to the gate routes. */
+  readonly wouldRoute: boolean;
+  readonly attributions: readonly SimulatedAttribution[];
+}
+
+export type SimulationResult =
+  | { readonly kind: 'simulation'; readonly simulation: Simulation }
+  /**
+   * The platform declined to compute one. Carried rather than replaced by a
+   * score: a what-if that invents an answer when refused is worse than one
+   * that admits it has none.
+   */
+  | { readonly kind: 'refused'; readonly reason: string };

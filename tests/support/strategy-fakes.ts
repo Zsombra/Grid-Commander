@@ -22,6 +22,7 @@ import type {
   StrategyListResult,
   VocabularyResult,
   VocabularyTemplatesResult,
+  SimulationResult,
 } from '@/ports/strategies.js';
 
 /**
@@ -129,6 +130,23 @@ export class FakeStrategiesPort implements StrategiesPort {
 
   async deriveRuleView(): Promise<readonly RuleMembership[]> {
     return this.membership;
+  }
+
+  /** Set per test. The platform's own arithmetic, stubbed. */
+  simulation: SimulationResult = {
+    kind: 'simulation',
+    simulation: {
+      aggregateScorePercent: 65,
+      gatePercent: 50,
+      wouldRoute: true,
+      attributions: [
+        { label: 'rsi_overbought', scorePercent: 100, allocation: 1, attributionPercent: 22 },
+      ],
+    },
+  };
+
+  async simulateAggregate(): Promise<SimulationResult> {
+    return this.simulation;
   }
 
   /** Set to make the rule write refuse with this message. */

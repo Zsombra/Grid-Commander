@@ -1,6 +1,8 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import type { ConsultedSignal } from '@/ports/agents.js';
+import { SIMULATION_SIGNAL_CAP } from '@/ports/strategies.js';
+import { CONTROL } from '@/presentation/components/control.js';
 
 /**
  * What your own agent read, indicator by indicator — and what it cost.
@@ -34,10 +36,13 @@ function byModule(signals: readonly ConsultedSignal[]): [string, ConsultedSignal
 
 export default async function OwnEvaluationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; logId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id, logId } = await params;
+  const q = await searchParams;
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
@@ -85,6 +90,50 @@ export default async function OwnEvaluationPage({
 
   const e = result.evaluation;
   const fired = e.signals.filter((s) => s.triggered);
+
+  /**
+   * The what-if, seeded from what actually fired.
+   *
+   * The aggregate is built from the triggered signals only — established
+   * live by feeding exactly these into the simulator and getting the
+   * platform's own score back, to its rounding, on five evaluations. So
+   * the unchanged form reproduces reality, and every departure from it is
+   * the user's own edit.
+   */
+  const one = (k: string): string | undefined => {
+    const v = q[k];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const tierFor = (signalId: string, actual: number | null): number => {
+    const asked = Number(one(`alloc:${signalId}`));
+    // Only a whole tier the platform accepts. Anything else falls back to
+    // what was really in force rather than being sent and refused.
+    if (Number.isInteger(asked) && asked >= 0 && asked <= 3) return asked;
+    return actual !== null && Number.isInteger(actual) ? actual : 1;
+  };
+  const asked = fired.some((s) => one(`alloc:${s.signalId}`) !== undefined);
+  const changed = fired.some(
+    (s) => tierFor(s.signalId, s.effectiveAllocation) !== (s.effectiveAllocation ?? 1),
+  );
+  const gate =
+    e.aggregateScorePercent !== null && typeof q['gate'] === 'string'
+      ? Number(q['gate']) / 100
+      : null;
+
+  const simulation = asked
+    ? await app.simulateAggregate.execute({
+        ...user.authority,
+        signals: fired.map((s) => ({
+          label: s.signalId.slice(0, 60),
+          // The score the signal actually produced. Only the weighting is
+          // the user's to change here — inventing scores would answer a
+          // question about a market that never existed.
+          score: Math.min(1, Math.max(0, (s.scorePercent ?? 0) / 100)),
+          allocation: tierFor(s.signalId, s.effectiveAllocation),
+        })),
+        gate: gate ?? 0.5,
+      })
+    : null;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
@@ -195,6 +244,108 @@ export default async function OwnEvaluationPage({
           </ul>
         </section>
       ) : null}
+
+      <section className="space-y-2">
+        <h2 className="text-base font-medium">What if it had weighted these differently?</h2>
+        {fired.length === 0 ? (
+          <p className="text-sm">Nothing fired on this evaluation, so there is nothing to re-weight.</p>
+        ) : fired.length > SIMULATION_SIGNAL_CAP ? (
+          /*
+            Not truncated to fit. Dropping signals would score a different
+            composition than the one that ran, which is the one thing this
+            section exists to be honest about.
+          */
+          <p className="text-sm">
+            This evaluation fired {fired.length} signals and BattleGrid&apos;s
+            simulator accepts at most {SIMULATION_SIGNAL_CAP}, so it cannot be
+            re-scored.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm">
+              Change a weighting and see what this candidate would have
+              scored. Nothing is saved — to actually change a weighting, use
+              the strategy&apos;s rule editor.
+            </p>
+            <form method="get" className="space-y-2 text-sm">
+              <ul className="space-y-1">
+                {fired.map((s) => (
+                  <li key={s.signalId} className="flex flex-wrap items-center gap-2">
+                    <label htmlFor={`alloc:${s.signalId}`} className="min-w-64">
+                      {s.signalId} · scored {pct(s.scorePercent)}
+                    </label>
+                    <select
+                      id={`alloc:${s.signalId}`}
+                      name={`alloc:${s.signalId}`}
+                      defaultValue={String(tierFor(s.signalId, s.effectiveAllocation))}
+                      className={CONTROL}
+                    >
+                      {[0, 1, 2, 3].map((t) => (
+                        <option key={t} value={t}>
+                          {t === 0 ? '0 — off' : `weight ${t}`}
+                        </option>
+                      ))}
+                    </select>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <label htmlFor="gate" className="block">
+                    Gate (%)
+                  </label>
+                  <input
+                    id="gate"
+                    name="gate"
+                    type="number"
+                    min={0}
+                    max={100}
+                    defaultValue={gate === null ? 50 : Math.round(gate * 100)}
+                    className={CONTROL}
+                  />
+                </div>
+                <button type="submit" className={CONTROL}>
+                  Score it
+                </button>
+              </div>
+            </form>
+
+            {simulation === null ? null : simulation.kind === 'refused' ? (
+              <p role="alert" className="text-sm">
+                BattleGrid would not score that: {simulation.reason}
+              </p>
+            ) : (
+              <div className="rounded border p-3 text-sm space-y-1">
+                {/*
+                  The label is structural, not tonal. A simulated figure
+                  beside a real one, unmarked, is the mistake this whole
+                  section was nearly not built to avoid.
+                */}
+                <p className="font-medium">
+                  This did not happen. It really scored {pct(e.aggregateScorePercent)}
+                  {e.terminalStatus ? ` and ended ${e.terminalStatus}` : ''}.
+                </p>
+                <p>
+                  {changed ? 'Re-weighted' : 'At the weightings that were in force'}, it would
+                  score {pct(simulation.simulation.aggregateScorePercent)} against a{' '}
+                  {pct(simulation.simulation.gatePercent)} gate —{' '}
+                  {simulation.simulation.wouldRoute ? 'it would route' : 'it would not route'}.
+                </p>
+                {simulation.simulation.attributions.length > 0 ? (
+                  <ul className="space-y-1">
+                    {simulation.simulation.attributions.map((a) => (
+                      <li key={a.label}>
+                        {a.label} — {pct(a.attributionPercent)} of the score
+                        {a.allocation !== null ? ` at weight ${a.allocation}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-base font-medium">

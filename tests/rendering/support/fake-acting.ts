@@ -14,6 +14,7 @@ import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.q
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
+import { SimulateAggregateQuery } from '@/application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
 import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-library.query.js';
@@ -103,6 +104,7 @@ export function actingWith({
     describeRetune: new DescribeRetuneQuery(strategies, confirmations, random, clock),
     retuneRule: new RetuneRuleCommand(strategies),
     previewComposition: new PreviewCompositionQuery(strategies),
+    simulateAggregate: new SimulateAggregateQuery(strategies),
   };
 
   const user: CurrentUserResult = {

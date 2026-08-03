@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
 import { actingWith, notConnected } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
+import { FakeStrategiesPort } from '../support/strategy-fakes.js';
 import type { EvaluationScorecard } from '@/ports/agents.js';
 
 /**
@@ -20,9 +21,9 @@ vi.mock('@/presentation/session.js', () => ({
 const AGENT = anAgent();
 const params = Promise.resolve({ id: AGENT.id, logId: 'l-1' });
 
-async function ownEvaluationRendered() {
+async function ownEvaluationRendered(query: Record<string, string> = {}) {
   const Page = (await import('../../app/(app)/agents/[id]/pipeline/[logId]/page.js')).default;
-  return rendered(await Page({ params }));
+  return rendered(await Page({ params, searchParams: Promise.resolve(query) }));
 }
 
 /** Shaped from this account's own live evaluation of 2026-08-03. */
@@ -97,6 +98,13 @@ function scorecard(over: Partial<EvaluationScorecard> = {}): EvaluationScorecard
   };
 }
 
+/** A platform that declines the simulation, as it does past twenty signals. */
+function refusingStrategies() {
+  const strategies = new FakeStrategiesPort();
+  strategies.simulation = { kind: 'refused', reason: 'too many signals' };
+  return strategies;
+}
+
 function world() {
   const agents = new FakeAgentsPort([AGENT]);
   agents.ownEvaluation = { kind: 'evaluation', evaluation: scorecard() };
@@ -164,6 +172,61 @@ describe('the user’s own evaluation page', () => {
     const r = await ownEvaluationRendered();
     expect(r.text).toContain('could not be read');
     expect(r.text).toContain('BattleGrid timed out');
+  });
+
+  it('offers a what-if seeded at the weightings that were in force', async () => {
+    world();
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('What if it had weighted these differently');
+    // The signal that fired is offered; the one that did not is not.
+    expect(r.text).toContain('rsi_overbought');
+  });
+
+  it('never shows a simulated score as what happened', async () => {
+    const agents = world();
+    agents.ownEvaluation = { kind: 'evaluation', evaluation: scorecard() };
+    const r = await ownEvaluationRendered({ 'alloc:rsi_overbought': '3', gate: '50' });
+    expect(r.text).toContain('This did not happen');
+    // The real score sits beside the simulated one.
+    expect(r.text).toContain('It really scored');
+    expect(r.text).toContain('would route');
+  });
+
+  it('carries a refusal rather than inventing a score', async () => {
+    const agents = world();
+    current = actingWith({ agents, strategies: refusingStrategies() });
+    const r = await ownEvaluationRendered({ 'alloc:rsi_overbought': '2' });
+    expect(r.text).toContain('would not score that');
+    expect(r.text).toContain('too many signals');
+    expect(r.text).not.toContain('This did not happen');
+  });
+
+  it('says an over-cap evaluation cannot be re-scored, and does not truncate', async () => {
+    const agents = world();
+    // Twenty-one fired: one more than BattleGrid's simulator accepts.
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      ...scorecard().signals[0]!,
+      signalId: `sig_${i}`,
+      triggered: true,
+    }));
+    agents.ownEvaluation = {
+      kind: 'evaluation',
+      evaluation: scorecard({ signals: many }),
+    };
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('cannot be');
+    expect(r.text).toMatch(/fired\s+21\s+signals/);
+    // No form offered at all — a partial simulation would score a different
+    // composition than the one that ran.
+    expect(r.text).not.toContain('Score it');
+  });
+
+  it('says there is nothing to re-weight when nothing fired', async () => {
+    const agents = world();
+    const none = scorecard().signals.map((s) => ({ ...s, triggered: false }));
+    agents.ownEvaluation = { kind: 'evaluation', evaluation: scorecard({ signals: none }) };
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('nothing to re-weight');
   });
 
   it('an unauthenticated request is offered the path to connect', async () => {
