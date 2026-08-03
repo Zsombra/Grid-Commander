@@ -46,6 +46,7 @@ import {
   RetuneRuleCommand,
 } from './application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
+import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
@@ -278,6 +279,7 @@ export function app(cookies: CookieStore) {
     describeRetune: new DescribeRetuneQuery(i.strategies, i.confirmations, random, systemClock),
     retuneRule: new RetuneRuleCommand(i.strategies),
     previewComposition: new PreviewCompositionQuery(i.strategies),
+    simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
     compilePlan: new CompilePlanCommand(i.strategies),

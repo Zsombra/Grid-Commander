@@ -2,10 +2,11 @@
 id: the-what-if-calculator-is-unused
 title: simulate_aggregate_score — a stateless what-if the strategy editor could use
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-03
 updated: 2026-08-03
+change: "the-what-if-is-answerable"
 capability: strategy-authoring
 blocked_by: []
 tags: [battlegrid, strategy, simulation]
@@ -48,3 +49,35 @@ Call it with the exact signals from one real evaluation
 returned aggregate reproduces the platform's own `aggregateScore` for that
 evaluation. If it does not, the tool is modelling something other than what
 the pipeline runs, and that is worth knowing before any UI is built on it.
+
+## Done (2026-08-03)
+
+**The correctness check came back clean, five for five.** Fed the triggered
+signals and effective allocations from five real evaluations, each with its
+own gate: the returned aggregate matched the platform's own
+`aggregateScore` to its rounding every time (0.647 → 0.64705, 0.566 →
+0.56614, 0.636 → 0.63579, 0.53 → 0.53), and the per-signal attribution
+percentages matched signal-for-signal. The simulator is the pipeline's own
+arithmetic, exposed.
+
+It also settled how the aggregate is built: over the **triggered** signals
+only. The ~58 that did not fire contribute nothing.
+
+`the-what-if-is-answerable` (archived) put it on
+`/agents/[id]/pipeline/[logId]`, seeded from that evaluation's fired
+signals at their real allocations — so the unchanged form reproduces the
+evaluation's own score, and every departure is the user's edit. The live
+probe asserts exactly that, and will fail if BattleGrid ever changes the
+aggregation.
+
+**Three platform facts the surface is built around**: the cap is twenty and
+twenty-one is **refused**, not truncated (one real evaluation fired 21, and
+the page says it cannot be re-scored rather than dropping one); allocation
+0 contributes nothing and an all-zero set scores 0 rather than erroring;
+and `wouldRoute` is `>=`, so an aggregate equal to the gate routes.
+
+**A concern raised against this in `the-scorecard-is-legible` was
+answered rather than ignored** — that a what-if beside a real outcome
+invites reading the simulation as what occurred. The answer is structural:
+a spec requirement that the simulated figure states it did not happen and
+sits beside the real score, with a test.

@@ -34,6 +34,9 @@ import type {
   VocabularyCategory,
   VocabularyResult,
   VocabularyTemplatesResult,
+  SimulatedAttribution,
+  SimulationResult,
+  SimulationSignal,
 } from '@/ports/strategies.js';
 import type { SectionTemplate } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
@@ -72,6 +75,7 @@ const TOOLS = {
   updateRule: 'update_strategy_signal_rule',
   preview: 'preview_strategy_report',
   ruleView: 'derive_strategy_rule_view',
+  simulate: 'simulate_aggregate_score',
 } as const;
 
 /** The tools that require the strict outer `{request: …}` envelope. */
@@ -347,6 +351,62 @@ export class McpStrategyAdapter implements StrategiesPort {
       if (err instanceof ToolRefusedError) return { kind: 'refused', reason: err.message };
       throw err;
     }
+  }
+
+  /**
+   * What a set of weightings would score. Stateless — nothing is saved.
+   *
+   * A refusal is carried as a refusal. The platform rejects more than
+   * twenty signals with a validation error, and a simulator that answered
+   * a number when the platform declined would be inventing the one figure
+   * a user came here to trust.
+   */
+  async simulateAggregate(params: {
+    userId: string;
+    accessToken: string;
+    signals: readonly SimulationSignal[];
+    gate: number;
+  }): Promise<SimulationResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.simulate, {
+        signals: params.signals.map((s) => ({
+          label: s.label,
+          score: s.score,
+          allocation: s.allocation,
+        })),
+        gate: params.gate,
+      });
+    } catch (err) {
+      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+    }
+    const n = (v: unknown): number | null =>
+      typeof v === 'number' && Number.isFinite(v) ? v : null;
+    const raw = Array.isArray(payload['attributions']) ? payload['attributions'] : [];
+    return {
+      kind: 'simulation',
+      simulation: {
+        aggregateScorePercent: n(payload['aggregateScorePercent']),
+        gatePercent: n(payload['gatePercent']),
+        // The platform's verdict, not a comparison recomputed here. It is
+        // `>=`, and re-deriving it would be a second implementation of the
+        // one rule this whole surface exists to report faithfully.
+        wouldRoute: payload['wouldRoute'] === true,
+        attributions: raw
+          .map((r: unknown) => {
+            const a = (r ?? {}) as Record<string, unknown>;
+            const label = typeof a['label'] === 'string' && a['label'] ? a['label'] : null;
+            if (label === null) return null;
+            return {
+              label,
+              scorePercent: n(a['scorePercent']),
+              allocation: n(a['allocation']),
+              attributionPercent: n(a['attributionPercent']),
+            };
+          })
+          .filter((a): a is SimulatedAttribution => a !== null),
+      },
+    };
   }
 
   async deriveRuleView(params: {

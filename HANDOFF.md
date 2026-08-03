@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-03  
-**State**: green (1151 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 24 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#38 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
+**State**: green (1164 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 25 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#39 merged. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | 10 |
-| Changes (archived) | 81 |
-| Vitest tests | 1151 (+24 key-gated live) + 62 db |
+| Changes (archived) | 82 |
+| Vitest tests | 1164 (+25 key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 0 |
 | Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#38 merged) |
+| Open draft PRs | 0 (see PR list; #8–#39 merged) |
 
 ---
 
@@ -41,7 +41,7 @@ All development branches have been merged. `main` is the single source of truth.
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
 | `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost** |
-| `strategy-authoring` | Fork, compile, review, apply; archive, restore |
+| `strategy-authoring` | Fork, compile, review, apply; archive, restore; **score a re-weighting before saving it** |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
 
@@ -58,7 +58,7 @@ Against a real connected BattleGrid account a user can:
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain); **retune any signal rule the strategy carries** (allocation, Required, declared params) through the full describe→confirm→perform ceremony, the token digest-bound to the exact values at the revision read (live-proven 2026-08-01: allocation 0→1 on a zero-bound fork, r1→r2 read back); **preview what an agent reads** (`/strategies/[id]/preview`) — the report rendered live over a bounded coin selection with token estimate, budget gauges, and which of the 82 signals the composition can feed, all without saving anything
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Trading record** (`/agents/[id]/trades`): every trade an agent closed — net P&L, both fees, slippage each side, leverage, the conviction it opened on, why and by whom it closed, how long it was held — with a summary *derived from those trades* and labelled as such, because BattleGrid's own performance figures read zero for accounts with real losses
-- **Decision pipeline** (`/agents/[id]/pipeline`): why an agent did or didn't trade, at each of the three places a candidate can end — stopped before evaluation (the platform's reason code *and* its numbers: `INSUFFICIENT_EQUITY` with `{equityUsd: 2.18, thresholdUsd: 10}`), evaluated and skipped (aggregate score against the threshold **in force at the time**, dominant bias, whether signals disagreed), or decided, carrying the agent's own reasoning paragraph whole **and the per-signal checklist behind it** — each signal named, with the platform's verdict (`CONFIRM` / `WARN` / `REJECT`, three states kept as three) and its written interpretation, plus what the agent would have staked and the exchange order ids it placed. Each stage is independently empty-or-unreadable, so one stage failing hides neither of the other two. Framed by **the funnel** (how much it evaluated against how much it acted on), and each evaluation opens to **its full scorecard** (`/agents/[id]/pipeline/[logId]`): every signal consulted with the platform's sentence and raw readings, the score attribution, the whole chain — and **what the decision cost to think** (model, price, duration), which BattleGrid nulls on public reads and this product shows for agents you own
+- **Decision pipeline** (`/agents/[id]/pipeline`): why an agent did or didn't trade, at each of the three places a candidate can end — stopped before evaluation (the platform's reason code *and* its numbers: `INSUFFICIENT_EQUITY` with `{equityUsd: 2.18, thresholdUsd: 10}`), evaluated and skipped (aggregate score against the threshold **in force at the time**, dominant bias, whether signals disagreed), or decided, carrying the agent's own reasoning paragraph whole **and the per-signal checklist behind it** — each signal named, with the platform's verdict (`CONFIRM` / `WARN` / `REJECT`, three states kept as three) and its written interpretation, plus what the agent would have staked and the exchange order ids it placed. Each stage is independently empty-or-unreadable, so one stage failing hides neither of the other two. Framed by **the funnel** (how much it evaluated against how much it acted on), and each evaluation opens to **its full scorecard** (`/agents/[id]/pipeline/[logId]`): every signal consulted with the platform's sentence and raw readings, the score attribution, the whole chain — and **what the decision cost to think** (model, price, duration), which BattleGrid nulls on public reads and this product shows for agents you own. Each evaluation also carries a **what-if**: change any fired signal's weighting and see what the candidate would have scored and whether it would cross the gate — seeded from the real weightings, so the unchanged form reproduces the evaluation's own score, and always labelled as not having happened
 - **The field** (`/explorer`): the population this account competes against — its totals (37 agents, 31% win rate, **−$162.07 net**: the field as a whole loses money), the ranked agent resumes with the platform's own subtitle and objective, a per-model-vendor breakdown of who is actually profiting, and where this account stands from both tools (rank 7 by profit / 97th percentile, and its own agents' places in the field). Three platform behaviours it is built around: the returned list can be shorter than the field it reports and no limit widens it (**intermittently** — 5 of 37 four runs running, then 37 of 37 an hour later), so both counts are always stated; an absent win rate is shown as not measured rather than 0%; and every rate is printed beside its trade count, because sorting by win rate promotes the smallest sample
 - **A competitor's record** (`/explorer/[agentId]`, opened from any field row): what one public agent looks at versus what it acts on — the funnel from evaluations through decisions to executions (`Market Predator`: 245 → 102 → 73 entered → 51 executed, fill rate 76%, 23W/28L, +$50.06), its closed trades with the platform's own win verdict, its evaluations against the threshold in force, and what it holds now. Two counters the platform names alike are kept apart (`skipCount` = SKIP decisions, `skippedCount` = SKIPPED terminal status), and open-position *rows* are carried but not interpreted — no agent in the field has ever held one, so the shape is unobserved and not guessed (`open-position-rows-are-unobserved`)
 - **One evaluation's scorecard** (`/explorer/[agentId]/evaluations/[logId]`): every signal a competitor consulted on one candidate — **72 of them**, across seventeen modules, the ~60 that did *not* fire included, each with its score, bias, primary/required flags, raw indicator values and the platform's own sentence ("RSI(14) at 38.1 — not oversold (threshold 30)"). Plus how the aggregate was attributed across the ones that fired, and the chain from gate → attempt → decision → execution → outcome, with stages the platform did not record omitted rather than shown empty. A listed evaluation that publishes no detail says so, distinctly from one that could not be read
@@ -170,17 +170,24 @@ the way every capability this month began:
    31 available. Now at parity *and past it* — an owned evaluation shows
    what it cost to think, which no public read carries.
 
-**Recommended next move:**
+8. ~~`the-what-if-calculator-is-unused`~~ — **shipped 2026-08-03**
+   (`the-what-if-is-answerable`). The correctness check came back clean
+   five for five, so the what-if lives on each evaluation, seeded from what
+   really fired.
 
-- **`the-what-if-calculator-is-unused`** — `simulate_aggregate_score` is
-  the only tool on the surface that answers a question about a strategy
-  that has **not run yet**. Both halves it needs now exist: the retune
-  ceremony, and a real evaluation's exact signals and allocations. First
-  step is a correctness check, not a UI — feed one real evaluation's
-  signals in and see whether the returned aggregate reproduces the
-  platform's own score for it.
+**Recommended next move** — no single item stands out now that the
+reporting and comparison arc is closed. In rough order of value:
+
 - What remains of `trading-telemetry-is-unread` (open orders, order status,
-  trade charts, position audit history).
+  trade charts, position audit history) — the last unread slice of an
+  agent's own record.
+- `market-grid-is-an-unmodelled-module` — the arena is watch-only, and
+  `get_public_agent_game_history` (left open twice now) belongs with it.
+- **`an-assistant-over-the-use-cases` (P2)** — the operator's original
+  vision. Worth revisiting now: there are ~40 use-cases in `composition.ts`
+  and the surfaces beneath them are far richer than when the item was
+  filed. Still gated on the two decisions recorded in it (whose Anthropic
+  key pays, and whether to prototype as an MCP server first).
 - `open-position-rows-are-unobserved` — one call away whenever any agent in
   the field is holding something; the item has the recipe.
 
@@ -293,7 +300,7 @@ for dev and build alike. Proven and recorded in `next.config.ts`.
 
 ### The live probes
 
-Sixteen key-gated probes in `tests/live/` — each proves one capability
+Seventeen key-gated probes in `tests/live/` — each proves one capability
 against the real platform and skips silently without a key:
 
 ```bash
@@ -309,6 +316,7 @@ BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
 | `competitor-probe` | opening the top agent in the field — funnel, trades, evaluations, holdings |
 | `evaluation-probe` | a real scorecard: 72 signals consulted, the dismissed ones included |
 | `own-evaluation-probe` | the same depth on an agent we own, plus what the thinking cost |
+| `simulate-probe` | that the what-if calculator still reproduces the pipeline's own score |
 | `radar-probe` | deploy replacement (r1→r2) through describe→confirm→perform |
 | `restore-probe` | archive → roster check → restore |
 | `apply-probe` | fork → compile → **apply** (the widest blast radius write) |
