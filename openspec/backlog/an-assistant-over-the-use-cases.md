@@ -2,11 +2,11 @@
 id: an-assistant-over-the-use-cases
 title: The assistant returns — conversational control over the use-case registry
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-01
 updated: 2026-08-01
-change: ""
+change: "grid-commander-is-an-mcp-server"
 capability: ""
 blocked_by: []
 tags: [assistant, architecture, vision]
@@ -69,3 +69,40 @@ performance and expected value — spanning every capability.
 
 - Whose Anthropic key, and what the cost model is for non-owner users.
 - A vs B first (B could ship far earlier as a feel-the-product prototype).
+
+## Done, in the form the operator chose (2026-08-03)
+
+Both gating decisions were settled by the operator, and the second
+dissolved the first.
+
+**"Can I install my own model?"** — you never install one. An MCP server
+contains no model; it is driven by whatever client the operator runs.
+Claude Desktop, Claude Code, Cline, an open-weights model behind any
+MCP-speaking client. Model choice is theirs, per session, and no inference
+credential exists on our side. "Whose Anthropic key pays" stopped being a
+question rather than being answered.
+
+**"MCP server first or chat UI first?"** — server, decisively: *"the
+controller is the utmost priority… our heart and soul will be the MCP
+controller understanding and creating a data frame for this language model
+to have control over the things of the MCP."*
+
+That instinct matches what `one-destination.test.ts` already records: a
+chat UI re-adds an outbound host to a model provider, which is the thing
+`@anthropic-ai/sdk` was removed for. An MCP server adds none — it is
+inbound.
+
+`grid-commander-is-an-mcp-server` (archived, full track) shipped it: 18
+read tools over stdio, each calling the same use-case the web routes call,
+so what crosses the boundary is the product's understanding rather than
+BattleGrid's raw surface. Proven live as a spawned subprocess: 15 agents
+read, the field at 37 agents and −$162.07, and `archive_agent` refused.
+
+**Writes are deliberately absent**, and that is the one thing to pick up
+next. The confirmation ceremony assumes a human reads the consequence, and
+a model in that seat is not one. Filed as
+`the-assistant-cannot-be-trusted-with-a-write`.
+
+**The chat UI remains unbuilt and unneeded for now** — the operator's own
+sequencing: "in the future, when we build the chat UI with the assistant, I
+think that will be, like, another model."
