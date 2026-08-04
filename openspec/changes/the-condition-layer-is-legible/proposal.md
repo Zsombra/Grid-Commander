@@ -2,8 +2,27 @@
 
 ## Why
 
-BattleGrid v5 added `conditions` — a boolean layer that sits **above** signals
-and decides direction. Grid-Commander passes them through and cannot see them.
+`conditions` are a boolean layer that sits **above** signals and decides
+direction. Grid-Commander passes them through and cannot see them.
+
+**They are not new, and that is the uncomfortable part.** Checked against the
+artifacts rather than assumed:
+
+| date | server | strategy `conditions` |
+|---|---|---|
+| 2026-07-27 | v3.0.0 | **absent** — the only `conditions` in that reference are deployment-slot time windows, a different feature |
+| 2026-07-31 | (unrecorded) | **present**, with `conditionVerdicts` alongside |
+| 2026-08-04 | v5.0.0 | present; `conditionVerdicts` **removed** |
+
+The layer arrived between 2026-07-27 and 2026-07-31. What v5 removed was
+`conditionVerdicts`, and that removal is what broke `apply_strategy_plan` and
+pulled the whole area into view.
+
+So `docs/battlegrid-mcp-surface.json` has recorded this layer for five days,
+and `src/domain/strategy/compiled-plan.ts` already names `conditions` in the
+projection list — a previous session added it to fix the sixth dead write path
+and never asked what it was. It has been carried, correctly, by a product that
+has never once looked inside it.
 
 **This is not hypothetical.** Of the 37 strategies on the account, three carry
 conditions today: Dunkirk (2), El Alamein (2), and Berlin (6).
@@ -31,7 +50,7 @@ while blind to the negated flow filter deciding when it goes short.
 
 `A Strategy Can Be Read In Full` already forbids exactly this: presenting a
 summary as though it were the whole. The requirement is currently satisfied only
-because its scenario enumerates a list that predates conditions existing.
+because its scenario enumerates a list that does not mention them.
 
 Today the word `conditions` appears in **one place** in the entire product —
 the pass-through projection list in `src/domain/strategy/compiled-plan.ts`. We
