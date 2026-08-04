@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v3.0.0`, protocol `2025-06-18`) on 2026-07-27.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v5.0.0`, protocol `2025-06-18`) on 2026-08-04.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -314,14 +314,15 @@ Returns: `filter`, `leaderboard`, `currentUser`, `generatedAt`
 
 *Get Market Context* — read-only · open-world
 
-Get comprehensive market context with 21 selectable modules. Provide sessionId for session-
+Get comprehensive market context with 22 selectable modules. Provide sessionId for session-
 scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research —
 exactly one of the two. Returns GFM markdown sections — the same format Intelligence Agents
-use during auto-play. Available modules: subTimeframe, rsi, macd, volume, volatility,
-bollingerBands, movingAverages, stochastic, fundingRates, openInterest, relativeStrength,
-supportResistance, trendStrength, mfi, higherTimeframe, regimeContext, structureZones,
-crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence. Default: ["rsi",
-"relativeStrength"]. Module 1 (Price Action) is always included.
+use during auto-play. Available modules: priceAction, subTimeframe, rsi, macd, volume,
+volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest,
+relativeStrength, supportResistance, trendStrength, mfi, higherTimeframe, regimeContext,
+structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence. Default:
+["priceAction", "rsi", "relativeStrength"]. Module 1 (Price Action) is selectable like any
+other module — included by default, omitted when your list leaves it out.
 
 Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coins`, `sections`
 
@@ -329,7 +330,7 @@ Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coin
 |---|---|:--:|---|
 | `sessionId` | string |  | Market Grid session UUID (provide this OR primaryTimeframe) |
 | `primaryTimeframe` | enum(5m|15m|1h|4h|1d) |  | Candle timeframe for sessionless market research (provide this OR sessionId) |
-| `modules` | array<enum(subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages|stochastic,…)> |  | Indicator modules to include. Available: subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, openI… |
+| `modules` | array<enum(priceAction|subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages,…)> |  | Indicator modules to include. Available: priceAction, subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundin… |
 
 ### `get_coin_market_context`
 
@@ -346,7 +347,7 @@ Returns: `strategyTimeframe`, `coins`
 |---|---|:--:|---|
 | `tickers` | array<string> | YES | 1-100 canonical coin tickers from get_coin_metadata (the "ticker" field, e.g. "BTC", "ETH", "PEPE"). Case-sensitive — do NOT alter casing. The k-pref… |
 | `strategyTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | Strategy timeframe — an enabled platform timeframe (e.g. 5m, 15m, 1h, 4h, 1d). |
-| `modules` | array<enum(subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages|stochastic,…)> |  | Indicator modules. Available: subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest, re… |
+| `modules` | array<enum(priceAction|subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages,…)> |  | Indicator modules. Available: priceAction, subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, ope… |
 
 ### `get_coin_metadata`
 
@@ -959,7 +960,7 @@ Returns: `sourceKey`, `displayName`, `content`, `estimatedTokenCount`, `tokenCou
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `gameType` | enum(MARKET_GRID|COIN_GRID) | YES | Game type. |
-| `sourceKey` | enum(includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages|includeStochastic,…) | YES | Context source key — one of the toggleable modules or "sessionContext". |
+| `sourceKey` | enum(includePriceAction|includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages,…) | YES | Context source key — one of the toggleable modules or "sessionContext". |
 | `sessionId` | string |  | Session to preview against. Provide this OR primaryTimeframe. |
 | `primaryTimeframe` | enum(5m|15m|1h|4h|1d) |  | Timeframe. Provide this OR sessionId. |
 
@@ -1049,7 +1050,7 @@ Returns: `category`, `metrics`, `transforms`, `timeframeRefs`, `budgets`, `timef
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
-| `category` | enum(momentum|trend|volatility|volumeFlow|derivatives|structure|regime|crowd,…) | YES | One canonical metric family returned by list_strategy_categories. |
+| `category` | enum(price|momentum|trend|volatility|volumeFlow|derivatives|structure|regime,…) | YES | One canonical metric family returned by list_strategy_categories. |
 
 ### `get_metric_construction_hints`
 
@@ -1062,7 +1063,7 @@ Returns: `metric`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
-| `metric` | enum(RSI14|RSI7|MACD|STOCH_K|STOCH_D|MFI14|PPO|ROC12,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
+| `metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|BAR_FORMING,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
 
 ### `get_strategy_column_contract`
 
@@ -1076,8 +1077,9 @@ Returns: `contract`
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `column` | object | YES |  |
-| `column.metric` | enum(RSI14|RSI7|MACD|STOCH_K|STOCH_D|MFI14|PPO|ROC12,…) | YES |  |
+| `column.metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|BAR_FORMING,…) | YES |  |
 | `column.transformId` | string | YES |  |
+| `column.chainedTransformId` | string |  |  |
 | `column.timeframe` | anyOf[object | object] | YES |  |
 | `column.timeframe` *(anyOf variant 1)* | object | |  |
 | `column.timeframe<1>.rel` | enum(anchor|lower|higher|regime) | YES |  |
@@ -1088,6 +1090,8 @@ Returns: `contract`
 | `column.side` | enum(support|resistance) |  |  |
 | `column.inputs` | array<object> |  |  |
 | `column.inputs[].metric` | ? | YES |  |
+| `column.bars` | enum(closed|all) |  |  |
+| `column.ordering` | enum(hi|lo|far|near) |  |  |
 | `sectionTimeframe` | ? |  |  |
 
 ### `get_strategy_section_template`
@@ -1104,7 +1108,7 @@ Returns: `template`
 | `request` | anyOf[object | object] | YES |  |
 | `request` *(anyOf variant 1)* | object | |  |
 | `request<1>.kind` | string | YES |  |
-| `request<1>.sectionKey` | enum(includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages|includeStochastic,…) | YES |  |
+| `request<1>.sectionKey` | enum(includePriceAction|includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages,…) | YES |  |
 | `request` *(anyOf variant 2)* | object | |  |
 | `request<2>.kind` | string | YES |  |
 | `request<2>.templateKey` | string | YES |  |
@@ -1116,7 +1120,7 @@ Returns: `template`
 Render a bounded live-market preview for a draft report and required bounded coin selection.
 Returns server-owned token and budget usage without saving or mutating strategy state.
 
-Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUsage`, `rankScopingNote`
+Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `rankScopingNote`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -1124,6 +1128,16 @@ Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUs
 | `regimeAutoDerive` | boolean | YES |  |
 | `regimeTimeframe` | anyOf[? | null] |  |  |
 | `sections` | array<anyOf[object | object]> | YES |  |
+| `conditions` | array<object> |  |  |
+| `conditions[].conditionKey` | string | YES |  |
+| `conditions[].name` | string | YES |  |
+| `conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `conditions[].definition` *(anyOf variant 2)* | object | |  |
+| `conditions[].definition<2>.kind` | string | YES |  |
+| `conditions[].definition<2>.op` | enum(ALL|ANY|NOT|N_OF) | YES |  |
+| `conditions[].definition<2>.n` | integer |  |  |
+| `conditions[].definition<2>.members` | array<?> | YES |  |
+| `conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
 | `coinSelection` | anyOf[object | object] | YES |  |
 | `coinSelection` *(anyOf variant 1)* | object | |  |
 | `coinSelection<1>.mode` | string | YES |  |
@@ -1220,6 +1234,16 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<1>.minRequiredCount` | integer |  |  |
 | `request<1>.minAtrPct` | number |  |  |
 | `request<1>.sections` | array<anyOf[object | object]> | YES |  |
+| `request<1>.conditions` | array<object> |  |  |
+| `request<1>.conditions[].conditionKey` | string | YES |  |
+| `request<1>.conditions[].name` | string | YES |  |
+| `request<1>.conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `request<1>.conditions[].definition` *(anyOf variant 2)* | object | |  |
+| `request<1>.conditions[].definition<2>.kind` | string | YES |  |
+| `request<1>.conditions[].definition<2>.op` | enum(ALL|ANY|NOT|N_OF) | YES |  |
+| `request<1>.conditions[].definition<2>.n` | integer |  |  |
+| `request<1>.conditions[].definition<2>.members` | array<?> | YES |  |
+| `request<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
 | `request<1>.rules` | array<object> |  |  |
 | `request<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request<1>.rules[].allocation` | integer | YES |  |
@@ -1243,6 +1267,7 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<2>.minRequiredCount` | ? |  |  |
 | `request<2>.minAtrPct` | ? |  |  |
 | `request<2>.sections` | ? |  |  |
+| `request<2>.conditions` | ? |  |  |
 | `request<2>.rules` | ? |  |  |
 | `request` *(anyOf variant 3)* | object | |  |
 | `request<3>.operation` | string | YES |  |
@@ -1262,6 +1287,7 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<3>.minRequiredCount` | ? |  |  |
 | `request<3>.minAtrPct` | ? |  |  |
 | `request<3>.sections` | ? |  |  |
+| `request<3>.conditions` | ? |  |  |
 | `request<3>.rules` | ? |  |  |
 
 ### `apply_strategy_plan`
@@ -1293,6 +1319,11 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<1>.timeframe` | ? | YES |  |
 | `request.plan<1>.regimeAutoDerive` | boolean | YES |  |
 | `request.plan<1>.marketReadText` | string | YES |  |
+| `request.plan<1>.conditions` | array<object> | YES |  |
+| `request.plan<1>.conditions[].conditionKey` | string | YES |  |
+| `request.plan<1>.conditions[].name` | string | YES |  |
+| `request.plan<1>.conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `request.plan<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
 | `request.plan<1>.minAggregateScore` | number | YES |  |
 | `request.plan<1>.minRequiredCount` | integer | YES |  |
 | `request.plan<1>.minAtrPct` | number | YES |  |
@@ -1314,6 +1345,7 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<2>.timeframe` | ? | YES |  |
 | `request.plan<2>.regimeAutoDerive` | ? | YES |  |
 | `request.plan<2>.marketReadText` | ? | YES |  |
+| `request.plan<2>.conditions` | ? | YES |  |
 | `request.plan<2>.minAggregateScore` | ? | YES |  |
 | `request.plan<2>.minRequiredCount` | ? | YES |  |
 | `request.plan<2>.minAtrPct` | ? | YES |  |
@@ -1331,6 +1363,7 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<3>.timeframe` | ? | YES |  |
 | `request.plan<3>.regimeAutoDerive` | ? | YES |  |
 | `request.plan<3>.marketReadText` | ? | YES |  |
+| `request.plan<3>.conditions` | ? | YES |  |
 | `request.plan<3>.minAggregateScore` | ? | YES |  |
 | `request.plan<3>.minRequiredCount` | ? | YES |  |
 | `request.plan<3>.minAtrPct` | ? | YES |  |
@@ -1870,8 +1903,7 @@ Returns: `presetId`, `slotCount`, `revision`
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |
@@ -1926,8 +1958,7 @@ Returns: `resolution`
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |
@@ -1965,8 +1996,7 @@ Returns: `result`
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |

@@ -108,6 +108,31 @@ def parse(raw: bytes) -> dict[str, Any]:
     return json.loads(text)
 
 
+def server_identity(key: str) -> dict[str, str]:
+    """Who answered, from `initialize`.
+
+    Recorded rather than inferred. A missing name or version is written as the
+    empty string and never as a plausible-looking default: the staleness guard
+    compares this against a live server, and a fabricated version would make it
+    pass while the record was unusable.
+    """
+    result = rpc(
+        key,
+        "initialize",
+        {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "grid-commander-probe", "version": "1.0.0"},
+        },
+    ).get("result", {})
+    info = result.get("serverInfo") or {}
+    return {
+        "name": str(info.get("name") or ""),
+        "version": str(info.get("version") or ""),
+        "protocol": str(result.get("protocolVersion") or ""),
+    }
+
+
 def classify(tool: dict[str, Any]) -> str:
     """What the server says this tool does. Never inferred from the name."""
     ann = tool.get("annotations") or {}
@@ -542,6 +567,15 @@ def main() -> int:
         print("BATTLEGRID_API_KEY is not set.", file=sys.stderr)
         return 2
 
+    # `initialize` is called for one reason: to learn which server answered.
+    # The probe worked for its whole life without it, because `tools/list` needs
+    # no handshake here — and that is exactly how a record with no version in it
+    # came to gate every write this product makes. BattleGrid went v3.0.0 → v5.0.0
+    # with the tool count unchanged at 110, and nothing could have noticed,
+    # because nothing recorded which version it had looked at.
+    server = server_identity(key)
+    print(f"server {server['name']} {server['version']}")
+
     listing = rpc(key, "tools/list", {})
     tools = listing["result"]["tools"]
     print(f"discovered {len(tools)} tools")
@@ -673,6 +707,8 @@ def main() -> int:
 
     surface = {
         "source": MCP_URL,
+        "server": server,
+        "probed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "tool_count": len(tools),
         "by_classification": {
             k: sum(1 for e in entries if e["classification"] == k)
@@ -684,7 +720,11 @@ def main() -> int:
             "server's outputSchema promises. They are recorded separately on purpose: "
             "a shape nobody has seen is not a shape that is known, and the whole reason "
             "this file exists is that a declared payload was correct while the envelope "
-            "carrying it went unread for the life of the product."
+            "carrying it went unread for the life of the product. `server` is "
+            "which BattleGrid answered: it is the only field that can tell you "
+            "this record is stale. `tool_count` cannot — it stayed at 110 across "
+            "v3.0.0 → v5.0.0 while enums, required arguments and semantics moved "
+            "underneath it."
         ),
         "tools": entries,
     }
