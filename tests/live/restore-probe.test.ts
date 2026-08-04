@@ -32,7 +32,18 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  */
 
 const KEY = process.env['BATTLEGRID_API_KEY'];
-const live = KEY ? describe : describe.skip;
+// Mutating probes need more than a credential.
+//
+// Gated on the key alone, `npm test` with one exported ran four of these
+// concurrently against the operator's real account — forking, archiving and
+// creating agents at the same time, tripping each other's optimistic
+// concurrency. Observed 2026-08-04. `oauth-metadata.test.ts` had already
+// established the principle in the other direction: do not tie a check to a
+// variable whose meaning is not what the check needs.
+//
+//     BATTLEGRID_API_KEY=… BATTLEGRID_LIVE_WRITES=1 npx vitest run <this file>
+const WRITES = process.env['BATTLEGRID_LIVE_WRITES'] === '1';
+const live = KEY && WRITES ? describe : describe.skip;
 
 const config = {
   clientId: '',

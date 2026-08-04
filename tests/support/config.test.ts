@@ -24,7 +24,17 @@ let saved: NodeJS.ProcessEnv;
 
 beforeEach(() => {
   saved = { ...process.env };
-  for (const name of [...Object.keys(REQUIRED), 'ANTHROPIC_API_KEY', 'ALLOW_INSECURE_COOKIES']) {
+  for (const name of [
+    ...Object.keys(REQUIRED),
+    'ANTHROPIC_API_KEY',
+    'ALLOW_INSECURE_COOKIES',
+    // Scrubbed because it changes the answer. A personal key puts the config
+    // in a mode where the OAuth pair is not required, so an operator with one
+    // exported saw these two cases pass an assertion they were meant to fail —
+    // the suite testing its own environment rather than the product. Found on
+    // 2026-08-04, the first time anything ran the suite with a key set.
+    'BATTLEGRID_API_KEY',
+  ]) {
     delete process.env[name];
   }
   Object.assign(process.env, REQUIRED);
