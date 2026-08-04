@@ -41,7 +41,14 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  */
 
 const KEY = process.env['BATTLEGRID_API_KEY'];
-const live = KEY ? describe : describe.skip;
+// Gated with the other mutating probes even though every write here is
+// *expected to be refused*. "The platform will refuse this" is a claim about
+// the platform, and the platform moved three times in the week this was
+// written. If a deployment ever starts accepting a first-create, this probe
+// would make one on the operator's real account — and would do it during an
+// ordinary `npm test` that merely happened to have a key in the environment.
+const WRITES = process.env['BATTLEGRID_LIVE_WRITES'] === '1';
+const live = KEY && WRITES ? describe : describe.skip;
 
 const config = {
   clientId: '',

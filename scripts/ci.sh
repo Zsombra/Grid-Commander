@@ -64,6 +64,23 @@ else
   skip "test:db" "no DATABASE_URL; start PostgreSQL and pass one to run the 62 database tests"
 fi
 
+# The surface record's age, which nothing else here can see.
+#
+# `tests/live/surface-freshness.test.ts` is one of nineteen live files that
+# `describe.skip` without a credential, so inside the `vitest` gate above it
+# vanishes silently — and a silent skip on the check that guards the input to
+# every conformance test is precisely the "green stops meaning anything" case
+# this script's header warns about. Named here so the summary says which it
+# was: verified, or not checked.
+#
+# It measures and does not repair. Re-probing from inside the gate would make a
+# stale record impossible to fail on, which is the one thing it exists to do.
+if [[ -n "${BATTLEGRID_API_KEY:-}" ]]; then
+  gate "freshness" npx vitest run --silent tests/live/surface-freshness.test.ts
+else
+  skip "freshness" "no BATTLEGRID_API_KEY; the surface record's age is unverified"
+fi
+
 gate "build" npm run --silent build
 
 if [[ "${CI_SERVING:-}" == "1" ]]; then

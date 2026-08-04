@@ -1,6 +1,6 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v5.0.0`**
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v5.1.0`**
 on 2026-08-04. Regenerate after any BattleGrid deployment: the server says its
 own list goes stale, and this file inherits that.
 
@@ -16,14 +16,22 @@ There are currently no unannotated tools.
 
 ## The count is not the check
 
-This file was written against **`battlegrid v3.0.0`**. BattleGrid deployed
-twice to **v5.0.0** and the tool count was 110 throughout, so nothing here
-looked wrong while enums, required arguments and one module's semantics moved
-underneath it.
+This file was written against **`battlegrid v3.0.0`**. BattleGrid has deployed
+three times since — to v5.0.0, then to **v5.1.0** hours later — and the tool
+count was **110 every single time**, while enums, required arguments and one
+module's semantics moved underneath it.
+
+| deployment | tools | what actually moved |
+|---|---|---|
+| → v5.0.0 | 110 | `conditionVerdicts` dropped from a closed plan schema; `entryStrategy` replaced two booleans on policy slots; `priceAction` became omissible |
+| → v5.1.0 | 110 | four crowd metrics added — `CROWD_PICK_LIVE`, `CROWD_UPBIAS_LIVE`, `CROWD_ACC_LIVE`, `CROWD_CAPT_LIVE`. Purely additive |
 
 `docs/battlegrid-mcp-surface.json` now records the server version it was taken
-from, and `tests/live/surface-freshness.test.ts` fails when that disagrees with
-the live server. Do not read an unchanged 110 as evidence of anything.
+from, `tests/live/surface-freshness.test.ts` fails when that disagrees with the
+live server, and `./scripts/ci.sh` runs it as a named gate. The v5.1.0
+deployment was found by that gate, on its first real run.
+
+Do not read an unchanged 110 as evidence of anything.
 
 ## How much of this is actually verified
 

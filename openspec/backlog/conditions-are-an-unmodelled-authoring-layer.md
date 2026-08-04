@@ -1,6 +1,6 @@
 ---
 id: conditions-are-an-unmodelled-authoring-layer
-title: BattleGrid v5 added conditions — a boolean layer above signals the product cannot author or read
+title: Conditions — a boolean layer above signals, recorded since 2026-07-31 and never read
 type: feature
 status: open
 priority: p2
@@ -16,7 +16,23 @@ tags: [battlegrid, v5, strategy, authoring, mapping]
 Found by re-probing the surface on 2026-08-04, after
 `the-map-knows-when-it-is-stale` established the record still said v3.0.0.
 
-BattleGrid v5.0.0 added a boolean layer **above** signals:
+**Corrected 2026-08-04.** This item first said v5.0.0 added the layer. It did
+not. Checked against the artifacts:
+
+| date | server | strategy `conditions` |
+|---|---|---|
+| 2026-07-27 | v3.0.0 | **absent** — the only `conditions` in that reference are deployment-slot time windows, a different feature |
+| 2026-07-31 | (unrecorded) | **present**, with `conditionVerdicts` alongside |
+| 2026-08-04 | v5.0.0 | present; `conditionVerdicts` **removed** |
+
+So the layer arrived between 2026-07-27 and 2026-07-31, and what v5 did was
+*remove* `conditionVerdicts`. That is the version the map missed, and it is why
+the finding surfaced now — but the layer itself has been in
+`docs/battlegrid-mcp-surface.json` for five days, recorded and unread.
+`compiled-plan.ts` even names `conditions` as part of the sixth dead write path.
+It was projected through without ever being looked at.
+
+The shape:
 
 ```
 conditions[].conditionKey   string
