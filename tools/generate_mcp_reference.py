@@ -1,5 +1,5 @@
 """Generate the complete BattleGrid MCP library reference from a live capability dump."""
-import json, re, textwrap, sys
+import json, re, textwrap, sys, time
 
 SP = sys.argv[1]
 init = json.load(open(f"{SP}/init.txt"))["result"]
@@ -132,7 +132,8 @@ si = cap["serverInfo"]
 w("# BattleGrid MCP — complete library reference\n")
 w("Generated from a live `tools/list`, `prompts/list` and `resources/list` against")
 w("`https://mcp.battlegrid.trade/mcp` (server `" + si.get("name", "?") + " v" + si.get("version", "?")
-  + "`, protocol `" + cap["protocolVersion"] + "`) on 2026-07-27.")
+  + "`, protocol `" + cap["protocolVersion"] + "`) on "
+  + time.strftime("%Y-%m-%d", time.gmtime()) + ".")
 w("Reconnaissance only — no wager tool was called.\n")
 w("> The server instructs clients to rediscover capabilities from the live connection,")
 w("> because this list stops being authoritative after a deployment. The machine-readable")

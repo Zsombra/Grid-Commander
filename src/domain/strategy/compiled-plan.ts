@@ -42,13 +42,12 @@ const PLAN_FIELDS_FROM_POST_STATE = [
   'minAggregateScore',
   'minRequiredCount',
   'minAtrPct',
-  // Required by the live schema since (at latest) 2026-07-31 — their absence
+  // Required by the live schema since (at latest) 2026-07-31 — its absence
   // was the sixth dead write path: every apply this product composed was
   // rejected by input validation, and the conformance guard could not see it
   // because `request.plan` was exempted as pass-through. Mapped against the
-  // real compile response: both live in `postState`.
+  // real compile response: it lives in `postState`.
   'conditions',
-  'conditionVerdicts',
 ] as const;
 
 /**
@@ -66,6 +65,14 @@ export const FIELDS_APPLY_REJECTS = [
   'authoringCatalogDigest',
   // `expectedRevision` left this list 2026-07-31: the live UPDATE/RESTORE
   // schema *requires* it — its absence was part of the sixth dead write path.
+  //
+  // `conditionVerdicts` joined it 2026-08-04. BattleGrid v5.0.0 dropped the
+  // field from `apply_strategy_plan` entirely while keeping `conditions`, and
+  // all three plan variants are `additionalProperties: false` — so sending it
+  // rejects the whole payload, exactly as the seven originals do. Found by
+  // re-probing the surface after noticing the record still said v3.0.0; the
+  // tool count was 110 on both sides of the deployment.
+  'conditionVerdicts',
   'bindingImpact',
   'reviewContext',
   'signalRules',
