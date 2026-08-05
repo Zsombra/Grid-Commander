@@ -99,6 +99,34 @@ export class FakeConfirmationStore implements ConfirmationStore {
   constructor(private readonly clock: Clock) {}
 
   async issue(token: ConfirmationToken): Promise<void> {
+    /**
+     * A token is issued once. Overwriting an unconsumed one is not a store
+     * behaviour to imitate — it is the store losing an outstanding agreement.
+     *
+     * This was a plain `Map.set`, so a fixture minting a duplicate id replaced
+     * the earlier entry and **retargeted an agreement someone still held**. It
+     * cost five days of `live-write-probe-confirmation-flake`: two consecutive
+     * runs failing at different consumptions, no product defect anywhere, and
+     * nothing in the failure pointing at the fake.
+     *
+     * A real store keys on 32 random bytes and will never see this. If it
+     * somehow did, silently discarding the first is the worst of the available
+     * behaviours — so the fake refuses instead of modelling something the
+     * platform cannot do.
+     */
+    const held = this.tokens.get(token.token);
+    // Outstanding means **still spendable** — unconsumed *and* unexpired, the
+    // same pair `consume` checks. A stricter rule than that refuses honest
+    // re-use: `call-path.test.ts` walks each refusal cause by re-issuing one id
+    // as expired, then consumed, then mismatched, and nothing is lost by
+    // overwriting a token no one could spend.
+    const spendable = held && held.consumedAt === null && held.expiresAt.getTime() > this.clock.now().getTime();
+    if (spendable) {
+      throw new Error(
+        `confirmation "${token.token}" is already outstanding for ${held.tool} on ${held.target}; ` +
+          'issuing it again would silently retarget an agreement someone still holds',
+      );
+    }
     this.tokens.set(token.token, token);
   }
 

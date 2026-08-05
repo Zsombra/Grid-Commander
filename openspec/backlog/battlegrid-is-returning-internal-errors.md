@@ -1,6 +1,6 @@
 ---
 id: battlegrid-is-returning-internal-errors
-title: BattleGrid is answering INTERNAL_ERROR and 504 across several tools
+title: BattleGrid went from per-tool INTERNAL_ERRORs to a 502 at the edge
 type: risk
 status: open
 priority: p2
@@ -12,11 +12,33 @@ blocked_by: []
 tags: [battlegrid, live, platform]
 ---
 
-# BattleGrid is answering INTERNAL_ERROR and 504 across several tools
+# BattleGrid went from per-tool INTERNAL_ERRORs to a 502 at the edge
 
-## What
+## Update, later the same day: it is a full outage
 
-On 2026-08-05 the platform is degraded, not broken in one place. Four live
+Every request now comes back **502 Bad Gateway from nginx** — HTML, not JSON,
+so nothing reaches the MCP layer at all. Both keys, repeated calls, `tools/call`
+on a plain read.
+
+```
+HTTP 502 text/html
+<html><head><title>502 Bad Gateway</title></head>
+<body><center><h1>502 Bad Gateway</h1></center><hr><center>nginx</center></body>
+</html>
+```
+
+That settles what the evidence below could only suggest: this is BattleGrid's
+infrastructure, not any per-tool logic and nothing about our payloads. The
+INTERNAL_ERRORs recorded first were the same failure earlier in its progression
+— a backend already unwell behind an edge that was still answering.
+
+**Nothing live can be run until it returns.** The probes fail on their first
+read now rather than deep in a sequence, which is at least an unambiguous
+signal.
+
+## What (as first observed)
+
+Earlier on 2026-08-05 the platform was degraded, not broken in one place. Four live
 probes that were green fail, and the one write this session needed could not be
 performed at all.
 

@@ -5,7 +5,7 @@ type: debt
 status: open
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-08-05
 change: ""
 capability: app-access
 blocked_by: []
@@ -62,9 +62,45 @@ The blast radius is bounded: it fails at `docker build` or at first `docker run`
 loudly, before anything is serving. It cannot fail quietly in production — which
 is why it is P1 and not P0.
 
+## Attempted 2026-08-05: a daemon is not enough
+
+Tried in an environment that **does** have Docker — client and daemon both,
+29.3.1, `dockerd` starts clean. The build still cannot run, and the reason is
+narrower and more useful than "no daemon":
+
+```
+FROM node:22-alpine AS deps
+  → failed to resolve source metadata for docker.io/library/node:22-alpine:
+    Get "https://production.cloudfront.docker.com/registry-v2/…": Forbidden
+```
+
+The agent proxy confirms it as a policy denial rather than a transient failure:
+
+```
+recentRelayFailures: [{
+  kind: "connect_rejected",
+  detail: "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  host: "production.cloudfront.docker.com:443"
+}]
+```
+
+`registry-1.docker.io/v2/` itself answers 401 — the normal unauthenticated
+reply — so **manifests resolve and blobs do not**. Docker Hub serves layer
+blobs from that CDN, so every pull fails at the first `FROM` regardless of the
+image, and no images are cached locally. Not worked around: circumventing the
+environment's egress policy is not a fix.
+
+**So the requirement is sharper than "somewhere with a daemon".** It needs an
+environment whose egress allows `production.cloudfront.docker.com` (or a
+mirror), or one with `node:22-alpine` already in its image cache. A session with
+Docker but the default network policy gets exactly this far and no further —
+worth knowing before spending the setup time again.
+
+Everything below still stands: what was proven, what is left, and why it is P1.
+
 ## Fix
 
-Run it, somewhere with a daemon:
+Run it, somewhere with a daemon **and registry egress**:
 
 ```bash
 docker build -t grid-commander .
