@@ -29,8 +29,18 @@
  * different plan, at which point the operator would be agreeing to something
  * the model never proposed. Not unsafe; unclear. See DL-1.
  */
-export const PROPOSABLE = [
-  'edit',
+export const PROPOSABLE = ['edit'] as const;
+
+/**
+ * Decided proposable (DL-1) and not yet openable.
+ *
+ * `OpenProposalQuery` wires one describe so far. Offering the others would
+ * record rows a human opens to find unusable — the exact thing
+ * `RecordProposalCommand` refuses to create — so they are absent from the
+ * surface until their describe is wired, and `checkProposal` names them so a
+ * model is told "not yet" rather than "never".
+ */
+export const DECIDED_PROPOSABLE_NOT_YET_WIRED = [
   'rebind',
   'archiveAgent',
   'deploy',
@@ -133,7 +143,9 @@ export interface OperationShape {
   readonly label: string;
 }
 
-export const OPERATIONS: Readonly<Record<ProposableOperation, OperationShape>> = {
+export const OPERATIONS: Readonly<
+  Record<ProposableOperation | (typeof DECIDED_PROPOSABLE_NOT_YET_WIRED)[number], OperationShape>
+> = {
   edit: { targets: 'agent', values: ['changes'], label: 'change an agent’s settings' },
   rebind: { targets: 'agent', values: ['toStrategyId'], label: 'move an agent to another strategy' },
   archiveAgent: { targets: 'agent', values: [], label: 'archive an agent' },
@@ -167,6 +179,11 @@ export function checkProposal(params: {
 }): ProposalRefusal | null {
   if (!isProposable(params.operation)) {
     const offered = PROPOSABLE.join(', ');
+    const notYet = (DECIDED_PROPOSABLE_NOT_YET_WIRED as readonly string[]).includes(
+      params.operation,
+    )
+      ? ` "${params.operation}" is a proposal Grid-Commander intends to offer and has not built yet.`
+      : '';
     const applying =
       params.operation === 'applyPlan' || params.operation === 'apply'
         ? ' Applying a compiled plan is done in the web app: its consequence is bound to a ' +
@@ -174,7 +191,7 @@ export function checkProposal(params: {
         : '';
     return {
       kind: 'unknown-operation',
-      reason: `Grid-Commander does not offer "${params.operation}" as a proposal. Offered: ${offered}.${applying}`,
+      reason: `Grid-Commander does not offer "${params.operation}" as a proposal. Offered: ${offered}.${notYet}${applying}`,
     };
   }
   if (params.target.trim().length === 0) {

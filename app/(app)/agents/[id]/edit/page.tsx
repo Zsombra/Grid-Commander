@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
 import {
+  editArguments,
   editIntent,
   MONEY_FIELDS,
   positionFromTransport,
@@ -241,7 +242,7 @@ export async function applyEdit(formData: FormData) {
     { name: ['displayName'], money: MONEY_FIELDS },
   );
 
-  const { tradingConfig, ...changes } = intent;
+  const { changes, tradingConfigChanges } = editArguments(intent);
 
   /**
    * The position object, off the same `pm.*` transport and through the same
@@ -256,8 +257,8 @@ export async function applyEdit(formData: FormData) {
     },
   });
   const fullConfig = position
-    ? { ...((tradingConfig ?? {}) as Record<string, unknown>), positionManagement: position }
-    : (tradingConfig as Record<string, unknown> | undefined);
+    ? { ...(tradingConfigChanges ?? {}), positionManagement: position }
+    : tradingConfigChanges;
 
   const result = await app.updateAgent.execute({
     ...user.authority,

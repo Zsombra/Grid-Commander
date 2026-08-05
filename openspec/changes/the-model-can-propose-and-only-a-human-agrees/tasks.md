@@ -39,16 +39,25 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 4. Agreeing (the web side)
 
-- [ ] 4.1 `/pending` lists unresolved proposals with target and change
-- [ ] 4.2 None exist, and could-not-be-read, are distinct states
-- [ ] 4.3 `/pending/[id]` runs the real describe at open time and renders the
-      same confirmation the corresponding web surface renders
-- [ ] 4.4 Where the fresh describe differs from what was proposed, the
-      difference is shown rather than reconciled
-- [ ] 4.5 A target that is gone or no longer eligible says so and offers no
+- [x] 4.1 `/pending` lists them in three groups — waiting, went stale unread,
+      already decided — with a nav entry. No row links yet: `/pending/[id]`
+      does not exist, and `reachability.test.ts` refuses a link to a route the
+      app does not serve
+- [x] 4.2 "Nothing has been proposed" and "could not be read" are separate
+      pages, and the second says it is not the same as having none
+- [x] 4.3 `/pending/[id]` runs the real describe at open time and shows the
+      product's own consequence sentence, unchanged. **Only `edit` is wired**:
+      the other six decided operations are absent from the MCP surface until
+      their describe lands here, because a proposal that cannot be opened is
+      the unusable row `RecordProposalCommand` refuses to create
+- [x] 4.4 Done, and built first. `reconcile` gives each proposed value one of
+      three honest dispositions — will-change, already-true, refused — against
+      the target read fresh. There is no before/after diff because no snapshot
+      is stored; inventing one would be the staleness this design avoids
+- [x] 4.5 A target that is gone or no longer eligible says so and offers no
       confirmation
-- [ ] 4.6 Agreeing runs the existing perform, and lands in the audit
-- [ ] 4.7 Declining closes the proposal permanently
+- [x] 4.6 Agreeing runs the existing perform, and lands in the audit
+- [x] 4.7 Declining closes the proposal permanently
 
 ## 5. The guard rewrite
 
@@ -61,28 +70,82 @@ Full track. The planner writes `plan/` before any of this is implemented.
 - [x] 5.3 Done, by injection. A tool named `stop_trading` wired to
       `updateAgent` fails with `stop_trading → updateAgent → updateAgent`; the
       old prefix rule matches none of it
-- [ ] 5.4 A test asserts no code path performs a proposal without a human
-      action — no worker, no scheduler, no retry
-- [ ] 5.5 A test asserts no MCP response can carry a confirmation token
+- [x] 5.4 Done. `proposals-are-inert.test.ts` holds the absence three ways:
+      nothing that touches proposals schedules (timer, interval, cron, worker,
+      queue), the perform is reachable only from a `'use server'` route, and the
+      close follows the write rather than preceding it. Proved by injecting a
+      `setTimeout` into `resolve-proposal.command.ts` — it fails naming the file
+      and the pattern
+- [x] 5.5 Done, in the same file, asserted three ways so none of them is the
+      only one: the recording use-case holds no confirmation store, no tool in
+      `TOOLS` resolves to a `describe*` use-case, and no `propose_*` tool body
+      names a token. Proved by injecting `confirmationToken: 'leaked'` into a
+      propose tool. **`composition.ts` is not exempted**: it wires `updateAgent`
+      without calling it, so the rule matches `.execute(` rather than the bare
+      name — an allowlist there would sit in the file most likely to grow
 
 ## 6. Live
 
-- [ ] 6.1 Drive the whole loop against the real account with a real client:
-      propose `stop trading` on an agent, open it in the web app, agree,
-      confirm `tradingMode` actually changed and the audit recorded it
-- [ ] 6.2 Prove the negative live: with a proposal recorded and unopened, the
-      agent is unchanged
-- [ ] 6.3 Prove the stale path: a proposal whose target moved shows the
-      difference rather than agreeing on the operator's behalf
-- [ ] 6.4 Live writes gated on `BATTLEGRID_LIVE_WRITES=1` like every other
-      mutating probe
+- [ ] 6.1 **Written and blocked.** `proposal-probe.test.ts` walks the whole
+      loop — propose `stop trading`, open, agree, confirm `tradingMode` moved,
+      the caps survived and the audit recorded it — on a throwaway agent it
+      creates. BattleGrid's `create_intelligence_agent` has been answering
+      `INTERNAL_ERROR` all day for every payload on both accounts, including
+      one with no `tradingConfig` at all, so the test **skips naming that**
+      rather than passing. It is not walked against the operator's own agents:
+      all of them are in `FULL_EXECUTION`, and editing a live trading agent to
+      make a probe pass is not a trade a test gets to make. See
+      `battlegrid-is-returning-internal-errors`
+- [x] 6.2 Done, live. A proposal recorded against a real agent leaves its
+      revision, mode and name exactly as they were — asserted by reading the
+      agent before and after
+- [x] 6.3 Done, live, three ways: the difference names the member against the
+      value BattleGrid holds this second; a proposal the account already
+      satisfies comes back `no-op` with no confirmation at all; a target that
+      does not exist comes back `not-possible`
+- [x] 6.4 Done. The write test is gated on `BATTLEGRID_LIVE_WRITES=1`; the
+      read-only three need only a key, so the honest-difference path is
+      exercised on every keyed CI run
 
 ## 7. Gates
 
-- [ ] 7.1 `./scripts/ci.sh` green, with and without a key
-- [ ] 7.2 `openspec.py validate the-model-can-propose-and-only-a-human-agrees`
-- [ ] 7.3 `docs/MCP_SERVER.md` rewritten — it currently states no writes are
-      coming without a design change. This is that design change
-- [ ] 7.4 Close `the-assistant-cannot-be-trusted-with-a-write`, recording that
-      option 2 was taken and elicitation was not established
-- [ ] 7.5 No credential in the diff
+- [ ] 7.1 Keyless `./scripts/ci.sh` green, ten gates. **The keyed run cannot
+      be green today**: BattleGrid is answering INTERNAL_ERROR and 504 across
+      several tools, and four live probes that touch nothing this change went
+      near — preview, field, competitor, column-grammar — fail on reads the
+      platform did not answer. Recorded rather than worked around; see
+      `battlegrid-is-returning-internal-errors`
+- [x] 7.2 Done. `openspec.py validate` — clean, no issues found
+- [x] 7.3 Done. `docs/MCP_SERVER.md` rewritten: "It cannot change anything. It
+      can propose." — what proposing is, why the consequence is computed at
+      open time, what cannot be proposed and why, the six operations decided
+      and not yet built, and the guard deriving reachability rather than
+      matching a prefix
+- [x] 7.4 Done. `the-assistant-cannot-be-trusted-with-a-write` closed as
+      `done`, recording that **option 2** was taken, that elicitation was not
+      established and therefore not chosen, and what would have to be answered
+      before it could be
+- [x] 7.5 Done. Scanned before each commit; no credential in the diff
+
+## 8. Found while proving it
+
+Four defects the walk turned up, each fixed with the test that would have
+caught it.
+
+- [x] 8.1 A proposed `tradingConfig` travelled inside `changes`, so agreeing
+      sent a partial — which BattleGrid does not reject, it *resets what the
+      send omits*. Stopping an agent would have cleared every loss cap it ran
+      under. The split is now `editArguments`, shared with the edit form,
+      which had always done it inline
+- [x] 8.2 `reconcile` compared the partial against the whole config object, so
+      the difference read "will change" even for an agent already off. It now
+      compares member by member for the fields the write merges, named by the
+      caller
+- [x] 8.3 A proposal the account already satisfied arrived `ready`, so the page
+      showed a button to agree above the words "nothing here would change the
+      account". `changesAnything` existed for exactly this and was consulted
+      only by the component
+- [x] 8.4 `readOnlyHint: true` was served for every tool without exception,
+      which stopped being true when a tool that records shipped. Now derived
+      from the tool's `writes` declaration, checked against whether its
+      use-case is a `Command` in `composition.ts`

@@ -23,18 +23,18 @@ interface ReactishElement {
 const isElement = (node: unknown): node is ReactishElement =>
   typeof node === 'object' && node !== null && 'type' in node && 'props' in node;
 
-async function expand(node: unknown, out: string[], headings: string[]): Promise<void> {
+async function expand(node: unknown, out: string[], headings: string[], links: string[]): Promise<void> {
   if (node === null || node === undefined || typeof node === 'boolean') return;
   if (typeof node === 'string' || typeof node === 'number') {
     out.push(String(node));
     return;
   }
   if (Array.isArray(node)) {
-    for (const child of node) await expand(child, out, headings);
+    for (const child of node) await expand(child, out, headings, links);
     return;
   }
   if (node instanceof Promise) {
-    await expand(await node, out, headings);
+    await expand(await node, out, headings, links);
     return;
   }
   if (!isElement(node)) {
@@ -44,22 +44,30 @@ async function expand(node: unknown, out: string[], headings: string[]): Promise
   const { type, props } = node;
   const children = props?.['children'];
 
+  // Collected so a test can assert *what is reachable*, not merely what is
+  // written. A page that renders a stale proposal's label without linking it
+  // is indistinguishable from one that links it, if you only read the text —
+  // and an assertion on text for a URL the harness never emits passes while
+  // proving nothing.
+  const href = props?.['href'];
+  if (typeof href === 'string') links.push(href);
+
   // Fragments and other symbol-typed wrappers render only their children.
   if (typeof type === 'symbol') {
-    await expand(children, out, headings);
+    await expand(children, out, headings, links);
     return;
   }
 
   if (typeof type === 'string') {
     if (/^h[1-6]$/.test(type)) {
       const inner: string[] = [];
-      await expand(children, inner, headings);
+      await expand(children, inner, headings, links);
       const text = inner.join('');
       headings.push(text);
       out.push(text);
       return;
     }
-    await expand(children, out, headings);
+    await expand(children, out, headings, links);
     return;
   }
 
@@ -69,7 +77,7 @@ async function expand(node: unknown, out: string[], headings: string[]): Promise
     // component using hooks will throw here — and that is a real limit worth
     // hearing about, not one to paper over.
     const rendered = (type as (p: unknown) => unknown)(props ?? {});
-    await expand(rendered, out, headings);
+    await expand(rendered, out, headings, links);
     return;
   }
 
@@ -81,12 +89,15 @@ export interface Rendered {
   readonly text: string;
   /** The text of each h1–h6, in document order. */
   readonly headings: readonly string[];
+  /** Every `href` reached, in document order. */
+  readonly links: readonly string[];
 }
 
 /** Render (resolve) what an awaited page component returned. */
 export async function rendered(tree: unknown): Promise<Rendered> {
   const out: string[] = [];
   const headings: string[] = [];
-  await expand(tree, out, headings);
-  return { text: out.join(' '), headings };
+  const links: string[] = [];
+  await expand(tree, out, headings, links);
+  return { text: out.join(' '), headings, links };
 }

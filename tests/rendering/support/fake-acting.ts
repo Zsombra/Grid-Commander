@@ -5,6 +5,8 @@ import {
   DescribeUndeployQuery,
 } from '@/application/use-cases/deploy-agent.command.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
+import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
+import { FakeProposalStore } from '../../support/proposal-fakes.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
@@ -68,12 +70,14 @@ export function actingWith({
   radar = new RenderRadarPort(),
   grid = new FakeMarketGridPort(),
   explorer = new FakeExplorerPort(),
+  proposals = new FakeProposalStore(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
   radar?: RenderRadarPort;
   grid?: FakeMarketGridPort;
   explorer?: FakeExplorerPort;
+  proposals?: FakeProposalStore;
 } = {}) {
   const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
@@ -81,6 +85,7 @@ export function actingWith({
 
   const app = {
     listAgents: new ListAgentsQuery(agents),
+    readProposals: new ReadProposalsQuery(proposals, clock),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),

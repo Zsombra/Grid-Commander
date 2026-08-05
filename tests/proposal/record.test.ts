@@ -75,9 +75,9 @@ describe('recording touches nothing', () => {
     const { cmd } = subject();
     const r = await cmd.execute({
       userId: 'u1',
-      operation: 'archiveAgent',
+      operation: 'edit',
       target: 'agent-1',
-      values: {},
+      values: { changes: { displayName: 'x' } },
     });
     if (r.kind !== 'recorded') throw new Error('unreachable');
     // A model will paraphrase this. "Recorded" alone reads as "done".
@@ -90,9 +90,9 @@ describe('recording touches nothing', () => {
     const { cmd } = subject();
     const r = await cmd.execute({
       userId: 'u1',
-      operation: 'archiveAgent',
+      operation: 'edit',
       target: 'agent-1',
-      values: {},
+      values: { changes: { displayName: 'x' } },
     });
     // There is no confirmation to leak: none is minted. Asserted on the shape
     // a model actually receives, so a later field cannot smuggle one out.
@@ -125,9 +125,9 @@ describe('a refused proposal stores nothing', () => {
     const { store, cmd } = subject();
     const r = await cmd.execute({
       userId: 'u1',
-      operation: 'deploy',
+      operation: 'edit',
       target: 'agent-1',
-      values: { coinId: 'BTC' },
+      values: {},
     });
     if (r.kind !== 'refused') throw new Error('unreachable');
     expect(r.refusal.kind).toBe('missing-values');

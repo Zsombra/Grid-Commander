@@ -1,7 +1,8 @@
 # Grid-Commander as an MCP server
 
 Grid-Commander exposes its read surface over MCP, so a language model of
-your choosing can ask it questions about your BattleGrid agents.
+your choosing can ask it questions about your BattleGrid agents — and
+suggest changes for you to decide on.
 
 **It contains no model.** Which model reads your agents is decided by
 whichever MCP client you point at it — Claude Desktop, Claude Code, Cline,
@@ -47,10 +48,11 @@ It speaks stdio and needs the same environment the web app needs:
 Any other MCP client works the same way — the server has no client-specific
 behaviour.
 
-## It cannot change anything
+## It cannot change anything. It can propose.
 
-Eighteen tools, every one a read. No create, update, rebind, archive,
-deploy, apply or disconnect, and none is coming without a design change.
+Nineteen tools. Eighteen are reads; the nineteenth records a suggestion and
+stops. No tool here creates, updates, rebinds, archives, deploys, applies or
+disconnects anything on your BattleGrid account.
 
 This is not caution for its own sake. Every write in Grid-Commander goes
 through **describe → confirm → perform**, with a token digest-bound to the
@@ -59,13 +61,47 @@ consequence before agreeing* — "this will archive Apex and stop three
 deployments". Over MCP a model occupies that seat, and nothing in the
 protocol compels it to show you anything before calling perform.
 
-So writes stay in the web app, where a person agrees to them. If you ask
-your model to change something, it is told that and told where.
+So writes stay in the web app, where a person agrees to them.
 
-`tests/architecture/mcp-read-only.test.ts` enforces this by deriving the
-mutating use-cases from `src/composition.ts` and failing if any becomes
-reachable. It is a test, not a convention, because the whole safety
-argument rests on it.
+### What proposing is
+
+`propose_agent_change` records **what a model suggests, and nothing that can
+be spent**: which agent, which settings, the values verbatim. BattleGrid is
+not contacted. Nothing is reserved. No confirmation is minted, so the model
+never holds one — the response carries a reference and a URL and no token.
+
+The consequence is computed when *you* open it at `/pending/<id>`, against
+your account as it is at that moment — not as it was when the suggestion was
+made. That is the whole design, and it is why an old proposal is noise rather
+than danger: it confers no authority, so nothing about it decays into a risk.
+The page shows the product's own consequence sentence and, beside it, what
+each proposed value actually does now — will change, already true, or not
+accepted — so a suggestion the account has since outgrown says so instead of
+being performed on your behalf.
+
+Nothing performs a proposal but you. There is no worker, no scheduler, no
+retry and no setting that changes that; `tests/architecture/proposals-are-inert.test.ts`
+holds it as a property rather than an intention, because "nothing runs on its
+own" is the kind of claim a small convenient commit undoes.
+
+Applying a compiled strategy plan cannot be proposed. Its consequence is bound
+to a plan token that expires in five minutes, so it cannot be recomputed later
+— and recompiling instead can legitimately produce a different plan, at which
+point you would be agreeing to something the model never suggested. Refused by
+name rather than quietly omitted.
+
+Six more operations are decided proposable and not yet built — rebind, archive
+an agent, deploy, undeploy, retune a rule, archive a strategy. They are absent
+from this surface until each has a describe the web app can run, because a
+proposal you cannot open is a row you would open to find unusable.
+
+`tests/architecture/mcp-read-only.test.ts` enforces the boundary by deriving
+reachability end to end — the mutating tools from BattleGrid's own
+classification, the port methods that send them, the use-case behind each, and
+whether anything a tool reaches calls one. It is a test, not a convention,
+because the whole safety argument rests on it, and it names no tool prefix: a
+`propose_*` tool passes because it reaches nothing, not because of what it is
+called.
 
 ## Why not just point the model at BattleGrid?
 
@@ -104,9 +140,17 @@ directly. It would lose everything this product knows:
 | `read_field` / `read_competitor` | the field, and one rival's whole public record |
 | `watch_arena` | Market Grid sessions |
 | `read_audit` | every write the product has made on your behalf |
+| `propose_agent_change` | records a suggested change to an agent, and nothing else |
 
 `read_audit` earns its place *because* the writes are absent: it is how you
 ask the model what has already been done for you.
+
+`propose_agent_change` takes the agent's own field names — `displayName`,
+`brain`, `tradingConfig` (which holds `tradingMode` and the money limits),
+`arenaChallengeEnabled`, `overlayText`. A field the bound strategy owns, like
+`signalRules` or `timeframe`, comes back reported as not accepted rather than
+silently sent. A partial `tradingConfig` is merged onto what the agent already
+runs under when you agree, never substituted for it.
 
 ## Proving it works
 

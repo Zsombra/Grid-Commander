@@ -52,6 +52,34 @@ function protocolError(message: string) {
   return { content: [{ type: 'text' as const, text: message }], isError: true as const };
 }
 
+/**
+ * What a client is told each tool does, derived from what it actually does.
+ *
+ * `readOnlyHint: true` was set on every tool without exception, which stopped
+ * being true the moment `propose_agent_change` shipped: recording a proposal
+ * writes a row to this product's own store. It changes nothing on the
+ * BattleGrid account — which is the claim the surface actually makes — but the
+ * annotation says "does not modify its environment", and a client that reads it
+ * to decide what needs the operator's approval would be reading a false one.
+ *
+ * Being wrong in the safe direction is still being wrong. Read off the tool's
+ * own `writes` declaration, which `tests/mcp/annotations.test.ts` checks against
+ * whether the use-case it names is a `Command` in `composition.ts` — so a second
+ * writing tool cannot inherit a read's annotation by being left undeclared.
+ *
+ * `destructiveHint` stays false and honestly: a proposal is additive, and
+ * declining closes it. `idempotentHint` is false for a write that records a
+ * new row each time it is called.
+ */
+function annotationsFor(tool: ToolDefinition) {
+  return {
+    readOnlyHint: tool.writes !== true,
+    destructiveHint: false,
+    idempotentHint: tool.writes !== true,
+    openWorldHint: true,
+  };
+}
+
 export const SERVER_INSTRUCTIONS =
   'Grid-Commander understands BattleGrid trading agents: what they decided, what they did ' +
   'with the money, why they did or did not trade, and how they compare to everyone else’s. ' +
@@ -83,15 +111,7 @@ export function buildServer(params: {
         properties: t.input,
         ...(t.required ? { required: [...t.required] } : {}),
       },
-      annotations: {
-        // Every tool on this surface, without exception. The guard in
-        // `tests/architecture/mcp-read-only.test.ts` is what makes this
-        // true rather than merely declared.
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
+      annotations: annotationsFor(t),
     })),
   }));
 

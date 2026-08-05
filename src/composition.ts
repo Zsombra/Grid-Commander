@@ -79,6 +79,9 @@ import {
 } from './infrastructure/db/repositories/drizzle-audit-repository.js';
 import { DrizzleProposalStore } from './infrastructure/db/repositories/drizzle-proposal-store.js';
 import { RecordProposalCommand } from './application/use-cases/record-proposal.command.js';
+import { ReadProposalsQuery } from './application/use-cases/read-proposals.query.js';
+import { OpenProposalQuery } from './application/use-cases/open-proposal.query.js';
+import { ResolveProposalCommand } from './application/use-cases/resolve-proposal.command.js';
 import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
@@ -260,6 +263,18 @@ export function app(cookies: CookieStore) {
     // it cannot read a consequence or mint a confirmation, and a test asserts
     // that by construction rather than by behaviour.
     recordProposal: new RecordProposalCommand(i.proposals, random, systemClock),
+    readProposals: new ReadProposalsQuery(i.proposals, systemClock),
+    openProposal: new OpenProposalQuery(
+      i.proposals,
+      i.agents,
+      // Its own instance rather than the one on `app`: the describe run when a
+      // proposal is opened is the same class doing the same thing, and reaching
+      // sideways into the object under construction would make the wiring
+      // depend on declaration order.
+      new DescribeEditQuery(i.agents, i.confirmations, random, systemClock),
+      systemClock,
+    ),
+    resolveProposal: new ResolveProposalCommand(i.proposals),
 
     describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
     performDeploy: new PerformDeployCommand(i.radar),

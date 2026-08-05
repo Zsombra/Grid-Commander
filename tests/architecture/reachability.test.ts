@@ -482,7 +482,14 @@ describe('every capability is reachable from wherever you already are', () => {
   it('derived a section list that is neither empty nor everything', () => {
     // The derivation must find the real sections. Empty would pass the check
     // above vacuously; the whole route table would fail it for the wrong reason.
-    expect(TOP_LEVEL).toEqual(['/agents', '/arena', '/audit', '/explorer', '/strategies']);
+    expect(TOP_LEVEL).toEqual([
+      '/agents',
+      '/arena',
+      '/audit',
+      '/explorer',
+      '/pending',
+      '/strategies',
+    ]);
   });
 
   /**
@@ -887,6 +894,7 @@ describe('a page about one thing can get back to it', () => {
     expect([...entityRoutes].sort()).toEqual([
       '/agents/[id]',
       '/explorer/[agentId]',
+      '/pending/[id]',
       '/strategies/[id]',
       '/strategies/metrics/[metric]',
       '/strategies/signals/[id]',
