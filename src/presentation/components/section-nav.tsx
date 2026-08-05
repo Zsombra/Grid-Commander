@@ -33,6 +33,7 @@ const SECTIONS = [
   { href: '/strategies', label: 'Strategies' },
   { href: '/arena', label: 'Arena' },
   { href: '/explorer', label: 'The field' },
+  { href: '/pending', label: 'Proposed' },
   { href: '/audit', label: 'Activity' },
 ] as const;
 

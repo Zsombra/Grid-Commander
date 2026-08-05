@@ -79,6 +79,7 @@ import {
 } from './infrastructure/db/repositories/drizzle-audit-repository.js';
 import { DrizzleProposalStore } from './infrastructure/db/repositories/drizzle-proposal-store.js';
 import { RecordProposalCommand } from './application/use-cases/record-proposal.command.js';
+import { ReadProposalsQuery } from './application/use-cases/read-proposals.query.js';
 import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
@@ -260,6 +261,7 @@ export function app(cookies: CookieStore) {
     // it cannot read a consequence or mint a confirmation, and a test asserts
     // that by construction rather than by behaviour.
     recordProposal: new RecordProposalCommand(i.proposals, random, systemClock),
+    readProposals: new ReadProposalsQuery(i.proposals, systemClock),
 
     describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
     performDeploy: new PerformDeployCommand(i.radar),

@@ -39,8 +39,12 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 4. Agreeing (the web side)
 
-- [ ] 4.1 `/pending` lists unresolved proposals with target and change
-- [ ] 4.2 None exist, and could-not-be-read, are distinct states
+- [x] 4.1 `/pending` lists them in three groups — waiting, went stale unread,
+      already decided — with a nav entry. No row links yet: `/pending/[id]`
+      does not exist, and `reachability.test.ts` refuses a link to a route the
+      app does not serve
+- [x] 4.2 "Nothing has been proposed" and "could not be read" are separate
+      pages, and the second says it is not the same as having none
 - [ ] 4.3 `/pending/[id]` runs the real describe at open time and renders the
       same confirmation the corresponding web surface renders
 - [x] 4.4 Done, and built first. `reconcile` gives each proposed value one of
