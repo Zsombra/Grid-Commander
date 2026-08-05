@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 86 |
-| Vitest tests | 1331 (+ key-gated live) + 62 db |
+| Changes (archived) | 87 |
+| Vitest tests | 1347 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | 1 — `the-model-can-propose-and-only-a-human-agrees` (full, 35/37, **built, two gates blocked by the platform**) |
 | Open backlog items | 24 |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#48 merged |
+| Open draft PRs | none; #8–#51 merged |
 
 ### Read this before anything else
 
@@ -191,6 +191,22 @@ agents.** Every one of them is in `FULL_EXECUTION`; editing a live trading
 agent to make a probe pass is not a trade a test gets to make on someone's
 behalf, and there is no clone tool, so the probe creates its own subject or it
 skips.
+
+### Two things that will cost a session if rediscovered
+
+**`FakeAgentsPort` records what a write bound its confirmation to and does not
+check it.** `enforce()` is the guard and it lives in the adapter. So a test that
+calls `update.execute`, sees `updated`, and concludes the binding works has
+proven nothing — drive the store's own `consume` against the target the write
+composed, the way `edit-binding.test.ts` does. Two drafts of
+`two-edits-in-a-row.test.ts` passed vacuously this way.
+
+**`docker` exists in these environments and cannot pull.** The daemon starts
+clean; the network policy denies `production.cloudfront.docker.com`, where
+Docker Hub serves layer blobs, so every build fails at the first `FROM`.
+Manifests resolve (401), blobs 403. `image-never-built` needs registry egress or
+a pre-seeded cache — not just a daemon. Do not spend the setup time again
+without one.
 
 ### The lesson that keeps recurring, now five times
 
