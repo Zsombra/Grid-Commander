@@ -62,11 +62,26 @@ export class ConfirmationRequiredError extends DomainError {
   }
 }
 
-/** Capabilities could not be discovered, so only confirmed reads are permitted. */
+/**
+ * Capabilities could not be discovered, so only confirmed reads are permitted.
+ *
+ * The message used to open `Configuration changes are unavailable:` — asserting
+ * a category the operation may not belong to. During the 2026-08-05 outage the
+ * refusal that reached `/explorer` was for `get_agent_explorer`, a **read**:
+ * with discovery down it classified as unknown, unknown fails closed as
+ * destructive, and an operator trying to look at the field was told that
+ * configuration changes were unavailable.
+ *
+ * The refusal is correct — see `Unrecognised Operations Are Treated As
+ * Dangerous`. Naming what was refused is not the same as naming what it was,
+ * and this only ever knew the former.
+ */
 export class DiscoveryUnavailableError extends DomainError {
   constructor(readonly tool: string) {
     super(
-      `Configuration changes are unavailable: Grid-Commander could not confirm what "${tool}" does.`,
+      `Grid-Commander could not confirm what "${tool}" does, so it did not call it. ` +
+        'Until BattleGrid can be asked what its operations do, anything not already ' +
+        'known to be a read is refused.',
     );
   }
 }
@@ -95,6 +110,65 @@ export class ConnectionRevokedError extends DomainError {
   constructor(remedy: Remedy) {
     super(`Your BattleGrid connection is no longer valid. ${describeRemedy(remedy)}`);
   }
+}
+
+/**
+ * The platform answered with something that is not an answer.
+ *
+ * This was a bare `` new Error(`${method} failed with ${res.status}`) ``, and
+ * that string is what an operator read. `unreadable(err)` uses `err.message`
+ * as the reason, so on 2026-08-05 — BattleGrid 502ing all day — five web
+ * surfaces and every MCP tool result said:
+ *
+ *     Your roster could not be loaded. tools/call failed with 502
+ *
+ * The classification was right and the sentence was a transport artefact. A
+ * person reading it cannot tell whether the fault is theirs, their key's, or
+ * the platform's, which is the only question they have.
+ *
+ * **The status stays**, in the sentence rather than instead of it. It is what
+ * makes the difference between two people describing the same outage to each
+ * other and two people guessing.
+ *
+ * Three cases, because they have three different remedies and one of them is
+ * "wait". 401 and 403 never arrive here — they are `ConnectionRevokedError`,
+ * which is the fourth remedy and the only one the operator can act on today.
+ */
+export class PlatformUnavailableError extends DomainError {
+  constructor(readonly status: number) {
+    super(describeStatus(status));
+  }
+}
+
+function describeStatus(status: number): string {
+  // A gateway that could not reach what it fronts. Nothing about the request
+  // was examined, so nothing about the request is the problem.
+  if (status === 502 || status === 503 || status === 504) {
+    return (
+      `BattleGrid is not answering right now (HTTP ${status}). This is a fault on ` +
+      'BattleGrid’s side — not with your account, your key, or anything you did. ' +
+      'Nothing has changed on your account.'
+    );
+  }
+  if (status === 429) {
+    // Not a fault at all, and the only case where the remedy is a specific wait.
+    return (
+      `BattleGrid is limiting how often this deployment may ask (HTTP ${status}). ` +
+      'Nothing is wrong; the next attempt should succeed.'
+    );
+  }
+  if (status >= 500) {
+    // It read the request and fell over. Distinct from the gateway case: here
+    // the request may well be implicated.
+    return (
+      `BattleGrid failed while handling this request (HTTP ${status}). Nothing has ` +
+      'changed on your account. If it keeps happening, it is worth reporting.'
+    );
+  }
+  return (
+    `BattleGrid refused this request (HTTP ${status}). Your connection is still ` +
+    'valid — it is this particular request it would not accept.'
+  );
 }
 
 /**

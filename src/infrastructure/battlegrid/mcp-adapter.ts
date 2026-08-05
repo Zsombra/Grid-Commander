@@ -5,7 +5,7 @@ import type { HeldScopes } from '@/domain/connection/held-scopes.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
 import type { Remedy } from '@/domain/connection/remedy.js';
-import { ConnectionRevokedError } from '@/domain/errors.js';
+import { ConnectionRevokedError, PlatformUnavailableError } from '@/domain/errors.js';
 import type {
   BattleGridPort,
   TokenGrant,
@@ -234,7 +234,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ token, client_id: this.deps.config.clientId }),
     });
-    if (!res.ok) throw new Error(`revocation failed with ${res.status}`);
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
   }
 
   async discoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {
@@ -349,7 +349,9 @@ export class McpBattleGridAdapter implements BattleGridPort {
     if (res.status === 401 || res.status === 403) {
       throw new ConnectionRevokedError(this.deps.remedy);
     }
-    if (!res.ok) throw new Error(`${method} failed with ${res.status}`);
+    // The sentence an operator reads, not the status line that produced it.
+    // `unreadable(err)` carries `err.message` through to every surface.
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
     const body = (await res.json()) as JsonRpcResponse;
     if (body.error) throw new Error(body.error.message);
     return body.result;
@@ -361,7 +363,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(body),
     });
-    if (!res.ok) throw new Error(`token request failed with ${res.status}`);
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
     const json = (await res.json()) as {
       access_token: string;
       refresh_token?: string;
