@@ -109,3 +109,89 @@ export function partition(
     stale: proposals.filter((p) => p.status === 'open' && isStale(p, now)),
   };
 }
+
+/**
+ * What each operation points at, and what it needs to be well-formed.
+ *
+ * Product vocabulary, in product terms — no BattleGrid tool names, no
+ * use-case names. The MCP layer validates a call against this and the web
+ * route resolves a stored proposal against the same table, so an operation
+ * cannot come to mean two things at the two ends.
+ *
+ * `values` lists what a **model must supply**, not everything the describe
+ * eventually needs. A describe also wants the agent's current name and
+ * revision, and those are read fresh when a human opens the proposal — which
+ * is the whole design. Asking a model to store them would freeze a copy of
+ * the world at proposal time, and a stale copy is exactly what this avoids.
+ */
+export interface OperationShape {
+  /** What `target` identifies. */
+  readonly targets: 'agent' | 'strategy';
+  /** Keys the proposer must provide. Empty when the target alone says it. */
+  readonly values: readonly string[];
+  /** What an operator would call it, for a refusal that teaches. */
+  readonly label: string;
+}
+
+export const OPERATIONS: Readonly<Record<ProposableOperation, OperationShape>> = {
+  edit: { targets: 'agent', values: ['changes'], label: 'change an agent’s settings' },
+  rebind: { targets: 'agent', values: ['toStrategyId'], label: 'move an agent to another strategy' },
+  archiveAgent: { targets: 'agent', values: [], label: 'archive an agent' },
+  deploy: { targets: 'agent', values: ['coinId', 'timeframe'], label: 'deploy an agent to a coin' },
+  undeploy: { targets: 'agent', values: ['coinId'], label: 'undeploy an agent from a coin' },
+  retuneRule: {
+    targets: 'strategy',
+    values: ['signalId', 'intent'],
+    label: 'retune a signal rule',
+  },
+  archiveStrategy: { targets: 'strategy', values: [], label: 'archive a strategy' },
+};
+
+export type ProposalRefusal =
+  | { readonly kind: 'unknown-operation'; readonly reason: string }
+  | { readonly kind: 'missing-target'; readonly reason: string }
+  | { readonly kind: 'missing-values'; readonly missing: readonly string[]; readonly reason: string };
+
+/**
+ * Whether a proposal is well-formed enough to record.
+ *
+ * Refuses by name and stores nothing, rather than recording something a human
+ * would later open to find unusable. `applyPlan` arrives here as an unknown
+ * operation and its refusal says where applying actually happens — the one
+ * exclusion an operator is most likely to trip over.
+ */
+export function checkProposal(params: {
+  operation: string;
+  target: string;
+  values: Readonly<Record<string, unknown>>;
+}): ProposalRefusal | null {
+  if (!isProposable(params.operation)) {
+    const offered = PROPOSABLE.join(', ');
+    const applying =
+      params.operation === 'applyPlan' || params.operation === 'apply'
+        ? ' Applying a compiled plan is done in the web app: its consequence is bound to a ' +
+          'plan token that expires in five minutes, so it cannot be recomputed later.'
+        : '';
+    return {
+      kind: 'unknown-operation',
+      reason: `Grid-Commander does not offer "${params.operation}" as a proposal. Offered: ${offered}.${applying}`,
+    };
+  }
+  if (params.target.trim().length === 0) {
+    return {
+      kind: 'missing-target',
+      reason: `A ${params.operation} proposal must name the ${OPERATIONS[params.operation].targets} it applies to.`,
+    };
+  }
+  const missing = OPERATIONS[params.operation].values.filter(
+    (key) => !(key in params.values) || params.values[key] === undefined,
+  );
+  if (missing.length > 0) {
+    return {
+      kind: 'missing-values',
+      missing,
+      reason: `To ${OPERATIONS[params.operation].label}, a proposal must carry: ${missing.join(', ')}.`,
+    };
+  }
+  return null;
+}

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  checkProposal,
   isActionable,
   isProposable,
   isStale,
+  OPERATIONS,
   partition,
   PROPOSABLE,
   STALE_AFTER_HOURS,
@@ -99,5 +101,67 @@ describe('what an operator can still act on', () => {
     // Stale is history, never deleted: "a model suggested stopping this agent
     // three days ago and nobody looked" is worth being able to find out.
     expect(stale.map((p) => p.id)).toEqual(['old']);
+  });
+});
+
+describe('a proposal is checked before it is stored', () => {
+  const ok = { operation: 'edit', target: 'agent-1', values: { changes: { tradingMode: 'OFF' } } };
+
+  it('accepts a well-formed one', () => {
+    expect(checkProposal(ok)).toBeNull();
+  });
+
+  it('refuses an operation it does not offer, and lists what it does', () => {
+    const r = checkProposal({ ...ok, operation: 'disconnect' });
+    expect(r?.kind).toBe('unknown-operation');
+    expect(r?.reason).toContain('disconnect');
+    expect(r?.reason).toContain('edit');
+  });
+
+  it('refusing an apply says where applying happens', () => {
+    // The one exclusion an operator is most likely to trip over, so the
+    // refusal teaches rather than just declining.
+    const r = checkProposal({ ...ok, operation: 'applyPlan' });
+    expect(r?.kind).toBe('unknown-operation');
+    expect(r?.reason).toMatch(/web app/i);
+    expect(r?.reason).toMatch(/five minutes/i);
+  });
+
+  it('refuses one that names no target', () => {
+    const r = checkProposal({ ...ok, target: '  ' });
+    expect(r?.kind).toBe('missing-target');
+    expect(r?.reason).toContain('agent');
+  });
+
+  it('names exactly what is missing', () => {
+    const r = checkProposal({ operation: 'deploy', target: 'agent-1', values: { coinId: 'BTC' } });
+    expect(r?.kind).toBe('missing-values');
+    expect(r && 'missing' in r ? r.missing : []).toEqual(['timeframe']);
+    expect(r?.reason).toContain('deploy an agent to a coin');
+  });
+
+  it('treats an explicit undefined as missing', () => {
+    const r = checkProposal({ ...ok, values: { changes: undefined } });
+    expect(r?.kind).toBe('missing-values');
+  });
+
+  it('asks a model for nothing the world can answer later', () => {
+    /**
+     * The design property. A describe also needs the agent's current name and
+     * revision — both read fresh when a human opens the proposal. Requiring a
+     * model to supply them would freeze a copy of the world at proposal time,
+     * which is the staleness this whole change exists to avoid.
+     */
+    for (const shape of Object.values(OPERATIONS)) {
+      expect(shape.values).not.toContain('expectedRevision');
+      expect(shape.values).not.toContain('agentName');
+      expect(shape.values).not.toContain('confirmationToken');
+    }
+  });
+
+  it('describes every operation it offers, and offers every one it describes', () => {
+    // Two tables that must not drift: an operation with no shape cannot be
+    // validated, and a shape with no operation is unreachable.
+    expect(Object.keys(OPERATIONS).sort()).toEqual([...PROPOSABLE].sort());
   });
 });
