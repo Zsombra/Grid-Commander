@@ -6,17 +6,19 @@ Read-only, live, with the real key. Record findings in the proposal before
 building against them — three of the account's strategies carry conditions, so
 none of this needs to be inferred.
 
-- [ ] 1.1 `get_strategy` on Berlin, El Alamein and Dunkirk — confirm the
-      condition shape and record whether every form in the declared grammar
-      actually appears in real data
-- [ ] 1.2 `preview_strategy_report` on Berlin — **does `conditionOutcomes`
-      actually come back, and in what shape?** It is declared, not observed
-- [ ] 1.3 Does a signal log or entry decision carry a condition outcome?
-      `get_signal_log` and `get_entry_decision` on an agent bound to Berlin.
-      **If not, the pipeline page stays out of scope** and the proposal's
-      out-of-scope note becomes permanent rather than provisional
-- [ ] 1.4 Does `list_strategies` carry conditions, or only `get_strategy`?
-      Decides whether the roster can show a count without a per-row read
+- [x] 1.1 Done. 12 of 37 (primary) and 11 of 15 (second) carry conditions, up
+      from 3 — eight platform strategies gained them across v5.0.0 → v5.1.0.
+      Every declared form appears in real data
+- [x] 1.2 Done. `conditionOutcomes` answers, per **ticker**, and carries three
+      things nothing anticipated: clause-level `evidence` (observed vs
+      required), `provisional`, and `counts` with an `unresolvedCount` third
+      state
+- [x] 1.3 Done — **NO**. A signal log has 31 keys, none about conditions, and
+      `conditionKey` appears nowhere even nested. Checked against the control:
+      an agent bound to a strategy that does define conditions. The pipeline
+      page is permanently out of scope
+- [x] 1.4 Done — **NO**. The roster carries no conditions; per-strategy read
+      required
 
 ## 2. The domain
 

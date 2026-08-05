@@ -132,6 +132,28 @@ platform's authority.
 - **GIVEN** a surface where BattleGrid resolves a strategy's conditions
 - **WHEN** the user views it
 - **THEN** each condition's reported outcome is shown against that condition
+- **AND** outcomes reported per instrument are shown per instrument rather than
+  merged into one answer for the strategy
+
+#### Scenario: An outcome that is not settled
+- **GIVEN** an outcome the platform reports as provisional
+- **WHEN** it is shown
+- **THEN** it is distinguishable from a settled outcome
+- **AND** it is not presented as a final answer
+
+#### Scenario: Why a condition came out as it did
+- **GIVEN** an outcome carrying the platform's clause-level evidence
+- **WHEN** it is shown
+- **THEN** each clause shows the value observed against the value required
+- **AND** the clause-level outcomes are shown, so a failing condition says
+  which part failed
+
+#### Scenario: A threshold group's tally
+- **GIVEN** an outcome carrying counts for a threshold group
+- **WHEN** it is shown
+- **THEN** how many members held, out of how many, is shown
+- **AND** members the platform reports as unresolved are shown as unresolved
+  rather than counted as not holding
 
 #### Scenario: The platform reports no outcome
 - **GIVEN** a surface showing conditions where BattleGrid reports no outcome
