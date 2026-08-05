@@ -4,6 +4,7 @@ import {
   isActionable,
   isProposable,
   isStale,
+  DECIDED_PROPOSABLE_NOT_YET_WIRED,
   OPERATIONS,
   partition,
   PROPOSABLE,
@@ -36,10 +37,30 @@ describe('what a model may propose', () => {
     expect(PROPOSABLE).not.toContain('applyPlan');
   });
 
-  it('offers the seven whose describe can be re-run from target and values', () => {
-    expect([...PROPOSABLE].sort()).toEqual(
-      ['archiveAgent', 'archiveStrategy', 'deploy', 'edit', 'rebind', 'retuneRule', 'undeploy'],
-    );
+  it('offers only what can actually be opened', () => {
+    /**
+     * DL-1 decided seven operations proposable. `OpenProposalQuery` wires one
+     * describe so far, and a proposal that cannot be opened is a row a human
+     * finds unusable — the thing `RecordProposalCommand` refuses to create.
+     * So the surface offers what it can honour, not what it intends to.
+     */
+    expect([...PROPOSABLE]).toEqual(['edit']);
+    expect([...DECIDED_PROPOSABLE_NOT_YET_WIRED].sort()).toEqual([
+      'archiveAgent',
+      'archiveStrategy',
+      'deploy',
+      'rebind',
+      'retuneRule',
+      'undeploy',
+    ]);
+  });
+
+  it('tells a model a decided-but-unwired operation is coming, not forbidden', () => {
+    const r = checkProposal({ operation: 'deploy', target: 'agent-1', values: {} });
+    expect(r?.kind).toBe('unknown-operation');
+    // "not yet" and "never" are different answers, and a model relays whichever
+    // it is given.
+    expect(r?.reason).toMatch(/intends to offer and has not built yet/);
   });
 
   it('refuses anything else', () => {
@@ -134,10 +155,10 @@ describe('a proposal is checked before it is stored', () => {
   });
 
   it('names exactly what is missing', () => {
-    const r = checkProposal({ operation: 'deploy', target: 'agent-1', values: { coinId: 'BTC' } });
+    const r = checkProposal({ operation: 'edit', target: 'agent-1', values: {} });
     expect(r?.kind).toBe('missing-values');
-    expect(r && 'missing' in r ? r.missing : []).toEqual(['timeframe']);
-    expect(r?.reason).toContain('deploy an agent to a coin');
+    expect(r && 'missing' in r ? r.missing : []).toEqual(['changes']);
+    expect(r?.reason).toContain('change an agent’s settings');
   });
 
   it('treats an explicit undefined as missing', () => {
@@ -159,9 +180,10 @@ describe('a proposal is checked before it is stored', () => {
     }
   });
 
-  it('describes every operation it offers, and offers every one it describes', () => {
-    // Two tables that must not drift: an operation with no shape cannot be
-    // validated, and a shape with no operation is unreachable.
-    expect(Object.keys(OPERATIONS).sort()).toEqual([...PROPOSABLE].sort());
+  it('describes every operation, offered or merely decided', () => {
+    // An offered operation with no shape cannot be validated; a decided one
+    // with no shape cannot be wired later without inventing its meaning twice.
+    const known = [...PROPOSABLE, ...DECIDED_PROPOSABLE_NOT_YET_WIRED].sort();
+    expect(Object.keys(OPERATIONS).sort()).toEqual(known);
   });
 });

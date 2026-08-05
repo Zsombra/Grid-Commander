@@ -45,16 +45,19 @@ Full track. The planner writes `plan/` before any of this is implemented.
       app does not serve
 - [x] 4.2 "Nothing has been proposed" and "could not be read" are separate
       pages, and the second says it is not the same as having none
-- [ ] 4.3 `/pending/[id]` runs the real describe at open time and renders the
-      same confirmation the corresponding web surface renders
+- [x] 4.3 `/pending/[id]` runs the real describe at open time and shows the
+      product's own consequence sentence, unchanged. **Only `edit` is wired**:
+      the other six decided operations are absent from the MCP surface until
+      their describe lands here, because a proposal that cannot be opened is
+      the unusable row `RecordProposalCommand` refuses to create
 - [x] 4.4 Done, and built first. `reconcile` gives each proposed value one of
       three honest dispositions — will-change, already-true, refused — against
       the target read fresh. There is no before/after diff because no snapshot
       is stored; inventing one would be the staleness this design avoids
-- [ ] 4.5 A target that is gone or no longer eligible says so and offers no
+- [x] 4.5 A target that is gone or no longer eligible says so and offers no
       confirmation
-- [ ] 4.6 Agreeing runs the existing perform, and lands in the audit
-- [ ] 4.7 Declining closes the proposal permanently
+- [x] 4.6 Agreeing runs the existing perform, and lands in the audit
+- [x] 4.7 Declining closes the proposal permanently
 
 ## 5. The guard rewrite
 

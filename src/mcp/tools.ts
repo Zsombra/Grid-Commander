@@ -295,10 +295,15 @@ export const TOOLS: readonly ToolDefinition[] = [
   /**
    * Proposing.
    *
-   * Seven tools over one use-case, named for what an operator would ask for
-   * rather than for the operation key underneath. A model looking for "stop
-   * this agent trading" should find something, and `propose_agent_change` with
-   * a `changes` bag is what it finds.
+   * One tool so far, named for what an operator would ask for rather than for
+   * the operation key underneath. A model looking for "stop this agent
+   * trading" should find something, and `propose_agent_change` with a
+   * `changes` bag is what it finds.
+   *
+   * DL-1 decided seven operations proposable. Only `edit` has its describe
+   * wired in `OpenProposalQuery`, and a proposal that cannot be opened is a row
+   * a human finds unusable — so the other six are absent here rather than
+   * recordable-and-stuck. `checkProposal` tells a model they are coming.
    *
    * None of these reaches BattleGrid. `RecordProposalCommand` holds no
    * platform port at all, so `mcp-read-only.test.ts` passes them without an
@@ -308,10 +313,14 @@ export const TOOLS: readonly ToolDefinition[] = [
   {
     name: 'propose_agent_change',
     description:
-      'Propose changing an agent’s settings — trading mode, limits, position sizing, name. ' +
-      'Records the intent only: BattleGrid is not contacted, nothing is reserved, and the ' +
-      'agent is unchanged until a person opens the proposal in the web app and agrees to ' +
-      'what it would do against the agent as it is then.',
+      'Propose changing an agent’s settings. `changes` uses the agent’s own field names: ' +
+      'displayName, brain, tradingConfig (which holds tradingMode and the money limits), ' +
+      'arenaChallengeEnabled, overlayText. A field the agent does not own — anything the ' +
+      'bound strategy owns, like signalRules or timeframe — is reported back as not ' +
+      'accepted rather than silently sent. Records the intent only: BattleGrid is not ' +
+      'contacted, nothing is reserved, and the agent is unchanged until a person opens ' +
+      'the proposal in the web app and agrees to what it would do against the agent as it ' +
+      'is then.',
     useCase: 'recordProposal',
     input: { ...AGENT_ID, changes: { type: 'object', description: 'The settings to change.' } },
     required: ['agentId', 'changes'],
@@ -321,115 +330,6 @@ export const TOOLS: readonly ToolDefinition[] = [
         operation: 'edit',
         target: str(a['agentId']),
         values: { changes: a['changes'] },
-      }),
-  },
-  {
-    name: 'propose_agent_rebind',
-    description:
-      'Propose moving an agent onto a different strategy. This replaces the agent’s entire ' +
-      'configuration with the destination strategy’s, so it is one of the largest changes ' +
-      'available. Records the intent only; the consequence is stated to a person before it ' +
-      'happens.',
-    useCase: 'recordProposal',
-    input: { ...AGENT_ID, toStrategyId: { type: 'string', description: 'Strategy to move it to.' } },
-    required: ['agentId', 'toStrategyId'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'rebind',
-        target: str(a['agentId']),
-        values: { toStrategyId: str(a['toStrategyId']) },
-      }),
-  },
-  {
-    name: 'propose_agent_archive',
-    description:
-      'Propose archiving an agent, which stops it and frees its slot. Records the intent ' +
-      'only; how many deployments this would stop is counted and shown to a person before ' +
-      'they agree.',
-    useCase: 'recordProposal',
-    input: { ...AGENT_ID },
-    required: ['agentId'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'archiveAgent',
-        target: str(a['agentId']),
-        values: {},
-      }),
-  },
-  {
-    name: 'propose_deploy',
-    description:
-      'Propose deploying an agent to scan a coin on a timeframe. Records the intent only. ' +
-      'Whether the deployment is even possible is resolved when a person opens it, not now.',
-    useCase: 'recordProposal',
-    input: {
-      ...AGENT_ID,
-      coinId: { type: 'string', description: 'Coin ticker, e.g. BTC.' },
-      timeframe: { type: 'string', description: 'A timeframe the platform accepts.' },
-    },
-    required: ['agentId', 'coinId', 'timeframe'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'deploy',
-        target: str(a['agentId']),
-        values: { coinId: str(a['coinId']), timeframe: str(a['timeframe']) },
-      }),
-  },
-  {
-    name: 'propose_undeploy',
-    description:
-      'Propose removing an agent’s radar deployment from a coin, so it stops scanning it. ' +
-      'Records the intent only; open positions are counted and shown to a person first.',
-    useCase: 'recordProposal',
-    input: { ...AGENT_ID, coinId: { type: 'string', description: 'Coin ticker, e.g. BTC.' } },
-    required: ['agentId', 'coinId'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'undeploy',
-        target: str(a['agentId']),
-        values: { coinId: str(a['coinId']) },
-      }),
-  },
-  {
-    name: 'propose_signal_retune',
-    description:
-      'Propose changing one signal rule’s weight or whether it is required. This reaches ' +
-      'every agent bound to the strategy at once, so the blast radius is counted and shown ' +
-      'to a person before they agree. Records the intent only. Use simulate_aggregate first ' +
-      'to see what the re-weighting would score.',
-    useCase: 'recordProposal',
-    input: {
-      strategyId: { type: 'string', description: 'The strategy holding the rule.' },
-      signalId: { type: 'string', description: 'The signal to retune.' },
-      intent: { type: 'object', description: 'allocation and/or required.' },
-    },
-    required: ['strategyId', 'signalId', 'intent'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'retuneRule',
-        target: str(a['strategyId']),
-        values: { signalId: str(a['signalId']), intent: a['intent'] },
-      }),
-  },
-  {
-    name: 'propose_strategy_archive',
-    description:
-      'Propose archiving a strategy. Records the intent only; how many agents depend on it ' +
-      'is counted and shown to a person before they agree.',
-    useCase: 'recordProposal',
-    input: { strategyId: { type: 'string', description: 'The strategy to archive.' } },
-    required: ['strategyId'],
-    call: (app, who, a) =>
-      app.recordProposal.execute({
-        userId: who.userId,
-        operation: 'archiveStrategy',
-        target: str(a['strategyId']),
-        values: {},
       }),
   },
 ];

@@ -18,21 +18,26 @@ import type { ProposalsResult } from '@/application/use-cases/read-proposals.que
 const when = (d: Date): string => d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 
 /**
- * No row links anywhere yet.
+ * Only an actionable row links.
  *
- * `/pending/[id]` — where a proposal is described afresh and agreed to — is the
- * next piece of `the-model-can-propose-and-only-a-human-agrees`. Linking to it
- * before it exists would offer an affordance that 404s, and
- * `reachability.test.ts` refuses that by design rather than by taste. When the
- * page lands, the link belongs on **actionable rows only**: a control that
- * cannot work still implies the change is available.
+ * A stale or resolved proposal has nothing to open — opening one would run a
+ * describe and mint a confirmation for a change nobody can agree to. A link
+ * that leads to a dead end still implies the change is available, so there
+ * isn't one.
  */
-function Row({ proposal }: { proposal: Proposal; actionable: boolean }) {
+function Row({ proposal, actionable }: { proposal: Proposal; actionable: boolean }) {
   const shape = OPERATIONS[proposal.operation];
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border-default p-3">
       <span className="text-sm text-text-primary">
-        {shape.label} — {shape.targets} {proposal.target}
+        {actionable ? (
+          <a href={`/pending/${proposal.id}`} className="underline">
+            {shape.label}
+          </a>
+        ) : (
+          shape.label
+        )}{' '}
+        — {shape.targets} {proposal.target}
       </span>
       <span className="text-xs text-text-secondary">
         {when(proposal.recordedAt)}

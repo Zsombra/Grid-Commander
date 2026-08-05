@@ -1,6 +1,17 @@
 import type { Proposal, ProposalStatus } from '@/domain/proposal/proposal.js';
 
 /**
+ * Re-exported so a route can name an operation without importing the domain.
+ *
+ * `boundaries.test.ts` forbids `app/` reaching past the port layer, and it is
+ * right to: a page importing the domain today is a page importing an adapter
+ * tomorrow. The vocabulary is what a surface legitimately needs, so it travels
+ * through the port that owns proposals.
+ */
+export { OPERATIONS } from '@/domain/proposal/proposal.js';
+export type { OperationShape, ProposableOperation } from '@/domain/proposal/proposal.js';
+
+/**
  * Where proposals live.
  *
  * A port rather than a repository import, so the domain and the use-cases

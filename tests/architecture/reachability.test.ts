@@ -894,6 +894,7 @@ describe('a page about one thing can get back to it', () => {
     expect([...entityRoutes].sort()).toEqual([
       '/agents/[id]',
       '/explorer/[agentId]',
+      '/pending/[id]',
       '/strategies/[id]',
       '/strategies/metrics/[metric]',
       '/strategies/signals/[id]',

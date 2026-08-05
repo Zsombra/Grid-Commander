@@ -81,7 +81,7 @@ describe('the proposal queue', () => {
     expect(t).toMatch(/Already decided/);
   });
 
-  it('links nowhere until the page it would link to exists', async () => {
+  it('links only what can still be agreed to', async () => {
     /**
      * Asserted on links the harness collected, not on rendered text.
      *
@@ -92,9 +92,8 @@ describe('the proposal queue', () => {
      * same string failed for the same reason, and fixed by teaching the harness
      * to collect hrefs.
      *
-     * Nothing links yet: `/pending/[id]` is the next piece, and
-     * `reachability.test.ts` refuses a link to a route the app does not serve.
-     * When it lands, this becomes `['/pending/fresh']` — actionable only.
+     * A stale or resolved proposal has nothing to open: opening one would run
+     * a describe and mint a confirmation for a change nobody can agree to.
      */
     const result = {
       kind: 'proposals' as const,
@@ -103,7 +102,7 @@ describe('the proposal queue', () => {
       resolved: [aProposal({ id: 'done', status: 'agreed' as const })],
     };
     const found = (await rendered(ProposalQueue({ result }))).links;
-    expect(found).toEqual([]);
+    expect(found).toEqual(['/pending/fresh']);
   });
 
   it('says nothing is waiting when all of them are resolved', async () => {
