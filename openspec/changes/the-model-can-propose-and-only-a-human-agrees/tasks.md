@@ -4,14 +4,15 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 1. Decide what is proposable, and write it down
 
-- [ ] 1.1 Enumerate the product operations a proposal may name, from the web
-      routes that already offer them — edit, rebind, archive, deploy, undeploy,
-      retune, apply, stop trading
-- [ ] 1.2 For each: is a fresh describe possible from target + values alone?
-      Anything that needs state only the web form holds is out, and the reason
-      is recorded rather than the operation quietly omitted
-- [ ] 1.3 Set the staleness horizon, with the reasoning. Not the 300-second
-      confirmation TTL, and not "never"
+- [x] 1.1 Done — DL-1. Seven: edit, rebind, archive agent, deploy, undeploy,
+      retune rule, archive strategy
+- [x] 1.2 Done — DL-1. **`applyPlan` is excluded**: `DescribeApplyRequest`
+      takes a `CompiledPlan` carrying a five-minute `planToken`, so its
+      consequence cannot be recomputed from stored intent. Refused by name
+      rather than quietly omitted
+- [x] 1.3 Done — DL-2. **72 hours.** Safety does not rest on it (the describe
+      runs fresh), so it is a signal-to-noise choice: long enough to cover a
+      weekend, short enough that a queue stays read. Stale is not deleted
 
 ## 2. The store
 
@@ -49,13 +50,15 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 5. The guard rewrite
 
-- [ ] 5.1 `mcp-read-only.test.ts` moves from a name-prefix rule to
-      reachability: a tool may reach this product's own store, never a use-case
-      that calls a mutating BattleGrid tool
-- [ ] 5.2 Derived from the adapters, so a new platform write is covered without
-      anyone remembering
-- [ ] 5.3 Prove it is stricter than what it replaced: a tool wired to
-      `updateAgent` under an innocent name fails it
+- [x] 5.1 Done. `mcp-read-only.test.ts` derives reachability end to end:
+      mutating tools from the surface record's own classification → the port
+      methods that send them, read out of the adapters → the file implementing
+      each use-case, read out of `composition.ts` → whether that file calls one
+- [x] 5.2 Done. Nothing in the chain is hand-maintained, and each link asserts
+      it is non-empty so the guard cannot pass vacuously
+- [x] 5.3 Done, by injection. A tool named `stop_trading` wired to
+      `updateAgent` fails with `stop_trading → updateAgent → updateAgent`; the
+      old prefix rule matches none of it
 - [ ] 5.4 A test asserts no code path performs a proposal without a human
       action — no worker, no scheduler, no retry
 - [ ] 5.5 A test asserts no MCP response can carry a confirmation token
