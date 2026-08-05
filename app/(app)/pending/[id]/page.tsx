@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting, requestApp } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
+import { editArguments } from '@/presentation/form.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 
 /**
@@ -151,11 +152,16 @@ async function agree(formData: FormData) {
   }
 
   // The ordinary perform, with the ordinary confirmation. Nothing about this
-  // path is special because a model suggested it.
+  // path is special because a model suggested it — including the split, which
+  // is the difference between merging a proposed limit onto the agent's config
+  // and replacing all twenty with the one that was proposed.
+  const { changes: rest, tradingConfigChanges } = editArguments(changes);
+
   const result = await app.updateAgent.execute({
     ...user.authority,
     agentId: text(formData, 'agentId'),
-    changes,
+    changes: rest,
+    ...(tradingConfigChanges ? { tradingConfigChanges } : {}),
     confirmationToken: text(formData, 'confirmationToken'),
   });
 

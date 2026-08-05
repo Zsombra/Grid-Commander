@@ -234,6 +234,43 @@ export function positionFromTransport(
   return out;
 }
 
+/**
+ * One composed intent, split into the two arguments `UpdateAgentCommand` takes.
+ *
+ * `tradingConfig` cannot travel inside `changes`. It is the platform's one
+ * partial-is-destructive field: every one of its twenty members is required
+ * once the object is present, and a send that omits nineteen does not error —
+ * it resets them to BattleGrid's defaults. `UpdateAgentCommand` guards that by
+ * merging `tradingConfigChanges` onto the agent's current config, checking the
+ * merge is complete and validating it against the catalog. A caller that puts
+ * the object in `changes` instead walks straight past all three.
+ *
+ * Shared rather than written twice because it already was. The edit form split
+ * it inline; `/pending/[id]` did not, so a model proposing `tradingMode: OFF`
+ * would, on agreement, have cleared every loss cap the agent ran under. Found
+ * by walking the live loop — the proposal the whole change exists to serve is
+ * the one that triggered it.
+ *
+ * The digest is unaffected: `confirmationTarget.agentEdit` sorts keys, so
+ * `{tradingConfig: X}` and `{...rest, tradingConfig: X}` bind identically —
+ * which is what lets the split happen after the token was minted.
+ */
+export function editArguments(intent: Readonly<Record<string, unknown>>): {
+  readonly changes: Readonly<Record<string, unknown>>;
+  readonly tradingConfigChanges: Readonly<Record<string, unknown>> | undefined;
+} {
+  const { tradingConfig, ...changes } = intent;
+  return {
+    changes,
+    // Absent, not empty — `editIntent` is careful about that distinction and
+    // discarding it here would undo it.
+    tradingConfigChanges:
+      typeof tradingConfig === 'object' && tradingConfig !== null
+        ? (tradingConfig as Readonly<Record<string, unknown>>)
+        : undefined,
+  };
+}
+
 export function editIntent(
   source: { get(name: string): string | null | undefined },
   fields: { readonly name: readonly string[]; readonly money: readonly string[] },

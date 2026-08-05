@@ -85,20 +85,74 @@ describe('a live probe that can mutate requires more than a credential', () => {
     ).toEqual([]);
   });
 
-  it('never treats the key alone as sufficient in a gated probe', () => {
+  it('never treats the key alone as sufficient for a block that writes', () => {
     /**
      * The specific regression: adding the opt-in constant but leaving the
-     * `describe` chosen by the key. Both must be consulted where the file
-     * declares its gate.
+     * `describe` chosen by the key alone.
+     *
+     * Checked per **block**, not per file. This read "the file's one
+     * `const live =` line must mention WRITES", which held while every probe
+     * had a single gate and broke the moment one legitimately had two:
+     * `proposal-probe.test.ts` describes a real agent read-only under a key,
+     * and creates one under the opt-in. A file-wide rule can only answer that
+     * by failing an honest split or by exempting the file — and the file it
+     * would exempt is the one doing the more careful thing.
+     *
+     * So: find each gate the file declares, note whether it consults the
+     * opt-in, and require that no block reaching a write runs under one that
+     * does not.
      */
+    const offenders: string[] = [];
+
     for (const file of liveFiles) {
       const raw = readFileSync(`tests/live/${file}`, 'utf8');
       if (!raw.includes('BATTLEGRID_LIVE_WRITES')) continue;
-      const gate = stripComments(raw)
-        .split('\n')
-        .find((l) => l.includes('const live ='));
-      expect(gate, `${file} declares a gate`).toBeTruthy();
-      expect(gate, `${file} consults the write opt-in in its gate`).toMatch(/WRITES/);
+      const code = stripComments(raw);
+
+      // `const live = KEY && WRITES ? describe : describe.skip` — the name, and
+      // whether the opt-in is consulted in choosing between them.
+      //
+      // Matched on `describe.skip` rather than `describe`, and on one line: a
+      // gate is the thing that can *decline* to run, and every helper in these
+      // files that merely mentions the word would otherwise be read as one —
+      // `archiveOf` was, and dragged three probes into the offender list.
+      const gates = new Map<string, boolean>();
+      for (const m of code.matchAll(/const\s+(\w+)\s*=\s*([^;\n]*describe\.skip[^;\n]*);/g)) {
+        gates.set(m[1] as string, /WRITES/.test(m[2] as string));
+      }
+      expect(gates.size, `${file} declares a gate`).toBeGreaterThan(0);
+      expect(
+        [...gates.values()].some(Boolean),
+        `${file} mentions the opt-in but no gate consults it`,
+      ).toBe(true);
+
+      // Where each gated block starts. Blocks run to the next one, which is
+      // exact enough here because gates are invoked at the top level and in
+      // order — and far less brittle than counting braces through strings.
+      const starts: Array<{ at: number; gate: string }> = [];
+      for (const [gate] of gates) {
+        for (const m of code.matchAll(new RegExp(`\\b${gate}\\s*\\(`, 'g'))) {
+          starts.push({ at: m.index, gate });
+        }
+      }
+      starts.sort((a, b) => a.at - b.at);
+
+      for (const [i, start] of starts.entries()) {
+        if (gates.get(start.gate) === true) continue;
+        const block = code.slice(start.at, starts[i + 1]?.at ?? code.length);
+        const reach = [
+          ...MUTATING.filter((tool) => block.includes(tool)),
+          ...new Set(block.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []),
+        ];
+        if (reach.length > 0) {
+          offenders.push(`${file}: a "${start.gate}" block reaches ${reach.join(', ')}`);
+        }
+      }
     }
+
+    expect(
+      offenders,
+      'a block that can write must run under a gate consulting BATTLEGRID_LIVE_WRITES',
+    ).toEqual([]);
   });
 });

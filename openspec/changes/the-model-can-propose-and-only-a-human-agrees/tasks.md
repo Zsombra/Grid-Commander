@@ -86,15 +86,26 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 6. Live
 
-- [ ] 6.1 Drive the whole loop against the real account with a real client:
-      propose `stop trading` on an agent, open it in the web app, agree,
-      confirm `tradingMode` actually changed and the audit recorded it
-- [ ] 6.2 Prove the negative live: with a proposal recorded and unopened, the
-      agent is unchanged
-- [ ] 6.3 Prove the stale path: a proposal whose target moved shows the
-      difference rather than agreeing on the operator's behalf
-- [ ] 6.4 Live writes gated on `BATTLEGRID_LIVE_WRITES=1` like every other
-      mutating probe
+- [ ] 6.1 **Written and blocked.** `proposal-probe.test.ts` walks the whole
+      loop — propose `stop trading`, open, agree, confirm `tradingMode` moved,
+      the caps survived and the audit recorded it — on a throwaway agent it
+      creates. BattleGrid's `create_intelligence_agent` has been answering
+      `INTERNAL_ERROR` all day for every payload on both accounts, including
+      one with no `tradingConfig` at all, so the test **skips naming that**
+      rather than passing. It is not walked against the operator's own agents:
+      all of them are in `FULL_EXECUTION`, and editing a live trading agent to
+      make a probe pass is not a trade a test gets to make. See
+      `battlegrid-is-returning-internal-errors`
+- [x] 6.2 Done, live. A proposal recorded against a real agent leaves its
+      revision, mode and name exactly as they were — asserted by reading the
+      agent before and after
+- [x] 6.3 Done, live, three ways: the difference names the member against the
+      value BattleGrid holds this second; a proposal the account already
+      satisfies comes back `no-op` with no confirmation at all; a target that
+      does not exist comes back `not-possible`
+- [x] 6.4 Done. The write test is gated on `BATTLEGRID_LIVE_WRITES=1`; the
+      read-only three need only a key, so the honest-difference path is
+      exercised on every keyed CI run
 
 ## 7. Gates
 

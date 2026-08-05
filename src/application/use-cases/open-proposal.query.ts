@@ -1,12 +1,23 @@
 import { AGENT_OWNED } from '@/domain/agent/field-ownership.js';
 import type { ValueDisposition } from '@/domain/proposal/difference.js';
-import { reconcile } from '@/domain/proposal/difference.js';
+import { changesAnything, reconcile } from '@/domain/proposal/difference.js';
 import type { Proposal } from '@/domain/proposal/proposal.js';
 import { isStale } from '@/domain/proposal/proposal.js';
 import type { AgentsPort } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
 import type { ProposalStore } from '@/ports/proposals.js';
 import type { DescribeEditQuery } from './describe-edit.query.js';
+
+/**
+ * What `UpdateAgentCommand` merges rather than replaces.
+ *
+ * One entry, and it has to stay in step with that command: `tradingConfig` is
+ * the field whose proposed value is folded onto the agent's current config
+ * rather than swapped for it, so it is the one whose difference has to be read
+ * member by member. Every other agent-owned field is replaced whole, and
+ * comparing those whole is right.
+ */
+const MERGED_FIELDS = ['tradingConfig'] as const;
 
 export interface OpenProposalRequest {
   readonly userId: string;
@@ -98,7 +109,16 @@ export class OpenProposalQuery {
         agentId: proposal.target,
       });
       current = Object.fromEntries(
-        AGENT_OWNED.map((f) => [f, (agent as unknown as Record<string, unknown>)[f]]),
+        AGENT_OWNED.map((f) => [
+          f,
+          // `tradingConfig` is unwrapped to the fields themselves. The domain
+          // holds it as `{ fields: {...} }`, and comparing a proposed
+          // `{tradingMode: 'OFF'}` against that wrapper can only ever report a
+          // change — including for an agent that is already off.
+          f === 'tradingConfig'
+            ? agent.tradingConfig?.fields
+            : (agent as unknown as Record<string, unknown>)[f],
+        ]),
       );
     } catch (error) {
       return {
@@ -123,7 +143,12 @@ export class OpenProposalQuery {
     }
 
     if (described.kind === 'rejected') {
-      const dispositions = reconcile({ proposed: changes, current, refused: described.rejected });
+      const dispositions = reconcile({
+        proposed: changes,
+        current,
+        refused: described.rejected,
+        merged: MERGED_FIELDS,
+      });
       return {
         kind: 'no-op',
         proposal,
@@ -139,7 +164,38 @@ export class OpenProposalQuery {
         kind: 'no-op',
         proposal,
         reason: described.reason,
-        dispositions: reconcile({ proposed: changes, current, refused: [] }),
+        dispositions: reconcile({ proposed: changes, current, refused: [], merged: MERGED_FIELDS }),
+      };
+    }
+
+    const dispositions = reconcile({
+      proposed: changes,
+      current,
+      refused: [],
+      merged: MERGED_FIELDS,
+    });
+
+    /**
+     * Described, but nothing in it would move.
+     *
+     * `describeEdit` returns a sentence for any `tradingConfig` present at all —
+     * it compares against the agent's *name*, not against its config — so
+     * "stop this agent", proposed for an agent already stopped, arrived here as
+     * a perfectly good proposal with a confirmation attached.
+     *
+     * The page would then have shown a button to agree and, directly beneath
+     * it, "nothing here would change the account". `changesAnything` existed to
+     * catch exactly that and was consulted only by the component, which could
+     * contradict the control above it but not remove it.
+     */
+    if (!changesAnything(dispositions)) {
+      return {
+        kind: 'no-op',
+        proposal,
+        reason:
+          'Everything this proposal asks for is already the case. Agreeing would ' +
+          'send a change that changes nothing.',
+        dispositions,
       };
     }
 
@@ -148,7 +204,7 @@ export class OpenProposalQuery {
       proposal,
       consequence: described.proposal.consequence,
       confirmationToken: described.proposal.confirmationToken,
-      dispositions: reconcile({ proposed: changes, current, refused: [] }),
+      dispositions,
     };
   }
 }

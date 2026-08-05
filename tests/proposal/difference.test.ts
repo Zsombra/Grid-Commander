@@ -116,3 +116,105 @@ describe('whether the fresh read disagreed with the proposal', () => {
     ).toBe(true);
   });
 });
+
+/**
+ * A field the write **merges** rather than replaces.
+ *
+ * `tradingConfig` is the only one, and it is the one every "stop trading"
+ * proposal names. `UpdateAgentCommand` folds the proposed members onto the
+ * agent's current twenty and sends the result; comparing the partial against
+ * the whole object can therefore only ever report a change, including for an
+ * agent that is already off.
+ *
+ * That is not a cosmetic difference. The disposition table exists so an
+ * operator can see what agreeing does; one that says "will change" about a
+ * setting already in force is the product answering for them.
+ */
+describe('a value that is merged onto the target, not swapped for it', () => {
+  const config = { tradingMode: 'OFF', maxDailyLossUsd: 300, maxLeverage: 5 };
+
+  it('reads member by member, so an unchanged member says so', () => {
+    const d = reconcile({
+      proposed: { tradingConfig: { tradingMode: 'OFF' } },
+      current: { tradingConfig: config },
+      refused: [],
+      merged: ['tradingConfig'],
+    });
+    expect(d).toEqual([{ key: 'tradingConfig.tradingMode', kind: 'already-true', proposed: 'OFF' }]);
+    expect(changesAnything(d), 'agreeing would perform nothing').toBe(false);
+  });
+
+  it('names the member that changes, not the object it lives in', () => {
+    const d = reconcile({
+      proposed: { tradingConfig: { tradingMode: 'OFF', maxDailyLossUsd: 300 } },
+      current: { tradingConfig: { ...config, tradingMode: 'APPROVAL_REQUIRED' } },
+      refused: [],
+      merged: ['tradingConfig'],
+    });
+    expect(d).toEqual([
+      {
+        key: 'tradingConfig.tradingMode',
+        kind: 'will-change',
+        proposed: 'OFF',
+        current: 'APPROVAL_REQUIRED',
+      },
+      { key: 'tradingConfig.maxDailyLossUsd', kind: 'already-true', proposed: 300 },
+    ]);
+  });
+
+  it('reports only the members proposed — the other seventeen are not a change', () => {
+    // The merge keeps them. A row per untouched field would report a change
+    // twenty times larger than the one being agreed to.
+    const d = reconcile({
+      proposed: { tradingConfig: { maxLeverage: 2 } },
+      current: { tradingConfig: config },
+      refused: [],
+      merged: ['tradingConfig'],
+    });
+    expect(d.map((x) => x.key)).toEqual(['tradingConfig.maxLeverage']);
+  });
+
+  it('refuses the field whole, because the platform refuses the field and not a member', () => {
+    const d = reconcile({
+      proposed: { tradingConfig: { tradingMode: 'OFF' } },
+      current: { tradingConfig: config },
+      refused: [{ field: 'tradingConfig', reason: 'owned by the strategy' }],
+      merged: ['tradingConfig'],
+    });
+    expect(d.map((x) => x.key)).toEqual(['tradingConfig']);
+    expect(d[0]?.kind).toBe('refused');
+  });
+
+  it('falls back to the whole comparison when the target holds no config at all', () => {
+    // Nothing to compare member against. Introducing a configuration is a
+    // change, and saying so as one row is honest where inventing a row per
+    // member would imply the agent held values it does not.
+    const d = reconcile({
+      proposed: { tradingConfig: { tradingMode: 'OFF' } },
+      current: { tradingConfig: undefined },
+      refused: [],
+      merged: ['tradingConfig'],
+    });
+    expect(d).toEqual([
+      {
+        key: 'tradingConfig',
+        kind: 'will-change',
+        proposed: { tradingMode: 'OFF' },
+        current: undefined,
+      },
+    ]);
+  });
+
+  it('leaves fields the caller did not name as merged alone', () => {
+    // `displayName` is replaced, not merged. Expanding every object would make
+    // the rule guess at what the write does with it.
+    const d = reconcile({
+      proposed: { positionSizePresets: { smallPct: 1 } },
+      current: { positionSizePresets: { smallPct: 1, mediumPct: 2 } },
+      refused: [],
+      merged: ['tradingConfig'],
+    });
+    expect(d.map((x) => x.key)).toEqual(['positionSizePresets']);
+    expect(d[0]?.kind, 'compared whole, so a partial is a change').toBe('will-change');
+  });
+});

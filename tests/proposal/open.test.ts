@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { FakeProposalStore, aProposal } from '../support/proposal-fakes.js';
-import { FakeAgentsPort, anAgent } from '../support/agent-fakes.js';
+import { FakeAgentsPort, anAgent, liveTradingConfig } from '../support/agent-fakes.js';
 import { FakeConfirmationStore } from '../support/fakes.js';
 import { FakeClock } from '../support/fakes.js';
 
@@ -106,5 +106,65 @@ describe('opening a proposal describes it against the world as it is now', () =>
     if (r.kind !== 'no-op') throw new Error('unreachable');
     // And the refusal is shown per field rather than summarised away.
     expect(r.dispositions.map((d) => d.kind)).toEqual(['refused']);
+  });
+});
+
+/**
+ * A proposed trading limit, read against the config it will be merged into.
+ *
+ * The agent holds `tradingConfig` as `{ fields: {...} }` and a proposal names
+ * members of it. Comparing the two whole reports a change every time — so
+ * "stop this agent", proposed against an agent already stopped, would offer a
+ * confirmation for nothing and tell the operator it was doing something.
+ */
+describe('a proposal that names members of the trading config', () => {
+  const target = anAgent().id;
+  const proposing = (mode: string) =>
+    aProposal({
+      userId: 'owner',
+      target,
+      proposedValues: { changes: { tradingConfig: { tradingMode: mode } } },
+      recordedAt: NOW,
+    });
+
+  it('names the member, not the object, when it would change', async () => {
+    const { query } = subject(
+      [proposing('OFF')],
+      anAgent({ tradingConfig: liveTradingConfig({ tradingMode: 'APPROVAL_REQUIRED' }) }),
+    );
+    const r = await query.execute({ ...who, id: 'p1' });
+    expect(r.kind).toBe('ready');
+    if (r.kind !== 'ready') throw new Error('unreachable');
+    expect(r.dispositions).toEqual([
+      {
+        key: 'tradingConfig.tradingMode',
+        kind: 'will-change',
+        proposed: 'OFF',
+        current: 'APPROVAL_REQUIRED',
+      },
+    ]);
+  });
+
+  it('says already-true for an agent that is already stopped', async () => {
+    const { query } = subject(
+      [proposing('OFF')],
+      anAgent({ tradingConfig: liveTradingConfig({ tradingMode: 'OFF' }) }),
+    );
+    const r = await query.execute({ ...who, id: 'p1' });
+    /**
+     * `no-op`, and therefore no confirmation.
+     *
+     * `describeEdit` returns a sentence for any `tradingConfig` present — it
+     * compares against the agent's name, not its config — so this arrived as a
+     * ready proposal with a token attached, and the page showed a button to
+     * agree directly above the words "nothing here would change the account".
+     */
+    expect(r.kind).toBe('no-op');
+    if (r.kind !== 'no-op') throw new Error('unreachable');
+    expect(r.dispositions).toEqual([
+      { key: 'tradingConfig.tradingMode', kind: 'already-true', proposed: 'OFF' },
+    ]);
+    expect(r.reason).toContain('already the case');
+    expect(r, 'no confirmation is offered at all').not.toHaveProperty('confirmationToken');
   });
 });

@@ -63,24 +63,61 @@ export function reconcile(params: {
   readonly current: Readonly<Record<string, unknown>>;
   /** What the product or platform will not accept, from the fresh describe. */
   readonly refused: readonly { readonly field: string; readonly reason: string }[];
+  /**
+   * Keys whose proposed value is **merged** onto the current one rather than
+   * replacing it, and so must be compared member by member.
+   *
+   * Named by the caller, because which fields merge is a property of the write
+   * — `UpdateAgentCommand` merges `tradingConfig` and replaces everything else
+   * — and a domain rule that guessed would be a second implementation of it.
+   *
+   * Without this, a proposed `{tradingMode: 'OFF'}` was compared against the
+   * agent's whole twenty-field config, never matched, and read `will change`
+   * even for an agent already off. Every honest disposition on this page is
+   * the product declining to agree on the operator's behalf; that one was the
+   * product doing it.
+   */
+  readonly merged?: readonly string[];
 }): readonly ValueDisposition[] {
   const refusedBy = new Map(params.refused.map((r) => [r.field, r.reason]));
+  const mergesInto = new Set(params.merged ?? []);
 
-  return Object.entries(params.proposed).map(([key, proposed]): ValueDisposition => {
+  return Object.entries(params.proposed).flatMap(([key, proposed]): ValueDisposition[] => {
     const reason = refusedBy.get(key);
     // Refusal wins over everything. A value the platform will not take is not
     // "already true" even when it happens to match — reporting it as settled
-    // would tell an operator a rejected field is fine.
-    if (reason !== undefined) return { key, kind: 'refused', proposed, reason };
+    // would tell an operator a rejected field is fine. Refused whole, too: the
+    // platform declines the field, not one of its members.
+    if (reason !== undefined) return [{ key, kind: 'refused', proposed, reason }];
 
-    // A key the target does not carry at all is a change, not a match. `same`
-    // would call `undefined === undefined` equal, which would silently hide a
-    // value being introduced.
-    if (key in params.current && same(proposed, params.current[key])) {
-      return { key, kind: 'already-true', proposed };
+    const held = params.current[key];
+    if (mergesInto.has(key) && isPlain(proposed) && isPlain(held)) {
+      return Object.entries(proposed).map(([member, value]) =>
+        // `tradingConfig.tradingMode`, so the row names the thing that changes
+        // rather than the object it lives in.
+        disposition(`${key}.${member}`, value, held, member),
+      );
     }
-    return { key, kind: 'will-change', proposed, current: params.current[key] };
+    return [disposition(key, proposed, params.current, key)];
   });
+}
+
+const isPlain = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+function disposition(
+  key: string,
+  proposed: unknown,
+  holder: Readonly<Record<string, unknown>>,
+  lookup: string,
+): ValueDisposition {
+  // A key the target does not carry at all is a change, not a match. `same`
+  // would call `undefined === undefined` equal, which would silently hide a
+  // value being introduced.
+  if (lookup in holder && same(proposed, holder[lookup])) {
+    return { key, kind: 'already-true', proposed };
+  }
+  return { key, kind: 'will-change', proposed, current: holder[lookup] };
 }
 
 /**
