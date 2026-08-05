@@ -258,21 +258,33 @@ simply did not answer is how they conclude their work is gone — the same reaso
 
 ### Requirement: A Strategy Can Be Read In Full
 Grid-Commander SHALL be able to present everything a strategy is made of — what
-it reads, how it reasons, when it acts, and what it weighs — and MUST NOT
-present a summary as though it were the whole.
+it reads, how it reasons, when it acts, what it weighs, and the conditions that
+gate direction — and MUST NOT present a summary as though it were the whole.
 
 A roster row is a summary by design: it carries a count of sections rather than
 the sections. Treating that as the complete picture is how a product ends up
 offering to edit a strategy while holding nothing but its name, which is both
 useless and misleading about what a change would do.
 
+Conditions are part of "everything" for the same reason. A strategy whose
+direction is decided by a negated flow filter, shown without that filter, is not
+under-described — it is described wrongly, and the operator who retunes it from
+that view is working blind to the thing that acts.
+
 #### Scenario: Looking at a strategy
 - **WHEN** a user opens a strategy
 - **THEN** they see its identity, the context sources it reads, the instruction
   it reasons with, the thresholds that decide when it acts, and the signals it
   weighs
+- **AND** they see the conditions the strategy defines, if it defines any
 - **AND** they see how many agents it governs and how many positions are open
   under it
+
+#### Scenario: A strategy that defines no conditions
+- **WHEN** a user opens a strategy whose condition list is empty
+- **THEN** the strategy is shown as having no conditions
+- **AND** this is distinguished from a strategy whose conditions could not be
+  read
 
 #### Scenario: A strategy that is archived
 - **WHEN** a user opens a private strategy that is not active
@@ -580,3 +592,91 @@ It SHALL NOT drop signals to fit.
 - **WHEN** the result renders
 - **THEN** the refusal is shown
 - **AND** no score is invented in its place
+
+### Requirement: A Condition Is Shown As The Structure It Is
+
+Grid-Commander SHALL present a condition's definition as readable structure
+rather than as the payload it arrived in: each comparison stated in words
+against the column it reads, each grouping stating how many of its members must
+hold, a negation shown as negating, and a reference to another condition shown
+by the name of the condition it refers to.
+
+A condition can nest arbitrarily. The presentation MUST show that nesting rather
+than flattening it, because a member of a group and a member of a group inside a
+`NOT` mean opposite things.
+
+#### Scenario: A comparison against a column
+- **GIVEN** a condition comparing a report column to a value or a label
+- **WHEN** it is shown
+- **THEN** the column it reads, the comparison, and the value or label are
+  legible without reading the underlying payload
+
+#### Scenario: A threshold group
+- **GIVEN** a condition requiring some number of its members to hold
+- **WHEN** it is shown
+- **THEN** how many must hold, and out of how many, is stated
+
+#### Scenario: A negation
+- **GIVEN** a condition containing a negated member
+- **WHEN** it is shown
+- **THEN** the negation is visible as part of the structure
+- **AND** the negated member is not presented as a requirement that must hold
+
+#### Scenario: A reference to another condition
+- **GIVEN** a condition referring to another condition by key
+- **WHEN** it is shown
+- **THEN** it names the condition referred to
+- **AND** a reference whose target is not present in the strategy is shown as
+  unresolved rather than silently omitted
+
+#### Scenario: A form the product does not recognise
+- **GIVEN** a condition using a form this product does not model
+- **WHEN** it is shown
+- **THEN** the strategy still renders
+- **AND** the unrecognised part is reported as not understood rather than
+  dropped or guessed at
+
+### Requirement: A Named Building Block Is Never Shown As A Directional Call
+
+A condition that carries no verdict SHALL be presented as a named building block
+— something other conditions refer to — and MUST NOT be presented as a way the
+strategy decides direction.
+
+Where conditions are listed, the ones that decide direction SHALL be
+distinguishable from the ones that only assemble into them.
+
+#### Scenario: A strategy mixing building blocks and calls
+- **GIVEN** a strategy with conditions that carry verdicts and conditions that
+  do not
+- **WHEN** its conditions are shown
+- **THEN** the ones carrying a verdict are distinguishable from the ones that do
+  not
+- **AND** the count of ways the strategy decides direction does not include the
+  building blocks
+
+#### Scenario: A verdict of neither
+- **GIVEN** a condition whose verdict is neither up nor down
+- **WHEN** it is shown
+- **THEN** it is shown as a directional call that resolves to neither
+- **AND** it is not shown as a building block
+
+### Requirement: Grid-Commander Never Decides Whether A Condition Holds
+
+Grid-Commander SHALL NOT evaluate a condition. Where the platform reports
+whether one held, that answer MAY be shown; where it does not, the product
+SHALL show the definition and SHALL NOT derive an outcome from column values.
+
+The columns a condition reads are resolved by the platform against market data
+this product does not hold. A locally computed verdict would be a different
+claim wearing the platform's authority — the same defect as reporting a
+platform figure this product had actually derived.
+
+#### Scenario: A condition is shown with no outcome available
+- **GIVEN** a surface showing conditions where the platform reports no outcome
+- **WHEN** the user views it
+- **THEN** the conditions are shown as definitions
+- **AND** no verdict is presented as though the platform had given one
+
+#### Scenario: Nothing is computed locally
+- **WHEN** any condition is shown
+- **THEN** no outcome is derived by this product from column values
