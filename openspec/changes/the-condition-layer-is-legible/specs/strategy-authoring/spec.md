@@ -116,35 +116,23 @@ distinguishable from the ones that only assemble into them.
 - **THEN** it is shown as a directional call that resolves to neither
 - **AND** it is not shown as a building block
 
-### Requirement: A Resolved Condition Is Shown Only Where The Platform Resolves It
+### Requirement: Grid-Commander Never Decides Whether A Condition Holds
 
-Where BattleGrid reports whether a condition held, Grid-Commander SHALL show
-that outcome alongside the condition. Where BattleGrid does not report it, the
-product SHALL say the outcome is not available rather than presenting the
-definition as though it were an outcome.
+Grid-Commander SHALL NOT evaluate a condition. Where the platform reports
+whether one held, that answer MAY be shown; where it does not, the product
+SHALL show the definition and SHALL NOT derive an outcome from column values.
 
-Grid-Commander MUST NOT evaluate a condition itself. The columns a condition
-reads are resolved by the platform against market data this product does not
-hold, and a locally computed verdict would be a different claim wearing the
-platform's authority.
+The columns a condition reads are resolved by the platform against market data
+this product does not hold. A locally computed verdict would be a different
+claim wearing the platform's authority — the same defect as reporting a
+platform figure this product had actually derived.
 
-#### Scenario: The platform reports outcomes
-- **GIVEN** a surface where BattleGrid resolves a strategy's conditions
-- **WHEN** the user views it
-- **THEN** each condition's reported outcome is shown against that condition
-
-#### Scenario: The platform reports no outcome
-- **GIVEN** a surface showing conditions where BattleGrid reports no outcome
+#### Scenario: A condition is shown with no outcome available
+- **GIVEN** a surface showing conditions where the platform reports no outcome
 - **WHEN** the user views it
 - **THEN** the conditions are shown as definitions
-- **AND** the absence of an outcome is stated rather than left to be inferred
-
-#### Scenario: Outcomes that name conditions the strategy does not define
-- **GIVEN** reported outcomes referring to a condition absent from the strategy
-- **WHEN** they are shown
-- **THEN** the mismatch is reported
-- **AND** the outcome is not silently attached to an unrelated condition
+- **AND** no verdict is presented as though the platform had given one
 
 #### Scenario: Nothing is computed locally
 - **WHEN** any condition is shown
-- **THEN** no verdict is derived by this product from column values
+- **THEN** no outcome is derived by this product from column values

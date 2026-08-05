@@ -1,3 +1,4 @@
+import { mapConditions } from './condition-mapper.js';
 import type {
   SignalRule,
   Strategy,
@@ -728,6 +729,7 @@ function mapStrategyDetail(raw: unknown): StrategyDetail {
       minAtrPct: num(s['minAtrPct']),
     },
     signalRules: mapSignalRules(s['signalRules']),
+    conditions: mapConditions(s['conditions']),
     // Not defaulted to zero. Zero means "nothing is open under this"; absent
     // means the platform did not say, and a surface that shows a confident 0 for
     // an unknown is inviting a change nobody priced.

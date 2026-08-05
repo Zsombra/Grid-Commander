@@ -164,8 +164,11 @@ export const TOOLS: readonly ToolDefinition[] = [
   {
     name: 'read_strategy',
     description:
-      "One strategy: its tagline, the report sections it composes, and its revision. An " +
-      'archived strategy is listed by BattleGrid but its detail answers NOT_FOUND.',
+      'One strategy: its tagline, the report sections it composes, the signals it weighs, ' +
+      'the conditions that decide direction, and its revision. A condition carrying no ' +
+      'verdict is a named building block referenced by the ones that do — not an absence ' +
+      'of opinion. An archived strategy is listed by BattleGrid but its detail answers ' +
+      'NOT_FOUND.',
     useCase: 'readStrategy',
     input: STRATEGY_ID,
     required: ['strategyId'],

@@ -392,6 +392,7 @@ describe('a copy that cannot be made is not offered on the strategy either', () 
       marketReadText: null,
       thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
       signalRules: [],
+      conditions: [],
       openPositionCount: 0,
       cadence: null,
       regimeAutoDerive: false,

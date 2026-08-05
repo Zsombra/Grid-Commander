@@ -24,8 +24,20 @@ projection list — a previous session added it to fix the sixth dead write path
 and never asked what it was. It has been carried, correctly, by a product that
 has never once looked inside it.
 
-**This is not hypothetical.** Of the 37 strategies on the account, three carry
-conditions today: Dunkirk (2), El Alamein (2), and Berlin (6).
+**This is not hypothetical, and it is spreading.** When this change was first
+written, three of the 37 strategies on the account carried conditions — Dunkirk
+(2), El Alamein (2), Berlin (6). Re-read hours later, across two accounts:
+
+| account | strategies | carrying conditions |
+|---|---|---|
+| primary | 37 | **12** |
+| second | 15 | **11** |
+
+The eight that changed are platform strategies — Leningrad, London, Tobruk,
+Midway, Bastogne, Kursk, Normandy, Iwo Jima — and they went from zero
+conditions to between two and nine each across the **v5.0.0 → v5.1.0**
+deployment the freshness gate caught. This is not a feature sitting unused in a
+corner. The platform is rolling it out under us while the product cannot see it.
 
 Berlin uses the whole grammar:
 
@@ -90,13 +102,55 @@ strategy rather than merely under-describing it.
   separate change with its own confirmation questions.
 - **Evaluating conditions locally.** Where the platform resolves them, the
   platform's answer is shown. This product does not re-derive a verdict.
-- **The pipeline page, until it is established that an evaluation carries
-  condition outcomes at all.** `get_strategy` returning `conditions` is
-  observed. `preview_strategy_report` declaring `conditionOutcomes` is declared
-  but not yet observed, and whether a signal log or entry decision carries a
-  condition outcome is **unknown**. Task 1 settles it by reading, and the
-  requirements below are written so that "the platform does not say" is a
-  reportable state rather than a gap.
+- **The pipeline page. Settled by reading, and now permanent.** Task 1 asked
+  whether an evaluation carries condition outcomes. It does not — see below.
+
+## What task 1 established (2026-08-04, live, both accounts)
+
+**`list_strategies` does not carry conditions** (1.4). Seventeen roster keys,
+none of them conditions. A count per row would cost a read per row, so the
+roster keeps its summary and conditions are read per strategy.
+
+**Every form in the declared grammar appears in real data** (1.1) — all four
+clause operators (`lt/lte/gt/gte`, `between`, `is`, `in`), `conditionRef`, and
+all four group operators (`ALL`, `ANY`, `NOT`, `N_OF`). Nothing here is
+theoretical surface.
+
+**Building blocks are roughly half of all conditions.** Across the second
+account's 55: `null` 27, `UP` 12, `DOWN` 12, `NEITHER` 4. The distinction this
+change turns on is not an edge case, and `NEITHER` occurs in real data rather
+than merely being declared.
+
+**`preview_strategy_report` does return `conditionOutcomes`** (1.2) — and
+carries considerably more than the name suggests. Per **ticker**, per condition:
+
+```json
+{ "conditionKey": "ALL_AGREE_UP", "name": "Regime, HTF and ADX agree — up",
+  "outcome": "FALSE", "provisional": true, "counts": null,
+  "evidence": [
+    { "kind": "clause", "sectionKey": "includeRegimeContext",
+      "header": "regTrend_now", "op": "is",
+      "operand": "ranging", "literal": "trending up", "outcome": "FALSE" } ] }
+```
+
+Three things nothing anticipated, each of which changes what an honest
+rendering owes:
+
+1. **`evidence` gives the clause-level reason** — the value actually observed
+   (`operand`) against what was required (`literal`). This answers *why* a
+   condition failed, not just that it did.
+2. **`provisional: true`** — the bar is not closed, so the outcome can still
+   change. A provisional `FALSE` is not a settled `FALSE`, and showing them
+   identically would be this product's characteristic mistake.
+3. **`counts` on a threshold group**: `{trueCount: 4, total: 4,
+   unresolvedCount: 0}`. `unresolvedCount` is a **third state** — a member that
+   is neither true nor false — which the declared schema does not hint at.
+
+**An evaluation carries nothing about conditions** (1.3). A signal log has 31
+keys; none names a condition, and `conditionKey` appears nowhere in the payload
+even nested. Checked with the control that matters: an agent **bound to a
+strategy that does define conditions**. So the pipeline-page exclusion above is
+permanent, not provisional.
 
 ## Capabilities
 

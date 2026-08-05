@@ -51,14 +51,32 @@ describe('a live probe that can mutate requires more than a credential', () => {
     expect(liveFiles.length).toBeGreaterThan(10);
   });
 
-  it('gates every probe naming a mutating tool on the explicit opt-in', () => {
+  it('gates every probe that can mutate on the explicit opt-in', () => {
+    /**
+     * Two ways a probe reaches a write, and the first version of this guard
+     * only saw one of them.
+     *
+     * It matched BattleGrid tool *names* in the source. `apply-probe.test.ts`
+     * names none: it forks a strategy and applies a plan by constructing
+     * `ForkStrategyCommand` and `ApplyPlanCommand`, so it sailed through and
+     * ran unasked during CI on 2026-08-04 — the exact exposure this file was
+     * written to close, missed by the file itself.
+     *
+     * A `*Command` is this codebase's own name for the write side of a
+     * use-case (`Query` reads, `Command` writes). Gating on it is deliberately
+     * conservative: a Command that only touches this product's store would
+     * also be gated, which costs nothing, because a live probe needs a
+     * credential regardless.
+     */
     const offenders: Array<[string, string]> = [];
     for (const file of liveFiles) {
       const raw = readFileSync(`tests/live/${file}`, 'utf8');
       const code = stripComments(raw);
       const named = MUTATING.filter((tool) => code.includes(tool));
-      if (named.length === 0) continue;
-      if (!raw.includes('BATTLEGRID_LIVE_WRITES')) offenders.push([file, named.join(', ')]);
+      const commands = [...new Set(code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? [])];
+      const reach = [...named, ...commands];
+      if (reach.length === 0) continue;
+      if (!raw.includes('BATTLEGRID_LIVE_WRITES')) offenders.push([file, reach.join(', ')]);
     }
     expect(
       offenders,

@@ -19,7 +19,8 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  *
  * Gated on `BATTLEGRID_API_KEY` like its siblings:
  *
- *     BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/apply-probe.test.ts
+ *     BATTLEGRID_API_KEY=bg_live_… BATTLEGRID_LIVE_WRITES=1 \
+ *       npx vitest run tests/live/apply-probe.test.ts
  *
  * **Why it exists.** Fork, compile, archive, restore, and the agent writes
  * have all been walked live; apply never was — and it is the write with the
@@ -39,7 +40,14 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  */
 
 const KEY = process.env['BATTLEGRID_API_KEY'];
-const live = KEY ? describe : describe.skip;
+// Gated with the other mutating probes. This one forks a strategy, compiles a
+// plan and applies it — real writes — while naming no BattleGrid tool at all:
+// it drives ForkStrategyCommand and ApplyPlanCommand instead. The first
+// version of the live-writes guard matched tool *names* in the source and
+// therefore missed this file entirely, which is how it ran unasked during CI
+// on 2026-08-04. The guard now derives from Command references too.
+const WRITES = process.env['BATTLEGRID_LIVE_WRITES'] === '1';
+const live = KEY && WRITES ? describe : describe.skip;
 
 const config = {
   clientId: '',
