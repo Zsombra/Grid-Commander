@@ -1,5 +1,102 @@
 # Journal
 
+## 2026-08-05 — the day the map was two versions stale, and BattleGrid deployed twice more
+
+**Did**: five changes merged (#41–#45) and one planned (#46).
+`the-map-knows-when-it-is-stale`, `the-freshness-check-is-a-named-gate` and
+`the-condition-layer-is-legible` archived; a twelfth capability,
+`platform-mapping`. `the-model-can-propose-and-only-a-human-agrees` is
+proposed, designed and planned, 3/33 tasks.
+
+**The single most important fact for whoever reads this next: BattleGrid
+deploys, often, and the tool count never moves.** Three deployments were
+observed in one session — v3.0.0 → v5.0.0 → v5.1.0 — and every one of them
+reported exactly **110 tools**. Any check that counts proves nothing. This
+is not a caution, it is the observed behaviour of the platform this product
+depends on.
+
+**The record could not tell you it was stale, because it never recorded a
+version.** `probe_mcp_surface.py` had never called `initialize`. Nine test
+files gate what this product puts on the wire against
+`docs/battlegrid-mcp-surface.json`, and `wire-values.test.ts` even carries a
+comment saying it "must fail loudest when the surface is stale" — what it
+asserted was that the file *has* input constants, which a snapshot frozen at
+v3 satisfies forever. The probe now records `server` and `probed_at`, an
+offline guard asserts the record is comparable, and a live guard compares it.
+**Absent is not matching**: a record with no version fails rather than skips.
+
+**It found a live break on its first real run.** `apply_strategy_plan` on v5
+dropped `conditionVerdicts` while keeping `conditions`, and all three plan
+variants are `additionalProperties: false` — so every apply this product
+composed was being rejected for an unknown key. The tenth dead write path,
+and the first found by a guard rather than by an operator.
+
+**Then running the guard found that `npm test` was writing to the live
+account.** Every live probe gated on `BATTLEGRID_API_KEY` alone, so a key in
+the environment ran four mutating probes *concurrently* against the real
+account — forking, archiving, creating an agent, tripping each other's
+optimistic concurrency. Nothing was lost; the confirmation ceremony refused
+what it should. But nobody had decided that, and the freshness gate makes
+running with a key normal. Five probes now need `BATTLEGRID_LIVE_WRITES=1`.
+
+**And the guard for that had the same shape of hole.** It matched BattleGrid
+tool *names* in test source, so it missed `apply-probe.test.ts` entirely —
+that file forks and applies through `ForkStrategyCommand` and
+`ApplyPlanCommand` without naming a tool. It ran unasked during CI, past the
+guard written to stop exactly that. **Derive from what code can reach, not
+from what it happens to spell.** That lesson is now DL-3 of the write-path
+plan, because the same trap is waiting there.
+
+**Conditions: a boolean layer above signals that this product had been
+carrying blind for five days.** `compiled-plan.ts` already listed
+`conditions` in its apply projection — added by an earlier session to fix the
+sixth dead write path, without asking what it was. I first wrote it up as a
+v5 addition; that was wrong and is corrected in the archived proposal. The
+layer arrived between 2026-07-27 and 07-31. What v5 removed was
+`conditionVerdicts`.
+
+**It is being rolled out under us.** Three of 37 strategies carried
+conditions in the morning; **twelve** by evening, and eleven of fifteen on
+the operator's second account. The eight that changed are platform
+strategies that went from zero to between two and nine each across a single
+deployment. Reading first was worth it twice over: it also established that
+**an evaluation carries nothing about conditions** — 31 keys on a signal log,
+`conditionKey` nowhere even nested, checked against an agent *bound to a
+conditioned strategy*. A pipeline surface would have been built around a
+payload that does not exist.
+
+**The distinction the rendering turns on**: a `null` verdict is a named
+building block, not an absence of opinion. Twenty-seven of fifty-five
+conditions are blocks referenced by the ones that decide, so a page listing
+Berlin's six as equals reports six ways to decide direction where there are
+two. And nesting must be drawn, never flattened — Berlin's
+`NOT( ref FLOW_UP )` flattened reads as "flow must be rising", the exact
+inverse of the rule.
+
+**Two things were deliberately not built.** `conditionOutcomes` answers and
+is far richer than the name suggests — per *ticker*, with clause-level
+`evidence` (observed value against required), a `provisional` flag, and an
+`unresolvedCount` third state the schema does not hint at. It is filed as
+`condition-outcomes-are-unrendered` and the delta was **trimmed** rather than
+left asserting unbuilt behaviour. And `applyPlan` is excluded from the
+write-path proposal: `DescribeApplyRequest` needs a `CompiledPlan` carrying a
+five-minute token, so its consequence cannot be recomputed when a human
+finally reads it.
+
+**Two decisions the operator delegated, recorded with reasoning** (DL-1,
+DL-2). Seven proposable operations. A 72-hour staleness horizon — chosen on
+signal-to-noise grounds because **safety does not rest on it**: a proposal
+carries no authority and the consequence is computed fresh on open, so an old
+one is noise rather than danger.
+
+**Next**: stage 1 of the write-path plan — the guard rewrite, deliberately
+sequenced before any `propose_*` exists, so it cannot be adjusted to admit
+what was just built.
+
+**Watch for**: the operator pasted two live keys into chat this session. Key
+handling is theirs by their own instruction (2026-08-03) and is not to be
+re-raised. Both are in the session scratchpad only, never in the repo.
+
 ## 2026-08-03 — Grid-Commander is an MCP server
 
 **Did**: `grid-commander-is-an-mcp-server` (full track, archived) — an

@@ -50,13 +50,15 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 5. The guard rewrite
 
-- [ ] 5.1 `mcp-read-only.test.ts` moves from a name-prefix rule to
-      reachability: a tool may reach this product's own store, never a use-case
-      that calls a mutating BattleGrid tool
-- [ ] 5.2 Derived from the adapters, so a new platform write is covered without
-      anyone remembering
-- [ ] 5.3 Prove it is stricter than what it replaced: a tool wired to
-      `updateAgent` under an innocent name fails it
+- [x] 5.1 Done. `mcp-read-only.test.ts` derives reachability end to end:
+      mutating tools from the surface record's own classification → the port
+      methods that send them, read out of the adapters → the file implementing
+      each use-case, read out of `composition.ts` → whether that file calls one
+- [x] 5.2 Done. Nothing in the chain is hand-maintained, and each link asserts
+      it is non-empty so the guard cannot pass vacuously
+- [x] 5.3 Done, by injection. A tool named `stop_trading` wired to
+      `updateAgent` fails with `stop_trading → updateAgent → updateAgent`; the
+      old prefix rule matches none of it
 - [ ] 5.4 A test asserts no code path performs a proposal without a human
       action — no worker, no scheduler, no retry
 - [ ] 5.5 A test asserts no MCP response can carry a confirmation token

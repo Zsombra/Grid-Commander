@@ -19,18 +19,42 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | 11 |
-| Changes (archived) | 83 |
-| Vitest tests | 1183 (+26 key-gated live) + 62 db |
+| Capabilities (archived) | **12** |
+| Changes (archived) | 86 |
+| Vitest tests | 1224 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
-| Active changes | 0 |
-| Open backlog items | 20 |
+| Active changes | 1 — `the-model-can-propose-and-only-a-human-agrees` (full, 3/33, planned) |
+| Open backlog items | 24 |
 | Design tickets open | 0 |
-| Open draft PRs | 0 (see PR list; #8–#40 merged) |
+| Open draft PRs | #46 (the write-path plan); #8–#45 merged |
+
+### Read this before anything else
+
+**BattleGrid deploys often, and the tool count never moves.** Three
+deployments were observed in one session on 2026-08-05 — v3.0.0 → v5.0.0 →
+v5.1.0 — and all three reported exactly **110 tools** while enums, required
+arguments and semantics changed underneath. A check that counts proves
+nothing.
+
+`./scripts/ci.sh` now runs a **`freshness`** gate. With `BATTLEGRID_API_KEY`
+set it compares `docs/battlegrid-mcp-surface.json`'s recorded server version
+against the live one and **fails** on a mismatch; without a key it prints a
+named skip. If it fails, re-probe before doing anything else:
+
+```bash
+BATTLEGRID_API_KEY=bg_live_… python3 tools/probe_mcp_surface.py
+```
+
+**A credential in the environment is not consent to mutate.** Live probes
+that can write require `BATTLEGRID_LIVE_WRITES=1` as well as a key, and
+`tests/architecture/live-writes.test.ts` fails any ungated probe that names a
+mutating tool **or** constructs a `*Command`. The condition sweep has its own
+opt-in, `BATTLEGRID_CONDITION_SWEEP=1`, because it is slow enough to starve
+its neighbours.
 
 ---
 
-## Eleven Capabilities
+## Twelve Capabilities
 
 | Capability | What it covers |
 |---|---|
@@ -41,10 +65,11 @@ All development branches have been merged. `main` is the single source of truth.
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
 | `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost** |
-| `strategy-authoring` | Fork, compile, review, apply; archive, restore; **score a re-weighting before saving it** |
+| `strategy-authoring` | Fork, compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — what decides direction, above the signals** |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 | `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
+| `platform-mapping` | The recorded model of BattleGrid's MCP surface, and the guarantee that it announces its own age |
 
 ---
 
@@ -131,7 +156,35 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 ## Start Here — Where The Next Session Picks Up
 
-Run `/board` first; it prints live counts. Then:
+Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
+key** — if `freshness` is red, BattleGrid has deployed and the map needs
+re-probing before any other work is trustworthy.
+
+### The next task is stage 1 of the write-path plan
+
+`the-model-can-propose-and-only-a-human-agrees` (full track) is proposed,
+designed and planned — see `openspec/changes/…/plan/`. **Do not start with the
+store or the routes.** The master plan deliberately sequences the **guard
+rewrite first**, against today's tool table, so it cannot later be adjusted to
+admit what was just built.
+
+The guard moves from a name-prefix rule to **reachability**: a tool may reach
+this product's own store; it may never reach a use-case that calls a mutating
+BattleGrid tool. It must be proven *stricter* than what it replaces — a tool
+wired to `updateAgent` under an innocent name has to fail it.
+
+DL-3 records why, with the worked example: the live-writes guard shipped the
+same day matched tool *names* in test source and missed `apply-probe.test.ts`
+entirely, because that file mutates through `ForkStrategyCommand` without
+naming a tool. **Derive from what code can reach, not from what it spells.**
+
+The two questions this change originally left to the operator are decided in
+`plan/decision-log.md`: seven proposable operations (`applyPlan` excluded, and
+why), and a 72-hour staleness horizon.
+
+---
+
+### Older context
 
 **Phase 2 of the assistant roadmap — reporting and expected value — has
 shipped both halves of the record.** Both started with a discovery read,
