@@ -1,5 +1,61 @@
 # Journal
 
+## 2026-08-05 (evening) — the outage was the test
+
+**Did**: #50 and #51 merged. `the-outage-explains-itself` archived — a
+thirteenth requirement on `battlegrid-connection`. The five-day confirmation
+flake closed. Backlog reconciled.
+
+**BattleGrid was down all day, and that turned out to be worth more than the
+work it blocked.** It went from per-tool `INTERNAL_ERROR`s to a flat **502 Bad
+Gateway from nginx** — HTML where JSON was expected. So the app was booted in
+personal mode against the real key and every route walked while the condition
+lasted, because it disappears when the platform recovers and it had never been
+observed.
+
+**The structure held.** Nothing crashed. Every read came back `unreadable` with
+`cause: 'unreachable'` rather than `empty`, and `/pending` and `/audit` — which
+need only this product's own database — worked normally. The "unreadable is not
+empty" design had only ever been proven against a *fake* that returns a failure.
+This was the first time it faced a platform that was genuinely gone.
+
+**The sentences did not.** An operator read `Your roster could not be loaded.
+tools/call failed with 502` — the classification right, the wording a transport
+artefact, on five web surfaces and every MCP tool result, because
+`unreadable(err)` carries `err.message` and the transport threw a bare `Error`.
+Now `PlatformUnavailableError`, four cases because they have four remedies and
+one of them is "wait". And `/explorer` said *"Configuration changes are
+unavailable"* for `get_agent_explorer` — a read, on a page that configures
+nothing. The refusal was right; the claim about what was refused was never ours
+to make.
+
+**Pinned against the real nginx 502 body**, HTML behind a `text/html` content
+type, which no fake would have invented — then re-walked live rather than
+asserted.
+
+**The flake, after five days, was a fixture.** `SequentialRandom` counted from
+zero per instance, so two of them minted the same token; the probe builds a
+fresh one per describe while sharing one store, and `issue()` was a plain
+`Map.set`. The second describe silently overwrote the first's unconsumed entry.
+Reproduced offline in one run — `expected 'r1' not to be 'r1'`. The counter is
+per module now, **but the smaller half**: the fake accepting a duplicate in
+silence is why it cost five days and read like a product defect.
+
+**Two things a future session should not have to rediscover.**
+`FakeAgentsPort` records what a write bound its confirmation to and does not
+check it — a test that calls `update.execute` and sees `updated` proves nothing
+about binding. And `docker` exists in these environments but the network policy
+denies Docker Hub's blob CDN, so `image-never-built` fails at the first `FROM`;
+it needs registry egress, not just a daemon.
+
+**Next**: BattleGrid, when it returns. `BATTLEGRID_API_KEY=…
+BATTLEGRID_LIVE_WRITES=1 npx vitest run tests/live/proposal-probe.test.ts` — if
+the write test stops skipping, tasks 6.1 and 7.1 close and
+`the-model-can-propose-and-only-a-human-agrees` can be archived. Offline, the
+best-shaped item is `an-unreadable-branch-need-not-explain-itself`: 30 surfaces
+render an unreadable branch, 5 use the shared component, and the **guard** is
+worth more than the sweep.
+
 ## 2026-08-05 (later) — the write path closed, and four defects the walk found
 
 **Did**: #46, #47 and #48 merged. `the-model-can-propose-and-only-a-human-agrees`
