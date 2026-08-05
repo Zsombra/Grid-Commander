@@ -70,9 +70,19 @@ Full track. The planner writes `plan/` before any of this is implemented.
 - [x] 5.3 Done, by injection. A tool named `stop_trading` wired to
       `updateAgent` fails with `stop_trading → updateAgent → updateAgent`; the
       old prefix rule matches none of it
-- [ ] 5.4 A test asserts no code path performs a proposal without a human
-      action — no worker, no scheduler, no retry
-- [ ] 5.5 A test asserts no MCP response can carry a confirmation token
+- [x] 5.4 Done. `proposals-are-inert.test.ts` holds the absence three ways:
+      nothing that touches proposals schedules (timer, interval, cron, worker,
+      queue), the perform is reachable only from a `'use server'` route, and the
+      close follows the write rather than preceding it. Proved by injecting a
+      `setTimeout` into `resolve-proposal.command.ts` — it fails naming the file
+      and the pattern
+- [x] 5.5 Done, in the same file, asserted three ways so none of them is the
+      only one: the recording use-case holds no confirmation store, no tool in
+      `TOOLS` resolves to a `describe*` use-case, and no `propose_*` tool body
+      names a token. Proved by injecting `confirmationToken: 'leaked'` into a
+      propose tool. **`composition.ts` is not exempted**: it wires `updateAgent`
+      without calling it, so the rule matches `.execute(` rather than the bare
+      name — an allowlist there would sit in the file most likely to grow
 
 ## 6. Live
 
