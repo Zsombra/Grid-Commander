@@ -21,12 +21,12 @@ All development branches have been merged. `main` is the single source of truth.
 |---|---|
 | Capabilities (archived) | **12** |
 | Changes (archived) | 86 |
-| Vitest tests | 1224 (+ key-gated live) + 62 db |
+| Vitest tests | 1331 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
-| Active changes | 1 — `the-model-can-propose-and-only-a-human-agrees` (full, 3/33, planned) |
+| Active changes | 1 — `the-model-can-propose-and-only-a-human-agrees` (full, 35/37, **built, two gates blocked by the platform**) |
 | Open backlog items | 24 |
 | Design tickets open | 0 |
-| Open draft PRs | #46 (the write-path plan); #8–#45 merged |
+| Open draft PRs | none; #8–#48 merged |
 
 ### Read this before anything else
 
@@ -160,27 +160,53 @@ Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
 re-probing before any other work is trustworthy.
 
-### The next task is stage 1 of the write-path plan
+### The write path is built. One thing is waiting on BattleGrid.
 
-`the-model-can-propose-and-only-a-human-agrees` (full track) is proposed,
-designed and planned — see `openspec/changes/…/plan/`. **Do not start with the
-store or the routes.** The master plan deliberately sequences the **guard
-rewrite first**, against today's tool table, so it cannot later be adjusted to
-admit what was just built.
+`the-model-can-propose-and-only-a-human-agrees` shipped in #46–#48 and is
+**deliberately not archived**: two of its gates cannot be met while the
+platform is unwell, and archiving would claim a proof that has not happened.
 
-The guard moves from a name-prefix rule to **reachability**: a tool may reach
-this product's own store; it may never reach a use-case that calls a mutating
-BattleGrid tool. It must be proven *stricter* than what it replaces — a tool
-wired to `updateAgent` under an innocent name has to fail it.
+**The loop**: `propose_agent_change` records an intent and stops — it holds no
+BattleGrid port, so it cannot read a consequence or mint a confirmation. The
+operator opens `/pending/<id>`, where the describe runs *then*, against the
+account as it is *then*, and agrees through the ordinary ceremony. Nothing
+performs a proposal but a person, and
+`tests/architecture/proposals-are-inert.test.ts` holds that as a property.
 
-DL-3 records why, with the worked example: the live-writes guard shipped the
-same day matched tool *names* in test source and missed `apply-probe.test.ts`
-entirely, because that file mutates through `ForkStrategyCommand` without
-naming a tool. **Derive from what code can reach, not from what it spells.**
+**What is left, and it is one command.** On 2026-08-05 BattleGrid was
+answering `INTERNAL_ERROR` and 504 across several tools — including
+`create_intelligence_agent` for a payload with no `tradingConfig` at all — so
+the live write could not be walked. When it recovers:
 
-The two questions this change originally left to the operator are decided in
-`plan/decision-log.md`: seven proposable operations (`applyPlan` excluded, and
-why), and a 72-hour staleness horizon.
+```bash
+BATTLEGRID_API_KEY=… BATTLEGRID_LIVE_WRITES=1 \
+  npx vitest run tests/live/proposal-probe.test.ts
+```
+
+If the write test stops skipping, tasks 6.1 and 7.1 close and the change can be
+archived. See `battlegrid-is-returning-internal-errors`.
+
+**Do not work around it by walking the write against the operator's own
+agents.** Every one of them is in `FULL_EXECUTION`; editing a live trading
+agent to make a probe pass is not a trade a test gets to make on someone's
+behalf, and there is no clone tool, so the probe creates its own subject or it
+skips.
+
+### The lesson that keeps recurring, now five times
+
+**A check that matches how something is *spelled* rather than what it
+*reaches* is the defect shape this codebase produces.** The read-only guard
+matched a tool-name prefix; the live-writes guard matched tool names in test
+source and missed a file that mutated through `ForkStrategyCommand`; a
+rendering assertion searched text for a URL the harness never emitted;
+`readOnlyHint: true` was served for every tool because every tool used to be a
+read; and the live-writes guard's *replacement* assumed one gate per file and
+broke on the first probe that honestly needed two.
+
+Corollary, learned the same day: **when a rule and an honest new case
+disagree, suspect the rule.** Every one of those was fixed by deriving from
+reachability — the surface record's own classification, the composition root's
+wiring, what a block actually calls — never by adding an exemption.
 
 ---
 

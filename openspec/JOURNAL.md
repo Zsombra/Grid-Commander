@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-05 (later) — the write path closed, and four defects the walk found
+
+**Did**: #46, #47 and #48 merged. `the-model-can-propose-and-only-a-human-agrees`
+is built end to end — 31/35 tasks — and **left open**, not archived, because
+two of its gates are blocked by the platform rather than by us.
+
+**The loop closes.** A model calls `propose_agent_change`, which records an
+intent and stops. The operator opens `/pending/<id>`, where the describe runs
+*then*, against the account as it is *then*, and agrees through the same
+confirmation any web-initiated change uses. The model never holds an unspent
+authorization; an old proposal is noise rather than danger. This is option 2
+from `the-assistant-cannot-be-trusted-with-a-write`, now closed — and
+**elicitation was not established, so it was not chosen**, which is what that
+item asked for.
+
+**Running the live walk found four defects, and the first one moves money.**
+`/pending/[id]` handed the whole proposed `changes` object to `updateAgent`, so
+a `tradingConfig` travelled inside it. BattleGrid requires all twenty members
+once that object is present and **resets what a send omits — it does not
+error**. A model proposing `tradingMode: OFF` would have had every loss cap on
+the agent cleared as the price of stopping it. The edit form had always split
+the config out inline; the proposal page never learned it had to. The split is
+now `editArguments`, shared by both, and the digest is unaffected because
+`confirmationTarget.agentEdit` sorts keys — which is what lets the split happen
+*after* the token is minted.
+
+The other three: `reconcile` compared a partial config against the whole object
+and so read "will change" even for an agent already off; a proposal the account
+already satisfied arrived `ready`, so the page showed a button to agree above
+the words "nothing here would change the account"; and `readOnlyHint: true` was
+served for **every** tool, which stopped being true the moment a tool that
+records shipped.
+
+**That last one is the fifth defect of the same shape this week**: a check, or
+a claim, that matched how something was *spelled* rather than what it *reached*.
+The `live-writes` guard was the same story in the same session — it read "the
+file's one `const live =` must mention WRITES" and broke on the first probe that
+legitimately gated its reads and its writes differently. It is per-block now.
+**When a rule and an honest new case disagree, suspect the rule.**
+
+**BattleGrid is unwell today, and it is not us.** `create_intelligence_agent`
+answers `INTERNAL_ERROR` for every payload — both accounts, every SYSTEM
+strategy, and a payload with **no `tradingConfig` at all**. A deliberately
+malformed payload still comes back with a full `-32602` field-by-field report,
+so the 500 is downstream of a request the schema accepted; and
+`surface-freshness` is green throughout, so nothing was renamed under us. Four
+other live probes — preview, field, competitor, column-grammar — fail on
+INTERNAL_ERROR and 504. Filed as `battlegrid-is-returning-internal-errors`.
+
+**So the write half of the live walk skips, naming that, rather than passing.**
+It is *not* walked against the operator's own agents instead: every one of them
+is in `FULL_EXECUTION`, and editing a live trading agent to make a probe pass is
+not a trade a test gets to make on someone's behalf. There is no clone tool for
+agents, so the probe creates its own subject or it skips.
+
+**Next**: when the platform recovers, run
+`BATTLEGRID_API_KEY=… BATTLEGRID_LIVE_WRITES=1 npx vitest run tests/live/proposal-probe.test.ts`.
+If the write test stops skipping, tasks 6.1 and 7.1 close and the change can be
+archived. Nothing else is waiting on it.
+
 ## 2026-08-05 — the day the map was two versions stale, and BattleGrid deployed twice more
 
 **Did**: five changes merged (#41–#45) and one planned (#46).
