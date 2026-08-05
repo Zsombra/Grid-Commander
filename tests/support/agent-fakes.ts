@@ -465,11 +465,30 @@ export function aBudget(overrides: Partial<Budget> = {}): Budget {
   };
 }
 
-/** Deterministic tokens, so a test can assert which one was issued. */
+/**
+ * Deterministic tokens, so a test can assert which one was issued.
+ *
+ * The counter is **per module, not per instance**. It was per instance, and two
+ * of them both minted `r1` — so a test or probe that built a fresh one per
+ * describe, sharing a confirmation store, had its second describe silently
+ * overwrite the first's unconsumed entry. The first agreement then pointed at
+ * the second edit's target, and which consume failed depended on the order they
+ * happened to be spent in.
+ *
+ * That is `live-write-probe-confirmation-flake`: two consecutive runs of the
+ * live write-probe failing at *different* confirmation consumptions, for five
+ * days, with no product defect anywhere. Real tokens are 32 random bytes and
+ * cannot collide; a fixture that can is modelling an impossible platform.
+ *
+ * Still deterministic, still ordered, still `r<n>` — no test asserts a literal
+ * value, and the guarantee that matters is uniqueness rather than which number
+ * a given call gets.
+ */
+let sequentialTokens = 0;
+
 export class SequentialRandom {
-  private n = 0;
   token(): string {
-    return `r${++this.n}`;
+    return `r${++sequentialTokens}`;
   }
   codeChallengeS256(verifier: string): string {
     return `challenge(${verifier})`;

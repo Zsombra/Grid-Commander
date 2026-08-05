@@ -1,18 +1,39 @@
 ---
 id: trading-telemetry-is-unread
-title: What the agent actually did with the money is invisible — ~17 telemetry reads unused
+title: The open side of an agent’s money is invisible — positions, orders and market context unused
 type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-02
+updated: 2026-08-05
 change: ""
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, reporting, expected-value]
 ---
 
-# What the agent actually did with the money is invisible
+# The open side of an agent’s money is invisible
+
+## Reconciled 2026-08-05: half of this shipped
+
+`the-trading-record-is-readable` (archived 2026-08-03) built the **closed**
+half. `list_trade_outcomes` is consumed by `McpAgentAdapter`, `readTradingRecord`
+derives the summary from the trades themselves — because BattleGrid’s own
+performance figures read zero for accounts carrying real losses — and it is on
+the MCP surface as `read_trading_record`.
+
+Checked by tool, not by memory. Of the fifteen named below, **one** is used:
+
+| used | unused |
+|---|---|
+| `list_trade_outcomes` | the other fourteen |
+
+So what is left is the **open** side and the market context around it, and the
+item is narrowed to that rather than closed. The original text follows.
+
+---
+
+## What the agent actually did with the money is invisible (as filed)
 
 The product shows the agent's thoughts (`get_agent_thought_log`), limits and
 budget — but not its trades. The whole positions/orders/outcomes read surface
@@ -40,9 +61,15 @@ discovery read should establish.
 
 ## First step when taken
 
-Read-only observation with the live key: outcomes + open positions + one
-trade chart on the account's most-played agent; record shapes in this item;
-then an `agent-trading-record` surface the same way the arena was built.
+Narrowed by the reconcile above: outcomes are done, so the discovery read is
+**open positions, open orders, and one trade chart** on the account's
+most-played agent — record the shapes here before modelling any of them.
+
+Note the sibling finding in `open-position-rows-are-unobserved`: on the public
+side, `positions` has only ever been observed **empty**, across all 37 agents in
+the field. If the private `get_agent_open_positions` is empty too, the rows stay
+unmodelled and this item stays open — an unobserved shape is not a shape, and
+inventing key names is behind three of the dead paths in `HANDOFF.md`.
 
 ## The outcomes slice shipped (2026-08-02)
 
