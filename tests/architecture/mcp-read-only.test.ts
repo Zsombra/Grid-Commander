@@ -85,12 +85,36 @@ function mutatingPortMethods(): Set<string> {
       if (opened) current = opened[1] as string;
       if (!current) continue;
 
-      const sendsMutating =
+      const names =
         [...alias.entries()].some(
           ([a, tool]) => MUTATING_TOOLS.has(tool) && new RegExp(`TOOLS\\.${a}\\b`).test(line),
         ) || [...MUTATING_TOOLS].some((tool) => line.includes(`'${tool}'`));
+      if (!names) continue;
 
-      if (sendsMutating) methods.add(current);
+      /**
+       * Naming a tool is not sending it, and two shapes in these adapters name
+       * one without dispatching it.
+       *
+       * `deploymentTimeframes` reads the *schema* of `upsert_radar_deployment`
+       * to discover which timeframes the platform accepts —
+       * `tools.find((t) => t.name === TOOLS.upsert)`. It is a read, and
+       * counting it made a read method mutating. Nothing was exposed through
+       * it yet, so the guard did not false-alarm; it would have the first time
+       * a read use-case needed a timeframe list.
+       *
+       * `ENVELOPED = new Set([TOOLS.compile, TOOLS.apply, …])` is a set of
+       * names used to decide response handling. Also not a dispatch.
+       *
+       * These are exclusions on **syntax**, not on tools: a compared reference
+       * and a collected reference are definitionally not sends, whatever they
+       * name. An exclusion list of tool names is the thing this file exists
+       * not to be.
+       */
+      const compared = /[=!]==/.test(line);
+      const collected = /new Set\(/.test(line);
+      if (compared || collected) continue;
+
+      methods.add(current);
     }
   }
   return methods;
@@ -139,6 +163,24 @@ describe('the MCP surface cannot change anything on the account', () => {
     expect(FILES.get('updateAgent')).toBe('src/application/use-cases/update-agent.command.ts');
   });
 
+  it('does not mistake naming a tool for sending one', () => {
+    /**
+     * The named regression. `deploymentTimeframes` reads
+     * `upsert_radar_deployment`'s *schema* to discover accepted timeframes —
+     * `tools.find((t) => t.name === TOOLS.upsert)`. The first draft counted
+     * that reference and made a read method mutating.
+     *
+     * Pinned by name because the fix is a syntactic exclusion, and a later
+     * change to how adapters dispatch could silently reintroduce it.
+     */
+    expect(
+      PORT_METHODS.has('deploymentTimeframes'),
+      'comparing against a tool name is not sending it',
+    ).toBe(false);
+    // And the counterweight: the method that really does send it is still caught.
+    expect(PORT_METHODS).toContain('upsertDeployment');
+  });
+
   it('found the writes it is guarding against', () => {
     const mutating = [...FILES].filter(([, f]) => canMutate(f, PORT_METHODS).length > 0);
     expect(mutating.length, 'some use-cases can reach a write').toBeGreaterThan(5);
@@ -147,10 +189,28 @@ describe('the MCP surface cannot change anything on the account', () => {
     expect(keys).toContain('applyPlan');
   });
 
+  it('resolves every tool to a file it can actually check', () => {
+    /**
+     * The check below can only inspect a use-case it located. Skipping an
+     * unresolvable one — which the first draft did, with a bare `continue` —
+     * means a tool could pass by being unfindable rather than by being safe.
+     * That is the same silent-skip this repository has now been bitten by
+     * twice, so it fails here instead.
+     */
+    const unresolved = TOOLS.filter((t) => !FILES.has(t.useCase)).map(
+      (t) => `${t.name} → ${t.useCase}`,
+    );
+    expect(
+      unresolved,
+      'a tool whose use-case cannot be located is unchecked, not proven safe',
+    ).toEqual([]);
+  });
+
   it('exposes no tool that can reach a BattleGrid write', () => {
     const offenders: string[] = [];
     for (const t of TOOLS) {
       const file = FILES.get(t.useCase);
+      // Absence is a failure of the test above, not a pass here.
       if (!file) continue;
       const reached = canMutate(file, PORT_METHODS);
       if (reached.length > 0) offenders.push(`${t.name} → ${t.useCase} → ${reached.join(', ')}`);
