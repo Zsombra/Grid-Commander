@@ -55,13 +55,34 @@ describe('the MCP server, over a real client', () => {
     expect(pipeline?.inputSchema.properties).toHaveProperty('agentId');
   });
 
-  it('declares every tool read-only, without exception', async () => {
+  it('declares each tool by what it actually does', async () => {
+    /**
+     * This read "every tool read-only, without exception", and that claim
+     * stopped being true when `propose_agent_change` shipped: recording a
+     * proposal writes a row to this product's store. Nothing reaches
+     * BattleGrid — but `readOnlyHint` says "does not modify its environment",
+     * and a client using it to decide what needs the operator's approval would
+     * have been reading a false one.
+     *
+     * Which tools may claim it is derived in `annotations.test.ts` from the
+     * composition root, so this is the client-side half: what a real client
+     * receives over a real transport.
+     */
     const client = await connected(world().app);
     const { tools } = await client.listTools();
     for (const t of tools) {
-      expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+      const writes = TOOLS.find((d) => d.name === t.name)?.writes === true;
+      expect(t.annotations?.readOnlyHint, t.name).toBe(!writes);
+      // Nothing on this surface destroys anything, in either direction: the
+      // reads cannot, and a proposal is additive with declining as its undo.
       expect(t.annotations?.destructiveHint, t.name).toBe(false);
     }
+    // Guards the guard: a surface that lost its one writing tool would make
+    // the loop above a re-statement of the old, weaker claim.
+    expect(
+      tools.filter((t) => t.annotations?.readOnlyHint === false).map((t) => t.name),
+      'the surface still carries the tool that records',
+    ).toEqual(['propose_agent_change']);
   });
 
   it('answers a real read through the real use-case', async () => {

@@ -109,10 +109,43 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 7. Gates
 
-- [ ] 7.1 `./scripts/ci.sh` green, with and without a key
-- [ ] 7.2 `openspec.py validate the-model-can-propose-and-only-a-human-agrees`
-- [ ] 7.3 `docs/MCP_SERVER.md` rewritten — it currently states no writes are
-      coming without a design change. This is that design change
-- [ ] 7.4 Close `the-assistant-cannot-be-trusted-with-a-write`, recording that
-      option 2 was taken and elicitation was not established
-- [ ] 7.5 No credential in the diff
+- [ ] 7.1 Keyless `./scripts/ci.sh` green, ten gates. **The keyed run cannot
+      be green today**: BattleGrid is answering INTERNAL_ERROR and 504 across
+      several tools, and four live probes that touch nothing this change went
+      near — preview, field, competitor, column-grammar — fail on reads the
+      platform did not answer. Recorded rather than worked around; see
+      `battlegrid-is-returning-internal-errors`
+- [x] 7.2 Done. `openspec.py validate` — clean, no issues found
+- [x] 7.3 Done. `docs/MCP_SERVER.md` rewritten: "It cannot change anything. It
+      can propose." — what proposing is, why the consequence is computed at
+      open time, what cannot be proposed and why, the six operations decided
+      and not yet built, and the guard deriving reachability rather than
+      matching a prefix
+- [x] 7.4 Done. `the-assistant-cannot-be-trusted-with-a-write` closed as
+      `done`, recording that **option 2** was taken, that elicitation was not
+      established and therefore not chosen, and what would have to be answered
+      before it could be
+- [x] 7.5 Done. Scanned before each commit; no credential in the diff
+
+## 8. Found while proving it
+
+Four defects the walk turned up, each fixed with the test that would have
+caught it.
+
+- [x] 8.1 A proposed `tradingConfig` travelled inside `changes`, so agreeing
+      sent a partial — which BattleGrid does not reject, it *resets what the
+      send omits*. Stopping an agent would have cleared every loss cap it ran
+      under. The split is now `editArguments`, shared with the edit form,
+      which had always done it inline
+- [x] 8.2 `reconcile` compared the partial against the whole config object, so
+      the difference read "will change" even for an agent already off. It now
+      compares member by member for the fields the write merges, named by the
+      caller
+- [x] 8.3 A proposal the account already satisfied arrived `ready`, so the page
+      showed a button to agree above the words "nothing here would change the
+      account". `changesAnything` existed for exactly this and was consulted
+      only by the component
+- [x] 8.4 `readOnlyHint: true` was served for every tool without exception,
+      which stopped being true when a tool that records shipped. Now derived
+      from the tool's `writes` declaration, checked against whether its
+      use-case is a `Command` in `composition.ts`

@@ -35,6 +35,22 @@ export interface ToolDefinition {
   readonly description: string;
   /** The `App` key this calls. Checked against `App` by the type system. */
   readonly useCase: keyof App;
+  /**
+   * Declares that this tool persists something, so its annotations can say so.
+   *
+   * Nothing on this surface writes to BattleGrid — that is what the read-only
+   * guard is for. But `propose_agent_change` writes a row to *this product's*
+   * store, and `readOnlyHint` means "does not modify its environment", not
+   * "does not modify BattleGrid". A client using that hint to decide what needs
+   * the operator's approval would be reading a false one.
+   *
+   * Declared rather than inferred from the tool's name, and
+   * `tests/mcp/annotations.test.ts` checks each declaration against whether the
+   * use-case it names is a `Command` in `composition.ts` — this codebase's own
+   * word for the write side. So a second writing tool cannot inherit a read's
+   * annotation by being appended to the list and left undeclared.
+   */
+  readonly writes?: true;
   /** JSON Schema properties, or `{}` for a tool that takes only authority. */
   readonly input: Readonly<Record<string, unknown>>;
   readonly required?: readonly string[];
@@ -322,6 +338,7 @@ export const TOOLS: readonly ToolDefinition[] = [
       'the proposal in the web app and agrees to what it would do against the agent as it ' +
       'is then.',
     useCase: 'recordProposal',
+    writes: true,
     input: { ...AGENT_ID, changes: { type: 'object', description: 'The settings to change.' } },
     required: ['agentId', 'changes'],
     call: (app, who, a) =>

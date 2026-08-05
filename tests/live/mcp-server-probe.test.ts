@@ -46,10 +46,13 @@ live('the MCP server answers a real client', () => {
       console.log(`  tools/list → ${tools.length} tools`);
       expect(tools.length).toBeGreaterThan(10);
 
-      // Every one, without exception. This is the promise the whole surface
-      // rests on, asserted against what a client actually receives.
+      // Each one by what it does, asserted against what a client actually
+      // receives. Every tool but `propose_agent_change` is a read; that one
+      // writes a row to this product's own store and says so, because
+      // `readOnlyHint` means "does not modify its environment" and not "does
+      // not modify BattleGrid".
       for (const t of tools) {
-        expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+        expect(t.annotations?.readOnlyHint, t.name).toBe(t.name !== 'propose_agent_change');
         expect(t.annotations?.destructiveHint, t.name).toBe(false);
       }
 
