@@ -84,3 +84,50 @@ export const confirmationTokens = pgTable(
   },
   (t) => [index('confirmation_tokens_user_id_idx').on(t.userId)],
 );
+
+/**
+ * What a model has suggested, and nothing that can be spent.
+ *
+ * A proposal is a **note**: which product operation, against which target, with
+ * which values. It holds no confirmation token and no access token, and the
+ * `battlegrid-connection` requirement it implements is stated as a property —
+ * an attacker who reads every row here can change nothing on any account.
+ * `tests/db/proposals.test.ts` asserts the absence of both columns by reading
+ * the schema, so a later migration cannot reintroduce one quietly.
+ *
+ * There is deliberately no worker, no scheduler and no retry touching this
+ * table. Nothing consumes a row but a person opening it, which is why the
+ * spec can say a proposal never performs itself.
+ */
+export const proposals = pgTable(
+  'proposals',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    // A *product operation* — `edit`, `rebind`, `deploy` — never a BattleGrid
+    // tool name. The web route and the MCP layer resolve the same vocabulary,
+    // so a name cannot come to mean two things, and a platform rename does not
+    // reach a migration.
+    operation: text('operation').notNull(),
+    // What it points at, in this product's terms: an agent id, a strategy id
+    // and signal, a coin. Opaque here on purpose — its shape belongs to the
+    // operation, exactly as `signal_rules.params` belongs to the signal.
+    target: text('target').notNull(),
+    // The model's values, verbatim. Kept so `/pending/[id]` can show what was
+    // proposed beside what the fresh describe says will happen; reconciling
+    // them here would be agreeing on the operator's behalf.
+    proposedValues: text('proposed_values').notNull(),
+    // Written from the injected clock, never `defaultNow()`. Staleness is
+    // computed from this against the 72-hour horizon, and a database default
+    // would put the one value the tests need to move outside their reach.
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
+    // open | agreed | declined. Never 'stale': staleness is derived from
+    // `recordedAt`, so a stored flag could disagree with the timestamp it is
+    // supposed to summarise.
+    status: text('status').notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  },
+  (t) => [index('proposals_user_id_recorded_at_idx').on(t.userId, t.recordedAt)],
+);

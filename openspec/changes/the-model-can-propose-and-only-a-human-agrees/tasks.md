@@ -16,13 +16,13 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 2. The store
 
-- [ ] 2.1 Drizzle schema + migration: one table, no token column, no access
+- [x] 2.1 Drizzle schema + migration: one table, no token column, no access
       token column
-- [ ] 2.2 A test asserts the schema carries neither, so a later migration
+- [x] 2.2 A test asserts the schema carries neither, so a later migration
       cannot reintroduce one quietly
-- [ ] 2.3 Ownership enforced by PostgreSQL, exercised in `tests/db/` against a
+- [x] 2.3 Ownership enforced by PostgreSQL, exercised in `tests/db/` against a
       real database like confirmations and OAuth state
-- [ ] 2.4 A proposal is immutable once recorded
+- [x] 2.4 A proposal is immutable once recorded
 
 ## 3. Recording (the MCP side)
 

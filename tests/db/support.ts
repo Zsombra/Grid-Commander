@@ -33,6 +33,7 @@ const TABLES = [
   'confirmation_tokens',
   'connections',
   'oauth_transactions',
+  'proposals',
   'users',
 ] as const;
 
