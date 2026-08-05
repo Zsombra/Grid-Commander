@@ -10,6 +10,7 @@ function aDetail(overrides: Partial<StrategyDetail> = {}): StrategyDetail {
     marketReadText: null,
     thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
     signalRules: [],
+    conditions: [],
     openPositionCount: 0,
     cadence: null,
     regimeAutoDerive: false,

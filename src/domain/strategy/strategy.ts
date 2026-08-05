@@ -124,6 +124,8 @@ export function describeBlastRadius(count: number): string {
  * The roster carries a `sectionCount`. This is what the count was counting —
  * and until `get_strategy` was wired, the number was all the product had.
  */
+import type { StrategyCondition } from './condition.js';
+
 export interface StrategySection {
   /** `platform` for a source BattleGrid provides. Carried as given, not enumerated. */
   readonly kind: string;
@@ -205,6 +207,14 @@ export interface StrategyDetail {
   readonly thresholds: StrategyThresholds;
   /** What it weighs. */
   readonly signalRules: readonly SignalRule[];
+  /**
+   * What decides direction, above the signals.
+   *
+   * Empty is a strategy that defines none. A strategy that could not be read
+   * never reaches here at all — `StrategyDetailResult` carries that state —
+   * so an empty list here means empty rather than unknown.
+   */
+  readonly conditions: readonly StrategyCondition[];
   /** Positions currently open under it. Part of the cost of changing it. */
   readonly openPositionCount: number;
   readonly cadence: string | null;

@@ -1,3 +1,4 @@
+import { StrategyConditions } from './strategy-conditions.js';
 import type { StrategyDetail } from '@/domain/strategy/strategy.js';
 import { requiredSignals, weightedSignals } from '@/domain/strategy/strategy.js';
 
@@ -94,6 +95,8 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
           <Threshold label="Minimum ATR %" value={detail.thresholds.minAtrPct} />
         </dl>
       </section>
+
+      <StrategyConditions conditions={detail.conditions} />
 
       <section className="space-y-2">
         <h2 className="text-base font-medium text-text-primary">What it weighs</h2>
