@@ -16,23 +16,25 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 2. The store
 
-- [ ] 2.1 Drizzle schema + migration: one table, no token column, no access
+- [x] 2.1 Drizzle schema + migration: one table, no token column, no access
       token column
-- [ ] 2.2 A test asserts the schema carries neither, so a later migration
+- [x] 2.2 A test asserts the schema carries neither, so a later migration
       cannot reintroduce one quietly
-- [ ] 2.3 Ownership enforced by PostgreSQL, exercised in `tests/db/` against a
+- [x] 2.3 Ownership enforced by PostgreSQL, exercised in `tests/db/` against a
       real database like confirmations and OAuth state
-- [ ] 2.4 A proposal is immutable once recorded
+- [x] 2.4 A proposal is immutable once recorded
 
 ## 3. Recording (the MCP side)
 
-- [ ] 3.1 `propose_*` tools, one per proposable operation, named for what an
-      operator would ask for
-- [ ] 3.2 Recording contacts BattleGrid not at all — asserted, not assumed
-- [ ] 3.3 The response carries a reference and a URL, and no token
-- [ ] 3.4 An operation the product does not offer is refused, naming it, and
+- [x] 3.1 Seven `propose_*` tools, one per proposable operation, named for
+      what an operator would ask for. They share one use-case: `ToolDefinition`
+      already carries a per-tool `call` closure, so the operation is bound
+      there rather than in a new table field
+- [x] 3.2 Recording contacts BattleGrid not at all — asserted, not assumed
+- [x] 3.3 The response carries a reference and a URL, and no token
+- [x] 3.4 An operation the product does not offer is refused, naming it, and
       stores nothing
-- [ ] 3.5 The server's instructions tell a model that agreement happens in the
+- [x] 3.5 The server's instructions tell a model that agreement happens in the
       web app and where
 
 ## 4. Agreeing (the web side)

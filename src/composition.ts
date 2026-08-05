@@ -77,6 +77,8 @@ import {
   DrizzleAuditRepository,
   DrizzleConfirmationStore,
 } from './infrastructure/db/repositories/drizzle-audit-repository.js';
+import { DrizzleProposalStore } from './infrastructure/db/repositories/drizzle-proposal-store.js';
+import { RecordProposalCommand } from './application/use-cases/record-proposal.command.js';
 import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
@@ -113,6 +115,7 @@ interface Infrastructure {
   readonly transactions: DrizzleTransactionStore;
   readonly audit: DrizzleAuditRepository;
   readonly confirmations: DrizzleConfirmationStore;
+  readonly proposals: DrizzleProposalStore;
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
@@ -137,6 +140,7 @@ function infrastructure(): Infrastructure {
   const connections = new DrizzleConnectionRepository(db, cipher, randomUUID);
   const audit = new DrizzleAuditRepository(db, systemClock, randomUUID);
   const confirmations = new DrizzleConfirmationStore(db, systemClock);
+  const proposals = new DrizzleProposalStore(db);
 
   const battlegrid = new McpBattleGridAdapter({
     config: config.battlegrid,
@@ -161,6 +165,7 @@ function infrastructure(): Infrastructure {
     transactions: new DrizzleTransactionStore(db, systemClock),
     audit,
     confirmations,
+    proposals,
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
@@ -251,6 +256,11 @@ export function app(cookies: CookieStore) {
     readDeployments: new ReadDeploymentsQuery(i.radar),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
+    // Recording what a model suggests. Deliberately holds no BattleGrid port:
+    // it cannot read a consequence or mint a confirmation, and a test asserts
+    // that by construction rather than by behaviour.
+    recordProposal: new RecordProposalCommand(i.proposals, random, systemClock),
+
     describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
     performDeploy: new PerformDeployCommand(i.radar),
     describeUndeploy: new DescribeUndeployQuery(i.radar, i.confirmations, random, systemClock),
