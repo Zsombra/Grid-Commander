@@ -43,8 +43,10 @@ Full track. The planner writes `plan/` before any of this is implemented.
 - [ ] 4.2 None exist, and could-not-be-read, are distinct states
 - [ ] 4.3 `/pending/[id]` runs the real describe at open time and renders the
       same confirmation the corresponding web surface renders
-- [ ] 4.4 Where the fresh describe differs from what was proposed, the
-      difference is shown rather than reconciled
+- [x] 4.4 Done, and built first. `reconcile` gives each proposed value one of
+      three honest dispositions — will-change, already-true, refused — against
+      the target read fresh. There is no before/after diff because no snapshot
+      is stored; inventing one would be the staleness this design avoids
 - [ ] 4.5 A target that is gone or no longer eligible says so and offers no
       confirmation
 - [ ] 4.6 Agreeing runs the existing perform, and lands in the audit
