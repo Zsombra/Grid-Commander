@@ -108,10 +108,13 @@ called.
 BattleGrid's own MCP server has 110 tools and the model could call them
 directly. It would lose everything this product knows:
 
-- **`get_agent_performance` answers zeros** on an agent carrying real
-  losses — three observations across three sessions. `read_trading_record`
-  computes the record from the closed trades instead, and says it is
-  derived.
+- **`get_agent_performance` measures a different thing than you expect.**
+  It reports P&L against the agent's **risk-budget baseline**, so an agent
+  with no budget configured reports zeros while carrying real closed losses
+  — observed on four agents across three sessions. On an agent that *does*
+  have a budget the two agree exactly (-0.23 against a -0.236 trade record).
+  `read_trading_record` computes the record from the closed trades instead
+  and says it is derived, so it answers the same in both cases.
 - **`unreadable` is not `empty`.** A roster that failed to load must not be
   reported as "you have no agents". Every tool here returns a state that
   names itself, and a failed read is never an MCP error for exactly this

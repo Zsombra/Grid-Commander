@@ -14,12 +14,20 @@ tags: [battlegrid, reporting, expected-value]
 
 # The open side of an agent’s money is invisible
 
+## Update 2026-08-06: the blocking reason is gone
+
+Filed because the position and order tools answered empty on the first
+account. The second account answers both. The observed shapes and the build
+are in `an-open-position-is-invisible` (p1); what remains here is whatever
+this item covers beyond open positions.
+
 ## Reconciled 2026-08-05: half of this shipped
 
 `the-trading-record-is-readable` (archived 2026-08-03) built the **closed**
 half. `list_trade_outcomes` is consumed by `McpAgentAdapter`, `readTradingRecord`
 derives the summary from the trades themselves — because BattleGrid’s own
-performance figures read zero for accounts carrying real losses — and it is on
+performance figures measure against a risk-budget baseline and read zero when
+no budget is configured, which is how account 1's agents are set up — and it is on
 the MCP surface as `read_trading_record`.
 
 Checked by tool, not by memory. Of the fifteen named below, **one** is used:

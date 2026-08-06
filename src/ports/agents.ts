@@ -125,11 +125,18 @@ export interface AgentsPort {
   /**
    * What the agent actually did with the money: the trades it closed.
    *
-   * Read rather than derived from `get_agent_performance`, which answers
-   * zeros and an empty curve on agents carrying real closed losses — three
-   * observations across three sessions
-   * (`performance-and-allocation-are-unmodelled`). The outcomes are alive;
-   * the aggregate is not.
+   * Read rather than taken from `get_agent_performance`, which measures
+   * something narrower than its name suggests: P&L **against the agent's
+   * risk-budget baseline**. An agent with no budget configured
+   * (`maxConcurrentExposureUsd: 0`) reports zeros and an empty curve while
+   * carrying real closed losses — four agents, three sessions. An agent that
+   * has one reports correctly and agrees with the outcomes to the cent
+   * (-0.23 against -0.23582, a 26-point curve for 26 trades, live
+   * 2026-08-06).
+   *
+   * So the tool is not broken and the record here is still the right source:
+   * it answers the same question the same way whether or not a budget was
+   * ever set, which is what a trading record has to do.
    */
   readTradeOutcomes(params: {
     userId: string;

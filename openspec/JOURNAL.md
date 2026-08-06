@@ -1,5 +1,68 @@
 # Journal
 
+## 2026-08-06 (night) — cross-referencing what we built against an account that trades
+
+**Did**: ran the built surfaces and the unread tools against `THE .0`, the one
+agent on either account with real volume. Corrected a load-bearing claim,
+unblocked two items, filed three. PR #64.
+
+**A documented "platform defect" turned out to be a misreading, and we were
+telling users about it.** `docs/MCP_SERVER.md` sold this product partly on
+*"`get_agent_performance` answers zeros on an agent carrying real losses"* —
+three sessions of observations behind it. The second account says otherwise:
+
+| | Fade Master II (acct 1) | `THE .0` (acct 2) |
+|---|---|---|
+| `maxConcurrentExposureUsd` | 0 | 250 |
+| `get_agent_performance` realized | **0** | **-0.23** |
+| curve points | **0** | **26** |
+| trade record | -4.47 (18 trades) | -0.236 (26 trades) |
+
+Where a budget is configured the tool is **correct to the cent**, with one
+curve point per closed trade. It measures P&L **against the risk-budget
+baseline**, and account 1's agents have no budget, so there is no baseline and
+it reports zero. Not a lie — a narrower question than its name suggests.
+Corrected in `docs/MCP_SERVER.md`, `src/ports/agents.ts` and two backlog items.
+`read_trading_record` still derives from the trades and still should: it
+answers the same either way.
+
+**The biggest gap is a p1 the product cannot do at all.** `THE .0` opened HYPE
+LONG at 17:10 today — $12.37 notional, 5×, $2.47 margined — and was still
+holding it. **No surface in Grid-Commander shows an open position.** `/trades`
+is closed trades; `/agents/[id]` is deployments and stoppages. The first thing
+an operator would look for is the one thing absent.
+
+It was filed as blocked because the position tools answered empty on account 1,
+and this repo does not model unseen shapes. **The second account has the
+shape** — `get_agent_open_positions` and `list_user_active_positions` both
+answer, the latter with mark price, unrealized P&L, ROE, margin, age,
+liquidation price, and `decisionId`/`signalLogId` back to the reasoning.
+`open-position-rows-are-unobserved` closed; `an-open-position-is-invisible`
+filed p1 with the recorded shape.
+
+**And inside it, a wrong number we already render.** The decision recorded
+`stopLoss: 55.67456526`; the live position reports `effectiveStopLoss: 55.954`.
+Trailing has walked the stop up and `/pipeline` shows the decided one — wrong
+in the direction of *understating* protection, on the surface where someone
+decides whether to intervene. `position-management-editing` shipped the
+configuration and the preset drift; it never showed the effect. Filed p2.
+
+**Two fields worth remembering.** `pricingStatus: LIVE` with
+`refreshIntervalMs: 10000` — the platform tells a client how often to re-read,
+and every surface here is a static server render, so a position page has a
+staleness problem no other page has. And `unpricedPositionCount`, which is the
+platform drawing the *unreadable is not empty* distinction this product
+enforces everywhere, arriving as a field.
+
+**One field is simply wrong**: `accountEquityUsd: 0` on both accounts,
+including one holding $49.13. Nothing renders it and nothing should until it is
+understood.
+
+**Next**: `an-open-position-is-invisible` (p1) is the build —
+`half-of-what-it-decides-never-reaches-the-exchange` (p1) is the other, and the
+two share a surface: what the agent is holding, and what it tried to hold and
+could not.
+
 ## 2026-08-06 (evening) — the second account broke two of my claims
 
 **Did**: surveyed the second account, reads only. Corrected two published
