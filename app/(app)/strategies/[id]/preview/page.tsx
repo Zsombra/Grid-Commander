@@ -2,14 +2,16 @@ import { acting } from '@/presentation/session.js';
 import { CONTROL } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { ConditionOutcomes } from '@/presentation/components/condition-outcomes.js';
 import type { CoinSelection } from '@/ports/strategies.js';
 
 /**
  * The agent's-eye view: what an agent bound to this strategy would actually
  * read, rendered live by the platform over a bounded coin selection —
- * saving nothing, changing nothing. Beneath it, the same composition's
- * signal membership: which weights would do something, and which rules the
- * report cannot feed.
+ * saving nothing, changing nothing. Beside the report text, how the
+ * strategy's conditions resolve against those same coins, with the platform's
+ * clause-level reasons. Beneath it, the same composition's signal membership:
+ * which weights would do something, and which rules the report cannot feed.
  */
 
 function selectionFrom(q: Record<string, string | string[] | undefined>): CoinSelection {
@@ -78,7 +80,7 @@ export default async function PreviewPage({
     );
   }
 
-  const { strategy, outcome, membership } = result;
+  const { strategy, outcome, membership, conditionsDefined } = result;
   const feeds = membership.filter((m) => m.inReport);
   const starves = membership.length - feeds.length;
 
@@ -153,6 +155,14 @@ export default async function PreviewPage({
               </details>
             ))}
           </section>
+
+          {/* Beside the report text, not on the strategy page: these outcomes
+              are resolved against the coins selected above, and the strategy
+              page has no coin selection to resolve anything against. */}
+          <ConditionOutcomes
+            outcomes={outcome.preview.conditionOutcomes}
+            conditionsDefined={conditionsDefined}
+          />
         </>
       )}
 

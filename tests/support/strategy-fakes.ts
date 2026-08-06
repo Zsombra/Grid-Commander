@@ -1,4 +1,5 @@
 import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type { TickerOutcomes } from '@/domain/strategy/condition-outcome.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
   CoinSelection,
@@ -121,10 +122,18 @@ export class FakeStrategiesPort implements StrategiesPort {
     timeframe: string;
     sections: readonly { kind: string; sectionKey: string }[];
     coinSelection: CoinSelection;
+    conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
   }): Promise<ReportPreviewOutcome> {
     this.calls.push({
       op: 'preview',
-      payload: { timeframe: params.timeframe, coinSelection: { ...params.coinSelection } },
+      payload: {
+        timeframe: params.timeframe,
+        coinSelection: { ...params.coinSelection },
+        // Recorded so a test can assert the round trip actually happens: the
+        // platform resolves only the conditions it is given, so a preview that
+        // forgets them renders an empty outcome list and looks fine.
+        ...(params.conditions !== undefined ? { conditions: params.conditions } : {}),
+      },
     });
     return this.previewOutcome;
   }
@@ -184,11 +193,19 @@ export class FakeStrategiesPort implements StrategiesPort {
     return { strategy: { id: params.strategyId, revision: (current?.revision ?? 0) + 1 } };
   }
 
+  /**
+   * The platform's own condition array, as `readStrategy` would hand it back
+   * for the preview round trip. Empty by default, matching `aDetail()`.
+   */
+  conditionsAsGiven: readonly Readonly<Record<string, unknown>>[] = [];
+
   async readStrategy(): Promise<StrategyDetailResult> {
     if (!this.detailReadable) {
       return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     }
-    return this.detail ? { kind: 'strategy', detail: this.detail } : { kind: 'missing' };
+    return this.detail
+      ? { kind: 'strategy', detail: this.detail, conditionsAsGiven: this.conditionsAsGiven }
+      : { kind: 'missing' };
   }
 
   async listStrategies(): Promise<StrategyListResult> {
@@ -510,6 +527,53 @@ export function aReportPreview(overrides: Partial<ReportPreview> = {}): ReportPr
       { name: 'distinctTimeframes', used: 3, cap: 8 },
       // v9 publishes the token estimate here rather than as its own field.
       { name: 'estimatedTokens', used: 1767, cap: 16000 },
+    ],
+    // Empty by default, matching a preview of a strategy that defines no
+    // conditions — which is what `aDetail()` is. A test wanting outcomes says
+    // so, so the two empty states never get confused in a fixture.
+    conditionOutcomes: [],
+    ...overrides,
+  };
+}
+
+/**
+ * How one coin's conditions resolved — the domain shape of the live
+ * `conditionOutcomes` row observed 2026-08-04.
+ *
+ * Carries all three of the things that must not flatten: clause-level evidence
+ * (observed against required), a provisional outcome, and a threshold group
+ * whose `counts` include an unresolved third state.
+ */
+export function aTickerOutcome(overrides: Partial<TickerOutcomes> = {}): TickerOutcomes {
+  return {
+    ticker: 'BTC',
+    outcomes: [
+      {
+        conditionKey: 'ALL_AGREE_UP',
+        name: 'Regime, HTF and ADX agree — up',
+        outcome: 'FALSE',
+        provisional: true,
+        counts: null,
+        evidence: [
+          {
+            kind: 'clause',
+            sectionKey: 'includeRegimeContext',
+            header: 'regTrend_now',
+            op: 'is',
+            operand: 'ranging',
+            literal: 'trending up',
+            outcome: 'FALSE',
+          },
+        ],
+      },
+      {
+        conditionKey: 'FOUR_OF_FOUR',
+        name: 'Four of four',
+        outcome: 'TRUE',
+        provisional: false,
+        counts: { trueCount: 4, total: 4, unresolvedCount: 0 },
+        evidence: [],
+      },
     ],
     ...overrides,
   };

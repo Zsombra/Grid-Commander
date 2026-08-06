@@ -1,4 +1,5 @@
 import { mapConditions } from './condition-mapper.js';
+import { mapConditionOutcomes } from './condition-outcome-mapper.js';
 import type {
   SignalRule,
   Strategy,
@@ -215,7 +216,15 @@ export class McpStrategyAdapter implements StrategiesPort {
 
     const raw = payload['strategy'];
     if (typeof raw !== 'object' || raw === null) return { kind: 'missing' };
-    return { kind: 'strategy', detail: mapStrategyDetail(raw) };
+    return {
+      kind: 'strategy',
+      detail: mapStrategyDetail(raw),
+      // The condition array read twice on purpose: once into the shape a page
+      // renders, once unread for the preview round trip. Collapsing them would
+      // make what goes back to the platform depend on this product
+      // understanding every form in a grammar still being rolled out.
+      conditionsAsGiven: rawConditions((raw as Record<string, unknown>)['conditions']),
+    };
   }
 
   async setActive(params: {
@@ -322,12 +331,30 @@ export class McpStrategyAdapter implements StrategiesPort {
     regimeTimeframe?: string | null | undefined;
     sections: readonly StrategySection[];
     coinSelection: CoinSelection;
+    conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
   }): Promise<ReportPreviewOutcome> {
     try {
       const payload = await this.call(params, TOOLS.preview, {
         timeframe: params.timeframe,
         regimeAutoDerive: params.regimeAutoDerive,
         ...(params.regimeTimeframe !== undefined ? { regimeTimeframe: params.regimeTimeframe } : {}),
+        // Sent only when there is something to resolve. A strategy defining no
+        // conditions sends the payload it has always sent — the argument is new
+        // and the outer object is closed, so the empty case stays byte-identical
+        // rather than newly exposed to a schema this product has not previewed
+        // against. What is sent is the platform's own array, back whole: see
+        // `StrategyDetailResult`'s `conditionsAsGiven`.
+        //
+        // Not covered by `payload-conformance.test.ts`, and deliberately so:
+        // the probed record flattens this recursive union to the keys its outer
+        // level shares (`conditions[].definition` accepts only
+        // kind/members/n/op), so a clause's own `column` and `label` read as
+        // violations of a closed set the live schema does not actually close.
+        // `apply_strategy_plan` already sends these same objects and is
+        // accepted. A conformance check here would fail against correct code.
+        ...(params.conditions !== undefined && params.conditions.length > 0
+          ? { conditions: [...params.conditions] }
+          : {}),
         // A custom table goes back whole — key alone is refused (-32602:
         // `title` and `columns` are required for `kind: 'custom'`). A
         // platform section is fully named by its key and carries nothing
@@ -789,6 +816,21 @@ function num(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
 }
 
+/**
+ * The condition payload, kept as the platform sent it.
+ *
+ * Only the entries that are objects, because only those can be sent back — a
+ * string or a null in that array is not a condition the platform would accept
+ * returned to it. Nothing inside is inspected: the point of this copy is that
+ * it survives a grammar this product does not fully model.
+ */
+function rawConditions(raw: unknown): readonly Readonly<Record<string, unknown>>[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null,
+  );
+}
+
 /** The preview payload, shaped live 2026-08-01 on Dunkirk's composition. */
 function mapReportPreview(payload: Record<string, unknown>) {
   const sections: RenderedSection[] = (
@@ -844,6 +886,9 @@ function mapReportPreview(payload: Record<string, unknown>) {
     tokenCountModel:
       typeof payload['tokenCountModel'] === 'string' ? payload['tokenCountModel'] : null,
     budget,
+    // Read since 2026-08-06, produced by the platform since the condition layer
+    // arrived. It answers empty unless conditions were sent to resolve.
+    conditionOutcomes: mapConditionOutcomes(payload['conditionOutcomes']),
   };
 }
 
