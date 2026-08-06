@@ -14,6 +14,36 @@ tags: [battlegrid, agent-understanding, mapping]
 
 # get_agent_performance and get_agent_fund_allocation have never returned a figure
 
+## Update 2026-08-06: the zeros are a baseline, not a bug
+
+The second account settles what "every figure zero" meant. `get_agent_performance`
+and `get_agent_budget` report P&L **against the agent's risk-budget baseline**,
+not against its trade history:
+
+| | account 1, Fade Master II | account 2, `THE .0` |
+|---|---|---|
+| `maxConcurrentExposureUsd` | 0 | 250 |
+| `get_agent_performance.realizedPnlUsd` | **0** | **-0.23** |
+| `pnlCurveUsd` points | **0** | **26** |
+| trade record net P&L | -4.47 (18 trades) | -0.236 (26 trades) |
+
+Where a budget is configured the tool is **correct to the cent** and its curve
+has one point per closed trade. Where none is (`maxConcurrentExposureUsd: 0`)
+there is no baseline to measure from, and it reports zeros.
+
+So this was never a populated-vs-empty payload problem. The shape was always
+right; the *condition* for it carrying figures is a configured budget, which
+none of account 1's agents has. Corrected in `docs/MCP_SERVER.md` and
+`src/ports/agents.ts`, both of which stated it as a platform defect.
+
+`read_trading_record` still derives from the closed trades, and should: it
+answers the same way whether or not a budget was ever set.
+
+One field is genuinely wrong, though — **`accountEquityUsd: 0` on both
+accounts**, including one holding $49.13. Nothing in this product renders it,
+and nothing should until it is understood.
+
+
 Both tools are now **called**, on twelve agents across two accounts — one with 97
 games and 18 trades. Neither has ever answered with a populated value.
 

@@ -2,7 +2,7 @@
 id: open-position-rows-are-unobserved
 title: A public agent's open-position rows have never been seen, so they are not modelled
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-03
 updated: 2026-08-06
@@ -12,6 +12,16 @@ tags: [battlegrid, explorer, unobserved-shape]
 ---
 
 # Open-position rows have never been seen
+
+## Closed 2026-08-06: they have now been seen
+
+The second account answers. `THE .0` held an open HYPE LONG while this was
+written, and both `get_agent_open_positions` and `list_user_active_positions`
+returned full rows — mark price, unrealized P&L, ROE, effective stop, margin,
+age, and the `decisionId`/`signalLogId` links back to the reasoning.
+
+The shape is recorded in `an-open-position-is-invisible` (p1), which is the
+build. This item existed to say "we have not seen it", and we have.
 
 ## Update 2026-08-06: still empty, across the whole cluster
 
