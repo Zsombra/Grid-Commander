@@ -5,7 +5,7 @@
     "version": "11.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-06T15:12:56Z",
+  "probed_at": "2026-08-06T22:07:34Z",
   "tool_count": 110,
   "by_classification": {
     "read": 83,
@@ -741,21 +741,274 @@
           ]
         },
         "request.plan.conditions[].definition": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "members[].kind",
+                "op"
+              ]
+            }
+          ]
+        },
+        "request.plan.conditions[].definition.column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "request.plan.conditions[].definition.members[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "op"
+              ]
+            }
+          ]
+        },
+        "request.plan.conditions[].definition.members[].column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "request.plan.rules[]": {
@@ -836,21 +1089,10 @@
               "when": {},
               "closed": true,
               "accepts": [
+                "abs",
                 "rel"
               ],
-              "required": [
-                "rel"
-              ]
-            },
-            {
-              "when": {},
-              "closed": true,
-              "accepts": [
-                "abs"
-              ],
-              "required": [
-                "abs"
-              ]
+              "required": []
             }
           ]
         }
@@ -1696,21 +1938,274 @@
           ]
         },
         "request.conditions[].definition": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "members[].kind",
+                "op"
+              ]
+            }
+          ]
+        },
+        "request.conditions[].definition.column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "request.conditions[].definition.members[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "op"
+              ]
+            }
+          ]
+        },
+        "request.conditions[].definition.members[].column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "request.rules[]": {
@@ -1789,21 +2284,10 @@
               "when": {},
               "closed": true,
               "accepts": [
+                "abs",
                 "rel"
               ],
-              "required": [
-                "rel"
-              ]
-            },
-            {
-              "when": {},
-              "closed": true,
-              "accepts": [
-                "abs"
-              ],
-              "required": [
-                "abs"
-              ]
+              "required": []
             }
           ]
         }
@@ -2604,21 +3088,10 @@
               "when": {},
               "closed": true,
               "accepts": [
+                "abs",
                 "rel"
               ],
-              "required": [
-                "rel"
-              ]
-            },
-            {
-              "when": {},
-              "closed": true,
-              "accepts": [
-                "abs"
-              ],
-              "required": [
-                "abs"
-              ]
+              "required": []
             }
           ]
         }
@@ -6881,21 +7354,10 @@
               "when": {},
               "closed": true,
               "accepts": [
+                "abs",
                 "rel"
               ],
-              "required": [
-                "rel"
-              ]
-            },
-            {
-              "when": {},
-              "closed": true,
-              "accepts": [
-                "abs"
-              ],
-              "required": [
-                "abs"
-              ]
+              "required": []
             }
           ]
         }
@@ -8346,7 +8808,10 @@
             "gateStage": "str",
             "id": "str",
             "reasonCode": "str",
-            "reasonDetail": "null",
+            "reasonDetail": {
+              "equityUsd": "float",
+              "thresholdUsd": "int"
+            },
             "sourceThoughtLogId": "null",
             "userId": "str"
           },
@@ -8784,7 +9249,7 @@
               "openPositionAgentAvatarUrl": "null",
               "openPositionAgentDisplayName": "null",
               "openPositionAgentId": "null",
-              "qualificationBlock": "null",
+              "qualificationBlock": "str",
               "qualified": "bool",
               "reason": "null",
               "regimeConviction": "str",
@@ -10228,21 +10693,274 @@
           ]
         },
         "conditions[].definition": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "members[].kind",
+                "op"
+              ]
+            }
+          ]
+        },
+        "conditions[].definition.column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "conditions[].definition.members[]": {
+          "variants": [
+            {
+              "when": {
+                "kind": "clause"
+              },
+              "when_one_of": {
+                "op": [
+                  "lt",
+                  "lte",
+                  "gte",
+                  "gt"
+                ]
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "op",
+                "value"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "op",
+                "value"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "between"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "high",
+                "kind",
+                "low",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "is"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "label",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "label",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "clause",
+                "op": "in"
+              },
+              "closed": true,
+              "accepts": [
+                "column",
+                "kind",
+                "labels",
+                "op"
+              ],
+              "required": [
+                "column",
+                "column.header",
+                "column.sectionKey",
+                "kind",
+                "labels",
+                "op"
+              ]
+            },
+            {
+              "when": {
+                "kind": "conditionRef"
+              },
+              "closed": true,
+              "accepts": [
+                "conditionKey",
+                "kind"
+              ],
+              "required": [
+                "conditionKey",
+                "kind"
+              ]
+            },
+            {
+              "when": {
+                "kind": "group"
+              },
+              "closed": true,
+              "accepts": [
+                "kind",
+                "members",
+                "n",
+                "op"
+              ],
+              "required": [
+                "kind",
+                "members",
+                "op"
+              ]
+            }
+          ]
+        },
+        "conditions[].definition.members[].column": {
           "closed": true,
           "accepts": [
-            "kind",
-            "members",
-            "n",
-            "op"
+            "header",
+            "sectionKey"
           ]
         },
         "sections[]": {
@@ -10312,21 +11030,10 @@
               "when": {},
               "closed": true,
               "accepts": [
+                "abs",
                 "rel"
               ],
-              "required": [
-                "rel"
-              ]
-            },
-            {
-              "when": {},
-              "closed": true,
-              "accepts": [
-                "abs"
-              ],
-              "required": [
-                "abs"
-              ]
+              "required": []
             }
           ]
         }
