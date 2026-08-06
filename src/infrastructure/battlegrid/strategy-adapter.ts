@@ -12,6 +12,7 @@ import type {
   CoinSelection,
   ColumnCheckOutcome,
   ColumnContract,
+  ColumnControls,
   ColumnOutput,
   ColumnProposal,
   ColumnRefusal,
@@ -43,6 +44,8 @@ import type {
 } from '@/ports/strategies.js';
 import type { SectionTemplate } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import { declaredValues } from './declared-values.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { RevisionConflictError } from '@/domain/errors.js';
 import { ToolRefusedError } from './mcp-adapter.js';
@@ -588,6 +591,42 @@ export class McpStrategyAdapter implements StrategiesPort {
     }
   }
 
+  /**
+   * The enumerated column controls, out of the *discovered* schema of the tool
+   * that validates a column — the same discovery every session already
+   * performs. Nothing here bakes in today's four relative timeframes, thirteen
+   * absolute ones, two `bars` values or four `ordering` values; a deployment
+   * that moves any of them moves this product with it.
+   *
+   * `declaredValues` rather than a hand-walk: `column.timeframe` is an `anyOf`
+   * whose two branches pin `rel` and `abs` at the same path, and a walk taking
+   * the first branch would report half the declaration — the exact failure the
+   * brain-preset walk was written for.
+   *
+   * Empty on a discovery that failed. A declaration that could not be read is
+   * not a platform with no timeframes, and the surfaces withhold the control
+   * and say so rather than offering a guess.
+   */
+  async columnControls(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<ColumnControls> {
+    let tools: readonly DiscoveredTool[];
+    try {
+      tools = await this.battlegrid.discoverTools(params.accessToken);
+    } catch {
+      return { relativeTimeframes: [], absoluteTimeframes: [], bars: [], ordering: [], sides: [] };
+    }
+    const contract = tools.find((t) => t.name === TOOLS.columnContract);
+    return {
+      relativeTimeframes: declaredValues(contract, 'column.timeframe.rel'),
+      absoluteTimeframes: declaredValues(contract, 'column.timeframe.abs'),
+      bars: declaredValues(contract, 'column.bars'),
+      ordering: declaredValues(contract, 'column.ordering'),
+      sides: declaredValues(contract, 'column.side'),
+    };
+  }
+
   async listSignals(params: { userId: string; accessToken: string }): Promise<SignalListResult> {
     try {
       const payload = await this.call(params, TOOLS.signals, {});
@@ -712,17 +751,49 @@ function mapCategory(raw: unknown): VocabularyCategory {
  * Two variants: entries with `sectionKey` are platform-native sections; entries
  * with `templateKey` are custom composites. Entries with neither are skipped —
  * they have no identity the edit page could use.
+ *
+ * **The name is read from `label` or from `title`.** The entry was mapped in
+ * July against a payload carrying `label`; the surface record captured on
+ * 2026-08-06 (server v11.0.0) shows the first template as
+ * `{columns, kind, sectionKey, title}` — no `label` at all — so a mapper reading
+ * only `label` renders the section checklist as a column of empty checkboxes.
+ * Both are read rather than one replaced by the other: which key a deployment
+ * sends is the platform's to change, and this product has now been wrong about
+ * that twice.
+ *
+ * **The columns come through.** They were being dropped: `templates[]` carries
+ * the thirteen-column definition of the section on every edit-page load, and
+ * three keys of it were kept. Same shape as the two mapper gaps in `HANDOFF.md`
+ * — the data was already on the wire.
  */
 function mapSectionTemplate(raw: unknown): SectionTemplate | null {
   const t = (raw ?? {}) as Record<string, unknown>;
-  const label = typeof t['label'] === 'string' ? t['label'] : '';
+  const named = [t['label'], t['title']].find((v) => typeof v === 'string' && v.length > 0);
+  const label = typeof named === 'string' ? named : '';
   const category = typeof t['category'] === 'string' ? t['category'] : undefined;
+  // Carried whole, opaque. Absent stays absent: a template that published no
+  // columns and one that renders none are different claims.
+  const columns = Array.isArray(t['columns'])
+    ? { columns: t['columns'] as readonly Readonly<Record<string, unknown>>[] }
+    : {};
 
   if (typeof t['sectionKey'] === 'string' && t['sectionKey'].length > 0) {
-    return { kind: 'platform', sectionKey: t['sectionKey'], label, ...(category ? { category } : {}) };
+    return {
+      kind: 'platform',
+      sectionKey: t['sectionKey'],
+      label,
+      ...(category ? { category } : {}),
+      ...columns,
+    };
   }
   if (typeof t['templateKey'] === 'string' && t['templateKey'].length > 0) {
-    return { kind: 'custom', templateKey: t['templateKey'], label, ...(category ? { category } : {}) };
+    return {
+      kind: 'custom',
+      templateKey: t['templateKey'],
+      label,
+      ...(category ? { category } : {}),
+      ...columns,
+    };
   }
   return null;
 }

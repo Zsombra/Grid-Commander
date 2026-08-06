@@ -128,6 +128,15 @@ export default async function EditStrategyPage({
 
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Sections</legend>
+            {/* This checklist says which sections, and nothing about what any
+                of them reads. The library behind this link is where a section's
+                own columns are — the question an author actually has while
+                ticking these boxes. */}
+            <p className="text-xs text-text-secondary">
+              What each section reads — its columns, their metrics and
+              transforms — is in{' '}
+              <a href="/strategies/sections" className="underline">the section library</a>.
+            </p>
             {/* The ceilings a preview of this composition runs under, published
                 by the platform's own discovery since v9.0.0. Shown here rather
                 than on the preview page because this is where a section is
