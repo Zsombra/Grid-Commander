@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
-import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from '@/application/use-cases/read-thought-log.query.js';
@@ -10,6 +9,7 @@ import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
+import { acquireProbeAgent, probeAgentName, releaseProbeAgent } from '../support/probe-agent.js';
 
 /**
  * One write, against the real platform, through the product's own path.
@@ -195,16 +195,25 @@ live('a write reaches the real platform', () => {
  * minimums anyway, because a probe that ships loose limits teaches the wrong
  * habit even when they are unreachable.
  *
+ * **The subject is reused, not minted.** This created one per run, and the runs
+ * added up: eight archived probe agents on the operator's second account by
+ * 2026-08-06, on a roster of eleven, with no delete tool anywhere on the MCP
+ * surface to remove them. `acquireProbeAgent` finds the one this slot left
+ * behind and reactivates it, and only creates when there is genuinely none —
+ * refusing, on two independent grounds, ever to select an agent the operator
+ * actually runs. See `tests/support/probe-agent.ts`.
+ *
  * The agent is archived in a `finally`. It occupies the operator's last slot
- * for the length of this test and gives it back.
+ * for the length of this test and gives it back — which is also what leaves it
+ * in the state the next run expects to find it in.
  */
 live('an agent can be created with limits the product can state', () => {
   const who = { userId: 'owner', accessToken: KEY as string };
 
   it(
-    'creates, reads back, and archives — with trading off',
+    'creates or reuses, reads back, and archives — with trading off',
     { timeout: 180_000 },
-    async () => {
+    async (ctx) => {
       const clock = new FakeClock();
       const audit = new FakeAuditStore(clock);
       const confirmations = new FakeConfirmationStore(clock);
@@ -239,26 +248,23 @@ live('an agent can be created with limits the product can state', () => {
       expect(target, 'need a SYSTEM strategy to bind to').toBeDefined();
       if (!target) return;
 
-      // Unique per run, same reason as the create name below.
-      const renamed = `GC probe renamed ${Date.now()}`;
+      /**
+       * Unique per run, and still carrying the slot prefix.
+       *
+       * Unique because an archived agent keeps its name: a fixed one collided
+       * with the agent an earlier run had archived and BattleGrid answered
+       * `INTERNAL_ERROR: Internal server error` — a 500, not a refusal, which
+       * looked exactly like the platform being unwell and was diagnosed as that
+       * for half an hour. Prefixed because the *next* run has to recognise what
+       * this one renamed; `probeAgentName` puts the note before the stamp for
+       * exactly that reason.
+       */
+      const renamed = probeAgentName('write', 'renamed');
 
-      const created = await new CreateAgentCommand(agents).execute({
-        ...who,
-        /**
-         * Unique per run, and that is not tidiness.
-         *
-         * This was a fixed string. The second run collided with the agent the
-         * first run had archived, and BattleGrid answered
-         * `INTERNAL_ERROR: Internal server error` — a 500, not a refusal. It
-         * looked exactly like the platform being unwell, and it was diagnosed
-         * as that for half an hour, because the probe was the thing that had
-         * changed and nothing said so.
-         *
-         * An archived agent still holds its name. Established directly: the
-         * same payload with a fresh name succeeds against the same strategy.
-         */
-        displayName: `Grid-Commander probe (off) ${Date.now()}`,
-        brain: { kind: 'preset', preset: 'ROMMEL' },
+      const acquired = await acquireProbeAgent({
+        agents,
+        who,
+        slot: 'write',
         strategyId: target.id,
         money: {
           tradingMode: 'OFF',
@@ -273,19 +279,21 @@ live('an agent can be created with limits the product can state', () => {
       });
 
       // eslint-disable-next-line no-console
-      console.log(`  create: ${created.kind}`);
-      if (created.kind === 'invalid') {
+      console.log(`  subject: ${acquired.kind}`);
+      if (acquired.kind === 'unavailable') {
+        /**
+         * A state of the account, not a defect here — and a skip that names it
+         * rather than a pass that hides it. The roster being unreadable, the
+         * slots being full, and `create_intelligence_agent` answering
+         * `INTERNAL_ERROR` (observed 2026-08-05, both accounts) all arrive here.
+         */
         // eslint-disable-next-line no-console
-        console.log('  issues:', created.issues.map((i) => `${i.field}: ${i.reason}`).join(' | '));
+        console.log(`  SKIPPED: ${acquired.reason}`);
+        ctx.skip();
+        return;
       }
-      if (created.kind === 'no-catalog') {
-        // eslint-disable-next-line no-console
-        console.log('  reason:', created.reason);
-      }
-      expect(created.kind).toBe('created');
-      if (created.kind !== 'created') return;
 
-      const agent = created.agent;
+      const agent = acquired.agent;
       // eslint-disable-next-line no-console
       console.log(`  agent:  ${agent.displayName} ${agent.id} r${agent.revision} ${agent.status}`);
 
@@ -301,7 +309,16 @@ live('an agent can be created with limits the product can state', () => {
             `leverage=${String(config?.['maxLeverage'])}`,
         );
 
-        // The whole point of the change: the limits are the ones we named.
+        /**
+         * The limits are the ones we named — on a create, because this run set
+         * them, and on a reuse, because the run that created this agent set the
+         * same six and nothing since has touched them. Only `maxDailyTrades`
+         * moves below, which is why it was chosen: it is not a money cap.
+         *
+         * The mode is asserted here as well as inside the selection. Selection
+         * refusing anything but OFF is what makes reuse safe; this is what
+         * makes the *platform's* agreement with that observable.
+         */
         expect(config?.['tradingMode'], 'this agent must not be able to trade').toBe('OFF');
         expect(config?.['maxDailyLossUsd']).toBe(10);
         expect(config?.['maxConcurrentExposureUsd']).toBe(10);
@@ -428,43 +445,32 @@ live('an agent can be created with limits the product can state', () => {
         expect(changed?.['maxDailyLossUsd']).toBe(10);
         expect(changed?.['maxConcurrentExposureUsd']).toBe(10);
       } finally {
-        const token = 'probe-archive-agent';
-        await confirmations.issue({
-          token,
-          userId: who.userId,
-          tool: 'archive_intelligence_agent',
-          target: agent.id,
-          consequence: `Archives the probe agent "${agent.displayName}".`,
-          expiresAt: new Date(clock.now().getTime() + 300_000),
-          consumedAt: null,
-        });
-
         /**
-         * Re-read the revision. It moved.
+         * Archived, which is both the cleanup and the handover.
          *
-         * This archived at `agent.revision` — the value captured at create,
-         * before the rename bumped it. The platform refused with a revision
-         * conflict and the probe left a live agent on the operator's account,
-         * which is precisely what a `finally` exists to prevent.
-         *
-         * The guard was right and the cleanup was wrong: optimistic concurrency
-         * did its job, and a teardown that assumes nothing changed has no
-         * business running after a test whose whole point is that something did.
+         * It gives the slot back whether or not anything above held, and it
+         * leaves the agent in the state `acquireProbeAgent` expects to find next
+         * run — archived and still OFF. `releaseProbeAgent` re-reads the
+         * revision rather than trusting the one captured before the rename: that
+         * assumption once made the platform refuse with a revision conflict and
+         * left a live agent on the operator's account, which is precisely what a
+         * `finally` exists to prevent.
          */
-        const current = await agents.getAgent({ ...who, agentId: agent.id });
-
-        const archived = await agents.setLifecycle({
-          ...who,
+        const released = await releaseProbeAgent({
+          agents,
+          confirmations,
+          clock,
+          who,
           agentId: agent.id,
-          expectedRevision: current.revision,
-          to: 'ARCHIVED',
-          confirmation: { token, target: agent.id },
+          confirmationToken: 'probe-archive-agent',
         });
         // eslint-disable-next-line no-console
-        console.log(`  archive: ${archived.status}`);
+        console.log(
+          `  archive: ${released.kind === 'archived' ? released.agent.status : released.reason}`,
+        );
         // eslint-disable-next-line no-console
         console.log(`  audit: ${audit.entries.map((e) => `${e.tool}=${e.outcome}`).join(' ')}`);
-        expect(archived.status).toBe('ARCHIVED');
+        expect(released.kind).toBe('archived');
       }
     },
   );
