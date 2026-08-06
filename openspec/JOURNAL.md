@@ -1,5 +1,67 @@
 # Journal
 
+## 2026-08-06 (round three) — a research map of what can be built, and the discovery that nobody has built anything that works
+
+**Did**: `_PM/TRADE_CATEGORIES_AND_MATHEMATICAL_FAMILIES.md` — 13 trade
+categories mapped onto a 16-operator mathematical algebra, with a benchmark
+specification. Probed live, read-only, against `battlegrid v11.0.0`. One backlog
+item filed: `the-surface-map-is-two-majors-stale` (p1).
+
+**The server is on v11.0.0. Everything in `docs/` says v9.0.0.** Tool count still
+110, nothing added, removed or reclassified — the exact failure mode the surface
+map warns about in its own words. What moved is inside the payloads: six
+transforms the product does not know exist (`efficiency`, `maxShare`,
+`crossDetect` among them), two new budget gauges that are **4× tighter** than the
+compile schema declares (`strategyConditions: 16` against `maxItems: 64`), only
+**6 of 13** enum timeframes actually enabled, and `rel: regime` resolving to
+`null` for every anchor — a column that renders empty rather than a call that
+fails, which is the same shape as the v9 section-body defect. The freshness gate
+is not at fault; it skips loudly without a key. CI simply has no path that
+reaches the live server, which is why two deployments went unnoticed.
+
+**The finding that matters most is not about the surface.** Across 715 pooled
+realised trades from 20 public agents, the population win rate is **29.8%**. An
+unconditional random-entry baseline on the same universe — 2,820 joined
+coin-bars, 1h anchor, 1.5% stop, 1.5R target — wins **30.6%**. The entry signals
+are adding nothing measurable. Six of 23 agents are profitable; the population
+is −$162 on 776 trades.
+
+**And the cause is geometry, not signals.** Median stop distance is **0.623%**.
+Mean single-bar adverse excursion on a 1h anchor is **0.47%**; by bar three it is
+0.85%. The stops sit inside the noise, so 74% of trades exit at STOP_LOSS with a
+15.5% win rate and a median life of 90 minutes. Every configuration bucket that
+beat the population shares one property — the trades lived longer and reached
+target more often: trailing off (4.3h life, 31% TP) against trailing on (1.5h,
+10%).
+
+Two restraints worth keeping in how that was written up. The obvious read of the
+duration data — "hold longer and you win" — is **survivorship**, and the doc says
+so: within stop-outs only, longer duration is *worse* (−5.91% ROE at 0–1h,
+−8.61% at 12h+). The defensible claim rests on the unconditional baseline
+instead, which does not depend on which agents happened to survive. And the
+headline module finding (structure zones, +0.898/trade) is **two agents, 51 of
+61 trades from one** — stated in the same paragraph as the number, not in a
+footnote, because a 45.9% win rate carried by one agent is a hypothesis.
+
+**Three things nobody is using.** `includeMtfConfluence` and
+`includePerpSpotFlow` are enabled on **0 of 23** agents, and the perp/spot module
+ships a vocabulary — `perp_led_fragile`, `spot_led_accumulation` — that names a
+real institutional distinction. No agent uses `conditions` at all, so the one
+deterministic layer on the platform is entirely untested. And no agent uses
+deployment-time conditioning, on a venue that lists ~15 equity and 5 commodity
+perps whose cash markets close.
+
+**Regimes predict range, not direction.** `bull_expansion` had the *worst* 4h
+forward payoff geometry (0.71 at 6 bars, decaying to 0.44 by 24) and
+`bear_expansion` the best. `volatile` is a one-bar transient that resolved into
+an expansion 8/8 times at 4h and 8/8 at 1d. `bull_ranging` is the one regime
+that is unprofitable at every horizon on both timeframes — 24% of bars that
+should not be traded.
+
+**Next**: the cheapest real test is the stop-geometry fix alone, holding signals
+constant — two fields. After that, C8 (perp–spot basis): strongest prior
+mechanism, native signal pair, zero competition.
+
 ## 2026-08-06 (round two) — four more in parallel, and one of them found the reason a field was always empty
 
 **Did**: four agents, four changes archived, five backlog items closed. PR #68.
