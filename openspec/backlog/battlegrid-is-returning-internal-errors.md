@@ -1,6 +1,6 @@
 ---
 id: battlegrid-is-returning-internal-errors
-title: BattleGrid went from per-tool INTERNAL_ERRORs to a 502 at the edge
+title: BattleGrid is flapping — it came back as v9.0.0 and per-tool INTERNAL_ERRORs returned with it
 type: risk
 status: open
 priority: p2
@@ -12,9 +12,57 @@ blocked_by: []
 tags: [battlegrid, live, platform]
 ---
 
-# BattleGrid went from per-tool INTERNAL_ERRORs to a 502 at the edge
+# BattleGrid is flapping, and the outage was a deployment
 
-## Update, later the same day: it is a full outage
+## Update 2026-08-06: back on **v9.0.0**, and unstable
+
+The outage was a deployment. **v5.1.0 → v9.0.0**, four majors, and the tool
+count is **110 — again**. Fourth time a major version moves and that number
+does not; it proves nothing and never has.
+
+The edge recovered and the backend did not, fully. There was a real working
+window — the surface re-probed cleanly, `./scripts/ci.sh` went green with a key
+across all ten gates, and the live write walk completed end to end. Twenty
+minutes later:
+
+| tool | |
+|---|---|
+| `list_strategies` | ok |
+| `get_trading_config_catalog` | ok |
+| `get_agent_explorer` | ok |
+| `list_intelligence_agents` | **INTERNAL_ERROR** |
+| `list_strategy_vocabulary` | **INTERNAL_ERROR** |
+
+**Read the envelope, not the status.** These come back **HTTP 200** with
+`isError: true` and `{"code":"INTERNAL_ERROR"}` inside — so a check that reads
+only the transport sees a healthy platform. `A Refused Tool Call Is A Failure`
+exists for exactly this, and the product classifies them correctly as
+`unreadable`. A hand-rolled `curl` check does not: an earlier status call here
+reported "back" on the strength of one 200 whose body was an error.
+
+Live probes touching the roster fail while their neighbours pass. Not a
+regression in this product — the same per-tool pattern as 2026-08-05, on a
+platform that has replaced itself underneath.
+
+### What v9 actually brought
+
+A **perp/spot flow** module, cleanly: context source `includePerpSpotFlow`,
+market-context module `perpSpotFlow`, signal module `FLOW_DIVERGENCE` with two
+signals, and metrics `PERP_SPOT_FLOW`, `PERP_SPOT_STRENGTH`,
+`PERP_SPOT_CONFIRMS`, `SPOT_CVD`, plus `BB_WIDTH_PCT` and `RVOL`.
+
+**One removal: `VOLUME_RATIO` is gone** from every metric enum. Nothing in this
+product names it — vocabulary is read at runtime and `structure.test.ts` forbids
+writing it into source, which is the design paying for itself. Also
+`preview_strategy_report` dropped `estimatedTokenCount`,
+`list_strategy_vocabulary` gained `previewExecutionLimits`, and the catalog
+gained two bounds: `agentMinConfidenceFloorPercent` and
+`agentMinTradeConvictionFloorPercent`.
+
+All 1347 tests pass against the re-probed record. No tool was added, removed, or
+reclassified — 23 tools' schemas moved underneath.
+
+## Update, 2026-08-05 evening: a full outage
 
 Every request now comes back **502 Bad Gateway from nginx** — HTML, not JSON,
 so nothing reaches the MCP layer at all. Both keys, repeated calls, `tools/call`
