@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting, requestApp } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { editArguments } from '@/presentation/form.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 
@@ -106,14 +107,17 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
           name="changes"
           value={JSON.stringify(result.proposal.proposedValues['changes'] ?? {})}
         />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Agree and make this change
         </button>
       </form>
 
       <form action={decline}>
         <input type="hidden" name="id" value={result.proposal.id} />
-        <button type="submit" className="text-sm underline">
+        {/* Declining is an operation, not a footnote — it closes the proposal
+            for good. A text link beneath the agree button read as the way out
+            of the page rather than the other half of the decision. */}
+        <button type="submit" className={BUTTON_SECONDARY}>
           Decline — this closes the proposal permanently
         </button>
       </form>

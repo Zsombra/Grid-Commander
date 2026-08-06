@@ -46,6 +46,7 @@ import {
   RetuneRuleCommand,
 } from './application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
+import { TryConditionQuery } from './application/use-cases/try-condition.query.js';
 import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
@@ -65,6 +66,8 @@ import {
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from './application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from './application/use-cases/open-grid-session.query.js';
 import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from './application/use-cases/read-competitor.query.js';
 import { ReadEvaluationQuery } from './application/use-cases/read-evaluation.query.js';
@@ -275,7 +278,9 @@ export function app(cookies: CookieStore) {
     readStoppages: new ReadStoppagesQuery(i.agents),
     // What it is holding, and what it could not get to the exchange. The
     // funnel half needs no new read — the counts were always there.
-    readExposure: new ReadExposureQuery(i.positions, i.agents),
+    // The clock is what turns a priced-at stamp into "4 minutes ago"; this is
+    // the only place in the product that names a real one.
+    readExposure: new ReadExposureQuery(i.positions, i.agents, systemClock),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
     // Recording what a model suggests. Deliberately holds no BattleGrid port:
@@ -323,6 +328,10 @@ export function app(cookies: CookieStore) {
     describeRetune: new DescribeRetuneQuery(i.strategies, i.confirmations, random, systemClock),
     retuneRule: new RetuneRuleCommand(i.strategies),
     previewComposition: new PreviewCompositionQuery(i.strategies),
+    // The drafting half of the same question, and read-only for the same
+    // reason: it asks the platform to resolve a condition that does not exist
+    // yet. It cannot save one — see `a-drafted-condition-cannot-be-saved`.
+    tryCondition: new TryConditionQuery(i.strategies),
     simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
@@ -334,6 +343,11 @@ export function app(cookies: CookieStore) {
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
 
     watchArena: new WatchArenaQuery(i.grid),
+    // The rulebook and one session, read apart from the arena list: the first
+    // is one unscoped call, the second is three calls about a session the user
+    // asked for, and neither belongs in a fan-out over fifty rows.
+    readGameRules: new ReadGameRulesQuery(i.grid),
+    openGridSession: new OpenGridSessionQuery(i.grid),
     readField: new ReadFieldQuery(i.explorer),
     readCompetitor: new ReadCompetitorQuery(i.explorer),
     readEvaluation: new ReadEvaluationQuery(i.explorer),

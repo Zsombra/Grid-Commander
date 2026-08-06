@@ -6,6 +6,7 @@ import {
   positionDrift,
   positionFieldKind,
 } from '@/domain/agent/trading-config.js';
+import { BindingInheritance, BindingSummary } from './binding.js';
 import { CONTROL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
@@ -151,10 +152,16 @@ export function AgentEditForm({
 
       <section className="space-y-1">
         <h2 className="font-medium">Not editable here</h2>
+        {/*
+          Through the shared components, not a sentence of its own. This copy
+          used to name the strategy and say the fields "change by editing that
+          strategy" — advice that sends an operator at a strategy an ORPHANED
+          binding says cannot be read. Four surfaces describe a binding and
+          they drifted once already.
+        */}
         <p className="text-sm">
-          Context sources, signal rules, prose and timeframe are inherited from{' '}
-          {agent.binding.strategyName}. They change by editing that strategy, or by
-          rebinding — which replaces all of them.
+          <BindingSummary binding={agent.binding} />{' '}
+          <BindingInheritance binding={agent.binding} />
         </p>
       </section>
     </div>
@@ -352,10 +359,22 @@ export function ReactivatePrompt({
 
   return (
     <div className="space-y-4">
+      {/*
+        Split deliberately. What it returns *with* — the configuration it had
+        when archived, and the slot it takes — is a fact about reactivation and
+        is true whatever the binding says. What it returns *bound to* is a claim
+        about the binding, and this is the page where getting it wrong costs
+        most: the agent all of this was found on (`Volatilis`, 2026-08-06) is
+        ARCHIVED **and** ORPHANED, so its reactivate confirmation is exactly
+        where an operator would have read "bound to" about a strategy that
+        cannot be read.
+      */}
       <p className="text-sm">
-        It returns to your roster bound to {agent.binding.strategyName} at revision{' '}
-        {agent.binding.strategyRevision}, with the configuration it had when it was
-        archived. Reactivating takes an agent slot.
+        It returns to your roster with the configuration it had when it was archived.
+        Reactivating takes an agent slot.
+      </p>
+      <p className="text-sm">
+        <BindingSummary binding={agent.binding} />
       </p>
       {/* Capacity before the act, not after the refusal. */}
       {atCapacity && <p role="alert" className="rounded border p-3 text-sm">{atCapacity}</p>}

@@ -2,11 +2,11 @@
 id: market-grid-is-an-unmodelled-module
 title: The Market Grid prediction game is a whole module the app does not model
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-31
-updated: 2026-08-01
-change: ""
+updated: 2026-08-06
+change: the-game-is-legible-before-it-is-played
 capability: "market-grid"
 blocked_by: []
 tags: [battlegrid, market-grid, product-model]
@@ -89,3 +89,27 @@ item:
   still need the discovery read before any surface uses them.
 - **The settled-results payload** — still never observed on this account;
   the port carries it opaque until one settles with a submission in.
+
+## The read half shipped (2026-08-06)
+
+`the-game-is-legible-before-it-is-played` (capability `market-grid`): the
+rulebook from `list_game_presets`, the price and player counts off the session
+list, `/arena/[id]` opening one session, and `get_market_grid_results` finally
+called — as a state, with the settled payload carried opaque.
+
+Two of the three bullets above are settled:
+
+- **The arg shapes are read.** `get_leaderboard` (metric + timeframe, optional
+  `gameType` / `limit`) has been consumed by `agent-comparison` since
+  `the-field-is-visible`, and `get_top_ranked_coins` (interval + metric) by the
+  market adapter. Nothing about either is guessed any more. What is left of
+  that bullet is narrower and filed as
+  `market-grid-standings-need-a-gametype-not-a-second-mapper`.
+- **The settled payload** moved to
+  `market-grid-payloads-that-only-fill-once-someone-plays`, with the player
+  grid and the crowd consensus beside it — three shapes, one blocker.
+
+**What remains here is the writes, and only the writes.** Entry fee 10 per
+session, observed on all 50 rows the list returned on 2026-08-06. Whether this
+client moves a user's stake at all is a product decision before it is an
+engineering one.

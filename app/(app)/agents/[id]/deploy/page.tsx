@@ -1,6 +1,11 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import {
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  CONTROL,
+  LABEL,
+} from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
@@ -68,11 +73,11 @@ export default async function DeployPage({
               BattleGrid&apos;s API does not let this client create a market&apos;s
               first deployment.
             </p>
-            <label className="block text-sm">
+            <label className={LABEL}>
               Coin
               <input type="text" name="coin" required placeholder="HYPE" className={CONTROL} />
             </label>
-            <label className="block text-sm">
+            <label className={LABEL}>
               Timeframe
               <select name="timeframe" className={CONTROL}>
                 {timeframes.map((tf) => (
@@ -81,10 +86,13 @@ export default async function DeployPage({
               </select>
             </label>
             <div className="flex flex-wrap gap-3">
-              <button type="submit" className="rounded border px-4 py-2 text-sm">
+              {/* This form asks rather than acts — it composes a description of
+                  the deployment and reaches no operation. Secondary, so the
+                  weight is kept for the page that follows. */}
+              <button type="submit" className={BUTTON_SECONDARY}>
                 See what deploying would do
               </button>
-              <a href={`/agents/${agent.id}`} className="px-4 py-2 text-sm underline">
+              <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
                 Back to the agent
               </a>
             </div>
@@ -130,10 +138,10 @@ export default async function DeployPage({
         <input type="hidden" name="timeframe" value={proposal.timeframe} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Deploy {agent.displayName}
         </button>
-        <a href={`/agents/${proposal.agentId}`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${proposal.agentId}`} className={BUTTON_SECONDARY}>
           Leave things as they are
         </a>
       </form>

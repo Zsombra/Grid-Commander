@@ -471,12 +471,38 @@ export const TOOLS: readonly ToolDefinition[] = [
   {
     name: 'watch_arena',
     description:
-      'Every Market Grid session — schedule, coin pool, player count, and whether this account ' +
-      'has entered. Reads only; playing stakes a real entry fee and is not offered anywhere in ' +
-      'this product.',
+      'Every Market Grid session — schedule, coin pool, entry fee, prize pool, how many more ' +
+      'players it needs, and whether this account has entered. Reads only; playing stakes a ' +
+      'real entry fee and is not offered anywhere in this product.',
     useCase: 'watchArena',
     input: {},
     call: (app, who) => app.watchArena.execute(who),
+  },
+  {
+    name: 'read_game_rules',
+    description:
+      'What Market Grid is, in BattleGrid’s own numbers: the grid shape and how many coins a ' +
+      'game calls, the window it is scored over, the entry fee, what a right call multiplies, ' +
+      'what the captain pick is worth, what a wrong one costs, and whether a jackpot rides on ' +
+      'it. The economics live on the game preset rather than on any one session.',
+    useCase: 'readGameRules',
+    input: {},
+    call: (app, who) => app.readGameRules.execute(who),
+  },
+  {
+    name: 'read_grid_session',
+    description:
+      'One Market Grid session: its schedule and status, whether this account entered it, and ' +
+      'the state of its results. Before settlement BattleGrid answers that results are ' +
+      'published afterwards — a state, not an error. After settlement this product reports ' +
+      'that results exist and does not read them: that payload has never been observed, and ' +
+      'nothing here is inferred from a declaration. Get the id from watch_arena.',
+    useCase: 'openGridSession',
+    input: {
+      sessionId: { type: 'string', description: 'The session id, from watch_arena.' },
+    },
+    required: ['sessionId'],
+    call: (app, who, a) => app.openGridSession.execute({ ...who, sessionId: str(a['sessionId']) }),
   },
   {
     name: 'read_audit',

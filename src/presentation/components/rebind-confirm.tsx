@@ -1,4 +1,5 @@
 import type { RebindProposal } from '@/application/use-cases/rebind-agent.command.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from './control.js';
 
 /**
  * The confirmation for the most destructive thing this product can do.
@@ -38,10 +39,13 @@ export function RebindConfirm({
       <input type="hidden" name="expectedRevision" value={rebind.expectedRevision} />
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        {/* Not danger-styled, for DT-0002's reason: the weight is on the
+            consequence above, and a hazard-coloured control here would train a
+            flinch at the action the page exists to offer. */}
+        <button type="submit" className={BUTTON_PRIMARY}>
           Replace {rebind.agentName}&apos;s configuration with {rebind.toStrategyName}&apos;s
         </button>
-        <a href={`/agents/${rebind.agentId}`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${rebind.agentId}`} className={BUTTON_SECONDARY}>
           Keep it bound to {rebind.fromStrategyName}
         </a>
       </div>

@@ -893,6 +893,7 @@ describe('a page about one thing can get back to it', () => {
     // vacuously; everything fails it for a reason unrelated to getting back.
     expect([...entityRoutes].sort()).toEqual([
       '/agents/[id]',
+      '/arena/[id]',
       '/explorer/[agentId]',
       '/pending/[id]',
       '/strategies/[id]',

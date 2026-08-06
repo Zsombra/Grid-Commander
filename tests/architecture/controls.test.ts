@@ -1,7 +1,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CONTROL } from '@/presentation/components/control.js';
+import {
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  CONTROL,
+  LABEL,
+} from '@/presentation/components/control.js';
 
 /**
  * Form controls carry the design system's tokens, from one place.
@@ -93,5 +98,89 @@ describe('the treatment itself is made of tokens', () => {
     // the only signal for another.
     expect(CONTROL).toMatch(/focus-visible:/);
     expect(CONTROL).not.toMatch(/(^|\s)focus:(?!visible)/);
+  });
+
+  it('sets the control text weight rather than inheriting it', () => {
+    // A `LABEL` that wraps its own control would otherwise push `font-medium`
+    // into the input — Tailwind's preflight sets `font-weight: inherit` on form
+    // elements. A control whose weight depends on what encloses it is this
+    // file's defect one layer along.
+    expect(CONTROL).toMatch(/\bfont-\w+/);
+  });
+});
+
+/**
+ * The button and label treatments, asserted on the constants themselves.
+ *
+ * **No filesystem scan here, deliberately.** The sibling check above can demand
+ * `className={CONTROL}` on every input because there is no exception to it. The
+ * button equivalent has one: `agent-edit.tsx` was out of scope for the change
+ * that added these and still carries the stock utilities. A scan shipped with an
+ * allowlist is a scan whose allowlist nobody deletes, and it would report a
+ * cleanliness the tree does not have. Filed as `agent-edit-still-stock`; the scan
+ * belongs to the change that empties it.
+ *
+ * What is checkable now without lying is that the treatments are made of tokens
+ * rather than of Tailwind's defaults — which is the property that made the
+ * controls invisible in dark mode, and the one these were extracted to fix.
+ */
+describe('the button and label treatments are made of tokens', () => {
+  it('fills the primary from the accent role, not from a default', () => {
+    // `bg-blue-600` is legible in both schemes and belongs to no design system.
+    expect(BUTTON_PRIMARY).toMatch(/\bbg-accent-\w+/);
+    expect(BUTTON_PRIMARY).toMatch(/\btext-accent-\w+/);
+    expect(BUTTON_PRIMARY).toMatch(/\bhover:bg-accent-\w+/);
+  });
+
+  it('gives the secondary a token border and token text', () => {
+    // The bare `border` is a width. Without a colour it falls through to
+    // Tailwind's grey — the original defect, on a different element.
+    expect(BUTTON_SECONDARY).toMatch(/\bborder-border-\w+/);
+    expect(BUTTON_SECONDARY).toMatch(/\btext-text-\w+/);
+  });
+
+  it('states the label colour rather than inheriting it', () => {
+    expect(LABEL).toMatch(/\btext-text-\w+/);
+  });
+
+  it('carries the radius from the token scale', () => {
+    // `rounded` is Tailwind's 4px; `rounded-gc-2` is radius.2 from system.json,
+    // and the two are not the same value.
+    expect(BUTTON_PRIMARY).toMatch(/\brounded-gc-\w+/);
+    expect(BUTTON_SECONDARY).toMatch(/\brounded-gc-\w+/);
+  });
+
+  it('meets the tap-target floor the design system states as a principle', () => {
+    // 44px, which system.json requires in prose and gives no token for — its
+    // space scale is 32px then 48px. DT-0002 spent Tailwind's `min-h-11` for the
+    // same reason. Asserted so that dropping it is a test failure rather than a
+    // quiet regression on touch. See `the-button-primitive-has-no-tokens`.
+    expect(BUTTON_PRIMARY).toMatch(/\bmin-h-11\b/);
+    expect(BUTTON_SECONDARY).toMatch(/\bmin-h-11\b/);
+  });
+
+  it('declares no focus ring of its own', () => {
+    // `globals.css` draws one outline for every interactive element. A second
+    // one here would be a second place to forget it, and the two could disagree.
+    expect(BUTTON_PRIMARY).not.toMatch(/\bring-|\boutline-/);
+    expect(BUTTON_SECONDARY).not.toMatch(/\bring-|\boutline-/);
+  });
+
+  it('is worn by the surface the treatments were taken from', () => {
+    // Vacuity: these constants could satisfy every assertion above and be
+    // imported by nothing. `plan-review.tsx` is where DT-0002 landed them, so it
+    // is the one file that must not drift back to spelling them out.
+    const panel = readFileSync(join('src', 'presentation', 'components', 'plan-review.tsx'), 'utf8');
+    expect(panel).toMatch(/className=\{BUTTON_PRIMARY\}/);
+    expect(panel).toMatch(/className=\{BUTTON_SECONDARY\}/);
+  });
+
+  it('is worn widely enough to be a treatment rather than a page style', () => {
+    const uses = (needle: string) =>
+      uiFiles.filter((f) => stripComments(read(f)).includes(needle)).length;
+    // A treatment one page imports is a page's style, not a system's.
+    expect(uses('className={BUTTON_PRIMARY}')).toBeGreaterThanOrEqual(8);
+    expect(uses('className={BUTTON_SECONDARY}')).toBeGreaterThanOrEqual(8);
+    expect(uses('className={LABEL}')).toBeGreaterThanOrEqual(8);
   });
 });

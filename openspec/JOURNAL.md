@@ -1,6 +1,6 @@
 # Journal
 
-## 2026-08-06 (round three) — a research map of what can be built, and the discovery that nobody has built anything that works
+## 2026-08-06 (round four) — a research map of what can be built, and the discovery that nobody has built anything that works
 
 **Did**: `_PM/TRADE_CATEGORIES_AND_MATHEMATICAL_FAMILIES.md` — 13 trade
 categories mapped onto a 16-operator mathematical algebra, with a benchmark
@@ -102,6 +102,102 @@ path does not is unverified, and the doc says so rather than guessing.
 **Next**: the cheapest real test is the stop-geometry fix alone, holding signals
 constant — two fields. After that, C8 (perp–spot basis): strongest prior
 mechanism, native signal pair, zero competition.
+
+## 2026-08-06 (round three) — six builds, and a destructive risk that turned out not to be
+
+**Did**: five agents plus one build of my own. Six changes archived, six items
+closed, five new items filed. PR #69. Backlog 23 → 26 — it went *up*, because
+finishing work honestly means filing what it uncovers.
+
+| change | closes |
+|---|---|
+| `a-drafted-condition-can-be-tried` | `conditions-are-an-unmodelled-authoring-layer` |
+| `the-game-is-legible-before-it-is-played` | `market-grid-is-an-unmodelled-module` |
+| `brain-presets-are-read-not-remembered` | `brain-presets-are-hardcoded-and-short-one` |
+| `buttons-and-labels-from-one-source` | `buttons-and-labels-untokenised` |
+| `the-snapshot-says-how-old-it-is` | `a-priced-position-goes-stale-while-you-read-it` |
+| `the-last-two-surfaces-that-assume-a-binding` | the binding-copy remainder |
+
+**The conditions build stopped at the write and was right to.** It found that
+`compileUpdateIntent` omits `conditions`, while `toApplyPlan` copies
+`postState.conditions` — so if the compiler treated an omitted list as empty,
+**every tagline edit would silently clear the layer that decides direction**, on
+a fleet-wide apply. Nothing in the repo distinguished that from the benign
+reading, so it refused to guess and filed it.
+
+**Settled live, and it is the benign one.** `compile_strategy_plan` performs no
+write, so one call answers it. On `Dunkirk (fork)` — user-owned; a SYSTEM
+strategy answers `FORBIDDEN` — with the request composed byte-for-byte as the
+product composes it:
+
+```
+BEFORE  rev=4  conditions=2  [ALL_AGREE_UP, ALL_AGREE_DOWN]
+postState.conditions: 2 entries [ALL_AGREE_UP, ALL_AGREE_DOWN]
+AFTER   rev=4  conditions=2   (compile wrote nothing)
+```
+
+The compiler fills `postState` from the stored strategy. Two things learned on
+the way: a **no-op UPDATE is refused** (`VALIDATION_ERROR — Strategy update
+contains no effective changes`), and `compile_strategy_plan` takes a **`request`
+wrapper** — a flat payload is refused on `path: ["request"]`, which is why a
+hand-rolled probe must be checked against the adapter and not the schema alone.
+
+It opened a new question rather than closing cleanly: **twenty-five of the
+twenty-six user-owned strategies across both accounts have zero conditions**,
+while every SYSTEM strategy has two to ten — and the twenty-sixth,
+`Dunkirk (fork)`, has two. So "forking drops them" cannot be the whole story.
+Filed.
+
+**The brain-presets item was diagnosed wrong, and the correction is the lesson.**
+It read as staleness — ten hard-coded, eleven declared. It was never stale: the
+2026-07-27 capabilities record already held eleven, and the constant was written
+2026-07-29 with ten because it copied the field's **description prose**, which
+enumerates presets in a sentence, rather than the `enum` constraint beside it.
+The comment saying "if BattleGrid adds one, this is where the surprise lands"
+was already out of date when it was written, and being the designated landing
+place did not make anyone look for eight days. The enum is now read live.
+
+`CUSTOM` is excluded without a guess: the offered set is the preset enum
+**minus every value that also appears as a `brain.kind` discriminator**, derived
+at runtime from both enums, so it holds if either moves. What
+`{kind: PRESET, preset: CUSTOM}` means is still unestablished and still filed.
+
+**The buttons item was also wrong about itself.** It deferred on the grounds
+that no design ticket had spent the tokens. DT-0002 had: `plan-review.tsx`
+carried both weights as inline strings, screenshotted in both schemes. The new
+constants are those strings lifted byte-for-byte — no visual language invented.
+Two buttons turned out to be wearing `CONTROL`, i.e. a submit dressed as a text
+input, `w-full` and all.
+
+**Market Grid found a dead path**: `get_market_grid_results` had been on the
+port since the arena shipped and was never called. It is reached now, from
+`/arena/[id]` rather than the fan-out over fifty rows — which is where this
+morning's 429 came from. It also filed a p2 questioning the fan-out itself: the
+session list already carries `status`/`lockAt`/`settleAt`/`playerCount`, so the
+per-session detail read may be unnecessary. It did not act on that, because
+removing it would retire three live scenarios.
+
+**Staleness took both options** — an age beside the stamp (not replacing it, so
+rounding hides nothing) and a server-rendered re-read link — with a third state,
+`ahead-of-clock`, so the panel can never say "priced -1 minutes ago". Clock
+through the port, plus a guard forbidding `Date.now()` under `src/presentation/`
+and `app/**/*.tsx`.
+
+**A test I loosened deliberately**, in my own build: `not.toContain('bound to')`
+failed *on the fix*, because `BindingSummary` legitimately says "the strategy it
+**was bound to** … can no longer be read". It now names the claim
+(`'returns to your roster bound to'`) rather than the phrase. A guard broad
+enough to catch the honest wording is one that gets relaxed carelessly the next
+time it fires.
+
+**CI**: keyless green. The keyed run failed two live probes on BattleGrid
+**504s** — third time today — and the platform, not the product, is what moved.
+
+**Next**: `an-update-that-omits-conditions-is-unobserved` is answered, so the
+condition **write** now has one blocker left rather than two — the record
+flattens the condition union, so `payload-conformance` cannot check a condition
+payload. `the-session-list-already-carries-the-schedule` (p2) is small and
+would undo a fan-out that has already cost one outage.
 
 ## 2026-08-06 (round two) — four more in parallel, and one of them found the reason a field was always empty
 

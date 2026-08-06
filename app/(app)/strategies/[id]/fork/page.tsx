@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredText } from '@/presentation/form.js';
 
 /**
@@ -86,11 +87,11 @@ export default async function ForkStrategyPage({ params }: { params: Promise<{ i
 
       <form action={forkStrategy} className="flex flex-wrap gap-3">
         <input type="hidden" name="strategyId" value={strategy.id} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Make my copy
         </button>
         {/* The strategy being copied, not the roster. */}
-        <a href={`/strategies/${strategy.id}`} className="px-4 py-2 text-sm underline">
+        <a href={`/strategies/${strategy.id}`} className={BUTTON_SECONDARY}>
           Cancel
         </a>
       </form>

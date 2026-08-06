@@ -1,14 +1,16 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
-import { CONTROL } from './control.js';
+import { BUTTON_PRIMARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
  * The create form.
  *
  * Every choice comes from the catalog argument, which was read from the live
- * platform. Nothing here is a literal list of BattleGrid values — the repo's own
+ * platform — including the brain presets, which came from a hand-written list
+ * until 2026-08-06 and were a value short of the schema for the whole of that
+ * time. Nothing here is a literal list of BattleGrid values: the repo's own
  * surface map already fell a preset behind the server inside a week
  * (findings-agents F-3), and a form built from it would offer a stale set and
  * reject a valid one.
@@ -60,16 +62,30 @@ export function AgentForm({
           yourself means setting the temperament too — one or the other, never both.
         </p>
 
-        <Field label="Preset" name="brainPreset" error={issueFor('brain.preset')}>
-          <select id="brainPreset" name="brainPreset" className={CONTROL}>
-            <option value="">Choose a model instead</option>
-            {catalog.brainPresets.map((preset) => (
-              <option key={preset} value={preset}>
-                {preset}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {/*
+          No presets means the declaration did not answer, not that BattleGrid
+          has none — the list is read from the create tool's own schema, and an
+          empty select would state the second while only the first is known. The
+          model route's values came from a catalogue call that did answer, so it
+          stays open and is what the sentence sends the operator to.
+        */}
+        {catalog.brainPresets.length === 0 ? (
+          <p role="status" className="text-sm">
+            BattleGrid did not declare which brain presets it accepts, so none are
+            offered here. Choose a model and set the temperament yourself.
+          </p>
+        ) : (
+          <Field label="Preset" name="brainPreset" error={issueFor('brain.preset')}>
+            <select id="brainPreset" name="brainPreset" className={CONTROL}>
+              <option value="">Choose a model instead</option>
+              {catalog.brainPresets.map((preset) => (
+                <option key={preset} value={preset}>
+                  {preset}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         <Field label="Model" name="modelId" error={issueFor('brain.modelId')}>
           <select id="modelId" name="modelId" className={CONTROL}>
@@ -124,7 +140,7 @@ export function AgentForm({
       <MoneyLimits catalog={catalog} />
 
 
-      <button type="submit" className="rounded border px-4 py-2 text-sm">
+      <button type="submit" className={BUTTON_PRIMARY}>
         Create agent
       </button>
     </form>
@@ -144,7 +160,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
+      <label htmlFor={name} className={LABEL}>
         {label}
       </label>
       {children}

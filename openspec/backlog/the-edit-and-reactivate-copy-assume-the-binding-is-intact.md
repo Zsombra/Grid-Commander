@@ -2,11 +2,11 @@
 id: the-edit-and-reactivate-copy-assume-the-binding-is-intact
 title: Two more surfaces describe a binding without reading its state
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-last-two-surfaces-that-assume-a-binding
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, binding, false-claim, deferred]

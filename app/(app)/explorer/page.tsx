@@ -2,7 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { FIELD_SORTS, FIELD_WINDOWS } from '@/ports/explorer.js';
 import type { FieldSort, FieldWindow } from '@/ports/explorer.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
@@ -158,7 +158,7 @@ export default async function ExplorerPage({
 
             <form method="get" className="flex flex-wrap items-end gap-3 text-sm">
               <div className="space-y-1">
-                <label htmlFor="window" className="block">
+                <label htmlFor="window" className={LABEL}>
                   Window
                 </label>
                 <select id="window" name="window" defaultValue={timeframe} className={CONTROL}>
@@ -170,7 +170,7 @@ export default async function ExplorerPage({
                 </select>
               </div>
               <div className="space-y-1">
-                <label htmlFor="sort" className="block">
+                <label htmlFor="sort" className={LABEL}>
                   Sort by
                 </label>
                 <select id="sort" name="sort" defaultValue={sortBy} className={CONTROL}>
@@ -181,7 +181,10 @@ export default async function ExplorerPage({
                   ))}
                 </select>
               </div>
-              <button type="submit" className={CONTROL}>
+              {/* Wore the text input's treatment, `w-full` and all, so it broke
+                  onto its own row instead of sitting at the end of the one it
+                  belongs to. It re-asks the question in the query string. */}
+              <button type="submit" className={BUTTON_SECONDARY}>
                 Apply
               </button>
             </form>

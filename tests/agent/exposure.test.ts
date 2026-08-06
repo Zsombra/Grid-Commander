@@ -4,6 +4,7 @@ import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.j
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 import { anEntryDecision, FakeAgentsPort } from '../support/agent-fakes.js';
 import { aPosition, FakePositionsPort, anExposure } from '../support/position-fakes.js';
+import { FakeClock } from '../support/fakes.js';
 
 /**
  * What an agent is holding, and what it could not get to the exchange.
@@ -25,6 +26,20 @@ import { aPosition, FakePositionsPort, anExposure } from '../support/position-fa
  */
 
 const who = { userId: 'u1', accessToken: 'at' };
+
+/** When the live read was priced: `generatedAtMs` on the payload below. */
+const PRICED_MS = 1786038921702; // 2026-08-06T17:55:21.702Z
+const MINUTE = 60_000;
+
+/**
+ * A clock reading a fixed distance from the moment the platform priced.
+ *
+ * Every age in this file is measured against it rather than against the wall
+ * clock, which is the whole reason `ReadExposureQuery` takes a `Clock` at all:
+ * `Date.now()` inside the read would make "4 minutes ago" a different sentence
+ * on every run.
+ */
+const readAt = (offsetMs: number) => new FakeClock(new Date(PRICED_MS + offsetMs));
 
 /** The live envelope, trimmed to the keys the mapper reads. */
 const LIVE = {
@@ -164,7 +179,7 @@ describe('one agent’s share of what is at stake', () => {
     positions.result = { kind: 'exposure', exposure };
     const agents = new FakeAgentsPort([]);
     agents.ownFunnel = funnel;
-    return new ReadExposureQuery(positions, agents);
+    return new ReadExposureQuery(positions, agents, readAt(4 * MINUTE));
   }
 
   it('shows this agent’s positions and the account’s totals', async () => {
@@ -183,7 +198,7 @@ describe('one agent’s share of what is at stake', () => {
   it('never reports an unreadable position read as holding nothing', async () => {
     const positions = new FakePositionsPort();
     positions.result = { kind: 'unreadable', reason: 'no answer', cause: 'unreachable' };
-    const out = await new ReadExposureQuery(positions, new FakeAgentsPort([])).execute({
+    const out = await new ReadExposureQuery(positions, new FakeAgentsPort([]), readAt(0)).execute({
       ...who,
       agentId: 'a1',
     });
@@ -200,6 +215,54 @@ describe('one agent’s share of what is at stake', () => {
     }).execute({ ...who, agentId: 'a1' });
     expect(out.exposure.kind).toBe('holding');
     expect(out.fills).toBeNull();
+  });
+});
+
+describe('how old these figures are', () => {
+  /**
+   * The gap `a-priced-position-goes-stale-while-you-read-it` filed. The stamp
+   * was already carried and already rendered, and a page four minutes old read
+   * exactly like one a second old — on a 5× position the platform asks a client
+   * to re-read every ten seconds (`refreshIntervalMs: 10000` on this payload).
+   * The age is the part of that a surface can actually say.
+   */
+  const priced = async (clock: FakeClock, exposure = anExposure()) => {
+    const positions = new FakePositionsPort();
+    positions.result = { kind: 'exposure', exposure };
+    const out = await new ReadExposureQuery(positions, new FakeAgentsPort([]), clock).execute({
+      ...who,
+      agentId: 'a1',
+    });
+    if (out.exposure.kind !== 'holding') throw new Error(out.exposure.kind);
+    return out.exposure.pricedAt;
+  };
+
+  it('measures the age against the clock it was given', async () => {
+    expect(await priced(readAt(4 * MINUTE))).toEqual({
+      kind: 'aged',
+      atMs: PRICED_MS,
+      ageMs: 4 * MINUTE,
+    });
+  });
+
+  it('reports a read taken the instant it was priced as an age of zero', async () => {
+    // Zero is a measurement: the read happened at the moment of pricing. Only a
+    // missing stamp is silence, and the two must not share a representation.
+    expect(await priced(readAt(0))).toMatchObject({ kind: 'aged', ageMs: 0 });
+  });
+
+  it('claims no age when the stamp is later than the clock reads', async () => {
+    /**
+     * Two machines keep two clocks and a second of skew is ordinary. Carried
+     * forward as a number it would surface as "priced -1 minutes ago" — this
+     * product's arithmetic presented as the platform's fact.
+     */
+    expect(await priced(readAt(-1))).toEqual({ kind: 'ahead-of-clock', atMs: PRICED_MS });
+  });
+
+  it('keeps a stamp the platform never sent apart from an age', async () => {
+    const totals = { ...anExposure().totals, generatedAtMs: null };
+    expect(await priced(readAt(4 * MINUTE), anExposure({ totals }))).toEqual({ kind: 'unstated' });
   });
 });
 
@@ -220,7 +283,7 @@ describe('the stop the decision set, against the stop now', () => {
     positions.result = { kind: 'exposure', exposure };
     const agents = new FakeAgentsPort([]);
     agents.entryDecisions = decisions;
-    return { query: new ReadExposureQuery(positions, agents), agents };
+    return { query: new ReadExposureQuery(positions, agents, readAt(4 * MINUTE)), agents };
   }
 
   const held = async (
@@ -362,7 +425,7 @@ describe('entries that never became an order', () => {
         ...over,
       },
     };
-    return new ReadExposureQuery(new FakePositionsPort(), agents);
+    return new ReadExposureQuery(new FakePositionsPort(), agents, readAt(4 * MINUTE));
   }
 
   it('states the failures against the total decided', async () => {
