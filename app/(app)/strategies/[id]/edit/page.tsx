@@ -128,6 +128,23 @@ export default async function EditStrategyPage({
 
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Sections</legend>
+            {/* The ceilings a preview of this composition runs under, published
+                by the platform's own discovery since v9.0.0. Shown here rather
+                than on the preview page because this is where a section is
+                added — by the time a preview is refused for being too large,
+                the refusal already says so in the platform's words.
+
+                Absent when the platform does not publish them, and never
+                defaulted: an invented ceiling would be read as the platform's,
+                and an author would compose against a number nobody enforces. */}
+            {result.limits ? (
+              <p className="text-xs text-text-secondary">
+                A preview of this composition may render up to{' '}
+                {result.limits.maxResultBytes.toLocaleString('en-US')} bytes and run for{' '}
+                {Math.round(result.limits.deadlineMs / 1000)} seconds. Past either, BattleGrid
+                refuses the preview rather than truncating it.
+              </p>
+            ) : null}
             {result.categories.map((cat) => {
               const catTemplates = result.templates.filter((t) => t.category === cat.category);
               if (catTemplates.length === 0) return null;

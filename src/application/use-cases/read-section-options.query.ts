@@ -39,6 +39,9 @@ export class ReadSectionOptionsQuery {
       detail: strategyResult.detail,
       templates: templateResult.templates,
       categories: vocabResult.categories,
+      // Carried through rather than read again: the templates call is the
+      // discovery call, and v9 moved the preview's ceilings onto it.
+      limits: templateResult.limits,
     };
   }
 }

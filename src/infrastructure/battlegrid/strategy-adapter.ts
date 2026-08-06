@@ -20,6 +20,7 @@ import type {
   MetricListResult,
   MetricSummary,
   MetricTransform,
+  PreviewLimits,
   RenderedSection,
   ReportPreviewOutcome,
   RuleMembership,
@@ -289,9 +290,13 @@ export class McpStrategyAdapter implements StrategiesPort {
    * All section templates the platform's vocabulary advertises.
    *
    * `list_strategy_vocabulary` requires a category argument but returns the same
-   * 24 templates regardless of which category is passed — verified against the
+   * templates regardless of which category is passed — verified against the
    * live platform. We fetch categories first to get a valid key, then fetch
    * templates once with that key.
+   *
+   * The same payload carries `previewExecutionLimits`, new in v9.0.0, and it is
+   * taken here rather than by a second read: `preview_strategy_report` moved its
+   * limits to discovery, and discovery is this call.
    */
   async listVocabularyTemplates(params: { userId: string; accessToken: string }): Promise<VocabularyTemplatesResult> {
     try {
@@ -303,7 +308,7 @@ export class McpStrategyAdapter implements StrategiesPort {
       const vocabPayload = await this.call(params, TOOLS.vocabulary, { category: firstCat });
       const raw = Array.isArray(vocabPayload['templates']) ? vocabPayload['templates'] : [];
       const templates = raw.map(mapSectionTemplate).filter((t): t is SectionTemplate => t !== null);
-      return { kind: 'templates', templates };
+      return { kind: 'templates', templates, limits: mapPreviewLimits(vocabPayload) };
     } catch (err) {
       return unreadable(err);
     }
@@ -1003,4 +1008,21 @@ function mapSignalDefinition(sig: Record<string, unknown>): SignalDefinition {
     parameters,
     indicators,
   };
+}
+
+/**
+ * The preview ceilings, or `null`.
+ *
+ * Both numbers or neither. A half-read limit — a deadline with no size cap —
+ * would be shown to an author as the whole constraint, and composing against
+ * half a ceiling is worse than composing against none.
+ */
+function mapPreviewLimits(payload: Record<string, unknown>): PreviewLimits | null {
+  const raw = payload['previewExecutionLimits'];
+  if (typeof raw !== 'object' || raw === null) return null;
+  const l = raw as Record<string, unknown>;
+  const maxResultBytes = num(l['maxResultBytes']);
+  const deadlineMs = num(l['deadlineMs']);
+  if (maxResultBytes === null || deadlineMs === null) return null;
+  return { maxResultBytes, deadlineMs };
 }

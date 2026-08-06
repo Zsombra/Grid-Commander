@@ -21,6 +21,7 @@ import type {
   StrategyDetailResult,
   StrategyListResult,
   VocabularyResult,
+  PreviewLimits,
   VocabularyTemplatesResult,
   SimulationResult,
 } from '@/ports/strategies.js';
@@ -262,12 +263,20 @@ export class FakeStrategiesPort implements StrategiesPort {
     };
   }
 
+  /**
+   * `null` exercises the honest branch — the platform not publishing limits is
+   * a state a surface has to handle, and it is the one v5 was always in.
+   * Overridden per-test where the limits themselves are the subject.
+   */
+  previewLimits: PreviewLimits | null = { maxResultBytes: 256000, deadlineMs: 15000 };
+
   async listVocabularyTemplates(): Promise<VocabularyTemplatesResult> {
     if (!this.vocabularyTemplatesReadable) {
       return { kind: 'unreadable', reason: 'vocabulary unavailable', cause: 'unreachable' };
     }
     return {
       kind: 'templates',
+      limits: this.previewLimits,
       templates: [
         { kind: 'platform', sectionKey: 'includeRsi', label: 'RSI', category: 'momentum' },
         { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
