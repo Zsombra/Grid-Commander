@@ -2,7 +2,7 @@
 id: screening-is-not-offered-over-mcp
 title: The MCP server cannot ask whether an agent would take a coin
 type: feature
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06

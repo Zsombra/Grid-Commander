@@ -2,11 +2,11 @@
 id: an-unreadable-branch-need-not-explain-itself
 title: Twenty-five surfaces print a failure's reason and stop; five explain it
 type: debt
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-05
 updated: 2026-08-06
-change: "a-failed-read-explains-itself"
+change: a-failed-read-explains-itself
 capability: app-access
 blocked_by: []
 tags: [ui, failure, consistency]

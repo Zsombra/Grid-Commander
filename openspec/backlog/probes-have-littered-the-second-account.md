@@ -2,7 +2,7 @@
 id: probes-have-littered-the-second-account
 title: Eight archived "GC probe" agents on the operator's second account are ours
 type: debt
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06

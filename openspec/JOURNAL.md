@@ -1,5 +1,75 @@
 # Journal
 
+## 2026-08-06 (backlog sweep) — five builds in parallel, and what the parallelism found
+
+**Did**: five agents in isolated worktrees, one backlog item each, integrated
+here. Five changes archived, five items closed, three new items filed from the
+second-account survey, two new items filed *by the agents* from things they hit
+on the way. PR #67. CI green on the five-way merge with no conflicts.
+
+| change | closes |
+|---|---|
+| `a-failed-read-explains-itself` | `an-unreadable-branch-need-not-explain-itself` |
+| `the-stop-that-moved-is-shown-as-moved` | `the-stop-that-moved-is-not-the-stop-we-show` |
+| `a-model-can-ask-whether-it-would-take-a-coin` | `screening-is-not-offered-over-mcp` |
+| `a-probe-reuses-its-throwaway-agent` | `probes-have-littered-the-second-account` |
+| `the-connect-response-says-only-what-is-read` | `unread-connect-response-fields` |
+
+**Three of the five found a defect the item did not describe.** That is the
+argument for doing them properly rather than as a sweep.
+
+- **`connectionId` was not merely unread — it was wrong.** The connections
+  insert is `onConflictDoUpdate` on `userId` whose `set` never touches `id`, so
+  on every reconnection the surviving row keeps its key while the code returned
+  a freshly minted one. Nothing caught it because `FakeConnectionStore.upsert`
+  *replaces* its stored connection with the fresh id: **the fake agreed with the
+  code and disagreed with the database**, and `expect(res.connectionId)
+  .toBeTruthy()` passed against both. Same shape as the `FakeAgentsPort`
+  confirmation trap already in HANDOFF.
+- **`/agents/new` reported a rejected credential as an outage.** It branched on
+  `catalog.kind !== 'catalog'` and discarded `cause`. Fixing it moved
+  `CatalogResult` from the domain to the ports — the domain cannot name
+  `FailureCause`, so the adapter had been producing one all along and only the
+  *type* dropped it.
+- **`write-probe` cannot spend the confirmation it mints.** Its trading-limit
+  step describes `{tradingConfig: {}}` and applies `{maxDailyTrades: 7}`; the
+  two digest differently, so the guard refuses the write. Established against
+  the fakes with the two differing targets rather than guessed, and filed as p2
+  rather than fixed inside an unrelated change.
+
+**The unreadable sweep's guard is the part worth keeping.** It walks `app/` and
+`src/presentation/`, finds every `.kind === 'unreadable'` test, extracts *the
+region that branch renders* by balanced-delimiter scan, and requires the shared
+sentence inside that region — per branch, not per file. An unrecognised branch
+shape fails loudly rather than passing. Exemptions are a declared table with a
+written reason each, checked **in both directions**: a stale entry fails, and so
+does one whose branch has started carrying the sentence. 32 of 36 branches
+explain themselves; the other four say why not, and the fourth
+(`exposure.tsx`) is deferred with a filed item rather than argued away.
+
+It also caught two subjects that read *"This does not mean this agent's limits
+gone"* — the sentence had no verb, on surfaces that had used the component
+correctly for weeks.
+
+**The stop-drift join has a third state I would not have specified.**
+`incomparable`, for when the decision recorded no stop *or* the position
+reports none now. Two absences are not agreement: folded into `as-decided`, a
+stop that had vanished from a live position would render as one that never
+moved. It produces the most alarming sentence the join can make — *"The
+decision set the stop at 55.67 and this position reports no stop now."*
+
+**On running five agents at once.** Disjoint file sets held: no merge conflicts
+across 39 files. The one integration cost was self-inflicted — the worktrees
+live under `.claude/worktrees/`, so `eslint .` scanned them and reported 427
+errors that were not in the merged code. Removing the worktrees after merging
+is part of the procedure, not an afterthought.
+
+**Next**: `an-orphaned-agent-is-shown-as-bound` and
+`an-archived-agent-is-shown-on-duty` (both p2, both filed today, both the same
+defect family — a surface asserting what the payload contradicts).
+`write-probe-describes-a-different-edit-than-it-applies` (p2) is small and
+self-contained.
+
 ## 2026-08-06 (closing) — the money that was at stake, and the money that never got there
 
 **Did**: both P1s from the second-account walk, as one change —

@@ -2,7 +2,7 @@
 id: the-stop-that-moved-is-not-the-stop-we-show
 title: Position management moves the stop and the product still shows the one the agent decided
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06

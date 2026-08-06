@@ -2,7 +2,7 @@
 id: unread-connect-response-fields
 title: CompleteConnectionCommand returns two fields nothing reads
 type: debt
-status: in-progress
+status: done
 priority: p3
 created: 2026-07-28
 updated: 2026-08-06
