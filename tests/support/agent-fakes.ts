@@ -220,10 +220,20 @@ export class FakeAgentsPort implements AgentsPort {
 
   /** The three pipeline stages, each settable on its own. */
   gateBlocks: StageResult<GateBlock> = { kind: 'none' };
+  /**
+   * Every `limit` the gate-block read was asked for, in order.
+   *
+   * Recorded because *how wide a window was read* is half of what the stoppage
+   * summary means: a fold over ten rows and a fold over a hundred answer
+   * differently, and a double that swallowed the argument would let a test
+   * pass while the product still read the pipeline's ten.
+   */
+  readonly gateBlockLimits: Array<number | undefined> = [];
   signalLogs: StageResult<SignalEvaluation> = { kind: 'none' };
   entryDecisions: StageResult<EntryDecision> = { kind: 'none' };
 
-  async readGateBlocks(): Promise<StageResult<GateBlock>> {
+  async readGateBlocks(params: { limit?: number | undefined }): Promise<StageResult<GateBlock>> {
+    this.gateBlockLimits.push(params.limit);
     return this.gateBlocks;
   }
 

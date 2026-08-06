@@ -172,7 +172,16 @@ describe('the page renders the three states distinctly', () => {
   const page = readFileSync('app/(app)/agents/[id]/page.tsx', 'utf8');
 
   it('reads the result and branches on all three kinds', () => {
-    expect(page).toMatch(/const radar = await app\.readDeployments\.execute/);
+    /**
+     * Matches the *call*, not the assignment around it. This was pinned to
+     * `const radar = await app.readDeployments.execute` and broke the day the
+     * page started reading the radar and the stoppage summary together in one
+     * `Promise.all` — a change that touched nothing this test protects.
+     *
+     * The three branch assertions below are the property. They survive any
+     * shape of the read, which is what a source-text check should be tied to.
+     */
+    expect(page).toMatch(/app\.readDeployments\.execute/);
     expect(page).toMatch(/radar\.kind === 'deployed'/);
     expect(page).toMatch(/radar\.kind === 'not-deployed'/);
   });
