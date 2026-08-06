@@ -468,6 +468,76 @@ PLURAL_OF: dict[str, str] = {
 }
 
 
+# Arguments that are objects rather than ids or enums, and how to build one.
+#
+# A builder gets everything the probe has already read and returns a value, or
+# `None` to decline. Written out per argument for the same reason `ID_SOURCES`
+# is: a composite assembled by guessing is a request the platform refuses in a
+# way that looks like the tool being broken.
+#
+# **Why this exists.** `preview_strategy_report` needs a `coinSelection`, so it
+# could never be called, so it had no observed shape, so no conformance guard
+# had anything to compare against — and v9 moved each rendered section's body
+# from `{sectionKey, title, text}` to `{sectionKey, section: {…}}` without a
+# single gate noticing. The preview page rendered five empty sections for days.
+# A tool the probe cannot call is a tool whose shape can change in silence.
+#
+# Deliberately minimal values: two coins, not fifty. The artifact records a
+# *shape*, and asking for more makes it depend on how busy the platform was.
+
+
+def _first_constant(constants: dict[str, Any], path: str) -> Any:
+    choices = constants.get(path)
+    return choices[0] if isinstance(choices, list) and choices else None
+
+
+def _sections_from_a_strategy(payloads: dict[str, Any], _c: dict[str, Any]) -> Any:
+    """A real strategy's own sections — the only shape the platform accepts."""
+    strategy = (payloads.get("get_strategy") or {}).get("strategy")
+    sections = (strategy or {}).get("sections")
+    if not isinstance(sections, list) or not sections:
+        return None
+    out = []
+    for s in sections:
+        if isinstance(s, dict) and isinstance(s.get("sectionKey"), str):
+            out.append({"kind": s.get("kind", "platform"), "sectionKey": s["sectionKey"]})
+    return out or None
+
+
+COMPOSITES: dict[str, Any] = {
+    # `{mode, limit}` — mode is an enum the schema declares; the limit is ours,
+    # and small on purpose.
+    "coinSelection": lambda p, c: (
+        {"mode": _first_constant(c, "coinSelection.mode") or "ranked", "limit": 2}
+    ),
+    "sections": _sections_from_a_strategy,
+    # Booleans and numbers the schema constrains but cannot supply.
+    "regimeAutoDerive": lambda p, c: False,
+    "gate": lambda p, c: 0.5,
+    "signals": lambda p, c: [{"label": "probe", "score": 0.5, "allocation": 1}],
+    # `column` is deliberately absent, and the attempt is worth recording.
+    #
+    # Two tries. `{metric: "OPEN"}` — the one obviously-required field — was
+    # answered with four more required paths. Building from the tool's own
+    # declared `input_required_paths` satisfied the schema and was then refused
+    # on *grammar*:
+    #
+    #     spread operand 'OPEN' is not a legal relational operand for base
+    #     'OPEN' — it must declare a numeric output in the base's OWN unit
+    #
+    # A legal column needs the report-table grammar, which is a domain this
+    # product models deliberately (`docs/REPORT_TABLE_GRAMMAR.md`) and a probe
+    # should not reimplement to fill an argument. Declining leaves a skip that
+    # says "not asked"; guessing left a failure that reads as a broken tool.
+    #
+    # `request` is deliberately absent for the same reason. Its shape differs
+    # per tool —
+    # `compile_strategy_plan` wants a whole plan, `get_strategy_section_template`
+    # wants a section descriptor — so one builder would have to guess which, and
+    # the artifact would record a refusal that looks like a broken tool.
+}
+
+
 def harvest(observed: dict[str, Any]) -> dict[str, str]:
     """One id per argument name, from responses the probe already holds.
 
@@ -493,6 +563,7 @@ def arguments_for(
     required: list[str],
     ids: dict[str, str],
     constants: dict[str, Any] | None = None,
+    payloads: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     """The call's arguments, or the reason it cannot be made.
 
@@ -530,6 +601,12 @@ def arguments_for(
         if singular and singular in ids:
             args[name] = [ids[singular]]
             continue
+        builder = COMPOSITES.get(name)
+        if builder is not None:
+            built = builder(payloads or {}, constants)
+            if built is not None:
+                args[name] = built
+                continue
         return None, f"no {name} available on this account"
     return args, ""
 
@@ -756,7 +833,7 @@ def main() -> int:
                 continue
 
             args, why = arguments_for(
-                entry["input_required"], ids, entry.get("input_constants")
+                entry["input_required"], ids, entry.get("input_constants"), payloads
             )
             if args is None:
                 # Names the argument that could not be supplied, not the whole

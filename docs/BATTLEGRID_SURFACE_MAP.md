@@ -77,7 +77,7 @@ Do not read an unchanged 110 as evidence of anything.
 
 ## How much of this is actually verified
 
-- **58 tools were called live** and their responses recorded — up from 43, and
+- **61 tools were called live** and their responses recorded — up from 43, and
   with **no failures at all**. Across all of them the declared `outputSchema`
   matched the observed response **exactly**: zero keys declared-but-absent, zero
   returned-but-undeclared.
@@ -108,9 +108,27 @@ says which it wanted; the probe now reads the refusal and retries **once** with
 values the tool's own schema declares. Four tools were recovered this way, and
 the map's one standing failure is gone.
 
-The 52 still unobserved are honest: mostly account state (no Market Grid
-sessions, no open orders, no entry decisions to fetch by id) and composite
-`request` objects that must be constructed rather than harvested.
+**Composite arguments are built, where they can be honestly built.**
+`coinSelection`, `sections`, `gate`, `signals` and `regimeAutoDerive` are
+assembled from the schema's own declared constants and from payloads the probe
+already holds — a real strategy's sections, the vocabulary's transforms. That is
+what finally made `preview_strategy_report` callable.
+
+Two are deliberately *not* built, and the attempts are recorded in the source:
+
+- **`column`** — the schema was satisfiable from the tool's own
+  `input_required_paths`, and the platform then refused on **grammar**: *"spread
+  operand 'OPEN' is not a legal relational operand for base 'OPEN'"*. A legal
+  column needs the report-table grammar, which this product models deliberately
+  and a probe should not reimplement to fill an argument.
+- **`request`** — its shape differs per tool, so one builder would have to guess
+  which.
+
+Declining leaves a skip that says *"not asked"*. Guessing left a failure that
+reads as a broken tool. Only one of those is true.
+
+The 49 still unobserved are honest: mostly account state (no Market Grid
+sessions, no open orders, no entry decisions to fetch by id) plus those two.
 
 ### Why the unreachable ones are the dangerous ones
 

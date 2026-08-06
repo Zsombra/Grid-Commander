@@ -5,7 +5,7 @@
     "version": "11.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-06T13:34:00Z",
+  "probed_at": "2026-08-06T15:12:56Z",
   "tool_count": 110,
   "by_classification": {
     "read": 83,
@@ -14,8 +14,8 @@
     "unclassified": 0
   },
   "probed": {
-    "called": 58,
-    "skipped": 52,
+    "called": 61,
+    "skipped": 49,
     "failed": 0
   },
   "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product. `server` is which BattleGrid answered: it is the only field that can tell you this record is stale. `tool_count` cannot \u2014 it stayed at 110 across v3.0.0 \u2192 v5.0.0 while enums, required arguments and semantics moved underneath it.",
@@ -2626,7 +2626,31 @@
       "declared_output": [
         "rules"
       ],
-      "not_called_because": "no sections available on this account"
+      "not_called_because": "no sections available on this account",
+      "observed": [
+        "rules"
+      ],
+      "observed_shape": {
+        "rules": [
+          {
+            "inReport": "bool",
+            "params": {
+              "threshold": "int"
+            },
+            "reportDefaultAllocation": "int",
+            "signalId": "str",
+            "status": "str"
+          },
+          "\u2026\u00d784"
+        ]
+      },
+      "arguments_from": "discovered:sections",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "fork_strategy",
@@ -3049,7 +3073,7 @@
             "coinName": "str",
             "coinTicker": "str",
             "evaluatedAt": "str",
-            "firstFailReason": "str",
+            "firstFailReason": "null",
             "gates": {
               "aggregateScore": {
                 "minScorePercent": "int",
@@ -3070,18 +3094,18 @@
             "long": {
               "candidateLevels": {
                 "ok": "bool",
-                "rejectionStage": "str"
+                "rejectionStage": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "qualifies": "bool",
             "short": {
               "candidateLevels": {
                 "ok": "bool",
-                "rejectionStage": "str"
+                "rejectionStage": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "strategyTimeframe": "str"
@@ -3902,7 +3926,7 @@
             "symbol": "str",
             "timeframe": "str",
             "timestamp": "str",
-            "volume": "int"
+            "volume": "float"
           },
           "\u2026\u00d720"
         ]
@@ -8588,7 +8612,7 @@
                 "coinId": "str",
                 "ticker": "str"
               },
-              "\u2026\u00d731"
+              "\u2026\u00d736"
             ],
             "crowdDownPercent": "null",
             "crowdUpPercent": "null",
@@ -8760,7 +8784,7 @@
               "openPositionAgentAvatarUrl": "null",
               "openPositionAgentDisplayName": "null",
               "openPositionAgentId": "null",
-              "qualificationBlock": "str",
+              "qualificationBlock": "null",
               "qualified": "bool",
               "reason": "null",
               "regimeConviction": "str",
@@ -10314,7 +10338,57 @@
         "renderedSections",
         "tokenCountModel"
       ],
-      "not_called_because": "no coinSelection available on this account"
+      "observed": [
+        "budgetUsage",
+        "conditionOutcomes",
+        "rankScopingNote",
+        "renderedSections",
+        "tokenCountModel"
+      ],
+      "observed_shape": {
+        "budgetUsage": {
+          "columnLookback": {
+            "cap": "int",
+            "used": "int"
+          },
+          "distinctTimeframes": {
+            "cap": "int",
+            "used": "int"
+          },
+          "estimatedTokens": {
+            "cap": "int",
+            "used": "int"
+          },
+          "sectionColumns": {
+            "cap": "int",
+            "used": "int"
+          },
+          "sections": {
+            "cap": "int",
+            "used": "int"
+          }
+        },
+        "conditionOutcomes": [],
+        "rankScopingNote": "str",
+        "renderedSections": [
+          {
+            "section": {
+              "text": "str",
+              "title": "str"
+            },
+            "sectionKey": "str"
+          },
+          "\u2026\u00d75"
+        ],
+        "tokenCountModel": "str"
+      },
+      "arguments_from": "discovered:coinSelection,regimeAutoDerive,sections,timeframe+refusal-named:regimeTimeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "random_submit_market_grid",
@@ -10586,7 +10660,38 @@
         "gatePercent",
         "wouldRoute"
       ],
-      "not_called_because": "no gate available on this account"
+      "observed": [
+        "aggregateScore",
+        "aggregateScorePercent",
+        "attributions",
+        "gate",
+        "gatePercent",
+        "wouldRoute"
+      ],
+      "observed_shape": {
+        "aggregateScore": "float",
+        "aggregateScorePercent": "int",
+        "attributions": [
+          {
+            "allocation": "int",
+            "attributionPercent": "int",
+            "label": "str",
+            "score": "float",
+            "scorePercent": "int"
+          },
+          "\u2026\u00d71"
+        ],
+        "gate": "float",
+        "gatePercent": "int",
+        "wouldRoute": "bool"
+      },
+      "arguments_from": "discovered:gate,signals",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "submit_agent_grid",
