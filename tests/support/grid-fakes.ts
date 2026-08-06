@@ -1,8 +1,10 @@
 import type {
   ArenaListResult,
+  GridDetailResult,
   GridResultsOutcome,
   GridSessionDetail,
   GridSessionSummary,
+  GridSubmissionResult,
   MarketGridPort,
 } from '@/ports/market-grid.js';
 
@@ -46,14 +48,30 @@ export class FakeMarketGridPort implements MarketGridPort {
     return this.list;
   }
 
-  async sessionDetail(params: { sessionId: string }): Promise<GridSessionDetail> {
+  /**
+   * Sessions whose per-session reads answer `unreadable`, by id.
+   *
+   * The fan-out failing is the case the arena got wrong for the life of the
+   * feature, so the double has to be able to produce it. A fake that could only
+   * succeed is why nothing caught it.
+   */
+  readonly unreadableDetail = new Set<string>();
+  readonly unreadableSubmission = new Set<string>();
+
+  async sessionDetail(params: { sessionId: string }): Promise<GridDetailResult> {
+    if (this.unreadableDetail.has(params.sessionId)) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not answer', cause: 'unreachable' };
+    }
     const detail = this.details.get(params.sessionId);
-    if (!detail) throw new Error(`no detail staged for ${params.sessionId}`);
-    return detail;
+    if (!detail) return { kind: 'unreadable', reason: `no detail staged for ${params.sessionId}`, cause: 'unreachable' };
+    return { kind: 'detail', detail };
   }
 
-  async hasSubmitted(params: { sessionId: string }): Promise<boolean> {
-    return this.submitted.has(params.sessionId);
+  async hasSubmitted(params: { sessionId: string }): Promise<GridSubmissionResult> {
+    if (this.unreadableSubmission.has(params.sessionId)) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not answer', cause: 'unreachable' };
+    }
+    return { kind: 'submission', entered: this.submitted.has(params.sessionId) };
   }
 
   async results(): Promise<GridResultsOutcome> {

@@ -20,7 +20,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 93 |
+| Changes (archived) | 94 |
 | Vitest tests | 1367 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
 | Active changes | none |

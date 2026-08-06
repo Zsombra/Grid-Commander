@@ -43,22 +43,39 @@ export default async function ArenaPage() {
       <ul className="space-y-4">
         {arena.sessions.map((s) => (
           <li key={s.id} className="rounded border p-4 text-sm space-y-1">
+            {/* Name and coin pool come off the list, so they are known for
+                every session that appears at all. Everything below them is a
+                separate read that can fail on its own. */}
             <p className="font-medium">
-              {s.name} — {s.status}
+              {s.detail === null ? s.name : `${s.name} — ${s.detail.status}`}
             </p>
-            <p>
-              {s.lockAt ? `Locks ${s.lockAt}` : 'Lock time unknown'}
-              {' · '}
-              {s.settleAt ? `settles ${s.settleAt}` : 'settle time unknown'}
-              {typeof s.playerCount === 'number' ? ` · ${s.playerCount} player(s)` : ''}
-            </p>
+            {s.detail === null ? (
+              <p role="status">
+                This session&apos;s schedule could not be read
+                {s.unreadable ? `: ${s.unreadable}` : ''}.
+              </p>
+            ) : (
+              <p>
+                {s.detail.lockAt ? `Locks ${s.detail.lockAt}` : 'Lock time unknown'}
+                {' · '}
+                {s.detail.settleAt ? `settles ${s.detail.settleAt}` : 'settle time unknown'}
+                {typeof s.detail.playerCount === 'number'
+                  ? ` · ${s.detail.playerCount} player(s)`
+                  : ''}
+              </p>
+            )}
             <p>Coins: {s.coinTickers.length > 0 ? s.coinTickers.join(', ') : 'not previewed'}</p>
+            {/* Three states. `null` is nobody knows, and saying "has not
+                entered" for it would be a claim from a read that never
+                answered. */}
             <p>
-              {s.entered
-                ? 'This account has entered this session.'
-                : 'This account has not entered this session.'}
+              {s.entered === null
+                ? 'Whether this account entered could not be read.'
+                : s.entered
+                  ? 'This account has entered this session.'
+                  : 'This account has not entered this session.'}
             </p>
-            {s.status !== 'SETTLED' ? (
+            {s.detail !== null && s.detail.status !== 'SETTLED' ? (
               <p className="text-text-secondary">Results arrive after settlement.</p>
             ) : null}
           </li>
