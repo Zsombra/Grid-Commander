@@ -29,15 +29,21 @@ import { berlinFullSendDown, berlinRegimeDown } from '../support/strategy-fakes.
  * with its `anyOf` branches and `$ref`s intact.
  *
  * That distinction is the reason this file carries a schema walker at all.
- * `payload-conformance.test.ts` holds every other payload this product builds
- * against `docs/battlegrid-mcp-surface.json`, and it cannot hold this one: the
- * probe flattens `conditions[].definition` to the keys of its outermost object
- * branch, so the record accepts `kind/members/n/op` and reads a clause's
- * `column` and a reference's `conditionKey` as violations of a closed set the
- * live schema does not close. A conformance case there would fail against
- * correct code, which is worse than no case at all. `the-record-flattens-the-condition-union`
- * files the gap; the last describe below proves the gap is still there, so that
- * a re-probe which fixes it makes this file fail rather than pass quietly.
+ * `payload-conformance.test.ts` holds every payload this product builds against
+ * `docs/battlegrid-mcp-surface.json` — the *record*, which is a derivation of
+ * the declaration and can lose things the declaration says. It used to lose this
+ * one: the probe's walk stopped at the outer level of `conditions[].definition`'s
+ * nested `anyOf`, so the record accepted `kind/members/n/op` and closed the set,
+ * and a clause's `column` read as a violation the live schema does not make.
+ * `the-record-flattens-the-condition-union` filed that, and the walk now follows
+ * a branch that is itself a union — so the record can hold a condition payload
+ * and `payload-conformance.test.ts` holds two of them.
+ *
+ * This walker stays regardless. It reads the declaration itself, `$ref`s and
+ * branches intact, which is a stronger check than any record derived from it —
+ * the pattern on `conditionKey`, the length bounds on a label, the numeric
+ * bounds on `n`: none of those reach the record, and all of them refuse a
+ * payload.
  */
 
 type Schema = Record<string, unknown>;
@@ -382,30 +388,68 @@ describe('the check that guards the check', () => {
     expect(found.join('\n')).toContain('matches none of the');
   });
 
-  it('the probed record still cannot express the union this file walks', () => {
+  it('the probed record expresses this union, or is an artifact awaiting a re-probe', () => {
     /**
-     * The reason there is no `payload-conformance.test.ts` case for a composed
-     * condition. `tools/probe_mcp_surface.py` records accepted sets per object
-     * path, and the definition union's object branches sit inside a nested
-     * `anyOf` its walk does not reach — so only the outermost branch (the
-     * group) is recorded, and `column` reads as a violation.
+     * **The flip.** This case used to assert that the record *could not* express
+     * the union — deliberately written to fail the day it was fixed, so that a
+     * re-probe closing the gap could not close it quietly and leave
+     * `payload-conformance.test.ts` with no condition case. That job is done:
+     * the walk follows nested unions now, and the sweep holds both payloads this
+     * product constructs (`preview_strategy_report — a strategy's own
+     * conditions, round-tripped`, and `— a drafted condition, alongside the
+     * strategy's own`). So the assertion's question changes from "is the gap
+     * still open" to "what does the record in hand actually say".
      *
-     * If a future re-probe fixes this, the assertion below fails and the
-     * conformance case becomes both possible and required. That is the point:
-     * a known gap that quietly closes is a check nobody adds.
+     * Both answers are legitimate, and which one is in hand is not this
+     * branch's to decide. `docs/battlegrid-mcp-surface.json` is written by a
+     * live probe against a real account — never by hand and never from the
+     * capabilities dump, which is a snapshot of an older deployment — so the
+     * fixed walk reaches the artifact only when someone holding a credential
+     * runs `BATTLEGRID_API_KEY=… python3 tools/probe_mcp_surface.py`. Until
+     * then the artifact honestly describes what the old walk saw.
+     *
+     * `tests/test_probe_declared_fields.py::TheConditionUnion` is where the walk
+     * itself is held against this same declaration, with no artifact involved.
      */
     const surface = JSON.parse(readFileSync('docs/battlegrid-mcp-surface.json', 'utf8')) as {
-      tools: Array<{ name: string; input_accepts?: Record<string, { accepts?: string[] }> }>;
+      tools: Array<{
+        name: string;
+        input_accepts?: Record<
+          string,
+          { accepts?: string[]; variants?: Array<{ when: Record<string, unknown>; accepts: string[] }> }
+        >;
+      }>;
     };
     const preview = surface.tools.find((t) => t.name === 'preview_strategy_report');
-    const accepts = preview?.input_accepts?.['conditions[].definition']?.accepts ?? [];
-    expect(accepts, 'the record still describes only the group branch').toEqual([
-      'kind',
-      'members',
-      'n',
-      'op',
+    const entry = preview?.input_accepts?.['conditions[].definition'];
+
+    if (!entry?.variants) {
+      // Pre-fix artifact: the group branch alone, and a clause unrepresentable.
+      expect(entry?.accepts, 'the record describes only the group branch').toEqual([
+        'kind',
+        'members',
+        'n',
+        'op',
+      ]);
+      expect(entry?.accepts, 'a clause is unrepresentable in this record').not.toContain('column');
+      return;
+    }
+
+    // Re-probed: every branch this file walks is in the record, and the keys
+    // that used to read as violations are accepted by the branch that declares
+    // them. Six shapes — four clause forms, the reference, the group.
+    expect(entry.variants.map((v) => v.when['kind'])).toEqual([
+      'clause',
+      'clause',
+      'clause',
+      'clause',
+      'conditionRef',
+      'group',
     ]);
-    expect(accepts, 'a clause is still unrepresentable in the record').not.toContain('column');
+    const accepted = new Set(entry.variants.flatMap((v) => v.accepts));
+    for (const key of ['column', 'value', 'low', 'high', 'label', 'labels', 'conditionKey']) {
+      expect(accepted, `${key} is still unrepresentable`).toContain(key);
+    }
   });
 });
 

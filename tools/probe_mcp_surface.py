@@ -286,6 +286,207 @@ def _discriminator(branch: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _union_shapes(
+    node: dict[str, Any], root: Any, active: frozenset[str]
+) -> list[tuple[dict[str, Any], frozenset[str]]]:
+    """Every shape a union at this node declares, with nested unions flattened.
+
+    Unions arrive nested. `conditions[].definition` is an `anyOf` over *two*
+    members — the group object, and a further `anyOf` which itself holds a third
+    `anyOf` of the four clause forms plus the reference. A walk that reads only
+    the outer level sees exactly one object shape, records it as though it were
+    the whole grammar, and never reaches the other five: the record then said
+    `conditions[].definition` accepts `kind/members/n/op` **and closed the set**,
+    so a clause's `column` and a reference's `conditionKey` read as violations of
+    a set the platform does not close.
+
+    That is the record *inventing* a violation — the one direction
+    `input_accepts` promises it never takes, and the damaging one, because a
+    guard that fails against correct code gets disabled rather than fixed.
+
+    A member carrying `properties` is a shape; a member carrying only more
+    branches is a signpost, and this follows it. `_resolve`'s `active` set ends a
+    branch that recurses through itself, so a union reachable from inside its own
+    members — the group's `members[]` is a `$ref` back to `definition` — stops
+    here exactly as it does everywhere else.
+    """
+    shapes: list[tuple[dict[str, Any], frozenset[str]]] = []
+    for raw in (node.get("anyOf") or []) + (node.get("oneOf") or []):
+        branch, branch_active = _resolve(raw, root, active)
+        if not isinstance(branch, dict):
+            continue
+        if not branch.get("properties") and (branch.get("anyOf") or branch.get("oneOf")):
+            shapes.extend(_union_shapes(branch, root, branch_active))
+        else:
+            shapes.append((branch, branch_active))
+    return shapes
+
+
+def _one_of_pinned(branch: dict[str, Any]) -> dict[str, list[Any]]:
+    """The enum-pinned properties a branch *demands* — a discriminator's other half.
+
+    A `const` is an enum of one. Reading one as a discriminator and the other as
+    invisible is a distinction of how the schema is *spelled* rather than of what
+    it *reaches*, and the four clause forms are where that costs something: three
+    pin `op` with `const` (`between`, `is`, `in`) and the fourth pins it with
+    `enum: [lt, lte, gte, gt]`. On consts alone the fourth discriminates on
+    `kind: "clause"` and collides with the other three.
+
+    Required-only, unlike `_discriminator`. A discriminator naming a property the
+    branch does not demand cannot be answered by a payload that legitimately
+    omits it, and an unmatchable variant reads as "no declared variant matches" —
+    an invented violation of exactly the kind this walk exists to remove. Every
+    const-pinned discriminator on the observed surface is already required, so
+    the rule costs nothing there; it is stated here because here it is
+    load-bearing.
+    """
+    required = set(branch.get("required") or [])
+    return {
+        key: list(prop["enum"])
+        for key, prop in (branch.get("properties") or {}).items()
+        if isinstance(prop, dict)
+        and "const" not in prop
+        and isinstance(prop.get("enum"), list)
+        and prop["enum"]
+        and key in required
+    }
+
+
+def _tellable_apart(a: dict[str, list[Any]], b: dict[str, list[Any]]) -> bool:
+    """Whether some property pins these two discriminators to disjoint values.
+
+    Both sides are `property -> the values it permits` (a const contributing one).
+    They can be told apart only where they *both* pin a property and the two sets
+    of permitted values do not meet: anywhere else a single payload satisfies
+    both, and a reader picking the first match would check it against the wrong
+    branch. Membership by `in` rather than by set intersection, because a const
+    is any JSON value and need not be hashable.
+    """
+    for key in set(a) & set(b):
+        if not any(value in b[key] for value in a[key]):
+            return True
+    return False
+
+
+def _indistinguishable_groups(discriminators: list[dict[str, list[Any]]]) -> list[list[int]]:
+    """Branch indices gathered into the sets a payload cannot choose between.
+
+    Connected components, not first-fit: "tellable apart" is symmetric but not
+    transitive — A may separate from C while both collide with B — and in that
+    chain a reader still has no rule for picking, so all three belong together.
+    Groups come back in declaration order, first member first, because the record
+    is read by people diffing it against the schema.
+    """
+    parent = list(range(len(discriminators)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(len(discriminators)):
+        for j in range(i + 1, len(discriminators)):
+            if not _tellable_apart(discriminators[i], discriminators[j]):
+                parent[find(j)] = find(i)
+
+    groups: dict[int, list[int]] = {}
+    for i in range(len(discriminators)):
+        groups.setdefault(find(i), []).append(i)
+    return [groups[key] for key in sorted(groups, key=lambda k: groups[k][0])]
+
+
+def _variants(
+    object_branches: list[tuple[dict[str, Any], frozenset[str]]], root: Any
+) -> list[dict[str, Any]]:
+    """One record per branch a payload can actually be matched to.
+
+    Three rules, in this order, and the order is the whole design.
+
+    **Discriminate on consts.** What the record has always done, and what the
+    great majority of unions need: `operation=UPDATE`, `kind=PRESET`.
+
+    **Widen with enums only where consts collide.** The clause forms need it (see
+    `_one_of_pinned`). Nothing else does, and widening a discriminator that
+    already separates would make the record assert more than it needs to: the
+    discriminator's job is to say which branch a payload belongs to, and checking
+    that the payload's *values* are permitted is a different job, done by
+    `input_constants` and its own test. A widened variant records
+    `when_one_of: {"op": [...]}` beside `when`; a reader matches on both, `when`
+    by equality and `when_one_of` by membership. Kept as a second key rather than
+    folded into `when` as a list, because a `const` may itself be a list and a
+    reader would have no way to tell "this value" from "one of these".
+
+    **Merge what still cannot be told apart.** Two branches may differ only in
+    which keys they *require* — `sections[].columns[].timeframe` is `{rel}` or
+    `{abs}`, with nothing pinned on either — and no discriminator can be built
+    from that. Recorded as one variant whose accepted sets union and whose
+    required paths intersect, which is the merge rule `input_accepts` already
+    applies where two paths meet: it can miss a violation, and it cannot invent
+    one. The alternative — emitting both and letting a reader take the first
+    match — is what made an `{abs}` timeframe read as a violation of a closed set
+    containing only `rel`.
+    """
+    consts = [_discriminator(branch) for branch, _ in object_branches]
+    one_of: list[dict[str, list[Any]]] = [{} for _ in object_branches]
+
+    def permitted(index: int) -> dict[str, list[Any]]:
+        merged: dict[str, list[Any]] = {key: [value] for key, value in consts[index].items()}
+        merged.update(one_of[index])
+        return merged
+
+    groups = _indistinguishable_groups([permitted(i) for i in range(len(object_branches))])
+    if any(len(group) > 1 for group in groups):
+        for group in groups:
+            if len(group) == 1:
+                continue
+            for index in group:
+                branch, _ = object_branches[index]
+                one_of[index] = {
+                    key: values
+                    for key, values in _one_of_pinned(branch).items()
+                    if key not in consts[index]
+                }
+        # Widening only ever narrows what a discriminator matches, so a group can
+        # break apart here and none can newly form.
+        groups = _indistinguishable_groups([permitted(i) for i in range(len(object_branches))])
+
+    records: list[dict[str, Any]] = []
+    for group in groups:
+        members = [object_branches[index] for index in group]
+        required_per_branch = [
+            _required_paths(branch, root, "", branch_active) for branch, branch_active in members
+        ]
+        accepts: set[str] = set()
+        for branch, _ in members:
+            accepts |= set((branch.get("properties") or {}).keys())
+
+        first = group[0]
+        if len(group) == 1:
+            when = consts[first]
+            widened = one_of[first]
+        else:
+            # What the whole group shares — the weakest constraint that still
+            # matches every payload any member would have matched. A
+            # `when_one_of` here would be one that failed to separate them, so it
+            # could only make the merged variant unmatchable.
+            when = {
+                key: value
+                for key, value in consts[first].items()
+                if all(key in consts[index] and consts[index][key] == value for index in group)
+            }
+            widened = {}
+
+        record: dict[str, Any] = {"when": when}
+        if widened:
+            record["when_one_of"] = {key: list(values) for key, values in sorted(widened.items())}
+        record["closed"] = all(branch.get("additionalProperties") is False for branch, _ in members)
+        record["accepts"] = sorted(accepts)
+        record["required"] = sorted(set.intersection(*required_per_branch))
+        records.append(record)
+    return records
+
+
 def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
     """Per object path: what the schema will accept there, and whether it is closed.
 
@@ -297,11 +498,20 @@ def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
 
     A plain closed object records `{"closed": true, "accepts": [...]}`. A path
     declared as a union of object shapes records `{"variants": [...]}` instead,
-    each variant keyed by the const-pinned properties that discriminate it
-    (`operation=UPDATE`, `kind=PRESET`), with its own accepted set, closed flag,
-    and required paths relative to that object — because merging branches either
+    each variant keyed by what discriminates it — the const-pinned properties in
+    `when` (`operation=UPDATE`, `kind=PRESET`), and where consts alone cannot
+    tell two branches apart, the enum-pinned ones in `when_one_of`
+    (`op` ∈ `lt|lte|gte|gt`). Each carries its own accepted set, closed flag, and
+    required paths relative to that object — because merging branches either
     demands too much or accepts too little, and the branch a payload uses is
-    knowable from the payload itself.
+    knowable from the payload itself. Where nothing at all can tell two branches
+    apart they are recorded as one merged variant. `_variants` holds the rules
+    and the reasoning.
+
+    Unions are flattened before any of that: `_union_shapes` follows a branch
+    that is itself a union, which is how `conditions[].definition` is declared
+    and why the record used to describe one sixth of that grammar as though it
+    were all of it.
 
     The empty path is the argument root. Where two union branches record the
     same deeper path, the records merge conservatively: accepted names union,
@@ -322,11 +532,7 @@ def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(node, dict):
             return
 
-        resolved_branches: list[tuple[dict[str, Any], frozenset[str]]] = []
-        for raw in (node.get("anyOf") or []) + (node.get("oneOf") or []):
-            branch, branch_active = _resolve(raw, root, active)
-            if isinstance(branch, dict):
-                resolved_branches.append((branch, branch_active))
+        resolved_branches = _union_shapes(node, root, active)
 
         object_branches = [(b, a) for b, a in resolved_branches if b.get("properties")]
         if len(object_branches) == 1:
@@ -337,19 +543,7 @@ def input_accepts(tool: dict[str, Any]) -> dict[str, Any]:
             if lone.get("additionalProperties") is False:
                 record_closed(path, (lone.get("properties") or {}).keys())
         if len(object_branches) >= 2 and path not in out:
-            out[path] = {
-                "variants": [
-                    {
-                        "when": _discriminator(branch),
-                        "closed": branch.get("additionalProperties") is False,
-                        "accepts": sorted((branch.get("properties") or {}).keys()),
-                        "required": sorted(
-                            _required_paths(branch, root, "", branch_active)
-                        ),
-                    }
-                    for branch, branch_active in object_branches
-                ]
-            }
+            out[path] = {"variants": _variants(object_branches, root)}
         elif node.get("additionalProperties") is False:
             record_closed(path, (node.get("properties") or {}).keys())
 
