@@ -231,6 +231,17 @@ export class FakeAgentsPort implements AgentsPort {
   readonly gateBlockLimits: Array<number | undefined> = [];
   signalLogs: StageResult<SignalEvaluation> = { kind: 'none' };
   entryDecisions: StageResult<EntryDecision> = { kind: 'none' };
+  /**
+   * Every `limit` the decision read was asked for, in order.
+   *
+   * Recorded for the same reason as `gateBlockLimits`, and it bites harder
+   * here: the exposure surface joins an open position to the decision that
+   * opened it, and the platform's default window is ten rows. An agent that
+   * decides sixty entries pushes that decision off page one within hours, so a
+   * double that swallowed the argument would let the join test pass while the
+   * product asked for a window too narrow to contain the answer.
+   */
+  readonly entryDecisionLimits: Array<number | undefined> = [];
 
   async readGateBlocks(params: { limit?: number | undefined }): Promise<StageResult<GateBlock>> {
     this.gateBlockLimits.push(params.limit);
@@ -241,7 +252,10 @@ export class FakeAgentsPort implements AgentsPort {
     return this.signalLogs;
   }
 
-  async readEntryDecisions(): Promise<StageResult<EntryDecision>> {
+  async readEntryDecisions(params: {
+    limit?: number | undefined;
+  }): Promise<StageResult<EntryDecision>> {
+    this.entryDecisionLimits.push(params.limit);
     return this.entryDecisions;
   }
 
@@ -517,6 +531,52 @@ export class SequentialRandom {
   codeChallengeS256(verifier: string): string {
     return `challenge(${verifier})`;
   }
+}
+
+/**
+ * The decision that opened the live HYPE position of 2026-08-06.
+ *
+ * Its id is the `decisionId` `aPosition()` carries, so the two fixtures join
+ * the way the platform's own rows do. `stopLoss` is the recorded 55.67456526
+ * against the position's `effectiveStopLoss: 55.954` — trailing having walked
+ * the stop 28 cents up a $56 instrument, which is the drift this pair exists
+ * to exercise.
+ *
+ * **The target is the position's effective one, and the arithmetic says it was
+ * never moved.** Against an entry of 56.233 the decided stop and target sit at
+ * exactly 2.0 risk-reward — 0.55843474 of risk against 1.11686948 of reward —
+ * which is a decision-time construction, not a coincidence. Walking the stop
+ * to 55.954 takes the same pair to 4.0, because trailing shrinks the risk and
+ * leaves the reward alone. So the fixture drifts on the stop only, which is
+ * the observed case, and a test that moves the target is saying something
+ * deliberate rather than restating the default.
+ */
+export function anEntryDecision(overrides: Partial<EntryDecision> = {}): EntryDecision {
+  return {
+    id: '4f1096e9-cb21-4695-ad4f-0befd0b5f704',
+    coinTicker: 'HYPE',
+    decision: 'ENTER',
+    direction: 'LONG',
+    conviction: 0.65,
+    entryPrice: 56.233,
+    stopLoss: 55.67456526,
+    takeProfit: 57.34986948,
+    riskRewardRatio: 2,
+    status: 'EXECUTED',
+    reasoning: null,
+    checklist: [],
+    positionSizePct: null,
+    positionSizePreset: null,
+    timeHorizon: '1h',
+    atrPct: null,
+    expiresAt: null,
+    executedAt: '2026-08-06T17:10:18.262Z',
+    executedOrderId: null,
+    stopLossOrderId: null,
+    takeProfitOrderId: null,
+    at: '2026-08-06T17:10:17.000Z',
+    ...overrides,
+  };
 }
 
 /** Shaped from the live `list_trade_outcomes` row of 2026-08-02. */
