@@ -55,6 +55,7 @@ import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
+import { ReadStoppagesQuery } from './application/use-cases/read-stoppages.query.js';
 import { ReadOwnEvaluationQuery } from './application/use-cases/read-own-evaluation.query.js';
 import {
   DescribeRebindQuery,
@@ -265,6 +266,9 @@ export function app(cookies: CookieStore) {
     // from the agent, the coins from the radar, and the fallback coins from
     // the market. The use-case is the only place that knows all three.
     readQualification: new ReadQualificationQuery(i.agents, i.radar, i.market),
+    // Same rows `readPipeline` reads as one of three stages, asked a different
+    // question: not what happened lately, but what keeps happening.
+    readStoppages: new ReadStoppagesQuery(i.agents),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
     // Recording what a model suggests. Deliberately holds no BattleGrid port:

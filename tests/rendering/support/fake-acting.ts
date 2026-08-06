@@ -14,6 +14,7 @@ import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.j
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
+import { ReadStoppagesQuery } from '@/application/use-cases/read-stoppages.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
@@ -95,6 +96,7 @@ export function actingWith({
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
+    readStoppages: new ReadStoppagesQuery(agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),

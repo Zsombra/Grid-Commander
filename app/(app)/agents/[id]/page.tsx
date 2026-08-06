@@ -2,6 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { AgentRecord } from '@/presentation/components/record.js';
+import { Stoppages } from '@/presentation/components/stoppages.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 
 /**
@@ -46,7 +47,10 @@ export default async function AgentPage({
     );
   }
 
-  const radar = await app.readDeployments.execute({ ...user.authority, agentId: agent.id });
+  const [radar, stoppages] = await Promise.all([
+    app.readDeployments.execute({ ...user.authority, agentId: agent.id }),
+    app.readStoppages.execute({ ...user.authority, agentId: agent.id }),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
@@ -62,6 +66,25 @@ export default async function AgentPage({
        * reports a record full of zeroes and says so in its own words.
        */}
       {agent.performance && <AgentRecord performance={agent.performance} />}
+
+      {/**
+       * What keeps stopping it, before anything about how it is configured.
+       *
+       * An agent blocked ninety-eight times by one reason over a week is not a
+       * configuration question — it is the answer to every other question on
+       * this page, and it belonged above them. The three states are rendered
+       * distinctly for the usual reason: a history that could not be read must
+       * never dress up as an agent nothing has stopped.
+       */}
+      {stoppages.kind === 'summary' ? (
+        <Stoppages summary={stoppages.summary} />
+      ) : stoppages.kind === 'none' ? (
+        <p className="text-sm">Nothing has stopped this agent.</p>
+      ) : (
+        <p role="status" className="text-sm">
+          What has been stopping this agent could not be read: {stoppages.reason}
+        </p>
+      )}
 
       <section className="space-y-1">
         <h2 className="font-medium">Inherited from its strategy</h2>

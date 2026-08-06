@@ -2,7 +2,7 @@
 id: an-agent-can-be-structurally-unable-to-trade
 title: An agent can pay to think while being unable to place any valid order, and nothing says so
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-03
 updated: 2026-08-06
@@ -13,7 +13,32 @@ tags: [battlegrid, cost, sizing, derived-truth]
 
 # An agent can be structurally unable to trade, and nothing says so
 
-## Update 2026-08-06: the qualification surface does **not** answer this
+## Closed 2026-08-06 by `what-keeps-stopping-this-agent` — and the premise was wrong
+
+**The exchange minimum is published.** This item said it "is not published by
+any tool" and proposed scraping it out of rejection message text, then deriving
+the verdict from balance × preset × leverage. None of that was needed.
+BattleGrid emits it as a gate block with the arithmetic already done:
+
+```json
+{"equityUsd": 89.490186, "minEquityUsd": 1000, "smallPct": 1, "maxLeverage": 1}
+```
+
+`minEquityUsd` is the answer this item wanted computed — and it is computed
+per agent: CONFLUENCE's reads `minEquityUsd: 222.222222, smallPct: 0.9,
+maxLeverage: 5`. A derivation of our own would have produced a different number
+from the platform's and been wrong the first time BattleGrid changed how it
+sizes.
+
+So the shipped change **reads instead of deriving**, and the agent page now
+carries the standing verdict: which reason has been stopping this agent, how
+many times, over what window, with the figure that would clear it.
+
+What remains open from this item is not sizing at all — it is
+`approval-expired-on-a-full-execution-agent`, filed separately, which turned
+out to be the far bigger cause on this account.
+
+## Note: the qualification surface does **not** answer this
 
 `why-it-would-not-take-this-coin` shipped `/agents/[id]/qualification`, which
 screens a coin against the agent's gates and says which one stops it. It looks

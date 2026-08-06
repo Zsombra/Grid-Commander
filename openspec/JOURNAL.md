@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-08-06 (later) — the platform was already saying it
+
+**Did**: `what-keeps-stopping-this-agent` archived. Fifteen capabilities' worth
+of requirements on `agent-understanding`; PR #61.
+
+**Folded every gate block on the account and the picture changed.** 371 blocks
+across five agents, and almost all of them one reason repeating:
+
+```
+CONTRARIAN:  98× AGENT_APPROVAL_EXPIRED   30 Jul → today   {}
+Fade Master: 79× EXCHANGE_MIN_NOTIONAL_UNREACHABLE  {equityUsd: 89.49, minEquityUsd: 1000}
+Fade Master II: 80× INSUFFICIENT_EQUITY   {equityUsd: 2.18, thresholdUsd: 10}
+```
+
+`/pipeline` shows the ten most recent blocks, so the ninety-eighth looked
+exactly like the first. An agent can sit unable to trade for a week with every
+surface reporting normally, and one did.
+
+**The backlog item's premise was wrong, in our favour.**
+`an-agent-can-be-structurally-unable-to-trade` proposed deriving the verdict —
+balance × preset × leverage against an exchange minimum *scraped out of
+rejection message text*, "because the exchange minimum is not published by any
+tool". It is published. `minEquityUsd`, per agent, with the arithmetic done:
+Fade Master's reads 1000, CONFLUENCE's reads 222.22 at `smallPct: 0.9,
+maxLeverage: 5`. A derivation of ours would have disagreed with the platform
+and been wrong the first time BattleGrid changed how it sizes. **Read, don't
+derive** — the same lesson, found again from the other side.
+
+**The detail pairs are matched on field name, not reason code.**
+`equityUsd`/`thresholdUsd`, `availableUsd`/`requiredUsd`, `atrPct`/`minAtrPct`.
+So a code nobody has seen renders its arithmetic the day it ships, and there is
+no table of what codes mean to go stale. Nothing here paraphrases a code —
+the platform's word renders verbatim and the numbers do the explaining.
+
+**The biggest finding is one I refused to explain.**
+`AGENT_APPROVAL_EXPIRED` is the commonest block on the account — 134 in a week
+across three agents — carries `{}` every time, and fires on agents that are
+`FULL_EXECUTION`, which per BattleGrid's own reference needs no approval. Three
+readings, no evidence to choose between them. The surface shows the code, the
+count and the window, which is true under all three. Filed as
+`approval-expired-on-a-full-execution-agent` (p2) with the three readings and
+the three unread tools most likely to settle it.
+
+**A correction.** The journal entry above this one said the surface record was
+v9.0.0. It was v11.0.0 by 15:12 — the platform shipped **two more majors in one
+working day**, still 110 tools, and one `./scripts/ci.sh` run failed `freshness`
+mid-afternoon and passed on the next with no change to the record. That is the
+gate doing its job. Six majors observed, the count has never moved.
+
+**Also fixed**: a source-text assertion in `deployment.test.ts` pinned to
+`const radar = await app.readDeployments.execute`, which broke when the page
+started reading the radar and the summary in one `Promise.all` — a change that
+touched nothing the test protects. Loosened to the call; the three branch
+assertions are the property.
+
+**Next**: `approval-expired-on-a-full-execution-agent` is now the sharpest item
+and it is a *question*, answerable with three unread tools —
+`get_agent_activity_feed`, `get_agent_automation_status`,
+`get_agent_decision_context`. `screening-is-not-offered-over-mcp` (p3) is the
+small follow-on from the previous change.
+
 ## 2026-08-06 — v9 mapped, reconciled, and the first surface that asks forward
 
 **Did**: PRs #53–#59 merged, five changes archived —
@@ -8,8 +69,12 @@ production-gate line), `the-token-estimate-moved-into-the-budget`,
 `a-count-in-a-description-goes-stale`, `the-v9-datasets-are-reconciled`, and
 now `why-it-would-not-take-this-coin`. Fourteen capabilities.
 
-**BattleGrid replaced itself again: v5.1.0 → v9.0.0, four majors, 110 tools.**
-Fourth deployment where that number does not move. The full re-probe found a
+**BattleGrid replaced itself three more times today: v5.1.0 → v9.0.0 → v11.0.0,
+six majors, 110 tools throughout.** The record now reads v11.0.0; an earlier
+version of this entry said v9, which was true for about an hour. Sixth
+deployment where the tool count does not move — and the second time in one day
+that a major version landed between two runs of the same suite. The re-probe at
+v9 found a
 perp/spot flow module added cleanly, `VOLUME_RATIO` removed from every metric
 enum — harmless, because vocabulary is read at runtime and `structure.test.ts`
 forbids writing it into source, which is that design paying for itself — and

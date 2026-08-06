@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p2
 created: 2026-08-05
-updated: 2026-08-05
+updated: 2026-08-06
 change: ""
 capability: ""
 blocked_by: []
@@ -13,6 +13,18 @@ tags: [battlegrid, live, platform]
 ---
 
 # BattleGrid is flapping, and the outage was a deployment
+
+## Update 2026-08-06 (later): **v11.0.0**, and the count still has not moved
+
+Two more majors landed during a single working day — v9.0.0 in the morning,
+**v11.0.0** by 15:12, both at **110 tools**. Six majors observed in total and
+the number has never changed once. The surface record and the `freshness` gate
+now read v11.0.0.
+
+One `./scripts/ci.sh` run failed `freshness` mid-afternoon and passed on the
+next attempt with no change to the record — a deployment landing between two
+runs of the same suite. That is the gate working, not a flake, and it is the
+second time in a day the platform moved under a running suite.
 
 ## Update 2026-08-06: back on **v9.0.0**, and unstable
 
