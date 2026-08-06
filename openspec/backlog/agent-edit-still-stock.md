@@ -2,11 +2,11 @@
 id: agent-edit-still-stock
 title: agent-edit.tsx keeps the stock button and label utilities, and blocks the guard
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: "the-last-stock-buttons-and-the-guard"
 capability: app-access
 blocked_by: []
 tags: [ui, design, test]
