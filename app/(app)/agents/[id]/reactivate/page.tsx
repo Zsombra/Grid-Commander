@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ReactivatePrompt } from '@/presentation/components/agent-edit.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 
 /**
@@ -35,6 +36,9 @@ export default async function ReactivatePage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
         <p role="alert" className="text-sm">{roster.reason}</p>
+        {/* An archived agent is the one case where "gone" is a live worry, so
+            the sentence matters more here than on any other agent page. */}
+        <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
     );
   }

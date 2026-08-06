@@ -1,6 +1,7 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { CONTROL } from '@/presentation/components/control.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { ColumnProposal } from '@/ports/strategies.js';
 
 /**
@@ -92,6 +93,7 @@ export default async function MetricPage({
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The metric could not be read</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        <WhyNotLoaded cause={result.cause} subject="this metric is" />
         <p className="text-sm">
           <a href="/strategies/metrics" className="underline">Back to the metric index</a>
         </p>

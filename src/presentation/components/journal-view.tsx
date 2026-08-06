@@ -5,6 +5,7 @@ import type {
   Submission,
 } from '@/application/use-cases/read-agent-journal.query.js';
 import { usd } from '@/domain/agent/performance.js';
+import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
  * An agent's own record.
@@ -60,9 +61,13 @@ export function JournalView({
       </div>
 
       {journal.kind === 'unreadable' && (
-        <p role="alert" className="rounded-gc-2 border border-consequence-border p-3 text-sm">
-          This journal could not be loaded: {journal.reason}
-        </p>
+        <div role="alert" className="rounded-gc-2 border border-consequence-border p-3 text-sm">
+          <p>This journal could not be loaded: {journal.reason}</p>
+          {/* Named, because the branch below is the one this must not be
+              mistaken for: an agent that has recorded nothing looks the same
+              on screen as one whose record would not load. */}
+          <WhyNotLoaded cause={journal.cause} subject={`${agentName}’s record is`} />
+        </div>
       )}
 
       {journal.kind === 'none' && (

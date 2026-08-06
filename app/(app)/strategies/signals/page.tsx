@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * The signal library — every strategy signal the platform publishes, in its
@@ -17,6 +18,10 @@ export default async function SignalLibraryPage() {
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The signal library could not be read</h1>
         <p role="alert" className="text-sm">{library.reason}</p>
+        {/* The library is BattleGrid's, not this account's — but a strategy
+            whose rules reference it is the user's, and an empty library reads
+            as those references having lost their meaning. */}
+        <WhyNotLoaded cause={library.cause} subject="these signals are" />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to strategies</a>
         </p>

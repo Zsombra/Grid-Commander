@@ -1,6 +1,7 @@
 import { acting } from '@/presentation/session.js';
 import { CONTROL } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { CoinSelection } from '@/ports/strategies.js';
 
 /**
@@ -66,6 +67,10 @@ export default async function PreviewPage({
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The preview could not be read</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* The preview is rendered on demand and never stored, so the subject
+            is the composition it was rendered from — the thing an author
+            would fear they had broken. */}
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         <p className="text-sm">
           <a href={`/strategies/${id}`} className="underline">Back to the strategy</a>
         </p>

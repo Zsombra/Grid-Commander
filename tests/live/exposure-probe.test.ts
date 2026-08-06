@@ -67,7 +67,8 @@ live('what the account has at stake', () => {
 
       if (out.exposure.kind === 'holding') {
         sawHolding = true;
-        for (const p of out.exposure.positions) {
+        for (const held of out.exposure.positions) {
+          const p = held.position;
           // eslint-disable-next-line no-console
           console.log(
             `      ${p.coinTicker} ${p.direction} · entry ${p.entryFillPrice} mark ${p.markPrice}` +
@@ -75,6 +76,22 @@ live('what the account has at stake', () => {
               ` · unrealized ${p.unrealizedPnlUsd} (${p.roePct}%)` +
               ` · stop now ${p.effectiveStopLoss} target now ${p.effectiveTakeProfit}`,
           );
+          /**
+           * The drift, printed rather than asserted — position management may
+           * simply not have acted yet on a position opened a minute ago, and a
+           * probe demanding movement would be demanding market timing again.
+           * What a run *with* movement is worth is the evidence itself.
+           */
+          const stop = held.asDecided?.stop;
+          // eslint-disable-next-line no-console
+          console.log(
+            stop === undefined
+              ? '        decided stop unknown — no matching entry decision was read'
+              : stop.kind === 'moved'
+                ? `        decided stop ${stop.decided} → ${stop.effective} · protects ${stop.protects ?? 'a side this product does not read'}`
+                : `        stop is as decided (${stop.kind})`,
+          );
+
           // Attribution is what the whole filter depends on.
           expect(p.agentId).toBe(agent.id);
           expect(p.coinTicker).toBeTruthy();
@@ -85,6 +102,12 @@ live('what the account has at stake', () => {
            * either would mean a null had been filled in from somewhere.
            */
           expect(p.markPrice === null).toBe(p.unrealizedPnlUsd === null);
+          /**
+           * A drift can only be reported against a decision that was found,
+           * and only for a position that carries the link. Anything else would
+           * mean a decided value had come from somewhere other than the join.
+           */
+          if (held.asDecided !== null) expect(p.decisionId).toBeTruthy();
         }
       }
 

@@ -2,11 +2,11 @@
 id: screening-is-not-offered-over-mcp
 title: The MCP server cannot ask whether an agent would take a coin
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: a-model-can-ask-whether-it-would-take-a-coin
 capability: mcp-control
 blocked_by: []
 tags: [mcp, agent-understanding, screening]

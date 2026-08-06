@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { REPAIR_REQUIRED_GUIDANCE } from '@/application/use-cases/strategy-lifecycle.command.js';
 import { requiredText } from '@/presentation/form.js';
 
@@ -32,6 +33,9 @@ export default async function RestoreStrategyPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* An archived strategy is the one a user most readily believes has
+            been deleted, so the sentence carries the most weight here. */}
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy. Nothing here can claim the strategy is
             there to go back to — the read that would have said so is the one
             that failed. The list explains why. */}

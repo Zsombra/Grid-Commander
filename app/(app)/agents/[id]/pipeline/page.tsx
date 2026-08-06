@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { SignalVerdict, StageResult } from '@/ports/agents.js';
 
 /**
@@ -13,14 +14,35 @@ import type { SignalVerdict, StageResult } from '@/ports/agents.js';
  * what was blocked" send an operator to different places.
  */
 
-/** What an empty or unreadable stage says, so no branch renders as blank. */
-function StageNote({ stage, empty }: { stage: StageResult<unknown>; empty: string }) {
+/**
+ * What an empty or unreadable stage says, so no branch renders as blank.
+ *
+ * `subject` names the stage the way `empty` already does, rather than one
+ * wording covering all three. A reader who came for one of the three stages is
+ * owed the reassurance about that stage.
+ *
+ * Each subject names the *record*, not the thing recorded. "This does not mean
+ * what stopped this agent is gone" says the blocker is still in force, which is
+ * the opposite of reassuring and not what failed to load.
+ */
+function StageNote({
+  stage,
+  empty,
+  subject,
+}: {
+  stage: StageResult<unknown>;
+  empty: string;
+  subject: string;
+}) {
   if (stage.kind === 'none') return <p className="text-sm">{empty}</p>;
   if (stage.kind === 'unreadable') {
     return (
-      <p role="alert" className="text-sm">
-        This stage could not be read: {stage.reason}
-      </p>
+      <>
+        <p role="alert" className="text-sm">
+          This stage could not be read: {stage.reason}
+        </p>
+        <WhyNotLoaded cause={stage.cause} subject={subject} />
+      </>
     );
   }
   return null;
@@ -107,9 +129,12 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
       <section className="space-y-2">
         <h2 className="text-base font-medium">What it looks at, and what it acts on</h2>
         {funnel.kind === 'unreadable' ? (
-          <p role="alert" className="text-sm">
-            The record could not be read: {funnel.reason}
-          </p>
+          <>
+            <p role="alert" className="text-sm">
+              The record could not be read: {funnel.reason}
+            </p>
+            <WhyNotLoaded cause={funnel.cause} subject="this agent’s record is" />
+          </>
         ) : funnel.kind === 'none' ? (
           <p className="text-sm">This agent has evaluated nothing yet.</p>
         ) : (
@@ -151,6 +176,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         <StageNote
           stage={blocks}
           empty="Nothing was stopped before evaluation — every candidate reached the signal stage."
+          subject="this agent’s record of what stopped it is"
         />
         {blocks.kind === 'entries' ? (
           <ul className="space-y-2">
@@ -180,6 +206,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         <StageNote
           stage={evaluations}
           empty="No signal evaluation has run for this agent yet."
+          subject="this agent’s evaluations are"
         />
         {evaluations.kind === 'entries' ? (
           <ul className="space-y-2">
@@ -219,7 +246,11 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">Decided</h2>
-        <StageNote stage={decisions} empty="This agent has not reached a decision yet." />
+        <StageNote
+          stage={decisions}
+          empty="This agent has not reached a decision yet."
+          subject="this agent’s decisions are"
+        />
         {decisions.kind === 'entries' ? (
           <ul className="space-y-2">
             {decisions.entries.map((d) => (

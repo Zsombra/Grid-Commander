@@ -1,4 +1,5 @@
 import type { App } from '@/composition.js';
+import type { CoinSource } from '@/application/use-cases/read-qualification.query.js';
 
 /**
  * What a model may ask this product.
@@ -65,6 +66,18 @@ export interface ToolDefinition {
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const optionalNum = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+/**
+ * A list of strings the model sent, or nothing.
+ *
+ * Nothing rather than an empty list, because to `readQualification` those are
+ * different requests: an absent `coinTickers` means "choose for me" and an empty
+ * one would too, but a model that sent `[]` deliberately and a model that sent
+ * nothing should reach the same code either way. Non-string entries are dropped
+ * rather than coerced — `"1"` is not a ticker, and screening it would spend the
+ * whole call on `NOT_FOUND`.
+ */
+const optionalStrings = (v: unknown): readonly string[] | undefined =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : undefined;
 
 const AGENT_ID = {
   agentId: { type: 'string', description: 'The agent\'s id, from list_agents.' },
@@ -77,6 +90,57 @@ const STRATEGY_ID = {
 const LIMIT = {
   limit: { type: 'integer', minimum: 1, maximum: 50, description: 'How many rows (default 10).' },
 } as const;
+
+/**
+ * Where the screened coins came from, said in a sentence a model will repeat.
+ *
+ * `read_qualification` is the only tool here whose **subject** this product may
+ * choose, and the choice changes what the answer means: "none of these qualify"
+ * is a finding about the agent when the agent's deployments picked the coins,
+ * and a finding about our fallback when a ranked list did. The use-case already
+ * carries that as `CoinSource` — this renders it, because a model paraphrasing a
+ * JSON body will carry the verdicts and can skip a discriminator nested two
+ * levels down, and the operator on the other end is then told their agent is
+ * stuck.
+ *
+ * The fallback names its reason for the same purpose it does everywhere else in
+ * this product: an agent deployed nowhere and an agent whose deployments could
+ * not be read produce identical coins and opposite conclusions.
+ *
+ * A second rendering of what `ScreenedCoins` renders on the web, and
+ * deliberately so — that one is JSX for a person reading a page, this is one
+ * string for a model composing a sentence. Both read the same `CoinSource`,
+ * which stays the only place the choice is decided.
+ */
+function whereTheCoinsCameFrom(source: CoinSource): string {
+  const screening = `Screening ${source.coins.join(', ')}`;
+  /**
+   * A cap that truncates in silence reads as "we covered everything". The
+   * number left out is the use-case's to count — it knows what the platform
+   * screens per call, and writing that limit here would be a second copy of a
+   * figure BattleGrid owns.
+   */
+  const dropped =
+    source.dropped > 0
+      ? ` ${String(source.dropped)} more were left out: BattleGrid screens a limited number of ` +
+        'coins in one call.'
+      : '';
+
+  if (source.kind === 'requested') return `${screening} — the coins you asked about.${dropped}`;
+  if (source.kind === 'deployments') {
+    return `${screening} — the coins this agent is deployed on.${dropped}`;
+  }
+  const why =
+    source.because === 'not-deployed'
+      ? 'this agent is deployed nowhere'
+      : "this agent's deployments could not be read, so what it watches is unknown";
+  return (
+    `${screening} — Grid-Commander chose these, because ${why}. They are the platform's top ` +
+    `movers by ${source.metric} over ${source.interval}, and this agent may never have looked ` +
+    `at them.${dropped} Say that before reporting any verdict: these are not known to be coins ` +
+    'this agent watches, so a verdict of “would not take it” is not evidence the agent is stuck.'
+  );
+}
 
 /**
  * The read surface, grouped as an operator asks rather than as BattleGrid
@@ -169,6 +233,72 @@ export const TOOLS: readonly ToolDefinition[] = [
     input: AGENT_ID,
     required: ['agentId'],
     call: (app, who, a) => app.readDeployments.execute({ ...who, agentId: str(a['agentId']) }),
+  },
+  /**
+   * The only tool here that asks about now.
+   *
+   * Everything else on this surface is retrospective — what an agent decided,
+   * what stopped it, what it closed — so a model asked "why is my agent not
+   * trading" has to reason forward from backward evidence. The platform will
+   * simply answer: it scores the agent's gates against live coins, spends no
+   * decision, and the agent does not act.
+   *
+   * `coinTickers` declares no `maxItems`. The platform caps how many coins one
+   * call screens, and `readQualification` applies that cap by **dropping the
+   * surplus and reporting how many** rather than by refusing — a limit in the
+   * schema would tell a client the call fails when it does not, and would be a
+   * second copy of a number BattleGrid owns and has moved before.
+   */
+  {
+    name: 'read_qualification',
+    description:
+      'Whether an agent would take a coin right now, and what is stopping it — the only ' +
+      'forward-looking read here, and it costs the agent no decision. Per coin: whether it ' +
+      'qualifies, long and short kept apart because they disagree, and every gate as a measured ' +
+      'value beside the threshold it is judged against. Which coins were screened is part of ' +
+      'the answer and not background: name coinTickers and they are yours, omit it and the ' +
+      'product screens the coins the agent is deployed on, or a ranked list from the platform ' +
+      'when the agent is deployed nowhere. Always report where the coins came from — “none of ' +
+      'these qualify” is a finding about the agent only when the agent’s own coins were the ' +
+      'ones screened.',
+    useCase: 'readQualification',
+    input: {
+      ...AGENT_ID,
+      coinTickers: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Tickers to screen, e.g. ["BTC","ETH"]. Omit to let the product choose — it says ' +
+          'which coins it chose and why. One unknown ticker makes BattleGrid refuse the whole ' +
+          'screening, so a guessed symbol costs the good ones too.',
+      },
+    },
+    required: ['agentId'],
+    call: async (app, who, a) => {
+      const screening = await app.readQualification.execute({
+        ...who,
+        agentId: str(a['agentId']),
+        coinTickers: optionalStrings(a['coinTickers']),
+      });
+      /**
+       * "Nothing could be screened" is already a sentence about this product's
+       * inability to pick a subject, and it is not a verdict about the agent.
+       * Passed through as it is.
+       */
+      if (screening.kind === 'no-coins') return screening;
+      /**
+       * Provenance first, and ahead of the verdicts in the serialised body —
+       * the one requirement of this tool that a plain pass-through would fail.
+       * `source` still travels intact beneath it, because a model that wants to
+       * act on the fallback needs the reason as a value and not as prose.
+       */
+      return {
+        kind: screening.kind,
+        screening: whereTheCoinsCameFrom(screening.source),
+        source: screening.source,
+        result: screening.result,
+      };
+    },
   },
   {
     name: 'list_strategies',

@@ -37,8 +37,10 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
         sibling={{ href: `/agents/${id}/thinking`, label: 'What it decided' }}
       />
 
+      {/* The subject completes "This does not mean … gone", so it carries its
+          own verb. Without one this read "…this agent’s limits gone". */}
       {budget.kind === 'unreadable' ? (
-        <WhyNotLoaded subject="this agent’s limits" cause={budget.cause} />
+        <WhyNotLoaded subject="this agent’s limits are" cause={budget.cause} />
       ) : (
         <Ceilings
           limits={budget.limits}

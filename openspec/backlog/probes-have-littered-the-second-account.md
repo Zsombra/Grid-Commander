@@ -2,11 +2,11 @@
 id: probes-have-littered-the-second-account
 title: Eight archived "GC probe" agents on the operator's second account are ours
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: a-probe-reuses-its-throwaway-agent
 capability: harness-integrity
 blocked_by: []
 tags: [live, probes, housekeeping]
@@ -55,3 +55,9 @@ run, or ask the operator to delete them in BattleGrid's own UI.
 The reuse fix is the one that stops the bleeding and is ours to make: have the
 write probes look for an existing `GC probe` agent before creating another, and
 only create when none exists.
+
+That half is `a-probe-reuses-its-throwaway-agent`.
+
+**What stays here after it lands:** the eight above. Nothing in this product can
+remove them — asking the operator to delete them in BattleGrid's own UI is the
+only route, and it is now a one-time ask rather than a recurring one.

@@ -43,12 +43,65 @@ const stripComments = (code: string): string =>
 
 const liveFiles = readdirSync('tests/live').filter((f) => f.endsWith('.test.ts'));
 
+/**
+ * A probe can also reach a write through a helper, and this file could not see
+ * that.
+ *
+ * It matched tool names and `*Command` identifiers in the probe's own source.
+ * `tests/support/probe-agent.ts` holds the create-or-reuse of the throwaway
+ * agent every mutating probe operates on — so the moment that moved out of the
+ * probes, the marker moved with it, and a probe reaching
+ * `create_intelligence_agent` through one call would have looked inert. The
+ * same shape as the miss this file already records: `apply-probe.test.ts` named
+ * no tool because it constructed commands, and sailed through the first version
+ * of this guard while writing to the operator's account.
+ *
+ * So the helpers are read too, and reach found in one is attributed to any
+ * block that calls it. Attribution is per module rather than per export: a
+ * module that can write is treated as writing whichever of its names is used.
+ * That over-reports — `probeAgentName` composes a string — and over-reporting
+ * costs a probe an opt-in it needs anyway, while under-reporting costs somebody
+ * an agent.
+ */
+const HELPER_DIR = 'tests/support';
+
+/** Exported callables, by name, for every helper whose code can reach a write. */
+const WRITING_HELPERS = new Map<string, string>();
+for (const file of readdirSync(HELPER_DIR).filter((f) => f.endsWith('.ts'))) {
+  const code = stripComments(readFileSync(`${HELPER_DIR}/${file}`, 'utf8'));
+  const reaches =
+    MUTATING.some((tool) => code.includes(tool)) || /\b[A-Z][A-Za-z]*Command\b/.test(code);
+  if (!reaches) continue;
+  for (const m of code.matchAll(/export\s+(?:async\s+)?(?:function|const|class)\s+(\w+)/g)) {
+    WRITING_HELPERS.set(m[1] as string, file);
+  }
+}
+
+/** Everything in this fragment of source that can end in a BattleGrid write. */
+function reachIn(code: string): string[] {
+  return [
+    ...MUTATING.filter((tool) => code.includes(tool)),
+    ...new Set(code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []),
+    ...[...WRITING_HELPERS]
+      .filter(([name]) => new RegExp(`\\b${name}\\b`).test(code))
+      .map(([name, file]) => `${name} (via ${HELPER_DIR}/${file})`),
+  ];
+}
+
 describe('a live probe that can mutate requires more than a credential', () => {
   it('has mutating tools to look for, and live probes to look at', () => {
     // Guards the guard. If the classification key were ever renamed, MUTATING
     // would empty and every assertion below would pass vacuously.
     expect(MUTATING.length, 'the surface record classifies mutating tools').toBeGreaterThan(20);
     expect(liveFiles.length).toBeGreaterThan(10);
+    // And the same for the indirect route: the helper that acquires a probe's
+    // throwaway agent creates one, so it must register as able to write. An
+    // empty map would mean the export scan drifted, not that the helpers got
+    // safer.
+    expect(
+      WRITING_HELPERS.get('acquireProbeAgent'),
+      'the throwaway-agent helper reaches a create and must be seen to',
+    ).toBe('probe-agent.ts');
   });
 
   it('gates every probe that can mutate on the explicit opt-in', () => {
@@ -71,10 +124,7 @@ describe('a live probe that can mutate requires more than a credential', () => {
     const offenders: Array<[string, string]> = [];
     for (const file of liveFiles) {
       const raw = readFileSync(`tests/live/${file}`, 'utf8');
-      const code = stripComments(raw);
-      const named = MUTATING.filter((tool) => code.includes(tool));
-      const commands = [...new Set(code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? [])];
-      const reach = [...named, ...commands];
+      const reach = reachIn(stripComments(raw));
       if (reach.length === 0) continue;
       if (!raw.includes('BATTLEGRID_LIVE_WRITES')) offenders.push([file, reach.join(', ')]);
     }
@@ -140,10 +190,7 @@ describe('a live probe that can mutate requires more than a credential', () => {
       for (const [i, start] of starts.entries()) {
         if (gates.get(start.gate) === true) continue;
         const block = code.slice(start.at, starts[i + 1]?.at ?? code.length);
-        const reach = [
-          ...MUTATING.filter((tool) => block.includes(tool)),
-          ...new Set(block.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []),
-        ];
+        const reach = reachIn(block);
         if (reach.length > 0) {
           offenders.push(`${file}: a "${start.gate}" block reaches ${reach.join(', ')}`);
         }

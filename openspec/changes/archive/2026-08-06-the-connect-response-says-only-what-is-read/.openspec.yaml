@@ -1,0 +1,7 @@
+track: standard
+created: 2026-08-06
+# No requirement in openspec/specs/battlegrid-connection/spec.md describes either
+# field, and nothing a user can observe changes: the one production consumer,
+# app/api/auth/battlegrid/callback/route.ts, already destructures `userId` alone.
+# See the Capabilities section of proposal.md.
+skip_specs: true

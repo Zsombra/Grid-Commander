@@ -196,13 +196,13 @@ export function isKnownPositionPreset(catalog: Catalog, preset: string): boolean
   return preset === 'CUSTOM' || catalog.positionManagementPresets.some((p) => p.preset === preset);
 }
 
-/**
- * The catalog cannot be read.
+/*
+ * `CatalogResult` used to live here, and moved to `@/ports/agents.js`.
  *
- * A distinct state rather than an empty catalog: an empty catalog would offer a
- * form with no choices and reject everything the user typed, which is a worse
- * experience than saying the platform could not be reached.
+ * It is the outcome of a read, which is what a port describes — its three
+ * siblings (`RosterResult`, `BudgetResult`, `JournalResult`) were always
+ * declared there. Being the outlier had a cost: the domain does not know
+ * `FailureCause`, so this was the one read outcome that could not say *why* it
+ * failed, and the create page was the one failure surface that could not tell a
+ * refusal from an outage.
  */
-export type CatalogResult =
-  | { readonly kind: 'catalog'; readonly catalog: Catalog }
-  | { readonly kind: 'unreadable'; readonly reason: string };

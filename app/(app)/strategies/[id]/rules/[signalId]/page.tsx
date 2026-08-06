@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { CONTROL } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import type { SignalParameter } from '@/ports/strategies.js';
 
@@ -71,6 +72,9 @@ export default async function RetuneRulePage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The strategy could not be read</h1>
         <p role="alert" className="text-sm">{read.reason}</p>
+        {/* Distinct from the `missing` branch above, which is the platform
+            saying the strategy is not there. This one says nothing at all. */}
+        <WhyNotLoaded cause={read.cause} subject="this strategy is" />
         <p className="text-sm">
           <a href={`/strategies/${id}`} className="underline">Back to the strategy</a>
         </p>

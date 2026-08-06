@@ -96,6 +96,54 @@ live('the MCP server answers a real client', () => {
         );
         // Each part reports its own state rather than the call failing.
         expect(pipeline.funnel.kind).toBeTruthy();
+
+        /**
+         * The one forward-looking tool, asked the way a model would ask it:
+         * name an agent and nothing else, and let the product choose the coins.
+         *
+         * What is asserted is not the verdicts — they are whatever the market
+         * is doing this minute — but that **the answer says where its subject
+         * came from**. A model handed "none of these qualify" without being
+         * told the product picked the coins reports a stuck agent to its owner,
+         * and over stdio nothing but this sentence stands between the two.
+         */
+        const screening = JSON.parse(
+          text(await client.callTool({ name: 'read_qualification', arguments: { agentId } })),
+        ) as {
+          kind: string;
+          screening?: string;
+          reason?: string;
+          source?: { kind: string; coins: string[]; because?: string };
+          result?: {
+            kind: string;
+            verdicts?: { coinTicker: string; qualifies: boolean; firstFailReason: string | null }[];
+          };
+        };
+        // eslint-disable-next-line no-console
+        console.log(`  read_qualification → ${screening.screening ?? screening.reason ?? '?'}`);
+
+        if (screening.kind === 'screened') {
+          expect(screening.source?.kind, 'the coins have a stated source').toBeTruthy();
+          // Every coin screened is named in the sentence a model will repeat,
+          // so it cannot quote a subject narrower than the one it answers about.
+          for (const coin of screening.source?.coins ?? []) {
+            expect(screening.screening, 'the sentence names every coin screened').toContain(coin);
+          }
+          expect(screening.result?.kind, 'the screening reports its own state').toBeTruthy();
+          for (const v of screening.result?.verdicts ?? []) {
+            // eslint-disable-next-line no-console
+            console.log(
+              `    ${v.coinTicker}: ${v.qualifies ? 'would take it' : 'would not'}` +
+                `${v.firstFailReason ? ` — ${v.firstFailReason}` : ''}`,
+            );
+          }
+        } else {
+          // "Nothing could be screened" is a statement about this product's
+          // inability to pick a subject, and it carries its own sentence rather
+          // than an empty verdict list.
+          expect(screening.kind).toBe('no-coins');
+          expect(screening.reason).toBeTruthy();
+        }
       }
 
       // The negative, proven rather than asserted in a comment.

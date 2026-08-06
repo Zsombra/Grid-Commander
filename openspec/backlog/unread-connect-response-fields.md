@@ -2,11 +2,11 @@
 id: unread-connect-response-fields
 title: CompleteConnectionCommand returns two fields nothing reads
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-08-06
+change: the-connect-response-says-only-what-is-read
 capability: battlegrid-connection
 blocked_by: []
 tags: [cleanup, api-surface]

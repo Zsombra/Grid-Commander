@@ -2,11 +2,11 @@
 id: the-stop-that-moved-is-not-the-stop-we-show
 title: Position management moves the stop and the product still shows the one the agent decided
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-stop-that-moved-is-shown-as-moved
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, positions, position-management, money, live]

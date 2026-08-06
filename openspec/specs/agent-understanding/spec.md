@@ -601,6 +601,36 @@ ones, and labelled so. Position management moves them after the decision that
 opened the trade, so a surface presenting the decided values as current
 understates the protection in force.
 
+Where the decision that opened a position can be found, the stop and target
+**as that decision set them** SHALL be shown beside the effective ones, and
+each SHALL be labelled with the moment it belongs to. The effective stop alone
+answers *where is my protection* and hides *has anything moved it* — which is
+the question an operator who has configured position management actually has,
+and the only evidence on any surface that those settings ever act. The
+decision is matched to the position by the identifier the position already
+carries; no figure here is derived from any other.
+
+Where the effective stop differs from the decided one, the product SHALL state
+which way it moved — whether the position is now protected more than the
+decision asked for, or less. A pair of numbers without that reading is a
+puzzle, and read backwards it is the opposite of the truth on the surface where
+that matters most: a long is protected by a stop that rises and a short by one
+that falls. Where the platform reports a side the product cannot read a
+direction from, both values SHALL still be shown and no direction SHALL be
+claimed.
+
+Grid-Commander SHALL NOT claim a direction for a target that moved. A
+take-profit in a new place is a different exit, not more or less protection,
+and naming it either would be this product's reading rather than the
+platform's.
+
+Where the decision behind a position cannot be found — because the decision
+read did not answer, or because the decision has aged out of the window read —
+the decided values SHALL be stated as unknown and the position SHALL NOT be
+presented as one whose stop has not moved. The reads SHALL remain independent:
+a decision list that could not be read SHALL cost every position its decided
+values and SHALL NOT blank a position that answered.
+
 The time the position was priced SHALL be stated. The platform declares how
 often a client should re-read; a rendered page is a snapshot and SHALL NOT
 present itself as live.
@@ -623,6 +653,33 @@ present itself as live.
 - **WHEN** it renders
 - **THEN** the effective stop is shown as the current one
 - **AND** it is labelled as current rather than as the decided value
+
+#### Scenario: The stop the decision set, beside the stop now
+- **GIVEN** an open position whose entry decision can be found
+- **AND** whose effective stop differs from the stop that decision recorded
+- **WHEN** it renders
+- **THEN** both values are shown, each labelled as decided or as current
+- **AND** the move is stated as protecting more of the position, or less,
+  according to the side of the trade
+
+#### Scenario: A stop that has not moved
+- **GIVEN** an open position whose effective stop equals the one its decision
+  recorded
+- **WHEN** it renders
+- **THEN** no drift is reported for it
+
+#### Scenario: The decision behind a position cannot be found
+- **GIVEN** an open position whose entry decision is not among those read
+- **WHEN** it renders
+- **THEN** the decided stop is stated as unknown
+- **AND** the position is not presented as one whose stop has not moved
+
+#### Scenario: The decision list cannot be read while the position answers
+- **GIVEN** the platform does not answer the entry-decision read
+- **AND** the position read answered
+- **WHEN** the surface renders
+- **THEN** the position is still shown with every figure the platform sent
+- **AND** the decided values are stated as unknown
 
 #### Scenario: An agent holding nothing
 - **GIVEN** an agent with no open position

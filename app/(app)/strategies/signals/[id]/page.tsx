@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * One signal's authoring card — the platform's full definition: what it
@@ -31,6 +32,7 @@ export default async function SignalPage({ params }: { params: Promise<{ id: str
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The signal could not be read</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        <WhyNotLoaded cause={result.cause} subject="this signal is" />
         <p className="text-sm">
           <a href="/strategies/signals" className="underline">Back to the signal library</a>
         </p>
