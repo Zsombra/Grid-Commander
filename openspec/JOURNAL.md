@@ -3,10 +3,10 @@
 ## 2026-08-06 (round four) — six builds, and a write path proven live
 
 **Did**: five agents plus one build of my own, and the reserved live probes run
-serially. Six changes archived (110 → 116), **nine** items closed, **eight** new
-ones filed. Backlog 26 → 25. The probes answered five standing questions and
-every answer opened something real — which is why closing nine only moved the
-count by one.
+serially. Seven changes archived (110 → 117), **ten** items closed, **eight**
+new ones filed. Backlog 26 → 24. The probes answered five standing questions and
+every answer opened something real — which is why closing ten only moved the
+count by two.
 
 | change | closes |
 |---|---|
