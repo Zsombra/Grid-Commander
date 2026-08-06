@@ -4,6 +4,7 @@ import type {
   HeldPosition,
   LevelAsDecided,
 } from '@/application/use-cases/read-exposure.query.js';
+import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
  * What this agent has at stake, and what it could not get to the exchange.
@@ -208,9 +209,29 @@ export function Exposure({ exposure, fills }: AgentExposure) {
       <h2 className="text-base font-medium">What it has at stake</h2>
 
       {exposure.kind === 'unreadable' ? (
-        <p role="alert" className="text-sm">
-          What this agent is holding could not be read: {exposure.reason}
-        </p>
+        <div role="alert" className="text-sm">
+          <p>What this agent is holding could not be read: {exposure.reason}</p>
+          {/*
+            The reason says what failed. On this panel that leaves the reader
+            with a blank where money should be, and the conclusion nearest to
+            hand is that something was closed out. The cause comes out of the
+            read rather than off the message, because a refused credential and
+            an outage send an operator to opposite actions.
+
+            `this agent’s positions`, not `these positions`: nothing is listed
+            on this branch, so a demonstrative points at the very list that
+            failed to load. It is also the wording `/explorer` already uses for
+            a stranger's holdings — the same failure on two surfaces must not
+            read as two different facts.
+
+            The reassurance is about the read and never about the market. A
+            position can genuinely be closed between the read and the page; the
+            sentence denies only that this failure is evidence of it, which is
+            why the reason above stays exactly where it is — "could not be
+            read" and "does not mean … gone" are read together or not at all.
+          */}
+          <WhyNotLoaded cause={exposure.cause} subject="this agent’s positions are" />
+        </div>
       ) : exposure.kind === 'flat' ? (
         <p className="text-sm">This agent is holding nothing right now.</p>
       ) : (
