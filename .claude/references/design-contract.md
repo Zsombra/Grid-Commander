@@ -73,7 +73,7 @@ behavior change costs a rollback.
 |---|---|---|
 | `openspec/specs/<cap>/spec.md` | **What the UI does.** Behavior: states, actions, flows. | archiver |
 | `openspec/design/` | **What the UI looks like.** Tokens, surfaces, tickets. | design agent |
-| `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md` | **How UI code must be built.** Engineering standards: structure, a11y floor, responsive rules. | checklist-generator |
+| `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` | **How UI code must be built.** Engineering standards: structure, a11y floor, responsive rules. | checklist-generator |
 
 All three bind. A component can satisfy its design ticket, pass the review
 checklist, and still violate its spec — the auditor checks all three.

@@ -11,7 +11,7 @@ You are a senior debugger specializing in systematic root cause analysis across 
 
 Current branch: !`git branch --show-current`
 Recent commits: !`git log --oneline -3`
-Architecture checklist: !`head -5 docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
+Architecture checklist: !`head -5 docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
 
 ## Task
 
@@ -38,7 +38,7 @@ Use `@file-path` to examine referenced files. If the error includes a file path 
 ### Phase 3: Root Cause Isolation
 
 1. **Architectural Layer Analysis**: Where in the architecture the issue occurs
-   - If `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, use its Layer Overview to identify which layer is affected
+   - If `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, use its Layer Overview to identify which layer is affected
    - If not, identify the layer from the codebase structure
 2. **Pattern Compliance Check**: Does implementation follow established patterns?
 3. **Type Safety Verification**: Check for type mismatches, missing validations, incorrect assumptions
@@ -53,7 +53,7 @@ Use `@file-path` to examine referenced files. If the error includes a file path 
 
 ## Layer-Specific Debugging
 
-If `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, read it to understand the project's layer structure and debugging context. Then apply layer-specific debugging:
+If `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, read it to understand the project's layer structure and debugging context. Then apply layer-specific debugging:
 
 **Presentation Layer** (routes, handlers, controllers):
 - Request parsing and validation

@@ -69,7 +69,7 @@ Out of scope (from the proposal — do not implement):
 
 ## DATA_PIPELINE_REVIEW_CHECKLIST Coverage
 
-- Checklist source: `docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md`
+- Checklist source: `docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md`
 - Source-of-truth statement: `<where data originates — DB, external API, etc.>`
 - Contract map status: `N/A (No contract changes) | Included`
 
@@ -84,7 +84,7 @@ Out of scope (from the proposal — do not implement):
 
 ## ARCHITECTURE_REVIEW_CHECKLIST Coverage
 
-- Checklist source: `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md`
+- Checklist source: `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md`
 - Architecture verdict: `Pass | Changes Requested`
 
 ### Component Checklist Matrix
@@ -95,10 +95,10 @@ Out of scope (from the proposal — do not implement):
 
 ## UI_COMPONENT_REVIEW_CHECKLIST Coverage
 
-<!-- INSTRUCTION: If docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md does not exist,
+<!-- INSTRUCTION: If docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md does not exist,
      set UI scope to N/A and skip this section entirely. -->
 
-- Checklist source: `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md`
+- Checklist source: `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`
 - UI scope touched: `Yes | No | N/A (no UI checklist — backend-only project)`
 - Verdict: `Pass | Violations Found | N/A`
 

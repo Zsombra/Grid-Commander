@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Production gate for full-track changes. Independently audits executed work for spec parity (every requirement actually delivered), checklist parity, scope adherence, technical debt, and decision-log integrity. Reads the behavior contract from the change's delta specs and audit rules from docs/specs/ checklists. Use when openspec/changes/<change-id>/plan/master-plan.md is marked EXECUTION READY FOR PRODUCTION GATE to validate real code and block release for violations.
+description: Production gate for full-track changes. Independently audits executed work for spec parity (every requirement actually delivered), checklist parity, scope adherence, technical debt, and decision-log integrity. Reads the behavior contract from the change's delta specs and audit rules from docs/checklists/ checklists. Use when openspec/changes/<change-id>/plan/master-plan.md is marked EXECUTION READY FOR PRODUCTION GATE to validate real code and block release for violations.
 ---
 
 # Auditor (Production Gate)
@@ -23,13 +23,13 @@ openspec/changes/<change-id>/proposal.md         → Declared scope and out-of-s
 openspec/changes/<change-id>/plan/master-plan.md → Planned file inventory, constraints, coverage matrix
 openspec/specs/**/spec.md                        → Existing behavior that must not regress
 openspec/config.yaml                             → Project context, rules, quality gates
-docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md      → Architecture rules, quality gate commands
-docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md     → Data flow rules, pipeline layers
-docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md      → UI rules (if applicable)
+docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md      → Architecture rules, quality gate commands
+docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md     → Data flow rules, pipeline layers
+docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md      → UI rules (if applicable)
 ```
 
 Two independent standards, both binding: `openspec/` says what the system must
-do, `docs/specs/` says how it must be built. A change can satisfy every
+do, `docs/checklists/` says how it must be built. A change can satisfy every
 checklist and still fail to deliver its requirements — audit both.
 
 ## Required Inputs
@@ -177,7 +177,7 @@ checklist but does not deliver its requirements is BLOCKED.
 
 ### 1. Data Pipeline Parity
 
-<!-- Read pipeline layers from docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md -->
+<!-- Read pipeline layers from docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md -->
 
 - Validate data flows through ALL layers defined in the project's data pipeline checklist.
 - Ensure no missing propagation between layers.
@@ -186,7 +186,7 @@ checklist but does not deliver its requirements is BLOCKED.
 
 ### 2. Architecture Parity
 
-<!-- Read architecture rules from docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md -->
+<!-- Read architecture rules from docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md -->
 
 - Enforce the dependency direction defined in the project's architecture checklist.
 - Block runtime dual-paths, fallback branches, and mixed-responsibility components.
@@ -194,7 +194,7 @@ checklist but does not deliver its requirements is BLOCKED.
 
 ### 3. UI Parity (if UI checklist exists)
 
-<!-- Read UI rules from docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md -->
+<!-- Read UI rules from docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md -->
 
 - Confirm UI review findings are actually fixed in code.
 - Re-check against the project's UI checklist rules.
@@ -233,7 +233,7 @@ checklist but does not deliver its requirements is BLOCKED.
 
 ### Quality gate commands
 
-<!-- Read from docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality section -->
+<!-- Read from docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality section -->
 
 Run ALL quality gate commands defined in the project's architecture checklist. Do NOT hardcode commands — read them from the checklist.
 

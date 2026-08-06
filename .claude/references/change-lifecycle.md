@@ -49,15 +49,19 @@ specs describe current behavior
 Without it, every feature starts from zero. With it, the system accumulates a
 description of itself that the auditor can hold code against.
 
-### Two things named "spec" — keep them straight
+### Behavior contract vs engineering standards
 
 | Path | What it is | Written by |
 |---|---|---|
 | `openspec/specs/` | **What the system does.** Behavior contract. | archiver, on merge |
-| `docs/specs/` | **How we build.** Review checklists — architecture, data pipeline, UI. | checklist-generator |
+| `docs/checklists/` | **How we build.** Review checklists — architecture, data pipeline, UI. | checklist-generator |
 
-Behavior lives in `openspec/`. Engineering standards live in `docs/specs/`.
+Behavior lives in `openspec/`. Engineering standards live in `docs/checklists/`.
 The auditor checks code against both.
+
+Until 2026-08-06 the second was `docs/specs/`, and this section had to spend
+four paragraphs across four documents explaining that the two were unrelated.
+The names now carry that themselves.
 
 ---
 

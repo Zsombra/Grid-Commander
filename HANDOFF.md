@@ -365,7 +365,7 @@ regression.
 | `docs/REPORT_TABLE_GRAMMAR.md` | **How report tables are authored** — column grammar, the two laws (unit commensurability, timeframe inertia), the create-by-definition/modify-by-key loop. Every claim live-established 2026-08-02 |
 | `docs/BATTLEGRID_PRODUCT_MODEL.md` | The operator's description of what BattleGrid *is* |
 | `docs/CI_WITHOUT_BILLING.md` | Why CI is local, and the option chosen |
-| `docs/specs/*_REVIEW_CHECKLIST.md` | Engineering standards every change is held to |
+| `docs/checklists/*_REVIEW_CHECKLIST.md` | Engineering standards every change is held to |
 | `openspec/backlog/*.md` | Everything deferred, each with why and the first step when taken |
 
 ---
@@ -382,7 +382,7 @@ src/
   presentation/          Shared UI helpers, require-connection guard
 src/composition.ts       Single composition root — the only place that wires infrastructure to ports
 openspec/                Spec layer (behavior contract, journal, backlog, changes)
-docs/specs/              Review checklists (engineering standards)
+docs/checklists/              Review checklists (engineering standards)
 tests/                   Vitest (unit + architecture) + Vitest DB (real PostgreSQL) + Python unittest (harness)
 scripts/check.sh         All local gates in one script (replaces CI while Actions is blocked)
 ```

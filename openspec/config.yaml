@@ -67,7 +67,7 @@ rules:
 design_sync: none
 
 # Commands the executor and auditor must run and pass. Leave empty to fall back
-# to the Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md.
+# to the Quality Gate section of docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md.
 quality_gates:
   - npm run typecheck
   - npm run lint

@@ -1,6 +1,6 @@
 ---
 name: checklist-generator
-description: Generates project-specific review checklists for any architecture pattern. Supports Clean Architecture, Provider/Plugin Pattern, and is extensible to MVC and others. Creates ARCHITECTURE_REVIEW_CHECKLIST.md, DATA_PIPELINE_REVIEW_CHECKLIST.md, and UI_COMPONENT_REVIEW_CHECKLIST.md in docs/specs/. Auto-detects CREATE mode (no checklists) or UPDATE mode (checklists exist). Feeds the proposer → planner → executor → verifier → auditor pipeline. Produces engineering standards in docs/specs/, distinct from the behavior contract in openspec/specs/.
+description: Generates project-specific review checklists for any architecture pattern. Supports Clean Architecture, Provider/Plugin Pattern, and is extensible to MVC and others. Creates ARCHITECTURE_REVIEW_CHECKLIST.md, DATA_PIPELINE_REVIEW_CHECKLIST.md, and UI_COMPONENT_REVIEW_CHECKLIST.md in docs/checklists/. Auto-detects CREATE mode (no checklists) or UPDATE mode (checklists exist). Feeds the proposer → planner → executor → verifier → auditor pipeline. Produces engineering standards in docs/checklists/, distinct from the behavior contract in openspec/specs/.
 ---
 
 # Checklist Generator
@@ -9,7 +9,7 @@ description: Generates project-specific review checklists for any architecture p
 
 This skill creates the review checklists that the planner, executor, and auditor depend on. Without checklists, the full track cannot start. It adapts to different architecture patterns — not just Clean Architecture.
 
-**Scope note.** Checklists in `docs/specs/` are *engineering standards* — how code
+**Scope note.** Checklists in `docs/checklists/` are *engineering standards* — how code
 must be built. They are not the behavior contract; that lives in
 `openspec/specs/` and is written by the archiver. Both are binding and the
 auditor checks both. See `.claude/references/change-lifecycle.md` §1.
@@ -65,7 +65,7 @@ To add a new architecture pattern (e.g., MVC, Hexagonal, Serverless):
 On invocation, check if checklist files exist:
 
 ```
-Check: ls docs/specs/*_CHECKLIST.md 2>/dev/null
+Check: ls docs/checklists/*_CHECKLIST.md 2>/dev/null
 
 Files found → Mode 2: UPDATE
 No files   → Mode 1: CREATE
@@ -277,16 +277,16 @@ Optional modules included: [list]
 Custom policies applied: [list]
 ```
 
-Ask: "Should I save these checklists to docs/specs/? You can also ask to see any specific section first."
+Ask: "Should I save these checklists to docs/checklists/? You can also ask to see any specific section first."
 
 ### Phase 5: Save
 
 After human approval:
 
-1. Create `docs/specs/` directory if it doesn't exist
-2. Write `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md`
-3. Write `docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md`
-4. Write `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md` (skip if no frontend)
+1. Create `docs/checklists/` directory if it doesn't exist
+2. Write `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md`
+3. Write `docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md`
+4. Write `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` (skip if no frontend)
 
 Each file includes:
 - Version: `1.0.0`
@@ -301,7 +301,7 @@ End with: `CHECKLISTS READY FOR PLANNER`
 
 ### Phase 1: Read Current State
 
-1. Read all existing `docs/specs/*_CHECKLIST.md` files
+1. Read all existing `docs/checklists/*_CHECKLIST.md` files
 2. Parse current version numbers and architecture pattern
 3. Identify existing modules and rules
 
