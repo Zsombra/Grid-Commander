@@ -2,11 +2,11 @@
 id: market-grid-is-an-unmodelled-module
 title: The Market Grid prediction game is a whole module the app does not model
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-31
 updated: 2026-08-06
-change: "the-game-is-legible-before-it-is-played"
+change: the-game-is-legible-before-it-is-played
 capability: "market-grid"
 blocked_by: []
 tags: [battlegrid, market-grid, product-model]

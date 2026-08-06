@@ -2,7 +2,7 @@
 id: brain-presets-are-hardcoded-and-short-one
 title: BRAIN_PRESETS is a hand-written list, and the schema has one it lacks
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-29
 updated: 2026-08-06

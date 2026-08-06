@@ -2,7 +2,7 @@
 id: a-priced-position-goes-stale-while-you-read-it
 title: The platform asks for a 10-second refresh and every surface here is a static render
 type: risk
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06

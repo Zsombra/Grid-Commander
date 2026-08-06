@@ -1,8 +1,8 @@
 ---
 id: an-update-that-omits-conditions-is-unobserved
 title: An UPDATE compile that omits conditions may be clearing them, and nothing here can say
-type: risk
-status: open
+type: question
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
@@ -13,6 +13,49 @@ tags: [battlegrid, conditions, apply, observed-vs-declared]
 ---
 
 # The field the edit page does not send
+
+## Answered 2026-08-06, live: it is reading (1). Nothing is destroyed.
+
+Settled with `compile_strategy_plan` alone — the tool states it performs no
+write, and the strategy's revision was re-read afterwards to confirm it.
+
+Subject: `Dunkirk (fork)`, user-owned (a SYSTEM strategy answers `FORBIDDEN`),
+revision 4, two conditions. The request sent was byte-for-byte what
+`compileUpdateIntent` composes, **with no `conditions` key**:
+
+```
+BEFORE  rev=4  conditions=2  [ALL_AGREE_UP, ALL_AGREE_DOWN]
+postState.conditions: 2 entries [ALL_AGREE_UP, ALL_AGREE_DOWN]
+AFTER   rev=4  conditions=2   (compile wrote nothing)
+```
+
+**The compiler fills `postState` from the stored strategy.** An UPDATE that
+names no conditions gets the existing ones back, and `toApplyPlan` copying
+`postState.conditions` therefore preserves them. The edit page is not clearing
+the layer that decides direction.
+
+Two things learned on the way, both worth keeping:
+
+- **A no-op UPDATE is refused**, not compiled: `VALIDATION_ERROR — Strategy
+  update contains no effective changes.` The first attempt resent the same
+  tagline and got that back. So the compiler will not mint a plan for a request
+  that changes nothing, which is a small guarantee in its own right.
+- **`compile_strategy_plan` takes a `request` wrapper.** A flat payload is
+  refused with `invalid_type … path: ["request"]`. The product composes it
+  correctly; a hand-rolled probe does not, which is why this was worth checking
+  against the adapter rather than the schema alone.
+
+### What this does not settle
+
+Why every fork on both accounts carries **zero** conditions while every SYSTEM
+strategy carries two to ten — three forks on the second account and one of two
+on the first. Whether forking drops them, or whether they were never there, is
+unobserved. Filed as `a-fork-appears-to-arrive-without-conditions`.
+
+The write path stays out of `a-drafted-condition-can-be-tried` regardless: this
+answers the first of the two facts that stopped it, and the second — the record
+flattening the condition union — is untouched.
+
 
 `a-drafted-condition-can-be-tried` stopped short of a write, and this is the
 first of the two facts that stopped it.

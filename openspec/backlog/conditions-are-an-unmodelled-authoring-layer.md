@@ -2,7 +2,7 @@
 id: conditions-are-an-unmodelled-authoring-layer
 title: Conditions — a boolean layer above signals, recorded since 2026-07-31 and never read
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-04
 updated: 2026-08-06
