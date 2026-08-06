@@ -6,13 +6,22 @@ status: open
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-probe-applies-the-edit-it-described
 capability: battlegrid-connection
 blocked_by: []
 tags: [live, probes, confirmation]
 ---
 
 # The write probe describes one edit and applies another
+
+> **Being fixed** — `the-probe-applies-the-edit-it-described`.
+>
+> The probe forms one intent and splits it with `editArguments`, the same split
+> the edit page and the pending page use. Proven against the fakes rather than
+> by a live run: `edit-binding.test.ts` drives the probe's describe→apply pair,
+> asserts the confirmation is spendable, and runs the old disagreeing pair to
+> show the refusal. The live run this item asks for is still outstanding and is
+> still the operator's to make — the change does not claim it.
 
 ## What
 
