@@ -71,6 +71,34 @@ an expansion 8/8 times at 4h and 8/8 at 1d. `bull_ranging` is the one regime
 that is unprofitable at every horizon on both timeframes — 24% of bars that
 should not be traded.
 
+**Then swept the one gap the doc had named**: `get_strategy_signal_definition`,
+all 84, 84/84 answered. It carries much more than the list view — tunable params
+with bounds, timeframe dependencies, worked scoring examples, and a `watchOut`
+field where the platform states its own regime caveats.
+
+**The finding that changes advice: a signal that barely fires is worth almost
+nothing.** Scores are graded, not binary, and the gradient near the threshold is
+steep — `rsi_oversold` scores **0.10** at RSI 27 against 0.50 at RSI 15;
+`trend_adx_trending` scores 0.20 at ADX 30 against 1.00 at ADX 50. So a high
+aggregate means signals fired *deeply*, not that many fired, which is the
+mechanism behind the earlier §D.5 correlation. And tightening a signal's own
+threshold is usually a sharper instrument than raising the gate: **39 of 84
+signals are tunable with declared bounds**, and that is the real optimisation
+surface.
+
+Three things it caught that were wrong or missing in the doc I had just written.
+The four `structure_*` signals declare `HIGHER` + `PRIMARY`, so C5's anchor-only
+table would not have fed them. `mtf_pullback_long/short` depend on HIGHER and
+LOWER but **not** PRIMARY. And nine signals document scores above 1.0 — up to
+**2.0** — while `simulate_aggregate_score` declares `score ∈ [0,1]`, so offline
+tuning understates the aggregate wherever those are weighted. All three are
+corrected in place rather than appended.
+
+One thing raised and deliberately left unsettled: the four `regime_*` signals
+declare a `REGIME` dependency while `rel: regime` resolves to `null` on every
+anchor for columns. Whether the signal path resolves it by a route the column
+path does not is unverified, and the doc says so rather than guessing.
+
 **Next**: the cheapest real test is the stop-geometry fix alone, holding signals
 constant — two fields. After that, C8 (perp–spot basis): strongest prior
 mechanism, native signal pair, zero competition.

@@ -67,6 +67,14 @@ perp/spot module ships a classification vocabulary — `perp_led_fragile`,
 `spot_led_accumulation` — that names a real institutional distinction and is
 sitting entirely unexploited.
 
+**8. A signal that barely fires is worth almost nothing.** Signals emit a
+*graded* score, not a binary vote, and the gradient near the threshold is steep:
+`rsi_oversold` scores **0.10** at RSI 27 and 0.50 at RSI 15; `trend_adx_trending`
+scores **0.20** at ADX 30 and 1.00 at ADX 50. So a high aggregate score means
+signals fired *deeply*, not that many fired — and tightening a signal's own
+threshold is often a better lever than raising the gate. 39 of 84 signals are
+tunable, with declared bounds; that is the real optimisation surface (§3.6).
+
 **What to build first:** §E gives a benchmark specification that follows from
 these seven directly. It is deliberately not clever. It fixes the geometry,
 sits out the one bad regime, and gives you a measurable baseline to optimise
@@ -318,6 +326,100 @@ and `docs/battlegrid-mcp-capabilities.json` carries `serverInfo: 9.0.0` while
 its schemas already hold v11-era content. The data was regenerated; the
 narrative was not.
 
+
+### 3.6 The signal parameter surface — swept live, all 84
+
+`get_strategy_signal_definition` was swept across the whole catalogue
+(84/84 answered). It carries far more than the list view: tunable parameters
+with bounds, timeframe dependencies, worked scoring examples, and the
+platform's own guidance per signal.
+
+**39 of 84 signals are tunable. 45 are fixed.** That 39-dimensional continuous
+space, with declared bounds, is the actual optimisation surface:
+
+| Parameter | Signals | Example bounds (default) |
+|---|---:|---|
+| `threshold` | 18 | `rsi_oversold` [1,50] (30) · `trend_adx_trending` [15,50] (25) |
+| `multiplier` | 4 | `volume_surge` [1.1,20] (2) · `volatility_atr_expanding` [1.05,5] (1.5) |
+| `proximityPct` | 4 | `sr_at_support` [0.001,0.05] (0.005) · `structure_ob_approach` [0.1,10] (1) |
+| `thresholdPct` | 3 | `funding_extreme_positive` [0.0001,0.05] (0.0005) · `oi_surge` [0.005,0.5] (0.05) |
+| `zoneThreshold` | 2 | `stoch_bull_cross` [5,50] (30) |
+| `pctBThreshold` | 2 | `bollinger_lower_touch` [0,0.2] (0.05) |
+| `minPeerFraction` | 2 | `comparison_sector_momentum` [0.3,1] (0.6) |
+| `bandwidthPct` / `maxCorrelation` / `rangePct` / `alignmentPct` | 1 each | `bollinger_squeeze` [0.005,0.2] (0.04) |
+
+#### A signal that "just fires" is worth almost nothing
+
+**This is the most important thing the sweep found.** Signals do not cast binary
+votes — they emit a graded score, and the gradient near the threshold is steep.
+From the platform's own worked examples:
+
+| Signal | Marginal trigger | Deep trigger |
+|---|---|---|
+| `rsi_oversold` (threshold 30) | RSI 27 → **0.10** | RSI 15 → 0.50 |
+| `trend_adx_trending` (threshold 25) | ADX 30 → **0.20** | ADX 50 → 1.00 |
+| `volume_surge` (threshold 2.0) | ratio 2.4 → **0.20** | ratio 4.0 → 1.00 |
+| `funding_extreme_positive` (0.0005) | rate 0.0006 → **0.20** | rate 0.0010 → 1.00 |
+
+A scorecard of six barely-triggered signals aggregates to almost nothing. This
+is the mechanism behind §D.5's finding that a higher average aggregate score
+correlates with better outcomes: **a high aggregate means signals fired deeply,
+not that many signals fired.** It also means `minAggregateScore` is a *depth*
+filter, and tightening a signal's own `threshold` is often better than raising
+the gate — it moves the same market event further into the scoring range.
+
+#### Nine signals score above 1.0, which the simulator does not declare
+
+`simulate_aggregate_score` declares `score` in `[0,1]`. Nine signals document
+examples above it — `bollinger_lower/upper_touch` reach **2.0 (clamped)**,
+`ma_sma200_above/below`, `sr_support/resistance_break` and `oi_surge` reach 2.0,
+and the two `bollinger_cci_*` reach 1.5. Anyone tuning offline by feeding
+`[0,1]` scores into the simulator will **understate** the aggregate for these
+nine. Treat the simulator as a lower bound where they are weighted.
+
+#### Dependencies — 22 of 84 signals need a timeframe other than the primary
+
+| Dependency set | n | Signals |
+|---|---:|---|
+| `PRIMARY` | 57 | the bulk |
+| `HIGHER` | 6 | the six `htf_*` |
+| `LOWER` | 6 | the six `ltf_*` |
+| `HIGHER` + `PRIMARY` | 4 | **all four `structure_*`** |
+| `REGIME` | 4 | the four `regime_*` |
+| `COMPARISON` (+`PRIMARY`) | 3 | the three `comparison_*` |
+| `HIGHER`+`LOWER`+`PRIMARY`+`SYNTHESIS` | 2 | `mtf_aligned_bull/bear` |
+| `HIGHER`+`LOWER`+`SYNTHESIS` | 2 | `mtf_pullback_long/short` |
+
+Two of these correct build specs elsewhere in this document:
+
+- **The four `structure_*` signals need a higher-timeframe read, not just the
+  anchor.** C5's table alone will not feed them.
+- **`mtf_pullback_long/short` depend on HIGHER and LOWER but not PRIMARY** — the
+  anchor timeframe is not part of their evaluation at all.
+
+And the four `regime_*` signals declare a `REGIME` dependency while `rel: regime`
+resolves to `null` for every anchor (§3.5). Whether the signal path resolves the
+regime timeframe by a route the column path does not is **unverified** — worth
+establishing before weighting them.
+
+#### The platform documents its own regime caveats
+
+**39 of 84 signals carry explicit regime guidance** in a `watchOut` field, and it
+consistently says what Part B says independently:
+
+> `ltf_rsi_oversold` — "LTF oversold is noisy — pair with an HTF trend gate so
+> you fade dips only in the trend direction."
+> `funding_extreme_positive` — "During strong uptrends funding can stay extreme
+> for many funding intervals; don't fade a strong trend on funding alone."
+> `bollinger_lower_touch` — "In strong downtrends price can 'walk the band'
+> lower for many bars — don't fade strong momentum on touch alone."
+> `ltf_trend_adx_ranging` — "A tight LTF range often precedes a fast expansion —
+> watch for the ADX turning up."
+
+That last one is C4's thesis in the platform's own words. This field is the
+cheapest available source of per-signal regime pairing and should be read before
+weighting anything.
+
 ---
 
 ## Part A — The mathematical families
@@ -499,6 +601,9 @@ is an entry, not a reversal.
 **Build.** This is the category the platform has pre-built for you.
 - Signals: **`mtf_pullback_long` / `mtf_pullback_short`** — HTF trend + LTF
   counter-extreme, already synthesised. Allocation 3, `required: true`.
+  Note their dependency set is `HIGHER` + `LOWER` + `SYNTHESIS` — **not
+  `PRIMARY`** (§3.6). The anchor timeframe plays no part in evaluating them, so
+  the higher and lower tables below are the ones that matter.
 - Supporting: `htf_ma_aligned_bull` (2), `ltf_rsi_oversold` (2),
   `sr_at_support` (1)
 - Section (`rel: higher`): `MA_ALIGN value`, `ADX value`
@@ -597,8 +702,14 @@ the natural place to put a stop *behind* rather than *inside*.
 **Build.**
 - Section (anchor): `STRUCT_ZONES count`, `nearestZoneType`, `nearestZoneDist`,
   `nearestZoneRange`, `nearestZoneAge`
+- Section (`rel: higher`): `STRUCT_ZONES count`, `nearestZoneDist` —
+  **required**: all four `structure_*` signals declare a `HIGHER` + `PRIMARY`
+  dependency (§3.6), so an anchor-only table will not feed them
 - Signals: `structure_zone_confluence` (3), `structure_ob_approach` (2),
   `structure_fvg_approach` (2), `structure_zone_cluster` (2)
+- Tuning: `proximityPct` [0.1,10] default 1 on the two `*_approach` signals;
+  `alignmentPct` [0.1,5] default 0.5 on confluence — tighten before raising
+  the gate (§3.6)
 - Condition: `ALL[ nearestZoneDist ≤ 0.5, STRUCT_ZONES count ≥ 2 ]`
 - Regime gate: any except `bull_ranging`
 
@@ -1266,6 +1377,11 @@ the LLM last.
    joined dataset the API will not give you retroactively.
 2. **Score offline.** Replay recorded signal states through
    `simulate_aggregate_score` to tune allocations without touching a live agent.
+   Two caveats from §3.6: the simulator declares `score ∈ [0,1]` but nine signals
+   document examples up to **2.0**, so it is a *lower bound* wherever those are
+   weighted; and because scoring is graded, sweep each signal's own `threshold`
+   (39 are tunable, with bounds) alongside `minAggregateScore` — they are
+   substitutes, and the threshold is usually the sharper instrument.
 3. **Qualify.** Sweep `minAggregateScore` / `minRequiredCount` / `minAtrPct`
    through `get_agent_coin_qualification` and record the first-failing gate
    distribution — that tells you which knob is actually binding.
@@ -1306,9 +1422,17 @@ acting on, not the individual p-values, which do not exist.
   all, so the deterministic layer — arguably the most powerful part of the
   platform — is entirely untested. Everything in Part B that leans on F15 is
   reasoned, not measured.
-- **`get_strategy_signal_definition` was not swept.** Per-signal tunable
-  `params` were not enumerated for all 84 signals; the parameter surface behind
-  each rule is therefore unmapped.
+- ~~`get_strategy_signal_definition` was not swept.~~ **Closed** — swept
+  2026-08-06, 84/84 answered. See §3.6. It found three things that changed
+  advice elsewhere in this document: signal scores are graded with a steep
+  gradient near the threshold, nine signals exceed the simulator's declared
+  `[0,1]` range, and the four `structure_*` signals need a higher-timeframe
+  table that C5's original spec omitted.
+- **One thing the sweep raised and did not settle.** The four `regime_*` signals
+  declare a `REGIME` dependency, while `rel: regime` resolves to `null` on every
+  anchor for *columns*. Whether the signal path resolves the regime timeframe by
+  a route the column path does not is unverified — establish it before weighting
+  those four.
 - **Candle history caps at 100 bars.** Any claim needing more than ~4 days at 1h
   or ~16 days at 4h cannot currently be checked.
 - **`rel: regime` is inert.** It resolves to `null` for every anchor, so
@@ -1343,6 +1467,7 @@ tool could be reached.
 |---|---|---|
 | Vocabulary | `list_strategy_categories`, `list_strategy_vocabulary` × 10 | 84 metrics, 16 transforms, budgets |
 | Signals | `list_strategy_signals` | 84 signals, 19 modules |
+| Signal definitions | `get_strategy_signal_definition` × 84 | 84/84; params, bounds, dependencies, scoring examples |
 | Agent cross-section | `get_agent_explorer` × 3 sorts | 38 agents |
 | Realised trades | `get_public_agent_realized_trades`, `get_public_agent_signal_performance` | 715 trades, 20 agents |
 | Regime series | `get_regime_history`, `get_regime_snapshot` | 296 bars 4h + 184 bars 1d BTC; 30 coins × 2 TFs |
