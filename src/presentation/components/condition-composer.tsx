@@ -3,7 +3,7 @@ import type { DraftStanding } from '@/domain/strategy/condition-draft.js';
 import { columnsRead } from '@/domain/strategy/condition-draft.js';
 import type { QueryFields } from '../condition-form.js';
 import { CLAUSE_OPS, MEMBER_SLOTS } from '../condition-form.js';
-import { CONTROL } from './control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
 import { ConditionStructure } from './strategy-conditions.js';
 
 /**
@@ -54,7 +54,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
         Row {index + 1}
       </legend>
 
-      <label className="block text-sm">
+      <label className={LABEL}>
         This row is
         <select name={`${p}kind`} defaultValue={was(q, `${p}kind`)} className={CONTROL}>
           <option value="">— unused —</option>
@@ -64,7 +64,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
       </label>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <label className="block text-sm">
+        <label className={LABEL}>
           Referenced condition key
           <input
             type="text"
@@ -74,7 +74,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Section key (blank if the column belongs to none)
           <input
             type="text"
@@ -83,7 +83,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Column header
           <input
             type="text"
@@ -93,7 +93,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Comparison
           <select name={`${p}op`} defaultValue={was(q, `${p}op`)} className={CONTROL}>
             {CLAUSE_OPS.map((op) => (
@@ -103,7 +103,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Number (lt, lte, gte, gt)
           <input
             type="text"
@@ -112,7 +112,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Label (is)
           <input
             type="text"
@@ -121,11 +121,11 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Low bound (between)
           <input type="text" name={`${p}low`} defaultValue={was(q, `${p}low`)} className={CONTROL} />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           High bound (between)
           <input
             type="text"
@@ -134,7 +134,7 @@ function MemberRow({ index, q }: { index: number; q: QueryFields }) {
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm sm:col-span-2">
+        <label className={`${LABEL} sm:col-span-2`}>
           Labels, comma separated (in)
           <input
             type="text"
@@ -185,7 +185,7 @@ export function ConditionComposer({
       </p>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <label className="block text-sm">
+        <label className={LABEL}>
           Condition key
           <input
             type="text"
@@ -195,11 +195,11 @@ export function ConditionComposer({
             className={CONTROL}
           />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Name
           <input type="text" name="name" defaultValue={was(q, 'name')} className={CONTROL} />
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Calls
           <select name="verdict" defaultValue={was(q, 'verdict')} className={CONTROL}>
             {/* The empty option first and named for what it means. A condition
@@ -215,14 +215,14 @@ export function ConditionComposer({
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <label className="block text-sm">
+        <label className={LABEL}>
           The definition is
           <select name="shape" defaultValue={was(q, 'shape')} className={CONTROL}>
             <option value="single">a single row</option>
             <option value="group">a group over the rows below</option>
           </select>
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Group operator
           <select name="groupOp" defaultValue={was(q, 'groupOp')} className={CONTROL}>
             <option value="ALL">ALL — every member must hold</option>
@@ -231,7 +231,7 @@ export function ConditionComposer({
             <option value="N_OF">N_OF — a threshold</option>
           </select>
         </label>
-        <label className="block text-sm">
+        <label className={LABEL}>
           Threshold (N_OF only)
           <input type="text" name="n" defaultValue={was(q, 'n')} className={CONTROL} />
         </label>
@@ -258,11 +258,11 @@ export function ConditionComposer({
         ))}
       </div>
 
-      <label className="block text-sm">
+      <label className={LABEL}>
         Resolve against (top ranked coins)
         <input type="text" name="limit" defaultValue={was(q, 'limit') || '3'} className={CONTROL} />
       </label>
-      <label className="block text-sm">
+      <label className={LABEL}>
         …or explicit tickers, comma separated
         <input type="text" name="tickers" defaultValue={was(q, 'tickers')} className={CONTROL} />
       </label>
@@ -271,7 +271,10 @@ export function ConditionComposer({
           than a first visit — the same marker the edit page's compile uses. */}
       <input type="hidden" name="try" value="1" />
 
-      <button type="submit" className="rounded border px-4 py-2 text-sm">
+      {/* Secondary, like every other submit that only asks. This one asks
+          harder than most: the form cannot save, and the paragraph under it
+          says so. An accent button would argue with both. */}
+      <button type="submit" className={BUTTON_SECONDARY}>
         Try it — ask BattleGrid how this would resolve
       </button>
 
