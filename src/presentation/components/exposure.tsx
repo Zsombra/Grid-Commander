@@ -3,6 +3,7 @@ import type {
   FillFailures,
   HeldPosition,
   LevelAsDecided,
+  PricedAt,
 } from '@/application/use-cases/read-exposure.query.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
 
@@ -23,6 +24,35 @@ const percent = (v: number | null): string =>
   v === null ? 'not priced' : `${(Math.round(v * 100) / 100).toFixed(2)}%`;
 
 const price = (v: number | null): string => (v === null ? '—' : String(v));
+
+/** The platform's own stamp, unrounded and unlocalised. */
+const stamp = (ms: number): string => new Date(ms).toISOString();
+
+/**
+ * An age in milliseconds, worded the way staleness is actually thought about.
+ *
+ * Named for how it reads at the call site — `Priced ${ago(ageMs)}` — and not to
+ * be confused with `SinceTheDecision` below, which is about a stop moving.
+ *
+ * Measured in `ReadExposureQuery` against the injected clock and only *said*
+ * here — the same split `money` and `percent` already use, and the reason no
+ * component in this product calls `Date.now()`.
+ *
+ * Rounded **down**, so it can understate by up to one unit. That is only
+ * acceptable because the exact stamp is rendered beside it: "4 minutes ago" on
+ * its own is a figure to be taken on trust, and next to 17:55:21.702Z it is a
+ * reading of something the reader can check.
+ */
+const ago = (ageMs: number): string => {
+  const seconds = Math.floor(ageMs / 1000);
+  if (seconds < 60) return 'less than a minute ago';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+};
 
 /**
  * One open position, and the decision that opened it.
@@ -166,6 +196,51 @@ function targetSentence(target: LevelAsDecided): string | null {
 }
 
 /**
+ * How old these figures are, and the one thing the reader can do about it.
+ *
+ * The stamp alone was already here and was already true. What it left the
+ * reader is arithmetic: `Priced 2026-08-06T17:55:21.702Z` reads identically one
+ * second and four minutes after the page loaded, on a 5× position the platform
+ * asks a client to re-read every ten seconds (`refreshIntervalMs: 10000`). The
+ * age is the part of that a static render can honestly state.
+ *
+ * The re-read is a plain `<a>` back to this agent's page: a full page load, a
+ * server render, a fresh read of BattleGrid. No client component, nothing that
+ * could be mistaken for the panel updating itself. It is here rather than left
+ * to the browser's reload button because the affordance belongs beside the
+ * sentence that gives a reason to use it.
+ *
+ * The disclaimer is written once and appended to all three states, rather than
+ * spelled out in each. The line used to be dropped whole when the platform sent
+ * no `generatedAtMs`, which took `a snapshot, not a live ticker` with it — on
+ * the one read least able to justify being taken as current.
+ */
+function Priced({ pricedAt, agentId }: { pricedAt: PricedAt; agentId: string }) {
+  return (
+    <p className="text-sm text-text-secondary">
+      {`${when(pricedAt)} — a snapshot, not a live ticker.`}{' '}
+      <a href={`/agents/${agentId}`} className="underline">
+        Read these figures again
+      </a>
+      .
+    </p>
+  );
+}
+
+/** What can be said about the moment these figures belong to. */
+const when = (pricedAt: PricedAt): string => {
+  if (pricedAt.kind === 'unstated') return 'BattleGrid did not say when this was priced';
+  if (pricedAt.kind === 'aged') return `Priced ${ago(pricedAt.ageMs)}, at ${stamp(pricedAt.atMs)}`;
+  // Only what was observed: this server's clock reads earlier than the stamp.
+  // Which of the two clocks is wrong is not knowable from here, and naming one
+  // would be a claim about BattleGrid's.
+  return (
+    `Priced at ${stamp(pricedAt.atMs)}; how long ago that was cannot be said, ` +
+    `because the stamp is later than this server's clock reads`
+  );
+};
+
+/**
  * Entries that never became an order.
  *
  * The counts already existed on the funnel and already rendered on
@@ -203,7 +278,20 @@ function Fills({ fills }: { fills: FillFailures }) {
   );
 }
 
-export function Exposure({ exposure, fills }: AgentExposure) {
+export function Exposure({
+  exposure,
+  fills,
+  agentId,
+}: AgentExposure & {
+  /**
+   * Whose page this is, so the panel can build the link back to it. The href is
+   * assembled here rather than passed in ready-made so
+   * `tests/architecture/reachability.test.ts` can see it — that guard reads
+   * `href=` literals out of the source, and a path arriving as an opaque prop
+   * is a path it cannot check against the route table.
+   */
+  agentId: string;
+}) {
   return (
     <section className="space-y-2">
       <h2 className="text-base font-medium">What it has at stake</h2>
@@ -242,15 +330,12 @@ export function Exposure({ exposure, fills }: AgentExposure) {
             ))}
           </ul>
           {/*
-            A snapshot, and it says so. The platform declares how often a
-            client should re-read; a server-rendered page cannot honour that,
-            so it states when it was priced rather than implying it is live.
+            A snapshot, and it says so — with how old it is, and a way to take
+            it again. The platform declares how often a client should re-read;
+            a server-rendered page cannot honour that, so it states its own age
+            rather than implying it is live.
           */}
-          {exposure.totals.generatedAtMs === null ? null : (
-            <p className="text-sm text-text-secondary">
-              {`Priced ${new Date(exposure.totals.generatedAtMs).toISOString()} — a snapshot, not a live ticker.`}
-            </p>
-          )}
+          <Priced pricedAt={exposure.pricedAt} agentId={agentId} />
           {/* What else on the account is exposed, so one agent's page does not
               imply it is the only thing at risk. */}
           {exposure.totals.openPositionCount !== null && exposure.totals.openPositionCount > exposure.positions.length ? (

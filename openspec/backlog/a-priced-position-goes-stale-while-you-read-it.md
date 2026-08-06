@@ -2,11 +2,11 @@
 id: a-priced-position-goes-stale-while-you-read-it
 title: The platform asks for a 10-second refresh and every surface here is a static render
 type: risk
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-snapshot-says-how-old-it-is
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, positions, staleness, money]

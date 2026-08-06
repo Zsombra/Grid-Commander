@@ -78,6 +78,12 @@ export function actingWith({
   proposals = new FakeProposalStore(),
   market = new FakeMarketPort(),
   positions = new FakePositionsPort(),
+  /**
+   * When the page is being rendered. Injectable because a surface can now say
+   * how old its figures are — "priced 4 minutes ago" — and a test that let
+   * that read the wall clock would assert a different sentence every run.
+   */
+  clock = new FakeClock(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
@@ -87,8 +93,8 @@ export function actingWith({
   proposals?: FakeProposalStore;
   market?: FakeMarketPort;
   positions?: FakePositionsPort;
+  clock?: FakeClock;
 } = {}) {
-  const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
   const random = new SequentialRandom();
 
@@ -101,7 +107,7 @@ export function actingWith({
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
-    readExposure: new ReadExposureQuery(positions, agents),
+    readExposure: new ReadExposureQuery(positions, agents, clock),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),
@@ -129,7 +135,19 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, grid, explorer, market, positions, confirmations };
+  return {
+    app,
+    user,
+    agents,
+    strategies,
+    radar,
+    grid,
+    explorer,
+    market,
+    positions,
+    confirmations,
+    clock,
+  };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */

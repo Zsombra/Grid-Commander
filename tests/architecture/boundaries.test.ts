@@ -164,6 +164,47 @@ describe('W-D — routes are thin, and W-E — one way in', () => {
   });
 });
 
+describe('the clock is a port — nothing that renders reads it directly', () => {
+  /**
+   * `Clock` exists so that what a page *says* can be pinned by a test.
+   *
+   * The exposure panel now states how stale its figures are — "priced 4 minutes
+   * ago", against a `refreshIntervalMs: 10000` the platform sends and a
+   * server-rendered page cannot honour. Measured with `Date.now()` inside the
+   * component, that sentence would be a different string on every run, and the
+   * only way to test it would be to freeze global time — the flaky-fixture
+   * shape this repository has already paid for once.
+   *
+   * So the age is measured in the read, against the injected clock, and the
+   * surface only words it. Routes are excluded deliberately: this is a rule
+   * about rendering, and `app/api/auth/battlegrid/callback/route.ts` stamps a
+   * session at the moment it issues one.
+   */
+  const renderingFiles = () => [...filesUnder('src/presentation', '.tsx'), ...filesUnder('app', '.tsx')];
+
+  it('measures no time of its own', () => {
+    const offenders: Array<[string, string]> = [];
+    for (const file of renderingFiles()) {
+      const code = stripComments(readFileSync(file, 'utf8'));
+      // `new Date(ms)` formats a stamp the platform sent and is pure. The
+      // zero-argument form is a reading of now, which is the dependency.
+      for (const m of code.matchAll(/Date\.now\s*\(\s*\)|new\s+Date\s*\(\s*\)/g)) {
+        offenders.push([file, m[0]]);
+      }
+    }
+    expect(offenders, 'take now from Clock in the use case; render what it produced').toEqual([]);
+  });
+
+  it('is looking at files, and at a surface that does state an age', () => {
+    // Both halves of vacuity: a scan that found nothing, and a rule protecting
+    // a property no code has any more.
+    expect(renderingFiles().length).toBeGreaterThan(10);
+    expect(readFileSync('src/application/use-cases/read-exposure.query.ts', 'utf8')).toContain(
+      "@/ports/clock.js",
+    );
+  });
+});
+
 describe('AL-2 — canDelete does not exist in this product', () => {
   /**
    * The live agent payload sets `capabilities.canDelete: true`, and the MCP
