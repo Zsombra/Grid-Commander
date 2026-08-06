@@ -5,13 +5,20 @@ type: question
 status: open
 priority: p3
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-08-06
 capability: agent-comparison
 blocked_by: []
 tags: [battlegrid, explorer, unobserved-shape]
 ---
 
 # Open-position rows have never been seen
+
+## Update 2026-08-06: still empty, across the whole cluster
+
+Re-checked while looking for the next build. `get_agent_open_positions`,
+`list_user_active_positions`, `get_open_orders` and `list_trade_outcomes` all
+answer empty on both accounts — so the private side is as unobserved as the
+public one this item was filed about. Nothing has been seen to model.
 
 `get_public_agent_unrealized_pnl` answers a real envelope:
 

@@ -14,6 +14,7 @@ import type {
   SignalEvaluation,
   StageResult,
   ThoughtLogResult,
+  QualificationResult,
   TradeOutcome,
   TradeOutcomesResult,
 } from '@/ports/agents.js';
@@ -237,6 +238,9 @@ export class FakeAgentsPort implements AgentsPort {
   /** One evaluation in full, and the agent's own funnel. */
   ownEvaluation: EvaluationResult = { kind: 'none' };
   ownFunnel: FunnelResult = { kind: 'none' };
+  qualification: QualificationResult = { kind: 'none' };
+  /** Every set of tickers the screening was asked about, in order. */
+  readonly screened: string[][] = [];
 
   async readOwnEvaluationDetail(): Promise<EvaluationResult> {
     return this.ownEvaluation;
@@ -244,6 +248,16 @@ export class FakeAgentsPort implements AgentsPort {
 
   async readOwnFunnel(): Promise<FunnelResult> {
     return this.ownFunnel;
+  }
+
+  async readCoinQualification(params: {
+    coinTickers: readonly string[];
+  }): Promise<QualificationResult> {
+    // Recorded rather than ignored: which coins the product chose to screen is
+    // half of what this feature does, and a double that swallowed the argument
+    // would let every choice test pass without a choice being made.
+    this.screened.push([...params.coinTickers]);
+    return this.qualification;
   }
 
   private expect(agentId: string, revision: number): Agent {

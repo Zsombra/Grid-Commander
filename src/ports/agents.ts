@@ -189,6 +189,21 @@ export interface AgentsPort {
     accessToken: string;
     agentId: string;
   }): Promise<FunnelResult>;
+
+  /**
+   * Whether this agent's gates would admit a trade on each named coin, now.
+   *
+   * The only prospective read in this port. Everything else here answers what
+   * an agent already did; this answers what it would do, which is the question
+   * an operator tuning one actually has. BattleGrid screens at most twelve
+   * tickers per call and spends no LLM call doing it.
+   */
+  readCoinQualification(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    coinTickers: readonly string[];
+  }): Promise<QualificationResult>;
 }
 
 export type EvaluationResult =
@@ -376,6 +391,90 @@ export interface TradeOutcome {
   readonly decisionId: string | null;
   readonly signalLogId: string | null;
 }
+
+/**
+ * One gate, as the platform measures it: the reading and the bar.
+ *
+ * Three gates, each with its own pair of field names rather than a shared
+ * `{measured, threshold}`. The units differ — two percents and a count — and a
+ * generic pair invites exactly the mistake `pipeline/page.tsx` documents at
+ * length: a value the platform already expressed as a percentage passed through
+ * a fraction formatter and rendered as 3970%. The names carry the unit, so a
+ * call site cannot lose it.
+ *
+ * `verdict` stays a string. The platform sends `CLEARED`, `FAILING`,
+ * `NOT_ENFORCED` and `UNMEASURABLE`, and the last two are not failures — a gate
+ * nobody configured and a gate that could not be measured are both *not* a coin
+ * falling short. Collapsing four states into pass/fail would report an
+ * unconfigured floor as an obstacle to remove.
+ */
+export interface AggregateScoreGate {
+  readonly verdict: string;
+  readonly scorePercent: number | null;
+  readonly minScorePercent: number | null;
+}
+
+export interface RequiredCountGate {
+  readonly verdict: string;
+  readonly count: number | null;
+  readonly min: number | null;
+}
+
+export interface AtrVolatilityGate {
+  readonly verdict: string;
+  readonly atrPct: number | null;
+  readonly minAtrPct: number | null;
+}
+
+export interface QualificationGates {
+  readonly aggregateScore: AggregateScoreGate;
+  readonly requiredCount: RequiredCountGate;
+  readonly atrVolatility: AtrVolatilityGate;
+}
+
+/**
+ * One direction's answer. A coin can qualify long and not short.
+ *
+ * `candidateLevels` is the construction step before any gate is scored: whether
+ * a stop and a target could be placed at all. `rejectionStage` names where that
+ * construction stopped — `NO_SL_CANDIDATES`, `SL_POLICY_FILTERED` and the rest —
+ * and is null when nothing rejected it.
+ */
+export interface DirectionQualification {
+  readonly qualifies: boolean;
+  readonly firstFailReason: string | null;
+  readonly candidateLevels: {
+    readonly ok: boolean;
+    readonly rejectionStage: string | null;
+  };
+}
+
+/** One coin, screened against one agent's gates. */
+export interface CoinQualification {
+  readonly coinTicker: string;
+  readonly coinName: string | null;
+  readonly qualifies: boolean;
+  /**
+   * The first gate that failed, **in the platform's live evaluation order**.
+   *
+   * Not derivable from `gates`: the platform stops at the first failure, so a
+   * gate listed after it may never have been measured. Deriving our own order
+   * would name a different gate than the one actually standing in the way.
+   */
+  readonly firstFailReason: string | null;
+  /** The timeframe the agent's bound strategy reasons over. */
+  readonly strategyTimeframe: string | null;
+  readonly evaluatedAt: string | null;
+  readonly gates: QualificationGates;
+  readonly long: DirectionQualification;
+  readonly short: DirectionQualification;
+}
+
+export type QualificationResult =
+  | { readonly kind: 'verdicts'; readonly verdicts: readonly CoinQualification[] }
+  /** The platform answered and screened nothing. Never an unreadable read. */
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type TradeOutcomesResult =
   | {

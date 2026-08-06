@@ -7,12 +7,15 @@ import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/jour
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
 import type {
+  CoinQualification,
+  DirectionQualification,
   EntryDecision,
   GateBlock,
   SignalEvaluation,
   SignalVerdict,
   TradeOutcome,
 } from '@/ports/agents.js';
+import type { RankedCoin } from '@/ports/market.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -701,4 +704,117 @@ export class PipelinePayloadError extends Error {
   constructor(field: string) {
     super(`BattleGrid returned a pipeline row with no usable "${field}"`);
   }
+}
+
+/**
+ * One coin's qualification verdict, from the live `get_agent_coin_qualification`
+ * row recorded 2026-08-06.
+ *
+ * The ticker is the only field worth refusing a row over: a verdict that cannot
+ * be attributed to a market is a paragraph about nothing. Everything else is
+ * preserved-or-null, including the two figures inside each gate — a gate the
+ * platform could not measure sends `atrPct: null`, and defaulting that to zero
+ * would render "no volatility at all", which reads as the most extreme possible
+ * failure of the very gate that was not measured.
+ */
+export function mapCoinQualification(raw: unknown): CoinQualification {
+  const v = (raw ?? {}) as Record<string, unknown>;
+  const text = (x: unknown): string | null => (typeof x === 'string' && x ? x : null);
+  const coinTicker = text(v['coinTicker']);
+  if (coinTicker === null) throw new PipelinePayloadError('qualification coinTicker');
+
+  const gates = (
+    typeof v['gates'] === 'object' && v['gates'] !== null ? v['gates'] : {}
+  ) as Record<string, unknown>;
+  const gate = (key: string): Record<string, unknown> =>
+    typeof gates[key] === 'object' && gates[key] !== null
+      ? (gates[key] as Record<string, unknown>)
+      : {};
+
+  /**
+   * A gate whose verdict is absent reads `UNSTATED`, not `FAILING`.
+   *
+   * The four states the platform sends include two that are not failures, so
+   * the safe default when it sends none is a fifth word that claims nothing —
+   * rather than borrowing one of the four and asserting something about the
+   * coin that the platform never said.
+   */
+  const verdictOf = (g: Record<string, unknown>): string => text(g['verdict']) ?? 'UNSTATED';
+
+  const aggregate = gate('aggregateScore');
+  const required = gate('requiredCount');
+  const atr = gate('atrVolatility');
+
+  return {
+    coinTicker,
+    coinName: text(v['coinName']),
+    qualifies: v['qualifies'] === true,
+    firstFailReason: text(v['firstFailReason']),
+    strategyTimeframe: text(v['strategyTimeframe']),
+    evaluatedAt: text(v['evaluatedAt']),
+    gates: {
+      aggregateScore: {
+        verdict: verdictOf(aggregate),
+        scorePercent: num(aggregate['scorePercent']) ?? null,
+        minScorePercent: num(aggregate['minScorePercent']) ?? null,
+      },
+      requiredCount: {
+        verdict: verdictOf(required),
+        count: num(required['count']) ?? null,
+        min: num(required['min']) ?? null,
+      },
+      atrVolatility: {
+        verdict: verdictOf(atr),
+        atrPct: num(atr['atrPct']) ?? null,
+        minAtrPct: num(atr['minAtrPct']) ?? null,
+      },
+    },
+    long: mapDirectionQualification(v['long']),
+    short: mapDirectionQualification(v['short']),
+  };
+}
+
+/**
+ * One direction's half of a verdict.
+ *
+ * `qualifies` defaults to false and `candidateLevels.ok` to false, because both
+ * are permissions rather than measurements: absent means the platform did not
+ * say this direction is available, and the honest reading of that is that it is
+ * not known to be. `rejectionStage` stays null in that case rather than
+ * inventing a stage, so the surface can say "not stated" instead of naming a
+ * step that never ran.
+ */
+function mapDirectionQualification(raw: unknown): DirectionQualification {
+  const d = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const levels = (
+    typeof d['candidateLevels'] === 'object' && d['candidateLevels'] !== null
+      ? d['candidateLevels']
+      : {}
+  ) as Record<string, unknown>;
+  return {
+    qualifies: d['qualifies'] === true,
+    firstFailReason:
+      typeof d['firstFailReason'] === 'string' && d['firstFailReason']
+        ? d['firstFailReason']
+        : null,
+    candidateLevels: {
+      ok: levels['ok'] === true,
+      rejectionStage:
+        typeof levels['rejectionStage'] === 'string' && levels['rejectionStage']
+          ? levels['rejectionStage']
+          : null,
+    },
+  };
+}
+
+/** One row of the platform's ranked coin list. */
+export function mapRankedCoin(raw: unknown): RankedCoin {
+  const c = (raw ?? {}) as Record<string, unknown>;
+  const ticker = typeof c['ticker'] === 'string' && c['ticker'] ? c['ticker'] : null;
+  if (ticker === null) throw new PipelinePayloadError('ranked coin ticker');
+  return {
+    ticker,
+    rank: num(c['rank']) ?? null,
+    latestMetricValue: num(c['latestMetricValue']) ?? null,
+  };
 }

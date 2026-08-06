@@ -5,13 +5,28 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-08-06
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, cost, sizing, derived-truth]
 ---
 
 # An agent can be structurally unable to trade, and nothing says so
+
+## Update 2026-08-06: the qualification surface does **not** answer this
+
+`why-it-would-not-take-this-coin` shipped `/agents/[id]/qualification`, which
+screens a coin against the agent's gates and says which one stops it. It looks
+like the answer and is not: the three gates BattleGrid reports —
+`aggregateScore`, `requiredCount`, `atrVolatility` — are all about *the
+market*. None of them consults balance, allocation floor, leverage or the
+exchange minimum.
+
+So an agent with $4.20 can screen a coin as **qualifying**, in full, and still
+fail the order the moment it places one. The two answers now sit one click
+apart and disagree, which makes this item more worth doing rather than less —
+and the new page is the natural place for the sentence, beside a verdict that
+would otherwise read as a green light.
 
 Found by analysing all 159 of `Fade Master II`'s evaluations on 2026-08-03.
 

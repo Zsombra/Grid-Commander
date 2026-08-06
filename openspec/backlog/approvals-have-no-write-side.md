@@ -5,13 +5,32 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-08-06
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, approvals, human-in-the-loop, wager]
 ---
 
 # The human-in-the-loop can be read but not answered
+
+## Update 2026-08-06: re-checked, and it is blocked twice over
+
+Picked up as the next build and put back down, with the reasons recorded so
+nobody spends the afternoon again:
+
+- **Our own spec forbids the write.** `accept_entry_decision` and
+  `cancel_entry_decision` both say *"Requires mcp:wager scope"*, and
+  `Read Scope Is Requested And Wager Scope Is Not` says Grid-Commander MUST NOT
+  request authority to commit funds. Building it is an operator's decision to
+  relax a standing requirement, not a commit.
+- **The read side still has no observed shape.** `list_pending_approvals`
+  answers `{approvals: []}` — no agent on either account runs
+  `APPROVAL_REQUIRED`, so the row has never been seen. Modelling it means
+  inventing key names, which is what produced three of the dead paths in
+  `HANDOFF.md`.
+
+`why-it-would-not-take-this-coin` was built instead, for the opposite reason:
+its rows are populated on this account today.
 
 `why-it-did-not-trade` (archived 2026-08-03) built the read half:
 `/agents/[id]/pipeline` shows the three stages a candidate can end at, and

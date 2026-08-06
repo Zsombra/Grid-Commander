@@ -54,6 +54,7 @@ import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.qu
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
+import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
 import { ReadOwnEvaluationQuery } from './application/use-cases/read-own-evaluation.query.js';
 import {
   DescribeRebindQuery,
@@ -69,6 +70,7 @@ import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.j
 import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
 import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
 import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
+import { McpMarketAdapter } from './infrastructure/battlegrid/market-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -123,6 +125,7 @@ interface Infrastructure {
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
   readonly radar: McpRadarAdapter;
+  readonly market: McpMarketAdapter;
   readonly grid: McpMarketGridAdapter;
   readonly explorer: McpExplorerAdapter;
   readonly sessionSecret: string;
@@ -173,6 +176,7 @@ function infrastructure(): Infrastructure {
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
     radar: new McpRadarAdapter(battlegrid),
+    market: new McpMarketAdapter(battlegrid),
     grid: new McpMarketGridAdapter(battlegrid),
     explorer: new McpExplorerAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
@@ -257,6 +261,10 @@ export function app(cookies: CookieStore) {
     readPipeline: new ReadPipelineQuery(i.agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar),
+    // Three ports because the question needs three answers: the gates come
+    // from the agent, the coins from the radar, and the fallback coins from
+    // the market. The use-case is the only place that knows all three.
+    readQualification: new ReadQualificationQuery(i.agents, i.radar, i.market),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
     // Recording what a model suggests. Deliberately holds no BattleGrid port:
