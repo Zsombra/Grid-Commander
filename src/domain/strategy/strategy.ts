@@ -179,8 +179,9 @@ export type SectionTemplate =
  * number is the platform's to change. `allocation` is its weight, `required`
  * means the setup does not fire without it, and `params` is the signal's own
  * configuration — a threshold, a lookback — whose shape belongs to the signal
- * rather than to us. Carried opaque on purpose: inventing a union over 82
- * signals' parameters would be a second opinion on the platform's own schema.
+ * rather than to us. Carried opaque on purpose: inventing a union over every
+ * signal's parameters would be a second opinion on the platform's own schema —
+ * which is why v9 adding `threshold` to a rule's params needed no change here.
  */
 export interface SignalRule {
   readonly signalId: string;
@@ -193,8 +194,8 @@ export interface SignalRule {
  * A strategy, whole.
  *
  * Separate from `Strategy` rather than replacing it. The roster draws seventeen
- * rows and needs a name, a scope and a bound-agent count; it does not need 82
- * signal rules and a page of prose, and widening the summary would make every
+ * rows and needs a name, a scope and a bound-agent count; it does not need every
+ * signal rule and a page of prose, and widening the summary would make every
  * list read pay for the detail page. `list_strategies` and `get_strategy` are
  * two different calls returning two different amounts, and the types say so.
  */
