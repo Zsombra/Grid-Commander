@@ -1,5 +1,9 @@
-import type { AgentExposure, FillFailures } from '@/application/use-cases/read-exposure.query.js';
-import type { OpenPosition } from '@/ports/positions.js';
+import type {
+  AgentExposure,
+  FillFailures,
+  HeldPosition,
+  LevelAsDecided,
+} from '@/application/use-cases/read-exposure.query.js';
 
 /**
  * What this agent has at stake, and what it could not get to the exchange.
@@ -20,15 +24,21 @@ const percent = (v: number | null): string =>
 const price = (v: number | null): string => (v === null ? '—' : String(v));
 
 /**
- * One open position.
+ * One open position, and the decision that opened it.
  *
  * The stop and target shown are the **effective** ones and say so. Position
  * management moves them after the decision that opened the trade — observed
  * live: a decision recorded 55.67456526 and its position reported 55.954 — so
  * a surface presenting the decided values as current understates the
  * protection in force.
+ *
+ * Showing only the effective one hides the other half. `SinceTheDecision`
+ * below is the join back to what was decided, which is the only evidence
+ * anywhere in this product that a trailing setting ever acted.
  */
-function Position({ p }: { p: OpenPosition }) {
+function Position({ held }: { held: HeldPosition }) {
+  const p = held.position;
+
   // The platform distinguishes a position it could not price from one worth
   // nothing, and so does this. `unpricedPositionCount` is that distinction
   // arriving as a field.
@@ -70,6 +80,8 @@ function Position({ p }: { p: OpenPosition }) {
         after the decision.
       </p>
 
+      <SinceTheDecision held={held} />
+
       {p.openedAt ? (
         <p className="text-text-secondary">
           {`Opened ${p.openedAt}`}
@@ -78,6 +90,78 @@ function Position({ p }: { p: OpenPosition }) {
       ) : null}
     </li>
   );
+}
+
+/**
+ * Where the decision put the stop and target, against where they are now.
+ *
+ * The drift is the point of the section, not a footnote to it.
+ * `position-management-editing` shipped the settings — preset, trailing type,
+ * break-even trigger — and until now nothing in the product showed them *act*.
+ * The pair this was built from was live on 2026-08-06: decision 55.67456526,
+ * position 55.954, trailing having walked the stop 28 cents up a $56
+ * instrument.
+ *
+ * Which way it moved is stated rather than left to be worked out. Two bare
+ * numbers on a stop are a puzzle whose wrong answer is "my money is covered".
+ */
+function SinceTheDecision({ held }: { held: HeldPosition }) {
+  if (held.asDecided === null) {
+    /**
+     * Unknown, never "unmoved" — the position-level twin of *unreadable is not
+     * empty*. The decision may be older than the window read, or the read may
+     * have failed outright; in both cases the stop may well have been walked,
+     * and saying nothing here would read as saying it has not.
+     */
+    return (
+      <p className="text-text-secondary">
+        Where the decision put this stop is unknown — its entry decision was not
+        among the ones read, so whether position management has moved it cannot
+        be said.
+      </p>
+    );
+  }
+
+  const stop = stopSentence(held.asDecided.stop);
+  const target = targetSentence(held.asDecided.target);
+  if (stop === null && target === null) return null;
+
+  return (
+    <>
+      {stop === null ? null : <p>{stop}</p>}
+      {target === null ? null : <p className="text-text-secondary">{target}</p>}
+    </>
+  );
+}
+
+/** Null where there is nothing to say: the stop is where the decision put it. */
+function stopSentence(stop: LevelAsDecided): string | null {
+  if (stop.kind === 'as-decided') return null;
+  if (stop.kind === 'incomparable') {
+    // A decision that recorded no stop leaves nothing to compare and nothing
+    // worth a line. A decided stop with none in force is the opposite — it is
+    // the most alarming state this join can surface.
+    return stop.decided === null
+      ? null
+      : `The decision set the stop at ${stop.decided} and this position reports no stop now.`;
+  }
+
+  const both = `The decision set the stop at ${stop.decided} · it is now ${stop.effective}`;
+  return stop.protects === null
+    ? `${both}. Which way that moved the protection cannot be read — BattleGrid reported a side this product does not recognise.`
+    : `${both} — moved to protect ${stop.protects} of this position.`;
+}
+
+/**
+ * The decided target, where it has moved.
+ *
+ * Stated without a direction: a take-profit in a new place is a different
+ * exit, not more or less protection, and calling it either would be this
+ * product's reading rather than the platform's.
+ */
+function targetSentence(target: LevelAsDecided): string | null {
+  if (target.kind !== 'moved') return null;
+  return `The decision set the target at ${target.decided} · it is now ${target.effective}.`;
 }
 
 /**
@@ -132,8 +216,8 @@ export function Exposure({ exposure, fills }: AgentExposure) {
       ) : (
         <>
           <ul className="space-y-2">
-            {exposure.positions.map((p) => (
-              <Position key={p.positionId} p={p} />
+            {exposure.positions.map((held) => (
+              <Position key={held.position.positionId} held={held} />
             ))}
           </ul>
           {/*
