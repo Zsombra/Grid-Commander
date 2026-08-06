@@ -44,6 +44,16 @@ function world(
   return { agents, positions: pos };
 }
 
+/**
+ * The page's text as a reader meets it, rather than as JSX assembled it.
+ *
+ * `rendered` joins every text node with a space, so a sentence built from
+ * literals either side of an interpolation arrives with its seams showing.
+ * Asserting on the seams would pin the markup; the sentences below are judged
+ * on their words, which is what the reader is judging them on too.
+ */
+const asRead = (text: string): string => text.replace(/\s+/g, ' ');
+
 /** The decision that opened the live HYPE position, as a readable stage. */
 const decided = (
   over: Parameters<typeof anEntryDecision>[0] = {},
@@ -196,6 +206,46 @@ describe('the two ways of holding nothing', () => {
     const r = await page();
     expect(r.text).toContain('could not be read');
     expect(r.text).not.toContain('holding nothing right now');
+  });
+});
+
+describe('a position read that failed says what it does not mean', () => {
+  /**
+   * The last panel in the product to print a reason and stop, and the one where
+   * that costs the most: a blank where money should be is the place a reader is
+   * likeliest to conclude something was closed out. Read against the rendered
+   * page rather than the source, because the source has said the right words in
+   * the wrong grammar before — "this does not mean this agent's limits gone"
+   * shipped on two surfaces and nothing read it back.
+   */
+  it('names the positions, in a sentence that completes', async () => {
+    world({ kind: 'unreadable', reason: 'BattleGrid did not answer', cause: 'unreachable' });
+    const r = await page();
+    expect(asRead(r.text)).toContain(
+      'This does not mean this agent’s positions are gone — ' +
+        'Grid-Commander could not reach BattleGrid to ask.',
+    );
+  });
+
+  it('tells a refusal from an outage', async () => {
+    // Opposite actions: a refused authority is fixed by reconnecting, an
+    // unreachable platform by waiting. Neither is legible from the reason, and
+    // offering both would be offering neither.
+    world({ kind: 'unreadable', reason: 'BattleGrid declined the request', cause: 'refused' });
+    const said = asRead((await page()).text);
+    expect(said).toContain('This does not mean this agent’s positions are gone');
+    expect(said).toContain('BattleGrid refused the authority Grid-Commander presented');
+    expect(said).not.toContain('could not reach BattleGrid');
+  });
+
+  it('adds the reassurance beside the reason, not instead of it', async () => {
+    // The reason is the only specific information on this branch — which HTTP
+    // status, which refusal — and the sentence above generalises by design.
+    world({ kind: 'unreadable', reason: 'HTTP 502 from BattleGrid', cause: 'unreachable' });
+    const said = asRead((await page()).text);
+    expect(said).toContain(
+      'What this agent is holding could not be read: HTTP 502 from BattleGrid',
+    );
   });
 });
 

@@ -218,17 +218,6 @@ const EXEMPT: ReadonlyArray<{ file: string; reads: string; because: string }> = 
       'is mid-sentence rather than looking at an empty panel where their work ' +
       'should be. The page’s own unreadable branch, one section up, does carry it.',
   },
-  {
-    file: 'src/presentation/components/exposure.tsx',
-    reads: 'exposure',
-    because:
-      'Owed, and deferred rather than denied. `AgentExposure` already carries a ' +
-      '`FailureCause`, so this is one component edit and no argument against it ' +
-      'has been made — it was simply out of scope where the rest of the sweep ' +
-      'happened. Tracked as `the-exposure-panel-still-prints-its-reason`, which ' +
-      'carries the wording question worth settling first. Listed rather than ' +
-      'left silent so the gap is a decision someone can find and close.',
-  },
 ];
 
 const key = (b: { file: string; reads: string }): string => `${b.file}  (${b.reads})`;
