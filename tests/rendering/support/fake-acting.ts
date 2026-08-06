@@ -18,6 +18,8 @@ import { ReadQualificationQuery } from '@/application/use-cases/read-qualificati
 import { ReadStoppagesQuery } from '@/application/use-cases/read-stoppages.query.js';
 import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
+import { ComposeColumnQuery } from '@/application/use-cases/compose-column.query.js';
+import { ReadSectionLibraryQuery } from '@/application/use-cases/read-section-library.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
 import { TryConditionQuery } from '@/application/use-cases/try-condition.query.js';
@@ -133,6 +135,8 @@ export function actingWith({
     readMetricIndex: new ReadMetricIndexQuery(strategies),
     readMetric: new ReadMetricQuery(strategies),
     checkColumn: new CheckColumnQuery(strategies),
+    readSectionLibrary: new ReadSectionLibraryQuery(strategies),
+    composeColumn: new ComposeColumnQuery(strategies),
     describeRetune: new DescribeRetuneQuery(strategies, confirmations, random, clock),
     retuneRule: new RetuneRuleCommand(strategies),
     previewComposition: new PreviewCompositionQuery(strategies),

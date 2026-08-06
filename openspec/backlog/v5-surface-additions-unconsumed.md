@@ -31,7 +31,7 @@ Also: `ATR_PCT` arrived; `CHANGE_RANK`, `VOLUME_RANK` and the `crossSectional`
 category left. The column grammar surfaces already list whatever the platform
 returns, so these are visible today without any change.
 
-## Two new column controls
+## Two new column controls — **landed 2026-08-06**
 
 `get_strategy_column_contract` gained:
 
@@ -39,7 +39,23 @@ returns, so these are visible today without any change.
 - `ordering` — `hi | lo | far | near`
 
 `chainedTransformId` is already carried (`src/ports/strategies.ts`). These two
-are not, so a column the operator builds here cannot express them.
+were carried too, by the port and the adapter — and **no surface offered them**,
+so a column the operator built could not say either. `/strategies/metrics/[metric]`
+read both off the query string and rendered no control that sets them.
+
+Closed by **`the-inside-of-a-section-is-composable`**: the column editor at
+`/strategies/sections/[sectionKey]` offers both, and their permitted values are
+read at runtime from `get_strategy_column_contract`'s own discovered schema
+through `declared-values.ts` — no enum value is written into source. A control
+the declaration cannot answer for is withheld and said to be withheld. The
+adapter's wire shape for both is now held by a test; nothing held it before,
+because nothing could set them.
+
+**What did not change**: `app/(app)/strategies/metrics/[metric]/page.tsx` still
+offers no `bars` or `ordering` control, and still carries a hard-coded
+`REL_TIMEFRAMES`. Both are one small edit now that `StrategiesPort.columnControls`
+exists — left alone here only to keep this change's blast radius to the surface
+it built.
 
 ## `priceAction` became omissible — the one with a trap
 

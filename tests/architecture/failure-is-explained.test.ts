@@ -218,6 +218,17 @@ const EXEMPT: ReadonlyArray<{ file: string; reads: string; because: string }> = 
       'is mid-sentence rather than looking at an empty panel where their work ' +
       'should be. The page’s own unreadable branch, one section up, does carry it.',
   },
+  {
+    file: 'app/(app)/strategies/sections/[sectionKey]/page.tsx',
+    reads: 'check?',
+    because:
+      'The same branch as the metric page’s, for the same reason and no other: a ' +
+      'contract check of a column composed in the query string a moment ago. ' +
+      'Nothing was saved, so nothing can be gone, and the reassurance would be ' +
+      'about a thing that never existed. The two failures this page can have about ' +
+      'something that does exist — the section itself and the metric’s ' +
+      'construction hints — both carry the sentence.',
+  },
 ];
 
 const key = (b: { file: string; reads: string }): string => `${b.file}  (${b.reads})`;

@@ -185,6 +185,19 @@ export interface StrategiesPort {
   }): Promise<ColumnCheckOutcome>;
 
   /**
+   * What the platform's own declaration permits at each place it pins a column
+   * value. Read from the live discovery, never a list compiled into this
+   * product — the same treatment `RadarPort.deploymentTimeframes` and the brain
+   * presets get, for the reason the brain presets earned it: the enum moved
+   * before anybody looked.
+   *
+   * Empty at a control means the declaration could not answer — no discovery,
+   * no such tool, nothing pinned there. Callers withhold that control and say
+   * so; they never read it as "there are none".
+   */
+  columnControls(params: { userId: string; accessToken: string }): Promise<ColumnControls>;
+
+  /**
    * Every strategy signal the platform publishes, as compact summaries.
    * Read fresh each time — the signal list is platform vocabulary and goes
    * stale after a deployment like everything else.
@@ -435,6 +448,31 @@ export interface ColumnRefusal {
 export type ColumnCheckOutcome =
   | { readonly kind: 'contract'; readonly contract: ColumnContract }
   | { readonly kind: 'refused'; readonly refusal: ColumnRefusal };
+
+/**
+ * The enumerated halves of the column grammar, as the platform declares them.
+ *
+ * Only the pinned ones are here. `transformId` and `chainedTransformId` are
+ * free strings in the schema because the legal set is *per metric* — it comes
+ * from `get_metric_construction_hints`, and a control offering every transform
+ * the platform has would offer `nearestZoneAge` on `CLOSE`.
+ *
+ * Each list is empty when the declaration says nothing at that path. That is
+ * the state a caller must be able to tell from "the platform accepts nothing
+ * here", so it is never defaulted and never filled in.
+ */
+export interface ColumnControls {
+  /** `column.timeframe.rel` — a timeframe named relative to the section's. */
+  readonly relativeTimeframes: readonly string[];
+  /** `column.timeframe.abs` — a timeframe named outright. */
+  readonly absoluteTimeframes: readonly string[];
+  /** `column.bars` — whether a forming bar counts. New in v5 and unoffered until now. */
+  readonly bars: readonly string[];
+  /** `column.ordering` — which end of a set the column reads. New in v5. */
+  readonly ordering: readonly string[];
+  /** `column.side` — which side of a structure a distance is measured to. */
+  readonly sides: readonly string[];
+}
 
 /** How a preview bounds its live coin selection — the platform's two modes. */
 export type CoinSelection =

@@ -38,6 +38,8 @@ import {
   SetStrategyActiveCommand,
 } from './application/use-cases/strategy-lifecycle.command.js';
 import { ReadSectionOptionsQuery } from './application/use-cases/read-section-options.query.js';
+import { ReadSectionLibraryQuery } from './application/use-cases/read-section-library.query.js';
+import { ComposeColumnQuery } from './application/use-cases/compose-column.query.js';
 import { ReadSignalLibraryQuery } from './application/use-cases/read-signal-library.query.js';
 import { ReadSignalQuery } from './application/use-cases/read-signal.query.js';
 import { CheckColumnQuery } from './application/use-cases/check-column.query.js';
@@ -318,6 +320,10 @@ export function app(cookies: CookieStore) {
     readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
     readSectionOptions: new ReadSectionOptionsQuery(i.strategies),
+    // What a section *contains*, asked without a strategy — the contents are
+    // vocabulary, and only membership is a strategy's own.
+    readSectionLibrary: new ReadSectionLibraryQuery(i.strategies),
+    composeColumn: new ComposeColumnQuery(i.strategies),
     readSignalLibrary: new ReadSignalLibraryQuery(i.strategies),
     readSignal: new ReadSignalQuery(i.strategies),
     readMetricIndex: new ReadMetricIndexQuery(i.strategies),
