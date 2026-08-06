@@ -1,6 +1,6 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { undefaultableFields, UNBOUNDED_AT_ZERO } from '@/domain/agent/catalog.js';
-import { CONTROL } from './control.js';
+import { CONTROL, LABEL } from './control.js';
 
 /**
  * The six questions BattleGrid will not answer for you.
@@ -55,7 +55,7 @@ export function MoneyLimits({
 
       {asked.has('tradingMode') && (
         <div className="space-y-1">
-          <label htmlFor="tradingMode" className="block text-sm text-text-primary">
+          <label htmlFor="tradingMode" className={LABEL}>
             Trading mode
           </label>
           {/*
@@ -176,7 +176,7 @@ function Money({
 
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm text-text-primary">
+      <label htmlFor={name} className={LABEL}>
         {label}
       </label>
       <input

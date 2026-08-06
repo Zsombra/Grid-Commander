@@ -2,7 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import type { ConsultedSignal } from '@/ports/agents.js';
 import { SIMULATION_SIGNAL_CAP } from '@/ports/strategies.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
@@ -276,7 +276,7 @@ export default async function OwnEvaluationPage({
               <ul className="space-y-1">
                 {fired.map((s) => (
                   <li key={s.signalId} className="flex flex-wrap items-center gap-2">
-                    <label htmlFor={`alloc:${s.signalId}`} className="min-w-64">
+                    <label htmlFor={`alloc:${s.signalId}`} className={`${LABEL} min-w-64`}>
                       {s.signalId} · scored {pct(s.scorePercent)}
                     </label>
                     <select
@@ -296,7 +296,7 @@ export default async function OwnEvaluationPage({
               </ul>
               <div className="flex flex-wrap items-end gap-2">
                 <div className="space-y-1">
-                  <label htmlFor="gate" className="block">
+                  <label htmlFor="gate" className={LABEL}>
                     Gate (%)
                   </label>
                   <input
@@ -309,7 +309,11 @@ export default async function OwnEvaluationPage({
                     className={CONTROL}
                   />
                 </div>
-                <button type="submit" className={CONTROL}>
+                {/* Was wearing the text input's treatment, `w-full` included,
+                    so the submit filled its own row below the field it belongs
+                    beside. It scores nothing at BattleGrid — the simulation is
+                    read-only — so it is a question, and secondary. */}
+                <button type="submit" className={BUTTON_SECONDARY}>
                   Score it
                 </button>
               </div>

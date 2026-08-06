@@ -3,6 +3,7 @@ import { requestApp } from '@/presentation/session.js';
 import { ConsentSummary } from '@/presentation/components/consent-summary.js';
 import { NothingToConnect } from '@/presentation/components/nothing-to-connect.js';
 import { DescribeGrantQuery } from '@/application/use-cases/describe-grant.query.js';
+import { BUTTON_PRIMARY } from '@/presentation/components/control.js';
 
 /**
  * What the user is agreeing to, before they are sent anywhere.
@@ -27,7 +28,7 @@ export default async function ConnectPage() {
       <h1 className="text-xl font-medium">Connect your BattleGrid account</h1>
       <ConsentSummary grant={new DescribeGrantQuery().execute()} />
       <form action={startAuthorization}>
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Continue to BattleGrid
         </button>
       </form>

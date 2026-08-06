@@ -2,11 +2,11 @@
 id: buttons-and-labels-untokenised
 title: Buttons and labels still use stock utilities
 type: debt
-status: open
+status: in-progress
 priority: p3
 created: 2026-07-29
-updated: 2026-07-29
-change: ""
+updated: 2026-08-06
+change: "buttons-and-labels-from-one-source"
 capability: app-access
 blocked_by: []
 tags: [ui, dark-mode, design]

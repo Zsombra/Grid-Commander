@@ -1,7 +1,7 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
-import { CONTROL } from './control.js';
+import { BUTTON_PRIMARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
@@ -140,7 +140,7 @@ export function AgentForm({
       <MoneyLimits catalog={catalog} />
 
 
-      <button type="submit" className="rounded border px-4 py-2 text-sm">
+      <button type="submit" className={BUTTON_PRIMARY}>
         Create agent
       </button>
     </form>
@@ -160,7 +160,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
+      <label htmlFor={name} className={LABEL}>
         {label}
       </label>
       {children}

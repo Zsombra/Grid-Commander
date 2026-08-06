@@ -1,6 +1,11 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import {
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  CONTROL,
+  LABEL,
+} from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
@@ -128,7 +133,7 @@ export default async function RetuneRulePage({
         </p>
         {problem ? <p role="alert" className="rounded border p-3 text-sm">{problem}</p> : null}
         <form method="get" className="space-y-3 text-sm">
-          <label className="block">
+          <label className={LABEL}>
             Allocation (weight, 0–3)
             <select name="a" className={CONTROL} defaultValue={String(rule.allocation)}>
               {ALLOCATIONS.map((a) => (
@@ -141,7 +146,7 @@ export default async function RetuneRulePage({
             the setup is gated on this signal firing
           </label>
           {declared.map((p) => (
-            <label key={p.key} className="block">
+            <label key={p.key} className={LABEL}>
               {p.key}
               {p.min !== null || p.max !== null ? ` (${p.min ?? '…'}–${p.max ?? '…'})` : ''}
               <input
@@ -152,7 +157,11 @@ export default async function RetuneRulePage({
                   (rule.params as Record<string, unknown> | null)?.[p.key] ?? p.defaultValue ?? '',
                 )}
               />
-              {p.description ? <span className="block text-text-secondary">{p.description}</span> : null}
+              {/* The parameter's own description, not part of its name — so it
+                  drops the label's weight rather than inheriting it. */}
+              {p.description ? (
+                <span className="block font-normal text-text-secondary">{p.description}</span>
+              ) : null}
             </label>
           ))}
           {declared.length === 0 && signal.kind !== 'signal' ? (
@@ -162,10 +171,10 @@ export default async function RetuneRulePage({
             </p>
           ) : null}
           <div className="flex flex-wrap gap-3">
-            <button type="submit" className="rounded border px-4 py-2 text-sm">
+            <button type="submit" className={BUTTON_SECONDARY}>
               See what this change would do
             </button>
-            <a href={`/strategies/${id}`} className="px-4 py-2 text-sm underline">
+            <a href={`/strategies/${id}`} className={BUTTON_SECONDARY}>
               Back to the strategy
             </a>
           </div>
@@ -248,10 +257,10 @@ export default async function RetuneRulePage({
           <input type="hidden" name="paramsJson" value={JSON.stringify(proposal.intent.ruleParams)} />
         ) : null}
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Retune {proposal.signalId}
         </button>
-        <a href={`/strategies/${proposal.strategyId}`} className="px-4 py-2 text-sm underline">
+        <a href={`/strategies/${proposal.strategyId}`} className={BUTTON_SECONDARY}>
           Leave things as they are
         </a>
       </form>
