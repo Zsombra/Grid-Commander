@@ -579,6 +579,72 @@ export function aTickerOutcome(overrides: Partial<TickerOutcomes> = {}): TickerO
   };
 }
 
+/**
+ * **Berlin's real `FULL_SEND_DOWN`**, copied from `get_strategy` on 2026-08-04.
+ *
+ * Not invented, and the hardest shape either account holds: a threshold group
+ * mixing references, a nested negation, and plain clauses. If a change flattens
+ * nesting or loses the negation, this is the payload that catches it — and the
+ * consequence of losing the negation is a page that reads "flow must be rising"
+ * for a rule saying the exact opposite.
+ *
+ * Here rather than in one test file because two suites now need the same bytes:
+ * `conditions.test.ts` reads it into the domain, and `condition-draft.test.ts`
+ * writes it back out and demands the result be identical. A round-trip check
+ * against a *second copy* of the fixture would pass while the two copies drifted,
+ * which is the one way that check could be wrong.
+ */
+export function berlinFullSendDown(): Record<string, unknown> {
+  return {
+    conditionKey: 'FULL_SEND_DOWN',
+    name: 'Full send — down',
+    verdict: 'DOWN',
+    definition: {
+      kind: 'group',
+      op: 'N_OF',
+      n: 3,
+      members: [
+        { kind: 'conditionRef', conditionKey: 'REGIME_DOWN' },
+        { kind: 'conditionRef', conditionKey: 'WINDOW_OPEN' },
+        { kind: 'group', op: 'NOT', members: [{ kind: 'conditionRef', conditionKey: 'FLOW_UP' }] },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeHigherTimeframe', header: 'MAalign_htf' },
+          op: 'is',
+          label: 'bearish',
+        },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeOpenInterest', header: 'oiRegime' },
+          op: 'is',
+          label: 'new shorts',
+        },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeCvd', header: 'CVD_trend' },
+          op: 'is',
+          label: 'falling',
+        },
+      ],
+    },
+  };
+}
+
+/** One of the four building blocks `FULL_SEND_DOWN` is assembled from. */
+export function berlinRegimeDown(): Record<string, unknown> {
+  return {
+    conditionKey: 'REGIME_DOWN',
+    name: 'Regime trending down',
+    verdict: null,
+    definition: {
+      kind: 'clause',
+      column: { sectionKey: 'includeRegimeContext', header: 'regTrend_now' },
+      op: 'is',
+      label: 'trending down',
+    },
+  };
+}
+
 /** Shaped from the live `derive_strategy_rule_view` row of 2026-08-01. */
 export function aMembership(overrides: Partial<RuleMembership> = {}): RuleMembership {
   return {

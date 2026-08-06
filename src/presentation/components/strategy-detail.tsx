@@ -97,6 +97,16 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
       </section>
 
       <StrategyConditions conditions={detail.conditions} />
+      {/* The other half of the same question. This section says what the
+          strategy's conditions are; the link asks what a different one would
+          do, resolved live by BattleGrid and saved nowhere. Offered whether or
+          not the strategy defines any — a strategy with none is exactly the one
+          whose author has never seen the layer work. */}
+      <p className="text-sm">
+        <a href={`/strategies/${summary.id}/conditions`} className="underline">
+          Draft a condition and see how it would resolve
+        </a>
+      </p>
 
       <section className="space-y-2">
         <h2 className="text-base font-medium text-text-primary">What it weighs</h2>

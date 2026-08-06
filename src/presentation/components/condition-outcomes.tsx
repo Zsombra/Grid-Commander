@@ -166,11 +166,26 @@ function TickerBlock({ row }: { row: TickerOutcomes }) {
 
 export function ConditionOutcomes({
   outcomes,
-  conditionsDefined,
+  conditionsAsked,
+  subject = 'This strategy defines',
 }: {
   outcomes: readonly TickerOutcomes[];
-  /** How many conditions the strategy defines — the two empty states differ. */
-  conditionsDefined: number;
+  /**
+   * How many conditions the platform was asked to resolve — the two empty
+   * states differ, and only this number can tell them apart.
+   *
+   * "Asked", not "defined". On the preview surface they are the same number;
+   * on the drafting surface they are not, because a draft is resolved inside a
+   * list this product assembles. Naming it for the strategy would have made the
+   * empty-state sentence say a strategy defines a condition nobody has saved.
+   */
+  conditionsAsked: number;
+  /**
+   * How the empty-state sentence names what was asked about. Defaulted rather
+   * than required, so the surface this component was written for reads exactly
+   * as it did.
+   */
+  subject?: string | undefined;
 }) {
   return (
     <section className="space-y-3">
@@ -178,7 +193,7 @@ export function ConditionOutcomes({
         How these rules stand right now
       </h2>
 
-      {conditionsDefined === 0 ? (
+      {conditionsAsked === 0 ? (
         <p className="text-sm text-text-secondary">
           This strategy defines no conditions. Direction is decided by its signals alone.
         </p>
@@ -187,15 +202,19 @@ export function ConditionOutcomes({
         // and "conditions the platform said nothing about" are different facts,
         // and a reader shown the same words for both cannot tell which they have.
         <p role="alert" className="text-sm text-text-secondary">
-          This strategy defines {conditionsDefined}{' '}
-          {conditionsDefined === 1 ? 'condition' : 'conditions'}, and BattleGrid returned no
-          outcome for {conditionsDefined === 1 ? 'it' : 'them'} on this preview.
+          {subject} {conditionsAsked} {conditionsAsked === 1 ? 'condition' : 'conditions'}, and
+          BattleGrid returned no outcome for {conditionsAsked === 1 ? 'it' : 'them'} on this
+          preview.
         </p>
       ) : (
         <>
           <p className="text-sm text-text-secondary">
-            BattleGrid resolved this strategy&apos;s conditions against each coin below. The
-            outcomes are the platform&apos;s — Grid-Commander computes none of them.
+            {/* "these conditions" rather than "this strategy's": on the drafting
+                surface the list carries one the strategy does not hold, and
+                naming them the strategy's would be false there. The claim that
+                matters is unchanged and still stated here. */}
+            BattleGrid resolved these conditions against each coin below. The outcomes are the
+            platform&apos;s — Grid-Commander computes none of them.
           </p>
           {outcomes.map((row) => (
             <TickerBlock key={row.ticker} row={row} />

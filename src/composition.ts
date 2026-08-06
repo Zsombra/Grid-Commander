@@ -46,6 +46,7 @@ import {
   RetuneRuleCommand,
 } from './application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
+import { TryConditionQuery } from './application/use-cases/try-condition.query.js';
 import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
@@ -327,6 +328,10 @@ export function app(cookies: CookieStore) {
     describeRetune: new DescribeRetuneQuery(i.strategies, i.confirmations, random, systemClock),
     retuneRule: new RetuneRuleCommand(i.strategies),
     previewComposition: new PreviewCompositionQuery(i.strategies),
+    // The drafting half of the same question, and read-only for the same
+    // reason: it asks the platform to resolve a condition that does not exist
+    // yet. It cannot save one — see `a-drafted-condition-cannot-be-saved`.
+    tryCondition: new TryConditionQuery(i.strategies),
     simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
