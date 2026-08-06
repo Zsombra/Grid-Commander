@@ -38,6 +38,42 @@ describe('the arena page, branch by branch', () => {
     expect(r.text).not.toContain('no Market Grid sessions');
   });
 
+  it('a session whose detail failed still renders, and the others are untouched', async () => {
+    /**
+     * The whole page used to be a 500 here: the list read was guarded, the
+     * per-session reads were not, and one rate-limited session threw out of
+     * the use-case. `all-controllers-probe` caught it on its first run.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1', name: 'CRYPTO WARS · 1H' }));
+    grid.stage(
+      aGridSession({ id: 'ms-2', name: 'STOCKS OFFENSIVE', coinTickers: ['NVDA'] }),
+      aGridDetail({ id: 'ms-2', name: 'STOCKS OFFENSIVE', status: 'LOCKED' }),
+    );
+    grid.unreadableDetail.add('ms-1');
+    current = actingWith({ grid });
+
+    const r = await arenaRendered();
+    // Present, named, with the coin pool the list carried.
+    expect(r.text).toContain('CRYPTO WARS · 1H');
+    expect(r.text).toContain('BTC, ETH, HYPE');
+    expect(r.text).toContain('schedule could not be read');
+    // And the neighbour rendered in full.
+    expect(r.text).toContain('STOCKS OFFENSIVE');
+    expect(r.text).toContain('LOCKED');
+  });
+
+  it('an unread submission check does not claim the account stayed out', async () => {
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1' }));
+    grid.unreadableSubmission.add('ms-1');
+    current = actingWith({ grid });
+
+    const r = await arenaRendered();
+    expect(r.text).toContain('Whether this account entered could not be read');
+    expect(r.text).not.toContain('has not entered this session');
+  });
+
   it('an empty arena says the platform lists nothing', async () => {
     const r = await arenaRendered();
     expect(r.headings[0]).toBe('Arena');

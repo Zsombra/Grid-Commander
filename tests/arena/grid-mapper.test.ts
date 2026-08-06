@@ -100,34 +100,60 @@ describe('mapping a session detail', () => {
     }));
     const detail = await adapter.sessionDetail({ ...who, sessionId: 's-1' });
     expect(detail).toEqual({
-      id: 's-1',
-      name: 'CRYPTO WARS · 1H',
-      status: 'PENDING',
-      lockAt: '2026-08-01T18:00:00Z',
-      settleAt: '2026-08-01T19:00:00Z',
-      playerCount: 3,
+      kind: 'detail',
+      detail: {
+        id: 's-1',
+        name: 'CRYPTO WARS · 1H',
+        status: 'PENDING',
+        lockAt: '2026-08-01T18:00:00Z',
+        settleAt: '2026-08-01T19:00:00Z',
+        playerCount: 3,
+      },
     });
     expect(calls[0]?.args).toEqual({ sessionId: 's-1' });
   });
 
   it('refuses a detail with no status rather than inventing one', async () => {
+    /**
+     * It used to reject. It now answers `unreadable` with the same complaint —
+     * a read in a per-session fan-out that throws takes the whole arena down,
+     * which is what `all-controllers-probe` caught it doing on a rate limit.
+     * Refusing to invent a status is unchanged; only the shape of the refusal
+     * moved.
+     */
     const { adapter } = adapterOver(() => ({ id: 's-1' }));
-    await expect(adapter.sessionDetail({ ...who, sessionId: 's-1' })).rejects.toThrow('status');
+    const result = await adapter.sessionDetail({ ...who, sessionId: 's-1' });
+    if (result.kind !== 'unreadable') throw new Error(result.kind);
+    expect(result.reason).toContain('status');
   });
 });
 
 describe('the played fact', () => {
   it('comes from the submission check alone', async () => {
     const { adapter, calls } = adapterOver(() => ({ hasSubmitted: true }));
-    expect(await adapter.hasSubmitted({ ...who, sessionId: 's-1' })).toBe(true);
+    expect(await adapter.hasSubmitted({ ...who, sessionId: 's-1' })).toEqual({
+      kind: 'submission',
+      entered: true,
+    });
     // The one tool allowed to answer this — `get_market_grid_player_grid`
     // answers a 500 for "not played" and must never be consulted.
     expect(calls.map((c) => c.tool)).toEqual(['check_market_grid_submission']);
   });
 
-  it('anything but an explicit true is false', async () => {
+  it('anything but an explicit true is false — but a failed read is neither', async () => {
     const { adapter } = adapterOver(() => ({}));
-    expect(await adapter.hasSubmitted({ ...who, sessionId: 's-1' })).toBe(false);
+    expect(await adapter.hasSubmitted({ ...who, sessionId: 's-1' })).toEqual({
+      kind: 'submission',
+      entered: false,
+    });
+
+    // The distinction the three states exist for: a check that did not answer
+    // must not become "has not entered", which is a claim.
+    const { adapter: broken } = adapterOver(() => {
+      throw new Error('BattleGrid did not answer');
+    });
+    const result = await broken.hasSubmitted({ ...who, sessionId: 's-1' });
+    expect(result.kind).toBe('unreadable');
   });
 });
 

@@ -1,5 +1,68 @@
 # Journal
 
+## 2026-08-06 (late) — a full walk of every controller, and it found a 500
+
+**Did**: built `all-controllers-probe` — every read controller, one live
+account, one run, printed as a table. Ran it against both accounts. It found a
+defect on its **first execution**. `one-bad-session-must-not-take-the-arena-down`
+archived; PR #65.
+
+**The finding, in two lines of its own output:**
+
+```
+watchArena   THREW BattleGrid is limiting how often this deployment may ask (HTTP 429).
+readField    field=unreadable leaderboard=unreadable
+```
+
+Same rate limit, same run, opposite behaviour. `WatchArenaQuery` reads the
+session list through a guarded call and then **fans out** per session to
+`sessionDetail` and `hasSubmitted` — and the guard was on the first call only.
+One rate-limited session threw out of the use-case, which at a route is a 500.
+`/arena` had this for the life of the feature.
+
+No single-feature probe could have found it: `arena-probe` reads the arena
+alone and never generates enough traffic to be limited. It took a walk of
+everything at once.
+
+**The second defect is the worse one.** `ArenaSession.entered` was a `boolean`,
+and the page rendered `!entered` as *"This account has not entered this
+session."* So a submission check that failed produced a **definite claim from a
+read that returned nothing** — the same error as an unreadable roster shown as
+an empty one, which this product names in four other places. Now three states,
+and `null` renders as unknown.
+
+**The probe's own first run was also wrong, and that stays in the file.** It
+read `listings[0].id` where the shape is `listings[0].strategy.id`, and
+`field.agents` where it is `field.field.agents`. Both `if`s fell through and
+**four controllers were never called in a run that reported success**. Every
+controller is now walked or printed as `SKIPPED — <why>`, and the row count is
+asserted at 25. A survey whose gaps are invisible is precisely what it exists
+to catch.
+
+**Both accounts now walk clean — 25 controllers, 0 threw** — and the diff
+between them is the argument for having built it:
+
+| | account 1 | account 2 |
+|---|---|---|
+| `readTradingRecord` | `none` | `record outcomes[5] total=27` |
+| `readPipeline` | `evaluations=none decisions=none` | all four populated |
+| `readOwnEvaluation` | skipped, nothing to open | `evaluation` |
+| `readBudget` | `unbounded[0]` | `unbounded[2]` |
+| `listStrategies` | 59 listings, `at-capacity` | 18 listings, `available` |
+
+The empty column on the left is why every existing probe stayed green while a
+500 shipped. Account 1 exercises fewer paths; a suite that only ever ran there
+could not reach them.
+
+**One CI note.** The keyed run failed once on `column-grammar-probe` with an
+HTTP **504** from BattleGrid and passed on retry, unchanged. Platform, not
+product — the same flapping recorded all day. The keyless run, which is the
+deterministic gate, is green.
+
+**Next**: `an-open-position-is-invisible` (p1) and
+`half-of-what-it-decides-never-reaches-the-exchange` (p1) are still the two
+builds, and they share a surface.
+
 ## 2026-08-06 (night) — cross-referencing what we built against an account that trades
 
 **Did**: ran the built surfaces and the unread tools against `THE .0`, the one

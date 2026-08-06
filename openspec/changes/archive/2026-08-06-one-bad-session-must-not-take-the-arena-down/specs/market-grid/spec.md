@@ -1,13 +1,6 @@
-# Market Grid Specification
+# market-grid — delta
 
-## Purpose
-
-Watching BattleGrid's Market Grid arena: which sessions exist, their
-schedule and coin pool, whether this account has entered, and results once
-a session settles. Reads only — playing carries a real stake and is not
-this capability.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: The Arena Is Watchable Without Being Played
 Grid-Commander SHALL show the Market Grid sessions the platform lists —

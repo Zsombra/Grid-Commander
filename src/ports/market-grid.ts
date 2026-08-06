@@ -22,6 +22,29 @@ export interface GridSessionDetail {
   readonly playerCount: number | null;
 }
 
+/**
+ * One session's detail, or why it could not be read.
+ *
+ * A result rather than a bare `GridSessionDetail`, because this read is one of
+ * N in a fan-out and any of them can fail alone. It used to throw, which at a
+ * route is a 500 — found by `all-controllers-probe` when a rate limit took the
+ * whole arena down while every other controller in the same run degraded.
+ */
+export type GridDetailResult =
+  | { readonly kind: 'detail'; readonly detail: GridSessionDetail }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Whether this account entered, or that the question could not be answered.
+ *
+ * Three states, not a boolean. An unread check rendered as `false` says "this
+ * account has not entered" — a definite claim from a read that returned
+ * nothing, and the same error as an unreadable roster reported as an empty one.
+ */
+export type GridSubmissionResult =
+  | { readonly kind: 'submission'; readonly entered: boolean }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
 export type ArenaListResult =
   | { readonly kind: 'sessions'; readonly sessions: readonly GridSessionSummary[] }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
@@ -44,7 +67,7 @@ export interface MarketGridPort {
     userId: string;
     accessToken: string;
     sessionId: string;
-  }): Promise<GridSessionDetail>;
+  }): Promise<GridDetailResult>;
 
   /**
    * Whether this account entered the session. The ONLY source for the
@@ -56,7 +79,7 @@ export interface MarketGridPort {
     userId: string;
     accessToken: string;
     sessionId: string;
-  }): Promise<boolean>;
+  }): Promise<GridSubmissionResult>;
 
   results(params: {
     userId: string;

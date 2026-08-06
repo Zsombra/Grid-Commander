@@ -1,12 +1,13 @@
 import type {
   ArenaListResult,
   GridResultsOutcome,
-  GridSessionDetail,
+  GridDetailResult,
+  GridSubmissionResult,
   MarketGridPort,
 } from '@/ports/market-grid.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { ToolRefusedError } from './mcp-adapter.js';
-import { unreadable } from './unreadable.js';
+import { malformed, unreadable } from './unreadable.js';
 
 /**
  * The Market Grid module, read side only — mapped against the shapes
@@ -70,39 +71,58 @@ export class McpMarketGridAdapter implements MarketGridPort {
     userId: string;
     accessToken: string;
     sessionId: string;
-  }): Promise<GridSessionDetail> {
-    const result = await this.battlegrid.callTool({
-      userId: params.userId,
-      accessToken: params.accessToken,
-      tool: TOOLS.detail,
-      args: { sessionId: params.sessionId },
-    });
-    const p = result.content as Record<string, unknown>;
-    const id = str(p['id']);
-    const status = str(p['status']);
-    if (!id || !status) throw new GridPayloadError(!id ? 'id' : 'status');
-    return {
-      id,
-      name: str(p['displayName']) ?? id,
-      status,
-      lockAt: str(p['lockAt']),
-      settleAt: str(p['settleAt']),
-      playerCount: typeof p['playerCount'] === 'number' ? p['playerCount'] : null,
-    };
+  }): Promise<GridDetailResult> {
+    // Guarded like every other read here. It was not, and one rate-limited
+    // session took the whole arena down as a 500 — the outcome the three-state
+    // result exists to make unrepresentable.
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool: TOOLS.detail,
+        args: { sessionId: params.sessionId },
+      });
+      const p = result.content as Record<string, unknown>;
+      const id = str(p['id']);
+      const status = str(p['status']);
+      if (!id || !status) return malformed(new GridPayloadError(!id ? 'id' : 'status').message);
+      return {
+        kind: 'detail',
+        detail: {
+          id,
+          name: str(p['displayName']) ?? id,
+          status,
+          lockAt: str(p['lockAt']),
+          settleAt: str(p['settleAt']),
+          playerCount: typeof p['playerCount'] === 'number' ? p['playerCount'] : null,
+        },
+      };
+    } catch (err) {
+      return unreadable(err);
+    }
   }
 
   async hasSubmitted(params: {
     userId: string;
     accessToken: string;
     sessionId: string;
-  }): Promise<boolean> {
-    const result = await this.battlegrid.callTool({
-      userId: params.userId,
-      accessToken: params.accessToken,
-      tool: TOOLS.submitted,
-      args: { sessionId: params.sessionId },
-    });
-    return (result.content as Record<string, unknown>)['hasSubmitted'] === true;
+  }): Promise<GridSubmissionResult> {
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool: TOOLS.submitted,
+        args: { sessionId: params.sessionId },
+      });
+      return {
+        kind: 'submission',
+        entered: (result.content as Record<string, unknown>)['hasSubmitted'] === true,
+      };
+    } catch (err) {
+      // Emphatically not `false`. "Has not entered" is a claim; this is the
+      // absence of one.
+      return unreadable(err);
+    }
   }
 
   async results(params: {
