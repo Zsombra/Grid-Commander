@@ -177,8 +177,22 @@ describe('the MCP surface cannot change anything on the account', () => {
       PORT_METHODS.has('deploymentTimeframes'),
       'comparing against a tool name is not sending it',
     ).toBe(false);
+    /**
+     * The second one, added 2026-08-06. `readCatalog` now resolves the brain
+     * presets from the *schema* of `create_intelligence_agent`, which the server
+     * classifies as a write — so a mutating tool is named inside the read that
+     * builds the create form. The exclusion that saves it is the same syntactic
+     * one: the reference is a comparison. Pinned so that rewriting the lookup
+     * into a shape that is not a comparison fails here, loudly, rather than
+     * making a read look like a write everywhere downstream.
+     */
+    expect(
+      PORT_METHODS.has('readCatalog'),
+      'reading a write tool’s schema is not calling it',
+    ).toBe(false);
     // And the counterweight: the method that really does send it is still caught.
     expect(PORT_METHODS).toContain('upsertDeployment');
+    expect(PORT_METHODS).toContain('createAgent');
   });
 
   it('found the writes it is guarding against', () => {

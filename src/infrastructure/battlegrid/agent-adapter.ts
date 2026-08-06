@@ -35,7 +35,9 @@ import {
 } from './agent-mapper.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { mapEvaluationScorecard } from './scorecard-mapper.js';
+import { declaredValues } from './declared-values.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
+import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
 
 /**
  * Agent operations, expressed as BattleGrid tool calls.
@@ -85,26 +87,6 @@ const TOOLS = {
  */
 const MAX_TICKERS_PER_CALL = 12;
 
-/**
- * The named brain presets, from the create tool's own enum.
- *
- * A closed enum in the schema rather than a catalog endpoint — there is no tool
- * that lists them. Kept here at the boundary, next to the tool names, rather
- * than in the domain: if BattleGrid adds one, this is where the surprise lands.
- */
-const BRAIN_PRESETS = [
-  'MONTGOMERY',
-  'KESSELRING',
-  'CHUIKOV',
-  'EISENHOWER',
-  'ZHUKOV',
-  'NIMITZ',
-  'BRADLEY',
-  'ROMMEL',
-  'PATTON',
-  'YAMAMOTO',
-] as const;
-
 export class McpAgentAdapter implements AgentsPort {
   constructor(private readonly battlegrid: BattleGridPort) {}
 
@@ -135,16 +117,60 @@ export class McpAgentAdapter implements AgentsPort {
 
   async readCatalog(params: { userId: string; accessToken: string }): Promise<CatalogResult> {
     try {
-      const [models, trading] = await Promise.all([
+      const [models, trading, brainPresets] = await Promise.all([
         this.call(params, TOOLS.models, {}),
         this.call(params, TOOLS.tradingCatalog, {}),
+        this.brainPresets(params.accessToken),
       ]);
-      return { kind: 'catalog', catalog: mapCatalog(models, trading, BRAIN_PRESETS) };
+      return { kind: 'catalog', catalog: mapCatalog(models, trading, brainPresets) };
     } catch (err) {
       // No catalog, no form. Offering one whose submission is certain to fail
       // is worse than saying the platform could not be reached.
       return unreadable(err);
     }
+  }
+
+  /**
+   * The brain presets, from the create tool's own enum in the *discovered*
+   * schema — the same discovery every session already performs.
+   *
+   * This was ten names written down here, under a comment saying that if
+   * BattleGrid added one, this is where the surprise would land. It had already
+   * landed: the enum in this repo's first capabilities dump (2026-07-27, server
+   * v3.0.0) carried eleven values, two days before the constant was written with
+   * ten — the ten in the field's *description*, which enumerates presets in
+   * prose and is not the constraint beside it. Being the designated landing
+   * place for the surprise did not make anyone look for eight days. Meanwhile
+   * the server went v3.0.0 → v11.0.0 (probed 2026-08-06) with `tool_count`
+   * never moving off 110, which is the record's own warning about what a stable
+   * tool list does and does not tell you.
+   *
+   * So it is read, exactly as `RadarPort.deploymentTimeframes` and
+   * `MarketPort.rankingVocabulary` read theirs. Still resolved at the boundary,
+   * next to the tool names; the domain still receives a list whose origin it
+   * does not know.
+   */
+  private async brainPresets(accessToken: string): Promise<readonly string[]> {
+    let tools: readonly DiscoveredTool[];
+    try {
+      tools = await this.battlegrid.discoverTools(accessToken);
+    } catch {
+      // A discovery that failed is a declaration that could not answer, not a
+      // platform with no presets. Empty travels out and the surfaces say which,
+      // the way an empty timeframe list does one module over — and the model
+      // route, whose values did answer, stays open.
+      return [];
+    }
+    const create = tools.find((t) => t.name === TOOLS.create);
+    // A value the declaration lists as a preset *and* uses to name a branch of
+    // the same union is ambiguous inside the declaration itself, and this
+    // product does not offer a choice it cannot describe. Derived from the two
+    // enums rather than named here, so it stays true if either moves. What the
+    // platform does with such a value is not established — see the backlog item
+    // `preset-custom-in-the-preset-branch-is-unestablished`; nothing here
+    // guesses, and nothing here explains it.
+    const branches = new Set(declaredValues(create, 'brain.kind'));
+    return declaredValues(create, 'brain.preset').filter((preset) => !branches.has(preset));
   }
 
   async createAgent(params: {
