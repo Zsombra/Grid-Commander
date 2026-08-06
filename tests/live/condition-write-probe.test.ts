@@ -140,7 +140,9 @@ live('what the compiler does with a condition list, without writing', () => {
           `sections=${unchanged.sectionKeys.length} tagline=${String(unchanged.tagline)}`,
       );
 
+      let lastRefusal: string | null = null;
       const compileWith = async (conditions: readonly Record<string, unknown>[], why: string) => {
+        lastRefusal = null;
         const result = await strategies.compilePlan({
           ...who,
           request: compileConditionsIntent({
@@ -152,6 +154,7 @@ live('what the compiler does with a condition list, without writing', () => {
           }),
         });
         if (result.kind === 'rejected') {
+          lastRefusal = result.reason;
           // eslint-disable-next-line no-console
           console.log(`  ${why}: REJECTED — ${result.reason}`);
           return null;
@@ -168,16 +171,38 @@ live('what the compiler does with a condition list, without writing', () => {
         return result.approvedPlan;
       };
 
-      // (1) The list resubmitted unchanged. Nothing moves, and the product's
-      // own check is what reads the answer — so a platform that stopped
-      // honouring the omission fails here rather than in front of an operator.
+      /**
+       * (1) The list resubmitted unchanged — and the platform refuses it.
+       *
+       * Written expecting a plan, and the live server said, 2026-08-06 against
+       * `Dunkirk (fork)` r4:
+       *
+       *     VALIDATION_ERROR  Strategy update contains no effective changes.
+       *
+       * Which is correct, and better evidence than the plan would have been.
+       * Resubmitting a strategy's own condition list **is** a no-op, so the
+       * only way the compiler can know to refuse is by comparing the submitted
+       * conditions against the stored ones and finding them equal. A compiler
+       * that ignored the `conditions` argument would see an UPDATE naming a
+       * revision and produce a plan.
+       *
+       * So the assertion is two-armed rather than loosened. A plan means the
+       * axes not named must be untouched. A refusal is accepted **only** if it
+       * is the no-op refusal; a refusal for any other reason is the compiler
+       * declining a list it should take, and still fails here rather than in
+       * front of an operator.
+       */
       const same = await compileWith([...subject.conditions], 'unchanged list');
-      expect(same, 'the compiler must accept the strategy’s own condition list').not.toBeNull();
       if (same) {
         expect(
           postStateDrift(same, { conditionKeys: listedKeys(subject.conditions), ...unchanged }),
           'an UPDATE naming only conditions must leave tagline and sections as stored',
         ).toEqual([]);
+      } else {
+        expect(
+          lastRefusal ?? '',
+          'the only acceptable refusal of a strategy’s own list is that it changes nothing',
+        ).toMatch(/no effective changes/i);
       }
 
       // (2) One added. The draft reads a column this strategy's own conditions

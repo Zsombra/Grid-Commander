@@ -149,3 +149,39 @@ something else is exactly what must never reach an apply.
 Never against the operator's own agents; every one of them is in
 `FULL_EXECUTION`, and a strategy write reconfigures every bound agent
 immediately.
+
+## DL-9 — The describe understates what a removal breaks (found live, after the design)
+
+The read-only half of this change's own probe was run by the integrator on
+2026-08-06 with a key, against `Dunkirk (fork)` r4. It found a **fourth**
+reference site nobody had modelled.
+
+A strategy's `marketReadText` can name a condition by `{KEY}` marker, and
+removing that condition is refused:
+
+```
+MARKET_READ_MARKER_UNKNOWN   path: ["marketReadText", 184]
+marker '{ALL_AGREE_UP}' names neither a column this strategy's report renders
+nor one of its conditions
+```
+
+`unresolvedReferences` — the dangling set this change's describe reports — is
+therefore correct and incomplete. `details.allowedDomain` is computed per
+compile from the **submitted** conditions, so the platform will always name the
+legal markers exactly; the describe does not need to parse prose, it needs to
+ask.
+
+**Not fixed here, and the change is not weakened by it.** The compile refuses,
+the refusal reaches the operator as the platform's own words, and nothing is
+written — the refusal handling this change built is what makes the gap a wasted
+round trip rather than a bad write. Fixing it properly means either parsing a
+marker grammar this product does not own, or compiling before describing; both
+are their own decision.
+
+Filed as `the-prose-references-conditions-and-nothing-knows` (p2).
+
+**DL-8 is also still open, and for a new reason.** The probe's empty-list case
+was refused by *this* rule — the prose still named the removed condition — not
+by anything about an empty list. So whether `conditions: []` means "define
+none" or "unspecified" is untested, and settling it needs a subject strategy
+whose prose names no condition.
