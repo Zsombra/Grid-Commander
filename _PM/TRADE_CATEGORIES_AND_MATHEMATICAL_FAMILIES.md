@@ -1363,7 +1363,7 @@ Four tools do most of it, and two of them are free:
 | **`get_agent_coin_qualification`** | Runs *your agent's own gates* against live coins — candidate levels, aggregate score, required-signal count, ATR% floor, and **which gate failed first** — with **no LLM call** | free |
 | **`simulate_aggregate_score`** | Stateless scorecard what-if: weights × scores → aggregate, attribution, `wouldRoute` | free |
 | `get_coin_signal_preview` | Every evaluated signal for a coin with its `triggered` flag, dominant bias, aggregate %, conflict flag; `agentId` overlays your weighting | free, per coin |
-| `preview_strategy_report` | The literal report text an agent will receive, with live values | free, 15s deadline |
+| `preview_strategy_report` | The literal report text an agent will receive, with live values — and, via `/strategies/[id]/conditions`, what an **unwritten** condition would do | free, 15s deadline |
 
 **`get_agent_coin_qualification` is the objective function.** It lets you sweep
 gate settings against the live universe at zero marginal cost and see exactly
@@ -1421,7 +1421,11 @@ acting on, not the individual p-values, which do not exist.
 - **No condition-layer evidence.** No agent in the sample uses `conditions` at
   all, so the deterministic layer — arguably the most powerful part of the
   platform — is entirely untested. Everything in Part B that leans on F15 is
-  reasoned, not measured.
+  reasoned, not measured. **But it is now measurable:** `a-drafted-condition-can-be-tried`
+  (merged in #70) added `/strategies/[id]/conditions`, which drafts a condition
+  and asks BattleGrid what it would do through `preview_strategy_report` —
+  read-only, nothing saved. That is the instrument every F15 claim in Part B
+  needs, and it did not exist when Part B was written.
 - ~~`get_strategy_signal_definition` was not swept.~~ **Closed** — swept
   2026-08-06, 84/84 answered. See §3.6. It found three things that changed
   advice elsewhere in this document: signal scores are graded with a steep
