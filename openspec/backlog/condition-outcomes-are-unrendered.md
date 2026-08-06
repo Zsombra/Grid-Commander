@@ -2,10 +2,11 @@
 id: condition-outcomes-are-unrendered
 title: preview_strategy_report resolves every condition against real coins, and nothing renders it
 type: feature
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-08-06
+change: the-condition-outcomes-are-legible
 capability: strategy-authoring
 blocked_by: []
 tags: [battlegrid, conditions, preview, derived-truth]
@@ -58,3 +59,12 @@ and why not" — from a call the surface already makes.
 Render on the preview surface, per ticker, beside the section text already
 shown. Grid-Commander must not compute any of it —
 `the-condition-layer-is-legible` makes that a requirement with a test.
+
+## Taken 2026-08-06
+
+`the-condition-outcomes-are-legible`. One thing this item did not know: the
+surface's `conditionOutcomes` was empty because the tool resolves only the
+conditions it is **sent**, and the preview sent none — so the change is a round
+trip, not only a render. The `verdict` field the output schema declares per
+ticker is still unobserved and is filed separately as
+`preview-per-ticker-verdict-is-unobserved`.

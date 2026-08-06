@@ -6,6 +6,7 @@ import type {
   StrategySection,
 } from '@/domain/strategy/strategy.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
+import type { TickerOutcomes } from '@/domain/strategy/condition-outcome.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -112,6 +113,16 @@ export interface StrategiesPort {
     regimeTimeframe?: string | null | undefined;
     sections: readonly StrategySection[];
     coinSelection: CoinSelection;
+    /**
+     * The strategy's conditions, as the platform sent them.
+     *
+     * Optional, and the reason the surface has been receiving an empty
+     * `conditionOutcomes` since the condition layer arrived: the tool resolves
+     * only what it is given and takes no strategy id, so a preview that sends
+     * nothing gets nothing back. Passed straight through — see
+     * `StrategyDetail.conditionsAsGiven` for why they are not rebuilt here.
+     */
+    conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
   }): Promise<ReportPreviewOutcome>;
 
   /**
@@ -202,7 +213,30 @@ export interface StrategiesPort {
  * one layer down.
  */
 export type StrategyDetailResult =
-  | { readonly kind: 'strategy'; readonly detail: StrategyDetail }
+  | {
+      readonly kind: 'strategy';
+      readonly detail: StrategyDetail;
+      /**
+       * The strategy's conditions exactly as the platform sent them, carried
+       * whole because the platform needs them back whole.
+       *
+       * `preview_strategy_report` resolves only the conditions it is given, so
+       * asking how a strategy's rules stand against live coins means sending
+       * them — and sending them re-serialised out of `detail.conditions` would
+       * drop whatever the mapper read as `unrecognised`. The grammar is still
+       * being rolled out (eight platform strategies gained conditions across a
+       * single deployment), so "nothing is unrecognised today" is not a
+       * property to build a round trip on. Same reasoning as
+       * `StrategySection.columns`, which the preview already sends back whole.
+       *
+       * On the *result* rather than on `StrategyDetail`, deliberately. This is
+       * plumbing for one call, not part of what a strategy is: putting it on
+       * the entity would have shipped a byte-identical second condition list to
+       * every model calling `read_strategy`, which reads as two answers to one
+       * question.
+       */
+      readonly conditionsAsGiven: readonly Readonly<Record<string, unknown>>[];
+    }
   | { readonly kind: 'missing' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
@@ -440,6 +474,14 @@ export interface ReportPreview {
   /** How the platform counted, for the budget note. Still returned by v9. */
   readonly tokenCountModel: string | null;
   readonly budget: readonly BudgetGauge[];
+  /**
+   * How the strategy's conditions stand, per coin — the platform resolving each
+   * one against the same live market state the report above was rendered from.
+   *
+   * Empty when no conditions were sent to resolve, which is every preview this
+   * product made before the argument existed.
+   */
+  readonly conditionOutcomes: readonly TickerOutcomes[];
 }
 
 export type ReportPreviewOutcome =

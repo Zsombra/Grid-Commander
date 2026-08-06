@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ToolRefusedError } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
+import { mapConditions } from '@/infrastructure/battlegrid/condition-mapper.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 import { aDetail, aMembership, aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 
@@ -35,7 +36,58 @@ const LIVE_PREVIEW = {
     distinctTimeframes: { used: 3, cap: 8 },
     estimatedTokens: { used: 1767, cap: 16000 },
   },
+  // Empty because that call sent no conditions — the tool resolves only what it
+  // is given, which is why this key read empty for the life of the product.
   conditionOutcomes: [],
+};
+
+/**
+ * The `conditionOutcomes` row observed live on **2026-08-04**, from the capture
+ * recorded in `openspec/backlog/condition-outcomes-are-unrendered.md`.
+ *
+ * Held apart from `LIVE_PREVIEW` rather than merged into it, because the two
+ * were captured on different days against different strategies and a single
+ * fixture claiming to be one payload would be a payload nobody saw. Tests that
+ * need both spread this over that, and the mapper reads the two keys
+ * independently.
+ */
+const LIVE_CONDITION_OUTCOMES = [
+  {
+    ticker: 'BTC',
+    outcomes: [
+      {
+        conditionKey: 'ALL_AGREE_UP',
+        name: 'Regime, HTF and ADX agree — up',
+        outcome: 'FALSE',
+        provisional: true,
+        counts: null,
+        evidence: [
+          {
+            kind: 'clause',
+            sectionKey: 'includeRegimeContext',
+            header: 'regTrend_now',
+            op: 'is',
+            operand: 'ranging',
+            literal: 'trending up',
+            outcome: 'FALSE',
+          },
+        ],
+      },
+    ],
+  },
+];
+
+/** Berlin's `REGIME_DOWN`, exactly as `get_strategy` sends it (live, 2026-08-04). */
+const LIVE_CONDITION = {
+  conditionKey: 'REGIME_DOWN',
+  name: 'Regime trending down',
+  verdict: null,
+  definition: {
+    kind: 'clause',
+    column: { sectionKey: 'includeRegimeContext', header: 'regTrend_now' },
+    op: 'is',
+    label: 'trending down',
+  },
 };
 
 function adapterOver(respond: (req: ToolCallRequest) => unknown) {
@@ -124,6 +176,62 @@ describe('mapping the preview payload', () => {
     expect(outcome.reason).toContain('self-contained definition');
   });
 
+  it('reads the resolved conditions the same call returns', async () => {
+    const { adapter } = adapterOver(() => ({
+      ...LIVE_PREVIEW,
+      conditionOutcomes: LIVE_CONDITION_OUTCOMES,
+    }));
+    const outcome = await adapter.previewReport({
+      ...who,
+      timeframe: '1h',
+      regimeAutoDerive: true,
+      sections: SECTIONS,
+      coinSelection: { mode: 'explicit', tickers: ['BTC'] },
+      conditions: [LIVE_CONDITION],
+    });
+    if (outcome.kind !== 'preview') throw new Error(outcome.kind);
+    const [btc] = outcome.preview.conditionOutcomes;
+    expect(btc?.ticker).toBe('BTC');
+    expect(btc?.outcomes[0]?.outcome).toBe('FALSE');
+    expect(btc?.outcomes[0]?.provisional).toBe(true);
+    const [e] = btc?.outcomes[0]?.evidence ?? [];
+    if (e?.kind !== 'clause') throw new Error('the observed evidence is a clause');
+    expect(e.operand).toBe('ranging');
+    expect(e.literal).toBe('trending up');
+  });
+
+  it('sends the strategy’s conditions back whole, because nothing is resolved without them', async () => {
+    const { adapter, calls } = adapterOver(() => LIVE_PREVIEW);
+    await adapter.previewReport({
+      ...who,
+      timeframe: '1h',
+      regimeAutoDerive: true,
+      sections: SECTIONS,
+      coinSelection: { mode: 'ranked', limit: 2 },
+      conditions: [LIVE_CONDITION],
+    });
+    // Byte-for-byte what `get_strategy` sent, not a re-serialisation of the
+    // domain shape — which would drop whatever the mapper read as
+    // `unrecognised`, in a grammar the platform is still rolling out.
+    expect((calls[0]?.args as Record<string, unknown>)['conditions']).toEqual([LIVE_CONDITION]);
+  });
+
+  it('a strategy with no conditions sends the payload it always sent', async () => {
+    const { adapter, calls } = adapterOver(() => LIVE_PREVIEW);
+    await adapter.previewReport({
+      ...who,
+      timeframe: '1h',
+      regimeAutoDerive: true,
+      sections: SECTIONS,
+      coinSelection: { mode: 'ranked', limit: 2 },
+      conditions: [],
+    });
+    // The outer object is closed. An argument sent empty is one more key the
+    // platform can reject on a call that has worked since v5, so the empty case
+    // stays exactly as it was.
+    expect(Object.keys(calls[0]?.args as Record<string, unknown>)).not.toContain('conditions');
+  });
+
   it('a section with no key refuses the whole read', async () => {
     const { adapter } = adapterOver(() => ({
       renderedSections: [{ section: { title: 'ghost', text: 'x' } }],
@@ -181,6 +289,37 @@ describe('the preview query', () => {
     expect(call?.payload).toMatchObject({ timeframe: '1h', coinSelection: { mode: 'ranked', limit: 3 } });
   });
 
+  it('sends the conditions the strategy holds, so there is something to resolve', async () => {
+    const summary = aStrategy();
+    const strategies = new FakeStrategiesPort([summary]);
+    strategies.detail = { ...aDetail(summary), conditions: mapConditions([LIVE_CONDITION]) };
+    strategies.conditionsAsGiven = [LIVE_CONDITION];
+    const result = await new PreviewCompositionQuery(strategies).execute({
+      ...who,
+      strategyId: summary.id,
+      coinSelection: { mode: 'ranked', limit: 3 },
+    });
+    if (result.kind !== 'ready') throw new Error(result.kind);
+    const call = strategies.calls.find((c) => c.op === 'preview');
+    expect(call?.payload?.['conditions']).toEqual([LIVE_CONDITION]);
+    // Carried so the surface can tell "no conditions" apart from "conditions
+    // the platform said nothing about" — two empty lists, two different facts.
+    expect(result.conditionsDefined).toBe(1);
+  });
+
+  it('a strategy with no conditions reports none defined', async () => {
+    const summary = aStrategy();
+    const strategies = new FakeStrategiesPort([summary]);
+    strategies.detail = aDetail(summary);
+    const result = await new PreviewCompositionQuery(strategies).execute({
+      ...who,
+      strategyId: summary.id,
+      coinSelection: { mode: 'ranked', limit: 3 },
+    });
+    if (result.kind !== 'ready') throw new Error(result.kind);
+    expect(result.conditionsDefined).toBe(0);
+  });
+
   it('missing and unreadable strategies stay themselves', async () => {
     const strategies = new FakeStrategiesPort();
     expect(
@@ -236,6 +375,32 @@ describe('a custom table survives the round trip', () => {
     // A platform section is fully named by its key and carries nothing else.
     expect(platform?.title).toBeUndefined();
     expect(platform?.columns).toBeUndefined();
+  });
+
+  it('the conditions are kept whole too, unread, for the same reason', async () => {
+    // A form the mapper reports as `unrecognised` still has to go back to the
+    // platform exactly as it came, or previewing a strategy would silently
+    // resolve fewer rules than the strategy has.
+    const UNMODELLED = { conditionKey: 'FUTURE', name: 'Future', verdict: 'UP', definition: { kind: 'somethingNew' } };
+    const { adapter } = adapterOver(() => ({
+      strategy: {
+        id: 's1',
+        revision: 2,
+        name: 'Berlin',
+        scope: 'SYSTEM',
+        isActive: true,
+        boundAgentCount: 0,
+        sections: [],
+        signalRules: [],
+        conditions: [LIVE_CONDITION, UNMODELLED],
+      },
+    }));
+    const read = await adapter.readStrategy({ ...who, strategyId: 's1' });
+    if (read.kind !== 'strategy') throw new Error(read.kind);
+    expect(read.conditionsAsGiven).toEqual([LIVE_CONDITION, UNMODELLED]);
+    // And the read-for-rendering copy still reports the form it cannot model,
+    // rather than the two copies quietly agreeing to drop it.
+    expect(read.detail.conditions[1]?.definition.kind).toBe('unrecognised');
   });
 
   it('the preview sends a custom table back whole — a key alone is refused', async () => {
