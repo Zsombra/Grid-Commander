@@ -4,6 +4,7 @@ import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { McpPositionsAdapter } from '@/infrastructure/battlegrid/positions-adapter.js';
 import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
+import { systemClock } from '@/ports/clock.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 
 /**
@@ -50,7 +51,9 @@ live('what the account has at stake', () => {
     });
     const agents = new McpAgentAdapter(battlegrid);
     const positions = new McpPositionsAdapter(battlegrid);
-    const query = new ReadExposureQuery(positions, agents);
+    // The real clock, not the suite's fake one: this probe reads a live
+    // account, and the age of a live price is only meaningful against now.
+    const query = new ReadExposureQuery(positions, agents, systemClock);
 
     const roster = await agents.listAgents(who);
     if (roster.kind !== 'agents') throw new Error(`roster ${roster.kind}`);

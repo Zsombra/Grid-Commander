@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredText } from '@/presentation/form.js';
 
 /**
@@ -90,14 +91,14 @@ export default async function ArchiveStrategyPage({
           name="confirmationToken"
           value={proposal.proposal.confirmationToken}
         />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Archive {listing.strategy.name}
         </button>
         {/* Back to the strategy, not to the list. Someone who opens this and
             decides against it has not finished with the strategy, and sending
             them to the roster loses their place — which makes declining the more
             costly choice. */}
-        <a href={`/strategies/${listing.strategy.id}`} className="px-4 py-2 text-sm underline">
+        <a href={`/strategies/${listing.strategy.id}`} className={BUTTON_SECONDARY}>
           Leave it active
         </a>
       </form>

@@ -48,8 +48,14 @@ function columnLabel(column: { sectionKey: string | null; header: string }): str
  * A list rather than a sentence: a sentence would have to choose between
  * accuracy and readability at three levels of nesting, and this grammar goes
  * deeper than a sentence survives.
+ *
+ * Exported since 2026-08-06 so the drafting surface draws a composed condition
+ * with the same vocabulary a saved one is drawn with. A second renderer would
+ * be a second reading of the grammar, and the two would disagree about a
+ * negation eventually — which is the exact misreading this component's `NOT`
+ * handling exists to prevent.
  */
-function Definition({
+export function ConditionStructure({
   definition,
   defined,
 }: {
@@ -102,7 +108,7 @@ function Definition({
         <ul className="ml-4 mt-1 space-y-1 border-l border-border-default pl-3">
           {definition.members.map((member, i) => (
             <li key={i}>
-              <Definition definition={member} defined={defined} />
+              <ConditionStructure definition={member} defined={defined} />
             </li>
           ))}
         </ul>
@@ -156,7 +162,7 @@ function ConditionCard({
         </span>
       </div>
       <div className="text-sm">
-        <Definition definition={condition.definition} defined={defined} />
+        <ConditionStructure definition={condition.definition} defined={defined} />
       </div>
       {hasUnrecognisedPart(condition.definition) && (
         <p className="text-xs text-text-secondary">

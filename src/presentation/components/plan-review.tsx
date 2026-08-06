@@ -1,4 +1,5 @@
 import type { PlanReview } from '@/application/use-cases/compile-plan.command.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from './control.js';
 
 /**
  * The review screen.
@@ -150,10 +151,7 @@ export function PlanReviewPanel({
               thing; styling it as a hazard teaches people to flinch at the
               correct action. The weight lives on the consequence above it.
             */}
-            <button
-              type="submit"
-              className="min-h-11 rounded-gc-2 bg-accent-default px-4 py-2 text-base font-medium text-accent-text transition-colors duration-fast hover:bg-accent-hover"
-            >
+            <button type="submit" className={BUTTON_PRIMARY}>
               Apply this{' '}
               {boundAgentCount !== null && boundAgentCount > 0
                 ? `— reconfigures ${boundAgentCount} agent${boundAgentCount === 1 ? '' : 's'} now`
@@ -161,10 +159,7 @@ export function PlanReviewPanel({
             </button>
             {/* A visible peer of Apply, not a footnote. Going back is the
                 expected outcome of a review that surprised the user. */}
-            <a
-              href={changeIt}
-              className="inline-flex min-h-11 items-center justify-center rounded-gc-2 border border-border-default px-4 py-2 text-base text-text-primary"
-            >
+            <a href={changeIt} className={BUTTON_SECONDARY}>
               Go back and change it
             </a>
           </form>

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 
@@ -83,10 +84,10 @@ export default async function UndeployPage({
         <input type="hidden" name="coinId" value={proposal.coinId} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Stop scanning {proposal.coinId}
         </button>
-        <a href={`/agents/${proposal.agentId}`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${proposal.agentId}`} className={BUTTON_SECONDARY}>
           Keep it deployed
         </a>
       </form>

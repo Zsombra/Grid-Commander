@@ -1,6 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { ColumnProposal } from '@/ports/strategies.js';
 
@@ -155,7 +155,7 @@ export default async function MetricPage({
           the grammar in the platform&apos;s own words.
         </p>
         <form method="get" className="space-y-3 text-sm">
-          <label className="block">
+          <label className={LABEL}>
             Transform
             <select name="transformId" className={CONTROL} defaultValue={proposal?.transformId ?? ''}>
               <option value="">— choose —</option>
@@ -166,7 +166,7 @@ export default async function MetricPage({
               ))}
             </select>
           </label>
-          <label className="block">
+          <label className={LABEL}>
             Timeframe
             <input
               type="text"
@@ -177,19 +177,19 @@ export default async function MetricPage({
               }
             />
           </label>
-          <label className="block">
+          <label className={LABEL}>
             Operand metrics (comma-separated, for transforms that need one)
             <input type="text" name="inputs" className={CONTROL} defaultValue={proposal?.inputs?.join(', ') ?? ''} />
           </label>
-          <label className="block">
+          <label className={LABEL}>
             Window
             <input type="text" name="window" className={CONTROL} defaultValue={proposal?.window?.toString() ?? ''} />
           </label>
-          <label className="block">
+          <label className={LABEL}>
             Offset
             <input type="text" name="offset" className={CONTROL} defaultValue={proposal?.offset?.toString() ?? ''} />
           </label>
-          <button type="submit" className="rounded border px-4 py-2 text-sm">
+          <button type="submit" className={BUTTON_SECONDARY}>
             Check against the contract
           </button>
         </form>

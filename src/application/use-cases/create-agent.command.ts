@@ -90,7 +90,18 @@ export class CreateAgentCommand {
     }
 
     if (req.brain.kind === 'preset' && !isKnownBrainPreset(catalog, req.brain.preset)) {
-      issues.push({ field: 'brain.preset', reason: `"${req.brain.preset}" is not a brain preset.` });
+      // Two different refusals. The presets are read from the create tool's own
+      // declaration, so an empty set means it could not be read — and telling
+      // an operator their choice "is not a brain preset" on the strength of a
+      // read that failed blames them for it. `DescribeDeployQuery` draws the
+      // same line for timeframes, in the same words.
+      issues.push({
+        field: 'brain.preset',
+        reason:
+          catalog.brainPresets.length === 0
+            ? 'BattleGrid did not declare which brain presets it accepts, so none can be validated.'
+            : `"${req.brain.preset}" is not a brain preset.`,
+      });
     }
     if (req.brain.kind === 'custom' && !isApprovedModel(catalog, req.brain.modelId)) {
       issues.push({

@@ -650,9 +650,24 @@ presented as one whose stop has not moved. The reads SHALL remain independent:
 a decision list that could not be read SHALL cost every position its decided
 values and SHALL NOT blank a position that answered.
 
-The time the position was priced SHALL be stated. The platform declares how
-often a client should re-read; a rendered page is a snapshot and SHALL NOT
-present itself as live.
+The time the position was priced SHALL be stated, and **how long ago that was**
+SHALL be stated with it. The platform declares how often a client should
+re-read; a rendered page is a snapshot and SHALL NOT present itself as live. A
+timestamp alone leaves the reader to do the arithmetic that turns it into
+staleness, so a page held open for four minutes on a leveraged position reads
+exactly like one opened a second ago.
+
+Where the platform states no priced-at time, the surface SHALL still say the
+figures are a snapshot rather than fall silent — a read that cannot say when it
+was taken is more of a snapshot, not less. Where the priced-at time is later
+than this product's own clock reads, the surface SHALL state the time and
+SHALL NOT claim an age for it: two machines keep two clocks, and a negative age
+rendered as a number would be this product's arithmetic presented as the
+platform's fact.
+
+The surface SHALL offer a way to read the figures again, and that way SHALL NOT
+imply the page updates itself. A page that states its own staleness and offers
+nothing to do about it reports a problem it does not let the reader solve.
 
 #### Scenario: An agent holding a position
 - **GIVEN** an agent with one open position
@@ -660,6 +675,27 @@ present itself as live.
 - **THEN** the market, direction, notional, leverage and margin are shown
 - **AND** the unrealized result is shown as the platform reported it
 - **AND** the time it was priced is stated
+- **AND** how long ago that was is stated with it
+
+#### Scenario: A page read four minutes after it was priced
+- **GIVEN** an agent holding a position priced four minutes before the page renders
+- **WHEN** the surface renders
+- **THEN** it states how long ago the figures were priced
+- **AND** it still states the priced-at time itself
+- **AND** it offers a way to read the figures again
+- **AND** it does not present itself as live
+
+#### Scenario: A priced-at time the platform did not state
+- **GIVEN** an open position whose read carries no priced-at time
+- **WHEN** the surface renders
+- **THEN** the surface says the platform did not say when it was priced
+- **AND** it still says the figures are a snapshot rather than a live reading
+
+#### Scenario: A priced-at time later than this product's clock
+- **GIVEN** a priced-at time ahead of the clock this product renders against
+- **WHEN** the surface renders
+- **THEN** the priced-at time is stated
+- **AND** no age is claimed for it
 
 #### Scenario: A position the platform could not price
 - **GIVEN** an open position with no mark price

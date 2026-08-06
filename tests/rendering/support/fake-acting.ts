@@ -9,6 +9,7 @@ import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
+import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
@@ -19,6 +20,7 @@ import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.j
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
+import { TryConditionQuery } from '@/application/use-cases/try-condition.query.js';
 import { SimulateAggregateQuery } from '@/application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
@@ -26,6 +28,8 @@ import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-libr
 import { ReadSignalQuery } from '@/application/use-cases/read-signal.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from '@/application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from '@/application/use-cases/open-grid-session.query.js';
 import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from '@/application/use-cases/read-competitor.query.js';
 import { ReadEvaluationQuery } from '@/application/use-cases/read-evaluation.query.js';
@@ -78,6 +82,12 @@ export function actingWith({
   proposals = new FakeProposalStore(),
   market = new FakeMarketPort(),
   positions = new FakePositionsPort(),
+  /**
+   * When the page is being rendered. Injectable because a surface can now say
+   * how old its figures are — "priced 4 minutes ago" — and a test that let
+   * that read the wall clock would assert a different sentence every run.
+   */
+  clock = new FakeClock(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
@@ -87,8 +97,8 @@ export function actingWith({
   proposals?: FakeProposalStore;
   market?: FakeMarketPort;
   positions?: FakePositionsPort;
+  clock?: FakeClock;
 } = {}) {
-  const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
   const random = new SequentialRandom();
 
@@ -97,11 +107,14 @@ export function actingWith({
     readProposals: new ReadProposalsQuery(proposals, clock),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
+    // The edit and create forms both refuse to render without it — a form
+    // whose submission is certain to fail is worse than none.
+    readCatalog: new ReadCatalogQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
-    readExposure: new ReadExposureQuery(positions, agents),
+    readExposure: new ReadExposureQuery(positions, agents, clock),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),
@@ -110,6 +123,8 @@ export function actingWith({
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
     watchArena: new WatchArenaQuery(grid),
+    readGameRules: new ReadGameRulesQuery(grid),
+    openGridSession: new OpenGridSessionQuery(grid),
     readField: new ReadFieldQuery(explorer),
     readCompetitor: new ReadCompetitorQuery(explorer),
     readEvaluation: new ReadEvaluationQuery(explorer),
@@ -121,6 +136,7 @@ export function actingWith({
     describeRetune: new DescribeRetuneQuery(strategies, confirmations, random, clock),
     retuneRule: new RetuneRuleCommand(strategies),
     previewComposition: new PreviewCompositionQuery(strategies),
+    tryCondition: new TryConditionQuery(strategies),
     simulateAggregate: new SimulateAggregateQuery(strategies),
   };
 
@@ -129,7 +145,19 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, grid, explorer, market, positions, confirmations };
+  return {
+    app,
+    user,
+    agents,
+    strategies,
+    radar,
+    grid,
+    explorer,
+    market,
+    positions,
+    confirmations,
+    clock,
+  };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */
