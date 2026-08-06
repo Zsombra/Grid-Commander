@@ -26,6 +26,8 @@ import { ReadSignalLibraryQuery } from '@/application/use-cases/read-signal-libr
 import { ReadSignalQuery } from '@/application/use-cases/read-signal.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from '@/application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from '@/application/use-cases/open-grid-session.query.js';
 import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from '@/application/use-cases/read-competitor.query.js';
 import { ReadEvaluationQuery } from '@/application/use-cases/read-evaluation.query.js';
@@ -110,6 +112,8 @@ export function actingWith({
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
     watchArena: new WatchArenaQuery(grid),
+    readGameRules: new ReadGameRulesQuery(grid),
+    openGridSession: new OpenGridSessionQuery(grid),
     readField: new ReadFieldQuery(explorer),
     readCompetitor: new ReadCompetitorQuery(explorer),
     readEvaluation: new ReadEvaluationQuery(explorer),

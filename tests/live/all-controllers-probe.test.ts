@@ -30,6 +30,8 @@ import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
 import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from '@/application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from '@/application/use-cases/open-grid-session.query.js';
 import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from '@/application/use-cases/read-competitor.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
@@ -247,7 +249,23 @@ live('every read controller, against one account', () => {
     }
 
     // -- the field, and the arena ------------------------------------------
-    await walk('watchArena', () => new WatchArenaQuery(grid).execute(who));
+    const arena = (await walk('watchArena', () => new WatchArenaQuery(grid).execute(who))) as {
+      kind: string;
+      sessions?: readonly { id: string }[];
+    } | null;
+    await walk('readGameRules', () => new ReadGameRulesQuery(grid).execute(who));
+
+    // The one controller here that needs an id, so it is skipped by name when
+    // the platform lists nothing — a survey whose gaps are invisible is the
+    // failure this probe exists to catch.
+    const sessionId = arena?.kind === 'arena' ? arena.sessions?.[0]?.id : undefined;
+    if (sessionId) {
+      await walk('openGridSession', () =>
+        new OpenGridSessionQuery(grid).execute({ ...who, sessionId }),
+      );
+    } else {
+      rows.push({ name: 'openGridSession', result: 'SKIPPED — no session listed', failed: false });
+    }
 
     const field = (await walk('readField', () =>
       new ReadFieldQuery(explorer).execute({ ...who, timeframe: 'ALL_TIME', sortBy: 'NET_PNL', limit: 5 }),
@@ -294,6 +312,6 @@ live('every read controller, against one account', () => {
      * reading an id one level too shallow, taking the `if`, and reporting a
      * clean run over four controllers it never called.
      */
-    expect(rows.length, 'every controller is walked or named as skipped').toBe(26);
+    expect(rows.length, 'every controller is walked or named as skipped').toBe(28);
   });
 });

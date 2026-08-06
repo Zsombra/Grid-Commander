@@ -1,18 +1,24 @@
 import type { FailureCause } from '@/ports/failure.js';
-import type { GridSessionDetail, MarketGridPort } from '@/ports/market-grid.js';
+import type {
+  GridSessionDetail,
+  GridSessionSummary,
+  MarketGridPort,
+} from '@/ports/market-grid.js';
 
 /**
  * One session on the arena surface.
  *
  * Split into what the **list** knew and what the **per-session reads** added,
- * because they fail independently. `id`, `name` and `coinTickers` come off the
- * list and are therefore known for every session that appears at all; `detail`
- * and `entered` are separate reads and either can come back empty-handed.
+ * because they fail independently. Everything on `GridSessionSummary` — the
+ * name, the coin pool, and what entering costs — comes off the list and is
+ * therefore known for every session that appears at all; `detail` and `entered`
+ * are separate reads and either can come back empty-handed.
+ *
+ * Extended from the summary rather than restated, so a field added to the list
+ * mapping reaches the surface instead of being dropped by a copy nobody
+ * updated.
  */
-export interface ArenaSession {
-  readonly id: string;
-  readonly name: string;
-  readonly coinTickers: readonly string[];
+export interface ArenaSession extends GridSessionSummary {
   /** Schedule, status and player count. Null when that read did not answer. */
   readonly detail: GridSessionDetail | null;
   /**
@@ -70,9 +76,7 @@ export class WatchArenaQuery {
               ? submission.reason
               : null;
         return {
-          id: s.id,
-          name: s.name,
-          coinTickers: s.coinTickers,
+          ...s,
           detail: detail.kind === 'detail' ? detail.detail : null,
           entered: submission.kind === 'submission' ? submission.entered : null,
           unreadable,

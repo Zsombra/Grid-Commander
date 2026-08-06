@@ -3,17 +3,55 @@ import { ToolRefusedError } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpMarketGridAdapter } from '@/infrastructure/battlegrid/market-grid-adapter.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 
-/** Shaped from the live `list_market_grid_sessions` entry of 2026-08-01. */
+/**
+ * Shaped from the live `list_market_grid_sessions` entry of 2026-08-01, with
+ * the economics the 2026-08-06 re-probe recorded on all 50 rows. The three
+ * fields the platform also sends and this product does not map —
+ * `crowdUpPercent`, `crowdDownPercent`, `coinPicks` — are present here as the
+ * live probe saw them: null, null, and a roster with nobody in it.
+ */
 const LIVE_SESSION = {
   sessionId: '7f3a9c2e-1b4d-4e8f-9a6c-2d5e8f1a3b7c',
   presetId: 'p-crypto-wars',
   displayName: 'CRYPTO WARS · 1H',
   timeRangeKey: '1H',
+  entryFee: 10,
+  totalPrizePool: 40,
+  minimumPlayers: 4,
+  playersNeeded: 1,
+  crowdUpPercent: null,
+  crowdDownPercent: null,
+  coinPicks: { hasPicks: false, top: [], rosterSize: 0, others: 0 },
   coinPoolPreview: [
     { coinId: 'c-btc', ticker: 'BTC' },
     { coinId: 'c-eth', ticker: 'ETH' },
     { coinId: 'c-hype', ticker: 'HYPE' },
   ],
+};
+
+/** Shaped from the live `list_game_presets` entry of 2026-08-06. */
+const LIVE_PRESET = {
+  id: 'p-crypto-wars',
+  displayName: 'CRYPTO WARS',
+  gameType: 'MARKET_GRID',
+  timeRangeKey: '1H',
+  gridRows: 3,
+  gridCols: 3,
+  gridSize: 9,
+  entryFee: 10,
+  changeMultiplier: 100,
+  captainMultiplier: 2,
+  captainWrongPenaltyMultiplier: 2,
+  wrongPenaltyMultiplier: 1,
+  jackpotEnabled: true,
+  perfectGameAllCorrectRequired: true,
+  minimumPlayers: 4,
+  maxPlayers: 100,
+  cancelBelowThreshold: true,
+  // Real, populated, and deliberately unmapped — nothing renders them.
+  feeConfig: { platformFeePercent: 10, winnersPoolPercent: 70 },
+  distributionCurveId: 'curve-1',
+  badgeImageUrl: 'https://example.invalid/badge.png',
 };
 
 function adapterOver(respond: (req: ToolCallRequest) => unknown) {
@@ -48,7 +86,7 @@ function adapterOver(respond: (req: ToolCallRequest) => unknown) {
 const who = { userId: 'u1', accessToken: 'at' };
 
 describe('mapping the live session list', () => {
-  it('keeps id, name and the previewed tickers', async () => {
+  it('keeps id, name, the previewed tickers and what entering costs', async () => {
     const { adapter, calls } = adapterOver(() => ({ sessions: [LIVE_SESSION] }));
     const result = await adapter.listSessions(who);
     expect(result.kind).toBe('sessions');
@@ -57,8 +95,25 @@ describe('mapping the live session list', () => {
       id: LIVE_SESSION.sessionId,
       name: 'CRYPTO WARS · 1H',
       coinTickers: ['BTC', 'ETH', 'HYPE'],
+      entryFee: 10,
+      prizePool: 40,
+      minimumPlayers: 4,
+      playersNeeded: 1,
+      timeRangeKey: '1H',
     });
     expect(calls[0]?.tool).toBe('list_market_grid_sessions');
+  });
+
+  it('leaves an absent fee unknown rather than free', async () => {
+    // The one number on this surface where a zero fallback would be a lie
+    // with a price on it.
+    const { adapter } = adapterOver(() => ({
+      sessions: [{ ...LIVE_SESSION, entryFee: undefined, totalPrizePool: 'lots' }],
+    }));
+    const result = await adapter.listSessions(who);
+    if (result.kind !== 'sessions') throw new Error(result.kind);
+    expect(result.sessions[0]?.entryFee).toBeNull();
+    expect(result.sessions[0]?.prizePool).toBeNull();
   });
 
   it('a row with no sessionId makes the whole read unreadable, not a shorter list', async () => {
@@ -84,7 +139,80 @@ describe('mapping the live session list', () => {
     }));
     const result = await adapter.listSessions(who);
     if (result.kind !== 'sessions') throw new Error(result.kind);
-    expect(result.sessions[0]).toEqual({ id: 's-1', name: 's-1', coinTickers: [] });
+    expect(result.sessions[0]).toEqual({
+      id: 's-1',
+      name: 's-1',
+      coinTickers: [],
+      entryFee: null,
+      prizePool: null,
+      minimumPlayers: null,
+      playersNeeded: null,
+      timeRangeKey: null,
+    });
+  });
+});
+
+describe('mapping the rulebook', () => {
+  it('keeps the grid, the price and what a call is worth', async () => {
+    const { adapter, calls } = adapterOver(() => ({ presets: [LIVE_PRESET] }));
+    const result = await adapter.gameRules(who);
+    if (result.kind !== 'rules') throw new Error(result.kind);
+    expect(result.presets[0]).toEqual({
+      id: 'p-crypto-wars',
+      name: 'CRYPTO WARS',
+      gameType: 'MARKET_GRID',
+      timeRangeKey: '1H',
+      gridRows: 3,
+      gridCols: 3,
+      coinsPerGame: 9,
+      entryFee: 10,
+      changeMultiplier: 100,
+      captainMultiplier: 2,
+      captainWrongPenaltyMultiplier: 2,
+      wrongPenaltyMultiplier: 1,
+      jackpotEnabled: true,
+      perfectGameNeedsEveryCall: true,
+      minimumPlayers: 4,
+      maxPlayers: 100,
+      cancelsBelowMinimum: true,
+    });
+    expect(calls[0]?.tool).toBe('list_game_presets');
+    expect(calls[0]?.args).toEqual({});
+  });
+
+  it('never reads an absent flag as a denial', async () => {
+    // A preset that says nothing about a jackpot has not said there is none,
+    // so the surface renders neither claim — `false` here means "not stated"
+    // and the page shows nothing rather than "no jackpot".
+    const { adapter } = adapterOver(() => ({
+      presets: [{ id: 'p-2', gameType: 'COIN_GRID' }],
+    }));
+    const result = await adapter.gameRules(who);
+    if (result.kind !== 'rules') throw new Error(result.kind);
+    expect(result.presets[0]).toMatchObject({
+      id: 'p-2',
+      name: 'p-2',
+      jackpotEnabled: false,
+      perfectGameNeedsEveryCall: false,
+      cancelsBelowMinimum: false,
+      entryFee: null,
+      coinsPerGame: null,
+    });
+  });
+
+  it('a rule with no identity makes the whole rulebook unreadable, not a shorter one', async () => {
+    // Three presets is small enough that "some of the rules" is never the
+    // useful answer: a rulebook missing the preset a session was dealt from
+    // still reads as complete.
+    const { adapter } = adapterOver(() => ({ presets: [LIVE_PRESET, { displayName: 'ghost' }] }));
+    const result = await adapter.gameRules(who);
+    if (result.kind !== 'unreadable') throw new Error(result.kind);
+    expect(result.reason).toContain('id');
+  });
+
+  it('a payload with no presets array is unreadable', async () => {
+    const { adapter } = adapterOver(() => ({ items: [] }));
+    expect((await adapter.gameRules(who)).kind).toBe('unreadable');
   });
 });
 
@@ -168,18 +296,30 @@ describe('results as a state machine', () => {
     expect(await adapter.results({ ...who, sessionId: 's-1' })).toEqual({ kind: 'not-settled' });
   });
 
-  it('any other refusal stays an error', async () => {
+  it('any other refusal is unreadable — and emphatically not not-settled', async () => {
+    /**
+     * It used to throw, which was survivable only while nothing called it. A
+     * session page calls it now, and a throw at a route is a 500 — the outcome
+     * `one-bad-session-must-not-take-the-arena-down` made unrepresentable for
+     * the two reads beside this one.
+     *
+     * The half that matters more is the second assertion: reporting a failed
+     * read as "not settled yet" tells a player to come back later for results
+     * that may already be published.
+     */
     const { adapter } = adapterOver(() => {
       throw new ToolRefusedError('get_market_grid_results', JSON.stringify({ code: 'NOT_FOUND' }));
     });
-    await expect(adapter.results({ ...who, sessionId: 's-1' })).rejects.toThrow(ToolRefusedError);
+    const result = await adapter.results({ ...who, sessionId: 's-1' });
+    expect(result.kind).toBe('unreadable');
+    expect(result.kind).not.toBe('not-settled');
   });
 
   it('a settled payload passes through opaque — it has never been observed', async () => {
     const { adapter } = adapterOver(() => ({ standings: [{ rank: 1 }] }));
     expect(await adapter.results({ ...who, sessionId: 's-1' })).toEqual({
       kind: 'settled',
-      payload: { standings: [{ rank: 1 }] },
+      payloadUnmodelled: { standings: [{ rank: 1 }] },
     });
   });
 });
