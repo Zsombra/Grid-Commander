@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-06  
-**State**: green (1367 vitest + 62 db + 221 harness tests, all ten `./scripts/ci.sh` gates including keyed `freshness`; further vitest are key-gated live probes). No active changes. 26 open backlog items. PRs #8–#69 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
+**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 25 open backlog items. PRs #8–#70 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 110 |
-| Vitest tests | 1367 (+ key-gated live) + 62 db |
-| Harness tests (Python) | 221 |
+| Changes (archived) | 116 |
+| Vitest tests | 1772 (+ key-gated live) + 62 db |
+| Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 26 |
+| Open backlog items | 25 |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#69 merged |
+| Open draft PRs | none; #8–#70 merged |
 
 ### Read this before anything else
 
@@ -44,6 +44,25 @@ named skip. If it fails, re-probe before doing anything else:
 ```bash
 BATTLEGRID_API_KEY=bg_live_… python3 tools/probe_mcp_surface.py
 ```
+
+**Three platform behaviours found on 2026-08-06, each of which will bite
+again.**
+
+- **`fork_strategy` answers `INTERNAL_ERROR` when a strategy of the fork's name
+  already exists.** Not the quota — that refuses cleanly with
+  `VALIDATION_ERROR: Strategy limit reached` and publishes
+  `quota: {used, limit, remaining}`. Isolated by forking three sources with and
+  without a name collision. Any repeated automation degrades, because each run
+  leaves behind the name that breaks the next one; live probes must pick a
+  source whose `<name> (fork)` is free. See `forking-a-name-that-exists-is-a-500`.
+- **`last24hCostUsd` disagrees between `list_intelligence_agents` (0.09022839)
+  and `get_intelligence_agent` (0)** for the same agent at the same moment,
+  stable across repeated samples, with every other key identical. Read spend
+  from the **list**. See `the-cost-of-an-agent-reads-differently-from-two-tools`.
+- **A no-op UPDATE is refused** — `Strategy update contains no effective
+  changes` — which is how the compiler proves it read the submitted list at all.
+  Any probe that resubmits a strategy's own state must expect this rather than a
+  plan.
 
 **A credential in the environment is not consent to mutate.** Live probes
 that can write require `BATTLEGRID_LIVE_WRITES=1` as well as a key, and
