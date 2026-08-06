@@ -433,15 +433,38 @@ def shape(value: Any, depth: int = 0) -> Any:
 # `signalLogId`. They yielded nothing and said nothing, which is the failure
 # mode this whole file exists to remove — so `test_probe_id_sources.py` now
 # fails if a row stops resolving against the artifact.
-ID_SOURCES: dict[str, tuple[str, str]] = {
-    # argument     (tool that returns it,        array field carrying `id`)
-    "agentId":     ("list_intelligence_agents",  "agents"),
-    "strategyId":  ("list_strategies",           "strategies"),
-    "decisionId":  ("list_entry_decisions",      "entries"),
-    "logId":       ("list_signal_logs",          "entries"),
+ID_SOURCES: dict[str, tuple[str, str, str]] = {
+    # argument     (tool that returns it,        array field,   key on the row)
+    "agentId":     ("list_intelligence_agents",  "agents",      "id"),
+    "strategyId":  ("list_strategies",           "strategies",  "id"),
+    "decisionId":  ("list_entry_decisions",      "entries",     "id"),
+    "logId":       ("list_signal_logs",          "entries",     "id"),
+    # Coins are named, not identified: `get_top_ranked_coins` returns rows of
+    # `{ticker, rank, latestMetricValue}` and no id at all. Four tools take a
+    # ticker under four different argument names, so each is listed rather than
+    # derived — the same rule as everything else in this table.
+    #
+    # This row only became reachable when `arguments_for` learned to fill
+    # `interval` and `metric` from the schema: the coin list was itself blocked
+    # on two enums the artifact already held.
+    "ticker":      ("get_top_ranked_coins",      "coins",       "ticker"),
+    "coinTicker":  ("get_top_ranked_coins",      "coins",       "ticker"),
     # `list_market_grid_sessions` is deliberately absent: its rows carry no
     # `id` at all, so a `sessionId` cannot be taken from them. Recorded here
     # rather than left as a silently empty lookup.
+}
+
+
+# Arguments that take a list of what an id source yields one of.
+#
+# Written out rather than derived by stripping an "s": `coinTickers` and
+# `tickers` both want one thing, and `sections` and `assumptions` — which also
+# end in "s" — want objects no id source produces. String surgery would fill
+# those with a ticker, which is the id-in-the-wrong-parameter defect `ID_SOURCES`
+# is written out to avoid.
+PLURAL_OF: dict[str, str] = {
+    "tickers": "ticker",
+    "coinTickers": "coinTicker",
 }
 
 
@@ -453,7 +476,7 @@ def harvest(observed: dict[str, Any]) -> dict[str, str]:
     nothing did, and the point of the artifact is that a diff means something.
     """
     found: dict[str, str] = {}
-    for argument, (tool, field) in ID_SOURCES.items():
+    for argument, (tool, field, key) in ID_SOURCES.items():
         payload = observed.get(tool)
         if not isinstance(payload, dict):
             continue
@@ -461,23 +484,53 @@ def harvest(observed: dict[str, Any]) -> dict[str, str]:
         if not isinstance(rows, list) or not rows:
             continue
         first = rows[0]
-        if isinstance(first, dict) and isinstance(first.get("id"), str):
-            found[argument] = first["id"]
+        if isinstance(first, dict) and isinstance(first.get(key), str):
+            found[argument] = first[key]
     return found
 
 
-def arguments_for(required: list[str], ids: dict[str, str]) -> tuple[dict[str, Any] | None, str]:
+def arguments_for(
+    required: list[str],
+    ids: dict[str, str],
+    constants: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any] | None, str]:
     """The call's arguments, or the reason it cannot be made.
+
+    `constants` are the tool's own declared enum values, used for arguments that
+    are not ids. Passing none keeps the old id-only behaviour.
 
     Names the argument that could not be supplied rather than the whole list —
     "needs arguments: agentId, ticker" does not say which of the two the account
     lacks, and that is the fact worth recording.
     """
+    constants = constants or {}
     args: dict[str, Any] = {}
     for name in required:
-        if name not in ids:
-            return None, f"no {name} available on this account"
-        args[name] = ids[name]
+        if name in ids:
+            args[name] = ids[name]
+            continue
+        # Not every required argument is an id to harvest. `interval`, `metric`,
+        # `gameType`, `strategyTimeframe` and `sourceKey` are **enums the schema
+        # already declares**, and the probe was reporting "no interval available
+        # on this account" for a value sitting in its own artifact — which left
+        # eleven read tools never once observed.
+        #
+        # First declared value, for the same reason `harvest` takes the first
+        # row: a probe that picks differently each run produces an artifact that
+        # appears to change when nothing did.
+        choices = constants.get(name)
+        if isinstance(choices, list) and choices:
+            args[name] = choices[0]
+            continue
+        # A list of one, where the singular was harvested. `get_coin_market_context`
+        # takes `tickers` and the coin list yields `ticker`; one row is enough to
+        # observe a shape, and asking for more would make the artifact depend on
+        # how many coins the platform happened to rank that day.
+        singular = PLURAL_OF.get(name)
+        if singular and singular in ids:
+            args[name] = [ids[singular]]
+            continue
+        return None, f"no {name} available on this account"
     return args, ""
 
 
@@ -592,6 +645,24 @@ def main() -> int:
             response = rpc(key, "tools/call", {"name": name, "arguments": args})
             payload, error = unwrap(response.get("result", {}))
             if error is not None:
+                # The platform often refuses by naming what it wanted, and for
+                # an either/or it *has* to: `get_market_context` requires
+                # "sessionId or primaryTimeframe", which no `required` list can
+                # express — so both are optional, the probe sent neither, and
+                # four tools were recorded as failures for years.
+                #
+                # One retry, and only with values the tool's own schema declares
+                # for an argument the refusal named. Not a guess and not a loop:
+                # if the second refusal names something else, that is the answer.
+                retry = {
+                    arg: choices[0]
+                    for arg, choices in (entry.get("input_constants") or {}).items()
+                    if arg not in args and isinstance(choices, list) and choices and arg in error
+                }
+                if retry:
+                    print(f"  retry {name}: refusal named {', '.join(sorted(retry))}")
+                    attempt(entry, {**args, **retry}, how + "+refusal-named:" + ",".join(sorted(retry)))
+                    return
                 entry["observed"] = None
                 entry["call_failed"] = error[:300]
                 entry["arguments_from"] = how
@@ -684,7 +755,9 @@ def main() -> int:
             if entry["classification"] != "read" or not entry["input_required"]:
                 continue
 
-            args, why = arguments_for(entry["input_required"], ids)
+            args, why = arguments_for(
+                entry["input_required"], ids, entry.get("input_constants")
+            )
             if args is None:
                 # Names the argument that could not be supplied, not the whole
                 # list: "needs arguments: agentId, ticker" never said which of

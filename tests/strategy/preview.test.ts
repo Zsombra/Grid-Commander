@@ -5,13 +5,24 @@ import { PreviewCompositionQuery } from '@/application/use-cases/preview-composi
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 import { aDetail, aMembership, aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 
-/** Shaped from the live `preview_strategy_report` payload of 2026-08-01. */
+/**
+ * Shaped from the live `preview_strategy_report` payload of **2026-08-06**, on
+ * v9.0.0.
+ *
+ * The body is nested under `section`. It used to sit flat beside `sectionKey`,
+ * and this fixture carried the flat shape for five days after the platform
+ * changed — which is why the preview page rendered five empty sections and
+ * every test stayed green. A fixture that outlives its payload proves the
+ * mapper against a world that no longer exists.
+ */
 const LIVE_PREVIEW = {
   renderedSections: [
     {
       sectionKey: 'includePriceAction',
-      title: 'Price Action',
-      text: 'Schema: 1h candles. last: the last traded price (live, not a bar close).',
+      section: {
+        title: 'Price Action',
+        text: 'Schema: 1h candles. last: the last traded price (live, not a bar close).',
+      },
     },
   ],
   // The v9.0.0 payload. `estimatedTokenCount` is gone as a standalone field —
@@ -115,7 +126,7 @@ describe('mapping the preview payload', () => {
 
   it('a section with no key refuses the whole read', async () => {
     const { adapter } = adapterOver(() => ({
-      renderedSections: [{ title: 'ghost' }],
+      renderedSections: [{ section: { title: 'ghost', text: 'x' } }],
       budgetUsage: {},
     }));
     await expect(
