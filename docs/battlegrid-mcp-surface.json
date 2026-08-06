@@ -2,10 +2,10 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "9.0.0",
+    "version": "11.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-06T07:03:05Z",
+  "probed_at": "2026-08-06T13:34:00Z",
   "tool_count": 110,
   "by_classification": {
     "read": 83,
@@ -14,9 +14,9 @@
     "unclassified": 0
   },
   "probed": {
-    "called": 43,
-    "skipped": 66,
-    "failed": 1
+    "called": 58,
+    "skipped": 52,
+    "failed": 0
   },
   "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product. `server` is which BattleGrid answered: it is the only field that can tell you this record is stale. `tool_count` cannot \u2014 it stayed at 110 across v3.0.0 \u2192 v5.0.0 while enums, required arguments and semantics moved underneath it.",
   "tools": [
@@ -1831,7 +1831,6 @@
         "strategyId"
       ],
       "input_optional": [
-        "arenaChallengeEnabled",
         "idempotencyKey",
         "tradingConfig"
       ],
@@ -1959,7 +1958,6 @@
         "": {
           "closed": true,
           "accepts": [
-            "arenaChallengeEnabled",
             "brain",
             "displayName",
             "idempotencyKey",
@@ -3039,7 +3037,65 @@
       "declared_output": [
         "verdicts"
       ],
-      "not_called_because": "no coinTickers available on this account"
+      "not_called_because": "no coinTickers available on this account",
+      "observed": [
+        "verdicts"
+      ],
+      "observed_shape": {
+        "verdicts": [
+          {
+            "agentId": "str",
+            "agentName": "str",
+            "coinName": "str",
+            "coinTicker": "str",
+            "evaluatedAt": "str",
+            "firstFailReason": "str",
+            "gates": {
+              "aggregateScore": {
+                "minScorePercent": "int",
+                "scorePercent": "int",
+                "verdict": "str"
+              },
+              "atrVolatility": {
+                "atrPct": "float",
+                "minAtrPct": "float",
+                "verdict": "str"
+              },
+              "requiredCount": {
+                "count": "int",
+                "min": "int",
+                "verdict": "str"
+              }
+            },
+            "long": {
+              "candidateLevels": {
+                "ok": "bool",
+                "rejectionStage": "str"
+              },
+              "firstFailReason": "str",
+              "qualifies": "bool"
+            },
+            "qualifies": "bool",
+            "short": {
+              "candidateLevels": {
+                "ok": "bool",
+                "rejectionStage": "str"
+              },
+              "firstFailReason": "str",
+              "qualifies": "bool"
+            },
+            "strategyTimeframe": "str"
+          },
+          "\u2026\u00d71"
+        ]
+      },
+      "arguments_from": "discovered:agentId,coinTickers",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_decision_context",
@@ -3070,7 +3126,20 @@
       "declared_output": [
         "context"
       ],
-      "not_called_because": "no coinTicker available on this account"
+      "not_called_because": "no coinTicker available on this account",
+      "observed": [
+        "context"
+      ],
+      "observed_shape": {
+        "context": "null"
+      },
+      "arguments_from": "discovered:coinTicker",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_explorer",
@@ -3663,7 +3732,51 @@
       "declared_output": [
         "preview"
       ],
-      "not_called_because": "no gameType available on this account"
+      "observed": [
+        "preview"
+      ],
+      "observed_shape": {
+        "preview": {
+          "agentId": "str",
+          "context": {
+            "includedTimeframes": [
+              "str",
+              "\u2026\u00d75"
+            ],
+            "lockAt": "null",
+            "millisecondsToLock": "null",
+            "millisecondsToSettle": "null",
+            "primaryTimeframe": "str",
+            "scoring": {
+              "captainMultiplier": "float",
+              "captainWrongPenaltyEffect": "str",
+              "wrongPenaltyEnabled": "bool"
+            },
+            "sessionStatus": "str",
+            "settleAt": "null"
+          },
+          "gameType": "str",
+          "promptSections": [
+            {
+              "content": "str",
+              "id": "str",
+              "isEditable": "bool",
+              "isLocked": "bool",
+              "kind": "str",
+              "title": "str"
+            },
+            "\u2026\u00d712"
+          ],
+          "sessionId": "null"
+        }
+      },
+      "arguments_from": "discovered:agentId,gameType+refusal-named:primaryTimeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_agent_thought_log",
@@ -3773,7 +3886,34 @@
       "declared_output": [
         "candles"
       ],
-      "not_called_because": "no interval available on this account"
+      "not_called_because": "no ticker available on this account",
+      "observed": [
+        "candles"
+      ],
+      "observed_shape": {
+        "candles": [
+          {
+            "close": "float",
+            "closeTime": "str",
+            "high": "float",
+            "low": "float",
+            "open": "float",
+            "openTime": "str",
+            "symbol": "str",
+            "timeframe": "str",
+            "timestamp": "str",
+            "volume": "int"
+          },
+          "\u2026\u00d720"
+        ]
+      },
+      "arguments_from": "discovered:interval,ticker",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_coin_market_context",
@@ -3852,7 +3992,35 @@
         "coins",
         "strategyTimeframe"
       ],
-      "not_called_because": "no strategyTimeframe available on this account"
+      "not_called_because": "no tickers available on this account",
+      "observed": [
+        "coins",
+        "strategyTimeframe"
+      ],
+      "observed_shape": {
+        "coins": [
+          {
+            "sections": [
+              {
+                "content": "str",
+                "kind": "str",
+                "title": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "ticker": "str"
+          },
+          "\u2026\u00d71"
+        ],
+        "strategyTimeframe": "str"
+      },
+      "arguments_from": "discovered:strategyTimeframe,tickers",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_coin_metadata",
@@ -3959,7 +4127,31 @@
       "declared_output": [
         "history"
       ],
-      "not_called_because": "no interval available on this account"
+      "not_called_because": "no ticker available on this account",
+      "observed": [
+        "history"
+      ],
+      "observed_shape": {
+        "history": [
+          {
+            "absChangeRank": "int",
+            "rsiActivityRank": "int",
+            "rsiActivityValue": "float",
+            "signedChangeValue": "float",
+            "timestamp": "int",
+            "volumeRank": "int",
+            "volumeValue": "float"
+          },
+          "\u2026\u00d710"
+        ]
+      },
+      "arguments_from": "discovered:interval,ticker",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_coin_signal_preview",
@@ -4022,7 +4214,70 @@
         "isAgentWeighted",
         "priceChangePercent"
       ],
-      "not_called_because": "no interval available on this account"
+      "not_called_because": "no ticker available on this account",
+      "observed": [
+        "aggregateScorePercent",
+        "allEvaluatedSignals",
+        "coinImageUrl",
+        "coinName",
+        "coinTicker",
+        "comparison",
+        "currentPrice",
+        "dominantBias",
+        "hasConflictingSignals",
+        "isAgentWeighted",
+        "priceChangePercent"
+      ],
+      "observed_shape": {
+        "aggregateScorePercent": "int",
+        "allEvaluatedSignals": [
+          {
+            "bias": "str",
+            "details": "str",
+            "direction": "str",
+            "effectiveAllocation": "int",
+            "id": "str",
+            "indicatorValues": {
+              "rsi14": "float"
+            },
+            "isPrimary": "bool",
+            "module": "str",
+            "required": "bool",
+            "score": "int",
+            "scorePercent": "int",
+            "triggered": "bool"
+          },
+          "\u2026\u00d784"
+        ],
+        "coinImageUrl": "str",
+        "coinName": "str",
+        "coinTicker": "str",
+        "comparison": [
+          {
+            "category": "str",
+            "correlationToTarget": "float",
+            "momentumState": "str",
+            "priceChange1h": "float",
+            "priceChange24h": "float",
+            "relationship": "str",
+            "ticker": "str",
+            "trendBias1h": "str"
+          },
+          "\u2026\u00d75"
+        ],
+        "currentPrice": "float",
+        "dominantBias": "str",
+        "hasConflictingSignals": "bool",
+        "isAgentWeighted": "bool",
+        "priceChangePercent": "float"
+      },
+      "arguments_from": "discovered:interval,ticker",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_context_source_full_preview",
@@ -4105,7 +4360,31 @@
         "sourceKey",
         "tokenCountModel"
       ],
-      "not_called_because": "no gameType available on this account"
+      "observed": [
+        "coinCount",
+        "content",
+        "displayName",
+        "estimatedTokenCount",
+        "snapshotTimestamp",
+        "sourceKey",
+        "tokenCountModel"
+      ],
+      "observed_shape": {
+        "coinCount": "int",
+        "content": "str",
+        "displayName": "str",
+        "estimatedTokenCount": "int",
+        "snapshotTimestamp": "str",
+        "sourceKey": "str",
+        "tokenCountModel": "str"
+      },
+      "arguments_from": "discovered:gameType,sourceKey+refusal-named:primaryTimeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_context_sources_preview",
@@ -4160,7 +4439,35 @@
         "snapshotTimestamp",
         "sources"
       ],
-      "not_called_because": "no gameType available on this account"
+      "observed": [
+        "coinCount",
+        "primaryTimeframe",
+        "sessionId",
+        "snapshotTimestamp",
+        "sources"
+      ],
+      "observed_shape": {
+        "coinCount": "int",
+        "primaryTimeframe": "str",
+        "sessionId": "null",
+        "snapshotTimestamp": "str",
+        "sources": [
+          {
+            "displayName": "str",
+            "enabled": "bool",
+            "key": "str",
+            "value": "null"
+          },
+          "\u2026\u00d723"
+        ]
+      },
+      "arguments_from": "discovered:agentId,gameType+refusal-named:primaryTimeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_decision_order_attribution",
@@ -4308,7 +4615,6 @@
       "observed_shape": {
         "agent": {
           "activeGameCount": "int",
-          "arenaChallengeEnabled": "bool",
           "avatarUrl": "str",
           "behavior": {
             "conviction": "str",
@@ -4502,7 +4808,29 @@
         "generatedAt",
         "leaderboard"
       ],
-      "not_called_because": "no metric available on this account"
+      "observed": [
+        "currentUser",
+        "filter",
+        "generatedAt",
+        "leaderboard"
+      ],
+      "observed_shape": {
+        "currentUser": "null",
+        "filter": {
+          "gameType": "str",
+          "metric": "str",
+          "timeframe": "str"
+        },
+        "generatedAt": "str",
+        "leaderboard": []
+      },
+      "arguments_from": "discovered:metric,timeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_macd_heatmap",
@@ -4569,7 +4897,7 @@
               "fundingRate": "float",
               "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "float",
+              "oraclePrice": "int",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -4671,9 +4999,39 @@
         "sections",
         "sessionId"
       ],
-      "observed": null,
-      "call_failed": "{\"code\":\"VALIDATION_ERROR\",\"message\":\"Provide sessionId or primaryTimeframe\"}",
-      "arguments_from": "none-required"
+      "observed": [
+        "coins",
+        "gridSize",
+        "presetDisplayName",
+        "primaryTimeframe",
+        "sections",
+        "sessionId"
+      ],
+      "observed_shape": {
+        "coins": [
+          "str",
+          "\u2026\u00d778"
+        ],
+        "gridSize": "int",
+        "presetDisplayName": "str",
+        "primaryTimeframe": "str",
+        "sections": [
+          {
+            "content": "str",
+            "kind": "str",
+            "title": "str"
+          },
+          "\u2026\u00d75"
+        ],
+        "sessionId": "null"
+      },
+      "arguments_from": "none-required+refusal-named:primaryTimeframe",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_market_grid_player_grid",
@@ -4991,7 +5349,58 @@
       "declared_output": [
         "metric"
       ],
-      "not_called_because": "no metric available on this account"
+      "observed": [
+        "metric"
+      ],
+      "observed_shape": {
+        "metric": {
+          "code": "str",
+          "family": "str",
+          "label": "str",
+          "metric": "str",
+          "nativeOutput": {
+            "kind": "str",
+            "precision": "int",
+            "unit": "str"
+          },
+          "outputKind": "str",
+          "spreadOperands": [
+            "str",
+            "\u2026\u00d715"
+          ],
+          "timeframeMode": "str",
+          "transforms": [
+            {
+              "authoring": {
+                "calculationSummary": "str",
+                "formula": "str",
+                "nullBehavior": "str",
+                "operandOrder": [
+                  "str",
+                  "\u2026\u00d71"
+                ],
+                "parameters": {
+                  "offset": {
+                    "defaultValue": "\u2026",
+                    "description": "\u2026",
+                    "required": "\u2026"
+                  }
+                }
+              },
+              "id": "str",
+              "label": "str"
+            },
+            "\u2026\u00d76"
+          ]
+        }
+      },
+      "arguments_from": "discovered:metric",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_open_orders",
@@ -5866,7 +6275,7 @@
               "t1": "str",
               "t2": "str",
               "t3": "str",
-              "trend": "str"
+              "trend": "null"
             },
             "pricePosition": [
               "str",
@@ -6700,7 +7109,92 @@
       "declared_output": [
         "signal"
       ],
-      "not_called_because": "no signalId available on this account"
+      "observed": [
+        "signal"
+      ],
+      "observed_shape": {
+        "signal": {
+          "defaultParams": {
+            "threshold": "int"
+          },
+          "dependencies": [
+            "str",
+            "\u2026\u00d71"
+          ],
+          "direction": "str",
+          "display": {
+            "description": "str",
+            "displayName": "str",
+            "id": "str",
+            "module": "str"
+          },
+          "indicators": [
+            {
+              "key": "str",
+              "meta": {
+                "label": "str",
+                "numericDomain": {
+                  "range": {
+                    "maxInclusive": "\u2026",
+                    "minInclusive": "\u2026"
+                  },
+                  "type": "str"
+                },
+                "precision": "int"
+              }
+            },
+            "\u2026\u00d71"
+          ],
+          "info": {
+            "bestFor": "str",
+            "detects": "str",
+            "exampleSetup": "str",
+            "examples": [
+              {
+                "outcome": "str",
+                "scenario": "str"
+              },
+              "\u2026\u00d73"
+            ],
+            "fires": "str",
+            "watchOut": "str"
+          },
+          "kind": "str",
+          "module": "str",
+          "moduleDisplay": {
+            "description": "str",
+            "displayName": "str",
+            "module": "str"
+          },
+          "paramSchemaJson": {
+            "$schema": "str",
+            "additionalProperties": "bool",
+            "properties": {
+              "threshold": {
+                "description": "str",
+                "maximum": "int",
+                "minimum": "int",
+                "type": "str"
+              }
+            },
+            "required": [
+              "str",
+              "\u2026\u00d71"
+            ],
+            "type": "str"
+          },
+          "priceBasis": "str",
+          "signalId": "str",
+          "timeframeAvailability": "null"
+        }
+      },
+      "arguments_from": "discovered:signalId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_top_ranked_coins",
@@ -6758,7 +7252,26 @@
       "declared_output": [
         "coins"
       ],
-      "not_called_because": "no interval available on this account"
+      "observed": [
+        "coins"
+      ],
+      "observed_shape": {
+        "coins": [
+          {
+            "latestMetricValue": "float",
+            "rank": "int",
+            "ticker": "str"
+          },
+          "\u2026\u00d725"
+        ]
+      },
+      "arguments_from": "discovered:interval,metric",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_trade_chart",
@@ -7866,7 +8379,6 @@
         "agents": [
           {
             "activeGameCount": "int",
-            "arenaChallengeEnabled": "bool",
             "avatarUrl": "str",
             "behavior": {
               "conviction": "str",
@@ -8076,7 +8588,7 @@
                 "coinId": "str",
                 "ticker": "str"
               },
-              "\u2026\u00d736"
+              "\u2026\u00d731"
             ],
             "crowdDownPercent": "null",
             "crowdUpPercent": "null",
@@ -8694,7 +9206,101 @@
         "timeframes",
         "transforms"
       ],
-      "not_called_because": "no category available on this account"
+      "observed": [
+        "budgets",
+        "category",
+        "metrics",
+        "previewExecutionLimits",
+        "templates",
+        "timeframeRefs",
+        "timeframes",
+        "transforms"
+      ],
+      "observed_shape": {
+        "budgets": {
+          "columnLookback": "int",
+          "conditionClauses": "int",
+          "distinctTimeframes": "int",
+          "estimatedTokens": "int",
+          "sectionColumns": "int",
+          "sections": "int",
+          "strategyConditions": "int"
+        },
+        "category": "str",
+        "metrics": [
+          {
+            "code": "str",
+            "family": "str",
+            "label": "str",
+            "metric": "str",
+            "nativeOutput": {
+              "kind": "str",
+              "precision": "int",
+              "unit": "str"
+            },
+            "timeframeMode": "str",
+            "transformIds": [
+              "str",
+              "\u2026\u00d76"
+            ]
+          },
+          "\u2026\u00d78"
+        ],
+        "previewExecutionLimits": {
+          "deadlineMs": "int",
+          "maxResultBytes": "int"
+        },
+        "templates": [
+          {
+            "columns": [
+              {
+                "metric": "str",
+                "timeframe": {
+                  "rel": "str"
+                },
+                "transformId": "str"
+              },
+              "\u2026\u00d712"
+            ],
+            "kind": "str",
+            "sectionKey": "str",
+            "title": "str"
+          },
+          "\u2026\u00d725"
+        ],
+        "timeframeRefs": [
+          {
+            "rel": "str",
+            "resolvedByAnchor": {
+              "15m": "str",
+              "1d": "str",
+              "1h": "str",
+              "1m": "str",
+              "4h": "str",
+              "5m": "str"
+            }
+          },
+          "\u2026\u00d74"
+        ],
+        "timeframes": [
+          "str",
+          "\u2026\u00d76"
+        ],
+        "transforms": [
+          {
+            "id": "str",
+            "label": "str"
+          },
+          "\u2026\u00d716"
+        ]
+      },
+      "arguments_from": "discovered:category",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "list_trade_outcomes",
@@ -8922,9 +9528,7 @@
         "request",
         "request.slots",
         "request.slots[].agentId",
-        "request.slots[].challengeEnabled",
         "request.slots[].coinRules",
-        "request.slots[].coinRules[].challengeEnabled",
         "request.slots[].coinRules[].coinId",
         "request.slots[].coinRules[].minConviction",
         "request.slots[].coinRules[].tradeEnabled",
@@ -8958,7 +9562,6 @@
           "closed": true,
           "accepts": [
             "agentId",
-            "challengeEnabled",
             "coinRules",
             "conditions",
             "entryStrategy",
@@ -8972,7 +9575,6 @@
         "request.slots[].coinRules[]": {
           "closed": true,
           "accepts": [
-            "challengeEnabled",
             "coinId",
             "minConviction",
             "tradeEnabled"
@@ -10170,9 +10772,7 @@
         "request",
         "request.slots",
         "request.slots[].agentId",
-        "request.slots[].challengeEnabled",
         "request.slots[].coinRules",
-        "request.slots[].coinRules[].challengeEnabled",
         "request.slots[].coinRules[].coinId",
         "request.slots[].coinRules[].minConviction",
         "request.slots[].coinRules[].tradeEnabled",
@@ -10206,7 +10806,6 @@
           "closed": true,
           "accepts": [
             "agentId",
-            "challengeEnabled",
             "coinRules",
             "conditions",
             "entryStrategy",
@@ -10220,7 +10819,6 @@
         "request.slots[].coinRules[]": {
           "closed": true,
           "accepts": [
-            "challengeEnabled",
             "coinId",
             "minConviction",
             "tradeEnabled"
@@ -10296,7 +10894,6 @@
         "expectedRevision"
       ],
       "input_optional": [
-        "arenaChallengeEnabled",
         "behavior",
         "brainPreset",
         "displayName",
@@ -10422,7 +11019,6 @@
           "closed": true,
           "accepts": [
             "agentId",
-            "arenaChallengeEnabled",
             "behavior",
             "brainPreset",
             "displayName",
@@ -10776,9 +11372,7 @@
         "request.expectedRevision",
         "request.slots",
         "request.slots[].agentId",
-        "request.slots[].challengeEnabled",
         "request.slots[].coinRules",
-        "request.slots[].coinRules[].challengeEnabled",
         "request.slots[].coinRules[].coinId",
         "request.slots[].coinRules[].minConviction",
         "request.slots[].coinRules[].tradeEnabled",
@@ -10812,7 +11406,6 @@
           "closed": true,
           "accepts": [
             "agentId",
-            "challengeEnabled",
             "coinRules",
             "conditions",
             "entryStrategy",
@@ -10826,7 +11419,6 @@
         "request.slots[].coinRules[]": {
           "closed": true,
           "accepts": [
-            "challengeEnabled",
             "coinId",
             "minConviction",
             "tradeEnabled"

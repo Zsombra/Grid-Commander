@@ -25,7 +25,7 @@ enums, required arguments and one module's semantics moved underneath it.
 |---|---|---|
 | → v5.0.0 | 110 | `conditionVerdicts` dropped from a closed plan schema; `entryStrategy` replaced two booleans on policy slots; `priceAction` became omissible |
 | → v5.1.0 | 110 | four crowd metrics added — `CROWD_PICK_LIVE`, `CROWD_UPBIAS_LIVE`, `CROWD_ACC_LIVE`, `CROWD_CAPT_LIVE`. Purely additive |
-| → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` |
+| → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` **and nested its rendered section bodies one level down** |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools
@@ -77,17 +77,61 @@ Do not read an unchanged 110 as evidence of anything.
 
 ## How much of this is actually verified
 
-- **43 tools were called live** and their responses recorded. Across all of
-  them, the declared `outputSchema` matched the observed response **exactly** —
-  zero keys declared-but-absent, zero returned-but-undeclared.
+- **58 tools were called live** and their responses recorded — up from 43, and
+  with **no failures at all**. Across all of them the declared `outputSchema`
+  matched the observed response **exactly**: zero keys declared-but-absent, zero
+  returned-but-undeclared.
 - That is why the remaining tools can be checked against their declared schema
   without being called, which matters because 27 of them change things.
 - Every observed response carried **both** encodings — `structuredContent` and a
   JSON text block — and they were byte-identical.
 
-One call failed:
+### What the probe had been unable to ask (fixed 2026-08-06)
 
-- `get_market_context` — {"code":"VALIDATION_ERROR","message":"Provide sessionId or primaryTimeframe"}
+Fifteen reads had never once been observed, and the reason was the probe's, not
+the account's. Two blind spots:
+
+**Enum arguments were treated as ids to harvest.** `interval`, `metric`,
+`gameType`, `strategyTimeframe`, `sourceKey` and `category` are not ids — they
+are enums the artifact **already held**, so the probe reported "no interval
+available on this account" for a value sitting in its own file. It now fills a
+required argument from the tool's own declared constants.
+
+That cascaded. `get_top_ranked_coins` was itself blocked on `interval` and
+`metric`; unblocking it produced the coin list, which is the only source of
+`ticker` — and four coin-scoped tools were waiting on that.
+
+**An either/or cannot be expressed in `required`.** `get_market_context` needs
+"sessionId **or** primaryTimeframe", so the schema marks neither required, the
+probe sent neither, and the call failed for the life of this file. The platform
+says which it wanted; the probe now reads the refusal and retries **once** with
+values the tool's own schema declares. Four tools were recovered this way, and
+the map's one standing failure is gone.
+
+The 52 still unobserved are honest: mostly account state (no Market Grid
+sessions, no open orders, no entry decisions to fetch by id) and composite
+`request` objects that must be constructed rather than harvested.
+
+### Why the unreachable ones are the dangerous ones
+
+`preview_strategy_report` is one of them — it needs a composite `coinSelection`,
+so it has **no observed shape**, so no conformance guard has anything to compare
+against. v9 renamed nothing at the top level and instead moved each rendered
+section's body one level down:
+
+```
+v5:  {sectionKey, title, text}
+v9:  {sectionKey, section: {title, text}}
+```
+
+The adapter read `s['text']` and turned the now-absent field into `''`. The
+preview page rendered five sections headed by their raw section key with no body
+at all — the whole point of that surface — and every gate stayed green, because
+the fixture still carried the v5 shape.
+
+**A tool the probe cannot call is a tool whose shape can change in silence.**
+That is the argument for teaching it to construct composite arguments, which is
+what the remaining 52 are mostly waiting on.
 
 `get_open_orders` failed with an `INTERNAL_ERROR` on the v3 probe and answers
 on v5. Recorded because it is the only thing that quietly *fixed* itself, and a

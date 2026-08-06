@@ -797,10 +797,35 @@ function mapReportPreview(payload: Record<string, unknown>) {
     const s = (entry ?? {}) as Record<string, unknown>;
     const sectionKey = typeof s['sectionKey'] === 'string' && s['sectionKey'] ? s['sectionKey'] : null;
     if (sectionKey === null) throw new StrategyPayloadError('sectionKey');
+
+    /**
+     * v9.0.0 moved the rendered body one level down.
+     *
+     *   v5: `{sectionKey, title, text}`
+     *   v9: `{sectionKey, section: {title, text}}`
+     *
+     * This read `s['text']` and `String(… ?? '')` turned the now-absent field
+     * into an empty string, so `/strategies/[id]/preview` rendered five
+     * sections headed by their raw section key with no body — the entire point
+     * of that page, gone, and nothing failed.
+     *
+     * Nothing caught it because `renderedSections` is still called
+     * `renderedSections`: the rename is *inside* the row, and
+     * `preview_strategy_report` is one of the tools the surface probe cannot
+     * call (it needs a composite `coinSelection`), so it has no observed shape
+     * for any guard to compare against. The tools the probe cannot reach are
+     * exactly where a silent shape change hides.
+     */
+    const nested = (s['section'] ?? null) as Record<string, unknown> | null;
+    if (nested === null || typeof nested !== 'object') throw new StrategyPayloadError('section');
+    // Named rather than defaulted. An absent body is a payload this product
+    // does not understand, and rendering it as blank is how the last one hid.
+    if (typeof nested['text'] !== 'string') throw new StrategyPayloadError('section.text');
     return {
       sectionKey,
-      title: typeof s['title'] === 'string' && s['title'] ? s['title'] : sectionKey,
-      text: String(s['text'] ?? ''),
+      title:
+        typeof nested['title'] === 'string' && nested['title'] ? nested['title'] : sectionKey,
+      text: nested['text'],
     };
   });
   // `budgetUsage` is a record of platform-named gauges. Names pass through
