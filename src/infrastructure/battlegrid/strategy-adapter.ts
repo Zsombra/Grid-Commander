@@ -345,13 +345,12 @@ export class McpStrategyAdapter implements StrategiesPort {
         // against. What is sent is the platform's own array, back whole: see
         // `StrategyDetailResult`'s `conditionsAsGiven`.
         //
-        // Not covered by `payload-conformance.test.ts`, and deliberately so:
-        // the probed record flattens this recursive union to the keys its outer
-        // level shares (`conditions[].definition` accepts only
-        // kind/members/n/op), so a clause's own `column` and `label` read as
-        // violations of a closed set the live schema does not actually close.
-        // `apply_strategy_plan` already sends these same objects and is
-        // accepted. A conformance check here would fail against correct code.
+        // Both shapes this argument carries — a strategy's own conditions and a
+        // draft composed beside them — are held against the record by
+        // `payload-conformance.test.ts`. They were exempt while the probe's walk
+        // flattened this nested union to its outer branch and read a clause's
+        // `column` as a violation of a set the platform does not close; the walk
+        // follows nested unions now (`the-record-flattens-the-condition-union`).
         ...(params.conditions !== undefined && params.conditions.length > 0
           ? { conditions: [...params.conditions] }
           : {}),
