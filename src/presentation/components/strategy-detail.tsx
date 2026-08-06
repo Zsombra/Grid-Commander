@@ -189,7 +189,7 @@ function Threshold({ label, value }: { label: string; value: number | null }) {
  *
  * The shape belongs to the signal — a threshold, a lookback, something not yet
  * invented — so this names keys and values rather than interpreting them. An
- * interpretation would be a second opinion on 82 signals' schemas.
+ * interpretation would be a second opinion on every signal's schema.
  */
 function describeParams(params: Readonly<Record<string, unknown>>): string {
   const entries = Object.entries(params);

@@ -175,7 +175,8 @@ export type SectionTemplate =
 /**
  * One signal, and how much it counts.
  *
- * A live strategy carries 82 of these. `allocation` is its weight, `required`
+ * A live strategy carries one per platform signal — 84 on v9.0.0, and the
+ * number is the platform's to change. `allocation` is its weight, `required`
  * means the setup does not fire without it, and `params` is the signal's own
  * configuration — a threshold, a lookback — whose shape belongs to the signal
  * rather than to us. Carried opaque on purpose: inventing a union over 82
@@ -231,8 +232,8 @@ export interface StrategyThresholds {
 /**
  * The signals that must fire for the setup to trigger at all.
  *
- * Computed here rather than in a view: it is the difference between "82 signals"
- * and "82 signals, 3 of which are mandatory", and a surface that counted it
+ * Computed here rather than in a view: it is the difference between "every signal"
+ * and "every signal, 3 of which are mandatory", and a surface that counted it
  * itself would be a second implementation of a rule.
  */
 export function requiredSignals(detail: StrategyDetail): readonly SignalRule[] {

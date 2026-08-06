@@ -13,7 +13,7 @@ import {
  * The layer above the signals, shown as the structure it is.
  *
  * Signals produce a score; conditions decide direction. A strategy page that
- * lists 82 signal rules and none of its conditions describes a strategy
+ * lists every signal rule and none of its conditions describes a strategy
  * wrongly rather than incompletely — the reader sees everything that scores
  * and nothing that calls.
  *

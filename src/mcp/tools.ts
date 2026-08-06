@@ -193,7 +193,7 @@ export const TOOLS: readonly ToolDefinition[] = [
   {
     name: 'read_signal_library',
     description:
-      'All 82 signals a strategy rule can reference, each with what it detects and when it fires.',
+      'Every signal a strategy rule can reference, each with what it detects and when it fires.',
     useCase: 'readSignalLibrary',
     input: {},
     call: (app, who) => app.readSignalLibrary.execute(who),
@@ -210,7 +210,9 @@ export const TOOLS: readonly ToolDefinition[] = [
   },
   {
     name: 'read_metric_index',
-    description: 'The 75 metrics a report column can be built from, across ten families.',
+    description:
+      'Every metric a report column can be built from, grouped into the families the ' +
+      'platform defines.',
     useCase: 'readMetricIndex',
     input: {},
     call: (app, who) => app.readMetricIndex.execute(who),
@@ -228,7 +230,8 @@ export const TOOLS: readonly ToolDefinition[] = [
     description:
       'What a set of signal weightings would score, and whether it would cross a gate. ' +
       "Stateless — saves nothing. Verified to reproduce the platform's own score when fed a " +
-      "real evaluation's signals unchanged. At most 20 signals; 21 is refused, not truncated.",
+      "real evaluation's signals unchanged. Over the schema's limit the call is refused " +
+      'rather than truncated — the schema states the limit itself.',
     useCase: 'simulateAggregate',
     input: {
       signals: {
