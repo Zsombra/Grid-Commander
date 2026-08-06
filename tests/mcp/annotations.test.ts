@@ -64,4 +64,40 @@ describe('what a client is told each tool does', () => {
     expect(source, 'annotations are computed per tool').toContain('annotationsFor(t)');
     expect(source, 'and read off the declaration').toMatch(/readOnlyHint:\s*tool\.writes/);
   });
+
+  it('states no count of things the platform owns', () => {
+    /**
+     * A tool description is a **static string served to a language model**,
+     * which will repeat it to an operator with the tool's own authority — while
+     * the tool itself returns the live list.
+     *
+     * Two of them counted, and both went wrong without anything failing:
+     * "All 82 signals a strategy rule can reference" and "The 75 metrics a
+     * report column can be built from". Counted live against v9.0.0 on
+     * 2026-08-06 by sweeping every category: **84 and 84**. True when written,
+     * false since, and nothing checks a sentence.
+     *
+     * This repository's loudest lesson is that BattleGrid's tool count never
+     * moves while everything under it does — four deployments, 110 tools every
+     * time, and a section of the surface map called "The count is not the
+     * check". Then we wrote counts of our own into what we serve.
+     *
+     * The list is the count.
+     *
+     * It caught a third the moment it ran: `simulate_aggregate` said "At most
+     * 20 signals" while its own input schema already declared `maxItems: 20`.
+     * Two copies of one number, and a client reads the schema. **A limit
+     * belongs in the schema; a description says what happens when you exceed
+     * it** — which for that tool is "refused rather than truncated", the part
+     * the schema cannot express and the only part worth writing.
+     */
+    const COUNTED = /\b\d+\s+(signals?|metrics?|tools?|modules?|families|categories|strategies|agents)\b/i;
+    const offenders = TOOLS.filter((t) => COUNTED.test(t.description)).map(
+      (t) => `${t.name}: "${COUNTED.exec(t.description)?.[0]}"`,
+    );
+    expect(
+      offenders,
+      'a description that counts is true the day it is written and silently wrong after',
+    ).toEqual([]);
+  });
 });

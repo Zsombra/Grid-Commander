@@ -134,8 +134,8 @@ directly. It would lose everything this product knows:
 | `read_evaluation` | one scorecard: every signal consulted, and what the decision cost |
 | `read_deployments` | where it is actually scanning |
 | `list_strategies` / `read_strategy` | the library, and one strategy |
-| `read_signal_library` / `read_signal` | the 82 signals a rule can reference |
-| `read_metric_index` / `read_metric` | the 75 metrics a column can be built from |
+| `read_signal_library` / `read_signal` | every signal a rule can reference |
+| `read_metric_index` / `read_metric` | every metric a column can be built from |
 | `simulate_aggregate` | what a re-weighting would score, without saving it |
 | `read_field` / `read_competitor` | the field, and one rival's whole public record |
 | `watch_arena` | Market Grid sessions |
