@@ -275,8 +275,32 @@ export type VocabularyResult =
   | { readonly kind: 'vocabulary'; readonly categories: readonly VocabularyCategory[] }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
+/**
+ * The ceilings a preview runs under, as the platform publishes them.
+ *
+ * New in BattleGrid v9.0.0. `preview_strategy_report` used to carry its own
+ * limits and now says they are "served by discovery, not by this result" — so
+ * they arrive on `list_strategy_vocabulary`, in the same payload the section
+ * templates come from.
+ *
+ * `null` when the platform does not publish them. Not defaulted: a ceiling
+ * this product invented would be shown to an author as the platform's, and a
+ * guessed limit is worse than an absent one — they would compose against it.
+ */
+export interface PreviewLimits {
+  /** How large a rendered preview may be before the platform refuses it. */
+  readonly maxResultBytes: number;
+  /** How long the platform will spend rendering one. */
+  readonly deadlineMs: number;
+}
+
 export type VocabularyTemplatesResult =
-  | { readonly kind: 'templates'; readonly templates: readonly SectionTemplate[] }
+  | {
+      readonly kind: 'templates';
+      readonly templates: readonly SectionTemplate[];
+      /** Free — the same payload the templates came from already carries it. */
+      readonly limits: PreviewLimits | null;
+    }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
@@ -502,6 +526,13 @@ export type SectionOptionsResult =
       readonly templates: readonly SectionTemplate[];
       /** Category metadata for group headers. */
       readonly categories: readonly VocabularyCategory[];
+      /**
+       * What a preview of this composition may cost before the platform
+       * refuses it. Shown while composing, which is when it can change a
+       * decision — by the time a preview is refused, the refusal says so
+       * itself in the platform's own words.
+       */
+      readonly limits: PreviewLimits | null;
     }
   | { readonly kind: 'strategy-missing' }
   | { readonly kind: 'strategy-unreadable' }
