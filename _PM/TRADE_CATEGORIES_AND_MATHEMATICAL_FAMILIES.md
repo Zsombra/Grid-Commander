@@ -7,11 +7,13 @@ own data says about which of it works, and a benchmark to optimise from.
 Part D came from a read-only tool call made during this research; nothing is
 inferred from declared schemas alone. Reproduction steps are in the appendix.
 
-> **Surface note.** `docs/BATTLEGRID_SURFACE_MAP.md` records `v9.0.0`. The live
-> server answers `v11.0.0`. Two majors have shipped underneath the committed
-> artifacts, and this document is written against the live server, not the
-> recorded one. Differences found are listed in §3.5. Filed as
-> `the-surface-map-is-two-majors-stale`.
+> **Surface note.** The recorded surface (`docs/battlegrid-mcp-surface.json`) is
+> current — it records `v11.0.0` and the freshness gate passes against the live
+> server. But the probe records payload **shapes**, not values, so the authoring
+> vocabulary's actual contents — the transform ids, the budget numbers, which
+> timeframes are enabled — appear in no committed artifact. Several facts this
+> document relies on are therefore unrecorded rather than stale. Listed in §3.5,
+> filed as `the-surface-map-is-two-majors-stale`.
 
 ---
 
@@ -279,20 +281,42 @@ that default is the right one.
 distinctTimeframes 8 · **strategyConditions 16 · conditionClauses 16** ·
 estimatedTokens 16,000. Preview execution: 256 KB, 15 s.
 
-### 3.5 What moved between the recorded v9 and the live v11
+### 3.5 What is unrecorded (and why the freshness gate cannot see it)
 
-| Area | Recorded (v9) | Live (v11) |
-|---|---|---|
-| transforms | 10 documented | **16** — adds `efficiency`, `maxShare`, `crossDetect` |
-| budgets | 4 gauges | **6** — adds `strategyConditions` 16, `conditionClauses` 16 |
-| enabled timeframes | implied 13 (schema enum) | **6 enabled**: 1m 5m 15m 1h 4h 1d |
-| `rel: regime` | documented as a timeframe ref | **resolves to `null` for every anchor** — currently inert |
-| `BB_PCT_B` family | volatility | **structure** |
-| metric count | 75 | **84** |
+`docs/battlegrid-mcp-surface.json` records `v11.0.0` and matches the live
+server. The problem is not staleness — it is that `tools/probe_mcp_surface.py`
+records response **shapes** rather than values, deliberately, so that account
+data never lands in a committed artifact. For `list_strategy_vocabulary` that
+loses the contract, because the vocabulary payload *is* values:
 
-The `rel: regime` finding matters: any column written against the regime
-timeframe reference resolves to nothing today. Use an absolute timeframe
-instead.
+| Fact used in this document | Recorded as |
+|---|---|
+| 16 transform ids, incl. `efficiency`, `maxShare` | nothing — absent from `docs/` entirely |
+| `strategyConditions: 16`, `conditionClauses: 16` | `"int"` |
+| only **6 of 13** enum timeframes enabled (`1m 5m 15m 1h 4h 1d`) | nothing |
+| `rel: regime` resolves to `null` for every anchor | nothing |
+| per-metric legal `transformIds` | an untyped list shape |
+
+Three of these can produce silently wrong output rather than a refusal:
+
+1. **`rel: regime` is inert.** Any column written against the regime timeframe
+   reference resolves to nothing on every anchor — it renders empty rather than
+   failing. Use an absolute timeframe.
+2. **The condition budget is 4× tighter than the schema declares** — 16 against
+   `maxItems: 64`. `docs/REPORT_TABLE_GRAMMAR.md` lists four budget gauges;
+   there are six.
+3. **Seven of the enum's timeframes are not enabled.** A strategy authored from
+   the schema enum can name one the platform refuses.
+
+The freshness gate compares `serverInfo.version` and nothing else, so a
+deployment that changes a budget number, retires a timeframe or adds a transform
+while leaving the version alone passes green.
+
+Two smaller inconsistencies, same family: `docs/BATTLEGRID_SURFACE_MAP.md` line
+3 still says "against `battlegrid v9.0.0`" beside a JSON file that says 11.0.0,
+and `docs/battlegrid-mcp-capabilities.json` carries `serverInfo: 9.0.0` while
+its schemas already hold v11-era content. The data was regenerated; the
+narrative was not.
 
 ---
 
@@ -1289,9 +1313,12 @@ acting on, not the individual p-values, which do not exist.
   or ~16 days at 4h cannot currently be checked.
 - **`rel: regime` is inert.** It resolves to `null` for every anchor, so
   regime-timeframe columns silently produce nothing. Use absolute timeframes.
-- **The committed surface artifacts are two majors stale** (v9 recorded, v11
-  live). Filed as `the-surface-map-is-two-majors-stale`; regenerate with
-  `tools/probe_mcp_surface.py` before relying on `docs/`.
+- **The authoring vocabulary is not recorded anywhere.** The surface artifact is
+  current (v11.0.0, freshness gate green) but records payload *shapes*, so the
+  transform ids, budget numbers and enabled-timeframe list this document relies
+  on exist in no committed file — they were read live and cannot be re-checked
+  from `docs/`. Filed as `the-surface-map-is-two-majors-stale` (kept under its
+  original id; the item's own headline was corrected).
 
 **What I would test next, in order:**
 

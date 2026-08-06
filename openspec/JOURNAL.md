@@ -7,17 +7,30 @@ categories mapped onto a 16-operator mathematical algebra, with a benchmark
 specification. Probed live, read-only, against `battlegrid v11.0.0`. One backlog
 item filed: `the-surface-map-is-two-majors-stale` (p1).
 
-**The server is on v11.0.0. Everything in `docs/` says v9.0.0.** Tool count still
-110, nothing added, removed or reclassified — the exact failure mode the surface
-map warns about in its own words. What moved is inside the payloads: six
-transforms the product does not know exist (`efficiency`, `maxShare`,
-`crossDetect` among them), two new budget gauges that are **4× tighter** than the
-compile schema declares (`strategyConditions: 16` against `maxItems: 64`), only
-**6 of 13** enum timeframes actually enabled, and `rel: regime` resolving to
-`null` for every anchor — a column that renders empty rather than a call that
-fails, which is the same shape as the v9 section-body defect. The freshness gate
-is not at fault; it skips loudly without a key. CI simply has no path that
-reaches the live server, which is why two deployments went unnoticed.
+**Filed a surface finding, then had to correct its headline — worth recording
+because the correction is the more interesting version.** The item went in as
+"the recorded surface is two majors stale". Then I ran the freshness gate with
+the operator's key, and it passed: `recorded battlegrid 11.0.0 · live battlegrid
+11.0.0`. `surface.json` is current. I had read the v9 prose header in
+`BATTLEGRID_SURFACE_MAP.md` and the v9 `serverInfo` in `capabilities.json` and
+generalised from the narrative to the data, without checking the data.
+
+The real finding is narrower and sharper. `probe_mcp_surface.py` records payload
+**shapes**, deliberately — account data must not be committed, and that rule is
+right. But for `list_strategy_vocabulary` the payload *is* values, so the
+authoring contract is lost: `budgets` is recorded as `{"strategyConditions":
+"int"}` where the platform answers `16` — **4× tighter** than the `maxItems: 64`
+the compile schema declares. Six transforms exist in no committed file at all
+(`grep -r efficiency docs/` finds nothing). Only **6 of 13** enum timeframes are
+enabled. `rel: regime` resolves to `null` for every anchor — a column that
+renders empty rather than a call that fails, the same shape as the v9
+section-body defect.
+
+And the gate cannot see any of it: it compares `serverInfo.version` and nothing
+more. A deployment that changes a budget number or retires a timeframe while
+leaving the version alone passes green. The vocabulary is the one payload that
+earns a carve-out from the shape-only rule — platform-owned, account-independent,
+small, and nobody's private data.
 
 **The finding that matters most is not about the surface.** Across 715 pooled
 realised trades from 20 public agents, the population win rate is **29.8%**. An
