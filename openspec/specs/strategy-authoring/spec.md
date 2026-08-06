@@ -485,21 +485,34 @@ acted from with the platform's reason.
 The product SHALL let a user preview a strategy's current composition
 without saving or changing anything: the rendered report text per section
 as an agent would receive it over a bounded live coin selection the user
-chooses, the platform's estimated token count with the counting model
-named, budget usage as used-against-cap for every gauge the platform
-declares, and — derived from the same composition — which signals the
-report can feed, with the platform's default allocation for each, and
-which it cannot. The preview reads the strategy fresh; a platform refusal
-SHALL be shown in the platform's words, and an unreadable strategy SHALL
-never render as an empty preview.
+chooses, budget usage as used-against-cap for every gauge the platform
+declares — **the estimated token count among them, since v9.0.0 publishes it
+that way** — with the counting model named, and — derived from the same
+composition — which signals the report can feed, with the platform's default
+allocation for each, and which it cannot. The preview reads the strategy fresh;
+a platform refusal SHALL be shown in the platform's words, and an unreadable
+strategy SHALL never render as an empty preview.
+
+**A cost SHALL be shown against its ceiling.** A bare figure cannot answer the
+question an author actually has, which is not "how large is this" but "how much
+room is left". Grid-Commander SHALL NOT reconstruct a figure the platform has
+stopped publishing, nor report as unavailable a figure it is displaying
+elsewhere on the same surface.
 
 #### Scenario: The agent's-eye report
 - **GIVEN** a strategy with sections composed
 - **WHEN** the user previews it over the top ranked coins
 - **THEN** each section renders its title and the platform's actual report
   text
-- **AND** the token estimate and its counting model are shown
-- **AND** each budget gauge shows used against its cap
+- **AND** each budget gauge shows used against its cap, the token estimate
+  included
+- **AND** the model that did the counting is named as a note on the measurement
+
+#### Scenario: A figure the platform no longer publishes
+- **WHEN** the platform stops returning a figure it once returned separately
+- **THEN** no surface claims that figure is unavailable while showing it in
+  another form
+- **AND** it is not reconstructed from the form that replaced it
 
 #### Scenario: Which signals the composition feeds
 - **WHEN** the preview renders
@@ -515,11 +528,6 @@ never render as an empty preview.
 - **GIVEN** the platform refuses the composed draft
 - **WHEN** the preview runs
 - **THEN** the refusal is shown in the platform's words on the same page
-
-#### Scenario: An unreadable strategy is not an empty preview
-- **GIVEN** the strategy cannot be read
-- **WHEN** the user opens the preview
-- **THEN** the page says the strategy could not be read and why
 
 ### Requirement: A Custom Table Is Carried Whole
 

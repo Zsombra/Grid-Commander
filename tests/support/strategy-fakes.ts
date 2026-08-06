@@ -495,11 +495,12 @@ export function aReportPreview(overrides: Partial<ReportPreview> = {}): ReportPr
         text: 'RSI(14) on 1h closes. rsi14: latest value.',
       },
     ],
-    estimatedTokenCount: 1393,
     tokenCountModel: 'o200k_base',
     budget: [
       { name: 'sections', used: 5, cap: 32 },
       { name: 'distinctTimeframes', used: 3, cap: 8 },
+      // v9 publishes the token estimate here rather than as its own field.
+      { name: 'estimatedTokens', used: 1767, cap: 16000 },
     ],
     ...overrides,
   };

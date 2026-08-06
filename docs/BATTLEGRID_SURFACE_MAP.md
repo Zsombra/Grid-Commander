@@ -1,7 +1,7 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v5.1.0`**
-on 2026-08-04. Regenerate after any BattleGrid deployment: the server says its
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v9.0.0`**
+on 2026-08-06. Regenerate after any BattleGrid deployment: the server says its
 own list goes stale, and this file inherits that.
 
 **110 tools** · 83 read ·
@@ -17,14 +17,56 @@ There are currently no unannotated tools.
 ## The count is not the check
 
 This file was written against **`battlegrid v3.0.0`**. BattleGrid has deployed
-three times since — to v5.0.0, then to **v5.1.0** hours later — and the tool
-count was **110 every single time**, while enums, required arguments and one
-module's semantics moved underneath it.
+four times since — v5.0.0, v5.1.0 hours later, and then **straight to v9.0.0**,
+skipping four majors — and the tool count was **110 every single time**, while
+enums, required arguments and one module's semantics moved underneath it.
 
 | deployment | tools | what actually moved |
 |---|---|---|
 | → v5.0.0 | 110 | `conditionVerdicts` dropped from a closed plan schema; `entryStrategy` replaced two booleans on policy slots; `priceAction` became omissible |
 | → v5.1.0 | 110 | four crowd metrics added — `CROWD_PICK_LIVE`, `CROWD_UPBIAS_LIVE`, `CROWD_ACC_LIVE`, `CROWD_CAPT_LIVE`. Purely additive |
+| → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` |
+
+**v9 arrived as an outage.** The platform 502'd for most of a day, came back on
+a version four majors along, and kept flapping afterwards — individual tools
+answering `HTTP 200` with `isError: true` and `INTERNAL_ERROR` inside while
+their neighbours were fine. Read the envelope, not the status.
+
+### What v9.0.0 brought
+
+**Added — a perp/spot flow module, whole:**
+
+| where | what |
+|---|---|
+| context source | `includePerpSpotFlow` |
+| market-context module | `perpSpotFlow` (22 modules → 23) |
+| signal module | `FLOW_DIVERGENCE` |
+| signals | `flow_perp_spot_bull_divergence`, `flow_perp_spot_bear_divergence` |
+| metrics | `PERP_SPOT_FLOW`, `PERP_SPOT_STRENGTH`, `PERP_SPOT_CONFIRMS`, `SPOT_CVD` |
+
+Also `BB_WIDTH_PCT` and `RVOL` as metrics, and two catalog bounds —
+`agentMinConfidenceFloorPercent`, `agentMinTradeConvictionFloorPercent`.
+
+**Removed — and this is the one that could have hurt:**
+
+- **`VOLUME_RATIO`** is gone from every metric enum: column inputs, column
+  metrics, construction hints, compile, apply, preview, rule derivation. A
+  product that had written it into source would now compose columns the platform
+  refuses. Nothing here names it — vocabulary is read at runtime and
+  `tests/strategy/structure.test.ts` forbids writing it into source, which is
+  that rule paying for itself against a breaking removal.
+- **`estimatedTokenCount`** is gone from `preview_strategy_report`. Not deleted
+  — *moved*, into `budgetUsage` as `estimatedTokens` used-against-cap, which the
+  tool's own description now says. Grid-Commander kept reading the old key and
+  got `null` on every preview, so the preview page reported "Token estimate
+  unavailable" directly above `estimatedTokens: 1767 of 16000`. Fixed by
+  `the-token-estimate-moved-into-the-budget`.
+- `preview_strategy_report`'s execution limits (result byte cap, deadline) moved
+  to discovery: `list_strategy_vocabulary` gained `previewExecutionLimits`.
+
+**Unchanged:** no tool added, removed, or reclassified. 5 prompts, 3 resources,
+0 resource templates, protocol `2025-06-18`. 23 tools' schemas moved; 2
+descriptions and the server instructions were reworded.
 
 `docs/battlegrid-mcp-surface.json` now records the server version it was taken
 from, `tests/live/surface-freshness.test.ts` fails when that disagrees with the

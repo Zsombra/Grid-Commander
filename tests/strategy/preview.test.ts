@@ -14,12 +14,15 @@ const LIVE_PREVIEW = {
       text: 'Schema: 1h candles. last: the last traded price (live, not a bar close).',
     },
   ],
-  estimatedTokenCount: 1393,
+  // The v9.0.0 payload. `estimatedTokenCount` is gone as a standalone field —
+  // it is `budgetUsage.estimatedTokens` now, used against cap. Observed live on
+  // 2026-08-06: `~null tokens (o200k_base) | gauges … estimatedTokens 1767/16000`.
   tokenCountModel: 'o200k_base',
   budgetUsage: {
     sections: { used: 5, cap: 32 },
     sectionColumns: { used: 0, cap: 32 },
     distinctTimeframes: { used: 3, cap: 8 },
+    estimatedTokens: { used: 1767, cap: 16000 },
   },
   conditionOutcomes: [],
 };
@@ -70,14 +73,20 @@ describe('mapping the preview payload', () => {
     if (outcome.kind !== 'preview') return;
     expect(outcome.preview.sections[0]?.title).toBe('Price Action');
     expect(outcome.preview.sections[0]?.text).toContain('the last traded price');
-    expect(outcome.preview.estimatedTokenCount).toBe(1393);
     expect(outcome.preview.tokenCountModel).toBe('o200k_base');
-    // Gauge names pass through as the platform names them — not enumerated.
+    // Gauge names pass through as the platform names them — not enumerated,
+    // which is why `estimatedTokens` needed no mapper change when v9 moved it
+    // here from a field of its own.
     expect(outcome.preview.budget).toEqual([
       { name: 'sections', used: 5, cap: 32 },
       { name: 'sectionColumns', used: 0, cap: 32 },
       { name: 'distinctTimeframes', used: 3, cap: 8 },
+      { name: 'estimatedTokens', used: 1767, cap: 16000 },
     ]);
+    // And the cost is a pair, never a bare number: "how much room is left" is
+    // the question, and 1767 alone cannot answer it.
+    const tokens = outcome.preview.budget.find((g) => g.name === 'estimatedTokens');
+    expect(tokens?.cap).toBe(16000);
     expect(calls[0]?.args).toMatchObject({
       timeframe: '1h',
       regimeAutoDerive: true,
