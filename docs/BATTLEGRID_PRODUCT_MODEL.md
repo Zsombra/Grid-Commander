@@ -52,21 +52,32 @@ user deploys an **already-configured agent** to play the prediction market —
 the agent itself chooses the coins. Distinct from radar; the two "work
 separate".
 
-*Grid-Commander coverage: none. Tool cluster:*
-`list_market_grid_sessions` · `get_market_grid_session` ·
-`get_market_grid_player_grid` · `get_market_grid_results` ·
-`check_market_grid_submission` · `submit_market_grid` / `update_market_grid` /
+*Grid-Commander coverage: the read half (2026-08-06). `/arena` lists every
+session with its schedule, coin pool, entry fee and player counts, states the
+game's own rules from the presets, and opens one session at `/arena/[id]` with
+its results as a state. Playing is not offered: entering stakes a real fee,
+observed at 10 per session. Tool cluster:*
+`list_market_grid_sessions` ✓ · `get_market_grid_session` ✓ ·
+`check_market_grid_submission` ✓ · `get_market_grid_results` ✓ ·
+`list_game_presets` ✓ · `get_market_grid_player_grid` (answers a 500 for "not
+played", never called) · `submit_market_grid` / `update_market_grid` /
 `random_submit_market_grid` / `submit_agent_grid` / `generate_agent_grid`
-(writes) · `list_game_presets` · `get_leaderboard`.
+(writes, unbuilt) · `get_leaderboard` (read by the explorer, not game-scoped).
 
 ## What this changes about the coverage picture
 
-The "87 unused tools" are not a monolith: two of them are **entire modules
-Grid-Commander does not model** (Radar, Market Grid), and the sharpest open
-question falls out of module 3: Grid-Commander can author an agent end to end
-and has no deployment surface — and a bound agent does **not** act without
+The "87 unused tools" are not a monolith: two of them were **entire modules
+Grid-Commander did not model** (Radar, Market Grid), and the sharpest open
+question fell out of module 3: Grid-Commander can author an agent end to end
+and had no deployment surface — and a bound agent does **not** act without
 a radar deployment (answered live the same day; see Confidence notes). The
-missing surface is `the-app-authors-agents-it-cannot-deploy` (P2).
+missing surface was `the-app-authors-agents-it-cannot-deploy` (P2).
+
+Both have since been modelled on their read side, and both stop at the same
+line: deploy and undeploy went through the confirmation ceremony
+(`deploy-and-undeploy-are-offered`, 2026-07-31), and Market Grid did not —
+entering a session stakes money, so the arena watches and does not play
+(`the-game-is-legible-before-it-is-played`, 2026-08-06).
 
 ## Confidence notes
 

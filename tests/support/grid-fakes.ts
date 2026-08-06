@@ -1,5 +1,7 @@
 import type {
   ArenaListResult,
+  GamePreset,
+  GameRulesResult,
   GridDetailResult,
   GridResultsOutcome,
   GridSessionDetail,
@@ -8,12 +10,20 @@ import type {
   MarketGridPort,
 } from '@/ports/market-grid.js';
 
-/** Shaped from the live `list_market_grid_sessions` entry of 2026-08-01. */
+/**
+ * Shaped from the live `list_market_grid_sessions` entry of 2026-08-01, with
+ * the price the 2026-08-06 re-probe recorded: `entryFee: 10` on every session.
+ */
 export function aGridSession(over: Partial<GridSessionSummary> = {}): GridSessionSummary {
   return {
     id: 'ms-1',
     name: 'CRYPTO WARS · 1H',
     coinTickers: ['BTC', 'ETH', 'HYPE'],
+    entryFee: 10,
+    prizePool: 40,
+    minimumPlayers: 4,
+    playersNeeded: 1,
+    timeRangeKey: '1H',
     ...over,
   };
 }
@@ -31,11 +41,36 @@ export function aGridDetail(over: Partial<GridSessionDetail> = {}): GridSessionD
   };
 }
 
+/** Shaped from the live `list_game_presets` entry of 2026-08-06. */
+export function aGamePreset(over: Partial<GamePreset> = {}): GamePreset {
+  return {
+    id: 'p-crypto-wars',
+    name: 'CRYPTO WARS',
+    gameType: 'MARKET_GRID',
+    timeRangeKey: '1H',
+    gridRows: 3,
+    gridCols: 3,
+    coinsPerGame: 9,
+    entryFee: 10,
+    changeMultiplier: 100,
+    captainMultiplier: 2,
+    captainWrongPenaltyMultiplier: 2,
+    wrongPenaltyMultiplier: 1,
+    jackpotEnabled: true,
+    perfectGameNeedsEveryCall: true,
+    minimumPlayers: 4,
+    maxPlayers: 100,
+    cancelsBelowMinimum: true,
+    ...over,
+  };
+}
+
 export class FakeMarketGridPort implements MarketGridPort {
   list: ArenaListResult = { kind: 'sessions', sessions: [] };
   details = new Map<string, GridSessionDetail>();
   submitted = new Set<string>();
   outcome: GridResultsOutcome = { kind: 'not-settled' };
+  rules: GameRulesResult = { kind: 'rules', presets: [aGamePreset()] };
 
   /** Stage one session with its detail in a single call. */
   stage(summary: GridSessionSummary, detail = aGridDetail({ id: summary.id, name: summary.name })) {
@@ -46,6 +81,10 @@ export class FakeMarketGridPort implements MarketGridPort {
 
   async listSessions(): Promise<ArenaListResult> {
     return this.list;
+  }
+
+  async gameRules(): Promise<GameRulesResult> {
+    return this.rules;
   }
 
   /**

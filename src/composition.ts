@@ -65,6 +65,8 @@ import {
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
 import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from './application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from './application/use-cases/open-grid-session.query.js';
 import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from './application/use-cases/read-competitor.query.js';
 import { ReadEvaluationQuery } from './application/use-cases/read-evaluation.query.js';
@@ -336,6 +338,11 @@ export function app(cookies: CookieStore) {
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
 
     watchArena: new WatchArenaQuery(i.grid),
+    // The rulebook and one session, read apart from the arena list: the first
+    // is one unscoped call, the second is three calls about a session the user
+    // asked for, and neither belongs in a fan-out over fifty rows.
+    readGameRules: new ReadGameRulesQuery(i.grid),
+    openGridSession: new OpenGridSessionQuery(i.grid),
     readField: new ReadFieldQuery(i.explorer),
     readCompetitor: new ReadCompetitorQuery(i.explorer),
     readEvaluation: new ReadEvaluationQuery(i.explorer),
