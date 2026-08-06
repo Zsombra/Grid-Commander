@@ -1,4 +1,4 @@
-import { deploymentsFor } from '@/domain/agent/deployment.js';
+import { deploymentsNaming } from '@/domain/agent/deployment.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import { confirmationTarget, CONFIRMATION_TTL_SECONDS } from '@/domain/capability/confirmation.js';
 import type { Clock } from '@/ports/clock.js';
@@ -197,7 +197,9 @@ export class DescribeUndeployQuery {
     if (!existing) {
       return { kind: 'refused', reason: `${req.coinId} carries no deployment to remove.` };
     }
-    const mine = deploymentsFor([existing], req.agentId);
+    // Membership, not standing: an archived agent still holds its slot and
+    // undeploying it is still an act with something to remove.
+    const mine = deploymentsNaming([existing], req.agentId);
     if (mine.length === 0) {
       return {
         kind: 'refused',

@@ -69,12 +69,45 @@ export interface AgentPermissions {
  * `strategyRevision` is the revision of the strategy at the moment its
  * configuration was materialized onto this agent — not the strategy's current
  * revision. The two diverging is meaningful, not a bug.
+ *
+ * `state` is kept as the platform's own word rather than narrowed to a union.
+ * BattleGrid declares two — `BOUND` and `ORPHANED` — and this product has been
+ * wrong before about a vocabulary being closed; a third value must reach a
+ * surface as itself. `mapAgent` writes `UNKNOWN` when the payload carried no
+ * state at all, which is a third thing again and also not a claim.
  */
 export interface StrategyBinding {
   readonly strategyId: string;
   readonly strategyName: string;
   readonly strategyRevision: number;
   readonly state: string;
+}
+
+/**
+ * The binding BattleGrid says is intact.
+ *
+ * A predicate rather than a comparison at each surface, for the reason
+ * `isEditable` is one: the platform's vocabulary belongs in one place, and the
+ * roster spent the life of the product hard-coding the *word* "Bound" over a
+ * field it never read.
+ */
+export function isBound(binding: StrategyBinding): boolean {
+  return binding.state === 'BOUND';
+}
+
+/**
+ * The binding BattleGrid says is broken.
+ *
+ * Observed live 2026-08-06 on the second account: `Volatilis` reads
+ * `strategy=Volatilis — imported (ORPHANED)`. What the state means
+ * operationally is **not established** — whether the strategy was archived,
+ * deleted or forked away, whether the agent goes on running the configuration
+ * it materialized, and whether rebinding is the remedy. Nothing in this
+ * product may assert any of that; a surface may say only that the strategy can
+ * no longer be read, and name the revision the configuration came from.
+ */
+export function isOrphaned(binding: StrategyBinding): boolean {
+  return binding.state === 'ORPHANED';
 }
 
 /** Nothing the platform owns is editable, whatever else is true. */

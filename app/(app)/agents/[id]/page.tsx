@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
+import { BindingInheritance, BindingSummary } from '@/presentation/components/binding.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { Stoppages } from '@/presentation/components/stoppages.js';
@@ -54,7 +55,19 @@ export default async function AgentPage({
   }
 
   const [radar, stoppages, exposure] = await Promise.all([
-    app.readDeployments.execute({ ...user.authority, agentId: agent.id }),
+    /**
+     * The agent goes to the radar read, not just its id: the radar reports a
+     * slot the same way whether the agent in it is active or archived, so
+     * standing cannot be computed without the lifecycle. The rest of the
+     * roster goes too — it is what answers whether anyone *else* in those
+     * slots is still active, which is what makes "deployed and unscanned"
+     * sayable about a market.
+     */
+    app.readDeployments.execute({
+      ...user.authority,
+      agent,
+      roster: roster.kind === 'agents' ? roster.agents : [],
+    }),
     app.readStoppages.execute({ ...user.authority, agentId: agent.id }),
     app.readExposure.execute({ ...user.authority, agentId: agent.id }),
   ]);
@@ -100,13 +113,23 @@ export default async function AgentPage({
         </p>
       )}
 
+      {/**
+       * The binding, as BattleGrid states it.
+       *
+       * The heading read "Inherited from its strategy" over a paragraph saying
+       * this agent's context, rules, prose and timeframe "come from there" —
+       * asserted for every binding, including one the platform reports as
+       * ORPHANED, whose strategy cannot be read at all. The inheritance
+       * sentence now belongs to the bound case, which is the only case it is
+       * true of.
+       */}
       <section className="space-y-1">
-        <h2 className="font-medium">Inherited from its strategy</h2>
+        <h2 className="font-medium">Its strategy binding</h2>
         <p className="text-sm">
-          {agent.binding.strategyName} at revision {agent.binding.strategyRevision}. Its
-          context sources, signal rules, prose and timeframe come from there and are
-          changed by editing that strategy, or by rebinding — which replaces all of
-          them.
+          <BindingSummary binding={agent.binding} />
+        </p>
+        <p className="text-sm">
+          <BindingInheritance binding={agent.binding} />
         </p>
       </section>
 
@@ -138,6 +161,12 @@ export default async function AgentPage({
        * ACTIVE agents, zero positions, absent from every slot, and nothing on
        * this page said so. Three states, rendered distinctly — an unreadable
        * radar must never dress up as "not deployed".
+       *
+       * The lifecycle join arrived after the second account proved the
+       * converse: `SP500@15m` holding only `Volatilis[ARCHIVED]` rendered here
+       * as "On duty: scanning SP500 on the 15m radar." The standing now comes
+       * from the pair, so this branch renders what it is given rather than
+       * re-deriving anything from the radar.
        */}
       <section className="space-y-1">
         <h2 className="font-medium">Deployment</h2>
@@ -150,7 +179,19 @@ export default async function AgentPage({
                     ? `Holding the position on ${d.coinTicker} (${d.timeframe} radar).`
                     : d.standing === 'on-duty'
                       ? `On duty: scanning ${d.coinTicker} on the ${d.timeframe} radar.`
-                      : `In the rotation for ${d.coinTicker} (${d.timeframe} radar), not on duty right now.`}{' '}
+                      : d.standing === 'slot-held-not-scanning'
+                        ? `Holds the ${d.coinTicker} slot (${d.timeframe} radar) and is not scanning it: this agent is not active.`
+                        : `In the rotation for ${d.coinTicker} (${d.timeframe} radar), not on duty right now.`}{' '}
+                  {/* The market's own state, beside the agent's. The radar
+                      reports the slot as occupied either way, so a policy
+                      holding nobody active reads as covered unless it is
+                      said. */}
+                  {d.occupancy === 'no-active-agent' ? (
+                    <>
+                      No active agent holds this deployment, so {d.coinTicker} is deployed and
+                      unscanned.{' '}
+                    </>
+                  ) : null}
                   <a
                     href={`/agents/${agent.id}/undeploy/${encodeURIComponent(d.coinTicker)}`}
                     className="underline"
