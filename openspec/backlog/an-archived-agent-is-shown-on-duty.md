@@ -2,11 +2,11 @@
 id: an-archived-agent-is-shown-on-duty
 title: An ARCHIVED agent still holds a radar slot, and the surface says it is scanning
 type: feature
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: bound-and-on-duty-are-claims-the-payload-must-back
 capability: agent-deployment
 blocked_by: []
 tags: [battlegrid, radar, lifecycle, live, false-claim]

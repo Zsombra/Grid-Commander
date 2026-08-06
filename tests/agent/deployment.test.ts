@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { deploymentsFor } from '@/domain/agent/deployment.js';
-import type { RadarDeployment } from '@/domain/agent/deployment.js';
+import { deploymentsFor, deploymentsNaming } from '@/domain/agent/deployment.js';
+import type { AgentLifecycle, RadarDeployment } from '@/domain/agent/deployment.js';
 import { deploymentsByAgent } from '@/domain/agent/deployment.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
@@ -15,9 +15,19 @@ import { mapDeployments } from '@/infrastructure/battlegrid/radar-adapter.js';
  * held zero positions, absent from every slot, and nothing in this product
  * said so — the status line read ACTIVE either way. These tests pin the read
  * path (mapper → derivation → query) and the page's three distinct states.
+ *
+ * The converse arrived on 2026-08-06 from the second account: `SP500@15m`
+ * holding one slot, and the agent in it — `Volatilis` — ARCHIVED. The radar
+ * reports that slot exactly as it reports an active agent's, so the same
+ * derivation that once said "ACTIVE hides idle" was saying "slotted means
+ * scanning". Standing is now computed from the pair, and the tests below carry
+ * both halves of it.
  */
 
 const who = { userId: 'owner', accessToken: 'tok' };
+
+const active = (id: string): AgentLifecycle => ({ id, status: 'ACTIVE' });
+const archived = (id: string): AgentLifecycle => ({ id, status: 'ARCHIVED' });
 
 function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
   return {
@@ -104,32 +114,123 @@ describe('the mapper carries the observed shape and repairs nothing', () => {
 });
 
 describe('the standing an agent holds in a deployment', () => {
+  const roster = [active('a1'), active('a2'), active('a3')];
+
   it('holding the position outranks being on duty', () => {
     const [mine] = deploymentsFor(
       [deployment({ onDutyAgentId: 'a1', openPositionAgentId: 'a1' })],
-      'a1',
+      active('a1'),
+      roster,
     );
     expect(mine?.standing).toBe('holding-position');
   });
 
   it('on duty when the radar resolves this agent as matched', () => {
-    expect(deploymentsFor([deployment()], 'a1')[0]?.standing).toBe('on-duty');
+    expect(deploymentsFor([deployment()], active('a1'), roster)[0]?.standing).toBe('on-duty');
   });
 
   it('in the rotation when slotted while another agent is on duty', () => {
     const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
-    expect(deploymentsFor([d], 'a1')[0]?.standing).toBe('in-rotation');
+    expect(deploymentsFor([d], active('a1'), roster)[0]?.standing).toBe('in-rotation');
   });
 
   it('a position holder is deployed even if it fell out of the slots', () => {
     // The radar can resolve a position to an agent a re-slotting removed.
     // Money is at stake there; membership must not hide it.
     const d = deployment({ slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a1' });
-    expect(deploymentsFor([d], 'a1')[0]?.standing).toBe('holding-position');
+    expect(deploymentsFor([d], active('a1'), roster)[0]?.standing).toBe('holding-position');
   });
 
   it('an agent in no deployment gets an empty list, not an invented row', () => {
-    expect(deploymentsFor([deployment()], 'somebody-else')).toEqual([]);
+    expect(deploymentsFor([deployment()], active('somebody-else'), roster)).toEqual([]);
+  });
+});
+
+describe('lifecycle joins the radar, because the radar cannot see it', () => {
+  it('an agent that is not ACTIVE holds its slot and is not on duty', () => {
+    /**
+     * The live shape of 2026-08-06: `SP500@15m slots=Volatilis[ARCHIVED]`,
+     * with the radar naming it on duty exactly as it would an active agent.
+     */
+    const sp500 = deployment({ coinTicker: 'SP500', slotAgentIds: ['a1'], onDutyAgentId: 'a1' });
+    const [mine] = deploymentsFor([sp500], archived('a1'), [archived('a1')]);
+    expect(mine?.standing).toBe('slot-held-not-scanning');
+  });
+
+  it('an archived agent waiting in a rotation is not called in-rotation either', () => {
+    // "In the rotation" says its turn is coming. It is not.
+    const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
+    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')]);
+    expect(mine?.standing).toBe('slot-held-not-scanning');
+  });
+
+  it('a position the radar attributes to it survives the lifecycle', () => {
+    /**
+     * The one place lifecycle must not win. An archive is not evidence that a
+     * position closed, and hiding it would drop the only thing on the row that
+     * can still cost the operator money.
+     */
+    const d = deployment({ openPositionAgentId: 'a1', onDutyAgentId: 'a2', slotAgentIds: ['a2'] });
+    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')]);
+    expect(mine?.standing).toBe('holding-position');
+  });
+
+  it('an ACTIVE agent reads exactly as it did before the join', () => {
+    expect(deploymentsFor([deployment()], active('a1'), [active('a1')])[0]?.standing).toBe(
+      'on-duty',
+    );
+  });
+});
+
+describe('whether the market has anyone active at all', () => {
+  it('says no active agent when every agent it names is archived', () => {
+    const sp500 = deployment({ coinTicker: 'SP500', slotAgentIds: ['a1'], onDutyAgentId: 'a1' });
+    expect(deploymentsFor([sp500], archived('a1'), [archived('a1')])[0]?.occupancy).toBe(
+      'no-active-agent',
+    );
+  });
+
+  it('claims nothing when one of the others is still active', () => {
+    const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
+    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')])[0]?.occupancy).toBe(
+      'active-agent-present',
+    );
+  });
+
+  it('an active agent holding the position keeps the market from reading unscanned', () => {
+    // Not a scanner, but "nobody active is here" is the strongest sentence on
+    // this row and it must not be said over an agent with money on the market.
+    const d = deployment({ slotAgentIds: ['a1'], onDutyAgentId: 'a1', openPositionAgentId: 'a2' });
+    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')])[0]?.occupancy).toBe(
+      'active-agent-present',
+    );
+  });
+
+  it('is unknown when a slot names an agent whose lifecycle was not read', () => {
+    // The claim is about *every* agent in the policy. One unread lifecycle and
+    // there is no honest negative to state.
+    const d = deployment({ slotAgentIds: ['a1', 'ghost'], onDutyAgentId: 'a1' });
+    expect(deploymentsFor([d], archived('a1'), [archived('a1')])[0]?.occupancy).toBe('unknown');
+  });
+
+  it('is unknown for every deployment when no lifecycles were read at all', () => {
+    const d = deployment({ openPositionAgentId: 'a1' });
+    expect(deploymentsFor([d], archived('a1'), [])[0]?.occupancy).toBe('unknown');
+  });
+});
+
+describe('membership is asked for separately from standing', () => {
+  it('names every deployment an agent is in, whatever it is doing there', () => {
+    const held = deployment({ coinTicker: 'SP500', slotAgentIds: ['a1'], onDutyAgentId: 'a1' });
+    const other = deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a2'], onDutyAgentId: 'a2' });
+    expect(deploymentsNaming([held, other], 'a1').map((d) => d.coinTicker)).toEqual(['SP500']);
+  });
+
+  it('carries the policy itself, so callers that need a revision still have one', () => {
+    // `describeUndeploy` reads it to decide whether there is anything to
+    // remove, and an archived agent's slot is still removable.
+    expect(deploymentsNaming([deployment()], 'a1')[0]?.revision).toBe(3);
+    expect(deploymentsNaming([deployment()], 'nobody')).toEqual([]);
   });
 });
 
@@ -141,7 +242,7 @@ describe('the query answers with one of three distinct states', () => {
         deployments: [deployment(), deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a1'], onDutyAgentId: 'a9' })],
       }),
     );
-    const res = await q.execute({ ...who, agentId: 'a1' });
+    const res = await q.execute({ ...who, agent: active('a1'), roster: [active('a1'), active('a9')] });
     expect(res.kind).toBe('deployed');
     if (res.kind !== 'deployed') return;
     expect(res.deployments.map((d) => `${d.coinTicker}:${d.standing}`)).toEqual([
@@ -154,7 +255,25 @@ describe('the query answers with one of three distinct states', () => {
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
     );
-    expect((await q.execute({ ...who, agentId: 'zz' })).kind).toBe('not-deployed');
+    expect(
+      (await q.execute({ ...who, agent: active('zz'), roster: [active('a1')] })).kind,
+    ).toBe('not-deployed');
+  });
+
+  it('an archived agent in a slot is deployed, not not-deployed', async () => {
+    /**
+     * It holds the slot, the operator can still undeploy it, and the market is
+     * still occupied. Folding this into `not-deployed` would replace one false
+     * sentence with another.
+     */
+    const q = new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+    );
+    const res = await q.execute({ ...who, agent: archived('a1'), roster: [archived('a1')] });
+    expect(res.kind).toBe('deployed');
+    if (res.kind !== 'deployed') return;
+    expect(res.deployments[0]?.standing).toBe('slot-held-not-scanning');
+    expect(res.deployments[0]?.occupancy).toBe('no-active-agent');
   });
 
   it('unreadable is carried through, never collapsed into not-deployed', async () => {
@@ -163,7 +282,7 @@ describe('the query answers with one of three distinct states', () => {
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'unreadable', reason: 'no usable answer', cause: 'unreachable' }),
     );
-    const res = await q.execute({ ...who, agentId: 'a1' });
+    const res = await q.execute({ ...who, agent: active('a1'), roster: [active('a1')] });
     expect(res.kind).toBe('unreadable');
   });
 });
@@ -198,6 +317,19 @@ describe('the page renders the three states distinctly', () => {
     expect(page).toMatch(/could not be read/);
   });
 
+  it('sends the lifecycle to the read that needs it', () => {
+    // `agentId` alone is the shape that produced "On duty: scanning SP500" for
+    // an archived agent — the radar cannot answer the question without it.
+    expect(page).toMatch(/agent,/);
+    expect(page).toMatch(/roster: roster\.kind === 'agents' \? roster\.agents : \[\]/);
+  });
+
+  it('renders the fourth standing and the market behind it', () => {
+    expect(page).toMatch(/slot-held-not-scanning/);
+    expect(page).toMatch(/is not scanning it/);
+    expect(page).toMatch(/deployed and\s*\n?\s*unscanned/);
+  });
+
   it('stays out of the domain', () => {
     expect(page, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
   });
@@ -222,29 +354,56 @@ describe('the platform record backs the read', () => {
 });
 
 describe('the roster asks for everyone at once', () => {
-  it('deploymentsByAgent agrees with deploymentsFor, for every involved agent', () => {
+  it('deploymentsByAgent agrees with deploymentsFor, for every agent it was given', () => {
     const ds = [
       deployment(),
       deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a3' }),
     ];
-    const byAgent = deploymentsByAgent(ds);
+    const roster = [active('a1'), archived('a2'), active('a3')];
+    const byAgent = deploymentsByAgent(ds, roster);
     expect(Object.keys(byAgent).sort()).toEqual(['a1', 'a2', 'a3']);
-    for (const id of ['a1', 'a2', 'a3']) {
-      expect(byAgent[id]).toEqual(deploymentsFor(ds, id));
+    for (const agent of roster) {
+      expect(byAgent[agent.id]).toEqual(deploymentsFor(ds, agent, roster));
     }
+  });
+
+  it('keys the map by the roster, not by whoever the radar names', () => {
+    /**
+     * An agent in a slot and absent from the roster has no lifecycle to judge
+     * its standing against, and the roster looks this map up by the rows it is
+     * about to render — which are exactly the agents passed in. Inventing an
+     * entry for `ghost` would mean inventing a lifecycle for it.
+     */
+    const ds = [deployment({ slotAgentIds: ['a1', 'ghost'] })];
+    expect(Object.keys(deploymentsByAgent(ds, [active('a1')]))).toEqual(['a1']);
+  });
+
+  it('an agent the radar names nowhere gets an empty list, not a missing key', () => {
+    const byAgent = deploymentsByAgent([deployment()], [active('a1'), active('idle')]);
+    expect(byAgent['idle']).toEqual([]);
   });
 
   it('summary answers with the map, or carries unreadable through', async () => {
     const ok = await new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
-    ).summary(who);
+    ).summary({ ...who, roster: [active('a1')] });
     expect(ok.kind).toBe('summary');
     if (ok.kind === 'summary') expect(ok.byAgent['a1']?.[0]?.standing).toBe('on-duty');
 
     const bad = await new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'unreadable', reason: 'nope', cause: 'unreachable' }),
-    ).summary(who);
+    ).summary({ ...who, roster: [active('a1')] });
     expect(bad.kind).toBe('unreadable');
+  });
+
+  it('the same agent archived reads as holding its slot in the summary too', async () => {
+    // The roster and the detail page must not disagree within one account.
+    const summary = await new ReadDeploymentsQuery(
+      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+    ).summary({ ...who, roster: [archived('a1')] });
+    expect(summary.kind === 'summary' && summary.byAgent['a1']?.[0]?.standing).toBe(
+      'slot-held-not-scanning',
+    );
   });
 });
 
@@ -257,10 +416,26 @@ describe('the roster renders the deployment line honestly', () => {
     expect(page).toMatch(/deployments=\{deployments\}/);
   });
 
+  it('the page hands over the lifecycles the radar cannot see', () => {
+    // Without the roster travelling with the request, every archived agent's
+    // row reads as a scanning one again.
+    expect(page).toMatch(/roster: roster\.kind === 'agents' \? roster\.agents : \[\]/);
+  });
+
   it('a row says acting or waiting, in the detail page\'s words', () => {
     expect(component).toMatch(/Scanning \$\{d\.coinTicker\}/);
     expect(component).toMatch(/Holding the position on/);
     expect(component).toMatch(/Not deployed — scanning no market/);
+  });
+
+  it('a row that holds a slot without scanning says both halves', () => {
+    expect(component).toMatch(/slot-held-not-scanning/);
+    expect(component).toMatch(/is not scanning it/);
+  });
+
+  it('a market nobody active is deployed on is named as unscanned', () => {
+    expect(component).toMatch(/no-active-agent/);
+    expect(component).toMatch(/deployed and unscanned/);
   });
 
   it('unreadable is one notice, and then no row claims either way', () => {

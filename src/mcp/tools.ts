@@ -228,11 +228,59 @@ export const TOOLS: readonly ToolDefinition[] = [
     name: 'read_deployments',
     description:
       'Where an agent is actually scanning — each radar deployment\'s market, timeframe and ' +
-      'standing — or a plain statement that it is configured but scanning nothing.',
+      'standing — or a plain statement that it is configured but scanning nothing. An agent ' +
+      'that is not ACTIVE still holds its slots and is reported as holding them without ' +
+      'scanning, never as on duty; where every agent a deployment names is out of that ' +
+      'lifecycle, the market is reported as deployed and unscanned. Answers "deployed", ' +
+      '"not-deployed", "unreadable", or "no-such-agent" for an id this account does not hold.',
     useCase: 'readDeployments',
     input: AGENT_ID,
     required: ['agentId'],
-    call: (app, who, a) => app.readDeployments.execute({ ...who, agentId: str(a['agentId']) }),
+    /**
+     * The roster read is not incidental here — it is the half of the answer
+     * the radar does not carry.
+     *
+     * A slot looks identical whether the agent in it is active or archived, so
+     * standing cannot be derived from the radar alone (live 2026-08-06:
+     * `SP500@15m` holding only `Volatilis[ARCHIVED]`). The web surfaces have
+     * already read the roster on the page they render; a model has sent an id
+     * and nothing else, so this reads it here rather than letting the tool ask
+     * a question it cannot answer honestly.
+     *
+     * A roster that will not answer costs the whole call, deliberately: an
+     * `unreadable` naming the lifecycle as the missing piece is honest, and
+     * standing computed against a lifecycle nobody read is the defect this
+     * change removes.
+     */
+    call: async (app, who, a) => {
+      const agentId = str(a['agentId']);
+      const { roster } = await app.listAgents.execute(who);
+      if (roster.kind === 'unreadable') {
+        return {
+          kind: 'unreadable',
+          reason:
+            `The roster could not be read, so this agent's lifecycle is unknown and whether ` +
+            `it is scanning cannot be stated: ${roster.reason}`,
+          cause: roster.cause,
+        };
+      }
+      const agents = roster.kind === 'agents' ? roster.agents : [];
+      const agent = agents.find((x) => x.id === agentId);
+      if (!agent) {
+        /**
+         * Its own answer rather than an `unreadable`. The roster was read and
+         * this account does not hold that agent — neither `refused` nor
+         * `unreachable` describes that, and borrowing one would tell a model
+         * to retry or to check its authority over a mistyped id.
+         */
+        return {
+          kind: 'no-such-agent',
+          agentId,
+          reason: `No agent on this account has the id "${agentId}". list_agents has the ids.`,
+        };
+      }
+      return app.readDeployments.execute({ ...who, agent, roster: agents });
+    },
   },
   /**
    * The only tool here that asks about now.
