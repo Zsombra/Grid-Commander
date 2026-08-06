@@ -2,10 +2,10 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "5.1.0",
+    "version": "9.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-04T19:47:35Z",
+  "probed_at": "2026-08-06T07:03:05Z",
   "tool_count": 110,
   "by_classification": {
     "read": 83,
@@ -249,7 +249,9 @@
           "mtf_aligned_bull",
           "mtf_aligned_bear",
           "mtf_pullback_long",
-          "mtf_pullback_short"
+          "mtf_pullback_short",
+          "flow_perp_spot_bull_divergence",
+          "flow_perp_spot_bear_divergence"
         ],
         "request.plan.sections[].columns[].bars": [
           "closed",
@@ -291,6 +293,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -306,9 +309,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -334,7 +338,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "request.plan.sections[].columns[].metric": [
           "OPEN",
@@ -372,6 +379,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -387,9 +395,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -415,7 +424,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "request.plan.sections[].columns[].ordering": [
           "hi",
@@ -474,7 +486,8 @@
           "includeRegimeContext",
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
-          "includeStructureZones"
+          "includeStructureZones",
+          "includePerpSpotFlow"
         ],
         "request.plan.sections[].timeframe": [
           "1m",
@@ -1206,7 +1219,9 @@
           "mtf_aligned_bull",
           "mtf_aligned_bear",
           "mtf_pullback_long",
-          "mtf_pullback_short"
+          "mtf_pullback_short",
+          "flow_perp_spot_bull_divergence",
+          "flow_perp_spot_bear_divergence"
         ],
         "request.sections[].columns[].bars": [
           "closed",
@@ -1248,6 +1263,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -1263,9 +1279,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -1291,7 +1308,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "request.sections[].columns[].metric": [
           "OPEN",
@@ -1329,6 +1349,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -1344,9 +1365,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -1372,7 +1394,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "request.sections[].columns[].ordering": [
           "hi",
@@ -1431,7 +1456,8 @@
           "includeRegimeContext",
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
-          "includeStructureZones"
+          "includeStructureZones",
+          "includePerpSpotFlow"
         ],
         "request.sections[].timeframe": [
           "1m",
@@ -2233,7 +2259,9 @@
           "mtf_aligned_bull",
           "mtf_aligned_bear",
           "mtf_pullback_long",
-          "mtf_pullback_short"
+          "mtf_pullback_short",
+          "flow_perp_spot_bull_divergence",
+          "flow_perp_spot_bear_divergence"
         ],
         "sections[].columns[].bars": [
           "closed",
@@ -2275,6 +2303,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -2290,9 +2319,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -2318,7 +2348,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "sections[].columns[].metric": [
           "OPEN",
@@ -2356,6 +2389,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -2371,9 +2405,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -2399,7 +2434,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "sections[].columns[].ordering": [
           "hi",
@@ -2458,7 +2496,8 @@
           "includeRegimeContext",
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
-          "includeStructureZones"
+          "includeStructureZones",
+          "includePerpSpotFlow"
         ],
         "sections[].timeframe": [
           "1m",
@@ -2800,14 +2839,11 @@
             "eventType": "str",
             "id": "str",
             "marketGridSessionId": "null",
-            "metadata": {
-              "modelDisplayName": "str",
-              "strategyName": "str"
-            },
+            "metadata": {},
             "thoughtLogId": "null",
             "userId": "str"
           },
-          "\u2026\u00d71"
+          "\u2026\u00d72"
         ],
         "limit": "int",
         "page": "int",
@@ -3188,6 +3224,7 @@
               "includeMovingAverages": "bool",
               "includeMtfConfluence": "bool",
               "includeOpenInterest": "bool",
+              "includePerpSpotFlow": "bool",
               "includePriceAction": "bool",
               "includeRegimeContext": "bool",
               "includeRelativeStrength": "bool",
@@ -3267,7 +3304,7 @@
               "netPnl": "float"
             }
           },
-          "\u2026\u00d737"
+          "\u2026\u00d738"
         ],
         "filter": {
           "sortBy": "str",
@@ -3463,14 +3500,11 @@
             "eventType": "str",
             "id": "str",
             "marketGridSessionId": "null",
-            "metadata": {
-              "modelDisplayName": "str",
-              "strategyName": "str"
-            },
+            "metadata": {},
             "thoughtLogId": "null",
             "userId": "str"
           },
-          "\u2026\u00d71"
+          "\u2026\u00d72"
         ],
         "recentGames": [],
         "recentThoughts": [],
@@ -3781,7 +3815,8 @@
           "crowdIntelligence",
           "cvd",
           "cvdCrowdConvergence",
-          "mtfConfluence"
+          "mtfConfluence",
+          "perpSpotFlow"
         ],
         "strategyTimeframe": [
           "1m",
@@ -4042,6 +4077,7 @@
           "includeCvd",
           "includeCvdCrowdConvergence",
           "includeMtfConfluence",
+          "includePerpSpotFlow",
           "sessionContext"
         ]
       },
@@ -4299,6 +4335,7 @@
             "includeMovingAverages": "bool",
             "includeMtfConfluence": "bool",
             "includeOpenInterest": "bool",
+            "includePerpSpotFlow": "bool",
             "includePriceAction": "bool",
             "includeRegimeContext": "bool",
             "includeRelativeStrength": "bool",
@@ -4319,7 +4356,7 @@
           "last24hCostUsd": "int",
           "modelDisplayName": "str",
           "modelId": "str",
-          "modelImageUrl": "str",
+          "modelImageUrl": "null",
           "overlayText": "str",
           "performance": {
             "gameStats": {
@@ -4378,10 +4415,10 @@
               "timeDecayMaxTightenPct": "int",
               "timeDecayStaleThresholdTpProgressPct": "int",
               "timeDecayTightenPct": "int",
-              "trailingAtrMultiple": "float",
+              "trailingAtrMultiple": "int",
               "trailingBufferPct": "float",
               "trailingEnabled": "bool",
-              "trailingFixedPct": "float",
+              "trailingFixedPct": "int",
               "trailingType": "str"
             },
             "positionSizePresets": {
@@ -4530,9 +4567,9 @@
             "marketStats": {
               "baseVolume24h": "float",
               "fundingRate": "float",
-              "markPrice": "float",
+              "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "int",
+              "oraclePrice": "float",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -4574,7 +4611,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Get comprehensive market context with 22 selectable modules. Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research \u2014 exactly one of the tw",
+      "description": "Get comprehensive market context with 23 selectable modules. Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research \u2014 exactly one of the tw",
       "input_required": [],
       "input_optional": [
         "modules",
@@ -4604,7 +4641,8 @@
           "crowdIntelligence",
           "cvd",
           "cvdCrowdConvergence",
-          "mtfConfluence"
+          "mtfConfluence",
+          "perpSpotFlow"
         ],
         "primaryTimeframe": [
           "5m",
@@ -4888,6 +4926,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -4903,9 +4942,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -4931,7 +4971,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ]
       },
       "input_required_paths": [
@@ -6100,11 +6143,13 @@
           "signalRules": [
             {
               "allocation": "int",
-              "params": {},
+              "params": {
+                "threshold": "int"
+              },
               "required": "bool",
               "signalId": "str"
             },
-            "\u2026\u00d782"
+            "\u2026\u00d784"
           ],
           "systemKey": "str",
           "tagline": "str",
@@ -6178,6 +6223,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -6193,9 +6239,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -6221,7 +6268,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "column.metric": [
           "OPEN",
@@ -6259,6 +6309,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -6274,9 +6325,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -6302,7 +6354,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "column.ordering": [
           "hi",
@@ -6458,7 +6513,8 @@
           "includeRegimeContext",
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
-          "includeStructureZones"
+          "includeStructureZones",
+          "includePerpSpotFlow"
         ]
       },
       "input_required_paths": [
@@ -6609,7 +6665,9 @@
           "mtf_aligned_bull",
           "mtf_aligned_bear",
           "mtf_pullback_long",
-          "mtf_pullback_short"
+          "mtf_pullback_short",
+          "flow_perp_spot_bull_divergence",
+          "flow_perp_spot_bear_divergence"
         ],
         "timeframe": [
           "1m",
@@ -6825,7 +6883,9 @@
         "tradingDefaults": {
           "bounds": {
             "agentMinConfidenceFloor": "float",
+            "agentMinConfidenceFloorPercent": "int",
             "agentMinTradeConvictionFloor": "float",
+            "agentMinTradeConvictionFloorPercent": "int",
             "maximumAtrPct": "int",
             "maximumMaxDailyTrades": "int",
             "maximumMaxEntryDeviationAtrMultiple": "int",
@@ -7833,6 +7893,7 @@
               "includeMovingAverages": "bool",
               "includeMtfConfluence": "bool",
               "includeOpenInterest": "bool",
+              "includePerpSpotFlow": "bool",
               "includePriceAction": "bool",
               "includeRegimeContext": "bool",
               "includeRelativeStrength": "bool",
@@ -7853,7 +7914,7 @@
             "last24hCostUsd": "int",
             "modelDisplayName": "str",
             "modelId": "str",
-            "modelImageUrl": "str",
+            "modelImageUrl": "null",
             "overlayText": "str",
             "performance": {
               "gameStats": {
@@ -7912,10 +7973,10 @@
                 "timeDecayMaxTightenPct": "int",
                 "timeDecayStaleThresholdTpProgressPct": "int",
                 "timeDecayTightenPct": "int",
-                "trailingAtrMultiple": "float",
+                "trailingAtrMultiple": "int",
                 "trailingBufferPct": "float",
                 "trailingEnabled": "bool",
-                "trailingFixedPct": "float",
+                "trailingFixedPct": "int",
                 "trailingType": "str"
               },
               "positionSizePresets": {
@@ -8208,7 +8269,8 @@
                 "resolvedConviction": {
                   "provenance": "str",
                   "value": "float"
-                }
+                },
+                "resolvedConvictionPercent": "int"
               },
               "\u2026\u00d71"
             ]
@@ -8537,7 +8599,8 @@
           "REGIME",
           "PRICE_STRUCTURE",
           "CVD",
-          "CONFLUENCE"
+          "CONFLUENCE",
+          "FLOW_DIVERGENCE"
         ]
       },
       "input_required_paths": [],
@@ -8571,7 +8634,7 @@
             "priceBasis": "str",
             "signalId": "str"
           },
-          "\u2026\u00d782"
+          "\u2026\u00d784"
         ]
       },
       "arguments_from": "none-required",
@@ -8625,6 +8688,7 @@
         "budgets",
         "category",
         "metrics",
+        "previewExecutionLimits",
         "templates",
         "timeframeRefs",
         "timeframes",
@@ -9120,7 +9184,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Render a bounded live-market preview for a draft report and required bounded coin selection. Returns server-owned token and budget usage without saving or mutating strategy state.",
+      "description": "Render a bounded live-market preview for a draft report and required bounded coin selection. Returns server-owned budget usage \u2014 including the estimated-token budget as used/cap \u2014 without saving or mu",
       "input_required": [
         "coinSelection",
         "regimeAutoDerive",
@@ -9243,6 +9307,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -9258,9 +9323,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -9286,7 +9352,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "sections[].columns[].metric": [
           "OPEN",
@@ -9324,6 +9393,7 @@
           "ATR",
           "ATR_PCT",
           "BB_WIDTH",
+          "BB_WIDTH_PCT",
           "HIGH_DEV",
           "LOW_DEV",
           "BB_PCT_B",
@@ -9339,9 +9409,10 @@
           "BUY_VOLUME",
           "SELL_VOLUME",
           "NOTIONAL_VOLUME_1D",
-          "VOLUME_RATIO",
+          "RVOL",
           "OBV",
           "CVD",
+          "SPOT_CVD",
           "BUY_PRESSURE",
           "BUY_TRADES",
           "SELL_TRADES",
@@ -9367,7 +9438,10 @@
           "FLOW_ALIGN",
           "SMART_RETAIL",
           "CAPTAIN_CONF",
-          "CONFIDENCE"
+          "CONFIDENCE",
+          "PERP_SPOT_FLOW",
+          "PERP_SPOT_STRENGTH",
+          "PERP_SPOT_CONFIRMS"
         ],
         "sections[].columns[].ordering": [
           "hi",
@@ -9426,7 +9500,8 @@
           "includeRegimeContext",
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
-          "includeStructureZones"
+          "includeStructureZones",
+          "includePerpSpotFlow"
         ],
         "sections[].timeframe": [
           "1m",
@@ -9633,7 +9708,6 @@
       "declared_output": [
         "budgetUsage",
         "conditionOutcomes",
-        "estimatedTokenCount",
         "rankScopingNote",
         "renderedSections",
         "tokenCountModel"
@@ -10601,7 +10675,9 @@
           "mtf_aligned_bull",
           "mtf_aligned_bear",
           "mtf_pullback_long",
-          "mtf_pullback_short"
+          "mtf_pullback_short",
+          "flow_perp_spot_bull_divergence",
+          "flow_perp_spot_bear_divergence"
         ]
       },
       "input_required_paths": [

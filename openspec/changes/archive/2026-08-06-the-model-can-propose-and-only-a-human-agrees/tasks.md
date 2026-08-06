@@ -86,16 +86,26 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 6. Live
 
-- [ ] 6.1 **Written and blocked.** `proposal-probe.test.ts` walks the whole
-      loop — propose `stop trading`, open, agree, confirm `tradingMode` moved,
-      the caps survived and the audit recorded it — on a throwaway agent it
-      creates. BattleGrid's `create_intelligence_agent` has been answering
-      `INTERNAL_ERROR` all day for every payload on both accounts, including
-      one with no `tradingConfig` at all, so the test **skips naming that**
-      rather than passing. It is not walked against the operator's own agents:
-      all of them are in `FULL_EXECUTION`, and editing a live trading agent to
-      make a probe pass is not a trade a test gets to make. See
-      `battlegrid-is-returning-internal-errors`
+- [x] 6.1 **Done, live, once BattleGrid returned.** Propose → open → agree,
+      end to end on a throwaway agent the probe created in `APPROVAL_REQUIRED`
+      and archived in a `finally`:
+
+      ```
+      propose: r7 → /pending/r7
+      inert:   mode=APPROVAL_REQUIRED r1 — unchanged
+      open:    Replaces every trading limit this agent runs under. Sets trading to off.
+      agree:   updated
+      after:   mode=OFF dailyLoss=10 fields=23 r2
+      audit:   update_intelligence_agent=succeeded
+      replay:  threw ConfirmationRequiredError
+      cleanup: archived
+      ```
+
+      Four separate claims, only jointly true and only observable here: the
+      confirmation minted at open time spent at agree time; the digest survived
+      the split into `changes` and `tradingConfigChanges`; **the merge sent 23
+      fields where the model named one, and the $10 caps survived being
+      stopped**; and the agreement is spent once
 - [x] 6.2 Done, live. A proposal recorded against a real agent leaves its
       revision, mode and name exactly as they were — asserted by reading the
       agent before and after
@@ -109,12 +119,10 @@ Full track. The planner writes `plan/` before any of this is implemented.
 
 ## 7. Gates
 
-- [ ] 7.1 Keyless `./scripts/ci.sh` green, ten gates. **The keyed run cannot
-      be green today**: BattleGrid is answering INTERNAL_ERROR and 504 across
-      several tools, and four live probes that touch nothing this change went
-      near — preview, field, competitor, column-grammar — fail on reads the
-      platform did not answer. Recorded rather than worked around; see
-      `battlegrid-is-returning-internal-errors`
+- [x] 7.1 Done, both ways. Keyless green; **keyed green too**, all ten gates
+      including `freshness`. The four probes that failed during the outage —
+      preview, field, competitor, column-grammar — pass untouched, which
+      settles that they were the platform and not this change
 - [x] 7.2 Done. `openspec.py validate` — clean, no issues found
 - [x] 7.3 Done. `docs/MCP_SERVER.md` rewritten: "It cannot change anything. It
       can propose." — what proposing is, why the consequence is computed at
