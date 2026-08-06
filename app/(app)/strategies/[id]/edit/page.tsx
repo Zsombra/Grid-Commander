@@ -3,7 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText, updateCompileIntent } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 /**
  * Compose a change, compile it, and review what applying would do.
  *
@@ -116,7 +116,7 @@ export default async function EditStrategyPage({
         </div>
         <form method="get" className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="tagline" className="block text-sm font-medium">Tagline</label>
+            <label htmlFor="tagline" className={LABEL}>Tagline</label>
             <input
               id="tagline"
               name="tagline"
@@ -225,7 +225,11 @@ export default async function EditStrategyPage({
               a page load. */}
           <input type="hidden" name="compile" value="1" />
 
-          <button type="submit" className="rounded border px-4 py-2 text-sm">
+          {/* Secondary on purpose. Compiling is effect-free and the review it
+              produces carries the only primary in this flow — DT-0002's Apply.
+              Two accent buttons in one journey would put the same weight on
+              looking and on doing. */}
+          <button type="submit" className={BUTTON_SECONDARY}>
             Compile — see what this would do, without doing it
           </button>
         </form>

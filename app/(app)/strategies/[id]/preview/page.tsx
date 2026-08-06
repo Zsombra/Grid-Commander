@@ -1,5 +1,5 @@
 import { acting } from '@/presentation/session.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { ConditionOutcomes } from '@/presentation/components/condition-outcomes.js';
@@ -93,7 +93,7 @@ export default async function PreviewPage({
       </p>
 
       <form method="get" className="flex flex-wrap items-end gap-3 text-sm">
-        <label className="block">
+        <label className={LABEL}>
           Top ranked coins
           <input
             type="text"
@@ -102,7 +102,7 @@ export default async function PreviewPage({
             defaultValue={selection.mode === 'ranked' ? String(selection.limit) : ''}
           />
         </label>
-        <label className="block">
+        <label className={LABEL}>
           …or explicit tickers (comma-separated)
           <input
             type="text"
@@ -111,7 +111,7 @@ export default async function PreviewPage({
             defaultValue={selection.mode === 'explicit' ? selection.tickers.join(', ') : ''}
           />
         </label>
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_SECONDARY}>
           Preview again
         </button>
       </form>

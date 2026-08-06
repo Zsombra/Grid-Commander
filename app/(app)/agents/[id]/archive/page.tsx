@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 
 /** Archiving is reversible, and the copy the token was issued against says so. */
@@ -39,10 +40,10 @@ export default async function ArchivePage({
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Archive {proposal.agentName} and free its slot
         </button>
-        <a href={`/agents/${proposal.agentId}`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${proposal.agentId}`} className={BUTTON_SECONDARY}>
           Leave it active
         </a>
       </form>
