@@ -168,3 +168,76 @@ describe('a binding state this product has no reading of', () => {
     expect(r.text).not.toContain('Bound to');
   });
 });
+
+/**
+ * The two surfaces the first change did not reach.
+ *
+ * `bound-and-on-duty-are-claims-the-payload-must-back` fixed the roster and
+ * `/agents/[id]` — the two the backlog item named — and its own author filed
+ * the remainder rather than letting it pass. Both were the sentence
+ * `/agents/[id]` used to carry, and the reactivate one is the pointed case:
+ * `Volatilis` is **ARCHIVED and ORPHANED**, so its reactivate confirmation is
+ * exactly the page an operator opens, with the word "bound" in it.
+ */
+describe('the edit and reactivate copy', () => {
+  async function editPage(agent: Agent) {
+    world(agent);
+    const Page = (await import('../../app/(app)/agents/[id]/edit/page.js')).default;
+    return rendered(await Page({ params: params({ id: agent.id }), searchParams: noSearch }));
+  }
+
+  async function reactivatePage(agent: Agent) {
+    world(agent);
+    const Page = (await import('../../app/(app)/agents/[id]/reactivate/page.js')).default;
+    return rendered(await Page({ params: params({ id: agent.id }), searchParams: noSearch }));
+  }
+
+  it('the reactivate confirmation does not say an orphaned agent returns bound', async () => {
+    const r = await reactivatePage(ORPHANED);
+    /**
+     * The claim, not the phrase. `BindingSummary` legitimately says "the
+     * strategy it **was bound to** … can no longer be read" — past tense and
+     * accurate — so a bare `not.toContain('bound to')` fails on the very
+     * sentence that fixes the defect. What must not survive is the assertion
+     * that reactivating *returns it bound*.
+     */
+    expect(r.text).not.toContain('returns to your roster bound to');
+    expect(r.text).not.toContain('Bound to');
+    expect(r.text).toContain('ORPHANED');
+    expect(r.text).toContain('can no longer be read');
+  });
+
+  it('the reactivate confirmation still says what reactivating does', async () => {
+    // The split: what it returns *with* is a fact about reactivation and is
+    // true whatever the binding says. Only the claim about the binding moved.
+    const r = await reactivatePage(ORPHANED);
+    expect(r.text).toContain('configuration it had when it was archived');
+    expect(r.text).toContain('takes an agent slot');
+  });
+
+  it('a healthy binding still reads as bound on reactivate', async () => {
+    const bound = anAgent({ status: 'ARCHIVED' });
+    const r = await reactivatePage(bound);
+    expect(r.text).toContain('Bound to');
+  });
+
+  it('the edit page stops sending an orphaned agent to edit its strategy', async () => {
+    /**
+     * "They change by editing that strategy" is advice, and for an ORPHANED
+     * binding it points at a strategy the platform says cannot be read. An
+     * editable agent is ACTIVE by definition, so this needs an active agent
+     * whose binding is nonetheless orphaned — which the platform permits and
+     * this product must not assume away.
+     */
+    const activeOrphan = anAgent({ ...ORPHANED, status: 'ACTIVE' });
+    const r = await editPage(activeOrphan);
+    expect(r.text).toContain('ORPHANED');
+    expect(r.text).not.toContain('changed by editing that strategy');
+  });
+
+  it('the edit page still explains inheritance for a healthy binding', async () => {
+    const r = await editPage(anAgent());
+    expect(r.text).toContain('Bound to');
+    expect(r.text).toContain('editing that strategy');
+  });
+});

@@ -9,6 +9,7 @@ import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
+import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
@@ -97,6 +98,9 @@ export function actingWith({
     readProposals: new ReadProposalsQuery(proposals, clock),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
+    // The edit and create forms both refuse to render without it — a form
+    // whose submission is certain to fail is worse than none.
+    readCatalog: new ReadCatalogQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
