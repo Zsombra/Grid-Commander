@@ -15,6 +15,7 @@ import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluat
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
 import { ReadStoppagesQuery } from '@/application/use-cases/read-stoppages.query.js';
+import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
@@ -36,6 +37,7 @@ import { FakeAgentsPort } from '../../support/agent-fakes.js';
 import { SequentialRandom } from '../../support/agent-fakes.js';
 import { FakeMarketGridPort } from '../../support/grid-fakes.js';
 import { FakeMarketPort } from '../../support/market-fakes.js';
+import { FakePositionsPort } from '../../support/position-fakes.js';
 import { FakeExplorerPort } from '../../support/explorer-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
@@ -75,6 +77,7 @@ export function actingWith({
   explorer = new FakeExplorerPort(),
   proposals = new FakeProposalStore(),
   market = new FakeMarketPort(),
+  positions = new FakePositionsPort(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
@@ -83,6 +86,7 @@ export function actingWith({
   explorer?: FakeExplorerPort;
   proposals?: FakeProposalStore;
   market?: FakeMarketPort;
+  positions?: FakePositionsPort;
 } = {}) {
   const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
@@ -97,6 +101,7 @@ export function actingWith({
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
+    readExposure: new ReadExposureQuery(positions, agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),
@@ -124,7 +129,7 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, grid, explorer, market, confirmations };
+  return { app, user, agents, strategies, radar, grid, explorer, market, positions, confirmations };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */

@@ -2,17 +2,40 @@
 id: an-open-position-is-invisible
 title: An agent can be holding live money and no surface in this product says so
 type: feature
-status: open
+status: done
 priority: p1
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: what-it-holds-and-what-it-could-not-place
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, positions, money, live, observed-shape]
 ---
 
 # An agent holding a live position, and nothing shows it
+
+## Closed 2026-08-06 by `what-it-holds-and-what-it-could-not-place`
+
+`/agents/[id]` now shows what the agent is holding, from
+`list_user_active_positions` — one account-wide read carrying `agentId` per
+row, filtered per agent. Every figure is the platform's: mark price,
+unrealized result, ROE, margin, liquidation price. Nothing is recomputed.
+
+The three states hold: `holding`, `flat`, and `unreadable`. An unpriced
+position renders as unknown rather than flat, because
+`unpricedPositionCount` exists and a position the platform could not value is
+not one worth nothing.
+
+The effective stop is shown as current and labelled so, and `/pipeline`'s stop
+is relabelled "at the decision" — so one word cannot mean two numbers across
+two surfaces. **The join that shows the drift between them is still open** in
+`the-stop-that-moved-is-not-the-stop-we-show`.
+
+Postscript: the HYPE position closed between the build and the probe run —
+open 17:10, gone by 19:10. `exposure-probe` therefore asserts the shape of
+whatever it finds and prints which branch it saw, rather than demanding a
+position and failing on market timing.
+
 
 `THE .0` on the second account opened **HYPE LONG at 17:10 on 2026-08-06** —
 $12.37 notional, 5× leverage, $2.47 margined — and was still holding it while

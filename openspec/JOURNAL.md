@@ -1,5 +1,62 @@
 # Journal
 
+## 2026-08-06 (closing) — the money that was at stake, and the money that never got there
+
+**Did**: both P1s from the second-account walk, as one change —
+`what-it-holds-and-what-it-could-not-place`. PR #66. Sixteen requirements on
+`agent-understanding`.
+
+**An agent could hold leveraged money and nothing rendered it.** `/trades` is
+closed trades, `/pipeline` is decisions already made. `THE .0` opened HYPE LONG
+at 17:10 — $12.37 notional at 5×, $2.47 margined — and every surface reported
+normally. `/agents/[id]` now shows it, above everything retrospective.
+
+Sourced from `list_user_active_positions`: **one account-wide read** carrying
+`agentId` per row, richer than the per-agent tool and cheaper than N calls —
+and one source rather than two that can disagree. Every figure is the
+platform's. Mark price, unrealized result, ROE, margin and liquidation price
+all arrive computed; recomputing any from an entry price would disagree with
+the exchange the first time BattleGrid changed how it marks.
+
+**`unpricedPositionCount` is the platform writing our own rule as a field.** A
+position it could not price renders as unknown, not flat. Zero is a result;
+null is silence — the same distinction as a null win rate and an unconfigured
+gauge, arriving from the other direction for once.
+
+**The stop is now the one that is actually in force.** The position reports
+`effectiveStopLoss: 55.954`; the decision that opened it recorded
+`55.67456526`. `/pipeline`'s stop is relabelled *"at the decision"* so one word
+cannot mean two numbers across two surfaces. The join that shows the drift is
+still open as a p2.
+
+**The second P1 needed no new read at all.** `AgentFunnel` has carried
+`executed`, `failed` and `enterDecisions` since Phase 2, and `/pipeline` has
+rendered them the whole time — as a row of figures, which is exactly where 28
+reads as a number rather than as half of everything the agent decided. The
+change was the sentence: **28 of 60 entries never became an order**, and
+"failing is the more common outcome" when `failed >= executed` — a comparison
+of the platform's own two counts, not a threshold anyone picked.
+
+Two refusals, both from this item's own notes: **no reason per failure** (the
+row carries an `executedAt` and no `executedOrderId`, and that absence is the
+evidence), and **no reconciliation** of BattleGrid's `fillRatePercent: 63`
+against counts that give 27 of 60. Different computations, unknown to us, so
+both are shown and each is attributed.
+
+**The position closed while this was being built** — open 17:10, gone by 19:10.
+So `exposure-probe` asserts the shape of whatever it finds and *prints which
+branch it saw*, rather than demanding `holding` and failing on market timing.
+It reported the other P1 through the product's own path on its first run:
+
+```
+THE .0: flat · fills 27 executed / 28 failed of 60
+```
+
+**Next**: `the-stop-that-moved-is-not-the-stop-we-show` (p2) is now a small
+join — the position carries `decisionId` and the decisions are already read.
+`approval-expired-on-a-full-execution-agent` (p2) is still the open question
+and still needs the operator, not the product.
+
 ## 2026-08-06 (late) — a full walk of every controller, and it found a 500
 
 **Did**: built `all-controllers-probe` — every read controller, one live
