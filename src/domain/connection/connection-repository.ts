@@ -17,17 +17,24 @@ export interface NewConnection {
 }
 
 /**
- * Which identity a connection ended up under, and which row holds it.
+ * Which identity a connection ended up under.
  *
  * `userId` is returned rather than assumed because the caller only *proposes*
  * one: for a subject that has never connected, it mints a fresh id, and two
  * callbacks racing on the same new subject both mint. Exactly one can win, and
  * the loser has to be told which id it lost to — otherwise it signs its user in
  * under an identity that holds no connection.
+ *
+ * It carried `connectionId` as well, and that one was dropped rather than
+ * repaired. Nothing read it, and the value was wrong exactly where a reader
+ * would have relied on it: the Drizzle writer returned the id it minted for the
+ * insert, but the insert upserts on the unique index over `user_id` without
+ * setting `id`, so on every reconnection the surviving row kept its own key and
+ * the id handed back named nothing. A connection is reachable by user, which is
+ * how every caller already finds one.
  */
 export interface ResolvedConnection {
   readonly userId: string;
-  readonly connectionId: string;
 }
 
 /** CQRS: writers return void or an identifier, never an aggregate. */

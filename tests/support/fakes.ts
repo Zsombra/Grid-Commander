@@ -201,7 +201,7 @@ export class FakeConnectionStore implements ConnectionReader, ConnectionWriter {
       createdAt: this.clock.now(),
     });
     this.secrets.set(userId, { accessToken: c.accessToken, refreshToken: c.refreshToken });
-    return { userId, connectionId: id };
+    return { userId };
   }
 
   async markRevoked(userId: string): Promise<void> {

@@ -113,8 +113,26 @@ describe('CompleteConnectionCommand', () => {
   it('establishes a connection the user can act through', async () => {
     const state = await pending();
     const res = await complete().execute({ state, code: 'c1' });
-    expect(res.connectionId).toBeTruthy();
     expect((await connections.findByUserId(res.userId))?.status).toBe('active');
+  });
+
+  /**
+   * The response is the identity, whole — not a bag with an identity in it.
+   *
+   * It used to carry `connectionId` and `isReturningUser`, which the callback
+   * route never read (PG-003), and the id it carried named no row after a
+   * reconnection: the writer returned the id it minted while the upsert left the
+   * existing row's key in place. The only assertion guarding it was
+   * `expect(res.connectionId).toBeTruthy()`, which the fake satisfied because
+   * the fake replaces the stored connection — so the check agreed with the code
+   * and disagreed with the database.
+   *
+   * Asserted as a whole rather than field by field, so the next field to arrive
+   * here is a decision made in this file rather than something that accumulates.
+   */
+  it('answers with the identity to act as, and nothing else', async () => {
+    const res = await complete().execute({ state: await pending(), code: 'c1' });
+    expect(Object.keys(res)).toEqual(['userId']);
   });
 
   /** R1 — an untrusted response is refused and stores nothing. */
@@ -169,13 +187,26 @@ describe('CompleteConnectionCommand', () => {
     expect(transactions.transactions.size).toBe(0); // consumed, not left dangling
   });
 
-  /** R2 — the connection is the identity. */
+  /**
+   * R2 — the connection is the identity.
+   *
+   * These asserted `isReturningUser`, the response's *report* of what happened
+   * here. The report is gone; the thing it reported on is the requirement, so it
+   * is asserted where it lives — in the store, which is also the only place a
+   * future surface could ask.
+   */
   describe('returning_user_same_workspace', () => {
     it('recognises a returning user by their BattleGrid subject', async () => {
       const first = await complete().execute({ state: await pending('s1'), code: 'c1' });
       const second = await complete().execute({ state: await pending('s2'), code: 'c2' });
       expect(second.userId).toBe(first.userId);
-      expect(second.isReturningUser).toBe(true);
+      // One workspace, not two that happen to share an id: the second callback
+      // proposed nothing new, and the connection it resolved to is the one
+      // holding the subject that came back.
+      expect(connections.connections.size).toBe(1);
+      expect((await connections.findByUserId(second.userId))?.battlegridSubject).toBe(
+        'bg-subject-1',
+      );
     });
 
     it('treats a different subject as a different user', async () => {
@@ -191,7 +222,8 @@ describe('CompleteConnectionCommand', () => {
       });
       const second = await complete(other).execute({ state: await pending('s2'), code: 'c2' });
       expect(second.userId).not.toBe(first.userId);
-      expect(second.isReturningUser).toBe(false);
+      // And a workspace each, rather than one identity adopting both accounts.
+      expect(connections.connections.size).toBe(2);
     });
   });
 
