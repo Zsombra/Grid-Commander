@@ -70,6 +70,11 @@ export class McpMarketGridAdapter implements MarketGridPort {
         kind: 'sessions',
         sessions: raw.map((entry: unknown) => {
           const s = (entry ?? {}) as Record<string, unknown>;
+          // `sessionId` here, `id` on the detail payload — the same session
+          // under two names, which is exactly the shape that gets a mapper
+          // reading one level too shallow. Both are read explicitly, in the
+          // method that meets each payload, and neither key is assumed of the
+          // other.
           const id = str(s['sessionId']);
           const name = str(s['displayName']);
           // A dropped row would render as "no such session" — refuse the read
@@ -91,6 +96,22 @@ export class McpMarketGridAdapter implements MarketGridPort {
             minimumPlayers: num(s['minimumPlayers']),
             playersNeeded: num(s['playersNeeded']),
             timeRangeKey: str(s['timeRangeKey']),
+            // The schedule, which this row has always carried. The arena used
+            // to fetch these four with one `get_market_grid_session` per listed
+            // session — fifty calls, and the fan-out where `all-controllers-
+            // probe` met HTTP 429 — then rendered "this session's schedule
+            // could not be read" for any that failed, while the answer sat in
+            // this payload.
+            //
+            // Redundant is measured, not assumed: both reads were taken for
+            // session 9954544c on 2026-08-06 22:00Z and all four fields came
+            // back byte-identical (`"PENDING"`, the two ISO instants, `0`).
+            // Nullable regardless — a status nobody sent is not a state to put
+            // a session in.
+            status: str(s['status']),
+            lockAt: str(s['lockAt']),
+            settleAt: str(s['settleAt']),
+            playerCount: num(s['playerCount']),
           };
         }),
       };
@@ -126,7 +147,9 @@ export class McpMarketGridAdapter implements MarketGridPort {
   }): Promise<GridDetailResult> {
     // Guarded like every other read here. It was not, and one rate-limited
     // session took the whole arena down as a 500 — the outcome the three-state
-    // result exists to make unrepresentable.
+    // result exists to make unrepresentable. The arena no longer calls this at
+    // all (the schedule is on the list row above); one session opened on its
+    // own does, once.
     try {
       const result = await this.battlegrid.callTool({
         userId: params.userId,

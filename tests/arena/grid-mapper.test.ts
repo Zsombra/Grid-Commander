@@ -19,6 +19,15 @@ const LIVE_SESSION = {
   totalPrizePool: 40,
   minimumPlayers: 4,
   playersNeeded: 1,
+  // The schedule, on the list row — the four fields the arena used to spend a
+  // detail call per session on. The keys are the platform's; the values are one
+  // plausible session and not a claim about the arena's contents, which on
+  // 2026-08-06 was 2 PENDING and 48 CANCELLED with `playerCount: 0` on every
+  // row.
+  status: 'PENDING',
+  lockAt: '2026-08-01T18:00:00Z',
+  settleAt: '2026-08-01T19:00:00Z',
+  playerCount: 3,
   crowdUpPercent: null,
   crowdDownPercent: null,
   coinPicks: { hasPicks: false, top: [], rosterSize: 0, others: 0 },
@@ -86,7 +95,7 @@ function adapterOver(respond: (req: ToolCallRequest) => unknown) {
 const who = { userId: 'u1', accessToken: 'at' };
 
 describe('mapping the live session list', () => {
-  it('keeps id, name, the previewed tickers and what entering costs', async () => {
+  it('keeps id, name, the previewed tickers, what entering costs — and the schedule', async () => {
     const { adapter, calls } = adapterOver(() => ({ sessions: [LIVE_SESSION] }));
     const result = await adapter.listSessions(who);
     expect(result.kind).toBe('sessions');
@@ -100,6 +109,14 @@ describe('mapping the live session list', () => {
       minimumPlayers: 4,
       playersNeeded: 1,
       timeRangeKey: '1H',
+      // The four the arena used to spend a call per session on. `toEqual`
+      // rather than `toMatchObject` on purpose: this is the assertion that
+      // fails the day a field the platform sends stops arriving here, which is
+      // the mistake `list_entry_decisions` (35 keys, 11 mapped) taught twice.
+      status: 'PENDING',
+      lockAt: '2026-08-01T18:00:00Z',
+      settleAt: '2026-08-01T19:00:00Z',
+      playerCount: 3,
     });
     expect(calls[0]?.tool).toBe('list_market_grid_sessions');
   });
@@ -148,6 +165,13 @@ describe('mapping the live session list', () => {
       minimumPlayers: null,
       playersNeeded: null,
       timeRangeKey: null,
+      // A row with no schedule is a row whose schedule is unknown. Nothing is
+      // substituted — `status: null` renders as "status not stated", and a
+      // session in an unknown state is never told a reader it will settle.
+      status: null,
+      lockAt: null,
+      settleAt: null,
+      playerCount: null,
     });
   });
 });
