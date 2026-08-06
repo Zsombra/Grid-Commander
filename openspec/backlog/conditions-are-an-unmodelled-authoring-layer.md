@@ -2,10 +2,11 @@
 id: conditions-are-an-unmodelled-authoring-layer
 title: Conditions — a boolean layer above signals, recorded since 2026-07-31 and never read
 type: feature
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-08-06
+change: a-drafted-condition-can-be-tried
 capability: strategy-authoring
 blocked_by: []
 tags: [battlegrid, v5, strategy, authoring, mapping]
@@ -74,6 +75,27 @@ verdict, or whether authoring follows.
 `N_OF` carries an `n` and `members`, and `members` is `array<?>` in the declared
 schema — whether members are condition keys, signal ids, or nested definitions
 is not answerable from the schema and must be observed.
+
+## What has been taken, and what is left
+
+Three changes, in the order the layer became legible.
+
+- `the-condition-layer-is-legible` (2026-08-05) — reading the definitions on
+  `/strategies/[id]`. It also **answered the open question above**: `members`
+  are nested definitions, not condition keys or signal ids, observed live in
+  Berlin's `N_OF 3 of: ref, ref, NOT(ref), clause, clause, clause` and confirmed
+  in the declared schema, where `members.items` is a `$ref` back to `definition`.
+- `the-condition-outcomes-are-legible` (2026-08-06) — the outcomes half, per
+  ticker, on the preview surface.
+- `a-drafted-condition-can-be-tried` (2026-08-06) — the authoring half this item
+  asks for, **as far as it can honestly go**: an operator composes a condition
+  and BattleGrid resolves it live, and nothing can be saved. Why saving is not
+  offered, and what it will need, is `a-drafted-condition-cannot-be-saved`.
+
+This item stays open until a condition can be written. Two facts block that and
+are filed with the calls that settle them:
+`an-update-that-omits-conditions-is-unobserved` and
+`the-record-flattens-the-condition-union`.
 
 ## Related
 

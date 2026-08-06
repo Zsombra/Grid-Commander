@@ -161,7 +161,9 @@ export default async function PreviewPage({
               page has no coin selection to resolve anything against. */}
           <ConditionOutcomes
             outcomes={outcome.preview.conditionOutcomes}
-            conditionsDefined={conditionsDefined}
+            // Here the conditions asked about are exactly the ones the strategy
+            // defines — the preview sends its own list and nothing else.
+            conditionsAsked={conditionsDefined}
           />
         </>
       )}

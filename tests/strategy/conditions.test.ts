@@ -8,63 +8,26 @@ import {
 } from '@/domain/strategy/condition.js';
 import type { StrategyCondition } from '@/domain/strategy/condition.js';
 import { mapConditions, mapDefinition } from '@/infrastructure/battlegrid/condition-mapper.js';
+import { berlinFullSendDown, berlinRegimeDown } from '../support/strategy-fakes.js';
 
 /**
  * The condition layer, read from the platform's own payload.
  *
- * The fixture below is **Berlin's real `FULL_SEND_DOWN`**, copied from
- * `get_strategy` on 2026-08-04, not invented. It is the hardest shape the
- * account actually holds: a threshold group mixing references, a nested
- * negation, and plain clauses. If a change flattens nesting or loses the
- * negation, this is where it fails — and the consequence of losing it is that
- * the page reads "flow must be rising" for a rule that says the opposite.
+ * The fixture is **Berlin's real `FULL_SEND_DOWN`**, copied from `get_strategy`
+ * on 2026-08-04, not invented. It is the hardest shape the account actually
+ * holds: a threshold group mixing references, a nested negation, and plain
+ * clauses. If a change flattens nesting or loses the negation, this is where it
+ * fails — and the consequence of losing it is that the page reads "flow must be
+ * rising" for a rule that says the opposite.
+ *
+ * It moved to `tests/support/strategy-fakes.ts` on 2026-08-06 so that
+ * `condition-draft.test.ts` can write the same bytes back out and demand they
+ * are identical. A round trip checked against a second copy of the fixture would
+ * pass while the two copies drifted.
  */
 
-const BERLIN_FULL_SEND_DOWN = {
-  conditionKey: 'FULL_SEND_DOWN',
-  name: 'Full send — down',
-  verdict: 'DOWN',
-  definition: {
-    kind: 'group',
-    op: 'N_OF',
-    n: 3,
-    members: [
-      { kind: 'conditionRef', conditionKey: 'REGIME_DOWN' },
-      { kind: 'conditionRef', conditionKey: 'WINDOW_OPEN' },
-      { kind: 'group', op: 'NOT', members: [{ kind: 'conditionRef', conditionKey: 'FLOW_UP' }] },
-      {
-        kind: 'clause',
-        column: { sectionKey: 'includeHigherTimeframe', header: 'MAalign_htf' },
-        op: 'is',
-        label: 'bearish',
-      },
-      {
-        kind: 'clause',
-        column: { sectionKey: 'includeOpenInterest', header: 'oiRegime' },
-        op: 'is',
-        label: 'new shorts',
-      },
-      {
-        kind: 'clause',
-        column: { sectionKey: 'includeCvd', header: 'CVD_trend' },
-        op: 'is',
-        label: 'falling',
-      },
-    ],
-  },
-};
-
-const REGIME_DOWN = {
-  conditionKey: 'REGIME_DOWN',
-  name: 'Regime trending down',
-  verdict: null,
-  definition: {
-    kind: 'clause',
-    column: { sectionKey: 'includeRegimeContext', header: 'regTrend_now' },
-    op: 'is',
-    label: 'trending down',
-  },
-};
+const BERLIN_FULL_SEND_DOWN = berlinFullSendDown();
+const REGIME_DOWN = berlinRegimeDown();
 
 describe('the platform payload becomes the domain shape', () => {
   it('reads Berlin’s threshold group without flattening it', () => {
