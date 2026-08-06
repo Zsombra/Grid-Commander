@@ -1,11 +1,11 @@
 import type { Agent } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import { brainToArgument } from '@/domain/agent/brain.js';
-import type { CatalogResult } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
   BudgetResult,
+  CatalogResult,
   EntryDecision,
   GateBlock,
   JournalResult,

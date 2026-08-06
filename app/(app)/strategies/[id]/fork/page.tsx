@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredText } from '@/presentation/form.js';
 
 /**
@@ -27,6 +28,7 @@ export default async function ForkStrategyPage({ params }: { params: Promise<{ i
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy: the read that would have said the
             strategy is there is the one that failed. */}
         <p className="text-sm">

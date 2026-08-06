@@ -2,11 +2,11 @@
 id: an-unreadable-branch-need-not-explain-itself
 title: Twenty-five surfaces print a failure's reason and stop; five explain it
 type: debt
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-05
-updated: 2026-08-05
-change: ""
+updated: 2026-08-06
+change: "a-failed-read-explains-itself"
 capability: app-access
 blocked_by: []
 tags: [ui, failure, consistency]
@@ -70,6 +70,16 @@ $ grep -rl "kind === 'unreadable'" app/ src/presentation | wc -l
 $ grep -rl "WhyNotLoaded" app/ src/presentation | wc -l
 5   # plus the component itself
 ```
+
+## Taken as `a-failed-read-explains-itself`
+
+The guard is `tests/architecture/failure-is-explained.test.ts`. The recount at
+the time it was written was 36 branches across 32 files, six of them reaching
+the component. Twenty-six were swept; four carry a stated exemption, one of
+which is a deferral — `the-exposure-panel-still-prints-its-reason`.
+
+The presentation question below — the audit table's repeated paragraph — is not
+in that change and remains open here.
 
 ## Notes
 

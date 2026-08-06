@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import {
   editArguments,
   editIntent,
@@ -54,6 +55,10 @@ export default async function EditAgentPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
         <p role="alert" className="text-sm">{roster.reason}</p>
+        {/* Said before the form is refused rather than after: an editor who
+            cannot see their agent should know whether to wait or to reconnect,
+            and those are opposite actions. */}
+        <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
     );
   }

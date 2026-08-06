@@ -4,6 +4,7 @@ import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { Stoppages } from '@/presentation/components/stoppages.js';
 import { Exposure } from '@/presentation/components/exposure.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 
 /**
@@ -32,6 +33,10 @@ export default async function AgentPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
         <p role="alert" className="text-sm">{roster.reason}</p>
+        {/* The roster is the read that would have said the agent is there, so
+            nothing here can claim it is — only that failing to read it is not
+            evidence it went away. */}
+        <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
     );
   }

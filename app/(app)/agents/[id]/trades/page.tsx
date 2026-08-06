@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * What the agent did with the money.
@@ -44,6 +45,10 @@ export default async function TradesPage({
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The trading record could not be read</h1>
         <p role="alert" className="text-sm">{result.reason}</p>
+        {/* The trades happened; only the reading of them failed. Said here
+            because this is the surface where a blank page most reads as money
+            having disappeared. */}
+        <WhyNotLoaded cause={result.cause} subject="these trades are" />
         <p className="text-sm">
           <a href={`/agents/${id}`} className="underline">Back to the agent</a>
         </p>

@@ -36,7 +36,9 @@ export default async function ThinkingPage({ params }: { params: Promise<{ id: s
         sibling={{ href: `/agents/${id}/limits`, label: 'What would stop it' }}
       />
 
-      {log.kind === 'unreadable' && <WhyNotLoaded subject="this agent’s reasoning" cause={log.cause} />}
+      {log.kind === 'unreadable' && (
+        <WhyNotLoaded subject="this agent’s reasoning is" cause={log.cause} />
+      )}
 
       {log.kind === 'none' && (
         <p className="text-sm text-text-secondary">

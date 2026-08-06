@@ -3,7 +3,7 @@ import type { Budget } from '@/domain/agent/budget.js';
 import type { AgentRecord } from '@/domain/agent/journal.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Brain } from '@/domain/agent/brain.js';
-import type { CatalogResult } from '@/domain/agent/catalog.js';
+import type { Catalog } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { EvaluationScorecard } from '@/domain/agent/scorecard.js';
@@ -509,6 +509,23 @@ export type RosterResult =
 
 export type BudgetResult =
   | { readonly kind: 'budget'; readonly budget: Budget }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * The vocabulary the create form is built from, or why there is none.
+ *
+ * A distinct state rather than an empty catalog: an empty catalog would offer a
+ * form with no choices and reject everything the user typed, which is worse
+ * than saying the platform could not be reached.
+ *
+ * Declared here with its siblings rather than in `@/domain/agent/catalog.js`,
+ * where it used to sit. The domain does not know `FailureCause` — so this was
+ * the one read outcome that could not distinguish a refusal from an outage,
+ * and `/agents/new` was the one failure surface that told the user to wait
+ * whichever it was.
+ */
+export type CatalogResult =
+  | { readonly kind: 'catalog'; readonly catalog: Catalog }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type ThoughtLogResult =

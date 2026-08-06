@@ -5,6 +5,7 @@ import type {
   StrategiesPort,
 } from '@/ports/strategies.js';
 import type { Strategy } from '@/domain/strategy/strategy.js';
+import type { FailureCause } from '@/ports/failure.js';
 
 export type PreviewCompositionResult =
   | {
@@ -14,7 +15,7 @@ export type PreviewCompositionResult =
       readonly membership: readonly RuleMembership[];
     }
   | { readonly kind: 'strategy-missing' }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * The agent's-eye view of a strategy's current composition, live and
@@ -35,7 +36,12 @@ export class PreviewCompositionQuery {
   }): Promise<PreviewCompositionResult> {
     const read = await this.strategies.readStrategy(req);
     if (read.kind === 'missing') return { kind: 'strategy-missing' };
-    if (read.kind === 'unreadable') return { kind: 'unreadable', reason: read.reason };
+    // The adapter classified this with the error in hand; carrying its verdict
+    // is the whole point of `FailureCause`. Re-deriving one here would be a
+    // second, worse copy of a judgement already made.
+    if (read.kind === 'unreadable') {
+      return { kind: 'unreadable', reason: read.reason, cause: read.cause };
+    }
 
     const { detail } = read;
     try {
@@ -58,7 +64,10 @@ export class PreviewCompositionQuery {
       return { kind: 'ready', strategy: detail.summary, outcome, membership };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      return { kind: 'unreadable', reason };
+      // A throw out of the port is no usable answer, whatever caused it — the
+      // same reading `CheckColumnQuery` and `ReadMetricQuery` take. Calling it
+      // a refusal would send an author to fix an authority that is working.
+      return { kind: 'unreadable', reason, cause: 'unreachable' };
     }
   }
 }

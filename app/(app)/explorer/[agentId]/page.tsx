@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { PublicResult } from '@/ports/explorer.js';
 
 /**
@@ -15,14 +16,35 @@ import type { PublicResult } from '@/ports/explorer.js';
  * unreadable when three quarters answered is the worse lie.
  */
 
-/** What an empty or unreadable section says, so no branch renders blank. */
-function SectionNote({ result, empty }: { result: PublicResult<unknown>; empty: string }) {
+/**
+ * What an empty or unreadable section says, so no branch renders blank.
+ *
+ * `subject` names the section the way `empty` already does. Four reads land
+ * here and each fails on its own — "this could not be read" three sections
+ * down says nothing about which read, and neither would one shared
+ * reassurance.
+ */
+function SectionNote({
+  result,
+  empty,
+  subject,
+}: {
+  result: PublicResult<unknown>;
+  empty: string;
+  subject: string;
+}) {
   if (result.kind === 'none') return <p className="text-sm">{empty}</p>;
   if (result.kind === 'unreadable') {
     return (
-      <p role="alert" className="text-sm">
-        This could not be read: {result.reason}
-      </p>
+      <>
+        <p role="alert" className="text-sm">
+          This could not be read: {result.reason}
+        </p>
+        {/* Withheld and unread are separate on this page: the platform
+            publishes nothing of a competitor's private reasoning by design,
+            and that is `none`, not this. */}
+        <WhyNotLoaded cause={result.cause} subject={subject} />
+      </>
     );
   }
   return null;
@@ -62,6 +84,7 @@ export default async function CompetitorPage({
         <SectionNote
           result={funnel}
           empty="BattleGrid publishes no evaluation record for this agent."
+          subject="this agent’s record is"
         />
         {funnel.kind === 'value' ? (
           <div className="rounded border p-3 text-sm space-y-1">
@@ -114,7 +137,11 @@ export default async function CompetitorPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">What it is holding now</h2>
-        <SectionNote result={open} empty="BattleGrid publishes no position snapshot for this agent." />
+        <SectionNote
+          result={open}
+          empty="BattleGrid publishes no position snapshot for this agent."
+          subject="this agent’s positions are"
+        />
         {open.kind === 'value' ? (
           <div className="text-sm space-y-1">
             <p>
@@ -141,7 +168,11 @@ export default async function CompetitorPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">What it closed</h2>
-        <SectionNote result={trades} empty="This agent has closed no trades." />
+        <SectionNote
+          result={trades}
+          empty="This agent has closed no trades."
+          subject="this agent’s trades are"
+        />
         {trades.kind === 'value' ? (
           <>
             {trades.total !== null && trades.total > trades.value.length ? (
@@ -177,7 +208,11 @@ export default async function CompetitorPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">What it evaluated</h2>
-        <SectionNote result={evaluations} empty="BattleGrid publishes no evaluations for this agent." />
+        <SectionNote
+          result={evaluations}
+          empty="BattleGrid publishes no evaluations for this agent."
+          subject="this agent’s evaluations are"
+        />
         {evaluations.kind === 'value' ? (
           <>
             {evaluations.total !== null && evaluations.total > evaluations.value.length ? (

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { CONTROL } from '@/presentation/components/control.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 
@@ -33,6 +34,7 @@ export default async function DeployPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
         <p role="alert" className="text-sm">{roster.reason}</p>
+        <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
     );
   }

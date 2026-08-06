@@ -1,10 +1,11 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
-import type { Catalog, CatalogResult } from '@/domain/agent/catalog.js';
+import type { Catalog } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
   BudgetResult,
+  CatalogResult,
   EntryDecision,
   EvaluationResult,
   FunnelResult,
@@ -69,7 +70,9 @@ export class FakeAgentsPort implements AgentsPort {
   }
 
   async readCatalog(): Promise<CatalogResult> {
-    if (!this.catalogReadable) return { kind: 'unreadable', reason: 'catalog unavailable' };
+    if (!this.catalogReadable) {
+      return { kind: 'unreadable', reason: 'catalog unavailable', cause: 'unreachable' };
+    }
     return { kind: 'catalog', catalog: this.catalog };
   }
 

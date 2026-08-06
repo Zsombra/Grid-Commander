@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * The Market Grid arena, watched — sessions, schedules, coin pools, and
@@ -20,6 +21,9 @@ export default async function ArenaPage() {
         {/* Not an empty arena: "nothing is running" and "nothing could be
             read" are different facts. */}
         <p role="alert" className="text-sm">{arena.reason}</p>
+        {/* The account's own entries are read from the same failed call, so
+            "you have not entered" is exactly what this page must not imply. */}
+        <WhyNotLoaded cause={arena.cause} subject="the arena is" />
       </main>
     );
   }
