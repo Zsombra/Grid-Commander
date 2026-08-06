@@ -29,8 +29,8 @@ export default async function ArenaPage() {
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   // Two reads, asked together and answered apart: the rulebook is one unscoped
-  // call, the arena is a list plus a fan-out, and a failure of either says
-  // nothing about the other.
+  // call, the arena is a list plus one submission check per session, and a
+  // failure of either says nothing about the other.
   const [arena, rules] = await Promise.all([
     app.watchArena.execute(user.authority),
     app.readGameRules.execute(user.authority),
@@ -80,34 +80,31 @@ export default async function ArenaPage() {
         <ul className="space-y-4">
           {arena.sessions.map((s) => (
             <li key={s.id} className="rounded border p-4 text-sm space-y-1">
-              {/* Name and coin pool come off the list, so they are known for
-                  every session that appears at all. Everything below them is a
-                  separate read that can fail on its own. */}
+              {/* Everything about the session — name, status, schedule, player
+                  count, coin pool, price — comes off the list, so it is known
+                  for every session that appears at all. The only per-session
+                  read left is about this *account*, and it is the last block
+                  below. */}
               <p className="font-medium">
                 {/* Every row opens. A session you can only read a summary of
                     cannot answer what happened when it settled. */}
                 <a href={`/arena/${s.id}`} className="underline">
                   {s.name}
                 </a>
-                {s.detail === null ? '' : ` — ${s.detail.status}`}
+                {` — ${s.status ?? 'status not stated'}`}
               </p>
-              {s.detail === null ? (
-                <p role="status">
-                  This session&apos;s schedule could not be read
-                  {s.unreadable ? `: ${s.unreadable}` : ''}.
-                </p>
-              ) : (
-                <p>
-                  {s.detail.lockAt ? `Locks ${s.detail.lockAt}` : 'Lock time unknown'}
-                  {' · '}
-                  {s.detail.settleAt ? `settles ${s.detail.settleAt}` : 'settle time unknown'}
-                  {typeof s.detail.playerCount === 'number'
-                    ? ` · ${s.detail.playerCount} player(s)`
-                    : ''}
-                </p>
-              )}
+              {/* No degraded branch here any more. This used to say "this
+                  session's schedule could not be read" whenever a per-session
+                  detail call failed — while the schedule sat in the list
+                  payload that had rendered the row. */}
+              <p>
+                {s.lockAt ? `Locks ${s.lockAt}` : 'Lock time unknown'}
+                {' · '}
+                {s.settleAt ? `settles ${s.settleAt}` : 'settle time unknown'}
+                {typeof s.playerCount === 'number' ? ` · ${s.playerCount} player(s)` : ''}
+              </p>
               {/* The stake, from the list itself — known even when the
-                  per-session reads fail, and the one number a player should
+                  submission check fails, and the one number a player should
                   never have to go looking for. */}
               <p>
                 Entry {stated(s.entryFee)} · pool {stated(s.prizePool)}
@@ -120,17 +117,24 @@ export default async function ArenaPage() {
                 </p>
               ) : null}
               <p>Coins: {s.coinTickers.length > 0 ? s.coinTickers.join(', ') : 'not previewed'}</p>
-              {/* Three states. `null` is nobody knows, and saying "has not
-                  entered" for it would be a claim from a read that never
-                  answered. */}
-              <p>
+              {/* The one thing on this row that is a separate read, and the
+                  one honest degradation left. Three states: `null` is nobody
+                  knows, and saying "has not entered" for it would be a claim
+                  from a read that never answered. The reason rides along — it
+                  used to be spent on the schedule sentence above. */}
+              <p role={s.entered === null ? 'status' : undefined}>
                 {s.entered === null
-                  ? 'Whether this account entered could not be read.'
+                  ? `Whether this account entered could not be read${
+                      s.unreadable ? `: ${s.unreadable}` : ''
+                    }.`
                   : s.entered
                     ? 'This account has entered this session.'
                     : 'This account has not entered this session.'}
               </p>
-              {s.detail !== null && s.detail.status !== 'SETTLED' ? (
+              {/* Neither promised nor denied when the list sent no status: a
+                  session whose state is unknown is not a session known to be
+                  unsettled. */}
+              {s.status !== null && s.status !== 'SETTLED' ? (
                 <p className="text-text-secondary">Results arrive after settlement.</p>
               ) : null}
             </li>
