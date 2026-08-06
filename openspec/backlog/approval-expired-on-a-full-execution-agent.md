@@ -14,6 +14,67 @@ tags: [battlegrid, gate-blocks, unexplained, live]
 
 # The commonest block on the account is one nobody can explain
 
+## Update 2026-08-06 (evening): the "unfilled order" reading is ruled out
+
+The operator's reading was that the platform threw a signal, the order did not
+fill inside the timeout, and the decision expired unexecuted. It is a natural
+reading of the name and it does not survive the data.
+
+**All three agents carrying this block have never evaluated anything.**
+
+| | CONTRARIAN | CONFLUENCE | VELOCITY | Fade Master II |
+|---|---|---|---|---|
+| `get_signal_performance.totalEvaluations` | **0** | **0** | **0** | 245 |
+| `list_entry_decisions` total | **0** | **0** | **0** | 151 |
+| `list_signal_logs` | **0** | **0** | **0** | many |
+| `AGENT_APPROVAL_EXPIRED` blocks | 98 | 27 | 9 | **0** |
+
+No signal was ever thrown, so no order could fail to fill. A gate block happens
+*before* signal evaluation by definition, and these three have no evaluations,
+no signal logs and no decisions in their entire history.
+
+The contrast is the sharpest part: **Fade Master II, the one agent that
+actually trades, has none of these blocks.** It has `INSUFFICIENT_EQUITY`
+instead. The block lands on agents that have never traded, not on the one that
+has.
+
+### What the evidence does point at
+
+All three were created 2026-07-29/30, and CONTRARIAN's activity feed has
+exactly two events since creation:
+
+```
+2026-07-29T16:08 AGENT_BLOCKED_NO_ALLOCATION   {}
+2026-07-29T14:16 AGENT_CREATED                 {strategyName: "Fade Master — imported", modelDisplayName: "Grok 4.3"}
+```
+
+`get_agent_fund_allocation` for all three: `availableUsd: 0, committedUsd: 0,
+**lifetimeAllocatedUsd: 0**`. They have never been funded.
+
+So the shape is: created, never allocated, blocked ever since. Whether
+`AGENT_APPROVAL_EXPIRED` *means* something about allocation is still not
+established — the enum carries a separate `NO_AGENT_ALLOCATION` code, and the
+activity feed uses `AGENT_BLOCKED_NO_ALLOCATION` while the gate block says
+`AGENT_APPROVAL_EXPIRED`. Three names in the neighbourhood of one condition.
+
+### Tools checked, and what they were worth
+
+- `get_agent_activity_feed` — **useful**. Named `AGENT_BLOCKED_NO_ALLOCATION`,
+  which nothing else did. Two events total for CONTRARIAN.
+- `get_agent_fund_allocation` — **useful**. `lifetimeAllocatedUsd: 0` is the
+  fact the whole picture turns on.
+- `get_agent_automation_status` — **not related**. It answers Market Grid game
+  assignments and assignable presets (`CRYPTO WARS`, `STOCKS OFFENSIVE`,
+  `entryFee: 10`), nothing about trading authorization. Struck off this item's
+  first-step list.
+
+### What is still open
+
+Whether the fix is "allocate funds to these three agents" — which the operator
+can test directly, and which would resolve 134 blocks a week if right. That is
+an account action, not a product change, so this item stays a question rather
+than becoming a change.
+
 Found while building `what-keeps-stopping-this-agent`, by folding every gate
 block on the operator's five agents (2026-08-06):
 
