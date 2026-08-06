@@ -809,7 +809,8 @@ function mapReportPreview(payload: Record<string, unknown>) {
     .filter((g): g is BudgetGauge => g.used !== null && g.cap !== null);
   return {
     sections,
-    estimatedTokenCount: num(payload['estimatedTokenCount']),
+    // No `estimatedTokenCount`: v9 moved it into `budget` as `estimatedTokens`,
+    // used against cap. Reading the old key returned null on every preview.
     tokenCountModel:
       typeof payload['tokenCountModel'] === 'string' ? payload['tokenCountModel'] : null,
     budget,

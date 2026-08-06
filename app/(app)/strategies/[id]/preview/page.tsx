@@ -118,12 +118,11 @@ export default async function PreviewPage({
         <>
           <section className="space-y-2 text-sm">
             <h2 className="text-base font-medium">Cost</h2>
-            <p>
-              {outcome.preview.estimatedTokenCount !== null
-                ? `About ${outcome.preview.estimatedTokenCount} tokens`
-                : 'Token estimate unavailable'}
-              {outcome.preview.tokenCountModel ? ` (counted as ${outcome.preview.tokenCountModel})` : ''}
-            </p>
+            {/* Every figure against its ceiling, the token estimate among them.
+                v9 moved that estimate into the budget as used/cap and stopped
+                returning it separately; this page used to read the standalone
+                field, get nothing, and print "Token estimate unavailable"
+                immediately above the gauge that had it. */}
             <ul className="space-y-1">
               {outcome.preview.budget.map((g) => (
                 <li key={g.name}>
@@ -131,6 +130,13 @@ export default async function PreviewPage({
                 </li>
               ))}
             </ul>
+            {outcome.preview.tokenCountModel ? (
+              // A note on how the budget was measured, not a qualifier hanging
+              // off a number that is not there.
+              <p className="text-text-secondary">
+                Tokens counted as {outcome.preview.tokenCountModel}.
+              </p>
+            ) : null}
           </section>
 
           <section className="space-y-3">

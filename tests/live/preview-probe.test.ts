@@ -59,7 +59,7 @@ live('a composition previews as the agent reads it', () => {
     console.log(
       `  subject: ${subject.name} | outcome ${result.outcome.kind}` +
         (result.outcome.kind === 'preview'
-          ? ` | sections ${result.outcome.preview.sections.length} | ~${String(result.outcome.preview.estimatedTokenCount)} tokens (${String(result.outcome.preview.tokenCountModel)}) | gauges ${result.outcome.preview.budget.map((g) => `${g.name} ${g.used}/${g.cap}`).join(', ')}`
+          ? ` | sections ${result.outcome.preview.sections.length} | counted as ${String(result.outcome.preview.tokenCountModel)} | gauges ${result.outcome.preview.budget.map((g) => `${g.name} ${g.used}/${g.cap}`).join(', ')}`
           : ` | ${result.outcome.reason.slice(0, 120)}`),
     );
     expect(result.outcome.kind).toBe('preview');

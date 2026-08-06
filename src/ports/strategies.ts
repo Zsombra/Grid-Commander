@@ -396,10 +396,24 @@ export interface BudgetGauge {
   readonly cap: number;
 }
 
-/** What `preview_strategy_report` renders — shaped live 2026-08-01. */
+/**
+ * What `preview_strategy_report` renders — shaped live 2026-08-01, reshaped
+ * against v9.0.0 on 2026-08-06.
+ *
+ * **`estimatedTokenCount` is deliberately absent.** v9 stopped returning it and
+ * moved the number into `budget` as a used/cap gauge named `estimatedTokens` —
+ * its own description says so. Until then this carried the standalone field and
+ * mapped it to `null` forever, so the preview page reported "Token estimate
+ * unavailable" directly above `estimatedTokens: 1767 of 16000`.
+ *
+ * Not reconstructed from the gauge. The gauge is the better shape — a bare
+ * count cannot say how close to the cap it is — and rebuilding the old one
+ * would model a payload the platform no longer sends, which is this project's
+ * most expensive recurring mistake.
+ */
 export interface ReportPreview {
   readonly sections: readonly RenderedSection[];
-  readonly estimatedTokenCount: number | null;
+  /** How the platform counted, for the budget note. Still returned by v9. */
   readonly tokenCountModel: string | null;
   readonly budget: readonly BudgetGauge[];
 }

@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v5.1.0`, protocol `2025-06-18`) on 2026-08-04.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v9.0.0`, protocol `2025-06-18`) on 2026-08-06.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -314,15 +314,15 @@ Returns: `filter`, `leaderboard`, `currentUser`, `generatedAt`
 
 *Get Market Context* — read-only · open-world
 
-Get comprehensive market context with 22 selectable modules. Provide sessionId for session-
+Get comprehensive market context with 23 selectable modules. Provide sessionId for session-
 scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research —
 exactly one of the two. Returns GFM markdown sections — the same format Intelligence Agents
 use during auto-play. Available modules: priceAction, subTimeframe, rsi, macd, volume,
 volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest,
 relativeStrength, supportResistance, trendStrength, mfi, higherTimeframe, regimeContext,
-structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence. Default:
-["priceAction", "rsi", "relativeStrength"]. Module 1 (Price Action) is selectable like any
-other module — included by default, omitted when your list leaves it out.
+structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence, perpSpotFlow.
+Default: ["priceAction", "rsi", "relativeStrength"]. Module 1 (Price Action) is selectable
+like any other module — included by default, omitted when your list leaves it out.
 
 Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coins`, `sections`
 
@@ -1046,7 +1046,7 @@ _No parameters._
 List compact report-authoring vocabulary for one category, including metrics, transforms,
 timeframe references, budgets, enabled timeframes, and template summaries.
 
-Returns: `category`, `metrics`, `transforms`, `timeframeRefs`, `budgets`, `timeframes`, `templates`
+Returns: `category`, `metrics`, `transforms`, `timeframeRefs`, `budgets`, `previewExecutionLimits`, `timeframes`, `templates`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -1118,9 +1118,11 @@ Returns: `template`
 *Preview Strategy Report* — read-only · open-world
 
 Render a bounded live-market preview for a draft report and required bounded coin selection.
-Returns server-owned token and budget usage without saving or mutating strategy state.
+Returns server-owned budget usage — including the estimated-token budget as used/cap —
+without saving or mutating strategy state. The preview execution limits (result byte cap,
+deadline) are served by discovery, not by this result.
 
-Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `rankScopingNote`
+Returns: `renderedSections`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `rankScopingNote`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|

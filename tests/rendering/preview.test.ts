@@ -47,7 +47,15 @@ describe('the preview page, branch by branch', () => {
     expect(r.headings[0]).toContain('Midway (fork)');
     expect(r.text).toContain('Price Action');
     expect(r.text).toContain('the last traded price');
-    expect(r.text).toContain('1393 tokens');
+    // The token estimate is a gauge now, not a sentence. v9 stopped returning
+    // `estimatedTokenCount` and publishes it as used-against-cap, so the page
+    // shows `estimatedTokens: 1767 of 16000` rather than "About 1393 tokens" —
+    // and, critically, no longer claims it is unavailable while showing it.
+    expect(r.text).toContain('estimatedTokens');
+    expect(r.text).toContain('1767');
+    expect(r.text).toContain('16000');
+    expect(r.text, 'the count is never reported as missing').not.toContain('unavailable');
+    // The counting model stays, as a note on the measurement.
     expect(r.text).toContain('o200k_base');
     expect(r.text).toContain('sections');
     expect(r.text).toContain('of  32');
