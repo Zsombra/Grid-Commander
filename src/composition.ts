@@ -275,7 +275,9 @@ export function app(cookies: CookieStore) {
     readStoppages: new ReadStoppagesQuery(i.agents),
     // What it is holding, and what it could not get to the exchange. The
     // funnel half needs no new read — the counts were always there.
-    readExposure: new ReadExposureQuery(i.positions, i.agents),
+    // The clock is what turns a priced-at stamp into "4 minutes ago"; this is
+    // the only place in the product that names a real one.
+    readExposure: new ReadExposureQuery(i.positions, i.agents, systemClock),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
     // Recording what a model suggests. Deliberately holds no BattleGrid port:

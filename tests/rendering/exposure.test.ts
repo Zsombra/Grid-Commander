@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { anAgent, anEntryDecision, FakeAgentsPort } from '../support/agent-fakes.js';
+import { FakeClock } from '../support/fakes.js';
 import { anExposure, aPosition, FakePositionsPort } from '../support/position-fakes.js';
 import { actingWith } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
@@ -25,6 +26,22 @@ const AGENT = anAgent(); // id 'a1'
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
 const noSearch = Promise.resolve({});
 
+/** `generatedAtMs` on the live exposure fixture: 2026-08-06T17:55:21.702Z. */
+const PRICED_MS = 1786038921702;
+const PRICED_ISO = '2026-08-06T17:55:21.702Z';
+const MINUTE = 60_000;
+
+/**
+ * The moment the page is rendered, as a distance from the moment it was priced.
+ *
+ * Every sentence about staleness below is asserted against this rather than
+ * against the wall clock. A rendered age that read `Date.now()` would assert a
+ * different string on every run — the flaky-fixture shape this repo has already
+ * paid for once — which is why the clock is a port and why the suite's
+ * composition root now takes one.
+ */
+const renderedAt = (offsetMs: number) => new FakeClock(new Date(PRICED_MS + offsetMs));
+
 async function page() {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
   return rendered(await Page({ params: params({ id: AGENT.id }), searchParams: noSearch }));
@@ -34,13 +51,14 @@ function world(
   positions: FakePositionsPort['result'],
   funnel?: FakeAgentsPort['ownFunnel'],
   decisions?: FakeAgentsPort['entryDecisions'],
+  clock: FakeClock = renderedAt(4 * MINUTE),
 ) {
   const agents = new FakeAgentsPort([AGENT]);
   if (funnel) agents.ownFunnel = funnel;
   if (decisions) agents.entryDecisions = decisions;
   const pos = new FakePositionsPort();
   pos.result = positions;
-  current = actingWith({ agents, positions: pos });
+  current = actingWith({ agents, positions: pos, clock });
   return { agents, positions: pos };
 }
 
@@ -96,6 +114,7 @@ describe('a position that is open right now', () => {
     world({ kind: 'exposure', exposure: anExposure() });
     const r = await page();
     expect(r.text).toContain('a snapshot, not a live ticker');
+    expect(r.text).toContain(PRICED_ISO);
   });
 
   it('renders an unpriced position as unknown, never as flat', async () => {
@@ -110,6 +129,77 @@ describe('a position that is open right now', () => {
     expect(r.text).toContain('Unrealized result unknown');
     expect(r.text).toContain('could not price 1 of them');
     expect(r.text).not.toContain('Unrealized $0.00');
+  });
+});
+
+describe('how stale it is, and what can be done about it', () => {
+  /**
+   * The sentence a reader who has been sitting on this page needs.
+   *
+   * `Priced 2026-08-06T17:55:21.702Z` was true a second after the page loaded
+   * and equally true four minutes later, which is twenty-four of the platform's
+   * own ten-second refresh intervals on a 5× leveraged position. The timestamp
+   * is a fact about the past; only the age is a statement about *now*.
+   */
+  const said = async (offsetMs: number, exposure = anExposure()) => {
+    world({ kind: 'exposure', exposure }, undefined, undefined, renderedAt(offsetMs));
+    return page();
+  };
+
+  it('states the age beside the stamp, not instead of it', async () => {
+    const r = await said(4 * MINUTE);
+    expect(asRead(r.text)).toContain(`Priced 4 minutes ago, at ${PRICED_ISO}`);
+    // The disclaimer is the floor this stands on and does not move.
+    expect(r.text).toContain('a snapshot, not a live ticker');
+  });
+
+  it('reads a page opened at once as fresh rather than as zero minutes old', async () => {
+    expect((await said(20_000)).text).toContain('Priced less than a minute ago');
+  });
+
+  it('counts in the units the wait is felt in', async () => {
+    expect((await said(MINUTE)).text).toContain('Priced 1 minute ago');
+    expect((await said(3 * 60 * MINUTE)).text).toContain('Priced 3 hours ago');
+    expect((await said(50 * 60 * MINUTE)).text).toContain('Priced 2 days ago');
+  });
+
+  it('offers a re-read, and it is a link to this same page', async () => {
+    /**
+     * The whole affordance: an ordinary `<a>` back to `/agents/[id]`. A full
+     * page load, a server render, a fresh read — no client component, and
+     * nothing that could be read as the panel updating itself. Asserted
+     * through `links` rather than the text, because a label that is not
+     * reachable is not an affordance.
+     */
+    const r = await said(4 * MINUTE);
+    expect(r.text).toContain('Read these figures again');
+    expect(r.links).toContain(`/agents/${AGENT.id}`);
+  });
+
+  it('states the time and claims no age when the stamp is ahead of the clock', async () => {
+    // A read served by a machine whose clock trails BattleGrid's. Ordinary
+    // skew, and never rendered as "priced -1 minutes ago".
+    const r = await said(-1_000);
+    expect(asRead(r.text)).toContain(`Priced at ${PRICED_ISO}`);
+    expect(asRead(r.text)).toContain('how long ago that was cannot be said');
+    expect(r.text).not.toMatch(/Priced (less than|\d+ (minute|hour|day))/);
+    expect(r.text).toContain('a snapshot, not a live ticker');
+  });
+
+  it('still calls itself a snapshot when the platform stated no priced time', async () => {
+    /**
+     * The line used to be dropped whole when `generatedAtMs` was null, which
+     * took the snapshot disclaimer with it — on the one read least able to
+     * justify being trusted as current.
+     */
+    const totals = { ...anExposure().totals, generatedAtMs: null };
+    const r = await said(4 * MINUTE, anExposure({ totals }));
+    expect(asRead(r.text)).toContain(
+      'BattleGrid did not say when this was priced — a snapshot, not a live ticker.',
+    );
+    // And the way out is still offered: an unstated age is a reason to re-read,
+    // not a reason to withhold the only thing the reader can do.
+    expect(r.links).toContain(`/agents/${AGENT.id}`);
   });
 });
 

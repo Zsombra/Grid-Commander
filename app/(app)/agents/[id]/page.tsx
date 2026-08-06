@@ -92,7 +92,7 @@ export default async function AgentPage({
        * surface here looks backwards; an agent can be holding a leveraged
        * position with a moved stop and nothing said so.
        */}
-      <Exposure exposure={exposure.exposure} fills={exposure.fills} />
+      <Exposure exposure={exposure.exposure} fills={exposure.fills} agentId={agent.id} />
 
       {/**
        * What keeps stopping it, before anything about how it is configured.

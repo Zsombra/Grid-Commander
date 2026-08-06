@@ -33,6 +33,7 @@ import { WatchArenaQuery } from '@/application/use-cases/watch-arena.query.js';
 import { ReadFieldQuery } from '@/application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from '@/application/use-cases/read-competitor.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
+import { systemClock } from '@/ports/clock.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 
 /**
@@ -171,7 +172,10 @@ live('every read controller, against one account', () => {
     );
     await walk('readJournal', () => new ReadAgentJournalQuery(agents).execute({ ...forAgent, limit: 5 }));
     await walk('readStoppages', () => new ReadStoppagesQuery(agents).execute(forAgent));
-    await walk('readExposure', () => new ReadExposureQuery(positions, agents).execute(forAgent));
+    await walk('readExposure', () =>
+      // The real clock: a live read's age is only meaningful against now.
+      new ReadExposureQuery(positions, agents, systemClock).execute(forAgent),
+    );
     await walk('readDeployments', () =>
       new ReadDeploymentsQuery(radar).execute({ ...who, agent: subject, roster: owned }),
     );

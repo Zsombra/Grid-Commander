@@ -1,4 +1,5 @@
 import type { AgentsPort, EntryDecision, StageResult } from '@/ports/agents.js';
+import type { Clock } from '@/ports/clock.js';
 import type { FailureCause } from '@/ports/failure.js';
 import type { ExposureTotals, OpenPosition, PositionsPort } from '@/ports/positions.js';
 
@@ -116,12 +117,41 @@ export interface HeldPosition {
   readonly asDecided: DecidedLevels | null;
 }
 
+/**
+ * When the platform priced this, and how long ago that was by the time it is
+ * read.
+ *
+ * `generatedAtMs` is a fact about the past; staleness is a relation between it
+ * and now, and only the second one tells an operator anything. The page said
+ * `Priced 2026-08-06T17:55:21.702Z` a second after loading and said exactly the
+ * same thing four minutes later, on a 5× position the platform asks a client to
+ * re-read every ten seconds.
+ *
+ * The age is measured here rather than in the component because *now* is a
+ * dependency: taken from `Date.now()` inside a render, the sentence cannot be
+ * pinned by any test. It is measured in milliseconds and worded on the surface,
+ * the same split money and percentages already use.
+ *
+ * Three states rather than one signed number. A stamp later than our own clock
+ * is two machines disagreeing, not a position priced in the future, and an age
+ * of `-4 minutes` rendered as words would be this product's arithmetic
+ * presented as the platform's fact.
+ */
+export type PricedAt =
+  | { readonly kind: 'aged'; readonly atMs: number; readonly ageMs: number }
+  /** The platform's stamp is ahead of this server's clock. Age unstatable. */
+  | { readonly kind: 'ahead-of-clock'; readonly atMs: number }
+  /** The read carried no `generatedAtMs`. Still a snapshot — of an unknown moment. */
+  | { readonly kind: 'unstated' };
+
 export type ExposureView =
   | {
       readonly kind: 'holding';
       readonly positions: readonly HeldPosition[];
       /** Account-wide, so a single agent's page can say what else is at risk. */
       readonly totals: ExposureTotals;
+      /** How old these figures are, against the clock the request was served on. */
+      readonly pricedAt: PricedAt;
     }
   | { readonly kind: 'flat' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
@@ -136,6 +166,13 @@ export class ReadExposureQuery {
   constructor(
     private readonly positions: PositionsPort,
     private readonly agents: AgentsPort,
+    /**
+     * Injected and required, never defaulted to the system clock: a default
+     * would put a real clock back inside the application layer, which is the
+     * one thing `Clock` exists to prevent. `ReadProposalsQuery` takes it the
+     * same way, for the same reason — it decides what is stale.
+     */
+    private readonly clock: Clock,
   ) {}
 
   async execute(req: {
@@ -153,7 +190,10 @@ export class ReadExposureQuery {
       this.agents.readEntryDecisions({ ...req, limit: DECISION_WINDOW }),
     ]);
 
-    return { exposure: view(active, req.agentId, byId(decisions)), fills: fills(funnel) };
+    return {
+      exposure: view(active, req.agentId, byId(decisions), this.clock.now()),
+      fills: fills(funnel),
+    };
   }
 }
 
@@ -174,6 +214,7 @@ function view(
   active: Awaited<ReturnType<PositionsPort['readActivePositions']>>,
   agentId: string,
   decisions: ReadonlyMap<string, EntryDecision>,
+  now: Date,
 ): ExposureView {
   if (active.kind === 'unreadable') {
     return { kind: 'unreadable', reason: active.reason, cause: active.cause };
@@ -186,7 +227,25 @@ function view(
     .filter((p) => p.agentId === agentId)
     .map((p) => held(p, p.decisionId === null ? undefined : decisions.get(p.decisionId)));
   if (mine.length === 0) return { kind: 'flat' };
-  return { kind: 'holding', positions: mine, totals: active.exposure.totals };
+  return {
+    kind: 'holding',
+    positions: mine,
+    totals: active.exposure.totals,
+    // Only the holding branch: nothing is priced on the other two, and an age
+    // over a failed read would date the failure rather than any figure.
+    pricedAt: priced(active.exposure.totals.generatedAtMs, now),
+  };
+}
+
+/** The stamp read against the clock the request is being served on. */
+function priced(generatedAtMs: number | null, now: Date): PricedAt {
+  if (generatedAtMs === null) return { kind: 'unstated' };
+  const ageMs = now.getTime() - generatedAtMs;
+  // Not an error, and not zero: BattleGrid stamps on its clock and this runs on
+  // another. Seconds of skew between two machines is ordinary, and the honest
+  // answer is the stamp with no age beside it.
+  if (ageMs < 0) return { kind: 'ahead-of-clock', atMs: generatedAtMs };
+  return { kind: 'aged', atMs: generatedAtMs, ageMs };
 }
 
 /**
