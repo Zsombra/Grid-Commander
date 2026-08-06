@@ -984,6 +984,7 @@ describe('a page about one thing can get back to it', () => {
       '/agents/[id]/rebind',
       '/agents/[id]/undeploy/[coin]',
       '/strategies/[id]/archive',
+      '/strategies/[id]/conditions/save',
       '/strategies/[id]/edit',
       '/strategies/[id]/fork',
       '/strategies/[id]/restore',

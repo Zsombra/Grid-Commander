@@ -23,6 +23,9 @@ import { ReadSectionLibraryQuery } from '@/application/use-cases/read-section-li
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
 import { TryConditionQuery } from '@/application/use-cases/try-condition.query.js';
+import { DescribeConditionWriteQuery } from '@/application/use-cases/describe-condition-write.query.js';
+import { CompilePlanCommand } from '@/application/use-cases/compile-plan.command.js';
+import { DescribeApplyQuery } from '@/application/use-cases/apply-plan.command.js';
 import { SimulateAggregateQuery } from '@/application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
@@ -141,6 +144,15 @@ export function actingWith({
     retuneRule: new RetuneRuleCommand(strategies),
     previewComposition: new PreviewCompositionQuery(strategies),
     tryCondition: new TryConditionQuery(strategies),
+    // The write half of the same layer. Wired from the real classes for the
+    // reason the rest of this harness is: a page rendered here runs the
+    // application code a request runs, including the compile that decides
+    // whether there is anything to confirm.
+    describeConditionWrite: new DescribeConditionWriteQuery(
+      strategies,
+      new CompilePlanCommand(strategies),
+      new DescribeApplyQuery(confirmations, random, clock),
+    ),
     simulateAggregate: new SimulateAggregateQuery(strategies),
   };
 

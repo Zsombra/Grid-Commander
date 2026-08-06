@@ -244,3 +244,141 @@ export function compileUpdateIntent(input: {
     sections: input.sections,
   };
 }
+
+/**
+ * The compile UPDATE request that changes the condition list, and nothing else.
+ *
+ * A second builder rather than four optional fields on the first, and the
+ * asymmetry is the point: the section editor restates `tagline` and `sections`
+ * and never mentions `conditions`; this restates `conditions` and never
+ * mentions the other two. One builder taking all of them would let a caller
+ * compose an UPDATE that restates the whole strategy — the payload nobody has
+ * observed, and the one that could silently overwrite an axis its surface never
+ * offered to change.
+ *
+ * **What it omits is load-bearing, and it is observed rather than assumed.**
+ * `compile_strategy_plan` fills its `postState` from the stored strategy for
+ * every field the request leaves out — established live on 2026-08-06 against a
+ * fork carrying two conditions, where an UPDATE naming no `conditions` came
+ * back with both of them in `postState` and wrote nothing
+ * (`an-update-that-omits-conditions-is-unobserved`). That is what makes an
+ * intent this narrow safe, and it is exactly why `postStateDrift` reads the
+ * answer back on every compile rather than trusting the finding to hold.
+ *
+ * `coinSelection` is pinned as it is on its sibling: ranked, limit 9 — the one
+ * composition the platform was observed to accept, not an operator choice.
+ */
+export function compileConditionsIntent(input: {
+  readonly strategyId: string;
+  readonly expectedRevision: number;
+  readonly intentSummary: string;
+  readonly assumptions: readonly string[];
+  /** The whole list, in order — the platform takes no smaller unit. */
+  readonly conditions: readonly Readonly<Record<string, unknown>>[];
+}): Readonly<Record<string, unknown>> {
+  return {
+    operation: 'UPDATE' as const,
+    strategyId: input.strategyId,
+    expectedRevision: input.expectedRevision,
+    intentSummary: input.intentSummary,
+    assumptions: input.assumptions,
+    coinSelection: { mode: 'ranked' as const, limit: 9 },
+    // Always present, even when empty. `[]` is the composed intent of removing
+    // the last condition, and omitting it is the request that preserves them —
+    // the two are opposite acts and the difference is one key.
+    conditions: [...input.conditions],
+  };
+}
+
+/**
+ * What a condition write claims it leaves alone, checked against the compiler.
+ *
+ * A compile writes nothing, so its `postState` is the platform telling us what
+ * it *would* save — free, and the only moment this product can see what its
+ * omissions actually did before a human is asked to agree to them. Rather than
+ * carrying the 2026-08-06 finding forward as an assumption, every condition
+ * write re-establishes it: the compiler is asked, and a plan whose post-state
+ * moved an axis the surface never offered to change is refused rather than
+ * described.
+ *
+ * Three checks, each at the level the finding was actually observed at:
+ *
+ * - **The condition keys, in order.** Whether the submitted list was taken
+ *   whole. Deliberately not a byte comparison — the compiler normalises what it
+ *   returns, and asserting equality this product has never observed would refuse
+ *   honest writes for a shape nobody has established.
+ * - **The tagline**, compared as text with empty and absent read alike, since
+ *   the read and the plan disagree about which one they use for "none".
+ * - **The section keys**, as a set. Order inside `sections` is the compiler's;
+ *   membership is the claim — nothing added, nothing dropped.
+ */
+export interface UnchangedElsewhere {
+  /** The keys of the list submitted, in order. `null` for an entry carrying none. */
+  readonly conditionKeys: readonly (string | null)[];
+  readonly tagline: string | null;
+  readonly sectionKeys: readonly string[];
+}
+
+export function postStateDrift(
+  approvedPlan: Readonly<Record<string, unknown>>,
+  expected: UnchangedElsewhere,
+): readonly string[] {
+  const postState = approvedPlan['postState'];
+  if (typeof postState !== 'object' || postState === null) {
+    return ['BattleGrid returned a plan with no post-state, so what it would save cannot be read.'];
+  }
+  const post = postState as Record<string, unknown>;
+  const drift: string[] = [];
+
+  const compiled = Array.isArray(post['conditions'])
+    ? (post['conditions'] as unknown[]).map((entry) => {
+        const key = ((entry ?? {}) as Record<string, unknown>)['conditionKey'];
+        return typeof key === 'string' && key.length > 0 ? key : null;
+      })
+    : null;
+  if (compiled === null) {
+    drift.push(
+      `The plan carries no condition list at all, and ${expected.conditionKeys.length} condition(s) were submitted.`,
+    );
+  } else if (!sameSequence(compiled, expected.conditionKeys)) {
+    drift.push(
+      `The conditions submitted were ${name(expected.conditionKeys)}, and the plan would save ${name(compiled)}.`,
+    );
+  }
+
+  const tagline = text(post['tagline']);
+  if (tagline !== text(expected.tagline)) {
+    drift.push(
+      `The tagline would become ${quoted(tagline)}, and this strategy's tagline is ${quoted(expected.tagline)}.`,
+    );
+  }
+
+  const sections = Array.isArray(post['sections'])
+    ? (post['sections'] as unknown[]).flatMap((entry) => {
+        const key = ((entry ?? {}) as Record<string, unknown>)['sectionKey'];
+        return typeof key === 'string' ? [key] : [];
+      })
+    : [];
+  if (!sameSet(sections, expected.sectionKeys)) {
+    drift.push(
+      `The report sections would become ${name(sections)}, and this strategy reads ${name(expected.sectionKeys)}.`,
+    );
+  }
+
+  return drift;
+}
+
+const sameSequence = (a: readonly (string | null)[], b: readonly (string | null)[]): boolean =>
+  a.length === b.length && a.every((entry, i) => entry === b[i]);
+
+const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
+  sameSequence([...a].sort(), [...b].sort());
+
+/** Empty and absent are one state here; the read and the plan spell it differently. */
+const text = (value: unknown): string | null =>
+  typeof value === 'string' && value.length > 0 ? value : null;
+
+const name = (keys: readonly (string | null)[]): string =>
+  keys.length === 0 ? 'none' : keys.map((k) => k ?? '(an entry with no key)').join(', ');
+
+const quoted = (value: string | null): string => (value === null ? 'empty' : `"${value}"`);
