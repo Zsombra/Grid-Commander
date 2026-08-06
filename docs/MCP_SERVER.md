@@ -50,7 +50,7 @@ behaviour.
 
 ## It cannot change anything. It can propose.
 
-Nineteen tools. Eighteen are reads; the nineteenth records a suggestion and
+Twenty tools. Nineteen are reads; the twentieth records a suggestion and
 stops. No tool here creates, updates, rebinds, archives, deploys, applies or
 disconnects anything on your BattleGrid account.
 
@@ -136,6 +136,7 @@ directly. It would lose everything this product knows:
 | `read_decision_pipeline` | why it did or didn't trade, and its evaluate-vs-act funnel |
 | `read_evaluation` | one scorecard: every signal consulted, and what the decision cost |
 | `read_deployments` | where it is actually scanning |
+| `read_qualification` | whether it would take a coin **right now**, which gate stops it, and where the screened coins came from |
 | `list_strategies` / `read_strategy` | the library, and one strategy |
 | `read_signal_library` / `read_signal` | every signal a rule can reference |
 | `read_metric_index` / `read_metric` | every metric a column can be built from |
@@ -147,6 +148,21 @@ directly. It would lose everything this product knows:
 
 `read_audit` earns its place *because* the writes are absent: it is how you
 ask the model what has already been done for you.
+
+`read_qualification` is the only one that asks about **now**. Everything else
+here explains something that already happened, so a model asked "why is my
+agent not trading" has to reason forward from backward evidence; this one has
+BattleGrid score the agent's gates against live coins, which spends no decision
+and does not make the agent act.
+
+It is also the only tool whose *subject* the product may choose, so where the
+coins came from is part of its answer rather than context for it — the coins
+the agent is deployed on, a ranked list this product picked when the agent is
+deployed nowhere, or the ones you named. The fallback says which of the two
+reasons put it there: an agent deployed nowhere and an agent whose deployments
+could not be read produce the same coins and mean opposite things. "None of
+these qualify" is a finding about your agent only when your agent's own coins
+were the ones screened, and the response opens by saying which.
 
 `propose_agent_change` takes the agent's own field names — `displayName`,
 `brain`, `tradingConfig` (which holds `tradingMode` and the money limits),
