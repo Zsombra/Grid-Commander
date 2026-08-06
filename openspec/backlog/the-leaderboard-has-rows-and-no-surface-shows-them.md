@@ -2,11 +2,11 @@
 id: the-leaderboard-has-rows-and-no-surface-shows-them
 title: The leaderboard's ten rows are read, mapped onto the port, and rendered nowhere
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-players-above-you-are-shown
 capability: agent-comparison
 blocked_by: []
 tags: [battlegrid, explorer, leaderboard, mapped-but-unrendered]
