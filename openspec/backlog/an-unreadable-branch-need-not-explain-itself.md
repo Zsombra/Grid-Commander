@@ -78,6 +78,11 @@ the time it was written was 36 branches across 32 files, six of them reaching
 the component. Twenty-six were swept; four carry a stated exemption, one of
 which is a deferral — `the-exposure-panel-still-prints-its-reason`.
 
+*(Later the same day: that deferral was taken by
+`the-exposure-panel-explains-itself`, so three exemptions remain and all three
+are arguments rather than debts. The count above is left as it was, because it
+records what this change landed rather than what is true now.)*
+
 The presentation question below — the audit table's repeated paragraph — is not
 in that change and remains open here.
 
