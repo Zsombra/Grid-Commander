@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * The metric index — every report metric the platform publishes, grouped by
@@ -18,6 +19,10 @@ export default async function MetricIndexPage() {
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The metric vocabulary could not be read</h1>
         <p role="alert" className="text-sm">{index.reason}</p>
+        {/* A report column already saved reads one of these metrics, so an
+            index that will not load looks like the column's meaning going
+            with it. It has not. */}
+        <WhyNotLoaded cause={index.cause} subject="these metrics are" />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to strategies</a>
         </p>

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentForm } from '@/presentation/components/agent-form.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { behavior, optionalText, requiredText } from '@/presentation/form.js';
 import { moneyAnswers } from '@/presentation/form.js';
@@ -28,13 +29,20 @@ export default async function NewAgentPage() {
   }
 
   const catalog = await app.readCatalog.execute(user.authority);
-  if (catalog.kind !== 'catalog') {
+  // Branching on the failure rather than on "not the good case". The negative
+  // test needed a `: 'unknown'` fallback for a state the union does not have,
+  // and it hid the `cause` the result carries — so this page told a user with a
+  // rejected credential to wait for an outage that was not happening.
+  if (catalog.kind === 'unreadable') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot create an agent right now</h1>
         <p role="alert" className="text-sm">
-          The choices this form needs come from BattleGrid, and it could not be
-          reached: {catalog.kind === 'unreadable' ? catalog.reason : 'unknown'}
+          The choices this form needs come from BattleGrid: {catalog.reason}
+        </p>
+        <WhyNotLoaded cause={catalog.cause} subject="BattleGrid’s catalogue is" />
+        <p className="text-sm">
+          <a href="/agents" className="underline">Back to your agents</a>
         </p>
       </main>
     );

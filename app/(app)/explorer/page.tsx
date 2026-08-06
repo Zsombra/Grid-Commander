@@ -3,6 +3,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { FIELD_SORTS, FIELD_WINDOWS } from '@/ports/explorer.js';
 import type { FieldSort, FieldWindow } from '@/ports/explorer.js';
 import { CONTROL } from '@/presentation/components/control.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * The field: who else is doing this, and how it is going for them.
@@ -77,9 +78,15 @@ export default async function ExplorerPage({
       <section className="space-y-2">
         <h2 className="text-base font-medium">Where you stand</h2>
         {leaderboard.kind === 'unreadable' ? (
-          <p role="alert" className="text-sm">
-            Your standing could not be read: {leaderboard.reason}
-          </p>
+          <>
+            <p role="alert" className="text-sm">
+              Your standing could not be read: {leaderboard.reason}
+            </p>
+            {/* The branch below says BattleGrid does not place this account
+                yet. Unread and unplaced must not read alike — one is about
+                the platform, the other about this account's results. */}
+            <WhyNotLoaded cause={leaderboard.cause} subject="your standing is" />
+          </>
         ) : leaderboard.leaderboard.own === null ? (
           <p className="text-sm">
             BattleGrid does not place this account on the profit leaderboard
@@ -124,6 +131,7 @@ export default async function ExplorerPage({
           <p role="alert" className="text-sm">
             {field.reason}
           </p>
+          <WhyNotLoaded cause={field.cause} subject="the field is" />
         </section>
       ) : (
         <>

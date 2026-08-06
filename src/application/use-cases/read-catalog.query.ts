@@ -1,5 +1,4 @@
-import type { CatalogResult } from '@/domain/agent/catalog.js';
-import type { AgentsPort } from '@/ports/agents.js';
+import type { AgentsPort, CatalogResult } from '@/ports/agents.js';
 
 /**
  * The vocabulary and limits the create form is built from.

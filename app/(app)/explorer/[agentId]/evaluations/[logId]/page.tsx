@@ -1,5 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import type { ConsultedSignal } from '@/ports/explorer.js';
 
 /**
@@ -63,6 +64,9 @@ export default async function EvaluationPage({
         <p role="alert" className="text-sm">
           {result.reason}
         </p>
+        {/* The `none` branch below is BattleGrid publishing no detail, which
+            is a fact about the platform. This one establishes nothing. */}
+        <WhyNotLoaded cause={result.cause} subject="this evaluation is" />
         {back}
       </main>
     );

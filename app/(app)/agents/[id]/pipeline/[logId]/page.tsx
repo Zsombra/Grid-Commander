@@ -3,6 +3,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import type { ConsultedSignal } from '@/ports/agents.js';
 import { SIMULATION_SIGNAL_CAP } from '@/ports/strategies.js';
 import { CONTROL } from '@/presentation/components/control.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
  * What your own agent read, indicator by indicator — and what it cost.
@@ -70,6 +71,10 @@ export default async function OwnEvaluationPage({
         <p role="alert" className="text-sm">
           {result.reason}
         </p>
+        {/* Distinct from the `none` branch below, which is the platform
+            publishing no detail. This one says nothing was established either
+            way — including that the record still exists. */}
+        <WhyNotLoaded cause={result.cause} subject="this evaluation is" />
         {back}
       </main>
     );

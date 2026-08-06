@@ -55,9 +55,13 @@ export function AgentRoster({
           {/* One notice for the list, and then no row claims either way — a
               radar hiccup must not relabel a scanning agent as idle. */}
           {deployments.kind === 'unreadable' && (
-            <p role="status" className="text-sm">
-              Whether these agents are deployed could not be read: {deployments.reason}
-            </p>
+            <div role="status" className="text-sm">
+              <p>Whether these agents are deployed could not be read: {deployments.reason}</p>
+              {/* The rows below claim nothing either way, so the only thing a
+                  reader can take from that silence is that the radar was
+                  turned off. It was not. */}
+              <WhyNotLoaded cause={deployments.cause} subject="their deployments are" />
+            </div>
           )}
         <ul className="space-y-3">
           {roster.agents.map((agent) => (
