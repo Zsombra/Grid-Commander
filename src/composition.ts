@@ -47,6 +47,7 @@ import {
 } from './application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
 import { TryConditionQuery } from './application/use-cases/try-condition.query.js';
+import { DescribeConditionWriteQuery } from './application/use-cases/describe-condition-write.query.js';
 import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
@@ -330,8 +331,17 @@ export function app(cookies: CookieStore) {
     previewComposition: new PreviewCompositionQuery(i.strategies),
     // The drafting half of the same question, and read-only for the same
     // reason: it asks the platform to resolve a condition that does not exist
-    // yet. It cannot save one — see `a-drafted-condition-cannot-be-saved`.
+    // yet. It saves nothing; saving is the describe below, a separate act.
     tryCondition: new TryConditionQuery(i.strategies),
+    // Saving one. Its own instances of the compile and the apply describe,
+    // rather than the ones on `app`: reaching sideways into the object under
+    // construction would make the wiring depend on declaration order — the
+    // same reasoning `openProposal` records. Both are stateless.
+    describeConditionWrite: new DescribeConditionWriteQuery(
+      i.strategies,
+      new CompilePlanCommand(i.strategies),
+      new DescribeApplyQuery(i.confirmations, random, systemClock),
+    ),
     simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.

@@ -17,8 +17,9 @@ import { ConditionStructure } from './strategy-conditions.js';
  * **This form cannot save, and says so rather than implying it.** There is no
  * platform tool that writes one condition — the only path is a compiled plan
  * that resubmits the strategy's whole condition list and reconfigures every
- * bound agent atomically — and two facts that path depends on are still
- * unobserved. A composer that looked like an editor would be read as one.
+ * bound agent atomically. That act lives on `conditions/save`, behind its own
+ * describe and its own confirmation, and a composer that looked like it could
+ * perform it would be read as one.
  *
  * `method="get"`, so a tried draft is a URL. That is the right affordance for a
  * surface that changes nothing: it can be kept, shared and hand-edited, and the
@@ -180,8 +181,8 @@ export function ConditionComposer({
 
       <p className="text-sm text-text-secondary">
         Composing here changes nothing. BattleGrid resolves the draft against live market
-        data and answers; no strategy is written to, and this surface has no way to save
-        what you compose.
+        data and answers; no strategy is written to, and this form has no way to save what
+        you compose.
       </p>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -278,7 +279,7 @@ export function ConditionComposer({
       {/* Said again at the point of action. The button is the moment an
           operator would assume something is being saved. */}
       <p className="text-xs text-text-secondary">
-        Nothing is saved. There is no control on this page that writes to the strategy.
+        {`Nothing is saved by this form. There is no control in it that writes to the strategy — saving a draft is a separate act, with its own review and its own confirmation.`}
       </p>
     </form>
   );

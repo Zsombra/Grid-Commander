@@ -2,11 +2,11 @@
 id: a-drafted-condition-cannot-be-saved
 title: A drafted condition can be tried and not saved — the write path, and what must be observed first
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: "a-drafted-condition-can-be-saved"
 capability: strategy-authoring
 blocked_by: [an-update-that-omits-conditions-is-unobserved]
 tags: [battlegrid, conditions, authoring, write-path]

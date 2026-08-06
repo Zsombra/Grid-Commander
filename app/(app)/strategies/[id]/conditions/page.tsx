@@ -19,12 +19,32 @@ import type { CoinSelection } from '@/ports/strategies.js';
  *
  * **Nothing here writes.** The single platform call is
  * `preview_strategy_report`, the same read the preview page makes, annotated
- * `readOnlyHint: true` and `destructiveHint: false`. There is no save on this
- * page and no server action in this file; a draft lives in the URL and nowhere
- * else. Why saving is not offered — no per-condition tool exists, and two facts
- * the write would depend on are still unobserved — is recorded in
- * `a-drafted-condition-cannot-be-saved`.
+ * `readOnlyHint: true` and `destructiveHint: false`. There is no server action
+ * in this file; a draft lives in the URL and nowhere else.
+ *
+ * Saving one is a separate act on a separate route, `conditions/save`, reached
+ * from here carrying the draft's own query — so what is saved is what was
+ * resolved, read back by the same parser. That route compiles the strategy's
+ * whole condition list, states what it would become, and asks for agreement;
+ * this one still cannot save anything, and still says so.
  */
+
+/**
+ * The draft's own query, ready to be re-attached to the save route.
+ *
+ * The saved condition has to be the one that was tried, and the draft exists
+ * only as this query string — so it travels whole rather than being rebuilt
+ * from the parsed definition, which would be a second serialisation of a
+ * grammar that already has one.
+ */
+function draftQuery(q: Record<string, string | string[] | undefined>): string {
+  const out = new URLSearchParams();
+  for (const [key, value] of Object.entries(q)) {
+    const first = Array.isArray(value) ? value[0] : value;
+    if (typeof first === 'string') out.set(key, first);
+  }
+  return out.toString();
+}
 
 function selectionFrom(q: Record<string, string | string[] | undefined>): CoinSelection {
   const one = (key: string): string | undefined => {
@@ -116,7 +136,16 @@ export default async function DraftConditionPage({
         Conditions decide direction — signals produce a score, and a condition decides
         whether it is consulted. Compose one here and BattleGrid resolves it against live
         market data, beside this strategy&apos;s own conditions.{' '}
-        <strong>Nothing composed here is saved.</strong>
+        <strong>
+          {`Nothing composed here is saved until you take the separate step of saving it.`}
+        </strong>
+      </p>
+      <p className="text-sm">
+        {`Saving is a separate act, on its own page: it compiles the strategy's whole condition list, states what that list would become, and asks you to agree before anything is written.`}{' '}
+        <a href={`/strategies/${strategy.id}/conditions/save`} className="underline">
+          What this strategy defines now
+        </a>
+        {' — and where a condition is removed.'}
       </p>
       <p className="text-sm text-text-secondary">
         This composer builds one level of grouping over up to {MEMBER_SLOTS} members. The
@@ -204,6 +233,21 @@ export default async function DraftConditionPage({
           standing={result.kind === 'tried' ? result.standing : undefined}
           alongside={result.kind === 'tried' ? result.alongside : undefined}
         />
+      )}
+
+      {result.kind === 'tried' && (
+        <p className="text-sm">
+          <a
+            // The draft's own query, carried whole — so the describe on the
+            // other side reads the same rows this one resolved, rather than a
+            // second rendering of them.
+            href={`/strategies/${strategy.id}/conditions/save?${draftQuery(q)}`}
+            className="underline"
+          >
+            {`Save this draft to ${strategy.name}`}
+          </a>
+          {` — you will see what the whole condition list would become, and agree to it, before anything is written.`}
+        </p>
       )}
 
       {result.kind === 'tried' &&
