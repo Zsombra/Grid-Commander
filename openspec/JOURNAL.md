@@ -1,5 +1,69 @@
 # Journal
 
+## 2026-08-06 (evening) — the second account broke two of my claims
+
+**Did**: surveyed the second account, reads only. Corrected two published
+claims, filed three items. No source changes.
+
+**The second account is a different product.** `Fibonacci` — $49.13, one active
+agent (`THE .0`), **16 radar deployments** including SP500 and BRENTOIL, and an
+agent that is genuinely trading: 71 evaluations, 27 executed orders, 26 closed
+trades, evaluating as recently as 17:00 today. Account 1 has three agents that
+have never evaluated anything.
+
+**Two claims from this morning were wrong, and the second account is what
+found them.**
+
+1. *"The block lands on agents that have never traded, not on the one that
+   has."* `THE .0` has 71 evaluations **and** 90 `AGENT_APPROVAL_EXPIRED`
+   blocks. The account-1 pattern did not generalise one account.
+2. *`lifetimeAllocatedUsd: 0` means never funded.* `THE .0` reads 0 with 26
+   closed trades behind it. Whatever that counter is, it is not that.
+
+Both were generalisations from a single account, stated with more confidence
+than one account can carry. Corrected in the item.
+
+**The conclusion they supported survived, on better evidence.** The operator's
+"a signal fired and the order missed its fill window" reading is still not what
+the code counts — `THE .0` has `expiredCount: 5` against **90** blocks, and on
+that account the windows do not even overlap: the five expiries are 28–29 July,
+the blocks run 30 July → 6 August.
+
+**And the intuition found something real anyway.** The five expired decisions
+are each exactly 15 minutes from creation to expiry, against
+`signalTimeoutMinutes: 15`. First live confirmation of what that setting
+governs.
+
+**The finding that matters most is new and is p1.** `THE .0`'s decisions:
+
+```
+EXECUTED 27 · FAILED 28 · SKIPPED 11 · EXPIRED 5     fillRatePct: 63
+```
+
+**28 of 60 entries never became an order.** Every FAILED row carries an
+`executedAt` and no `executedOrderId` — the platform reached the point of
+placing and got nothing back. Sizes are 0.5–0.76% under `VOLATILITY_AUTO`,
+which on $49 is a notional around $0.30 before leverage. This account has
+already been told why, once, in the platform's own words:
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE {equityUsd: 240, minEquityUsd: 333.33}` —
+and that fired when equity was **$240**.
+
+`what-keeps-stopping-this-agent` will not show any of this: these decisions were
+never blocked. They passed every gate, spent a model call each, and died at
+execution. Filed as `half-of-what-it-decides-never-reaches-the-exchange` (p1).
+
+**Also filed**: eight archived `GC probe` agents on the operator's second
+account are ours, from write-probe runs across several sessions. All OFF and
+archived so none can trade — but there is no delete tool, so they cannot be
+cleaned up from here. The fix that is ours to make is having the probes reuse
+one throwaway instead of creating a new one per run.
+
+**Next**: `half-of-what-it-decides-never-reaches-the-exchange` is p1 and is the
+money surface. Everything it needs is already read — `fillRatePct` is on
+`AgentFunnel` and rendered today as a statistic; what is missing is treating a
+low fill rate as a finding and joining it to the `minEquityUsd` the platform
+has already quoted for this account.
+
 ## 2026-08-06 (later) — the platform was already saying it
 
 **Did**: `what-keeps-stopping-this-agent` archived. Fifteen capabilities' worth

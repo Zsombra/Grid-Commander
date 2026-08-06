@@ -14,6 +14,56 @@ tags: [battlegrid, gate-blocks, unexplained, live]
 
 # The commonest block on the account is one nobody can explain
 
+## Update 2026-08-06 (second account): two of yesterday's claims were wrong
+
+The second account (`Fibonacci`, one active agent, `THE .0`) breaks the pattern
+this item asserted from the first account alone. **Both corrections are against
+what was written below.**
+
+| | account 1 (three agents) | account 2 (`THE .0`) |
+|---|---|---|
+| `AGENT_APPROVAL_EXPIRED` | 134 | **90** |
+| evaluations | 0 | **71** |
+| entry decisions | 0 | **71** |
+| closed trades | 0 | **26** |
+
+**Wrong claim 1: "the block lands on agents that have never traded, not on the
+one that has."** `THE .0` trades — 71 evaluations, 27 executed orders, 26 closed
+trades, real P&L — and carries 90 of these blocks. The account-1 pattern did
+not generalise past account 1.
+
+**Wrong claim 2: `lifetimeAllocatedUsd: 0` means "never funded."** `THE .0`
+also reads `availableUsd: 0, lifetimeAllocatedUsd: 0` while having closed 26
+trades. Whatever that counter tracks, it is not "has this agent ever had
+capital".
+
+### The core conclusion survives, and is now stronger
+
+The operator's "a signal fired and the order missed its fill window" reading is
+still ruled out, on two independent grounds:
+
+1. **The counts are nowhere near each other.** `THE .0` has `expiredCount: 5`
+   against **90** approval blocks — off by 18×. Account 1 has 134 blocks and
+   zero decisions of any status.
+2. **On account 2 the windows do not even overlap.** All five expired decisions
+   are 28–29 July; the 90 approval blocks run 30 July → 6 August. The blocks
+   begin after the last expiry.
+
+### What the operator's intuition *did* find
+
+Decision expiry is real, it is just a much smaller and separate thing — and the
+observation settles an open question about a setting:
+
+```
+created=2026-07-29T08:02  expires=2026-07-29T08:17  HYPE       (15 min)
+created=2026-07-29T01:20  expires=2026-07-29T01:35  HYPE       (15 min)
+created=2026-07-28T22:35  expires=2026-07-28T22:50  BRENTOIL   (15 min)
+```
+
+Exactly 15 minutes, matching `signalTimeoutMinutes: 15`. First live
+confirmation of what that setting governs — and it governs the decision's own
+expiry, not a gate block.
+
 ## Update 2026-08-06 (evening): the "unfilled order" reading is ruled out
 
 The operator's reading was that the platform threw a signal, the order did not
