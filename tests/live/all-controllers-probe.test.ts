@@ -4,6 +4,7 @@ import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { McpRadarAdapter } from '@/infrastructure/battlegrid/radar-adapter.js';
 import { McpMarketAdapter } from '@/infrastructure/battlegrid/market-adapter.js';
+import { McpPositionsAdapter } from '@/infrastructure/battlegrid/positions-adapter.js';
 import { McpMarketGridAdapter } from '@/infrastructure/battlegrid/market-grid-adapter.js';
 import { McpExplorerAdapter } from '@/infrastructure/battlegrid/explorer-adapter.js';
 
@@ -17,6 +18,7 @@ import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluat
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
 import { ReadStoppagesQuery } from '@/application/use-cases/read-stoppages.query.js';
+import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import { ReadAgentJournalQuery } from '@/application/use-cases/read-agent-journal.query.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadStrategyQuery } from '@/application/use-cases/read-strategy.query.js';
@@ -85,7 +87,8 @@ function world() {
   const market = new McpMarketAdapter(battlegrid);
   const grid = new McpMarketGridAdapter(battlegrid);
   const explorer = new McpExplorerAdapter(battlegrid);
-  return { agents, strategies, radar, market, grid, explorer };
+  const positions = new McpPositionsAdapter(battlegrid);
+  return { agents, strategies, radar, market, grid, explorer, positions };
 }
 
 /** What a controller answered, in one line, whatever shape it returned. */
@@ -129,7 +132,7 @@ async function walk(name: string, run: () => Promise<unknown>): Promise<unknown>
 
 live('every read controller, against one account', () => {
   it('answers, and says what it answered', { timeout: 900_000 }, async () => {
-    const { agents, strategies, radar, market, grid, explorer } = world();
+    const { agents, strategies, radar, market, grid, explorer, positions } = world();
 
     // -- the roster, and the subject everything per-agent uses ---------------
     const roster = (await walk('listAgents', () =>
@@ -157,6 +160,7 @@ live('every read controller, against one account', () => {
     );
     await walk('readJournal', () => new ReadAgentJournalQuery(agents).execute({ ...forAgent, limit: 5 }));
     await walk('readStoppages', () => new ReadStoppagesQuery(agents).execute(forAgent));
+    await walk('readExposure', () => new ReadExposureQuery(positions, agents).execute(forAgent));
     await walk('readDeployments', () => new ReadDeploymentsQuery(radar).execute(forAgent));
     await walk('readDeployments.summary', () => new ReadDeploymentsQuery(radar).summary(who));
     await walk('readQualification', () =>
@@ -275,6 +279,6 @@ live('every read controller, against one account', () => {
      * reading an id one level too shallow, taking the `if`, and reporting a
      * clean run over four controllers it never called.
      */
-    expect(rows.length, 'every controller is walked or named as skipped').toBe(25);
+    expect(rows.length, 'every controller is walked or named as skipped').toBe(26);
   });
 });

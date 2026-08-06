@@ -2,17 +2,37 @@
 id: half-of-what-it-decides-never-reaches-the-exchange
 title: 28 of 60 entry decisions FAILED with an execution timestamp and no order id, on a funded account
 type: feature
-status: open
+status: done
 priority: p1
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: what-it-holds-and-what-it-could-not-place
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, execution, sizing, live, money]
 ---
 
 # Nearly half of what this agent decides never becomes an order
+
+## Closed 2026-08-06 by `what-it-holds-and-what-it-could-not-place`
+
+The agent surface now states it: **28 of 60 entries never became an order**,
+and says plainly when more failed than succeeded.
+
+**No new read was needed.** `AgentFunnel` has carried `executed`, `failed` and
+`enterDecisions` since Phase 2 and `/pipeline` has rendered them all along — as
+a row of figures, which is where 28 reads as a number rather than as half of
+everything the agent decided. The change was the sentence.
+
+Two things deliberately not done, both of which this item's first-step notes
+asked for:
+
+- **No reason is offered per failure.** The row carries an `executedAt` and no
+  `executedOrderId`, and that absence is the whole of the evidence.
+- **The platform's `fillRatePercent: 63` is not reconciled** with the counts,
+  which give 27 of 60. They are computed differently, this product does not
+  know how, and both are shown attributed.
+
 
 Found 2026-08-06 by surveying the **second** account (`Fibonacci`), which has
 one active agent, `THE .0`, and is genuinely funded and trading.

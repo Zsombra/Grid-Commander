@@ -229,10 +229,17 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
                   {d.conviction !== null ? ` · ${pct(d.conviction)} conviction` : ''}
                   {d.status ? ` · ${d.status}` : ''}
                 </p>
+                {/*
+                  "at the decision" is load-bearing. Position management moves
+                  the stop and target after a trade opens — observed live, a
+                  decision recorded 55.67456526 while its position reported
+                  55.954 — so this page and the agent page would otherwise show
+                  one word meaning two different numbers.
+                */}
                 {d.entryPrice !== null || d.stopLoss !== null || d.takeProfit !== null ? (
                   <p>
-                    Entry {d.entryPrice ?? '—'} · stop {d.stopLoss ?? '—'} · target{' '}
-                    {d.takeProfit ?? '—'}
+                    At the decision: entry {d.entryPrice ?? '—'} · stop {d.stopLoss ?? '—'} ·
+                    target {d.takeProfit ?? '—'}
                     {d.riskRewardRatio !== null ? ` · R:R ${d.riskRewardRatio}` : ''}
                   </p>
                 ) : null}

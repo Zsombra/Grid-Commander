@@ -56,6 +56,7 @@ import { ReadTradingRecordQuery } from './application/use-cases/read-trading-rec
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
 import { ReadStoppagesQuery } from './application/use-cases/read-stoppages.query.js';
+import { ReadExposureQuery } from './application/use-cases/read-exposure.query.js';
 import { ReadOwnEvaluationQuery } from './application/use-cases/read-own-evaluation.query.js';
 import {
   DescribeRebindQuery,
@@ -72,6 +73,7 @@ import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-ad
 import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
 import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
 import { McpMarketAdapter } from './infrastructure/battlegrid/market-adapter.js';
+import { McpPositionsAdapter } from './infrastructure/battlegrid/positions-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -127,6 +129,7 @@ interface Infrastructure {
   readonly strategies: McpStrategyAdapter;
   readonly radar: McpRadarAdapter;
   readonly market: McpMarketAdapter;
+  readonly positions: McpPositionsAdapter;
   readonly grid: McpMarketGridAdapter;
   readonly explorer: McpExplorerAdapter;
   readonly sessionSecret: string;
@@ -178,6 +181,7 @@ function infrastructure(): Infrastructure {
     strategies: new McpStrategyAdapter(battlegrid),
     radar: new McpRadarAdapter(battlegrid),
     market: new McpMarketAdapter(battlegrid),
+    positions: new McpPositionsAdapter(battlegrid),
     grid: new McpMarketGridAdapter(battlegrid),
     explorer: new McpExplorerAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
@@ -269,6 +273,9 @@ export function app(cookies: CookieStore) {
     // Same rows `readPipeline` reads as one of three stages, asked a different
     // question: not what happened lately, but what keeps happening.
     readStoppages: new ReadStoppagesQuery(i.agents),
+    // What it is holding, and what it could not get to the exchange. The
+    // funnel half needs no new read — the counts were always there.
+    readExposure: new ReadExposureQuery(i.positions, i.agents),
     // Deploy and undeploy follow the same split: the describe reads the radar
     // fresh, states the consequence, and mints the token the perform spends.
     // Recording what a model suggests. Deliberately holds no BattleGrid port:

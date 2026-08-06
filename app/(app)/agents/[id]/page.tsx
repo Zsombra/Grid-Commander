@@ -3,6 +3,7 @@ import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { Stoppages } from '@/presentation/components/stoppages.js';
+import { Exposure } from '@/presentation/components/exposure.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 
 /**
@@ -47,9 +48,10 @@ export default async function AgentPage({
     );
   }
 
-  const [radar, stoppages] = await Promise.all([
+  const [radar, stoppages, exposure] = await Promise.all([
     app.readDeployments.execute({ ...user.authority, agentId: agent.id }),
     app.readStoppages.execute({ ...user.authority, agentId: agent.id }),
+    app.readExposure.execute({ ...user.authority, agentId: agent.id }),
   ]);
 
   return (
@@ -66,6 +68,13 @@ export default async function AgentPage({
        * reports a record full of zeroes and says so in its own words.
        */}
       {agent.performance && <AgentRecord performance={agent.performance} />}
+
+      {/**
+       * Money at stake right now, above everything retrospective. Every other
+       * surface here looks backwards; an agent can be holding a leveraged
+       * position with a moved stop and nothing said so.
+       */}
+      <Exposure exposure={exposure.exposure} fills={exposure.fills} />
 
       {/**
        * What keeps stopping it, before anything about how it is configured.
