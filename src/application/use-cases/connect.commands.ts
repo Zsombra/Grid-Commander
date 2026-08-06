@@ -68,10 +68,22 @@ export interface CompleteConnectionRequest {
   readonly code: string;
 }
 
+/**
+ * The identity to act as, and nothing else.
+ *
+ * `connectionId` and `isReturningUser` were here too, and the callback route —
+ * the only production caller — read neither (PG-003). `isReturningUser` was then
+ * *widened*, to keep reporting a returning user when the identity race below is
+ * lost, which is the worst state for an unread field to be in: the change reads
+ * as having been made for a consumer, and there was none to make it for.
+ *
+ * Neither fact is lost. Whether a subject has connected before is a
+ * `findUserIdBySubject` away, and the connection row is reachable by user — so
+ * whichever surface eventually wants either can ask the store that owns it,
+ * rather than inherit an answer computed for nobody a release earlier.
+ */
 export interface CompleteConnectionResponse {
   readonly userId: string;
-  readonly connectionId: string;
-  readonly isReturningUser: boolean;
 }
 
 /**
@@ -125,13 +137,7 @@ export class CompleteConnectionCommand {
       accessTokenExpiresAt: expiryFromResponse(grant.expiresIn, now),
     });
 
-    return {
-      userId: resolved.userId,
-      connectionId: resolved.connectionId,
-      // Returning by the only measure that survives the race: the identity that
-      // came back is not the one just minted for it.
-      isReturningUser: existingUserId !== null || resolved.userId !== proposedUserId,
-    };
+    return { userId: resolved.userId };
   }
 }
 
