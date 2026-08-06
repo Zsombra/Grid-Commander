@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-03  
-**State**: green (1183 vitest + 62 db + 221 harness tests, all nine `./scripts/ci.sh` gates; 26 further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#40 merged. **Grid-Commander is now an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md` (live, 2026-08-02). The assistant roadmap (`an-assistant-over-the-use-cases`) is filed; **Phase 1 (strategy-maker) is complete** — signal vocabulary, metric/column workbench, the signal-rule write (live-proven), and the agent's-eye preview. **Phase 2 reads both halves of the record**: what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`).
+**Date**: 2026-08-06  
+**State**: green (1348 vitest + 62 db + 221 harness tests, all ten `./scripts/ci.sh` gates including keyed `freshness`; further vitest are key-gated live probes). No active changes. 25 open backlog items. PRs #8–#59 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts. The surface record is **v9.0.0**.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 87 |
-| Vitest tests | 1347 (+ key-gated live) + 62 db |
+| Changes (archived) | 92 |
+| Vitest tests | 1348 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 221 |
-| Active changes | 1 — `the-model-can-propose-and-only-a-human-agrees` (full, 35/37, **built, two gates blocked by the platform**) |
-| Open backlog items | 24 |
+| Active changes | none |
+| Open backlog items | 25 |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#51 merged |
+| Open draft PRs | none; #8–#59 merged |
 
 ### Read this before anything else
 

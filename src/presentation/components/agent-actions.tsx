@@ -42,6 +42,9 @@ export function AgentActions({ agent }: { agent: Agent }) {
   actions.push({ href: `/agents/${agent.id}/thinking`, label: 'What it decided' });
   actions.push({ href: `/agents/${agent.id}/trades`, label: 'What it did with the money' });
   actions.push({ href: `/agents/${agent.id}/pipeline`, label: "Why it did or didn't trade" });
+  // The prospective sibling of the line above: the same gates, asked about now
+  // rather than read off what already happened.
+  actions.push({ href: `/agents/${agent.id}/qualification`, label: 'Would it take a coin' });
   actions.push({ href: `/agents/${agent.id}/limits`, label: 'What would stop it' });
   actions.push({ href: `/agents/${agent.id}/journal`, label: 'Journal' });
 

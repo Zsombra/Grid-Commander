@@ -13,6 +13,7 @@ import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-rec
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
+import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
@@ -33,6 +34,7 @@ import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { FakeAgentsPort } from '../../support/agent-fakes.js';
 import { SequentialRandom } from '../../support/agent-fakes.js';
 import { FakeMarketGridPort } from '../../support/grid-fakes.js';
+import { FakeMarketPort } from '../../support/market-fakes.js';
 import { FakeExplorerPort } from '../../support/explorer-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
 import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
@@ -71,6 +73,7 @@ export function actingWith({
   grid = new FakeMarketGridPort(),
   explorer = new FakeExplorerPort(),
   proposals = new FakeProposalStore(),
+  market = new FakeMarketPort(),
 }: {
   agents?: FakeAgentsPort;
   strategies?: FakeStrategiesPort;
@@ -78,6 +81,7 @@ export function actingWith({
   grid?: FakeMarketGridPort;
   explorer?: FakeExplorerPort;
   proposals?: FakeProposalStore;
+  market?: FakeMarketPort;
 } = {}) {
   const clock = new FakeClock();
   const confirmations = new FakeConfirmationStore(clock);
@@ -90,6 +94,7 @@ export function actingWith({
     readBudget: new ReadBudgetQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
+    readQualification: new ReadQualificationQuery(agents, radar, market),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
     describeDeploy: new DescribeDeployQuery(radar, confirmations, random, clock),
@@ -117,7 +122,7 @@ export function actingWith({
     authority: { userId: 'owner', battlegridSubject: null, accessToken: 'tok' },
   };
 
-  return { app, user, agents, strategies, radar, grid, explorer, confirmations };
+  return { app, user, agents, strategies, radar, grid, explorer, market, confirmations };
 }
 
 /** The other gate every page has: what an unauthenticated request sees. */

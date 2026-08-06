@@ -1,5 +1,84 @@
 # Journal
 
+## 2026-08-06 — v9 mapped, reconciled, and the first surface that asks forward
+
+**Did**: PRs #53–#59 merged, five changes archived —
+`the-model-can-propose-and-only-a-human-agrees` (full track, PASS on every
+production-gate line), `the-token-estimate-moved-into-the-budget`,
+`a-count-in-a-description-goes-stale`, `the-v9-datasets-are-reconciled`, and
+now `why-it-would-not-take-this-coin`. Fourteen capabilities.
+
+**BattleGrid replaced itself again: v5.1.0 → v9.0.0, four majors, 110 tools.**
+Fourth deployment where that number does not move. The full re-probe found a
+perp/spot flow module added cleanly, `VOLUME_RATIO` removed from every metric
+enum — harmless, because vocabulary is read at runtime and `structure.test.ts`
+forbids writing it into source, which is that design paying for itself — and
+`estimatedTokenCount` moved into `budgetUsage`, which was **not** harmless
+because we read it.
+
+**Two new bounds arrived that had to be refused.**
+`agentMinConfidenceFloorPercent: 30` beside `agentMinConfidenceFloor: 0.3`.
+Adding the new names to `BOUND_KEYS` — which is what "reconcile the new
+datasets" invites — would compare a config value of 0.7 against a floor of 30
+and refuse every valid configuration in the product. Pinned in
+`tests/strategy/v9-datasets.test.ts`.
+
+**Expanding the probe from 43 tools to 61 found a defect five gates had
+missed.** `preview_strategy_report` renders its sections inside a nested
+`section` object; the mapper read the outer one, so five preview sections
+rendered empty with everything green. Composite arguments (`coinSelection`,
+`sections`, `gate`, `signals`) and a refusal-driven retry are what reached it.
+`column` and `request` are deliberately still unbuilt — two guesses were made
+and both were refused on grammar, and the failures are written down.
+
+**Then the build, and the data chose it.** `approvals-have-no-write-side` was
+next on the list and is blocked twice: `accept_entry_decision` requires
+`mcp:wager`, which `Read Scope Is Requested And Wager Scope Is Not` forbids
+asking for, and `list_pending_approvals` answers `{approvals: []}` — the row
+has never been seen. The whole positions and orders cluster is empty too.
+Building any of it means inventing key names, which produced three of the dead
+paths in HANDOFF.
+
+`get_agent_coin_qualification` had never been called and has real rows. It is
+the **first prospective surface in the product** — every other agent page
+explains what already happened; this one asks whether the agent would act now.
+
+**The live sweep is what shaped it.** Five agents × twelve coins, sixty
+verdicts, three findings that changed code:
+
+- **`requiredCount` came back `NOT_ENFORCED` with `count: 0, min: 0` on every
+  one.** Rendered as a measurement that reads "0 signals against a minimum of
+  0" — a gate that looks satisfied by accident, on the surface whose whole job
+  is to say what is stopping the agent. This capability already carries the
+  requirement for that exact mistake: *A Limit Nobody Set Is Not A Limit Of
+  Zero*, written for the budget gauges in July.
+- **Long and short genuinely disagree.** CONTRARIAN on LINK stops long at
+  `ATR_VOLATILITY_BELOW_MIN` and short at `CANDIDATE_LEVELS_UNAVAILABLE`. Two
+  obstacles, one coin, one call.
+- **One unknown ticker fails the whole call.** `["BTC","ZZNOTACOIN"]` answers
+  `NOT_FOUND` and returns no verdicts at all. Reported as unreadable, never as
+  coins the agent would not take.
+
+**The half that took the most care was choosing the coins.** "None of these
+qualify" is a finding about coins the agent is deployed on and a triviality
+about coins the product picked off a ranked list. So the source travels with
+the result and the page states it — including *why* it fell back, because an
+agent deployed nowhere and a radar that would not answer produce the same list
+and opposite conclusions.
+
+**Where the answer stops.** The three gates are all about the market. None
+consults balance, allocation floor, leverage or the exchange minimum — so an
+agent with $4.20 can screen a coin as qualifying in full and still fail the
+order. `an-agent-can-be-structurally-unable-to-trade` now says so, and this
+page is where that sentence belongs.
+
+**Next**: `an-agent-can-be-structurally-unable-to-trade` (P2) is the sharpest
+item on the list and just got sharper — every input is already read, and the
+surface to say it on now exists. `screening-is-not-offered-over-mcp` (P3) is
+the small follow-on: a model tuning an agent would ask this question more than
+any other, and the MCP surface cannot. `image-never-built` still needs registry
+egress, not just a daemon.
+
 ## 2026-08-05 (evening) — the outage was the test
 
 **Did**: #50 and #51 merged. `the-outage-explains-itself` archived — a

@@ -16,6 +16,7 @@ import type {
   TradeOutcomesResult,
   EvaluationResult,
   FunnelResult,
+  QualificationResult,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
@@ -23,6 +24,7 @@ import {
   mapAgent,
   mapBudget,
   mapCatalog,
+  mapCoinQualification,
   mapEntryDecision,
   mapGateBlock,
   mapRecord,
@@ -31,7 +33,7 @@ import {
   mapThought,
   mapTradeOutcome,
 } from './agent-mapper.js';
-import { malformed, unreadable } from './unreadable.js';
+import { malformed, messageOf, unreadable } from './unreadable.js';
 import { mapEvaluationScorecard } from './scorecard-mapper.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 
@@ -69,7 +71,19 @@ const TOOLS = {
   entryDecisions: 'list_entry_decisions',
   signalLogDetail: 'get_signal_log',
   signalPerformance: 'get_signal_performance',
+  coinQualification: 'get_agent_coin_qualification',
 } as const;
+
+/**
+ * How many tickers `get_agent_coin_qualification` will screen in one call.
+ *
+ * Read off the tool's own `maxItems` in the surface record. Held here rather
+ * than in the use-case because it is the platform's constraint on this call,
+ * and a caller that oversteps it gets a validation refusal rather than a
+ * truncated answer — so the cap is enforced where the call is composed, and
+ * what was dropped is reported rather than silently lost.
+ */
+const MAX_TICKERS_PER_CALL = 12;
 
 /**
  * The named brain presets, from the create tool's own enum.
@@ -463,6 +477,44 @@ export class McpAgentAdapter implements AgentsPort {
           .filter((c): c is { coinTicker: string; count: number | null } => c !== null),
       },
     };
+  }
+
+  /**
+   * Whether this agent's gates would admit a trade on each named coin.
+   *
+   * `verdicts` missing entirely is `unreadable`, not `none`. The distinction is
+   * the one the roster has enforced since the beginning and it matters more
+   * here than almost anywhere: an empty verdict list rendered as an answer says
+   * *your agent would take none of these*, which is a claim about the agent's
+   * settings, made on the strength of a read that failed.
+   */
+  async readCoinQualification(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    coinTickers: readonly string[];
+  }): Promise<QualificationResult> {
+    // A caller asking for none would be refused by the schema's `minItems`.
+    // Answering it here costs one round trip less and says the same thing.
+    if (params.coinTickers.length === 0) return { kind: 'none' };
+
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.coinQualification, {
+        agentId: params.agentId,
+        coinTickers: params.coinTickers.slice(0, MAX_TICKERS_PER_CALL),
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+    const raw = payload['verdicts'];
+    if (!Array.isArray(raw)) return malformed('the qualification carried no verdicts');
+    if (raw.length === 0) return { kind: 'none' };
+    try {
+      return { kind: 'verdicts', verdicts: raw.map(mapCoinQualification) };
+    } catch (err) {
+      return malformed(messageOf(err));
+    }
   }
 
   private async stage<T>(
