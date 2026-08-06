@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
 import { RecordProposalCommand } from '@/application/use-cases/record-proposal.command.js';
@@ -12,6 +11,7 @@ import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter
 import { editArguments } from '@/presentation/form.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { acquireProbeAgent, releaseProbeAgent } from '../support/probe-agent.js';
 import { FakeProposalStore } from '../support/proposal-fakes.js';
 
 /**
@@ -32,11 +32,18 @@ import { FakeProposalStore } from '../support/proposal-fakes.js';
  * named one. Four things that are only jointly true, and this is the only place
  * they are all real at once.
  *
- * **What it touches.** Nothing that existed before it runs. The read-only tests
- * describe a real agent and never write; the write test operates on an agent it
- * creates in `APPROVAL_REQUIRED` — a mode that cannot place a trade without a
- * person approving it — deployed to nothing, capped at the platform's $10
- * minimums, and archived in a `finally`.
+ * **What it touches.** Only its own throwaway. The read-only tests describe a
+ * real agent and never write; the write test operates on the agent this file's
+ * slot owns — deployed to nothing, capped at the platform's $10 minimums, and
+ * archived in a `finally`.
+ *
+ * That throwaway is now **reused across runs rather than created per run**. This
+ * file created one every time it ran, and `write-probe` did the same, and by
+ * 2026-08-06 the operator's second account carried eight archived probe agents
+ * on a roster of eleven — with no delete tool on the MCP surface to remove any
+ * of them. `acquireProbeAgent` finds this slot's agent and reactivates it,
+ * creating only when there is none, and refuses on two independent grounds to
+ * select anything the operator actually runs.
  *
  * The operator's own agents are read and never written. Walking the loop on one
  * of them would mean editing a live trading agent to prove a test passes, and
@@ -257,54 +264,89 @@ liveWrite('a person agrees, and BattleGrid changes', () => {
       expect(strategy, 'need a SYSTEM strategy to bind to').toBeDefined();
       if (!strategy) return;
 
-      const created = await new CreateAgentCommand(app.agents)
-        .execute({
-          ...who,
-          // Unique per run: an archived agent keeps its name, and a collision
-          // comes back as a 500 that reads exactly like the platform being
-          // unwell — which is the failure this very test had to rule out.
-          displayName: `Grid-Commander proposal probe ${Date.now()}`,
-          brain: { kind: 'preset', preset: 'ROMMEL' },
-          strategyId: strategy.id,
-          money: { tradingMode: 'APPROVAL_REQUIRED', ...MINIMUMS },
-        })
-        .catch((error: unknown) => ({
-          kind: 'threw' as const,
-          reason: error instanceof Error ? error.message : String(error),
-        }));
+      const acquired = await acquireProbeAgent({
+        agents: app.agents,
+        who,
+        slot: 'proposal',
+        strategyId: strategy.id,
+        // Created OFF, always. A throwaway that could trade is one the next run's
+        // selection would refuse to recognise, and one this probe would have no
+        // business archiving in a `finally`.
+        money: { tradingMode: 'OFF', ...MINIMUMS },
+      });
 
-      if (created.kind !== 'created') {
+      if (acquired.kind === 'unavailable') {
         /**
-         * A platform state, not a defect here — and a skip that names it rather
-         * than a pass that hides it.
+         * A state of the account, not a defect here — and a skip that names it
+         * rather than a pass that hides it.
          *
          * Observed 2026-08-05: `create_intelligence_agent` answered
          * `INTERNAL_ERROR: Internal server error` for both accounts, for every
          * SYSTEM strategy, and for the minimal payload with no `tradingConfig`
          * at all. The surface record matched the running server, so no schema
          * had moved; the tool was simply down. See the backlog item
-         * `battlegrid-is-returning-internal-errors`.
+         * `battlegrid-is-returning-internal-errors`. An unreadable roster and a
+         * full slot allowance arrive the same way.
          *
          * The write is not walked against one of the operator's own agents
          * instead. Every one of them is in `FULL_EXECUTION`, and editing a live
          * trading agent to make a test pass is not a trade this probe gets to
-         * make on their behalf.
+         * make on their behalf — which is also the rule the selection enforces
+         * rather than merely states.
          */
         // eslint-disable-next-line no-console
-        console.log(
-          `  SKIPPED: could not create a throwaway agent — ${
-            'reason' in created ? created.reason : created.kind
-          }`,
-        );
+        console.log(`  SKIPPED: no throwaway agent — ${acquired.reason}`);
         ctx.skip();
         return;
       }
 
-      const agent = created.agent;
+      const agent = acquired.agent;
       // eslint-disable-next-line no-console
-      console.log(`  agent:   ${agent.displayName} ${agent.id} r${agent.revision}`);
+      console.log(`  agent:   ${acquired.kind} ${agent.displayName} ${agent.id} r${agent.revision}`);
 
       try {
+        /**
+         * Arm it — setup, not the thing under test.
+         *
+         * The loop below proves that a person agreeing *stops* an agent, so the
+         * subject has to start able to run. A throwaway rests in OFF, because
+         * that is the state selection insists on before it will reuse anything,
+         * so this run puts it into `APPROVAL_REQUIRED` first — a mode that still
+         * cannot place a trade without a person approving it, on an agent
+         * deployed to nothing.
+         *
+         * Through the product's own propose-then-apply path rather than around
+         * it: the confirmation is bound to the values described, so an arming
+         * step that composed its own token would be exercising a door the
+         * product does not have.
+         */
+        const arming = { tradingConfig: { tradingMode: 'APPROVAL_REQUIRED' } };
+        const armProposal = await new DescribeEditQuery(
+          app.agents,
+          app.confirmations,
+          new SequentialRandom(),
+          app.clock,
+        ).execute({ ...who, agentId: agent.id, changes: arming });
+        if (armProposal.kind !== 'proposal') {
+          throw new Error(`could not arm the throwaway: ${armProposal.kind}`);
+        }
+        const armArguments = editArguments(arming);
+        const armed = await app.update.execute({
+          ...who,
+          agentId: agent.id,
+          changes: armArguments.changes,
+          ...(armArguments.tradingConfigChanges
+            ? { tradingConfigChanges: armArguments.tradingConfigChanges }
+            : {}),
+          confirmationToken: armProposal.proposal.confirmationToken,
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  armed:   ${armed.kind}`);
+        expect(armed.kind, 'the subject has to be able to run before it is stopped').toBe(
+          'updated',
+        );
+        if (armed.kind !== 'updated') throw new Error('unreachable');
+
         const recorded = await app.record.execute({
           userId: who.userId,
           operation: 'edit',
@@ -315,10 +357,13 @@ liveWrite('a person agrees, and BattleGrid changes', () => {
         // eslint-disable-next-line no-console
         console.log(`  propose: ${recorded.proposalId} → ${recorded.reviewAt}`);
 
-        // Recorded and unopened: the agent must be exactly as it was.
+        // Recorded and unopened: the agent must be exactly as it was. Compared
+        // against the revision the *arming* left, not the one acquisition
+        // returned — a teardown or an assertion that assumes nothing moved has
+        // no business running after a step whose point was that something did.
         const untouched = await app.agents.getAgent({ ...who, agentId: agent.id });
         expect(untouched.tradingConfig?.fields['tradingMode']).toBe('APPROVAL_REQUIRED');
-        expect(untouched.revision).toBe(agent.revision);
+        expect(untouched.revision).toBe(armed.agent.revision);
 
         // Opening runs the describe now, against the agent read now. This is
         // where the confirmation comes from.
@@ -420,32 +465,30 @@ liveWrite('a person agrees, and BattleGrid changes', () => {
         console.log(`  replay:  ${replayed}`);
         expect(replayed, 'an agreement is spent once').not.toBe('returned updated');
       } finally {
-        // The probe's agent occupies a slot on a real account. It gives it back
-        // whether or not any of the above held.
-        const token = 'probe-archive';
-        await app.confirmations.issue({
-          token,
-          userId: who.userId,
-          tool: 'archive_intelligence_agent',
-          target: agent.id,
-          consequence: `Archives the probe agent ${agent.id}.`,
-          expiresAt: new Date(app.clock.now().getTime() + 300_000),
-          consumedAt: null,
+        /**
+         * The probe's agent occupies a slot on a real account. It gives it back
+         * whether or not any of the above held — and archiving is also what
+         * hands it to the next run, which finds it exactly here.
+         *
+         * The loop above ends with the agent in OFF, so what is left behind
+         * satisfies both halves of the selection. A run that fails partway
+         * through the arming leaves it in `APPROVAL_REQUIRED`, the next run's
+         * selection refuses it, and a fresh throwaway is created — one more
+         * agent on the account, which is the old behaviour rather than a new
+         * hazard, and only after a failure rather than on every run.
+         */
+        const released = await releaseProbeAgent({
+          agents: app.agents,
+          confirmations: app.confirmations,
+          clock: app.clock,
+          who,
+          agentId: agent.id,
+          confirmationToken: 'probe-archive',
         });
-        const cleanup = await app.agents
-          .setLifecycle({
-            ...who,
-            agentId: agent.id,
-            expectedRevision: (await app.agents.getAgent({ ...who, agentId: agent.id })).revision,
-            to: 'ARCHIVED',
-            confirmation: { token, target: agent.id },
-          })
-          .then(
-            () => 'archived',
-            (e: unknown) => `not archived: ${e instanceof Error ? e.message : String(e)}`,
-          );
         // eslint-disable-next-line no-console
-        console.log(`  cleanup: ${cleanup}`);
+        console.log(
+          `  cleanup: ${released.kind === 'archived' ? 'archived' : `not archived: ${released.reason}`}`,
+        );
       }
     },
   );
