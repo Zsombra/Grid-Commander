@@ -2,7 +2,7 @@
 id: an-orphaned-agent-is-shown-as-bound
 title: The roster says "Bound to X" for an agent whose binding state is ORPHANED
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06

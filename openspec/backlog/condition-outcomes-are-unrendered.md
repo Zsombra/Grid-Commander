@@ -2,7 +2,7 @@
 id: condition-outcomes-are-unrendered
 title: preview_strategy_report resolves every condition against real coins, and nothing renders it
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-04
 updated: 2026-08-06

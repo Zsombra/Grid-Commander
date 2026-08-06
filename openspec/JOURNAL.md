@@ -1,5 +1,79 @@
 # Journal
 
+## 2026-08-06 (round two) — four more in parallel, and one of them found the reason a field was always empty
+
+**Did**: four agents, four changes archived, five backlog items closed. PR #68.
+CI green on the four-way merge, no conflicts. 23 items open.
+
+| change | closes |
+|---|---|
+| `bound-and-on-duty-are-claims-the-payload-must-back` | the two lifecycle p2s |
+| `the-condition-outcomes-are-legible` | `condition-outcomes-are-unrendered` |
+| `the-probe-applies-the-edit-it-described` | the write-probe digest mismatch |
+| `the-exposure-panel-explains-itself` | the sweep's one deferred exemption |
+
+**The best find is why a field was always empty.**
+`preview_strategy_report` takes `conditions` as an **optional input** and no
+`strategyId` — it resolves only what it is *sent*. That is why
+`conditionOutcomes` had been `[]` in every capture this repo holds, including
+the probed surface record. So the work was never "render a field we ignored";
+it was a round trip nobody had noticed was missing a leg. The strategy's
+conditions now go back **whole, as the platform sent them**, on
+`conditionsAsGiven` — kept off `StrategyDetail` so `read_strategy` does not
+answer a model with two copies of one list, and passed through rather than
+re-serialised from the domain shape, which would drop any `unrecognised` form.
+
+Three things it refused to flatten, all from the item's own warnings.
+`unresolvedCount` is carried with **no false count**, and a test forbids
+`total -`, `- unresolvedCount` and `- trueCount` anywhere in the mapper or the
+component — subtraction is exactly how "unresolved" becomes "false". `counts:
+null` stays null rather than becoming 0-of-0. And `outcome` is kept as the
+platform's **string**, not narrowed to the declared three words, because a union
+has to coerce or crash on a fourth — which is where a three-state becomes a
+two-state, four times documented in this repo.
+
+**The lifecycle change put the join in the domain and let the compiler find the
+callers.** `deploymentsFor` now takes the agent's lifecycle and can return a
+fourth standing, `slot-held-not-scanning`. Three surfaces render standing, and a
+check repeated at three call sites is three chances to forget it once — which is
+how they disagreed in the first place. Taking lifecycle as a parameter means a
+caller that has not read it **cannot compile**. That flushed out two call sites
+that never wanted standing at all (`describeUndeploy`, `readQualification`);
+both now call `deploymentsNaming` for membership only, so neither is taught to
+invent a status.
+
+Two restraints in it worth keeping: an open position the radar attributes to the
+agent **outranks lifecycle** — an archive is not evidence a position closed —
+and the market-level occupancy only ever claims the negative. `no-active-agent`
+licenses "deployed and unscanned"; `active-agent-present` is never turned into
+"covered", because a policy can be `enabled: false` and that is unread here.
+
+**The probe fix did not loosen the guard.** The write probe described
+`{tradingConfig: {}}` and applied `{maxDailyTrades: 7}` — two digests, an
+unspendable token, a test that could never have passed. It now forms one intent
+and splits it with `editArguments`, the product's own split. Proven offline with
+a **negative control**: the old pair is run deliberately and asserted refused,
+without which the passing test is a fake agreeing with itself.
+
+**On wording.** The exposure panel's subject is `this agent's positions are`
+rather than the `these positions are` the item sketched — because nothing is
+listed on that branch, so a demonstrative points at the very list that failed to
+load. The reason line stays directly above it, so the sentence denies only that
+the failure is evidence, never that the market did not move.
+
+**Filed rather than done**, by the agents themselves:
+`the-edit-and-reactivate-copy-assume-the-binding-is-intact` (p3, a component
+swap now that `binding.tsx` exists) and `preview-per-ticker-verdict-is-unobserved`
+(the output schema declares a *required* per-ticker `verdict` that appears in no
+capture; the live probe now prints the rows so a keyed run settles it).
+
+**Procedure, corrected from round one**: worktrees removed *before* linting, so
+`eslint .` never scanned them.
+
+**Next**: `conditions-are-an-unmodelled-authoring-layer` (p2) is the sibling of
+the change that just landed. `approval-expired-on-a-full-execution-agent` (p2)
+still needs the operator rather than the product.
+
 ## 2026-08-06 (backlog sweep) — five builds in parallel, and what the parallelism found
 
 **Did**: five agents in isolated worktrees, one backlog item each, integrated

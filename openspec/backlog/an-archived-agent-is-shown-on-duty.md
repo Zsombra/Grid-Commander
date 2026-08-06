@@ -2,7 +2,7 @@
 id: an-archived-agent-is-shown-on-duty
 title: An ARCHIVED agent still holds a radar slot, and the surface says it is scanning
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06

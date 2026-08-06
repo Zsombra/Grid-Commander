@@ -2,7 +2,7 @@
 id: write-probe-describes-a-different-edit-than-it-applies
 title: The write probe's trading-limit step cannot spend the confirmation it minted
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06

@@ -2,7 +2,7 @@
 id: the-exposure-panel-still-prints-its-reason
 title: The exposure panel prints its reason and stops — the one branch the sweep did not reach
 type: debt
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
