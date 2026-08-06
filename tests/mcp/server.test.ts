@@ -5,7 +5,7 @@ import { buildServer } from '@/mcp/server.js';
 import { TOOLS } from '@/mcp/tools.js';
 import type { App } from '@/composition.js';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
-import { actingWith } from '../rendering/support/fake-acting.js';
+import { actingWith, RenderRadarPort } from '../rendering/support/fake-acting.js';
 
 /**
  * The MCP server, driven through a real client over a real transport.
@@ -158,6 +158,73 @@ describe('the MCP server, over a real client', () => {
     // narrate it as a finding about the agent.
     expect((result as { isError?: boolean }).isError).toBe(true);
     expect(text(result)).toContain('the product broke');
+  });
+
+  /**
+   * The model's surface has no page to have read the roster on, so the tool
+   * reads it: a radar slot looks the same whether the agent in it is active or
+   * archived, and answering "where is this agent scanning" from the radar
+   * alone is what put "On duty: scanning SP500" on an archived agent's page.
+   */
+  describe('read_deployments joins the lifecycle', () => {
+    const sp500 = {
+      policyId: 'p1',
+      coinTicker: 'SP500',
+      revision: 4,
+      timeframe: '15m',
+      enabled: true,
+      slotAgentIds: [AGENT.id],
+      onDutyAgentId: AGENT.id,
+      openPositionAgentId: null,
+    };
+
+    function radarWorld(agents: FakeAgentsPort) {
+      const radar = new RenderRadarPort();
+      radar.result = { kind: 'deployments', deployments: [sp500] };
+      return { app: actingWith({ agents, radar }).app as unknown as App, agents };
+    }
+
+    it('reports an archived agent as holding its slot, and the market as unscanned', async () => {
+      const archived = new FakeAgentsPort([anAgent({ status: 'ARCHIVED' })]);
+      const client = await connected(radarWorld(archived).app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_deployments', arguments: { agentId: AGENT.id } })),
+      ) as { kind: string; deployments: { standing: string; occupancy: string }[] };
+
+      expect(payload.kind).toBe('deployed');
+      expect(payload.deployments[0]?.standing).toBe('slot-held-not-scanning');
+      expect(payload.deployments[0]?.occupancy).toBe('no-active-agent');
+    });
+
+    it('leaves an active agent reading exactly as it did', async () => {
+      const client = await connected(radarWorld(new FakeAgentsPort([AGENT])).app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_deployments', arguments: { agentId: AGENT.id } })),
+      ) as { deployments: { standing: string }[] };
+      expect(payload.deployments[0]?.standing).toBe('on-duty');
+    });
+
+    it('will not answer at all when the lifecycle could not be read', async () => {
+      // Standing computed against a lifecycle nobody read is the defect, not
+      // the fallback. The refusal names which half is missing.
+      const agents = new FakeAgentsPort([AGENT]);
+      agents.rosterReadable = false;
+      const client = await connected(radarWorld(agents).app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_deployments', arguments: { agentId: AGENT.id } })),
+      ) as { kind: string; reason: string };
+      expect(payload.kind).toBe('unreadable');
+      expect(payload.reason).toContain('lifecycle');
+    });
+
+    it('says an unknown id is unknown rather than dressing it as a failed read', async () => {
+      const client = await connected(radarWorld(new FakeAgentsPort([AGENT])).app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_deployments', arguments: { agentId: 'ghost' } })),
+      ) as { kind: string; agentId: string };
+      expect(payload.kind).toBe('no-such-agent');
+      expect(payload.agentId).toBe('ghost');
+    });
   });
 
   it('tells the model it cannot change anything', async () => {

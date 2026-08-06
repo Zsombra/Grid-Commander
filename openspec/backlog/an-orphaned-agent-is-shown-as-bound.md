@@ -2,11 +2,11 @@
 id: an-orphaned-agent-is-shown-as-bound
 title: The roster says "Bound to X" for an agent whose binding state is ORPHANED
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: bound-and-on-duty-are-claims-the-payload-must-back
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, binding, live, false-claim]

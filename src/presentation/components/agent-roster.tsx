@@ -1,7 +1,9 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
 import type { DeploymentSummaryResult } from '@/application/use-cases/read-deployments.query.js';
+import type { AgentDeployment } from '@/domain/agent/deployment.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
+import { BindingSummary } from './binding.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
@@ -84,27 +86,32 @@ export function AgentRoster({
                 </h3>
                 <span className="text-xs uppercase">{agent.status}</span>
               </div>
+              {/* The binding as BattleGrid states it, through the same
+                  component the agent's own page uses. This line hard-coded the
+                  word "Bound" and never read `binding.state`. */}
               <p className="mt-1 text-sm">
-                Bound to <span className="font-medium">{agent.binding.strategyName}</span>{' '}
-                at revision {agent.binding.strategyRevision}
+                <BindingSummary binding={agent.binding} />
               </p>
               {/* Acting, or configured-and-waiting — the fact the ACTIVE badge
                   hides. Same words as the detail page, so the two surfaces
                   cannot disagree about what an agent is doing. */}
               {deployments.kind === 'summary' && (
-                <p className="mt-1 text-sm">
-                  {(deployments.byAgent[agent.id] ?? []).length > 0
-                    ? (deployments.byAgent[agent.id] ?? [])
-                        .map((d) =>
-                          d.standing === 'holding-position'
-                            ? `Holding the position on ${d.coinTicker} (${d.timeframe})`
-                            : d.standing === 'on-duty'
-                              ? `Scanning ${d.coinTicker} (${d.timeframe})`
-                              : `In the rotation for ${d.coinTicker} (${d.timeframe})`,
-                        )
-                        .join(' · ')
-                    : 'Not deployed — scanning no market'}
-                </p>
+                <>
+                  <p className="mt-1 text-sm">
+                    {(deployments.byAgent[agent.id] ?? []).length > 0
+                      ? (deployments.byAgent[agent.id] ?? []).map(rosterStanding).join(' · ')
+                      : 'Not deployed — scanning no market'}
+                  </p>
+                  {/* The other half of the same join: a market whose slots hold
+                      nobody active. It rides on the agent's row because this is
+                      the only place the product describes a policy at all. */}
+                  {unscanned(deployments.byAgent[agent.id] ?? []).map((d) => (
+                    <p key={`${d.coinTicker}-${d.timeframe}`} className="mt-1 text-sm">
+                      No active agent holds the {d.coinTicker} deployment ({d.timeframe}) — that
+                      market is deployed and unscanned.
+                    </p>
+                  ))}
+                </>
               )}
               <AgentActions agent={agent} />
             </li>
@@ -114,6 +121,33 @@ export function AgentRoster({
       )}
     </div>
   );
+}
+
+/**
+ * One deployment, in a row's worth of words.
+ *
+ * `slot-held-not-scanning` is the case this row used to render as "Scanning
+ * SP500 (15m)": the radar names the slot whatever the agent's lifecycle, and
+ * the row read the radar alone. It says what is true of the pair — the slot is
+ * held, and nothing is being scanned through it — and stops there. *Why* an
+ * agent is out of lifecycle is on its status badge two lines up; asserting
+ * anything more about what BattleGrid does with an archived agent's slot would
+ * be inventing platform behaviour.
+ */
+function rosterStanding(d: AgentDeployment): string {
+  if (d.standing === 'holding-position') {
+    return `Holding the position on ${d.coinTicker} (${d.timeframe})`;
+  }
+  if (d.standing === 'on-duty') return `Scanning ${d.coinTicker} (${d.timeframe})`;
+  if (d.standing === 'slot-held-not-scanning') {
+    return `Holds the ${d.coinTicker} slot (${d.timeframe}) and is not scanning it — this agent is not active`;
+  }
+  return `In the rotation for ${d.coinTicker} (${d.timeframe})`;
+}
+
+/** The markets on this row that nothing active is deployed on. */
+function unscanned(deployments: readonly AgentDeployment[]): readonly AgentDeployment[] {
+  return deployments.filter((d) => d.occupancy === 'no-active-agent');
 }
 
 function CreateAffordance({ creation }: { creation: CreationAvailability }) {

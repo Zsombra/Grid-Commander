@@ -7,6 +7,7 @@ import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.j
 import { ReadThoughtLogQuery } from '@/application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
+import { editArguments } from '@/presentation/form.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { acquireProbeAgent, probeAgentName, releaseProbeAgent } from '../support/probe-agent.js';
@@ -404,22 +405,49 @@ live('an agent can be created with limits the product can state', () => {
          *
          * `maxDailyTrades` is chosen deliberately: it is not a money cap, so
          * even a half-applied change leaves an agent that still cannot trade.
+         *
+         * **One intent, described and then applied** — not two that name the
+         * same agent and nothing else. This step used to describe an empty
+         * `tradingConfig` and submit `maxDailyTrades: 7`. The confirmation is
+         * bound to a digest of the described intent, so the two formed
+         * different targets — driven against the fakes, `agent:a1#82b404fa…`
+         * against `agent:a1#f2e6d896…` — and the token the describe minted
+         * could not be consumed by the apply. `enforce()` refused before a
+         * request was built, so the assertion below could never hold. The guard
+         * was right and the pair was wrong: an agreement bound to its values is
+         * what stops one about $25 authorising $25,000. It predates the
+         * narrowing of the target from the bare agent id to a digest of the
+         * intent, and nothing had run the probe since.
+         *
+         * `editArguments` performs the split, because `tradingConfig` cannot
+         * travel inside `changes` — the platform replaces it wholesale, so a
+         * partial send resets what it omits. Using the product's own split
+         * rather than composing the two halves here is the point: this walks
+         * the shape `/agents/[id]/edit` and `/pending/[id]` compose, and a
+         * second hand-rolled composition is exactly how the describe and the
+         * apply drifted apart. `edit-binding.test.ts` drives this same pair
+         * against the fakes, so the repair is provable without a live run.
          */
+        const limitIntent = { tradingConfig: { maxDailyTrades: 7 } };
+
         const proposedEdit = await new DescribeEditQuery(
           agents,
           confirmations,
           new SequentialRandom(),
           clock,
-        ).execute({ ...who, agentId: agent.id, changes: { tradingConfig: {} } });
+        ).execute({ ...who, agentId: agent.id, changes: limitIntent });
         if (proposedEdit.kind !== 'proposal') throw new Error('no proposal for the config edit');
         // eslint-disable-next-line no-console
         console.log(`  propose: ${proposedEdit.proposal.consequence}`);
 
+        const limitArguments = editArguments(limitIntent);
         const limits = await new UpdateAgentCommand(agents).execute({
           ...who,
           agentId: agent.id,
-          changes: {},
-          tradingConfigChanges: { maxDailyTrades: 7 },
+          changes: limitArguments.changes,
+          ...(limitArguments.tradingConfigChanges
+            ? { tradingConfigChanges: limitArguments.tradingConfigChanges }
+            : {}),
           confirmationToken: proposedEdit.proposal.confirmationToken,
         });
         // eslint-disable-next-line no-console

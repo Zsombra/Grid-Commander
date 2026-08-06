@@ -2,11 +2,11 @@
 id: the-exposure-panel-still-prints-its-reason
 title: The exposure panel prints its reason and stops — the one branch the sweep did not reach
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-exposure-panel-explains-itself
 capability: app-access
 blocked_by: []
 tags: [ui, failure, consistency]
@@ -63,6 +63,13 @@ the read and the page, so "these positions are gone" is the one subject where
 the reassurance could be read as a claim about the market rather than about the
 read. It is not — the sentence only ever says the *failure* is not evidence —
 but this is the surface where that distinction is worth getting right.
+
+## Taken as `the-exposure-panel-explains-itself`
+
+The wording question above was settled against `these positions are`: nothing is
+listed on the branch, so a demonstrative points at the list that failed to load.
+The subject is `this agent’s positions are` — the words `/explorer` already uses
+for a stranger's holdings. The exemption is out of the guard.
 
 ## Notes
 

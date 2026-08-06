@@ -1,4 +1,4 @@
-import { deploymentsFor } from '@/domain/agent/deployment.js';
+import { deploymentsNaming } from '@/domain/agent/deployment.js';
 import type { AgentsPort, QualificationResult } from '@/ports/agents.js';
 import type { MarketPort } from '@/ports/market.js';
 import type { RadarPort } from '@/ports/radar.js';
@@ -113,7 +113,14 @@ export class ReadQualificationQuery {
 
     const deployments = await this.radar.listDeployments(req);
     if (deployments.kind === 'deployments') {
-      const mine = deploymentsFor(deployments.deployments, req.agentId);
+      /**
+       * Membership, not standing. The question here is *which markets are this
+       * agent's own*, and an archived agent's slots are still the markets it
+       * was pointed at — screening them says what its gates would do if it
+       * were reactivated. Asking for a standing would mean holding a lifecycle
+       * this query never reads, and the answer would not change the coins.
+       */
+      const mine = deploymentsNaming(deployments.deployments, req.agentId);
       const coins = dedupe(mine.map((d) => d.coinTicker));
       if (coins.length > 0) return { kind: 'deployments', ...cap(coins) };
     }

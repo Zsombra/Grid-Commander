@@ -137,7 +137,18 @@ live('every read controller, against one account', () => {
     // -- the roster, and the subject everything per-agent uses ---------------
     const roster = (await walk('listAgents', () =>
       new ListAgentsQuery(agents).execute(who),
-    )) as { roster: { kind: string; agents?: readonly { id: string; displayName: string; status: string }[] } } | null;
+      /**
+       * `status` is narrowed to the platform's two rather than left `string`:
+       * the deployment reads take the lifecycle now, because a slot held by an
+       * archived agent looks identical to one held by an active one and only
+       * the roster can tell them apart.
+       */
+    )) as {
+      roster: {
+        kind: string;
+        agents?: readonly { id: string; displayName: string; status: 'ACTIVE' | 'ARCHIVED' }[];
+      };
+    } | null;
 
     const owned = roster?.roster.kind === 'agents' ? (roster.roster.agents ?? []) : [];
     const subject = owned.find((a) => a.status === 'ACTIVE') ?? owned[0];
@@ -161,8 +172,12 @@ live('every read controller, against one account', () => {
     await walk('readJournal', () => new ReadAgentJournalQuery(agents).execute({ ...forAgent, limit: 5 }));
     await walk('readStoppages', () => new ReadStoppagesQuery(agents).execute(forAgent));
     await walk('readExposure', () => new ReadExposureQuery(positions, agents).execute(forAgent));
-    await walk('readDeployments', () => new ReadDeploymentsQuery(radar).execute(forAgent));
-    await walk('readDeployments.summary', () => new ReadDeploymentsQuery(radar).summary(who));
+    await walk('readDeployments', () =>
+      new ReadDeploymentsQuery(radar).execute({ ...who, agent: subject, roster: owned }),
+    );
+    await walk('readDeployments.summary', () =>
+      new ReadDeploymentsQuery(radar).summary({ ...who, roster: owned }),
+    );
     await walk('readQualification', () =>
       new ReadQualificationQuery(agents, radar, market).execute(forAgent),
     );
