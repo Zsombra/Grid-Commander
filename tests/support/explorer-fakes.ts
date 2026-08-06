@@ -225,12 +225,40 @@ export function anEvaluationDetail(over: Partial<EvaluationDetail> = {}): Evalua
 /** A port whose reads are set independently, because they fail apart. */
 export class FakeExplorerPort implements ExplorerPort {
   field: FieldResult = { kind: 'field', field: aField() };
+  /**
+   * The live shape of 2026-08-06: ten rows, and **this account is one of
+   * them** — rank 7 by profit, inside its own top ten. Two rows are enough
+   * to carry that property, and it is the property that matters: a fake
+   * whose own standing sat outside its own list would let a page that never
+   * marks a row pass every test.
+   *
+   * `userId`s are the real ones the platform returned, so the match under
+   * test is the match that happens live.
+   */
   leaderboard: LeaderboardResult = {
     kind: 'leaderboard',
     leaderboard: {
       metric: 'PROFIT',
-      entries: [{ rank: 1, displayName: 'PrawnCocktail', value: 371.7 }],
-      own: { rank: 7, value: 37.51, percentile: 97 },
+      entries: [
+        {
+          rank: 1,
+          displayName: 'PrawnCocktail',
+          value: 371.7,
+          userId: '9b7a50e1-678e-4ee9-b229-2a65a67c4823',
+        },
+        {
+          rank: 7,
+          displayName: 'ANBUJEFF',
+          value: 37.51,
+          userId: 'bb334a1e-2ac2-4956-8dea-7c7cf01097b9',
+        },
+      ],
+      own: {
+        rank: 7,
+        value: 37.51,
+        percentile: 97,
+        userId: 'bb334a1e-2ac2-4956-8dea-7c7cf01097b9',
+      },
       generatedAt: '2026-08-03T07:02:44.088Z',
     },
   };
