@@ -4,6 +4,7 @@ import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js
 import { McpStrategyAdapter } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import { compileConditionsIntent, postStateDrift } from '@/domain/strategy/compiled-plan.js';
 import { listedKeys, resolveConditionEdit } from '@/domain/strategy/condition-write.js';
+import type { ConditionColumn, StrategyCondition } from '@/domain/strategy/condition.js';
 import { DescribeConditionWriteQuery } from '@/application/use-cases/describe-condition-write.query.js';
 import { CompilePlanCommand } from '@/application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from '@/application/use-cases/apply-plan.command.js';
@@ -91,6 +92,33 @@ const draftOver = (header: string, sectionKey: string | null) => ({
     value: 0,
   },
 });
+
+/**
+ * A column some condition on this strategy actually reads, found anywhere in
+ * the grammar.
+ *
+ * All four clause forms carry a `column` and a clause may sit inside a group,
+ * so a search that looked only at top-level `compare`/`between` finds nothing
+ * on a strategy whose conditions are groups of `is` clauses — which is most of
+ * them. `London` is the case that showed it: eight conditions, no column found,
+ * the walk skipped **after** forking, and reported success having proved
+ * nothing.
+ *
+ * Recursive because `group.members` are themselves definitions. `ref` and
+ * `unrecognised` carry no column and end the branch.
+ */
+function firstColumn(definitions: readonly StrategyCondition['definition'][]): ConditionColumn | null {
+  for (const d of definitions) {
+    if (d.kind === 'compare' || d.kind === 'between' || d.kind === 'is' || d.kind === 'in') {
+      return d.column;
+    }
+    if (d.kind === 'group') {
+      const found = firstColumn(d.members);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 live('what the compiler does with a condition list, without writing', () => {
   it(
@@ -207,12 +235,7 @@ live('what the compiler does with a condition list, without writing', () => {
 
       // (2) One added. The draft reads a column this strategy's own conditions
       // read, so the compiler has something real to resolve it against.
-      const columns = detail.conditions.flatMap((c) =>
-        c.definition.kind === 'compare' || c.definition.kind === 'between'
-          ? [c.definition.column]
-          : [],
-      );
-      const column = columns[0];
+      const column = firstColumn(detail.conditions.map((c) => c.definition));
       if (column) {
         const added = resolveConditionEdit(detail.conditions, subject.conditions, {
           kind: 'upsert',
@@ -312,10 +335,30 @@ writes('a condition can be saved, through the product path', () => {
       const slotHolder = listing.strategies.find(
         (s) => s.scope === 'PRIVATE' && s.isActive && s.boundAgentCount === 0,
       );
-      // A platform strategy that actually defines conditions — the fork has to
-      // carry some, or this proves nothing about a list.
+      /**
+       * A platform strategy that defines conditions — the fork has to carry
+       * some, or this proves nothing about a list — **and whose fork name is
+       * not already taken on this account.**
+       *
+       * That second condition is not tidiness. `fork_strategy` answers
+       * `INTERNAL_ERROR: Internal server error` when a strategy named
+       * `<name> (fork)` already exists, and answers normally when one does
+       * not. Established live 2026-08-06: this walk failed twice at the fork,
+       * on `Dunkirk` — which had twenty-two forks of that name on the account
+       * — and forking `Leningrad`, which had none, succeeded immediately and
+       * returned all eight of its parent's conditions.
+       *
+       * So a walk that picks the first eligible source is a walk that gets
+       * less reliable every time it runs, because each run leaves behind the
+       * name that breaks the next one. Filed as
+       * `forking-a-name-that-exists-is-a-500`.
+       */
+      const takenForkNames = new Set(
+        listing.strategies.filter((s) => s.forkedFromStrategyId !== null).map((s) => s.name),
+      );
       let source: Strategy | undefined;
       for (const candidate of listing.strategies.filter((s) => s.scope === 'SYSTEM')) {
+        if (takenForkNames.has(`${candidate.name} (fork)`)) continue;
         const read = await strategies.readStrategy({ ...who, strategyId: candidate.id });
         if (read.kind === 'strategy' && read.conditionsAsGiven.length > 0) {
           source = read.detail.summary;
@@ -341,17 +384,15 @@ writes('a condition can be saved, through the product path', () => {
 
         const before = await strategies.readStrategy({ ...who, strategyId: fork.id });
         if (before.kind !== 'strategy') throw new Error('cannot read the fork back');
-        const columns = before.detail.conditions.flatMap((c) =>
-          c.definition.kind === 'compare' || c.definition.kind === 'between'
-            ? [c.definition.column]
-            : [],
-        );
-        const column = columns[0];
+        const column = firstColumn(before.detail.conditions.map((c) => c.definition));
         if (!column) {
-          // The fork's conditions read no column directly — nothing to compose
-          // a clause against without inventing a header.
-          ctx.skip();
-          return;
+          // Nothing to compose a clause against without inventing a header.
+          // A skip *after* forking is a walk that reported success having
+          // proved nothing, so it is loud rather than silent.
+          throw new Error(
+            `${fork.name} defines ${before.detail.conditions.length} condition(s) and no ` +
+              'clause among them reads a column — pick another source',
+          );
         }
         // eslint-disable-next-line no-console
         console.log(

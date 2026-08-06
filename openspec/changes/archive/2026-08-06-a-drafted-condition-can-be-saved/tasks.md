@@ -28,6 +28,31 @@
       and what `conditions: []` means), and a write half under
       `BATTLEGRID_LIVE_WRITES=1` walking fork → describe → apply → read back →
       remove → restore.
-- [ ] 1.9 Walk the live write. Not run here: the integrator reserves live MCP
-      calls, and this change ships with the exact command and the exact
-      expectations in `plan/decision-log.md` (DL-9).
+- [x] 1.9 Walk the live write. **Run by the integrator, 2026-08-06, and it
+      passed end to end** — against `Tobruk (fork)` on account 1:
+
+      ```
+      fork:    Tobruk (fork) 8fc730ed-… r1
+      before:  conditions=5 [AT_SUPPORT, AT_RESISTANCE, VOLATILITY_CALM,
+                             FORTIFIED_UP, FORTIFIED_DOWN]
+      describe: proposal — "GC_PROBE_DRAFT is added … would be left defining
+                6 condition(s) … BattleGrid takes the condition list whole"
+      after:   r2 conditions=6 [… , GC_PROBE_DRAFT]  tagline unchanged
+      remove:  r3 conditions=5 [back to the original five]
+      cleanup: fork archived, parked strategy restored
+      ```
+
+      Every audit entry `succeeded`. The re-read is the proof, not the apply's
+      own payload; tagline and section keys were unchanged across both writes,
+      which is the narrow intent proving it cost the strategy no axis.
+
+      Two corrections the walk needed first, both committed:
+      - the read-only half's control case expected a plan where the platform
+        correctly refuses a no-op (see DL-9);
+      - the source selection picked the first eligible SYSTEM strategy, which
+        was `Dunkirk` — and `fork_strategy` answers `INTERNAL_ERROR` when a
+        strategy of the fork's name already exists, which for `Dunkirk` it did,
+        twenty-two times over. Filed as `forking-a-name-that-exists-is-a-500`.
+        The column search also had to recurse into groups: `London`'s eight
+        conditions carry no top-level `compare`/`between`, so the walk skipped
+        *after* forking and reported success having proved nothing.
