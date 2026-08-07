@@ -88,3 +88,20 @@ Direct MCP calls, 2026-08-06, both accounts' key handling unchanged. The
 duplicate-name run and the two clean runs are in the same session, minutes
 apart. Cleanup verified: every probe fork archived, every parked strategy
 restored.
+
+## Product-side half: landed (2026-08-07)
+
+The fork can be named — change `the-copy-can-be-named`. The fork form offers
+an optional name (blank keeps the platform's `<parent> (fork)`, and the page
+says so; the reason to name is stated only as telling copies apart, with no
+claim about avoiding errors, since a colliding *chosen* name has never been
+probed). `ForkStrategyCommand` threads the name; the adapter sends it only
+when non-blank, against the declared 1–50 bound. A refused fork is now a
+result rather than a crashed action: the platform's answer — this
+`INTERNAL_ERROR` included — renders on the fork form in the platform's own
+words with the typed name preserved, unre-diagnosed. No pre-check against
+existing names was added, per this item.
+
+The platform defect itself stands, so this item stays open: **reporting it to
+BattleGrid remains.** A duplicate-name conflict should be `VALIDATION_ERROR`
+or `CONFLICT`, as above.
