@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-08-07 — the signal recorder: proposed, planned, built, gated, archived
+
+**Did**: the full-track change `nothing-records-what-the-signals-said` end to
+end in one session — proposal (PR #74), master plan, execution, verifier
+round, production gate PASS, archive. `signal-recording` is the **thirteenth
+capability**: what the signals said, captured forward, because the platform
+serves current readings only and every day without a recorder is history
+nobody can re-fetch.
+
+- **Capture**: `bin/grid-commander-record.ts` (cron-owned schedule, exit
+  nonzero when the record didn't grow) → `get_coin_signal_preview` per coin
+  (unweighted; the deployments choose when nothing is named) → three tables:
+  runs (provenance + platform generation), captures (metrics + the raw
+  answer whole), readings. Raw-beside-normalized is the load-bearing
+  decision — all nine historical data bugs were mapper drops, and a
+  recorder's drop is permanent.
+- **Honesty set**: failed reads are recorded gaps with reasons (raw kept
+  even when unmappable); coverage derives gaps (spacing > 2× series median,
+  one definition in `domain/recording/coverage.ts`); never-recorded /
+  unreadable / attempted-and-never-captured are three rendered states.
+  Surfaces: `/recorder`, `/recorder/[ticker]?signal=`; MCP:
+  `read_signal_history`, `read_record_coverage`.
+- **The guards worked, five times**: the vocabulary guard rejected a signal
+  id in a tool description; reachability demanded the nav rows; the
+  failure-is-explained guard took two own-store exemptions on the
+  proposal-queue precedent; the verifier caught the untested no-credential
+  scenario (now spawn-tested on the real process); and the audit's ripgrep
+  refused to read the store file — a literal NUL byte in a template string
+  had made it binary to every text scan (PG-001, fixed).
+- **One guard evolved** (DL-008): `live-writes` now derives what a
+  `*Command` reaches (shared derivation with `mcp-read-only` in
+  `tests/support/write-reachability.ts`) instead of matching the spelling —
+  `CaptureSignalsCommand` was the honest read-only case the spelling rule
+  couldn't hold.
+
+**Filed**: `a-proposal-cannot-be-recorded-on-a-personal-deployment` (p2 bug
+— `proposals.user_id` FKs `users`, and personal mode has no users row; the
+recorder's tables were designed around that trap),
+`the-recorder-is-unproven-against-live` (p2, waiting on operator),
+`recorded-signals-are-not-yet-evidence` (p2, the analysis layer),
+`agent-evaluations-are-not-recorded` (p3), `the-record-cannot-be-forgotten`
+(p3).
+
+**State at wrap**: 13 capabilities, 123 archived changes, 25 open backlog
+items, 0 active changes. 1878 vitest + 80 db green, full local CI green.
+Branch `claude/signal-recorder-strategy-y1davv`, PR #74 (draft).
+
+**Next**: the operator — run the live probe
+(`BATTLEGRID_API_KEY=… npx vitest run tests/live/recorder-probe.test.ts`),
+then start the cron (`docs/FIRST_SESSION.md` §3). Every day before the first
+scheduled capture is the loss the capability exists to stop.
+
+**Watch out**: the recorder CLI acts only on personal-key deployments (the
+delegated path has no session to resolve headlessly — same as the MCP
+server). Coverage gaps need ≥2 captures to define a cadence; a single
+capture claims no gap on purpose. And the proposals-FK suspicion above means
+`propose_agent_change` may error on exactly the deployment mode the operator
+runs — one live call settles it.
+
 ## 2026-08-07 (wrap-up) — the documentation matches the product, for the first session
 
 **Did**: the branch documentation brought current end to end, so the next
