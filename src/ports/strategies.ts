@@ -46,7 +46,14 @@ export interface StrategiesPort {
     accessToken: string;
     strategyId: string;
     sourceRevision: number;
-  }): Promise<Strategy>;
+    /**
+     * A name of the user's own for the copy. Sent only when non-blank —
+     * absent or blank means the platform names the copy `<parent> (fork)`.
+     * The declared bound (1–50 characters) is pre-stated by the form control,
+     * the way the agent forms pre-state `displayName`'s 80.
+     */
+    name?: string | undefined;
+  }): Promise<ForkResult>;
 
   /**
    * One strategy, whole.
@@ -277,6 +284,22 @@ export type StrategyListResult =
     }
   | { readonly kind: 'empty' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Forking can be refused, and the refusal is a result, not a throw.
+ *
+ * Same reasoning as `LifecycleResult.refused`: a thrown refusal crashes the
+ * server action, so the platform's answer never reaches the person who acted.
+ * The arm this carries in practice: `fork_strategy` answers `INTERNAL_ERROR`
+ * — not a clean refusal — when a strategy named `<parent> (fork)` already
+ * exists (live, 2026-08-06; see
+ * `openspec/backlog/forking-a-name-that-exists-is-a-500.md`). The reason is
+ * the platform's own words and is never re-diagnosed: a cause the platform
+ * did not state is not this product's to invent.
+ */
+export type ForkResult =
+  | { readonly kind: 'forked'; readonly strategy: Strategy }
+  | { readonly kind: 'refused'; readonly reason: string };
 
 export type CompileResult =
   | {

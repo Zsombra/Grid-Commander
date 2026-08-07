@@ -17,6 +17,7 @@ import type {
   ColumnProposal,
   ColumnRefusal,
   CompileResult,
+  ForkResult,
   LifecycleResult,
   MetricHints,
   MetricListResult,
@@ -159,12 +160,33 @@ export class McpStrategyAdapter implements StrategiesPort {
     accessToken: string;
     strategyId: string;
     sourceRevision: number;
-  }): Promise<Strategy> {
-    const payload = await this.call(params, TOOLS.fork, {
-      strategyId: params.strategyId,
-      sourceRevision: params.sourceRevision,
-    });
-    return mapStrategy(payload['strategy'] ?? payload);
+    name?: string | undefined;
+  }): Promise<ForkResult> {
+    try {
+      const payload = await this.call(params, TOOLS.fork, {
+        strategyId: params.strategyId,
+        sourceRevision: params.sourceRevision,
+        // Only when the user chose one. Blank is not a name — the schema
+        // declares minLength 1 — and an absent argument is how the platform is
+        // told to use its own naming, `<parent> (fork)`.
+        ...(params.name !== undefined && params.name.trim() !== ''
+          ? { name: params.name }
+          : {}),
+      });
+      return { kind: 'forked', strategy: mapStrategy(payload['strategy'] ?? payload) };
+    } catch (err) {
+      // The platform's answer reaches the person as its reason instead of
+      // crashing the action — the same rule as `setActive` below. This arm is
+      // real: a fork whose default name `<parent> (fork)` is already taken
+      // answers INTERNAL_ERROR, not a clean refusal (live 2026-08-06 — see
+      // openspec/backlog/forking-a-name-that-exists-is-a-500.md). Carried in
+      // the platform's words, never re-diagnosed. Transport failures still
+      // throw: "no answer" is not "no".
+      if (err instanceof ToolRefusedError || err instanceof RevisionConflictError) {
+        return { kind: 'refused', reason: err.message };
+      }
+      throw err;
+    }
   }
 
   async readStrategy(params: {

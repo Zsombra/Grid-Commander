@@ -421,6 +421,18 @@ describe('every payload the product constructs can succeed', () => {
     expect(violations(toolOrThrow('update_intelligence_agent'), payload)).toEqual([]);
   });
 
+  it('fork_strategy — the copy, unnamed and named', () => {
+    // Mirrors McpStrategyAdapter.forkStrategy, which builds this payload
+    // inline the way the radar adapter builds its deployment. `name` travels
+    // only when the user chose one — blank is not a name (the declaration
+    // pins minLength 1) — so both generations the adapter can emit are held.
+    const tool = toolOrThrow('fork_strategy');
+    expect(violations(tool, { strategyId: 's1', sourceRevision: 2 })).toEqual([]);
+    expect(
+      violations(tool, { strategyId: 's1', sourceRevision: 2, name: 'Dunkirk, mark two' }),
+    ).toEqual([]);
+  });
+
   it('compile_strategy_plan — the UPDATE request the edit page composes', () => {
     // The same builder the page calls (`compileUpdateIntent`), so a drift in
     // the page's shape is a drift in this payload — the mirror this used to

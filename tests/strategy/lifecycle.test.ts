@@ -181,6 +181,39 @@ describe('forking', () => {
     expect(res.kind === 'forked' && res.strategy.scope).toBe('PRIVATE');
     expect(res.kind === 'forked' && res.strategy.forkedFromStrategyId).toBe('sys-1');
   });
+
+  it('threads the name the user chose through to the platform', async () => {
+    const h = harness();
+    const res = await h.fork.execute({ ...who, strategy: SYSTEM, name: 'Berlin, my tune' });
+    expect(h.port.calls.find((c) => c.op === 'fork')?.payload).toMatchObject({
+      name: 'Berlin, my tune',
+    });
+    expect(res.kind === 'forked' && res.strategy.name).toBe('Berlin, my tune');
+  });
+
+  it('sends no name when none was chosen — the platform picks "<parent> (fork)"', async () => {
+    const h = harness();
+    const res = await h.fork.execute({ ...who, strategy: SYSTEM });
+    // Absent, not empty: the schema declares minLength 1, so an empty string
+    // is a refusal waiting to happen, and undefined is the "name it yourself"
+    // the platform has always been given.
+    expect(h.port.calls.find((c) => c.op === 'fork')?.payload?.['name']).toBeUndefined();
+    expect(res.kind === 'forked' && res.strategy.name).toBe('Berlin (fork)');
+  });
+
+  it('carries a refusal through as the platform gave it', async () => {
+    // The arm that used to crash the server action: `refused` was declared on
+    // the result and nothing ever produced it, so a fork the platform declined
+    // — which a re-fork of an already-forked strategy is, live — rendered as a
+    // framework error page instead of the platform's answer.
+    const h = harness();
+    h.port.forkRefusal = '{"code":"INTERNAL_ERROR","message":"Internal server error"}';
+    const res = await h.fork.execute({ ...who, strategy: SYSTEM });
+    expect(res).toEqual({
+      kind: 'refused',
+      reason: '{"code":"INTERNAL_ERROR","message":"Internal server error"}',
+    });
+  });
 });
 
 /** Retiring accounts for what depends on the strategy. */
