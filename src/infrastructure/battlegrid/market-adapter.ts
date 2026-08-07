@@ -1,18 +1,25 @@
-import type { MarketPort, RankedCoinsResult, RankingVocabulary } from '@/ports/market.js';
+import type {
+  CoinSignalPreviewResult,
+  MarketPort,
+  RankedCoinsResult,
+  RankingVocabulary,
+} from '@/ports/market.js';
 import { mapRankedCoin } from './agent-mapper.js';
 import type { McpBattleGridAdapter } from './mcp-adapter.js';
+import { mapSignalPreview, UnmappablePreviewError } from './signal-preview-mapper.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 
 /**
  * Market data that belongs to nobody's agent.
  *
- * One tool so far — `get_top_ranked_coins`, a read with no account scope: it
- * answers the same list for every caller. It exists here because a coin
- * qualification needs coins to screen, and an agent deployed nowhere supplies
- * none.
+ * Two tools: `get_top_ranked_coins`, a read with no account scope that
+ * answers the same list for every caller, and `get_coin_signal_preview`, the
+ * unweighted signal layer for one coin — what the recorder captures. Neither
+ * is about an agent, which is what earns them this port.
  */
 const TOOLS = {
   ranked: 'get_top_ranked_coins',
+  signalPreview: 'get_coin_signal_preview',
 } as const;
 
 export class McpMarketAdapter implements MarketPort {
@@ -50,6 +57,42 @@ export class McpMarketAdapter implements MarketPort {
     } catch (err) {
       return malformed(messageOf(err));
     }
+  }
+
+  async coinSignalPreview(params: {
+    userId: string;
+    accessToken: string;
+    ticker: string;
+    interval: string;
+  }): Promise<CoinSignalPreviewResult> {
+    let payload: Readonly<Record<string, unknown>>;
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool: TOOLS.signalPreview,
+        // No agentId, ever: the unweighted preview is the record.
+        args: { ticker: params.ticker, interval: params.interval },
+      });
+      payload = result.content as Readonly<Record<string, unknown>>;
+    } catch (err) {
+      return unreadable(err);
+    }
+    try {
+      return { kind: 'preview', preview: mapSignalPreview(payload) };
+    } catch (err) {
+      // The answer arrived and could not be read. It rides along raw so the
+      // recorder keeps it — this failure is exactly the kind a later mapper
+      // improvement can recover, but only if the answer survives today.
+      if (err instanceof UnmappablePreviewError) {
+        return { ...malformed(err.message), raw: payload };
+      }
+      return { ...malformed(messageOf(err)), raw: payload };
+    }
+  }
+
+  async platformVersion(params: { accessToken: string }): Promise<string | null> {
+    return (await this.battlegrid.serverVersion?.(params.accessToken)) ?? null;
   }
 
   /**

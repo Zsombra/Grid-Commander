@@ -209,6 +209,26 @@ const EXEMPT: ReadonlyArray<{ file: string; reads: string; because: string }> = 
       'happening — the exact mistake `why-not-loaded.tsx` was written to stop.',
   },
   {
+    file: 'app/(app)/recorder/[ticker]/page.tsx',
+    reads: 'history',
+    because:
+      'The signal record is read from Grid-Commander’s own database, not from ' +
+      'BattleGrid — the same ground as the proposal queue’s exemption. The shared ' +
+      'sentence names BattleGrid as the cause, which here would be false, and ' +
+      '`ReadSignalHistoryResult` carries no `FailureCause` for the same reason. ' +
+      'The branch carries its own survival sentence instead: the store not ' +
+      'answering says nothing about what it holds.',
+  },
+  {
+    file: 'src/presentation/components/signal-record.tsx',
+    reads: 'result',
+    because:
+      'The coverage surface reads the product’s own store, exactly as the history ' +
+      'page above. Its unreadable branch states in its own terms that an ' +
+      'unanswered store is not an empty record — the reassurance the shared ' +
+      'sentence exists to give, with the cause named truthfully.',
+  },
+  {
     file: 'app/(app)/strategies/metrics/[metric]/page.tsx',
     reads: 'check?',
     because:

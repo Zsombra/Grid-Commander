@@ -7,8 +7,8 @@ own list goes stale, and this file inherits that.
 **110 tools** · 83 read ·
 17 write · 10 destructive
 
-**Grid-Commander calls 52 of them** — 40 read, 5 write, 7 destructive. The
-other 58 are unconsumed capability.
+**Grid-Commander calls 53 of them** — 41 read, 5 write, 7 destructive. The
+other 57 are unconsumed capability.
 
 Classification is the server's own annotation, never inferred from a name — the
 product reads it at runtime and treats anything unannotated as destructive.
@@ -179,6 +179,7 @@ a request the tool rejects.
 | `get_agent_explorer` | read | — | `aggregations`, `currentUser`, `entries`, `filter`, `generatedAt`, `stats` |
 | `get_agent_journal` | read | `agentId` | `recentActivity`, `recentGames`, `recentThoughts`, `username` |
 | `get_agent_thought_log` | read | `agentId` | `entries`, `limit`, `page`, `total` |
+| `get_coin_signal_preview` | read | `interval`, `ticker` | `coinTicker`, `coinName`, `coinImageUrl`, `currentPrice`, `priceChangePercent`, `dominantBias`, `aggregateScorePercent`, `hasConflictingSignals`, `allEvaluatedSignals`, `isAgentWeighted`, `comparison` |
 | `get_intelligence_agent` | read | `agentId` | `agent` |
 | `get_leaderboard` | read | `metric`, `timeframe` | `currentUser`, `filter`, `generatedAt`, `leaderboard` |
 | `get_market_grid_results` | read | `sessionId` | `avgNetChangeCapture`, `captureEfficiency`, `coinBoard`, `coinCaptainBadges`, `dominantBiasDirection`, `dominantBiasPercent`, `gameDuration`, `gameName`, `gameType`, `itmCount`, `itmPercent`, `leaderboard`, `playerGrids`, `players`, `resolutions`, `session`, `sessionAccuracy`, `settledMarketData`, `totalCorrectCount`, `totalDownCount`, `totalPlayers`, `totalPredictionCount`, `totalUpCount` |
@@ -222,9 +223,9 @@ a request the tool rejects.
 Grouped by classification. These are the surfaces available if the product grows
 into them — positions, orders, market context, deployment policies, wagering.
 
-### read (43 unused)
+### read (42 unused)
 
-`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_coin_qualification`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_coin_signal_preview`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_position_audit_history`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_chart`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
+`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_coin_qualification`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_position_audit_history`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_chart`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
 
 ### write (12 unused)
 

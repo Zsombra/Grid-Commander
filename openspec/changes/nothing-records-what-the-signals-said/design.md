@@ -102,25 +102,53 @@ describes acting on strategies, not observing the market.
 
 ## File Changes
 
-- `src/domain/recording/capture.ts` (new) — SignalCapture, SignalReading,
-  CaptureCoverage, provenance and failure types
-- `src/ports/strategies.ts` (modified) — one read: the coin signal preview
+*(Reconciled at execution — DL-002 moved the platform read to `MarketPort`
+and the store to the `drizzle-*` naming; the run table and the shared
+write-reachability derivation were added as implementation found the need.)*
+
+- `src/domain/recording/capture.ts` (new) — capture, reading, provenance,
+  run, and failure types
+- `src/domain/recording/coverage.ts` (new) — the one gap definition,
+  `deriveSeriesCoverage`
+- `src/ports/market.ts` (modified) — `coinSignalPreview` (unweighted, raw
+  riding along) and `platformVersion`
+- `src/ports/battlegrid.ts` (modified) — optional `serverVersion` member
+  (null-on-unknown contract; ~25 literal fakes stay valid)
 - `src/ports/signal-record.ts` (new) — SignalRecordStore port
 - `src/infrastructure/battlegrid/signal-preview-mapper.ts` (new) — observed
-  shape → domain; prints raw-vs-mapped key counts in its probe
-- `src/infrastructure/db/schema/index.ts` (modified) — `signal_captures`,
-  `signal_readings` (+ raw payload column on captures); generated migration
-  under `drizzle/`
-- `src/infrastructure/db/signal-record-repo.ts` (new)
-- `src/application/use-cases/capture-signals.command.ts` (new)
+  shape → domain, ConsultedSignal nullability discipline
+- `src/infrastructure/battlegrid/market-adapter.ts` (modified) — the read;
+  malformed answers return unreadable **with the raw answer attached**
+- `src/infrastructure/battlegrid/mcp-adapter.ts` (modified) — `serverVersion`
+  from the `initialize` handshake, SSE-tolerant
+- `src/infrastructure/db/schema/index.ts` (modified) — `signal_capture_runs`
+  (provenance + platform version), `signal_captures` (metrics + raw jsonb,
+  outcome recorded|failed), `signal_readings`; migration
+  `drizzle/migrations/0002_medical_marvex.sql`
+- `src/infrastructure/db/repositories/drizzle-signal-record-store.ts` (new)
+- `src/application/use-cases/capture-signals.command.ts` (new; exports
+  `exitCodeFor`)
 - `src/application/use-cases/read-signal-history.query.ts` (new)
-- `src/application/use-cases/read-record-coverage.query.ts` (new)
-- `src/composition.ts` (modified) — wire store + use-cases
+- `src/application/use-cases/read-record-coverage.query.ts` (new; owns
+  `HOW_RECORDING_STARTS`)
+- `src/presentation/recorder-cli.ts` (new) — arg parsing + summary, pure
+- `src/presentation/components/signal-record.tsx` (new)
+- `src/presentation/components/section-nav.tsx` (modified) — `/recorder`
+- `src/composition.ts` (modified) — store + three use-cases
 - `bin/grid-commander-record.ts` (new) — headless capture entry
-- `app/(app)/recorder/page.tsx`, `app/(app)/recorder/[ticker]/page.tsx`
-  (new) — coverage + per-coin timeline + per-signal history
-- `src/mcp/tools.ts` (modified) — two read tools: history, coverage
-- `tests/recording/*.test.ts`, `tests/db/signal-record.test.ts`,
-  `tests/live/recorder-probe.test.ts` (new); architecture suites pick the
-  new files up by construction
-- `docs/BATTLEGRID_SURFACE_MAP.md`, `docs/MCP_SERVER.md` (modified)
+- `app/(app)/recorder/page.tsx`, `app/(app)/recorder/[ticker]/page.tsx` (new)
+- `src/mcp/tools.ts` (modified) — `read_signal_history`,
+  `read_record_coverage`
+- `tests/support/recording-fakes.ts`, `tests/support/write-reachability.ts`
+  (new) — the second is the shared write-reachability derivation both
+  architecture guards now read (DL-008)
+- `tests/recording/{preview-mapper,capture,cli-exit,history,coverage}.test.ts`,
+  `tests/db/signal-record.test.ts`, `tests/rendering/recorder.test.ts`,
+  `tests/mcp/recorder-tools.test.ts`, `tests/live/recorder-probe.test.ts` (new)
+- `tests/db/support.ts`, `tests/rendering/support/fake-acting.ts`,
+  `tests/support/market-fakes.ts`, `tests/agent/coin-qualification.test.ts`
+  (modified) — harness additions for the new ports
+- `tests/architecture/{live-writes,mcp-read-only,reachability,failure-is-explained}.test.ts`
+  (modified) — guard refinements and derived-list updates (DL-008)
+- `docs/BATTLEGRID_SURFACE_MAP.md`, `docs/MCP_SERVER.md`,
+  `docs/FIRST_SESSION.md` (modified)

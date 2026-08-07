@@ -143,3 +143,111 @@ validation, waivers, or handoff clarity.
   kind of work goes wrong (mapper drops, vacuous fakes, silent skips).
 - Approved by: planner
 - Next action: Executor begins Phase A after operator approval of the plan.
+
+### DL-007
+
+- Timestamp: `2026-08-07 08:00 UTC`
+- Phase: `EXECUTION`
+- Type: `exception`
+- Decision: Refined DL-005's gap semantics: gaps are derived over **recorded
+  captures only**; failed attempts are counted apart (`failedAttemptCount`)
+  and never interrupt a gap. A series with attempts and zero successes is a
+  distinct coverage state (`neverCaptured`), listed rather than dropped.
+- Impacted files: `src/domain/recording/coverage.ts`,
+  `src/application/use-cases/read-record-coverage.query.ts`,
+  `tests/recording/coverage.test.ts`
+- Reason: DL-005 said failed captures "interrupt a gap"; implementing showed
+  that misleads — a three-day span of nothing-but-failures has no readings,
+  and presenting it gap-less renders a data hole as coverage. The failure
+  counts beside the gap explain it without filling it. And the first draft of
+  the query silently dropped all-failed series from the coverage list, which
+  is precisely the "failure indistinguishable from never-attempted" state the
+  spec forbids — caught in self-review, fixed as `neverCaptured`.
+- Approved by: executor (within DL-005's stated refinement latitude)
+- Next action: none — tested at the definition and the surface.
+
+### DL-008
+
+- Timestamp: `2026-08-07 08:10 UTC`
+- Phase: `EXECUTION`
+- Type: `exception`
+- Decision: The live-writes guard's `*Command` arm now derives what a class
+  can reach instead of matching its spelling, via a derivation shared with
+  `mcp-read-only.test.ts` (`tests/support/write-reachability.ts`): a Command
+  is gated iff its use-case file can reach a mutating port method, and an
+  unresolvable class fails closed. Both guards' mention-checks also now read
+  comment-stripped source. `mcp-read-only` was refactored onto the shared
+  module with behavior unchanged (12/12 green).
+- Impacted files: `tests/support/write-reachability.ts` (new),
+  `tests/architecture/live-writes.test.ts`,
+  `tests/architecture/mcp-read-only.test.ts`
+- Reason: `recorder-probe.test.ts` constructs `CaptureSignalsCommand`, whose
+  every platform call is a read — the guard's own comment had priced this
+  case as "costs nothing", but the cost was real: a read probe locked out of
+  every keyed CI run behind a *writes* opt-in. The standing corollary
+  applied: when a rule and an honest new case disagree, fix the rule by
+  deriving from reachability, never by exempting the file. The refinement is
+  pinned both directions in the guard (`ForkStrategyCommand` still writes;
+  `MadeUpCommand` fails closed).
+- Approved by: executor; flagged for the auditor's attention as a guard
+  change inside the change it guards
+- Next action: Auditor re-checks the pinned assertions against the merged
+  tree.
+
+### DL-009
+
+- Timestamp: `2026-08-07 08:15 UTC`
+- Phase: `EXECUTION`
+- Type: `scope-change`
+- Decision: Two artifacts reconciled to implementation truth: `design.md`'s
+  File Changes rewritten (DL-002's placement executed: `MarketPort` +
+  `drizzle-signal-record-store.ts`; the run table and shared derivation
+  added), and a third table (`signal_capture_runs`) added beyond the
+  proposal's "two tables" impact estimate — provenance and platform version
+  are run facts, and duplicating them per coin row would let two rows of one
+  run disagree.
+- Impacted files: `openspec/changes/…/design.md`,
+  `src/infrastructure/db/schema/index.ts`
+- Reason: The artifacts must describe what is true, not what was guessed;
+  behavior (the delta specs) is unchanged.
+- Approved by: executor
+- Next action: none.
+
+### DL-010
+
+- Timestamp: `2026-08-07 08:20 UTC`
+- Phase: `EXECUTION`
+- Type: `risk`
+- Decision: Task 8.2 (one full capture against the real platform) stays open:
+  this environment holds no `BATTLEGRID_API_KEY`, by design. The key-gated
+  probe is written and runs with the first keyed `tests/live/` invocation.
+- Impacted files: `tests/live/recorder-probe.test.ts`, `tasks.md`,
+  `verification.md`
+- Reason: The live proof is one command away for the operator and impossible
+  here; shipping the probe un-run is the same posture every capability in
+  this product shipped with. The mapper's contract is additionally held by
+  the observed-shape fixture and the db suite's raw round-trip.
+- Approved by: executor
+- Next action: Operator (or first keyed session) runs
+  `BATTLEGRID_API_KEY=… npx vitest run tests/live/recorder-probe.test.ts`.
+
+### DL-011
+
+- Timestamp: `2026-08-07 08:25 UTC`
+- Phase: `EXECUTION`
+- Type: `handoff`
+- Decision: Auditor handoff notes. (1) The no-users-row property is
+  load-bearing for personal deployments — `tests/db/signal-record.test.ts`
+  "needs no users row" pins it, and the same inspection surfaced a suspected
+  latent FK bug in the proposals table, filed as
+  `a-proposal-cannot-be-recorded-on-a-personal-deployment` (p2), not fixed
+  here. (2) The bin refusal branch is verified by construction, not by test —
+  `verification.md` states it plainly. (3) The MCP tool descriptions were
+  rewritten once after the vocabulary guard rejected a real signal id in an
+  example; the shipped text names no platform vocabulary and no counts.
+  (4) `docs/MCP_SERVER.md`'s prose tool count was found two stale and now
+  says to trust `tools/list`.
+- Impacted files: see master plan inventory
+- Reason: What the gate should know that the matrices alone do not say.
+- Approved by: executor
+- Next action: verifier, then auditor.

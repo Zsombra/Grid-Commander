@@ -1,6 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { TOOLS, READ_ONLY_NOTICE } from '@/mcp/tools.js';
+import {
+  canMutate,
+  mutatingPortMethods,
+  mutatingToolNames,
+  useCaseWiring,
+} from '../support/write-reachability.js';
 
 /**
  * The MCP surface changes nothing on the operator's BattleGrid account, and
@@ -49,106 +55,17 @@ import { TOOLS, READ_ONLY_NOTICE } from '@/mcp/tools.js';
 
 const composition = readFileSync('src/composition.ts', 'utf8');
 
-interface Surface {
-  tools: Array<{ name: string; classification: string }>;
-}
-
-/** Step 1 — what BattleGrid says changes things. Never inferred from a name. */
-const MUTATING_TOOLS = new Set(
-  (JSON.parse(readFileSync('docs/battlegrid-mcp-surface.json', 'utf8')) as Surface).tools
-    .filter((t) => t.classification !== 'read')
-    .map((t) => t.name),
-);
-
 /**
- * Step 2 — the port methods that send one.
- *
- * Adapters name tools through a local `TOOLS` alias map, so the alias is
- * resolved to the tool string first and the method is attributed to whichever
- * `async name(` most recently opened above the reference.
+ * The four derivation steps live in `tests/support/write-reachability.ts`
+ * now, because `live-writes.test.ts` needs the same answer — the recorder's
+ * probe constructs a Command that provably cannot write, and the spelling
+ * rule over there could only handle that by exemption. One derivation, two
+ * guards; the regression knowledge moved with the code.
  */
-function mutatingPortMethods(): Set<string> {
-  const methods = new Set<string>();
-  const dir = 'src/infrastructure/battlegrid';
-  for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts'))) {
-    const src = readFileSync(`${dir}/${file}`, 'utf8');
+const MUTATING_TOOLS = mutatingToolNames();
 
-    // alias → tool name, from the adapter's own map.
-    const alias = new Map<string, string>();
-    for (const m of src.matchAll(/^\s{2}([a-zA-Z][a-zA-Z0-9]*):\s*'([a-z_]+)',/gm)) {
-      alias.set(m[1] as string, m[2] as string);
-    }
-
-    let current: string | null = null;
-    for (const line of src.split('\n')) {
-      const opened = /^\s{2}(?:async\s+)?([a-zA-Z][a-zA-Z0-9]*)\s*\(/.exec(line);
-      if (opened) current = opened[1] as string;
-      if (!current) continue;
-
-      const names =
-        [...alias.entries()].some(
-          ([a, tool]) => MUTATING_TOOLS.has(tool) && new RegExp(`TOOLS\\.${a}\\b`).test(line),
-        ) || [...MUTATING_TOOLS].some((tool) => line.includes(`'${tool}'`));
-      if (!names) continue;
-
-      /**
-       * Naming a tool is not sending it, and two shapes in these adapters name
-       * one without dispatching it.
-       *
-       * `deploymentTimeframes` reads the *schema* of `upsert_radar_deployment`
-       * to discover which timeframes the platform accepts —
-       * `tools.find((t) => t.name === TOOLS.upsert)`. It is a read, and
-       * counting it made a read method mutating. Nothing was exposed through
-       * it yet, so the guard did not false-alarm; it would have the first time
-       * a read use-case needed a timeframe list.
-       *
-       * `ENVELOPED = new Set([TOOLS.compile, TOOLS.apply, …])` is a set of
-       * names used to decide response handling. Also not a dispatch.
-       *
-       * These are exclusions on **syntax**, not on tools: a compared reference
-       * and a collected reference are definitionally not sends, whatever they
-       * name. An exclusion list of tool names is the thing this file exists
-       * not to be.
-       */
-      const compared = /[=!]==/.test(line);
-      const collected = /new Set\(/.test(line);
-      if (compared || collected) continue;
-
-      methods.add(current);
-    }
-  }
-  return methods;
-}
-
-/** Step 3 — use-case key → the file that implements it. */
-function useCaseFiles(): Map<string, string> {
-  const body = composition.slice(composition.indexOf('export function app('));
-  const classToFile = new Map<string, string>();
-  for (const m of composition.matchAll(
-    /import\s+\{([^}]+)\}\s+from\s+'\.\/(application\/use-cases\/[^']+)\.js'/g,
-  )) {
-    const file = `src/${m[2] as string}.ts`;
-    for (const name of (m[1] as string).split(',')) classToFile.set(name.trim(), file);
-  }
-
-  const out = new Map<string, string>();
-  for (const m of body.matchAll(/^\s{4}([a-zA-Z][a-zA-Z0-9]*):\s*(?:\n\s*)?new\s+([A-Za-z]+)\(/gm)) {
-    const file = classToFile.get(m[2] as string);
-    if (file) out.set(m[1] as string, file);
-  }
-  return out;
-}
-
-/** Step 4 — can this use-case reach one? */
-function canMutate(file: string, methods: Set<string>): string[] {
-  const src = readFileSync(file, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-  return [...methods].filter((m) => new RegExp(`\\.${m}\\s*\\(`).test(src));
-}
-
-const PORT_METHODS = mutatingPortMethods();
-const FILES = useCaseFiles();
+const PORT_METHODS = mutatingPortMethods(MUTATING_TOOLS);
+const FILES = useCaseWiring(composition).byKey;
 
 describe('the MCP surface cannot change anything on the account', () => {
   it('derived a real chain, at every link', () => {

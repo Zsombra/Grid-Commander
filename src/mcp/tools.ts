@@ -64,6 +64,8 @@ export interface ToolDefinition {
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+const optionalStr = (v: unknown): string | undefined =>
+  typeof v === 'string' && v ? v : undefined;
 const optionalNum = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 /**
@@ -436,6 +438,66 @@ export const TOOLS: readonly ToolDefinition[] = [
           : [],
         gate: typeof a['gate'] === 'number' ? a['gate'] : 0.5,
       }),
+  },
+  /**
+   * The signal record.
+   *
+   * Both tools read this product's own store, not BattleGrid — the record the
+   * capture CLI grows. They are the boundary the coverage requirement crosses
+   * for a model: a gap must arrive as a gap, because a model reading a hole in
+   * the data and calling it a quiet market would be manufacturing evidence.
+   */
+  {
+    name: 'read_signal_history',
+    description:
+      "One coin's recorded signal history, from Grid-Commander's own store — not a live " +
+      'BattleGrid read. Captures newest first, each with its capture time, the price at that ' +
+      'moment, the aggregate score, dominant bias, how many of the evaluated signals ' +
+      'triggered, which platform generation answered, and why those coins were being ' +
+      'recorded. Failed capture attempts appear as themselves, with reasons — a hole in ' +
+      'this record means nothing recorded, never that the signals were quiet. Pass signalId ' +
+      'to also get that one signal\'s reading at each capture, with the price beside it. ' +
+      '`empty` means this coin has never been captured; `unreadable` means the record did ' +
+      'not answer, which says nothing about what it holds.',
+    useCase: 'readSignalHistory',
+    input: {
+      coinTicker: { type: 'string', description: 'The coin, e.g. "BTC".' },
+      signalId: {
+        type: 'string',
+        // No example id: signal ids are platform vocabulary, read at runtime
+        // and never written into source — the rule that held when a metric
+        // was removed from every enum in one deployment.
+        description: "One signal's id, exactly as read_signal_library lists it — optional.",
+      },
+      interval: {
+        type: 'string',
+        description: 'Narrow to captures at one interval, e.g. "4h" — optional.',
+      },
+      ...LIMIT,
+    },
+    required: ['coinTicker'],
+    call: (app, who, a) =>
+      app.readSignalHistory.execute({
+        userId: who.userId,
+        coinTicker: str(a['coinTicker']),
+        signalId: optionalStr(a['signalId']),
+        interval: optionalStr(a['interval']),
+        limit: optionalNum(a['limit']),
+      }),
+  },
+  {
+    name: 'read_record_coverage',
+    description:
+      "What the signal record holds and how continuous it is, from Grid-Commander's own " +
+      'store: per coin and interval, when recording started, the latest capture, how many ' +
+      'captures exist, failed attempts counted apart, and the gaps — spans where nothing ' +
+      'recorded, stated so they cannot be mistaken for calm. Coins that were attempted and ' +
+      'never once captured are listed too, as are runs that covered nothing, with reasons. ' +
+      '`never-recorded` means recording has not started and the answer says how to start ' +
+      'it; `unreadable` means the record did not answer, which is not the same as empty.',
+    useCase: 'readRecordCoverage',
+    input: {},
+    call: (app, who) => app.readRecordCoverage.execute({ userId: who.userId }),
   },
   {
     name: 'read_field',

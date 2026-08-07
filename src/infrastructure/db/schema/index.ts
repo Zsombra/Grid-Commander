@@ -1,4 +1,13 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  doublePrecision,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 /**
  * Tables mirror columns 1:1. Nothing here is computed, and nothing nullable is
@@ -130,4 +139,114 @@ export const proposals = pgTable(
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   },
   (t) => [index('proposals_user_id_recorded_at_idx').on(t.userId, t.recordedAt)],
+);
+
+/**
+ * The signal record: what BattleGrid's signals said, captured forward.
+ *
+ * Three tables, one grain each. A **run** is one recorder invocation — which
+ * coins it set out to cover and why, and the platform generation that
+ * answered its handshake. A **capture** is one coin's outcome inside a run —
+ * recorded with the price at that moment, or failed with the platform's
+ * reason, never silently absent. A **reading** is one signal inside a
+ * recorded capture.
+ *
+ * `user_id` is plain text like `audit_entries`, deliberately not a foreign
+ * key into `users`: the capture CLI runs on personal deployments as
+ * `OWNER_USER_ID`, for which no `users` row exists — the OAuth callback is
+ * the only writer of that table.
+ *
+ * `raw` carries the platform's whole answer, post-envelope and pre-mapper.
+ * Every data bug in this product's history was a mapper drop; on a recorder
+ * a dropped field is history permanently lost, so the mapper is never the
+ * only custodian of what came back.
+ */
+export const signalCaptureRuns = pgTable(
+  'signal_capture_runs',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    // From the injected clock, never `defaultNow()` — coverage and gap
+    // derivation read time from rows, and a database default would put the
+    // one value the tests need to move outside their reach.
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    // Nullable on purpose: a handshake that named no version is recorded as
+    // unknown, not guessed. The platform redeploys with semantics changes and
+    // an unchanged tool count, so rows that cannot name their generation must
+    // say so.
+    platformVersion: text('platform_version'),
+    // named | deployments | nothing. 'nothing' is a run that found no subject
+    // — kept, so an attempt that covered nothing is distinguishable from a
+    // scheduler that never fired.
+    provenanceKind: text('provenance_kind').notNull(),
+    // The named interval, for 'named' runs. Null otherwise: deployment pairs
+    // carry their own timeframes on the capture rows.
+    namedInterval: text('named_interval'),
+    // What the run set out to cover: tickers for 'named', {coinTicker,
+    // timeframe} pairs for 'deployments', [] for 'nothing'.
+    subjects: jsonb('subjects').notNull().$type<readonly unknown[]>(),
+    // Why nothing could be covered, for 'nothing' runs. Null otherwise.
+    reason: text('reason'),
+  },
+  (t) => [index('signal_capture_runs_user_id_started_at_idx').on(t.userId, t.startedAt)],
+);
+
+export const signalCaptures = pgTable(
+  'signal_captures',
+  {
+    id: text('id').primaryKey(),
+    runId: text('run_id')
+      .notNull()
+      .references(() => signalCaptureRuns.id),
+    userId: text('user_id').notNull(),
+    coinTicker: text('coin_ticker').notNull(),
+    interval: text('interval').notNull(),
+    capturedAt: timestamp('captured_at', { withTimezone: true }).notNull(),
+    // recorded | failed. A failed capture is a fact with a reason, and its
+    // metric columns stay null — a default would erase the difference between
+    // "the platform said zero" and "the platform did not answer".
+    outcome: text('outcome').notNull(),
+    failureReason: text('failure_reason'),
+    currentPrice: doublePrecision('current_price'),
+    priceChangePercent: doublePrecision('price_change_percent'),
+    dominantBias: text('dominant_bias'),
+    aggregateScorePercent: doublePrecision('aggregate_score_percent'),
+    hasConflictingSignals: boolean('has_conflicting_signals'),
+    // The platform's whole answer for this coin. Null exactly when the
+    // outcome is 'failed' — nothing arrived to keep.
+    raw: jsonb('raw').$type<Readonly<Record<string, unknown>>>(),
+  },
+  (t) => [
+    index('signal_captures_user_series_idx').on(t.userId, t.coinTicker, t.interval, t.capturedAt),
+    index('signal_captures_run_id_idx').on(t.runId),
+  ],
+);
+
+export const signalReadings = pgTable(
+  'signal_readings',
+  {
+    id: text('id').primaryKey(),
+    captureId: text('capture_id')
+      .notNull()
+      .references(() => signalCaptures.id),
+    userId: text('user_id').notNull(),
+    signalId: text('signal_id').notNull(),
+    // Nullable exactly where the domain is: the platform's absence is kept as
+    // null, and the capture's raw answer is what settles what it meant.
+    module: text('module'),
+    triggered: boolean('triggered').notNull(),
+    bias: text('bias'),
+    direction: text('direction'),
+    score: doublePrecision('score'),
+    scorePercent: doublePrecision('score_percent'),
+    effectiveAllocation: doublePrecision('effective_allocation'),
+    isPrimary: boolean('is_primary').notNull(),
+    required: boolean('required').notNull(),
+    details: text('details'),
+    indicatorValues: jsonb('indicator_values').notNull().$type<Readonly<Record<string, unknown>>>(),
+  },
+  (t) => [
+    index('signal_readings_capture_id_idx').on(t.captureId),
+    index('signal_readings_user_signal_idx').on(t.userId, t.signalId),
+  ],
 );
