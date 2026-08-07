@@ -34,4 +34,14 @@ export class FakeMarketPort implements MarketPort {
   async rankingVocabulary(): Promise<RankingVocabulary> {
     return this.vocabulary;
   }
+
+  // The recorder's reads. Nothing that fakes the market this way records, so
+  // reaching them is a wiring mistake worth a loud failure.
+  async coinSignalPreview(): Promise<never> {
+    throw new Error('coinSignalPreview is not in this fake; use ScriptedMarket from recording-fakes');
+  }
+
+  async platformVersion(): Promise<string | null> {
+    return null;
+  }
 }

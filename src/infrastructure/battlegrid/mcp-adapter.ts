@@ -291,6 +291,55 @@ export class McpBattleGridAdapter implements BattleGridPort {
     }
   }
 
+  /**
+   * The server version the platform's `initialize` handshake names, or null.
+   *
+   * The one consumer is the signal recorder, which stamps each capture run
+   * with the generation that answered — the platform redeploys often, changes
+   * semantics without changing its tool count, and a longitudinal record that
+   * cannot name its generation cannot be trusted across one.
+   *
+   * Null-on-any-failure is the contract, not error-swallowing: a version the
+   * handshake did not yield is recorded as unknown, and a capture must never
+   * fail because this metadata read hiccuped. The one live reader of this
+   * value before now (`tests/live/surface-freshness.test.ts`) parses the
+   * same both-encodings answer — plain JSON or an SSE frame — and so does
+   * this.
+   */
+  async serverVersion(accessToken: string): Promise<string | null> {
+    try {
+      const res = await this.deps.fetch(this.deps.config.mcpUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'grid-commander', version: '1.0.0' },
+          },
+        }),
+      });
+      if (!res.ok) return null;
+      const raw = await res.text();
+      const frame = raw.startsWith('event:')
+        ? (raw.split('\n').find((l) => l.startsWith('data: ')) ?? '').slice('data: '.length)
+        : raw;
+      const info = (JSON.parse(frame) as { result?: { serverInfo?: Record<string, unknown> } })
+        .result?.serverInfo;
+      const version = info?.['version'];
+      return typeof version === 'string' && version.length > 0 ? version : null;
+    } catch {
+      return null;
+    }
+  }
+
   // -- internals ---------------------------------------------------------
 
   /**

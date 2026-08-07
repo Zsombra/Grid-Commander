@@ -50,9 +50,13 @@ behaviour.
 
 ## It cannot change anything. It can propose.
 
-Twenty tools. Nineteen are reads; the twentieth records a suggestion and
-stops. No tool here creates, updates, rebinds, archives, deploys, applies or
-disconnects anything on your BattleGrid account.
+Twenty-four tools. All but one are reads; the odd one out records a suggestion
+and stops. (The count was already two stale when the recorder's tools arrived —
+prose tallies rot, so trust `tools/list` over this sentence.) No tool here creates, updates, rebinds, archives, deploys, applies
+or disconnects anything on your BattleGrid account. Two of the reads —
+`read_signal_history` and `read_record_coverage` — read Grid-Commander's own
+database rather than BattleGrid: they serve the signal record the capture CLI
+grows, gaps and all.
 
 This is not caution for its own sake. Every write in Grid-Commander goes
 through **describe → confirm → perform**, with a token digest-bound to the
@@ -141,6 +145,7 @@ directly. It would lose everything this product knows:
 | `read_signal_library` / `read_signal` | every signal a rule can reference |
 | `read_metric_index` / `read_metric` | every metric a column can be built from |
 | `simulate_aggregate` | what a re-weighting would score, without saving it |
+| `read_signal_history` / `read_record_coverage` | what the signals *said* — the recorder's own store, gaps stated as gaps |
 | `read_field` / `read_competitor` | the field, and one rival's whole public record |
 | `watch_arena` | Market Grid sessions |
 | `read_audit` | every write the product has made on your behalf |

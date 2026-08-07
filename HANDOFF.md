@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-07  
-**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#72 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
+**State**: green (1878 vitest + 80 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 25 open backlog items. PRs #8–#72 merged; #74 (the signal recorder) on its branch. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled.
 
 ---
 
@@ -19,12 +19,12 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | **12** |
-| Changes (archived) | 122 |
-| Vitest tests | 1811 (+ key-gated live) + 62 db |
+| Capabilities (archived) | **13** |
+| Changes (archived) | 123 |
+| Vitest tests | 1878 (+ key-gated live) + 80 db |
 | Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 20 |
+| Open backlog items | 25 |
 | Design tickets open | 0 |
 | Open draft PRs | none; #8–#72 merged |
 
@@ -73,7 +73,7 @@ its neighbours.
 
 ---
 
-## Twelve Capabilities
+## Thirteen Capabilities
 
 | Capability | What it covers |
 |---|---|
@@ -89,6 +89,7 @@ its neighbours.
 | `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
 | `platform-mapping` | The recorded model of BattleGrid's MCP surface, and the guarantee that it announces its own age |
+| `signal-recording` | The forward record of what the signals said — capture (CLI, cron-owned schedule), the raw answer kept whole, coverage with gaps stated as gaps, history per coin and per signal, readable by the web and by a model |
 
 ---
 

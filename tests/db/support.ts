@@ -34,6 +34,9 @@ const TABLES = [
   'connections',
   'oauth_transactions',
   'proposals',
+  'signal_readings',
+  'signal_captures',
+  'signal_capture_runs',
   'users',
 ] as const;
 
