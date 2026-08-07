@@ -1,5 +1,4 @@
 # CLAUDE.md — Project Configuration
-<!-- FILL IN: Project + Architecture sections. Everything else is pipeline scaffolding. -->
 
 ## Project
 
@@ -7,7 +6,10 @@
 - **Description**: A web workbench for building, tuning, and understanding
   BattleGrid trading agents and the strategies that drive them, over BattleGrid's
   MCP server.
-- **Status**: new — no application code yet. See `_IDEA/Grid-Commander_Idea_Brief.md`.
+- **Status**: built and live-proven — 12 capabilities, 122 archived changes,
+  every write walked against the real platform. `HANDOFF.md` is the current
+  state; `docs/FIRST_SESSION.md` is how an operator starts using it. The idea
+  brief this grew from is `_IDEA/Grid-Commander_Idea_Brief.md`.
 
 ## Architecture
 
