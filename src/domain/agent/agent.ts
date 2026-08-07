@@ -20,10 +20,14 @@ import type { TradingConfig } from './trading-config.js';
  * roster read for the life of the product and was discarded every time, and a
  * comment that read as settled is why nobody asked again.
  *
- * The rest of the exclusion stands. Avatar urls, `last24hCostUsd`,
- * `activeGameCount` and `provider` remain unmapped — not because they are
- * uninteresting, but because nothing has asked for them yet, which is a
- * different reason from the one above and worth keeping distinct.
+ * The rest of the exclusion stands, and the list has shortened twice for the
+ * same reason: `modelDisplayName` and `last24hCostUsd` are mapped now because
+ * surfaces asked — the brain line showed a bare discriminator, and the page
+ * titled "what would stop this agent" said nothing about spend. Avatar urls,
+ * `activeGameCount`, `hasActiveAssignments` and `provider` remain unmapped
+ * because nothing has asked for them yet, which is a different reason from
+ * the one above and worth keeping distinct
+ * (`the-payload-carries-more-than-is-read`).
  */
 export interface Agent {
   readonly id: string;
@@ -33,6 +37,29 @@ export interface Agent {
   readonly status: AgentStatus;
   readonly binding: StrategyBinding;
   readonly brain: Brain;
+  /**
+   * The platform's human-readable name for the brain's model — observed
+   * `"GLM-5.2"` — or null when the payload named none.
+   *
+   * Kept beside `brain` rather than inside it, because the read-back
+   * flattens the request's two-branch brain union into one `brainPreset`
+   * field: every agent observed reads back `CUSTOM` whatever it was created
+   * as, so the branch a read produces is not a fact about the agent and this
+   * name must not be tied to one
+   * (`preset-custom-in-the-preset-branch-is-unestablished`).
+   */
+  readonly modelDisplayName: string | null;
+  /**
+   * The running 24-hour spend, or null when the read this agent came from
+   * does not report one.
+   *
+   * Null never means "spent nothing" — the platform reports an explicit
+   * number when it reports at all. Only the roster read populates this; the
+   * detail read answers 0 for an agent the list prices at $0.09, so its copy
+   * is deliberately not read (see `mapAgent`, and
+   * `the-cost-of-an-agent-reads-differently-from-two-tools`).
+   */
+  readonly last24hCostUsd: number | null;
   readonly tradingConfig: TradingConfig | null;
   readonly arenaChallengeEnabled: boolean;
   readonly overlayText: string | null;

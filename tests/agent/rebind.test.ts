@@ -15,6 +15,8 @@ const agent: Agent = {
     state: 'BOUND',
   },
   brain: { kind: 'preset', preset: 'ROMMEL' },
+  modelDisplayName: null,
+  last24hCostUsd: null,
   tradingConfig: null,
   arenaChallengeEnabled: false,
   overlayText: null,
