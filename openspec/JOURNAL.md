@@ -21,8 +21,13 @@ gained the personal-deployment scenario.
 **Also**: the full keyed read sweep. First run went out **concurrently** —
 my mistake, HANDOFF says probes run serially — and came back 9-failed with
 platform-weather shapes (freshness reading an empty version mid-sweep,
-rosters unreadable): rate-limiting, not regressions. Serial re-run results
-recorded below/in the item when landed.
+rosters unreadable): rate-limiting, not regressions. **Serial: 26 passed /
+2 failed / 16 write-gated skips.** Of the two: `column-grammar-probe` is
+per-call platform flapping (the failure moved to a different test on rerun;
+appended to `battlegrid-is-returning-internal-errors`), and
+`own-evaluation-probe` is a real, stable finding — **the cost-to-think
+reads null on an owned evaluation**, twice, on platform 11.0.0, filed as
+`an-owned-evaluations-cost-reads-null` (p2) with the discrimination recipe.
 
 **State**: 13 capabilities, 124 archived changes, 23 open backlog items,
 0 active changes. Full CI green.

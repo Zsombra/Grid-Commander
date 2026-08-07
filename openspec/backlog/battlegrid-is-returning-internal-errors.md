@@ -230,3 +230,14 @@ Both reads answer normally again (`get_agent_explorer` 200 in ~4.1s,
 So the keyed CI failure of 2026-08-06 ~22:50Z is fully accounted for as a
 transient platform outage of the explorer subsystem, roughly bounded between
 22:00Z and 04:20Z. Nothing in this product changed between red and green.
+
+## 2026-08-07 — per-call flapping under a keyed serial sweep
+
+The serial read sweep (26/28 green) caught the per-call shape again, twice
+in one file: `column-grammar-probe`'s "a valid column compiles" answered
+`unreadable` at 16:13Z and passed on rerun at 16:2xZ, while its neighbour
+"a metric card carries transforms with formulas" did the reverse. Same key,
+same serial pacing, platform 11.0.0 throughout, and calls running 30–180s.
+Consistent with the standing record: individual tools flap `isError`/slow
+while neighbours answer. No product action; recorded so the next phantom
+failure costs a lookup instead of a diagnosis.
