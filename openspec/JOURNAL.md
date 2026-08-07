@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-07 (follow-up) — the recorder is live-proven, first capture recorded
+
+**Did**: PR #74 merged (`07a5138`), and the operator supplied a key the same
+afternoon. Freshness gate green (live battlegrid 11.0.0 = the recorded map),
+then both proofs: the key-gated probe (16 deployments captured, 0 failed,
+SP500 keep-rate **84 raw rows → 84 mapped readings**), and the CLI end to end
+into a real PostgreSQL — run `921f8db4`: 1 run, 16 captures, **1,344
+readings**, raw answers whole, platform 11.0.0 stamped, exit 0. 255 of 1,344
+readings were triggered at that moment. `the-recorder-is-unproven-against-live`
+closed with the evidence; the change's one open task (8.2) is thereby
+fulfilled.
+
+**State**: 13 capabilities, 123 archived changes, 24 open backlog items,
+0 active changes. Every write and now every read path of the recorder is
+live-proven.
+
+**Next**: operational, not evidential — the operator starts the cron on the
+machine that keeps the database (`docs/FIRST_SESSION.md` §3). The capture
+proven here lives in an ephemeral container; the record that matters begins
+with the first scheduled run at home.
+
+**Watch out**: the key was used for reads only and lives nowhere in the repo.
+`prove-token-lifetimes` and the proposals-FK suspicion
+(`a-proposal-cannot-be-recorded-on-a-personal-deployment`) both become
+one-call answers now that a key exists — worth the next keyed session.
+
 ## 2026-08-07 — the signal recorder: proposed, planned, built, gated, archived
 
 **Did**: the full-track change `nothing-records-what-the-signals-said` end to

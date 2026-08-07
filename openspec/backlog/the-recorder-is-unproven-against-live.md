@@ -2,7 +2,7 @@
 id: the-recorder-is-unproven-against-live
 title: Run the recorder's first live capture on a keyed session
 type: chore
-status: open
+status: done
 priority: p2
 created: 2026-08-07
 updated: 2026-08-07
@@ -49,3 +49,27 @@ capability this item completes.
 DL-010 in the change's decision log records the deferral. The probe is
 reads-only and needs no `BATTLEGRID_LIVE_WRITES` — the live-writes guard
 derives that rather than taking the file's word for it.
+
+## Closed 2026-08-07
+
+The operator supplied a key and both proofs ran the same afternoon the
+change merged, against live battlegrid 11.0.0 (freshness gate green first):
+
+- **The probe** (`tests/live/recorder-probe.test.ts`): 16 coins captured —
+  every radar deployment, at its own timeframe — 0 failed. SP500@15m keep
+  rate printed **84 raw signal rows → 84 mapped readings**; the raw answer
+  carried the unmapped fields (`comparison` included); the record read back
+  through `ReadSignalHistoryQuery` with the platform version on every entry.
+- **The CLI, end to end into a real PostgreSQL** (task 8.2's letter): run
+  `921f8db4` → **1 run row, 16 capture rows (all recorded), 1,344 reading
+  rows**, raw jsonb holding all 84 rows per coin, `platform_version =
+  11.0.0`, exit 0. Deployments chose the subject: SP500, FARTCOIN, BTC,
+  BRENTOIL, ETH, HYPE, SOL, AIXBT, WIF, SKHX, ENA, LDO, BNB, MELANIA,
+  MOODENG, TRUMP. A live market fact came free: 255 of 1,344 readings
+  triggered at capture time.
+
+The mapper's contract now rests on a live call, not only the recorded
+shape. What remains is operational, not evidential: the operator starts the
+cron on the machine that keeps the database (`docs/FIRST_SESSION.md` §3) —
+the capture proven here lives in an ephemeral container and goes down with
+it.
