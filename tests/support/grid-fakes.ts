@@ -36,6 +36,24 @@ export function aGridSession(over: Partial<GridSessionSummary> = {}): GridSessio
     lockAt: '2026-08-01T18:00:00Z',
     settleAt: '2026-08-01T19:00:00Z',
     playerCount: 3,
+    // The list-only half of the overlap, shaped like the 2026-08-06 rows: a
+    // host the platform has never named (null on all 50), the money split in
+    // the platform's own figures, and the pick roster's envelope — populated
+    // roster, no picks — which is the only crowd state ever observed.
+    hostDisplayName: null,
+    itmPercent: 30,
+    calculatedItmCount: 2,
+    alpha: 3,
+    distributionCurveId: 'curve-1',
+    feeBreakdown: {
+      winnersAmount: 7.5,
+      platformAmount: 1.5,
+      jackpotAmount: 0.5,
+      warBondAmount: 0.5,
+      hostAmount: 0,
+    },
+    pickRosterSize: 36,
+    hasPicks: false,
     ...over,
   };
 }
