@@ -14,13 +14,12 @@ import { harness } from './support.js';
 
 const h = harness();
 afterAll(() => h.close());
-beforeEach(async () => {
-  await h.reset();
-  // Proposals reference users; the FK is part of what is being asserted.
-  await h.db.execute(
-    "insert into users (id, battlegrid_subject) values ('u1', 's1'), ('u2', 's2')" as never,
-  );
-});
+// No users rows are inserted, deliberately. The table used to FK `users`,
+// which made propose_agent_change fail on every personal-key deployment —
+// the one mode the stdio server is actually run in — because only the OAuth
+// callback writes that table. Proven live 2026-08-07, constraint dropped;
+// this suite running against bare users is what keeps it dropped.
+beforeEach(() => h.reset());
 
 const RECORDED = new Date('2026-08-05T09:00:00Z');
 
@@ -59,6 +58,20 @@ describe('the proposal store holds nothing that can be spent', () => {
     expect(columns).toContain('proposedValues');
   });
 
+  it('records as owner with no users row — the personal deployment', async () => {
+    /**
+     * The regression that was live for the feature's whole life: `owner` is
+     * the personal deployment's acting identity, no `users` row ever exists
+     * for it, and the FK refused the insert. A migration reintroducing the
+     * constraint fails here, with this sentence to say why.
+     */
+    const s = store();
+    await s.record(intent({ id: 'own1', userId: 'owner' }));
+    const back = await s.get({ userId: 'owner', id: 'own1' });
+    expect(back?.status).toBe('open');
+    expect((await s.list('owner')).map((p) => p.id)).toEqual(['own1']);
+  });
+
   it('stores what was proposed, verbatim', async () => {
     const s = store();
     await s.record(intent({ proposedValues: { tradingMode: 'OFF', note: 'burning money' } }));
@@ -87,10 +100,22 @@ describe('a proposal belongs to exactly one account', () => {
     expect((await s.get({ userId: 'u1', id: 'p1' }))?.status).toBe('open');
   });
 
-  it('refuses a user the database does not know', async () => {
-    // The foreign key, not a check in code. A proposal for a non-existent
-    // account is a row nobody could ever open.
-    await expect(store().record(intent({ id: 'p2', userId: 'ghost' }))).rejects.toThrow();
+  it('a row recorded under one identity is invisible to every other', async () => {
+    /**
+     * This used to assert the opposite — that an unknown user was *refused by
+     * the foreign key*. That premise was the bug: `owner`, the personal
+     * deployment's identity, is unknown to `users` by design, and the FK made
+     * every personal-mode proposal fail. The property the old test gestured
+     * at — nobody can open a stranger's row — was never the FK's to hold; it
+     * lives in the WHERE, and this asserts it for an identity the database
+     * has never heard of.
+     */
+    const s = store();
+    await s.record(intent({ id: 'p2', userId: 'ghost' }));
+    expect(await s.get({ userId: 'u1', id: 'p2' })).toBeNull();
+    expect(await s.list('u1')).toEqual([]);
+    expect(await s.resolve({ userId: 'u1', id: 'p2', status: 'agreed' })).toBe(false);
+    expect((await s.get({ userId: 'ghost', id: 'p2' }))?.status).toBe('open');
   });
 });
 
