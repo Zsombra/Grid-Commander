@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-07 (wrap-up) — the documentation matches the product, for the first session
+
+**Did**: the branch documentation brought current end to end, so the next
+session — the operator's first *working* session — starts from truth instead
+of archaeology. No code changed.
+
+- **`README.md` is now the product's**, not the pipeline's. The SKILLMOREL
+  pipeline documentation moved whole to `docs/PIPELINE.md` with a pointer at
+  its old identity; the root README now says what Grid-Commander does, the
+  three facts that shape every decision, how to run it, and where every other
+  document lives.
+- **`docs/FIRST_SESSION.md` is new** — the operator runbook: boot with a
+  personal key (no OAuth registration; `/connect` says "nothing to connect"
+  when a key is set), trust it via the freshness gate, the reading tour in the
+  order the questions come up (stoppages → pipeline → trades → qualification →
+  the field), first writes in ascending blast radius, what the product refuses
+  on purpose, and what platform weather looks like.
+- **`CLAUDE.md`** no longer claims "no application code yet".
+- **`HANDOFF.md` refreshed whole**: the capabilities table names what actually
+  shipped (harness 124 → 235; conditions saved, not just tried; spend;
+  qualification), "What the App Can Do" gains the final three rounds' surfaces,
+  the stale "waiting on BattleGrid" start-here block — written when
+  `the-model-can-propose…` was unarchived — is replaced with the real state
+  (everything proposed is built; the 20 open items split into waiting-on-
+  operator / waiting-on-BattleGrid / waiting-on-evidence / buildable-not-
+  urgent), and the live-probe table covers the eight probes added since it was
+  written.
+
+**State at wrap**: 12 capabilities, 122 archived changes, 20 open backlog
+items, 0 active changes, 0 open design tickets. 1811 vitest + 62 db + 235
+harness, all ten CI gates green keyless, keyed suite fully green since the
+explorer subsystem recovered. Every write path live-proven. PRs #8–#72 merged.
+
+**Where the next session starts**: as the operator — `docs/FIRST_SESSION.md`.
+As a developer — `/board`, then the backlog's buildable tail (the open-orders
+slice of `trading-telemetry-is-unread` is the largest remaining read surface,
+one discovery read on account 2 away).
+
 ## 2026-08-07 (round five) — five builds, and two items settled by reading the code
 
 **Did**: four agents finished, one stalled and its work was completed by hand.
