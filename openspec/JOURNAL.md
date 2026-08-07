@@ -99,9 +99,43 @@ declare a `REGIME` dependency while `rel: regime` resolves to `null` on every
 anchor for columns. Whether the signal path resolves it by a route the column
 path does not is unverified, and the doc says so rather than guessing.
 
+**Then measured the live cross-section — 40 coins x 84 signals, 3,360
+evaluations — and it falsified my own top recommendation.** C2 called
+`mtf_pullback_long/short` "the highest recommendation in this document" and
+specified them `required: true`. They fire **0 of 40**. The components explain
+it: `htf_ma_aligned_bull` fires 20%, `ltf_rsi_oversold` 5%, and the conjunction
+is empty — a real but rare setup, not a broken signal. Marked required, that
+strategy would never have traded. Corrected to `required: false` with the
+allocation kept high, plus the §3.6 lever: loosen `ltf_rsi_oversold`'s own
+threshold toward 40 rather than touching the gate.
+
+**18 of 84 signals fired on nothing**, including four of C4's five. And
+`bollinger_squeeze` — which reads as a rare "setup forming" trigger — fires on
+**65%** of the universe, so its allocation dropped from 3 to 1. The benchmark's
+scorecard now carries a measured firing rate as a comment beside every weight,
+and `volume_surge` was dropped from it outright.
+
+**The rule that came out of this**: measure firing rates *before* assigning
+allocations, and never mark a signal `required` whose rate you have not
+measured. It is now step 3 of the E.2 protocol.
+
+**C8 held up where the others wobbled.** Its two signals fire selectively —
+`flow_perp_spot_bull_divergence` on 15% at a median score of 0.82 — which is the
+profile you want from a primary. The constraint is coverage: the module is
+crypto-only, 18 of 40 symbols, so scope it to `CRYPTO`. And `PERP_SPOT_CONFIRMS`
+read **false on all 18**, so a condition requiring it would never fire.
+
+Two other label findings worth keeping. `OI_PX_REGIME` populates for the *whole*
+universe — equities and commodities too — and is the best-distributed classifier
+on the platform (new shorts 40% / short covering 22% / new longs 22% / long
+liquidation 15%), which makes C9 a strong veto input even though its module
+scored worst empirically. And `hasConflictingSignals` was **true for all 40
+coins** — zero information as a filter.
+
 **Next**: the cheapest real test is the stop-geometry fix alone, holding signals
-constant — two fields. After that, C8 (perp–spot basis): strongest prior
-mechanism, native signal pair, zero competition.
+constant — two fields. C8 is now the best-evidenced unexploited category and is
+ready to build; scope it to CRYPTO and gate on the `PERP_SPOT_FLOW` labels, not
+on `PERP_SPOT_CONFIRMS`.
 
 ## 2026-08-06 (round three) — six builds, and a destructive risk that turned out not to be
 

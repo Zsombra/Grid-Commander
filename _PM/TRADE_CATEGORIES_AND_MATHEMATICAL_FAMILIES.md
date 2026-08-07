@@ -75,8 +75,15 @@ signals fired *deeply*, not that many fired — and tightening a signal's own
 threshold is often a better lever than raising the gate. 39 of 84 signals are
 tunable, with declared bounds; that is the real optimisation surface (§3.6).
 
+**9. Most of the catalogue is idle at any moment, and the two signals this
+document recommended most highly fired zero times.** In a 40-coin × 84-signal
+live cross-section (§D.7), **18 signals fired on nothing** — including both
+`mtf_pullback_*`, which C2 had specified as `required: true`. Marked required,
+that strategy would never have traded. Check firing rates before marking
+anything required; the spec is corrected in place.
+
 **What to build first:** §E gives a benchmark specification that follows from
-these seven directly. It is deliberately not clever. It fixes the geometry,
+these findings directly. It is deliberately not clever. It fixes the geometry,
 sits out the one bad regime, and gives you a measurable baseline to optimise
 against.
 
@@ -600,10 +607,18 @@ is an entry, not a reversal.
 
 **Build.** This is the category the platform has pre-built for you.
 - Signals: **`mtf_pullback_long` / `mtf_pullback_short`** — HTF trend + LTF
-  counter-extreme, already synthesised. Allocation 3, `required: true`.
+  counter-extreme, already synthesised. Allocation 3, **`required: false`**.
   Note their dependency set is `HIGHER` + `LOWER` + `SYNTHESIS` — **not
   `PRIMARY`** (§3.6). The anchor timeframe plays no part in evaluating them, so
   the higher and lower tables below are the ones that matter.
+
+  > **Corrected.** This spec originally said `required: true`. The live
+  > cross-section (§D.7) shows both signals firing **0 of 40 coins** — the
+  > conjunction of `htf_ma_aligned_bull` (20%) and `ltf_rsi_oversold` (5%) was
+  > empty. Marked `required`, this strategy would never have traded. Keep the
+  > allocation high — the signal is worth a lot when it fires — but never let it
+  > gate. To make it reachable, loosen `ltf_rsi_oversold`'s own `threshold`
+  > (range [1,50], default 30) toward 40 rather than touching the gate.
 - Supporting: `htf_ma_aligned_bull` (2), `ltf_rsi_oversold` (2),
   `sr_at_support` (1)
 - Section (`rel: higher`): `MA_ALIGN value`, `ADX value`
@@ -667,8 +682,17 @@ F4 windowed moments
 **Build.**
 - Section (anchor): `BB_WIDTH_PCT trajectory w=6`, `BB_WIDTH_PCT rank
   ordering:lo`, `ATR_PCT trajectory`, `PRICE_ZONE value`, `RVOL value`
-- Signals: `bollinger_squeeze` (3), `volatility_atr_expanding` (2),
+- Signals: `bollinger_squeeze` (1), `volatility_atr_expanding` (2),
   `sr_resistance_break` / `sr_support_break` (3), `volume_surge` (2)
+
+  > **Two corrections from §D.7.** `bollinger_squeeze` fires on **65%** of the
+  > universe — it is background context, not a trigger, so its allocation is
+  > dropped from 3 to 1. And four of the five signals here
+  > (`volatility_atr_expanding`, `volume_surge`, both `sr_*_break`) fired on
+  > **zero** coins in the snapshot, while `REGIME_VOL` read `normal` for 98%.
+  > This category's whole signal set is currently near-inert — which is
+  > consistent with it being a *transition* trade. Gate it on the `volatile`
+  > regime and accept that it will sit idle most of the time.
 - Condition: `ALL[ BB_WIDTH_PCT ≤ <p20>, PRICE_ZONE in [breakout high,
   breakdown low], RVOL ≥ 1.5 ]`
 - **Regime gate: `volatile`**
@@ -803,6 +827,17 @@ it to you as a label:
 - Conditions:
   - `ALL[ PERP_SPOT_FLOW is spot_led_accumulation, PERP_SPOT_STRENGTH is high ]` → **UP**
   - `ALL[ PERP_SPOT_FLOW is perp_led_fragile ]` → **NEITHER** (a veto, not a short)
+  - **Do not gate on `PERP_SPOT_CONFIRMS`** — it read `false` on all 18 covered
+    coins (§D.7). A condition requiring it would never fire.
+
+**Live check (§D.7).** The category holds up where the others wobbled. Its two
+signals fire selectively — `flow_perp_spot_bull_divergence` on 15% of coins at a
+median score of **0.82**, the bear side on 10% — which is the profile you want
+from a primary: rare enough to select, strong enough to move the aggregate.
+`PERP_SPOT_FLOW` read `spot_led_accumulation` on 22% of covered coins.
+**The constraint is coverage:** the module is *crypto-only*, populating 18 of 40
+symbols here, so C8's real universe is roughly half what a ranked selection
+implies. Scope `coinSelection` to `CRYPTO` rather than `ALL`.
 
 **Evidence.** This is standard derivatives-desk analysis and the mechanism is
 well understood: perp-led rallies are funded by leverage that must eventually be
@@ -1273,6 +1308,131 @@ Two implications: carry (C10) has little to harvest right now, and multi-
 timeframe momentum agreement (C1) is currently rare — which makes the `mtf_*`
 synthesis signals a genuinely selective filter rather than a permissive one.
 
+
+### D.7 The live cross-section — how selective each signal actually is
+
+40 coins × 84 signals = **3,360 evaluations**, via `get_coin_signal_preview` at
+a 1h interval, plus `get_coin_market_context` for the classification labels.
+
+**This is one snapshot.** A signal that did not fire here is not dead — it is
+*rare at this moment*. But for anything you intend to mark `required`, rarity is
+decisive: a required signal that seldom fires gates the strategy off.
+
+#### 18 of 84 signals fired on nothing
+
+`funding_extreme_positive/negative` · `volatility_atr_expanding/contracting` ·
+`volume_surge` · `volume_obv_bull/bear_divergence` · `sr_support/resistance_break` ·
+`rsi_overbought` · `rsi_bull/bear_divergence` · `ltf_rsi_overbought` ·
+`ma_ema_bull_cross` · `oi_surge` · `stoch_bull_cross` ·
+**`mtf_pullback_long`** · **`mtf_pullback_short`**
+
+#### The two I recommended most highly fired zero times
+
+C2 called `mtf_pullback_long/short` "the highest recommendation in this
+document" and specified them at **`required: true`**. That specification was
+wrong, and this is why:
+
+| Component | Fires |
+|---|---|
+| `htf_ma_aligned_bull` | 8/40 (20%) |
+| `ltf_rsi_oversold` | 2/40 (5%) |
+| coins with **both** | **0/40** |
+
+The conjunction is empty. Under independence you would expect ~1% — so 0/40 is
+entirely consistent with a real but rare setup, not a broken signal. The
+platform's own text agrees: *"No HTF uptrend with an LTF oversold dip."*
+
+**The fix is two-part**, and both parts follow from §3.6:
+
+1. **`required: false`.** Keep allocation 3 — when it fires it is worth a lot —
+   but never let it gate.
+2. **Loosen its component's threshold.** `ltf_rsi_oversold` takes
+   `threshold` ∈ [1,50], default 30. At 40 the conjunction becomes reachable.
+   This is exactly the "tune the signal, not the gate" lever from §3.6.
+
+C2 is corrected in place.
+
+#### Firing rates, by selectivity
+
+| Band | Signals | Examples |
+|---|---|---|
+| never | 18 | see above |
+| 2–10% | 21 | `bollinger_upper_touch` 2% · `oi_divergence_bear` 8% · `structure_ob_approach` 8% |
+| 10–25% | 14 | **`flow_perp_spot_bull_divergence` 15%** · `cvd_bull_divergence` 18% · `structure_zone_confluence` 25% |
+| 25–50% | 12 | `macd_bull_divergence` 28% · `comparison_btc_decorrelation` 42% · `ma_sma200_below` 45% |
+| 50%+ | 19 | `trend_adx_trending` 50% · `bollinger_squeeze` **65%** · `ltf_trend_adx_ranging` 68% |
+
+Two things worth acting on:
+
+- **`bollinger_squeeze` fires on 65% of the universe.** It reads as a rare
+  "setup forming" signal and behaves as a near-constant. It cannot carry C4 as a
+  primary trigger; treat it as background context.
+- **`rel_roc_positive/negative` fire with a median score of 0.00.** They trigger
+  and contribute nothing. Weighting them is free but pointless.
+
+#### Gate selectivity — what `minAggregateScore` actually costs
+
+Observed aggregate scores: min 38%, **median 53.5%**, mean 54.9%, max 87%.
+
+| `minAggregateScore` | Coins qualifying (of 40) |
+|---|---|
+| 50% | 26 (65%) |
+| 55% | 19 (48%) |
+| 60% | 14 (35%) |
+| **65%** | **6 (15%)** |
+| 70% | 2 (5%) |
+| 80% | 1 (2%) |
+
+Benchmark v0 sets 0.65, which admits **15% of the universe** — about 4 candidates
+from a 25-coin ranked selection. That is coherent with its 4-trades-per-day cap,
+but it is a deliberately tight gate and worth knowing as such.
+
+#### `hasConflictingSignals` was true for all 40 coins
+
+Every coin, without exception. As a filter it carries **zero information** — do
+not build a condition on it.
+
+#### Classification label distributions
+
+| Label | Coverage | Distribution |
+|---|---|---|
+| `OI_PX_REGIME` | **40/40** | new shorts 40% · short covering 22% · new longs 22% · long liquidation 15% |
+| `OI_VELOCITY` | 40/40 | accelerating 52% · decelerating 35% · steady 12% |
+| `REGIME_TREND` | 40/40 | ranging 55% · trending up 32% · trending down 12% |
+| `REGIME_VOL` | 40/40 | **normal 98%** · expanding 2% |
+| `REGIME_MOM` | 40/40 | bearish 38% · bullish 32% · neutral 25% · diverging 5% |
+| `PERP_SPOT_FLOW` | **18/40** | neutral 78% · spot_led_accumulation 22% · *(no confirmed_* or perp_led_fragile)* |
+| `PERP_SPOT_CONFIRMS` | 18/40 | **false on all 18** |
+| `FLOW_ALIGN` | 18/40 | aligned bullish 33% · divergent 33% · neutral 17% · aligned bearish 17% |
+| `SMART_RETAIL` | **7/40** | confirmed 43% · hidden distribution 43% · hidden accumulation 14% |
+
+Five consequences:
+
+1. **`OI_PX_REGIME` is the best-distributed classifier on the platform** and it
+   populates for the *whole* universe, equities and commodities included. C9's
+   module scored worst empirically (§D.2), but its central metric is universally
+   available and well spread — which makes it a strong **veto** input even where
+   it is a poor primary.
+2. **The perp/spot module is crypto-only** — 18 of 40 here. C8's universe is
+   materially smaller than the ranked selection implies.
+3. **`PERP_SPOT_CONFIRMS` was false on every coin.** A condition requiring it
+   would never fire. C8 should gate on `PERP_SPOT_FLOW` labels instead.
+4. **`SMART_RETAIL` populates for 7 of 40.** C13's key metric is sparse; treat
+   its absence as the normal case.
+5. **`REGIME_VOL` is `normal` for 98%.** Volatility-state conditions at 1h are
+   near-inert right now — consistent with `contraction` never appearing in 480
+   bars of regime history (§3.4), and another reason C4 must gate on the
+   `volatile` *regime* rather than on a volatility metric.
+
+#### The good news for C8
+
+Its two native signals **do** fire, and selectively:
+`flow_perp_spot_bull_divergence` on 15% of coins at a median score of **0.82**,
+`flow_perp_spot_bear_divergence` on 10% at 0.33. A 15% firing rate with a high
+median score is the profile you want from a primary signal — rare enough to be
+selective, strong enough to move the aggregate when it fires. C8 remains the
+best-supported unexploited category.
+
 ---
 
 ## Part E — The benchmark
@@ -1306,16 +1466,23 @@ conditions:
     verdict: NEITHER
 
 rules:                                  # keep the scorecard small and legible
-  mtf_pullback_long:    {allocation: 3, required: false}
-  mtf_pullback_short:   {allocation: 3, required: false}
-  mtf_aligned_bull:     {allocation: 2}
-  mtf_aligned_bear:     {allocation: 2}
-  trend_adx_trending:   {allocation: 2}
-  structure_zone_confluence: {allocation: 2}
-  volume_surge:         {allocation: 1}
+  # NOTHING is required — D.7 measured the firing rate of every one of these
+  # before it was weighted. mtf_pullback_* fired 0/40; required would mean
+  # never trading.
+  mtf_pullback_long:    {allocation: 3, required: false}   # 0/40 — rare, high value
+  mtf_pullback_short:   {allocation: 3, required: false}   # 0/40
+  structure_zone_confluence: {allocation: 3, required: false}  # 25/100 fires, med score 0.80
+  mtf_aligned_bull:     {allocation: 2, required: false}   # 5%
+  mtf_aligned_bear:     {allocation: 2, required: false}   # 5%
+  trend_adx_trending:   {allocation: 1, required: false}   # 50% — unselective, low weight
+  structure_fvg_approach: {allocation: 1, required: false} # 65% — background
+  # dropped from the original spec: volume_surge (0/40 in the cross-section)
 
-minAggregateScore:    0.65              # D.5: the 65%+ bucket outperformed
-minRequiredCount:     0
+minAggregateScore:    0.65              # D.5: the 65%+ bucket outperformed.
+                                        # D.7: admits 15% of the universe —
+                                        # ~4 candidates from a 25-coin selection.
+minRequiredCount:     0                 # keep at 0 until a required signal has
+                                        # a measured firing rate you can live with
 minAtrPct:            0.5
 
 # Agent
@@ -1342,6 +1509,7 @@ tradingMode:          APPROVAL_REQUIRED # start supervised, always
 | Position management | on (trailing + decay) | **off** | D.3 — 1.5h vs 4.3h life, 10% vs 31% TP |
 | Regime gate | none | **exclude `bull_ranging`** | D.4 — worst at every horizon |
 | Daily trades | 10 | **4** | D.1 — expectancy is negative; trade less |
+| Required signals | — | **none** | D.7 — 18 of 84 fired on nothing; measure before requiring |
 
 **What success looks like.** Beating the random-entry baseline for its
 configuration. At a 1.5% stop and 1.0R target on a 1h anchor, random entry wins
@@ -1382,15 +1550,20 @@ the LLM last.
    weighted; and because scoring is graded, sweep each signal's own `threshold`
    (39 are tunable, with bounds) alongside `minAggregateScore` — they are
    substitutes, and the threshold is usually the sharper instrument.
-3. **Qualify.** Sweep `minAggregateScore` / `minRequiredCount` / `minAtrPct`
+3. **Measure firing rates before weighting.** `get_coin_signal_preview` across
+   the universe gives every signal's `triggered` flag and score in one pass
+   (§D.7 is exactly this). Do it *before* assigning allocations, and never mark
+   a signal `required` whose rate you have not measured — 18 of 84 fired on
+   nothing, including the two this document had recommended most highly.
+4. **Qualify.** Sweep `minAggregateScore` / `minRequiredCount` / `minAtrPct`
    through `get_agent_coin_qualification` and record the first-failing gate
    distribution — that tells you which knob is actually binding.
-4. **Mine the population.** `get_agent_explorer` +
+5. **Mine the population.** `get_agent_explorer` +
    `get_public_agent_realized_trades` + `get_public_agent_signal_performance`
    is a live cross-sectional dataset of other people's configurations and
    outcomes. It is how every number in §D was produced, and it refreshes for
    free.
-5. **Then** run APPROVAL_REQUIRED for a fixed trade count before enabling
+6. **Then** run APPROVAL_REQUIRED for a fixed trade count before enabling
    FULL_EXECUTION.
 
 **Sample-size discipline.** At an expected win rate near 45% you need roughly
@@ -1472,6 +1645,8 @@ tool could be reached.
 | Vocabulary | `list_strategy_categories`, `list_strategy_vocabulary` × 10 | 84 metrics, 16 transforms, budgets |
 | Signals | `list_strategy_signals` | 84 signals, 19 modules |
 | Signal definitions | `get_strategy_signal_definition` × 84 | 84/84; params, bounds, dependencies, scoring examples |
+| Live signal cross-section | `get_coin_signal_preview` × 40 | 3,360 evaluations; firing rate and score per signal |
+| Classification labels | `get_coin_market_context` (8 modules) | 40 coins; OI/perp-spot/crowd/regime/structure label distributions |
 | Agent cross-section | `get_agent_explorer` × 3 sorts | 38 agents |
 | Realised trades | `get_public_agent_realized_trades`, `get_public_agent_signal_performance` | 715 trades, 20 agents |
 | Regime series | `get_regime_history`, `get_regime_snapshot` | 296 bars 4h + 184 bars 1d BTC; 30 coins × 2 TFs |
