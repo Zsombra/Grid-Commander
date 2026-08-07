@@ -80,6 +80,12 @@ const KNOWN_DROPPED: ReadonlyArray<{ file: string; tool: string; verdict: string
     verdict:
       'benign today: ApplyPlanResult is {applied} with no refusal arm; refusals throw. The applied payload goes unread by design — the page re-reads',
   },
+  {
+    file: 'app/(app)/strategies/[id]/conditions/save/page.tsx',
+    tool: 'applyPlan',
+    verdict:
+      'benign today, and for the same reason as its sibling above: ApplyPlanResult is {applied} with no refusal arm. This action does not discard the refusal — it catches the throw and returns to a fresh describe over the same edit with ?problem=, which is the outcome reaching the person. What goes unread is the success payload, whose shape apply has never published; the proof is the strategy page re-read',
+  },
 ];
 
 const key = (s: { file: string; tool: string }): string => `${s.file} :: ${s.tool}`;

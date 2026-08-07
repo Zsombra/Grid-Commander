@@ -11,14 +11,36 @@ this capability.
 
 ### Requirement: The Arena Is Watchable Without Being Played
 Grid-Commander SHALL show the Market Grid sessions the platform lists —
-each with its name, status, lock and settle times, and coin pool — and,
-per session, whether this account has submitted an entry. What cannot be
-read SHALL render as unknown, never as an empty arena.
+each with its name, status, lock and settle times, player count and coin
+pool — and, per session, whether this account has submitted an entry. What
+cannot be read SHALL render as unknown, never as an empty arena.
 
-Reading a session's detail and reading whether this account entered it are
-**separate reads per session**, and either can fail on its own. A failure of
-one SHALL NOT remove the session from the surface, and SHALL NOT remove any
-other session. The session list is the exception: with no list there is nothing
+A session's status, schedule and player count SHALL be read from the session
+list, which carries all four on every row. They SHALL NOT be re-read one call
+per session: fifty sessions is fifty calls for data already in hand, and it is
+where the platform's rate limit was met. A surface SHALL NOT report a field
+unreadable while the payload that rendered the row carries it.
+
+What a row says about results SHALL follow the session's status, and the
+promise that results arrive after settlement SHALL be made only where the
+status warrants it. A `PENDING` session is promised results after settlement.
+A `CANCELLED` session SHALL be told plainly that it was cancelled, will not
+settle, and will publish no results — cancellation is terminal, and "wait for
+settlement" sends a reader back for something that will never exist; on
+2026-08-06 that was 48 of the 50 sessions the list returned, the surface's
+ordinary case rather than an edge. A `SETTLED` session repeats no promise,
+because what was promised has arrived and its state is read on the opened
+session. Any other status SHALL render as the platform's own word with no
+claim about results attached: the declared vocabulary is wider than the
+observed one and has moved under this product before, and bespoke prose for a
+state never seen is a guess in the product's voice. A session whose status the
+list did not state SHALL claim nothing about results either way.
+
+Whether this account entered a session is the arena's **only per-session
+read** — it is asked about an account, and no list of sessions can answer it.
+It can fail on its own, and a failure SHALL NOT remove the session from the
+surface, SHALL NOT remove any other session, and SHALL NOT blank what the list
+already said. The session list is the exception: with no list there is nothing
 to show, so a list that cannot be read leaves the whole arena unreadable.
 
 Whether this account entered a session SHALL be able to be **unknown**. A
@@ -26,16 +48,53 @@ submission check that could not be read SHALL NOT render as not having entered
 — that is a definite claim produced by a read that returned nothing, and it is
 the same error as reporting an unreadable roster as an empty one.
 
+The per-session detail read SHALL remain available for a session opened on its
+own, where it is one call about one session and the platform declares more than
+the list carries.
+
 #### Scenario: Watching the arena
 - **WHEN** a user opens the arena surface
-- **THEN** the listed sessions render with name, status, lock/settle times
-  and coin pool
+- **THEN** the listed sessions render with name, status, lock/settle times,
+  player count and coin pool, all from the session list itself
 - **AND** each shows whether this account has entered
 
-#### Scenario: Results before settle
-- **WHEN** a session has not settled
-- **THEN** the surface says results arrive after settlement, as a state —
-  the platform's refusal is not shown as an error
+#### Scenario: The schedule is not re-read per session
+- **GIVEN** the session list carried each session's status, lock and settle
+  times and player count
+- **WHEN** the arena renders
+- **THEN** those fields are shown from the list
+- **AND** no per-session detail read is made to obtain them
+
+#### Scenario: A pending session is promised results
+- **GIVEN** a listed session whose status is `PENDING`
+- **WHEN** the arena renders
+- **THEN** the session says results arrive after settlement
+
+#### Scenario: A cancelled session is promised nothing
+- **GIVEN** a listed session whose status is `CANCELLED`
+- **WHEN** the arena renders
+- **THEN** the session says it was cancelled, will not settle, and will
+  publish no results
+- **AND** does NOT say results arrive after settlement
+
+#### Scenario: A settled session repeats no promise
+- **GIVEN** a listed session whose status is `SETTLED`
+- **WHEN** the arena renders
+- **THEN** the session does not say results arrive after settlement
+
+#### Scenario: A status with no prose of its own makes no claim
+- **GIVEN** a listed session whose status is a value the surface has no
+  bespoke sentence for
+- **WHEN** the arena renders
+- **THEN** the status renders as the platform's own word, stated as the
+  platform's word and not interpreted
+- **AND** the session neither promises results nor rules them out
+
+#### Scenario: A session with no stated status claims nothing about results
+- **GIVEN** a listed session whose status the list did not carry
+- **WHEN** the arena renders
+- **THEN** its status reads as not stated
+- **AND** the session neither promises results nor denies them
 
 #### Scenario: The played state is read only from the submission check
 - **WHEN** whether this account has played is rendered
@@ -48,25 +107,21 @@ the same error as reporting an unreadable roster as an empty one.
 - **THEN** the surface says so with the reason, and claims nothing about
   what is or is not running
 
-#### Scenario: One session's detail cannot be read
-- **GIVEN** several listed sessions, one whose detail read fails
-- **WHEN** the arena renders
-- **THEN** that session is still shown, with the name and coin pool the list
-  carried
-- **AND** it says its schedule could not be read
-- **AND** every other session renders in full
-
 #### Scenario: A submission check that did not answer
 - **GIVEN** a session whose submission check could not be read
 - **WHEN** the session renders
-- **THEN** the surface says whether this account entered is unknown
+- **THEN** the surface says whether this account entered is unknown, with the
+  reason
 - **AND** does NOT state that this account has not entered
+- **AND** the session still shows its status, schedule, player count, coin pool
+  and price, because the list carried them
 
-#### Scenario: The platform rate-limits the fan-out
-- **GIVEN** the platform refuses the per-session reads for being asked too
-  often
+#### Scenario: The platform rate-limits the per-session check
+- **GIVEN** the platform refuses the per-session submission checks for being
+  asked too often
 - **WHEN** the arena renders
-- **THEN** the sessions are still listed with what the list carried
+- **THEN** every session is still listed with everything the list carried,
+  including its status and schedule
 - **AND** no read failure propagates as an error to the surface
 
 ### Requirement: The Game States Its Price And Its Rules
@@ -121,11 +176,38 @@ Grid-Commander SHALL let any listed session be opened on a surface of its own,
 which names the session and shows its status and schedule, whether this
 account entered it, and the state of its results.
 
-Those are **separate reads and either can fail alone**, on the same terms the
-arena list already follows: a failure of one SHALL NOT blank the others. A
-session that could not be read SHALL NOT be reported as a session that does not
-exist — Grid-Commander cannot tell an id the platform does not know from a
+The page SHALL read the session from **both** Market Grid reads — the
+per-session detail, and the session's own row off the list the arena already
+calls — because the two payloads overlap and neither contains the other
+(measured live 2026-08-06). From the list row the page SHALL show the facts
+only the list carries: how many more players the session needs and the minimum
+it runs on, who hosts it (or that the platform names no host), what entering
+costs and what the pool holds, and how the money is split — the platform's
+in-the-money percent and paid-place count, its per-entry fee breakdown, and
+its payout curve with the curve's own parameter. Money figures SHALL be shown
+as the platform states them and SHALL NOT be derived, summed, or
+reconstructed. A fee the list did not carry SHALL render as not stated, never
+as zero or free.
+
+Those are **separate reads and any of them can fail alone**, on the same terms
+the arena list already follows: a failure of one SHALL NOT blank the others. A
+session that could not be read SHALL NOT be reported as a session that does
+not exist — Grid-Commander cannot tell an id the platform does not know from a
 platform that did not answer, and only one of those is the reader's mistake.
+
+A session absent from a list that answered SHALL be its own named state —
+distinct from an unreadable list, not an error, and never silently nothing:
+the page SHALL say the arena's list no longer carries the session, and the
+facts only the list holds are therefore unavailable, while everything the
+detail read answered still renders.
+
+Shapes the platform has never sent populated SHALL NOT be interpreted. The
+crowd percentages have only ever been null and the pick rows have never had an
+entry, so the page MAY state the observed roster fact — how many coins are on
+offer and that nobody has picked — and SHALL NOT render a crowd panel or any
+figure from inside a pick row. If the platform reports that picks exist, the
+page SHALL say so and say they are not read, the same treatment the settled
+results payload receives.
 
 Results SHALL NOT be read once per session from the arena list. A list of fifty
 sessions is where the platform's rate limit is met, and the question is asked
@@ -135,13 +217,42 @@ about the session a user opened.
 - **WHEN** a user opens a session from the arena
 - **THEN** the surface names it and shows its status, its schedule and whether
   this account entered it
+- **AND** shows, from the session's list row, the players it still needs
+  against its minimum, its host or that none is named, its entry fee and prize
+  pool, and the platform's own money split
 
 #### Scenario: A session that did not answer
 - **GIVEN** a session whose detail read fails
 - **WHEN** it is opened
 - **THEN** the surface says the session could not be read, with the reason
 - **AND** does NOT say that no such session exists
-- **AND** the reads that did answer are still shown
+- **AND** the reads that did answer are still shown, including everything the
+  list row carries
+
+#### Scenario: A list that did not answer
+- **GIVEN** a session whose detail read answered while the session list could
+  not be read
+- **WHEN** it is opened
+- **THEN** the schedule from the detail still renders
+- **AND** the surface says the facts the list carries could not be read, with
+  the reason
+- **AND** does NOT render the missing money figures as zero or absent-silently
+
+#### Scenario: A session the list no longer carries
+- **GIVEN** a session whose detail read answers while the list, which answered,
+  has no row for it
+- **WHEN** it is opened
+- **THEN** the surface says the arena's list does not carry this session, as a
+  state rather than an error
+- **AND** everything the detail read answered still renders
+
+#### Scenario: The crowd is not guessed
+- **GIVEN** a session whose list row reports a populated coin roster and no
+  picks
+- **WHEN** it is opened
+- **THEN** the surface states the roster fact — coins on offer, nobody has
+  picked
+- **AND** renders no crowd percentages and nothing from inside a pick row
 
 ### Requirement: Results Are A State, And An Unseen Payload Is Not Reported
 Grid-Commander SHALL treat a session's results as a state rather than a

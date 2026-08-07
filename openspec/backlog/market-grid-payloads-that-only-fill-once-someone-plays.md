@@ -75,3 +75,72 @@ with players through `LIVE → RESOLVING → SETTLED` and record what
 
 Settling 1 and 2 needs an entry, which needs the writes — see
 `market-grid-is-an-unmodelled-module`.
+
+---
+
+# Re-read 2026-08-06 — one shape was recorded wrong, and nobody is playing
+
+`list_market_grid_sessions` re-read whole, 50 rows.
+
+## The arena is empty, and that is the blocker
+
+```
+status:       PENDING 2   CANCELLED 48
+playerCount:  0 on all 50 — every session, both statuses
+```
+
+The two PENDING sessions (`CRYPTO WARS`, `STOCKS OFFENSIVE`) each need **5**
+players and have **0**, with `entryFee: 10`. The 48 CANCELLED ones also have
+`playerCount: 0` — so the reason they cancelled is plainly that nobody entered.
+
+This is stronger than "no account here has played". **No account anywhere has
+played any session this listing can see.** Polling for a session with players
+in it, which this item's first step proposes, has nothing to find at present.
+
+## `coinPicks` was quoted wrong, and the correction matters
+
+The item records `"coinPicks": {"hasPicks": false, "top": [], "rosterSize": 0, …}`.
+`rosterSize` is **not** 0. Every row carries a populated roster:
+
+```json
+{"top": [], "rosterSize": 36, "others": 36, "hasPicks": false,
+ "topLeanUp": 0, "topLeanDown": 0, "topLeanEven": 0}
+```
+
+47 rows at `rosterSize: 36`, 3 at `rosterSize: 31`. And three fields the item
+never named — `others`, `topLeanUp`, `topLeanDown`, `topLeanEven` — are on the
+payload today.
+
+So the envelope is fuller than recorded: the **roster of coins available to be
+picked** is real and populated, and only the **picks** are empty. `hasPicks:
+false` with `rosterSize: 36` is a coherent state (36 coins on offer, nobody has
+picked), not the empty shell the item describes. `top[]` remains unobserved on
+every row.
+
+`crowdUpPercent` / `crowdDownPercent` are still `null` on all 50.
+
+## A fourth unobserved shape, and a sentence that is wrong today
+
+`get_market_grid_results` on a **CANCELLED** session:
+
+```
+CONFLICT  Results are not available yet: Market Grid session … is CANCELLED.
+          Results are published after the session settles.
+```
+
+A different message from the pre-settle refusal this item quotes, and it names
+the status. But a CANCELLED session **never settles**, so "not available yet"
+and "published after the session settles" describe a wait that will not end.
+That is the platform's wording, not this product's — but this product repeats
+the promise. See `a-cancelled-session-is-told-to-wait-for-settlement`.
+
+## What this does to the item
+
+It stays open and its first step stands, unchanged in substance and weaker in
+prospects: watch, do not play. But it should be re-read as **blocked on the
+platform having players at all**, not on this account choosing to enter. Nothing
+here can be settled by anything this session or the operator does.
+
+The one thing that did move: the crowd panel's roster half is observed. Still
+not buildable — `top[]` is where the tickers, `picks`, `upPct`, `intensity`,
+`dir` and `tint` live, and it has never had an entry.

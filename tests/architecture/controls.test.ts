@@ -110,19 +110,92 @@ describe('the treatment itself is made of tokens', () => {
 });
 
 /**
+ * Every button and label wears one of the shared treatments, from one place.
+ *
+ * This scan is the one the block below used to say could not be written. It
+ * could not: `agent-edit.tsx` was out of scope for the change that extracted
+ * these constants and still spelled the old utilities out, so a use-scan would
+ * have had to ship with an allowlist — and an allowlist is a hole nobody
+ * removes. `the-last-stock-buttons-and-the-guard` swept that file, and swept
+ * `condition-composer.tsx` with it: a surface written in the same merge as the
+ * extraction, which had therefore never seen it. Eighteen labels and a submit,
+ * already drifted, before any guard existed to notice. That is the drift this
+ * scan exists to catch, arriving before the scan did.
+ *
+ * The two exclusions are read off the elements themselves rather than off a
+ * list of files, so neither can rot into an allowlist.
+ */
+describe('every button and label uses the shared treatment', () => {
+  const WEARS_BUTTON = /className=\{(?:BUTTON_PRIMARY|BUTTON_SECONDARY)\}/;
+  // `className={LABEL}` or the composed form — `pipeline/[logId]` adds a width
+  // to the label it puts beside a select, and composing onto the treatment is
+  // not the same as replacing it.
+  const WEARS_LABEL = /className=\{(?:LABEL|`[^`]*\$\{LABEL\}[^`]*`)\}/;
+
+  it('renders no button or label styled by hand', () => {
+    const offenders: string[] = [];
+
+    for (const file of uiFiles) {
+      const src = stripComments(read(file));
+
+      for (const m of src.matchAll(/<button\b[^>]*>/gs)) {
+        // Unlike the input scan, a button with no className is an offender
+        // rather than a skip. That scan skips them because a checkbox is
+        // deliberately unstyled; no button in this product is, so a bare
+        // `<button>` is precisely the browser-default control this file is
+        // named for.
+        if (WEARS_BUTTON.test(m[0])) continue;
+        offenders.push(`${file}: ${m[0].replace(/\s+/g, ' ').slice(0, 80)}`);
+      }
+
+      // Matched whole, open tag through close, because the one exclusion is a
+      // property of the content: a label wrapping its own checkbox with the
+      // text after it is an inline row, and `LABEL`'s `block` would break it.
+      for (const m of src.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/gs)) {
+        const open = m[0].slice(0, m[0].indexOf('>') + 1);
+        if (/type=["']checkbox["']/.test(m[0])) continue;
+        if (WEARS_LABEL.test(open)) continue;
+        offenders.push(`${file}: ${open.replace(/\s+/g, ' ').slice(0, 80)}`);
+      }
+    }
+
+    expect(offenders, 'these are styled per-file rather than from control.ts').toEqual([]);
+  });
+
+  it('finds the buttons and labels it is checking', () => {
+    // Vacuity, the same failure mode as the control scan's: a regex that
+    // stopped matching — a rename, a prop before `className`, a formatter
+    // breaking the tag across lines — reports a clean tree by finding nothing
+    // in it. The floors are well under the real counts, so this fails on a
+    // broken scan and not on a deleted page.
+    const buttons = uiFiles.flatMap((f) => [...stripComments(read(f)).matchAll(/<button\b[^>]*>/gs)]);
+    const labels = uiFiles.flatMap((f) => [...stripComments(read(f)).matchAll(/<label\b[^>]*>/gs)]);
+    expect(buttons.filter((m) => WEARS_BUTTON.test(m[0])).length).toBeGreaterThanOrEqual(20);
+    expect(labels.filter((m) => WEARS_LABEL.test(m[0])).length).toBeGreaterThanOrEqual(30);
+  });
+
+  it('leaves the anchors to a person', () => {
+    // Deliberately unscanned. A cancel sized as a button wears
+    // `BUTTON_SECONDARY`; `<a className="underline">` inside a sentence is a
+    // link and should look like one. Nothing in the tag tells the two apart, so
+    // a scan over `<a>` would either force prose links into button shapes or
+    // need the allowlist this file refuses. What is checkable is that both
+    // spellings are still in use, i.e. that neither was quietly swept into the
+    // other.
+    const anchors = uiFiles.map((f) => stripComments(read(f))).join('\n');
+    expect(anchors).toMatch(/<a[^>]*className=\{BUTTON_SECONDARY\}/);
+    expect(anchors).toMatch(/<a[^>]*className="underline"/);
+  });
+});
+
+/**
  * The button and label treatments, asserted on the constants themselves.
  *
- * **No filesystem scan here, deliberately.** The sibling check above can demand
- * `className={CONTROL}` on every input because there is no exception to it. The
- * button equivalent has one: `agent-edit.tsx` was out of scope for the change
- * that added these and still carries the stock utilities. A scan shipped with an
- * allowlist is a scan whose allowlist nobody deletes, and it would report a
- * cleanliness the tree does not have. Filed as `agent-edit-still-stock`; the scan
- * belongs to the change that empties it.
- *
- * What is checkable now without lying is that the treatments are made of tokens
- * rather than of Tailwind's defaults — which is the property that made the
- * controls invisible in dark mode, and the one these were extracted to fix.
+ * These outlive the scan above rather than being replaced by it, because the
+ * scan cannot see them: it proves every button wears one of the two constants,
+ * and would stay green if `BUTTON_PRIMARY` were `bg-blue-600`. Wearing one
+ * treatment and that treatment being made of tokens are two properties, and the
+ * defect this file exists for was the second one.
  */
 describe('the button and label treatments are made of tokens', () => {
   it('fills the primary from the accent role, not from a default', () => {

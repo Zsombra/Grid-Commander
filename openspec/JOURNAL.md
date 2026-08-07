@@ -57,6 +57,196 @@ of signal history permanently lost.
   They are gone when this container is reclaimed. `tools/probe_mcp_surface.py`
   provides the transport; the analysis was ad hoc and would need rewriting.
 
+## 2026-08-07 (wrap-up) — the documentation matches the product, for the first session
+
+**Did**: the branch documentation brought current end to end, so the next
+session — the operator's first *working* session — starts from truth instead
+of archaeology. No code changed.
+
+- **`README.md` is now the product's**, not the pipeline's. The SKILLMOREL
+  pipeline documentation moved whole to `docs/PIPELINE.md` with a pointer at
+  its old identity; the root README now says what Grid-Commander does, the
+  three facts that shape every decision, how to run it, and where every other
+  document lives.
+- **`docs/FIRST_SESSION.md` is new** — the operator runbook: boot with a
+  personal key (no OAuth registration; `/connect` says "nothing to connect"
+  when a key is set), trust it via the freshness gate, the reading tour in the
+  order the questions come up (stoppages → pipeline → trades → qualification →
+  the field), first writes in ascending blast radius, what the product refuses
+  on purpose, and what platform weather looks like.
+- **`CLAUDE.md`** no longer claims "no application code yet".
+- **`HANDOFF.md` refreshed whole**: the capabilities table names what actually
+  shipped (harness 124 → 235; conditions saved, not just tried; spend;
+  qualification), "What the App Can Do" gains the final three rounds' surfaces,
+  the stale "waiting on BattleGrid" start-here block — written when
+  `the-model-can-propose…` was unarchived — is replaced with the real state
+  (everything proposed is built; the 20 open items split into waiting-on-
+  operator / waiting-on-BattleGrid / waiting-on-evidence / buildable-not-
+  urgent), and the live-probe table covers the eight probes added since it was
+  written.
+
+**State at wrap**: 12 capabilities, 122 archived changes, 20 open backlog
+items, 0 active changes, 0 open design tickets. 1811 vitest + 62 db + 235
+harness, all ten CI gates green keyless, keyed suite fully green since the
+explorer subsystem recovered. Every write path live-proven. PRs #8–#72 merged.
+
+**Where the next session starts**: as the operator — `docs/FIRST_SESSION.md`.
+As a developer — `/board`, then the backlog's buildable tail (the open-orders
+slice of `trading-telemetry-is-unread` is the largest remaining read surface,
+one discovery read on account 2 away).
+
+## 2026-08-07 (round five) — five builds, and two items settled by reading the code
+
+**Did**: four agents finished, one stalled and its work was completed by hand.
+Five changes archived (117 → 122), six items closed, none filed. Backlog
+24 → 20 — the first round in five that shrank it, because the probes are
+answered and the findings they opened are now the work being done.
+
+| change | closes |
+|---|---|
+| `a-cancelled-session-is-promised-nothing` | `a-cancelled-session-is-told-to-wait-for-settlement` (p2) |
+| `the-session-page-reads-both-payloads` | `the-session-page-reads-the-narrower-of-two-payloads` |
+| `the-brains-name-and-the-spend-are-read` | `the-cost-of-an-agent-reads-differently-from-two-tools` |
+| `the-copy-can-be-named` | the product half of `forking-a-name-that-exists-is-a-500` |
+| `a-unification-ships-its-guard` | `a-sweep-cannot-see-files-born-in-the-same-round` |
+
+**Two items settled without building anything, by reading the code first.**
+The prose-marker item was filed P2 on the premise that an operator agrees to a
+removal and then meets the `MARKET_READ_MARKER_UNKNOWN` refusal — but
+`DescribeConditionWriteQuery` compiles as its *first* act, so the refusal lands
+on the describe, before any confirmation is minted. Re-graded P3. And the v5
+item's one buildable section (the `bars`/`ordering` controls) had already
+shipped in round four; the rest are records, and it now says so. The lesson is
+the round's title: a filed item is a claim, and the cheapest verification is
+often reading what is already there.
+
+**What the builds did**: the arena no longer promises results to the 48 of 50
+sessions that are CANCELLED and never settle (bespoke prose only for observed
+statuses; anything else gets the platform's-own-word treatment). `/arena/[id]`
+reads the list row alongside the detail, so the session's own page can finally
+say "needs 5 more players" and who hosts it. The brain renders its human name
+(`GLM-5.2`) instead of the flattened `CUSTOM`, and spend renders on `/limits` —
+read from the list, the copy that answers, with the detail's stable zero
+fenced off at the mapper so no refactor can route it to a surface. The fork
+form takes an optional name (the tool always accepted one; the product never
+sent it), and a refused fork now renders on the form in the platform's words
+instead of crashing the action.
+
+**One agent stalled** after writing a complete proposal for the process rule.
+Finished by hand: the unification-ships-its-guard rule now lives in the
+executor skill (Step 5), the UI checklist (Tailwind row 6, v1.1.0), and
+`change-lifecycle.md` §5 — whose new integrator paragraph was applied to this
+very round before it shipped: every round-introduced guard re-run against the
+merged tree, 217 architecture tests green.
+
+**The explorer outage resolved itself** in under six hours; both formerly-red
+live probes pass, so the keyed suite is fully green again with no change on
+this side. Recorded on `battlegrid-is-returning-internal-errors`.
+
+**Next**: the backlog's remaining P2s all wait on someone else — the operator
+(a browser consent, funding three agents), or BattleGrid (reporting the fork
+500, the internal errors record). The P3 tail is genuinely small. The largest
+unbuilt read surface is `trading-telemetry-is-unread`'s open-orders slice,
+which needs one discovery read on account 2 first.
+
+## 2026-08-06 (round four) — six builds, and a write path proven live
+
+**Did**: five agents plus one build of my own, and the reserved live probes run
+serially. Seven changes archived (110 → 117), **ten** items closed, **eight**
+new ones filed. Backlog 26 → 24. The probes answered five standing questions and
+every answer opened something real — which is why closing ten only moved the
+count by two.
+
+| change | closes |
+|---|---|
+| `the-schedule-comes-off-the-list` | `the-session-list-already-carries-the-schedule` |
+| `the-last-stock-buttons-and-the-guard` | `agent-edit-still-stock` |
+| `the-record-carries-the-whole-condition-union` | `the-record-flattens-the-condition-union` |
+| `the-inside-of-a-section-is-composable` | `strategy-metric-editor` |
+| `a-drafted-condition-can-be-saved` | `a-drafted-condition-cannot-be-saved` |
+| `the-players-above-you-are-shown` | (filed and built the same day) |
+
+### The write path is not a seventh dead one
+
+`a-drafted-condition-can-be-saved` shipped a `full`-track write and its own live
+walk, deliberately unrun. I ran it:
+
+```
+fork:     Tobruk (fork) r1
+before:   conditions=5
+describe: proposal, naming the whole resulting list and the bound-agent count
+after:    r2 conditions=6, GC_PROBE_DRAFT added, tagline and sections unchanged
+remove:   r3 conditions=5, back to the original five
+cleanup:  fork archived, parked strategy restored — every audit entry succeeded
+```
+
+**It took three corrections to get there, and all three were in the probe.**
+
+1. The control case resubmitted the strategy's own condition list and expected a
+   plan. The platform refuses it — `Strategy update contains no effective
+   changes` — which is *better* evidence: the compiler can only know to refuse
+   by comparing the submitted list against the stored one. Made two-armed, not
+   loosened.
+2. It forked `Dunkirk`, and **`fork_strategy` answers `INTERNAL_ERROR` when a
+   strategy of the fork's name already exists.** Twenty-two were named
+   `Dunkirk (fork)`. Isolated by forking `Leningrad` and `Tobruk`, which have no
+   such name — both clean. Not the quota, which refuses properly and publishes
+   `{used: 25, limit: 25, remaining: 0}`. A refusal wearing the wrong clothes,
+   so this product correctly renders a fixable mistake as a broken server.
+3. Its column search did not recurse into groups, so `London`'s eight conditions
+   yielded none and the walk **skipped after forking** — reporting success having
+   proved nothing. That skip now throws.
+
+The read half also found a **fourth reference site**: `marketReadText` names
+conditions by `{KEY}` marker, so removing one is refused for a reason the
+describe does not mention. `unresolvedReferences` is correct and incomplete.
+
+### The probes: five answers, and two published claims corrected
+
+- **`conditionOutcomes[].verdict` exists.** Declared, never captured, now
+  observed populated (`NEITHER` on BTC and ETH). The preview can state the
+  strategy's own call per coin. The capture also carries `counts` and
+  `provisional`, neither previously recorded.
+- **Forking preserves conditions**, and the item claiming otherwise was wrong.
+  All 22 forks on account 1 carry their parent's two. The split is *when* —
+  `fork_strategy` pins a `sourceRevision`, all twelve SYSTEM strategies were
+  batch-edited on 2026-08-05, and account 2's forks predate the revision that
+  added conditions. Confirmed twice over by the live walk: a fork taken today
+  arrived with all 8 of Leningrad's and all 5 of Tobruk's.
+- **The leaderboard has rows** — ten per metric, where the probe recorded `[]`.
+  `/explorer` had modelled them the whole time and rendered none. Built the same
+  day, because mapped-and-unrendered is what `binding.state` sat in until the
+  platform said ORPHANED and the roster said "Bound".
+- **The agent cost ceiling is not readable anywhere.** One cost-named field on
+  the whole payload; `get_agent_budget` has none. So `/limits` cannot gain a
+  fifth gauge — that question is closed, not open.
+- **`get_agent_performance` works and `get_agent_fund_allocation` does not.**
+  The pair has separated: performance answers to the cent with a 27-point curve
+  where a budget exists; allocation is all zeros on that same budgeted, trading
+  agent. So `lifetimeAllocatedUsd: 0` can no longer be read as "never funded" —
+  the second correction.
+
+**And one field disagrees with itself.** `last24hCostUsd` is `0.09022839` on the
+list row and `0` on the detail read, for the same agent at the same moment,
+stable across repeated samples, with every other key identical. Whichever
+surface renders spend must read it from the list. Same shape as the
+`connectionId` defect: a wrong value from a plausible source, invisible because
+nothing compared it against a second one.
+
+### Corrections to the record
+
+`coinPicks.rosterSize` was recorded as `0` and is `36` — the roster is
+populated, only the picks are empty, and three fields (`others`, `topLeanUp/
+Down/Even`) were never named. The arena itself is 2 PENDING and 48 CANCELLED
+with `playerCount: 0` everywhere, so "watch for a session with players" has
+nothing to find. And 48 of those 50 sessions are told results arrive after
+settlement, which for a CANCELLED session never happens.
+
+**Next**: the `docs/specs` → `docs/checklists` rename is still in flight. The
+two P2s the probes filed — the prose/condition reference and the fork 500 — are
+the pointed ones. `conditions: []` is still unobserved: the probe'''s empty-list
+case was refused by the marker rule, not by anything about an empty list.
+
 ## 2026-08-06 (round three) — six builds, and a destructive risk that turned out not to be
 
 **Did**: five agents plus one build of my own. Six changes archived, six items

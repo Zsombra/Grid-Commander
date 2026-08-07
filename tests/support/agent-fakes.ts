@@ -109,6 +109,8 @@ export class FakeAgentsPort implements AgentsPort {
         state: 'BOUND',
       },
       brain: params.brain,
+      modelDisplayName: null,
+      last24hCostUsd: null,
       tradingConfig: params.tradingConfig,
       arenaChallengeEnabled: params.arenaChallengeEnabled ?? false,
       overlayText: null,
@@ -311,6 +313,11 @@ export function anAgent(overrides: Partial<Agent> = {}): Agent {
       state: 'BOUND',
     },
     brain: { kind: 'preset', preset: 'ROMMEL' },
+    // Null is what most reads honestly produce: no reported model name, and
+    // no spend figure — the roster is the only read that populates the
+    // latter, and null is never a spend of zero.
+    modelDisplayName: null,
+    last24hCostUsd: null,
     tradingConfig: null,
     arenaChallengeEnabled: false,
     overlayText: null,

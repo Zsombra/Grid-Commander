@@ -8,6 +8,7 @@ import type {
   FieldStats,
   FieldWindow,
   Leaderboard,
+  LeaderboardEntry,
   LeaderboardMetric,
   LeaderboardResult,
   OpenPositions,
@@ -145,7 +146,7 @@ function mapOwnStanding(raw: unknown): OwnStanding | null {
   // The envelope always carries a userId; a standing with no rank, value or
   // percentile in it is the platform saying it did not place this account.
   if (rank === null && value === null && percentile === null) return null;
-  return { rank, value, percentile };
+  return { rank, value, percentile, userId: str(c['userId']) };
 }
 
 const list = (v: unknown): readonly unknown[] => (Array.isArray(v) ? v : []);
@@ -219,14 +220,27 @@ export class McpExplorerAdapter implements ExplorerPort {
       const p = result.content as Record<string, unknown>;
       const leaderboard: Leaderboard = {
         metric: params.metric,
+        // A row without a name is dropped — there is nothing to show. A row
+        // without a `userId` is kept: the id only decides whether the row is
+        // *marked*, and losing a ranked player to protect a marking would be
+        // the worse trade. Both fields were observed populated on every row
+        // returned 2026-08-06 (`rank`, `userId`, `displayName`, `avatarUrl`,
+        // `value`); `avatarUrl` is deliberately not carried, because no
+        // surface in this product renders an avatar and a field mapped to no
+        // reader is the defect this mapping exists to close.
         entries: list(p['leaderboard'])
           .map((raw) => {
             const e = (raw ?? {}) as Record<string, unknown>;
             const displayName = str(e['displayName']);
             if (displayName === null) return null;
-            return { rank: num(e['rank']), displayName, value: num(e['value']) };
+            return {
+              rank: num(e['rank']),
+              displayName,
+              value: num(e['value']),
+              userId: str(e['userId']),
+            };
           })
-          .filter((e): e is { rank: number | null; displayName: string; value: number | null } => e !== null),
+          .filter((e): e is LeaderboardEntry => e !== null),
         own: mapOwnStanding(p['currentUser']),
         generatedAt: str(p['generatedAt']),
       };

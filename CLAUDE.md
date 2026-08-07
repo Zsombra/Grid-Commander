@@ -1,5 +1,4 @@
 # CLAUDE.md — Project Configuration
-<!-- FILL IN: Project + Architecture sections. Everything else is pipeline scaffolding. -->
 
 ## Project
 
@@ -7,7 +6,10 @@
 - **Description**: A web workbench for building, tuning, and understanding
   BattleGrid trading agents and the strategies that drive them, over BattleGrid's
   MCP server.
-- **Status**: new — no application code yet. See `_IDEA/Grid-Commander_Idea_Brief.md`.
+- **Status**: built and live-proven — 12 capabilities, 122 archived changes,
+  every write walked against the real platform. `HANDOFF.md` is the current
+  state; `docs/FIRST_SESSION.md` is how an operator starts using it. The idea
+  brief this grew from is `_IDEA/Grid-Commander_Idea_Brief.md`.
 
 ## Architecture
 
@@ -74,7 +76,7 @@ Daily work
 ### Available Skills (invoked automatically or by name)
 ```
 proposer            — Creates the change folder (entry point)
-checklist-generator — Creates review checklists in docs/specs/
+checklist-generator — Creates review checklists in docs/checklists/
 planner             — [full track] Master plan + review scaffolds
 executor            — Implements the change, runs quality gates
 verifier            — Advisory: completeness, correctness, coherence
@@ -155,8 +157,8 @@ python3 .claude/tools/openspec.py archive <change> --apply
 └── [source code]
 ```
 
-**Two things named "spec":** `openspec/specs/` is *what the system does*
-(behavior contract, written by the archiver). `docs/specs/` is *how we build*
+**Two directories, two jobs:** `openspec/specs/` is *what the system does*
+(behavior contract, written by the archiver). `docs/checklists/` is *how we build*
 (review checklists, written by checklist-generator). Both are binding.
 
 ## Conventions
@@ -164,14 +166,14 @@ python3 .claude/tools/openspec.py archive <change> --apply
 - **Commits**: Use conventional commits (feat:, fix:, docs:, refactor:)
 - **Branches**: feature/<name>, fix/<name>, docs/<name>
 - **Quality gates**: [set `quality_gates:` in openspec/config.yaml, or the
-  Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md]
+  Quality Gate section of docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md]
 
 ## Rules
 
 - Do not modify production code while in planner mode
 - Do not skip checklist verification steps
 - Do not hardcode project-specific rules — read them from `openspec/config.yaml`
-  and the checklists in `docs/specs/`
+  and the checklists in `docs/checklists/`
 - Do not edit `openspec/specs/` directly — it is written by the archiver on merge
 - Do not diverge from a requirement silently — update the delta spec and say so
 - Do not archive a change that fails validation
@@ -195,7 +197,7 @@ New project with no checklists yet:
 5. `/propose` to create the first change
 6. Run `executor` to build, then `/verify`, then `/archive`
 
-Checklists already exist in `docs/specs/`:
+Checklists already exist in `docs/checklists/`:
 1. `/board` to see where things stand
 2. `/explore` if the problem is fuzzy, otherwise `/propose` directly
 3. `/handoff` before you stop

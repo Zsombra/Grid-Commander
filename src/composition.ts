@@ -38,6 +38,8 @@ import {
   SetStrategyActiveCommand,
 } from './application/use-cases/strategy-lifecycle.command.js';
 import { ReadSectionOptionsQuery } from './application/use-cases/read-section-options.query.js';
+import { ReadSectionLibraryQuery } from './application/use-cases/read-section-library.query.js';
+import { ComposeColumnQuery } from './application/use-cases/compose-column.query.js';
 import { ReadSignalLibraryQuery } from './application/use-cases/read-signal-library.query.js';
 import { ReadSignalQuery } from './application/use-cases/read-signal.query.js';
 import { CheckColumnQuery } from './application/use-cases/check-column.query.js';
@@ -47,6 +49,7 @@ import {
 } from './application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
 import { TryConditionQuery } from './application/use-cases/try-condition.query.js';
+import { DescribeConditionWriteQuery } from './application/use-cases/describe-condition-write.query.js';
 import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
@@ -318,6 +321,10 @@ export function app(cookies: CookieStore) {
     readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
     readSectionOptions: new ReadSectionOptionsQuery(i.strategies),
+    // What a section *contains*, asked without a strategy — the contents are
+    // vocabulary, and only membership is a strategy's own.
+    readSectionLibrary: new ReadSectionLibraryQuery(i.strategies),
+    composeColumn: new ComposeColumnQuery(i.strategies),
     readSignalLibrary: new ReadSignalLibraryQuery(i.strategies),
     readSignal: new ReadSignalQuery(i.strategies),
     readMetricIndex: new ReadMetricIndexQuery(i.strategies),
@@ -330,8 +337,17 @@ export function app(cookies: CookieStore) {
     previewComposition: new PreviewCompositionQuery(i.strategies),
     // The drafting half of the same question, and read-only for the same
     // reason: it asks the platform to resolve a condition that does not exist
-    // yet. It cannot save one — see `a-drafted-condition-cannot-be-saved`.
+    // yet. It saves nothing; saving is the describe below, a separate act.
     tryCondition: new TryConditionQuery(i.strategies),
+    // Saving one. Its own instances of the compile and the apply describe,
+    // rather than the ones on `app`: reaching sideways into the object under
+    // construction would make the wiring depend on declaration order — the
+    // same reasoning `openProposal` records. Both are stateless.
+    describeConditionWrite: new DescribeConditionWriteQuery(
+      i.strategies,
+      new CompilePlanCommand(i.strategies),
+      new DescribeApplyQuery(i.confirmations, random, systemClock),
+    ),
     simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.

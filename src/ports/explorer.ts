@@ -318,6 +318,19 @@ export interface LeaderboardEntry {
   readonly rank: number | null;
   readonly displayName: string;
   readonly value: number | null;
+  /**
+   * The platform's own id for the player, carried for one purpose: telling
+   * this account's row apart from everyone else's.
+   *
+   * Nullable because the identity is not what makes a row worth showing. A row
+   * the platform declined to identify is still a ranked player with a name and
+   * a value, and dropping it would lose a real row to protect a marking.
+   *
+   * Rank would be the obvious thing to match on and is wrong — ranks tie, and
+   * a tie would mark a stranger's row as yours. `displayName` is worse: it is
+   * a string the other player chooses.
+   */
+  readonly userId: string | null;
 }
 
 /** Where this account placed. Null when the platform did not rank it. */
@@ -325,6 +338,8 @@ export interface OwnStanding {
   readonly rank: number | null;
   readonly value: number | null;
   readonly percentile: number | null;
+  /** This account's id, as the platform gave it — the other half of the match. */
+  readonly userId: string | null;
 }
 
 export interface Leaderboard {

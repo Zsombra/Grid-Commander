@@ -31,7 +31,7 @@ Also: `ATR_PCT` arrived; `CHANGE_RANK`, `VOLUME_RANK` and the `crossSectional`
 category left. The column grammar surfaces already list whatever the platform
 returns, so these are visible today without any change.
 
-## Two new column controls
+## Two new column controls — **landed 2026-08-06**
 
 `get_strategy_column_contract` gained:
 
@@ -39,7 +39,23 @@ returns, so these are visible today without any change.
 - `ordering` — `hi | lo | far | near`
 
 `chainedTransformId` is already carried (`src/ports/strategies.ts`). These two
-are not, so a column the operator builds here cannot express them.
+were carried too, by the port and the adapter — and **no surface offered them**,
+so a column the operator built could not say either. `/strategies/metrics/[metric]`
+read both off the query string and rendered no control that sets them.
+
+Closed by **`the-inside-of-a-section-is-composable`**: the column editor at
+`/strategies/sections/[sectionKey]` offers both, and their permitted values are
+read at runtime from `get_strategy_column_contract`'s own discovered schema
+through `declared-values.ts` — no enum value is written into source. A control
+the declaration cannot answer for is withheld and said to be withheld. The
+adapter's wire shape for both is now held by a test; nothing held it before,
+because nothing could set them.
+
+**What did not change**: `app/(app)/strategies/metrics/[metric]/page.tsx` still
+offers no `bars` or `ordering` control, and still carries a hard-coded
+`REL_TIMEFRAMES`. Both are one small edit now that `StrategiesPort.columnControls`
+exists — left alone here only to keep this change's blast radius to the surface
+it built.
 
 ## `priceAction` became omissible — the one with a trap
 
@@ -71,3 +87,31 @@ still green.
 
 It failed `INTERNAL_ERROR` on the v3 probe and answers on v5. Noted so the
 surface map's failure list is not read as permanent.
+
+---
+
+# Reconciled 2026-08-06 — the buildable half landed; the rest are records
+
+**The two column controls shipped**: `the-inside-of-a-section-is-composable`
+carries `bars` and `ordering` end to end — read from the discovered schema at
+runtime, offered in the column editor, validated through
+`get_strategy_column_contract`. That was the only section of this item that was
+a build.
+
+What remains, section by section:
+
+- **The `price` metric family** — needs no change; the column grammar surfaces
+  list whatever the platform returns, and `ATR_PCT`/the departed
+  `crossSectional` category prove the mechanism daily.
+- **`priceAction` became omissible** — a recorded trap. This product still
+  never sends `modules`, and the note here is the warning to whoever first
+  does.
+- **`entryStrategy` on deployment policy slots** — this product calls no policy
+  tool; the section stands as the clearest argument for the freshness gate.
+- **`get_open_orders` recovered** — re-confirmed twice since (2026-07-31 and
+  2026-08-06); the failure-list note has done its job.
+
+Kept open as the standing record of the v5 additions, but **nothing here is
+actionable** — the item should not be picked up as work again unless a surface
+starts composing `modules` or calling the policy tools, and both of those would
+be their own changes.

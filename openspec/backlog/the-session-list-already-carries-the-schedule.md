@@ -2,11 +2,11 @@
 id: the-session-list-already-carries-the-schedule
 title: The arena re-reads per session what the session list already returned
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: the-schedule-comes-off-the-list
 capability: market-grid
 blocked_by: []
 tags: [battlegrid, market-grid, rate-limit]

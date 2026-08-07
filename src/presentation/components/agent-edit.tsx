@@ -7,7 +7,7 @@ import {
   positionFieldKind,
 } from '@/domain/agent/trading-config.js';
 import { BindingInheritance, BindingSummary } from './binding.js';
-import { CONTROL } from './control.js';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
@@ -51,7 +51,7 @@ export function AgentRenameForm({
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="agentId" value={agent.id} />
-      <label htmlFor="displayName" className="block text-sm font-medium">Name</label>
+      <label htmlFor="displayName" className={LABEL}>Name</label>
       <input
         id="displayName"
         name="displayName"
@@ -61,7 +61,7 @@ export function AgentRenameForm({
         required
         className={CONTROL}
       />
-      <button type="submit" className="rounded border px-4 py-2 text-sm">Rename</button>
+      <button type="submit" className={BUTTON_PRIMARY}>Rename</button>
     </form>
   );
 }
@@ -117,7 +117,7 @@ export function AgentEditForm({
         <input type="hidden" name="review" value="1" />
 
         <div className="space-y-2">
-          <label htmlFor="displayName" className="block text-sm font-medium">Name</label>
+          <label htmlFor="displayName" className={LABEL}>Name</label>
           <input
             id="displayName"
             name="displayName"
@@ -141,10 +141,13 @@ export function AgentEditForm({
         <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} />
 
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className="rounded border px-4 py-2 text-sm">
+          {/* Secondary, like every other submit that only asks: this form
+              composes the proposal and reaches no operation. The primary in
+              this flow belongs to `AgentEditConfirm`, one request later. */}
+          <button type="submit" className={BUTTON_SECONDARY}>
             Review the change
           </button>
-          <a href={`/agents/${agent.id}`} className="px-4 py-2 text-sm underline">
+          <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
             Back to {agent.displayName}
           </a>
         </div>
@@ -211,7 +214,7 @@ export function PositionManagement({
         <p className="text-sm">CUSTOM — these fourteen values are this agent&apos;s own.</p>
       ) : null}
 
-      <label className="block text-sm">
+      <label className={LABEL}>
         Manage like
         <select name="pmPreset" defaultValue="" className={CONTROL}>
           <option value="">Leave it as it is</option>
@@ -242,7 +245,7 @@ export function PositionManagement({
             );
           }
           return (
-            <label key={field} className="block text-sm">
+            <label key={field} className={LABEL}>
               {field}
               <input
                 type={kind === 'number' ? 'number' : 'text'}
@@ -326,10 +329,10 @@ export function AgentEditConfirm({
       ))}
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Apply this to {agent.displayName}
         </button>
-        <a href={`/agents/${agent.id}/edit`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${agent.id}/edit`} className={BUTTON_SECONDARY}>
           Change something else
         </a>
       </div>
@@ -381,10 +384,10 @@ export function ReactivatePrompt({
       <form action={action} className="flex flex-wrap gap-3">
         <input type="hidden" name="agentId" value={agent.id} />
         <input type="hidden" name="expectedRevision" value={agent.revision} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <button type="submit" className={BUTTON_PRIMARY}>
           Reactivate {agent.displayName}
         </button>
-        <a href={`/agents/${agent.id}`} className="px-4 py-2 text-sm underline">
+        <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
           Leave it archived
         </a>
       </form>

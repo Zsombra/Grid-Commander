@@ -1,7 +1,7 @@
 # Grid-Commander UI Component Review Checklist
 
-**Version**: 1.0.0
-**Last Updated**: 2026-07-27
+**Version**: 1.1.0
+**Last Updated**: 2026-08-07
 **Based On**: Clean Architecture + React / Next.js App Router + shadcn/ui + Tailwind + Zustand
 **Companion To**: `ARCHITECTURE_REVIEW_CHECKLIST.md`, `DATA_PIPELINE_REVIEW_CHECKLIST.md`
 
@@ -143,6 +143,7 @@ interface BadState {
 | 3 | Conditional classes composed with `cn()`, not string concatenation | ☐ |
 | 4 | No inline `style` except for genuinely dynamic values | ☐ |
 | 5 | Colour never the only carrier of meaning — see accessibility | ☐ |
+| 6 | A change that unifies N class spellings into one ships, in the same diff, the scan that the spelling cannot recur — a deferred guard never arrives, and a file born beside the sweep drifts the day it is born (`condition-composer.tsx`, round three) | ☐ |
 
 ---
 
@@ -326,7 +327,7 @@ useAuthStore.setState({ accessToken, planToken });
 | Hooks | X/5 | X/5 | - |
 | Store | X/6 | X/6 | - |
 | shadcn/ui | X/5 | X/5 | - |
-| Tailwind | X/5 | X/5 | - |
+| Tailwind | X/6 | X/6 | - |
 | Consequence & Confirmation | X/9 | X/9 | - |
 | Accessibility | X/9 | X/9 | - |
 | Responsive | X/6 | X/6 | - |

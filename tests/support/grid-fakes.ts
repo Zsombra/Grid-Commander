@@ -12,7 +12,15 @@ import type {
 
 /**
  * Shaped from the live `list_market_grid_sessions` entry of 2026-08-01, with
- * the price the 2026-08-06 re-probe recorded: `entryFee: 10` on every session.
+ * the price the 2026-08-06 re-probe recorded: `entryFee: 10` on every session,
+ * and the schedule keys it recorded on all fifty rows — `status`, `lockAt`,
+ * `settleAt`, `playerCount`. Those four are on the *summary* because the list
+ * sends them; the arena used to fetch them one detail call per session.
+ *
+ * The values are one session a test can reason about, not a description of the
+ * arena: on 2026-08-06 it held 2 PENDING and 48 CANCELLED sessions, every one
+ * with `playerCount: 0`. A fixture is an example, and a populated arena is not
+ * something this product may assume.
  */
 export function aGridSession(over: Partial<GridSessionSummary> = {}): GridSessionSummary {
   return {
@@ -24,6 +32,28 @@ export function aGridSession(over: Partial<GridSessionSummary> = {}): GridSessio
     minimumPlayers: 4,
     playersNeeded: 1,
     timeRangeKey: '1H',
+    status: 'PENDING',
+    lockAt: '2026-08-01T18:00:00Z',
+    settleAt: '2026-08-01T19:00:00Z',
+    playerCount: 3,
+    // The list-only half of the overlap, shaped like the 2026-08-06 rows: a
+    // host the platform has never named (null on all 50), the money split in
+    // the platform's own figures, and the pick roster's envelope — populated
+    // roster, no picks — which is the only crowd state ever observed.
+    hostDisplayName: null,
+    itmPercent: 30,
+    calculatedItmCount: 2,
+    alpha: 3,
+    distributionCurveId: 'curve-1',
+    feeBreakdown: {
+      winnersAmount: 7.5,
+      platformAmount: 1.5,
+      jackpotAmount: 0.5,
+      warBondAmount: 0.5,
+      hostAmount: 0,
+    },
+    pickRosterSize: 36,
+    hasPicks: false,
     ...over,
   };
 }
@@ -72,8 +102,26 @@ export class FakeMarketGridPort implements MarketGridPort {
   outcome: GridResultsOutcome = { kind: 'not-settled' };
   rules: GameRulesResult = { kind: 'rules', presets: [aGamePreset()] };
 
-  /** Stage one session with its detail in a single call. */
-  stage(summary: GridSessionSummary, detail = aGridDetail({ id: summary.id, name: summary.name })) {
+  /**
+   * Stage one session with its detail in a single call.
+   *
+   * The default detail is derived from the summary rather than from
+   * `aGridDetail`'s own defaults, because the platform sends the same schedule
+   * through both tools: a fixture where the list says LOCKED and the detail
+   * says PENDING is a payload BattleGrid has never produced, and a test written
+   * against it proves something about nothing.
+   */
+  stage(
+    summary: GridSessionSummary,
+    detail = aGridDetail({
+      id: summary.id,
+      name: summary.name,
+      status: summary.status ?? 'PENDING',
+      lockAt: summary.lockAt,
+      settleAt: summary.settleAt,
+      playerCount: summary.playerCount,
+    }),
+  ) {
     const sessions = this.list.kind === 'sessions' ? [...this.list.sessions, summary] : [summary];
     this.list = { kind: 'sessions', sessions };
     this.details.set(summary.id, detail);
@@ -97,7 +145,19 @@ export class FakeMarketGridPort implements MarketGridPort {
   readonly unreadableDetail = new Set<string>();
   readonly unreadableSubmission = new Set<string>();
 
+  /**
+   * Which sessions each per-session read was asked about.
+   *
+   * `detailCalls` exists to be asserted **empty** by the arena: the schedule is
+   * on the list row, and re-reading it is fifty calls where the platform's rate
+   * limit was met. A test that only checked the rendered schedule would pass
+   * just as happily against the fan-out that produced the 429.
+   */
+  readonly detailCalls: string[] = [];
+  readonly submissionCalls: string[] = [];
+
   async sessionDetail(params: { sessionId: string }): Promise<GridDetailResult> {
+    this.detailCalls.push(params.sessionId);
     if (this.unreadableDetail.has(params.sessionId)) {
       return { kind: 'unreadable', reason: 'BattleGrid did not answer', cause: 'unreachable' };
     }
@@ -107,6 +167,7 @@ export class FakeMarketGridPort implements MarketGridPort {
   }
 
   async hasSubmitted(params: { sessionId: string }): Promise<GridSubmissionResult> {
+    this.submissionCalls.push(params.sessionId);
     if (this.unreadableSubmission.has(params.sessionId)) {
       return { kind: 'unreadable', reason: 'BattleGrid did not answer', cause: 'unreachable' };
     }

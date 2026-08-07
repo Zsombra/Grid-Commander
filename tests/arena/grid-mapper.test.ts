@@ -5,10 +5,12 @@ import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 
 /**
  * Shaped from the live `list_market_grid_sessions` entry of 2026-08-01, with
- * the economics the 2026-08-06 re-probe recorded on all 50 rows. The three
- * fields the platform also sends and this product does not map —
- * `crowdUpPercent`, `crowdDownPercent`, `coinPicks` — are present here as the
- * live probe saw them: null, null, and a roster with nobody in it.
+ * the economics the 2026-08-06 re-probe recorded on all 50 rows. The fields
+ * the platform also sends and this product does not map — `crowdUpPercent`,
+ * `crowdDownPercent` (only ever null), `coinPicks.top` (never an entry),
+ * `payoutStructure` (only ever an empty array), `hostAvatarUrl` (nothing
+ * renders avatars) — are present here as the live probe saw them, so the
+ * assertions below also prove they stay unread.
  */
 const LIVE_SESSION = {
   sessionId: '7f3a9c2e-1b4d-4e8f-9a6c-2d5e8f1a3b7c',
@@ -19,9 +21,43 @@ const LIVE_SESSION = {
   totalPrizePool: 40,
   minimumPlayers: 4,
   playersNeeded: 1,
+  // The schedule, on the list row — the four fields the arena used to spend a
+  // detail call per session on. The keys are the platform's; the values are one
+  // plausible session and not a claim about the arena's contents, which on
+  // 2026-08-06 was 2 PENDING and 48 CANCELLED with `playerCount: 0` on every
+  // row.
+  status: 'PENDING',
+  lockAt: '2026-08-01T18:00:00Z',
+  settleAt: '2026-08-01T19:00:00Z',
+  playerCount: 3,
+  // The list-only half of the overlap: the host (never yet named), the money
+  // split, and the pick roster with its corrected envelope — `rosterSize` is
+  // populated on every row even while `top` has never had an entry.
+  hostDisplayName: null,
+  hostAvatarUrl: null,
+  itmPercent: 30,
+  calculatedItmCount: 2,
+  alpha: 3,
+  distributionCurveId: 'curve-1',
+  feeBreakdown: {
+    winnersAmount: 7.5,
+    platformAmount: 1.5,
+    jackpotAmount: 0.5,
+    warBondAmount: 0.5,
+    hostAmount: 0,
+  },
+  payoutStructure: [],
   crowdUpPercent: null,
   crowdDownPercent: null,
-  coinPicks: { hasPicks: false, top: [], rosterSize: 0, others: 0 },
+  coinPicks: {
+    hasPicks: false,
+    top: [],
+    rosterSize: 36,
+    others: 36,
+    topLeanUp: 0,
+    topLeanDown: 0,
+    topLeanEven: 0,
+  },
   coinPoolPreview: [
     { coinId: 'c-btc', ticker: 'BTC' },
     { coinId: 'c-eth', ticker: 'ETH' },
@@ -86,7 +122,7 @@ function adapterOver(respond: (req: ToolCallRequest) => unknown) {
 const who = { userId: 'u1', accessToken: 'at' };
 
 describe('mapping the live session list', () => {
-  it('keeps id, name, the previewed tickers and what entering costs', async () => {
+  it('keeps id, name, the previewed tickers, what entering costs — and the schedule', async () => {
     const { adapter, calls } = adapterOver(() => ({ sessions: [LIVE_SESSION] }));
     const result = await adapter.listSessions(who);
     expect(result.kind).toBe('sessions');
@@ -100,6 +136,33 @@ describe('mapping the live session list', () => {
       minimumPlayers: 4,
       playersNeeded: 1,
       timeRangeKey: '1H',
+      // The four the arena used to spend a call per session on. `toEqual`
+      // rather than `toMatchObject` on purpose: this is the assertion that
+      // fails the day a field the platform sends stops arriving here, which is
+      // the mistake `list_entry_decisions` (35 keys, 11 mapped) taught twice.
+      status: 'PENDING',
+      lockAt: '2026-08-01T18:00:00Z',
+      settleAt: '2026-08-01T19:00:00Z',
+      playerCount: 3,
+      // The list-only fields the session page renders. The host has never been
+      // named, so the mapper's answer is null, not ''. The money split is the
+      // platform's figures verbatim — same numbers, no arithmetic.
+      hostDisplayName: null,
+      itmPercent: 30,
+      calculatedItmCount: 2,
+      alpha: 3,
+      distributionCurveId: 'curve-1',
+      feeBreakdown: {
+        winnersAmount: 7.5,
+        platformAmount: 1.5,
+        jackpotAmount: 0.5,
+        warBondAmount: 0.5,
+        hostAmount: 0,
+      },
+      // The envelope only: `top[]` and the crowd percentages appear nowhere in
+      // this expected object, which is the `toEqual` proving they stay unread.
+      pickRosterSize: 36,
+      hasPicks: false,
     });
     expect(calls[0]?.tool).toBe('list_market_grid_sessions');
   });
@@ -148,6 +211,24 @@ describe('mapping the live session list', () => {
       minimumPlayers: null,
       playersNeeded: null,
       timeRangeKey: null,
+      // A row with no schedule is a row whose schedule is unknown. Nothing is
+      // substituted — `status: null` renders as "status not stated", and a
+      // session in an unknown state is never told a reader it will settle.
+      status: null,
+      lockAt: null,
+      settleAt: null,
+      playerCount: null,
+      // Same rule for the list-only half: absent is unknown. `hasPicks: null`
+      // is not "nobody has picked" — that would be a claim from a row that
+      // made none.
+      hostDisplayName: null,
+      itmPercent: null,
+      calculatedItmCount: null,
+      alpha: null,
+      distributionCurveId: null,
+      feeBreakdown: null,
+      pickRosterSize: null,
+      hasPicks: null,
     });
   });
 });

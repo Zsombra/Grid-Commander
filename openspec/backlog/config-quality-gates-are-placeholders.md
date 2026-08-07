@@ -34,7 +34,7 @@ added precisely because their absence let real defects ship.
 
 `CLAUDE.md` says quality gates come from "`quality_gates:` in
 openspec/config.yaml, or the Quality Gate section of
-docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md". The auditor reads them from there.
+docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md". The auditor reads them from there.
 
 With the config holding placeholders, every audit falls through to the
 checklist — which names `pnpm lint` and `pnpm typecheck` while the project uses
@@ -55,7 +55,7 @@ been built.
 Found during the production gate for `close-the-reachability-gap`, 2026-07-28.
 
 `openspec/config.yaml`, `quality_gates:` block — bracketed example values.
-`docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` — `pnpm lint`, `pnpm typecheck`.
+`docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` — `pnpm lint`, `pnpm typecheck`.
 `package.json` scripts — `typecheck`, `lint`, `test`, `build`, `db:generate`,
 `test:db`.
 

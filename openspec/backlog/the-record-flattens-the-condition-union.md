@@ -2,11 +2,11 @@
 id: the-record-flattens-the-condition-union
 title: The probed record describes only one branch of the condition grammar, so the conformance guard cannot see a condition payload
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: "the-record-carries-the-whole-condition-union"
 capability: platform-mapping
 blocked_by: []
 tags: [battlegrid, conditions, conformance, tooling]

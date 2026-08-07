@@ -37,6 +37,8 @@ interface RawAgent {
   bindingState?: unknown;
   brainPreset?: unknown;
   modelId?: unknown;
+  modelDisplayName?: unknown;
+  last24hCostUsd?: unknown;
   behavior?: unknown;
   tradingConfig?: unknown;
   performance?: unknown;
@@ -74,12 +76,45 @@ export function mapAgent(raw: unknown): Agent {
       state: str(a.bindingState) ?? 'UNKNOWN',
     },
     brain: mapBrain(a),
+    // Both reads carry this identically, so it is safe to map wherever an
+    // agent payload arrives. Null when absent — the fallback belongs to the
+    // surface, which shows what it always showed rather than a name nobody
+    // reported.
+    modelDisplayName: str(a.modelDisplayName),
+    // Deliberately not read here. `get_intelligence_agent` answers 0 for an
+    // agent `list_intelligence_agents` prices at $0.09 at the same moment —
+    // stable across repeated samples, every other key identical — so the
+    // detail read's copy (and every write result's, which shares this shape)
+    // is left null rather than repeated as a false zero. The roster read is
+    // the one source, in `mapRosterAgent` below. See
+    // `the-cost-of-an-agent-reads-differently-from-two-tools`.
+    last24hCostUsd: null,
     tradingConfig: mapTradingConfig(a.tradingConfig),
     arenaChallengeEnabled: a.arenaChallengeEnabled === true,
     overlayText: str(a.overlayText),
     performance: mapPerformance(a.performance),
     permissions: mapPermissions(a.capabilities),
   };
+}
+
+/**
+ * A roster row — the one read spend may come from.
+ *
+ * `last24hCostUsd` disagrees between the two tools that return this shape:
+ * for the same agent at the same moment the list said `0.09022839` and the
+ * detail said `0`, sampled twice three seconds apart, identical both times,
+ * with every other key equal. Neither has been checked against a cost
+ * ledger, but a stable zero on an agent that ran trades today is the
+ * suspicious one, and rendering it would show an agent that is spending
+ * money — and may be about to be halted for it — as one that is not. So the
+ * list is the source, decided in
+ * `the-cost-of-an-agent-reads-differently-from-two-tools`, and this mapper
+ * is the only place the field is read. Absent stays null, never 0: a figure
+ * the platform did not send is not a spend of nothing.
+ */
+export function mapRosterAgent(raw: unknown): Agent {
+  const a = (raw ?? {}) as RawAgent;
+  return { ...mapAgent(raw), last24hCostUsd: num(a.last24hCostUsd) ?? null };
 }
 
 function mapStatus(raw: unknown): AgentStatus {

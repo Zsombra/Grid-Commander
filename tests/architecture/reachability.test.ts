@@ -898,6 +898,7 @@ describe('a page about one thing can get back to it', () => {
       '/pending/[id]',
       '/strategies/[id]',
       '/strategies/metrics/[metric]',
+      '/strategies/sections/[sectionKey]',
       '/strategies/signals/[id]',
     ]);
     // An entity's own page is the destination, never in the set that must reach
@@ -983,6 +984,7 @@ describe('a page about one thing can get back to it', () => {
       '/agents/[id]/rebind',
       '/agents/[id]/undeploy/[coin]',
       '/strategies/[id]/archive',
+      '/strategies/[id]/conditions/save',
       '/strategies/[id]/edit',
       '/strategies/[id]/fork',
       '/strategies/[id]/restore',

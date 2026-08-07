@@ -12,10 +12,12 @@ import type {
   CoinSelection,
   ColumnCheckOutcome,
   ColumnContract,
+  ColumnControls,
   ColumnOutput,
   ColumnProposal,
   ColumnRefusal,
   CompileResult,
+  ForkResult,
   LifecycleResult,
   MetricHints,
   MetricListResult,
@@ -43,6 +45,8 @@ import type {
 } from '@/ports/strategies.js';
 import type { SectionTemplate } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import { declaredValues } from './declared-values.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { RevisionConflictError } from '@/domain/errors.js';
 import { ToolRefusedError } from './mcp-adapter.js';
@@ -156,12 +160,33 @@ export class McpStrategyAdapter implements StrategiesPort {
     accessToken: string;
     strategyId: string;
     sourceRevision: number;
-  }): Promise<Strategy> {
-    const payload = await this.call(params, TOOLS.fork, {
-      strategyId: params.strategyId,
-      sourceRevision: params.sourceRevision,
-    });
-    return mapStrategy(payload['strategy'] ?? payload);
+    name?: string | undefined;
+  }): Promise<ForkResult> {
+    try {
+      const payload = await this.call(params, TOOLS.fork, {
+        strategyId: params.strategyId,
+        sourceRevision: params.sourceRevision,
+        // Only when the user chose one. Blank is not a name — the schema
+        // declares minLength 1 — and an absent argument is how the platform is
+        // told to use its own naming, `<parent> (fork)`.
+        ...(params.name !== undefined && params.name.trim() !== ''
+          ? { name: params.name }
+          : {}),
+      });
+      return { kind: 'forked', strategy: mapStrategy(payload['strategy'] ?? payload) };
+    } catch (err) {
+      // The platform's answer reaches the person as its reason instead of
+      // crashing the action — the same rule as `setActive` below. This arm is
+      // real: a fork whose default name `<parent> (fork)` is already taken
+      // answers INTERNAL_ERROR, not a clean refusal (live 2026-08-06 — see
+      // openspec/backlog/forking-a-name-that-exists-is-a-500.md). Carried in
+      // the platform's words, never re-diagnosed. Transport failures still
+      // throw: "no answer" is not "no".
+      if (err instanceof ToolRefusedError || err instanceof RevisionConflictError) {
+        return { kind: 'refused', reason: err.message };
+      }
+      throw err;
+    }
   }
 
   async readStrategy(params: {
@@ -345,13 +370,12 @@ export class McpStrategyAdapter implements StrategiesPort {
         // against. What is sent is the platform's own array, back whole: see
         // `StrategyDetailResult`'s `conditionsAsGiven`.
         //
-        // Not covered by `payload-conformance.test.ts`, and deliberately so:
-        // the probed record flattens this recursive union to the keys its outer
-        // level shares (`conditions[].definition` accepts only
-        // kind/members/n/op), so a clause's own `column` and `label` read as
-        // violations of a closed set the live schema does not actually close.
-        // `apply_strategy_plan` already sends these same objects and is
-        // accepted. A conformance check here would fail against correct code.
+        // Both shapes this argument carries — a strategy's own conditions and a
+        // draft composed beside them — are held against the record by
+        // `payload-conformance.test.ts`. They were exempt while the probe's walk
+        // flattened this nested union to its outer branch and read a clause's
+        // `column` as a violation of a set the platform does not close; the walk
+        // follows nested unions now (`the-record-flattens-the-condition-union`).
         ...(params.conditions !== undefined && params.conditions.length > 0
           ? { conditions: [...params.conditions] }
           : {}),
@@ -589,6 +613,42 @@ export class McpStrategyAdapter implements StrategiesPort {
     }
   }
 
+  /**
+   * The enumerated column controls, out of the *discovered* schema of the tool
+   * that validates a column — the same discovery every session already
+   * performs. Nothing here bakes in today's four relative timeframes, thirteen
+   * absolute ones, two `bars` values or four `ordering` values; a deployment
+   * that moves any of them moves this product with it.
+   *
+   * `declaredValues` rather than a hand-walk: `column.timeframe` is an `anyOf`
+   * whose two branches pin `rel` and `abs` at the same path, and a walk taking
+   * the first branch would report half the declaration — the exact failure the
+   * brain-preset walk was written for.
+   *
+   * Empty on a discovery that failed. A declaration that could not be read is
+   * not a platform with no timeframes, and the surfaces withhold the control
+   * and say so rather than offering a guess.
+   */
+  async columnControls(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<ColumnControls> {
+    let tools: readonly DiscoveredTool[];
+    try {
+      tools = await this.battlegrid.discoverTools(params.accessToken);
+    } catch {
+      return { relativeTimeframes: [], absoluteTimeframes: [], bars: [], ordering: [], sides: [] };
+    }
+    const contract = tools.find((t) => t.name === TOOLS.columnContract);
+    return {
+      relativeTimeframes: declaredValues(contract, 'column.timeframe.rel'),
+      absoluteTimeframes: declaredValues(contract, 'column.timeframe.abs'),
+      bars: declaredValues(contract, 'column.bars'),
+      ordering: declaredValues(contract, 'column.ordering'),
+      sides: declaredValues(contract, 'column.side'),
+    };
+  }
+
   async listSignals(params: { userId: string; accessToken: string }): Promise<SignalListResult> {
     try {
       const payload = await this.call(params, TOOLS.signals, {});
@@ -713,17 +773,49 @@ function mapCategory(raw: unknown): VocabularyCategory {
  * Two variants: entries with `sectionKey` are platform-native sections; entries
  * with `templateKey` are custom composites. Entries with neither are skipped —
  * they have no identity the edit page could use.
+ *
+ * **The name is read from `label` or from `title`.** The entry was mapped in
+ * July against a payload carrying `label`; the surface record captured on
+ * 2026-08-06 (server v11.0.0) shows the first template as
+ * `{columns, kind, sectionKey, title}` — no `label` at all — so a mapper reading
+ * only `label` renders the section checklist as a column of empty checkboxes.
+ * Both are read rather than one replaced by the other: which key a deployment
+ * sends is the platform's to change, and this product has now been wrong about
+ * that twice.
+ *
+ * **The columns come through.** They were being dropped: `templates[]` carries
+ * the thirteen-column definition of the section on every edit-page load, and
+ * three keys of it were kept. Same shape as the two mapper gaps in `HANDOFF.md`
+ * — the data was already on the wire.
  */
 function mapSectionTemplate(raw: unknown): SectionTemplate | null {
   const t = (raw ?? {}) as Record<string, unknown>;
-  const label = typeof t['label'] === 'string' ? t['label'] : '';
+  const named = [t['label'], t['title']].find((v) => typeof v === 'string' && v.length > 0);
+  const label = typeof named === 'string' ? named : '';
   const category = typeof t['category'] === 'string' ? t['category'] : undefined;
+  // Carried whole, opaque. Absent stays absent: a template that published no
+  // columns and one that renders none are different claims.
+  const columns = Array.isArray(t['columns'])
+    ? { columns: t['columns'] as readonly Readonly<Record<string, unknown>>[] }
+    : {};
 
   if (typeof t['sectionKey'] === 'string' && t['sectionKey'].length > 0) {
-    return { kind: 'platform', sectionKey: t['sectionKey'], label, ...(category ? { category } : {}) };
+    return {
+      kind: 'platform',
+      sectionKey: t['sectionKey'],
+      label,
+      ...(category ? { category } : {}),
+      ...columns,
+    };
   }
   if (typeof t['templateKey'] === 'string' && t['templateKey'].length > 0) {
-    return { kind: 'custom', templateKey: t['templateKey'], label, ...(category ? { category } : {}) };
+    return {
+      kind: 'custom',
+      templateKey: t['templateKey'],
+      label,
+      ...(category ? { category } : {}),
+      ...columns,
+    };
   }
   return null;
 }

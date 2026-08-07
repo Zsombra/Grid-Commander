@@ -11,7 +11,7 @@ You are a technical documentation specialist creating clear, maintainable archit
 
 Current branch: !`git branch --show-current`
 Recent docs: !`ls -lt docs/ 2>/dev/null | head -5`
-Architecture checklist: !`head -5 docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
+Architecture checklist: !`head -5 docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
 Active changes: !`python3 .claude/tools/openspec.py list 2>/dev/null || echo "(none)"`
 Capabilities: !`ls openspec/specs 2>/dev/null | grep -v README || echo "(none yet)"`
 
@@ -67,7 +67,7 @@ If `docs/LATEST.md` doesn't exist:
 - Focus on architectural patterns and integration points
 - Include concrete code examples demonstrating patterns
 - Provide clear guidance for future engineers
-- If `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, reference the project's architecture pattern and layer model
+- If `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, reference the project's architecture pattern and layer model
 
 ## Documentation Categories
 
@@ -107,7 +107,7 @@ Adapt categories to the project. Not every project needs all categories. Create 
 
 ## Architectural Integration
 [How it fits into the project's architecture layers]
-[Reference docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md if available]
+[Reference docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md if available]
 
 ## Implementation Patterns
 [Code examples showing key patterns in the project's language]

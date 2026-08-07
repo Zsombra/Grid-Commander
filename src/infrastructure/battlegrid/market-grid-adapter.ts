@@ -2,6 +2,7 @@ import type {
   ArenaListResult,
   GamePreset,
   GameRulesResult,
+  GridFeeBreakdown,
   GridResultsOutcome,
   GridDetailResult,
   GridSubmissionResult,
@@ -26,10 +27,12 @@ import { malformed, unreadable } from './unreadable.js';
  * called at all.
  *
  * **Only observed fields are mapped.** The session summary also carries a
- * crowd consensus (`crowdUpPercent`, `crowdDownPercent`) and a pick roster
- * (`coinPicks.top`) that have only ever answered null and empty, and the
- * settled results payload has never been seen at all. None of them is
- * modelled here — see
+ * crowd consensus (`crowdUpPercent`, `crowdDownPercent`) that has only ever
+ * answered null, pick rows (`coinPicks.top`) that have never had an entry, a
+ * `payoutStructure` that has only ever been an empty array, and the settled
+ * results payload has never been seen at all. None of them is modelled here —
+ * only the pick roster's *envelope* (`rosterSize`, `hasPicks`), which is
+ * observed populated, is read. See
  * `openspec/backlog/market-grid-payloads-that-only-fill-once-someone-plays.md`.
  */
 const TOOLS = {
@@ -70,6 +73,11 @@ export class McpMarketGridAdapter implements MarketGridPort {
         kind: 'sessions',
         sessions: raw.map((entry: unknown) => {
           const s = (entry ?? {}) as Record<string, unknown>;
+          // `sessionId` here, `id` on the detail payload — the same session
+          // under two names, which is exactly the shape that gets a mapper
+          // reading one level too shallow. Both are read explicitly, in the
+          // method that meets each payload, and neither key is assumed of the
+          // other.
           const id = str(s['sessionId']);
           const name = str(s['displayName']);
           // A dropped row would render as "no such session" — refuse the read
@@ -91,6 +99,39 @@ export class McpMarketGridAdapter implements MarketGridPort {
             minimumPlayers: num(s['minimumPlayers']),
             playersNeeded: num(s['playersNeeded']),
             timeRangeKey: str(s['timeRangeKey']),
+            // List-only fields the session page renders — the two payloads
+            // overlap and neither contains the other (measured 2026-08-06),
+            // and these never appear on the detail read at all. The host name
+            // has only ever been null; `str` keeps it null rather than blank.
+            hostDisplayName: str(s['hostDisplayName']),
+            // The money split, read and never derived. `payoutStructure` is
+            // deliberately not here: only ever observed as an empty array, so
+            // its row shape is unobserved and stays unmapped.
+            itmPercent: num(s['itmPercent']),
+            calculatedItmCount: num(s['calculatedItmCount']),
+            alpha: num(s['alpha']),
+            distributionCurveId: str(s['distributionCurveId']),
+            feeBreakdown: mapFeeBreakdown(s['feeBreakdown']),
+            // The pick roster's envelope only. `coinPicks.top` has never had
+            // an entry and is not read — the crowd panel stays unbuilt until
+            // a pick row has been observed.
+            ...mapPickEnvelope(s['coinPicks']),
+            // The schedule, which this row has always carried. The arena used
+            // to fetch these four with one `get_market_grid_session` per listed
+            // session — fifty calls, and the fan-out where `all-controllers-
+            // probe` met HTTP 429 — then rendered "this session's schedule
+            // could not be read" for any that failed, while the answer sat in
+            // this payload.
+            //
+            // Redundant is measured, not assumed: both reads were taken for
+            // session 9954544c on 2026-08-06 22:00Z and all four fields came
+            // back byte-identical (`"PENDING"`, the two ISO instants, `0`).
+            // Nullable regardless — a status nobody sent is not a state to put
+            // a session in.
+            status: str(s['status']),
+            lockAt: str(s['lockAt']),
+            settleAt: str(s['settleAt']),
+            playerCount: num(s['playerCount']),
           };
         }),
       };
@@ -126,7 +167,9 @@ export class McpMarketGridAdapter implements MarketGridPort {
   }): Promise<GridDetailResult> {
     // Guarded like every other read here. It was not, and one rate-limited
     // session took the whole arena down as a 500 — the outcome the three-state
-    // result exists to make unrepresentable.
+    // result exists to make unrepresentable. The arena no longer calls this at
+    // all (the schedule is on the list row above); one session opened on its
+    // own does, once.
     try {
       const result = await this.battlegrid.callTool({
         userId: params.userId,
@@ -212,6 +255,42 @@ export class McpMarketGridAdapter implements MarketGridPort {
       return unreadable(err);
     }
   }
+}
+
+/**
+ * The per-entry fee split, exactly as the row states it — five amounts, no
+ * arithmetic. An absent or malformed breakdown is null, which renders as "not
+ * stated": inventing a split on a money surface is the same mistake as an
+ * entry fee falling back to 0.
+ */
+function mapFeeBreakdown(v: unknown): GridFeeBreakdown | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
+  const f = v as Record<string, unknown>;
+  return {
+    winnersAmount: num(f['winnersAmount']),
+    platformAmount: num(f['platformAmount']),
+    jackpotAmount: num(f['jackpotAmount']),
+    warBondAmount: num(f['warBondAmount']),
+    hostAmount: num(f['hostAmount']),
+  };
+}
+
+/**
+ * The observed half of `coinPicks` and nothing else: the roster size and
+ * whether anyone has picked. `top[]` — where the tickers, percentages and
+ * intensities would live — has never had an entry on any row, so no shape is
+ * read from inside it. `hasPicks` is three-valued on purpose: an envelope the
+ * platform did not send is unknown, not "nobody has picked", which is a claim.
+ */
+function mapPickEnvelope(v: unknown): { pickRosterSize: number | null; hasPicks: boolean | null } {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    return { pickRosterSize: null, hasPicks: null };
+  }
+  const p = v as Record<string, unknown>;
+  return {
+    pickRosterSize: num(p['rosterSize']),
+    hasPicks: typeof p['hasPicks'] === 'boolean' ? p['hasPicks'] : null,
+  };
 }
 
 /**

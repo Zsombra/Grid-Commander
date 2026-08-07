@@ -46,7 +46,14 @@ export interface StrategiesPort {
     accessToken: string;
     strategyId: string;
     sourceRevision: number;
-  }): Promise<Strategy>;
+    /**
+     * A name of the user's own for the copy. Sent only when non-blank —
+     * absent or blank means the platform names the copy `<parent> (fork)`.
+     * The declared bound (1–50 characters) is pre-stated by the form control,
+     * the way the agent forms pre-state `displayName`'s 80.
+     */
+    name?: string | undefined;
+  }): Promise<ForkResult>;
 
   /**
    * One strategy, whole.
@@ -185,6 +192,19 @@ export interface StrategiesPort {
   }): Promise<ColumnCheckOutcome>;
 
   /**
+   * What the platform's own declaration permits at each place it pins a column
+   * value. Read from the live discovery, never a list compiled into this
+   * product — the same treatment `RadarPort.deploymentTimeframes` and the brain
+   * presets get, for the reason the brain presets earned it: the enum moved
+   * before anybody looked.
+   *
+   * Empty at a control means the declaration could not answer — no discovery,
+   * no such tool, nothing pinned there. Callers withhold that control and say
+   * so; they never read it as "there are none".
+   */
+  columnControls(params: { userId: string; accessToken: string }): Promise<ColumnControls>;
+
+  /**
    * Every strategy signal the platform publishes, as compact summaries.
    * Read fresh each time — the signal list is platform vocabulary and goes
    * stale after a deployment like everything else.
@@ -264,6 +284,22 @@ export type StrategyListResult =
     }
   | { readonly kind: 'empty' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Forking can be refused, and the refusal is a result, not a throw.
+ *
+ * Same reasoning as `LifecycleResult.refused`: a thrown refusal crashes the
+ * server action, so the platform's answer never reaches the person who acted.
+ * The arm this carries in practice: `fork_strategy` answers `INTERNAL_ERROR`
+ * — not a clean refusal — when a strategy named `<parent> (fork)` already
+ * exists (live, 2026-08-06; see
+ * `openspec/backlog/forking-a-name-that-exists-is-a-500.md`). The reason is
+ * the platform's own words and is never re-diagnosed: a cause the platform
+ * did not state is not this product's to invent.
+ */
+export type ForkResult =
+  | { readonly kind: 'forked'; readonly strategy: Strategy }
+  | { readonly kind: 'refused'; readonly reason: string };
 
 export type CompileResult =
   | {
@@ -435,6 +471,31 @@ export interface ColumnRefusal {
 export type ColumnCheckOutcome =
   | { readonly kind: 'contract'; readonly contract: ColumnContract }
   | { readonly kind: 'refused'; readonly refusal: ColumnRefusal };
+
+/**
+ * The enumerated halves of the column grammar, as the platform declares them.
+ *
+ * Only the pinned ones are here. `transformId` and `chainedTransformId` are
+ * free strings in the schema because the legal set is *per metric* — it comes
+ * from `get_metric_construction_hints`, and a control offering every transform
+ * the platform has would offer `nearestZoneAge` on `CLOSE`.
+ *
+ * Each list is empty when the declaration says nothing at that path. That is
+ * the state a caller must be able to tell from "the platform accepts nothing
+ * here", so it is never defaulted and never filled in.
+ */
+export interface ColumnControls {
+  /** `column.timeframe.rel` — a timeframe named relative to the section's. */
+  readonly relativeTimeframes: readonly string[];
+  /** `column.timeframe.abs` — a timeframe named outright. */
+  readonly absoluteTimeframes: readonly string[];
+  /** `column.bars` — whether a forming bar counts. New in v5 and unoffered until now. */
+  readonly bars: readonly string[];
+  /** `column.ordering` — which end of a set the column reads. New in v5. */
+  readonly ordering: readonly string[];
+  /** `column.side` — which side of a structure a distance is measured to. */
+  readonly sides: readonly string[];
+}
 
 /** How a preview bounds its live coin selection — the platform's two modes. */
 export type CoinSelection =

@@ -164,13 +164,30 @@ export type SectionTemplate =
       readonly label: string;
       /** Category this template belongs to, as reported by the platform. Optional — absent templates are ungrouped. */
       readonly category?: string | undefined;
+      readonly columns?: TemplateColumns;
     }
   | {
       readonly kind: 'custom';
       readonly templateKey: string;
       readonly label: string;
       readonly category?: string | undefined;
+      readonly columns?: TemplateColumns;
     };
+
+/**
+ * The columns a template renders, exactly as the platform declared them.
+ *
+ * Opaque here for the same reason `StrategySection.columns` is: the column
+ * grammar belongs to the platform's column contract, which closes it to ten
+ * keys and has already widened by two in a single deployment (`bars`,
+ * `ordering`). A domain shape enumerating them would be a second opinion on a
+ * schema this product does not own, and the layer that needs the parts reads
+ * them where it can also say which ones it did not recognise.
+ *
+ * Absent means the platform's entry published none — which is not the same as a
+ * template that renders nothing, and the surfaces keep the two apart.
+ */
+export type TemplateColumns = readonly Readonly<Record<string, unknown>>[] | undefined;
 
 /**
  * One signal, and how much it counts.

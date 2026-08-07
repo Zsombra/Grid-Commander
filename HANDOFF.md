@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-06  
-**State**: green (1367 vitest + 62 db + 221 harness tests, all ten `./scripts/ci.sh` gates including keyed `freshness`; further vitest are key-gated live probes). No active changes. 26 open backlog items. PRs #8–#69 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
+**Date**: 2026-08-07  
+**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#72 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 110 |
-| Vitest tests | 1367 (+ key-gated live) + 62 db |
-| Harness tests (Python) | 221 |
+| Changes (archived) | 122 |
+| Vitest tests | 1811 (+ key-gated live) + 62 db |
+| Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 26 |
+| Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#69 merged |
+| Open draft PRs | none; #8–#72 merged |
 
 ### Read this before anything else
 
@@ -45,6 +45,25 @@ named skip. If it fails, re-probe before doing anything else:
 BATTLEGRID_API_KEY=bg_live_… python3 tools/probe_mcp_surface.py
 ```
 
+**Three platform behaviours found on 2026-08-06, each of which will bite
+again.**
+
+- **`fork_strategy` answers `INTERNAL_ERROR` when a strategy of the fork's name
+  already exists.** Not the quota — that refuses cleanly with
+  `VALIDATION_ERROR: Strategy limit reached` and publishes
+  `quota: {used, limit, remaining}`. Isolated by forking three sources with and
+  without a name collision. Any repeated automation degrades, because each run
+  leaves behind the name that breaks the next one; live probes must pick a
+  source whose `<name> (fork)` is free. See `forking-a-name-that-exists-is-a-500`.
+- **`last24hCostUsd` disagrees between `list_intelligence_agents` (0.09022839)
+  and `get_intelligence_agent` (0)** for the same agent at the same moment,
+  stable across repeated samples, with every other key identical. Read spend
+  from the **list**. See `the-cost-of-an-agent-reads-differently-from-two-tools`.
+- **A no-op UPDATE is refused** — `Strategy update contains no effective
+  changes` — which is how the compiler proves it read the submitted list at all.
+  Any probe that resubmits a strategy's own state must expect this rather than a
+  plan.
+
 **A credential in the environment is not consent to mutate.** Live probes
 that can write require `BATTLEGRID_LIVE_WRITES=1` as well as a key, and
 `tests/architecture/live-writes.test.ts` fails any ungated probe that names a
@@ -58,14 +77,14 @@ its neighbours.
 
 | Capability | What it covers |
 |---|---|
-| `market-grid` | The Market Grid arena, watched — sessions, schedules, entered state (reads only) |
+| `market-grid` | The Market Grid arena, watched — sessions, schedules, entered state, the money split, and honest status copy (reads only; a CANCELLED session is promised nothing) |
 | `agent-deployment` | Deploy/undeploy an agent's radar presence (guarded writes) |
 | `spec-validation` | Automated spec layer validation in CI |
-| `harness-integrity` | The `openspec.py` tooling itself (124 tests) |
+| `harness-integrity` | The `openspec.py` tooling itself (235 tests) |
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
-| `agent-understanding` | Agent journal (thought log), budget limits, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost** |
-| `strategy-authoring` | Fork, compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — what decides direction, above the signals** |
+| `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
+| `strategy-authoring` | Fork (nameable), compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — composed, tried live, and saved through the full ceremony**; the section library and column editor |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 | `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
@@ -90,6 +109,17 @@ Against a real connected BattleGrid account a user can:
 - **One evaluation's scorecard** (`/explorer/[agentId]/evaluations/[logId]`): every signal a competitor consulted on one candidate — **72 of them**, across seventeen modules, the ~60 that did *not* fire included, each with its score, bias, primary/required flags, raw indicator values and the platform's own sentence ("RSI(14) at 38.1 — not oversold (threshold 30)"). Plus how the aggregate was attributed across the ones that fired, and the chain from gate → attempt → decision → execution → outcome, with stages the platform did not record omitted rather than shown empty. A listed evaluation that publishes no detail says so, distinctly from one that could not be read
 - **Drive it from any model** (`docs/MCP_SERVER.md`): Grid-Commander runs as an MCP server over stdio, so Claude Desktop, Claude Code, or any MCP-speaking client — with whatever model the operator chooses — can ask it the questions the web surfaces answer. Eighteen tools, all reads: the product's derived figures and its `unreadable`-vs-`empty` distinctions cross the boundary intact, and a failed read is never an MCP error, because a model told a tool failed will often say "you have no agents". **No writes**, enforced by a guard rather than a convention — the confirmation ceremony assumes a human reads the consequence, and a model is not one
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
+
+Added in the final three rounds (2026-08-06 → 08-07):
+
+- **What keeps stopping it** (`/agents/[id]` now leads with this): the platform's gate blocks folded into standing reasons with the platform's own field names and units — `AGENT_APPROVAL_EXPIRED` 97×, `INSUFFICIENT_EQUITY` with `{equityUsd, thresholdUsd}` — so the first thing an operator reads is why nothing has been happening
+- **What it holds** (on the agent page): open positions with entry/mark/P&L/ROE as the platform prices them, the exposure totals, what could not be placed, and drift since the decision (`SinceTheDecision`) — a snapshot that states when it was priced
+- **Qualification** (`/agents/[id]/qualification`): the only prospective read — would this agent take these coins right now, and which gate stops it; coins from the request, its own deployments, or the platform's ranked list, with the source always stated
+- **Conditions, end to end** (`/strategies/[id]/conditions` → `/save`): compose a condition in the platform's own grammar, have BattleGrid resolve it against live market state, then save it through describe→confirm→perform — the whole list is what is agreed to, dangling references are named first, and the write is live-proven (Tobruk fork, r1→r2→r3, 2026-08-06)
+- **The section library** (`/strategies/sections`): every section template with its declared columns, and a column editor that validates a composed column against the platform's contract — including the v5 `bars` and `ordering` controls, read from the discovered schema
+- **The ranked players** (`/explorer`): the leaderboard rows beside this account's standing, its own row marked by the platform's `userId` and nothing else
+- **The brain's human name and the spend**: `GLM-5.2` instead of the flattened `CUSTOM`; the 24-hour spend on `/limits`, read from the list (the copy that answers), with no gauge because no read publishes the ceiling
+- **A nameable fork**: the fork form takes an optional name, and a refused fork renders the platform's words instead of crashing — the operator's account has 22 strategies named `Dunkirk (fork)`, which is also the platform's duplicate-name 500 trigger
 
 There is **no assistant**. It was removed in `3d54fab` (2026-07-29, merged via PR #5): the product is MCP-control only, and the application's single outbound host is `mcp.battlegrid.trade`. Earlier versions of this file described a read-only assistant — that description outlived the code.
 
@@ -160,37 +190,39 @@ Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
 re-probing before any other work is trustworthy.
 
-### The write path is built. One thing is waiting on BattleGrid.
+### Everything proposed is built. The backlog waits on other people.
 
-`the-model-can-propose-and-only-a-human-agrees` shipped in #46–#48 and is
-**deliberately not archived**: two of its gates cannot be met while the
-platform is unwell, and archiving would claim a proof that has not happened.
-
-**The loop**: `propose_agent_change` records an intent and stops — it holds no
-BattleGrid port, so it cannot read a consequence or mint a confirmation. The
-operator opens `/pending/<id>`, where the describe runs *then*, against the
-account as it is *then*, and agrees through the ordinary ceremony. Nothing
-performs a proposal but a person, and
+All 122 changes are archived, including `the-model-can-propose-and-only-a-human-agrees`
+(2026-08-06): a model can record an intent through the MCP server, and only a
+human — at `/pending/<id>`, through the ordinary describe→confirm→perform
+ceremony, against the account as it is *then* — can perform it.
 `tests/architecture/proposals-are-inert.test.ts` holds that as a property.
 
-**What is left, and it is one command.** On 2026-08-05 BattleGrid was
-answering `INTERNAL_ERROR` and 504 across several tools — including
-`create_intelligence_agent` for a payload with no `tradingConfig` at all — so
-the live write could not be walked. When it recovers:
+The 20 open backlog items split cleanly:
 
-```bash
-BATTLEGRID_API_KEY=… BATTLEGRID_LIVE_WRITES=1 \
-  npx vitest run tests/live/proposal-probe.test.ts
-```
-
-If the write test stops skipping, tasks 6.1 and 7.1 close and the change can be
-archived. See `battlegrid-is-returning-internal-errors`.
-
-**Do not work around it by walking the write against the operator's own
-agents.** Every one of them is in `FULL_EXECUTION`; editing a live trading
-agent to make a probe pass is not a trade a test gets to make on someone's
-behalf, and there is no clone tool, so the probe creates its own subject or it
-skips.
+- **Waiting on the operator**: `prove-token-lifetimes` and
+  `oauth-path-may-be-dead-weight` (a human browser consent),
+  `approval-expired-on-a-full-execution-agent` (funding three agents past the
+  $10 equity threshold), `preset-custom-in-the-preset-branch-is-unestablished`
+  (one create that takes an agent slot on an account with no readable cap),
+  `approvals-have-no-write-side` (putting a real agent into
+  `APPROVAL_REQUIRED` changes how a live account trades).
+- **Waiting on BattleGrid**: `forking-a-name-that-exists-is-a-500` (report it —
+  a duplicate name should refuse, not 500), `battlegrid-is-returning-internal-errors`
+  (the standing outage record), `radar-first-deployment-not-creatable-over-mcp`,
+  `market-grid-payloads-that-only-fill-once-someone-plays` (nobody on the
+  platform has ever entered a session this listing can see),
+  `two-read-tools-do-not-answer` (`get_market_context`'s schema understates its
+  precondition, third observation across two major versions).
+- **Waiting on evidence**: `performance-and-allocation-are-unmodelled`
+  (`get_agent_fund_allocation` all zeros on a budgeted, trading agent),
+  `a-fork-cannot-say-which-revision-it-came-from`.
+- **Genuinely buildable, none urgent**: the open-orders slice of
+  `trading-telemetry-is-unread` (one discovery read on account 2 first),
+  `the-button-primitive-has-no-tokens` (a `/surface` + `/design` pass),
+  `the-payload-carries-more-than-is-read`'s four remaining fields,
+  `market-grid-standings-need-a-gametype-not-a-second-mapper` (deferred until
+  the arena wants the panel), and `image-never-built` (needs registry egress).
 
 ### Two things that will cost a session if rediscovered
 
@@ -336,6 +368,9 @@ regression.
 
 | Read this | For |
 |---|---|
+| `docs/FIRST_SESSION.md` | **The operator's first session** — boot, connect with a personal key, the reading tour, first writes |
+| `README.md` | The product's front door — what it does, how to run it, the doc map |
+| `docs/PIPELINE.md` | SKILLMOREL — the development pipeline itself (moved from the root README 2026-08-07) |
 | `docs/MCP_SERVER.md` | Pointing a model at the product: setup, the tool list, and why it cannot write |
 | `CLAUDE.md` | Project rules, pipeline commands, the three load-bearing domain facts |
 | `HANDOFF.md` (this file) | Session-start state and what to do next |
@@ -346,7 +381,7 @@ regression.
 | `docs/REPORT_TABLE_GRAMMAR.md` | **How report tables are authored** — column grammar, the two laws (unit commensurability, timeframe inertia), the create-by-definition/modify-by-key loop. Every claim live-established 2026-08-02 |
 | `docs/BATTLEGRID_PRODUCT_MODEL.md` | The operator's description of what BattleGrid *is* |
 | `docs/CI_WITHOUT_BILLING.md` | Why CI is local, and the option chosen |
-| `docs/specs/*_REVIEW_CHECKLIST.md` | Engineering standards every change is held to |
+| `docs/checklists/*_REVIEW_CHECKLIST.md` | Engineering standards every change is held to |
 | `openspec/backlog/*.md` | Everything deferred, each with why and the first step when taken |
 
 ---
@@ -363,7 +398,7 @@ src/
   presentation/          Shared UI helpers, require-connection guard
 src/composition.ts       Single composition root — the only place that wires infrastructure to ports
 openspec/                Spec layer (behavior contract, journal, backlog, changes)
-docs/specs/              Review checklists (engineering standards)
+docs/checklists/              Review checklists (engineering standards)
 tests/                   Vitest (unit + architecture) + Vitest DB (real PostgreSQL) + Python unittest (harness)
 scripts/check.sh         All local gates in one script (replaces CI while Actions is blocked)
 ```
@@ -410,8 +445,11 @@ for dev and build alike. Proven and recorded in `next.config.ts`.
 
 ### The live probes
 
-Eighteen key-gated probes in `tests/live/` — each proves one capability
-against the real platform and skips silently without a key:
+Twenty-six key-gated probe files in `tests/live/` — each proves one capability
+against the real platform and skips silently without a key. The table below
+names the load-bearing ones; `all-controllers-probe` walks **every** read
+controller against one account and asserts the row count, so a silently
+skipped controller fails:
 
 ```bash
 BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
@@ -437,6 +475,13 @@ BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
 | `preview-probe` | the agent's-eye report with cost and budget gauges |
 | `custom-table-probe` | **create and modify a custom table** end to end |
 | `oauth-metadata` | the connect path's discovery documents |
+| `all-controllers-probe` | every read controller, one account, 28 asserted rows |
+| `condition-probe` / `condition-write-probe` | the condition layer: resolution, and the save walked fork→apply→remove→restore |
+| `qualification-probe` | the prospective screen: gates, verdicts, and the coin-source fallback |
+| `stoppages-probe` | gate blocks folded into standing reasons with the platform's own units |
+| `exposure-probe` | open positions, totals, and the unplaced remainder |
+| `proposal-probe` | a model's recorded intent performed only by a human |
+| `surface-freshness` | the recorded surface version against the live server |
 
 Several use the operator-authorized **slot shuffle**: the account sits at
 its 25-active-strategy cap, so a probe parks an unbound PRIVATE strategy,

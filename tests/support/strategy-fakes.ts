@@ -1,13 +1,20 @@
-import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type {
+  SectionTemplate,
+  Strategy,
+  StrategyDetail,
+  StrategyQuota,
+} from '@/domain/strategy/strategy.js';
 import type { TickerOutcomes } from '@/domain/strategy/condition-outcome.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
   CoinSelection,
   ColumnCheckOutcome,
   ColumnContract,
+  ColumnControls,
   ColumnProposal,
   ColumnRefusal,
   CompileResult,
+  ForkResult,
   LifecycleResult,
   MetricHints,
   MetricListResult,
@@ -238,12 +245,22 @@ export class FakeStrategiesPort implements StrategiesPort {
     return { strategy: { id: params.strategyId }, appliedImpact: { boundAgentCount: current?.boundAgentCount ?? 0 } };
   }
 
-  async forkStrategy(params: { strategyId: string; sourceRevision: number }): Promise<Strategy> {
+  /** Set to make the fork refuse with this reason — the platform's answer, whole. */
+  forkRefusal: string | null = null;
+
+  async forkStrategy(params: {
+    strategyId: string;
+    sourceRevision: number;
+    name?: string | undefined;
+  }): Promise<ForkResult> {
     this.calls.push({ op: 'fork', payload: { ...params } });
+    if (this.forkRefusal !== null) return { kind: 'refused', reason: this.forkRefusal };
     const source = this.strategies.find((s) => s.id === params.strategyId);
+    // The platform's naming, mirrored: a chosen name wins, blank is not a name.
+    const chosen = params.name !== undefined && params.name.trim() !== '' ? params.name : null;
     const fork: Strategy = {
       id: `${params.strategyId}-fork`,
-      name: `${source?.name ?? 'Strategy'} (fork)`,
+      name: chosen ?? `${source?.name ?? 'Strategy'} (fork)`,
       tagline: source?.tagline ?? null,
       description: source?.description ?? null,
       revision: 1,
@@ -254,7 +271,7 @@ export class FakeStrategiesPort implements StrategiesPort {
       forkedFromStrategyId: params.strategyId,
     };
     this.strategies = [...this.strategies, fork];
-    return fork;
+    return { kind: 'forked', strategy: fork };
   }
 
   async setActive(params: { strategyId: string; active: boolean }): Promise<LifecycleResult> {
@@ -287,19 +304,61 @@ export class FakeStrategiesPort implements StrategiesPort {
    */
   previewLimits: PreviewLimits | null = { maxResultBytes: 256000, deadlineMs: 15000 };
 
+  /**
+   * The templates the vocabulary advertises.
+   *
+   * Overridable because two properties now hang off this list that the default
+   * cannot show at once: a template whose columns the platform published, and
+   * one whose entry carried none. The default carries both, so the ordinary
+   * case exercises the ordinary distinction.
+   */
+  templates: SectionTemplate[] = [
+    {
+      kind: 'platform',
+      sectionKey: 'includeRsi',
+      label: 'RSI',
+      category: 'momentum',
+      columns: [
+        { metric: 'RSI14', transformId: 'value', timeframe: { rel: 'anchor' } },
+        { metric: 'RSI14', transformId: 'trajectory', timeframe: { rel: 'anchor' }, window: 4 },
+      ],
+    },
+    // No `columns` key at all — the platform published none for this one, which
+    // is a different claim from publishing an empty list.
+    { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
+    {
+      kind: 'platform',
+      sectionKey: 'includeMovingAverages',
+      label: 'Moving Averages',
+      category: 'trend',
+    },
+  ];
+
   async listVocabularyTemplates(): Promise<VocabularyTemplatesResult> {
     if (!this.vocabularyTemplatesReadable) {
       return { kind: 'unreadable', reason: 'vocabulary unavailable', cause: 'unreachable' };
     }
-    return {
-      kind: 'templates',
-      limits: this.previewLimits,
-      templates: [
-        { kind: 'platform', sectionKey: 'includeRsi', label: 'RSI', category: 'momentum' },
-        { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
-        { kind: 'platform', sectionKey: 'includeMovingAverages', label: 'Moving Averages', category: 'trend' },
-      ],
-    };
+    return { kind: 'templates', limits: this.previewLimits, templates: this.templates };
+  }
+
+  /**
+   * The declared column controls.
+   *
+   * Values lifted from the recorded schema of `get_strategy_column_contract`
+   * (server v11.0.0) rather than invented, so a page rendering them renders what
+   * the platform really pins. A test wanting the withheld branch empties one —
+   * which is the state a failed discovery leaves behind.
+   */
+  controls: ColumnControls = {
+    relativeTimeframes: ['anchor', 'lower', 'higher', 'regime'],
+    absoluteTimeframes: ['15m', '1h', '4h'],
+    bars: ['closed', 'all'],
+    ordering: ['hi', 'lo', 'far', 'near'],
+    sides: ['support', 'resistance'],
+  };
+
+  async columnControls(): Promise<ColumnControls> {
+    return this.controls;
   }
 }
 

@@ -25,7 +25,12 @@ export default async function StrategiesPage() {
           the metric index
         </a>{' '}
         — the raw material report columns are built from, with a contract
-        check for any column you compose.
+        check for any column you compose. Or{' '}
+        <a href="/strategies/sections" className="underline">
+          the section library
+        </a>{' '}
+        — every report section the platform publishes and the columns each one
+        renders.
       </p>
       <StrategyList result={result} listings={listings} forking={forking} />
     </main>

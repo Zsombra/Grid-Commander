@@ -28,6 +28,7 @@ import {
   mapEntryDecision,
   mapGateBlock,
   mapRecord,
+  mapRosterAgent,
   mapSignalEvaluation,
   mapSlotUsage,
   mapThought,
@@ -103,7 +104,10 @@ export class McpAgentAdapter implements AgentsPort {
     const slots = mapSlotUsage(payload['slotUsage']);
     const raw = payload['agents'];
     if (!Array.isArray(raw) || raw.length === 0) return { kind: 'empty', slots };
-    return { kind: 'agents', agents: raw.map(mapAgent), slots };
+    // The roster mapping, not the shared one: this is the read whose
+    // `last24hCostUsd` is trusted — the detail read answers 0 for the same
+    // agent at the same moment. See `mapRosterAgent`.
+    return { kind: 'agents', agents: raw.map(mapRosterAgent), slots };
   }
 
   async getAgent(params: {

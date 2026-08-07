@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Full-track planning lane that turns a proposed change into an implementation plan, review scaffolds, and a decision log without touching production code. Reads behavior from the change's delta specs and engineering rules from docs/specs/ checklists. Use after the proposer creates a full-track change and you need a file-level plan with checklist scaffolding for executor self-review and auditor production-gate verification.
+description: Full-track planning lane that turns a proposed change into an implementation plan, review scaffolds, and a decision log without touching production code. Reads behavior from the change's delta specs and engineering rules from docs/checklists/ checklists. Use after the proposer creates a full-track change and you need a file-level plan with checklist scaffolding for executor self-review and auditor production-gate verification.
 ---
 
 # Planner
@@ -23,7 +23,7 @@ It prepares:
 It does NOT:
 - Execute code or modify production files.
 - Run production gate audits.
-- Create or modify checklists in `docs/specs/` (that's the checklist-generator).
+- Create or modify checklists in `docs/checklists/` (that's the checklist-generator).
 
 ## Required Inputs
 
@@ -47,11 +47,11 @@ openspec/specs/**/spec.md                     → current behavior of touched ca
 openspec/config.yaml                          → project context and per-artifact rules
 ```
 
-**Engineering standards — how we build** (`docs/specs/`):
+**Engineering standards — how we build** (`docs/checklists/`):
 ```
-docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md  → Constraints, layers, patterns, quality gate commands
-docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md → Data flow rules, source-of-truth principle
-docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md  → UI rules (if file exists; skip if no frontend)
+docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md  → Constraints, layers, patterns, quality gate commands
+docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md → Data flow rules, source-of-truth principle
+docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md  → UI rules (if file exists; skip if no frontend)
 ```
 
 If the required checklists don't exist, tell the user to run the
@@ -94,12 +94,12 @@ against a broken delta wastes the whole downstream chain.
 ### Step 1: Read Project Rules
 
 1. Read repo constraints if present (`AGENT.md`, `CLAUDE.md`, scoped instructions).
-2. Read ALL checklists in `docs/specs/`:
-   - `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` — REQUIRED
-   - `docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md` — REQUIRED
-   - `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md` — OPTIONAL (skip UI sections if not present)
+2. Read ALL checklists in `docs/checklists/`:
+   - `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` — REQUIRED
+   - `docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md` — REQUIRED
+   - `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` — OPTIONAL (skip UI sections if not present)
 3. If any REQUIRED checklist is missing, STOP and tell the user:
-   "Checklists not found in docs/specs/. Run the checklist-generator first to create project-specific checklists."
+   "Checklists not found in docs/checklists/. Run the checklist-generator first to create project-specific checklists."
 
 ### Step 2: Extract Project-Specific Information from Checklists
 
@@ -244,7 +244,7 @@ Set master plan final line to: `PLAN READY FOR REVIEW`
 5. **Do NOT plan work outside the proposal's declared scope.** If the plan
    needs it, the proposal needs updating first — say so and stop.
 6. **Do NOT start execution** — planning only. Execution starts only after explicit user approval.
-7. **Do NOT hardcode project-specific rules** — read them from the checklists in `docs/specs/`.
+7. **Do NOT hardcode project-specific rules** — read them from the checklists in `docs/checklists/`.
 8. **Do NOT plan fallback or legacy dual paths** — one clean implementation path per feature.
 9. **Do NOT continue past planning** under any circumstance without explicit user approval.
 

@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Universal execution lane that implements an approved change — tasks on lite/standard, the master plan on full — self-reviews against checklists, and keeps artifacts truthful. Reads behavior from the change's delta specs and rules from docs/specs/ checklists. Use when the user says implement, build, continue, or work through the tasks.
+description: Universal execution lane that implements an approved change — tasks on lite/standard, the master plan on full — self-reviews against checklists, and keeps artifacts truthful. Reads behavior from the change's delta specs and rules from docs/checklists/ checklists. Use when the user says implement, build, continue, or work through the tasks.
 ---
 
 # Executor
@@ -19,7 +19,7 @@ It does NOT:
 - Create a new plan from scratch (that's the planner).
 - Grant production approval (that's the auditor).
 - Change gate decisions or violation statuses in the production gate tracker (auditor-exclusive).
-- Modify checklists in `docs/specs/` (that's the checklist-generator).
+- Modify checklists in `docs/checklists/` (that's the checklist-generator).
 
 ## Required Inputs
 
@@ -43,9 +43,9 @@ openspec/changes/<change-id>/proposal.md      → Scope, and what is out of it
 openspec/changes/<change-id>/design.md        → Approach and decisions (if present)
 openspec/changes/<change-id>/plan/master-plan.md → [full] Constraints, file inventory, coverage matrix
 openspec/config.yaml                          → Project context and rules
-docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md   → Implementation rules, quality gate commands
-docs/specs/DATA_PIPELINE_REVIEW_CHECKLIST.md  → Data flow rules, source-of-truth enforcement
-docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md   → UI rules (if applicable)
+docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md   → Implementation rules, quality gate commands
+docs/checklists/DATA_PIPELINE_REVIEW_CHECKLIST.md  → Data flow rules, source-of-truth enforcement
+docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md   → UI rules (if applicable)
 ```
 
 **Read the delta specs before writing code, every time, from disk.** The
@@ -216,6 +216,11 @@ Read from the architecture checklist's Quick Reference Card (already in master p
 - Update all call sites for signature changes.
 - Follow all constraints listed in the master plan.
 - Do not add fallback/legacy/dual-path runtime branches.
+- A change that unifies N spellings into one ships, in the same diff, the
+  check that the spelling cannot recur. A guard written once the tree is clean
+  is one line; a guard deferred is the one that never arrives — and in a
+  parallel round, a sibling agent's new file can drift the day it is born
+  (`condition-composer.tsx`, round three).
 
 ### Step 6: Run Quality Gates
 
@@ -223,7 +228,7 @@ Read ALL quality gate commands, in this precedence:
 
 1. `quality_gates:` in `openspec/config.yaml`
 2. **[full]** The master plan's Phase 2 Review Checklist
-3. The Code Quality / Quality Gate section of `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md`
+3. The Code Quality / Quality Gate section of `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md`
 
 There may be one or multiple commands — run ALL of them.
 
