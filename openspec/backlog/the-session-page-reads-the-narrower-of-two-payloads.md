@@ -2,11 +2,11 @@
 id: the-session-page-reads-the-narrower-of-two-payloads
 title: /arena/[id] reads only the detail payload, so it cannot show the twenty fields only the list carries
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-07
+change: "the-session-page-reads-both-payloads"
 capability: market-grid
 blocked_by: []
 tags: [battlegrid, market-grid, overlapping-payloads]

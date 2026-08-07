@@ -163,6 +163,52 @@ describe('the arena page, branch by branch', () => {
     current = actingWith({ grid });
     const r = await arenaRendered();
     expect(r.text).not.toContain('Results arrive after settlement.');
+    // And it is bespoke silence, not the fall-through for words the surface
+    // has no reading of — SETTLED's meaning is stated by the results tool
+    // itself, so shunting it there would disclaim something that is known.
+    expect(r.text).not.toContain('no reading of it');
+  });
+
+  it('a cancelled session is promised nothing', async () => {
+    /**
+     * The ordinary case, not an edge: 48 of the 50 sessions the live list
+     * returned on 2026-08-06 were CANCELLED, and every one of them was told
+     * "Results arrive after settlement" — a promise about an event that will
+     * never happen, made in this product's own voice. Cancellation is
+     * terminal, and the row now says so plainly.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ status: 'CANCELLED' }));
+    current = actingWith({ grid });
+
+    const r = await arenaRendered();
+    expect(r.text).toContain('CANCELLED');
+    expect(asRead(r.text)).toContain(
+      'This session was cancelled. It will not settle, and no results will be published.',
+    );
+    expect(r.text).not.toContain('Results arrive after settlement.');
+  });
+
+  it('a status outside the observed vocabulary is the platform word, with no claim attached', async () => {
+    /**
+     * The declared enum also carries LIVE, RESOLVING and
+     * SETTLEMENT_QUARANTINED, none ever observed on a session — and this
+     * repo has twice been shown a vocabulary it thought was closed. A word
+     * without bespoke prose renders as the platform's own, the BindingSummary
+     * third-branch treatment: reported, not interpreted, promised nothing.
+     * The fixture word is deliberately outside the declared enum too, because
+     * the branch exists for whatever a future deployment says next.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ status: 'LOCKED' }));
+    current = actingWith({ grid });
+
+    const r = await arenaRendered();
+    expect(asRead(r.text)).toContain(
+      `LOCKED is the platform's own word for this session's state — Grid-Commander has no reading of it, and neither promises results nor rules them out.`,
+    );
+    expect(r.text).not.toContain('Results arrive after settlement.');
+    expect(r.text).not.toContain('was cancelled');
   });
 
   it('a session the list gave no status neither promises results nor denies them', async () => {
@@ -177,6 +223,9 @@ describe('the arena page, branch by branch', () => {
     const r = await arenaRendered();
     expect(r.text).toContain('status not stated');
     expect(r.text).not.toContain('Results arrive after settlement.');
+    // Unreadable is not a vocabulary word either: null is the named unknown,
+    // not a platform word to be quoted back with a disclaimer.
+    expect(r.text).not.toContain('no reading of it');
   });
 
   it('an unauthenticated request is offered the path to connect', async () => {
@@ -288,6 +337,97 @@ describe('one session, opened', () => {
     expect(r.links).toContain('/arena');
   });
 
+  it('shows the facts only the list carries about the session', async () => {
+    /**
+     * The page used to read the detail alone, and the detail is the narrower
+     * of two overlapping payloads: the players still needed, the host, the
+     * price and the money split are list-only (measured live 2026-08-06). The
+     * arena's headline fact about a session belongs on the page devoted to it.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1', playersNeeded: 5, minimumPlayers: 5 }));
+    current = actingWith({ grid });
+
+    const r = await sessionRendered('ms-1');
+    expect(asRead(r.text)).toContain('Needs 5 more player(s) to reach its minimum of 5.');
+    expect(asRead(r.text)).toContain('Entry 10 · prize pool 40');
+    // The platform's own figures, quoted — not derived, not summed.
+    expect(asRead(r.text)).toContain('30% of players finish in the money');
+    expect(asRead(r.text)).toContain('2 paying place(s) at the current player count');
+    expect(asRead(r.text)).toContain(
+      'winners 7.5 · platform 1.5 · jackpot 0.5 · war bond 0.5 · host 0.',
+    );
+    expect(asRead(r.text)).toContain('Payout curve curve-1 (alpha 3).');
+    // A host the platform has never named renders as none named, not blank.
+    expect(r.text).toContain('The platform names no host for this session.');
+    expect(r.text).toContain('BTC, ETH, HYPE');
+  });
+
+  it('states the roster fact and builds no crowd panel', async () => {
+    /**
+     * The only crowd state ever observed: a populated roster and no picks.
+     * `coinPicks.top` has never had an entry and the crowd percentages have
+     * only ever been null, so the page states the observed fact and renders
+     * nothing from inside a pick row.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1', pickRosterSize: 36, hasPicks: false }));
+    current = actingWith({ grid });
+
+    const r = await sessionRendered('ms-1');
+    expect(asRead(r.text)).toContain('36 coin(s) on offer — nobody has picked yet.');
+    expect(r.text).not.toContain('crowd');
+  });
+
+  it('picks the platform says exist are named and not read', async () => {
+    // The same treatment the settled results payload gets: the fact is
+    // stated, the unobserved shape is not interpreted.
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1', hasPicks: true }));
+    current = actingWith({ grid });
+
+    const r = await sessionRendered('ms-1');
+    expect(r.text).toContain('Players have picked coins.');
+    expect(r.text).toContain('a pick row has never been observed');
+    expect(r.text).not.toContain('nobody has picked');
+  });
+
+  it('an unreadable list costs the list-only facts and nothing else', async () => {
+    /**
+     * The two reads fail independently. The detail answered, so the schedule
+     * renders; what only the list carries is missing and the page says so
+     * with the reason, instead of quietly showing a session with no price and
+     * no players needed.
+     */
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1' }), aGridDetail({ id: 'ms-1', status: 'PENDING' }));
+    grid.list = { kind: 'unreadable', reason: 'BattleGrid timed out', cause: 'unreachable' };
+    current = actingWith({ grid });
+
+    const r = await sessionRendered('ms-1');
+    expect(r.text).toContain('PENDING');
+    expect(r.text).toContain('What the arena lists for this session could not be read');
+    expect(r.text).toContain('BattleGrid timed out');
+    // Missing is missing — not free, not zero-players-needed.
+    expect(asRead(r.text)).not.toContain('Entry 10');
+    expect(r.text).not.toContain('Needs');
+  });
+
+  it('a session the list no longer carries is a state, not an error', async () => {
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-other', name: 'ANOTHER SESSION' }));
+    grid.details.set('ms-9', aGridDetail({ id: 'ms-9', name: 'CRYPTO WARS · 1H' }));
+    current = actingWith({ grid });
+
+    const r = await sessionRendered('ms-9');
+    expect(r.text).toContain('does not carry this session');
+    // Not the unreadable treatment: the list answered.
+    expect(r.text).not.toContain('What the arena lists for this session could not be read');
+    // And the detail read still renders in full.
+    expect(r.headings[0]).toBe('CRYPTO WARS · 1H');
+    expect(r.text).toContain('PENDING');
+  });
+
   it('a session that could not be read is not called a session that does not exist', async () => {
     const grid = new FakeMarketGridPort();
     grid.stage(aGridSession({ id: 'ms-1' }));
@@ -297,8 +437,11 @@ describe('one session, opened', () => {
     const r = await sessionRendered('ms-1');
     expect(r.text).toContain('could not be read');
     expect(r.text).not.toContain('No such session');
-    // And the reads that did answer still answer.
+    // And the reads that did answer still answer — the entered fact, and the
+    // list row with the price and the players still needed.
     expect(r.text).toContain('has not entered this session');
+    expect(asRead(r.text)).toContain('Entry 10 · prize pool 40');
+    expect(asRead(r.text)).toContain('Needs 1 more player(s)');
   });
 
   it('an unread submission check does not claim the account stayed out', async () => {

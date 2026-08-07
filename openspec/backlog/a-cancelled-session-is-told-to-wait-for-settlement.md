@@ -2,11 +2,11 @@
 id: a-cancelled-session-is-told-to-wait-for-settlement
 title: The arena promises results after settlement on 48 of 50 sessions that will never settle
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-07
+change: "a-cancelled-session-is-promised-nothing"
 capability: market-grid
 blocked_by: []
 tags: [battlegrid, market-grid, status, false-claim]

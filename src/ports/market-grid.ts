@@ -46,6 +46,57 @@ export interface GridSessionSummary {
   readonly playersNeeded: number | null;
   /** The window predictions are scored over — `1H` on every session seen. */
   readonly timeRangeKey: string | null;
+  /**
+   * Who hosts the session, as the list names them. Only the list carries a
+   * host name at all — the detail has a bare `hostUserId` — and so far the
+   * platform has named nobody: `hostDisplayName: null` on all 50 rows
+   * (2026-08-06). Null renders as "no host named", never as a name invented.
+   *
+   * `hostAvatarUrl` is deliberately not beside this: no surface renders
+   * avatars, and a field must reach a reader to earn a mapping.
+   */
+  readonly hostDisplayName: string | null;
+  /**
+   * How the money is split, in the platform's own figures — list-only, and
+   * the substance of deciding whether to enter. Read, never derived: the
+   * percent of players in the money, how many places that pays at the current
+   * player count, the payout curve's id and its `alpha` parameter, and the
+   * per-entry fee breakdown. All observed populated on every row 2026-08-06.
+   *
+   * `payoutStructure` is deliberately absent — it has only ever been observed
+   * as an empty array, so its row shape is exactly as unobserved as
+   * `coinPicks.top`, and a declared-only shape is not mapped here.
+   */
+  readonly itmPercent: number | null;
+  readonly calculatedItmCount: number | null;
+  readonly alpha: number | null;
+  readonly distributionCurveId: string | null;
+  readonly feeBreakdown: GridFeeBreakdown | null;
+  /**
+   * The pick roster's envelope — the only part of the crowd read the platform
+   * has ever sent populated. `rosterSize: 36` with `hasPicks: false` is an
+   * observed, coherent state: 36 coins on offer, nobody has picked. The rows
+   * themselves (`coinPicks.top`) have never had an entry and are not modelled
+   * — see `market-grid-payloads-that-only-fill-once-someone-plays`.
+   */
+  readonly pickRosterSize: number | null;
+  readonly hasPicks: boolean | null;
+}
+
+/**
+ * Where each entry fee goes, exactly as `list_market_grid_sessions` states it
+ * (`feeBreakdown`, observed populated on all 50 rows 2026-08-06). Five amounts
+ * in the platform's own units, carried without arithmetic: nothing here sums
+ * them, checks them against the entry fee, or fills a missing one from the
+ * others — a derived figure on a money surface is a claim the platform never
+ * made.
+ */
+export interface GridFeeBreakdown {
+  readonly winnersAmount: number | null;
+  readonly platformAmount: number | null;
+  readonly jackpotAmount: number | null;
+  readonly warBondAmount: number | null;
+  readonly hostAmount: number | null;
 }
 
 /**

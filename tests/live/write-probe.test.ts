@@ -105,11 +105,19 @@ live('a write reaches the real platform', () => {
       console.log(`  source: ${source.name} (SYSTEM, r${source.revision}, ${source.boundAgentCount} bound)`);
 
       // --- 1. fork: creates a new private strategy --------------------------
-      const fork = await strategies.forkStrategy({
+      // A refusal is a result now, not a throw — and one refusal is known
+      // live: INTERNAL_ERROR when `<name> (fork)` is already taken
+      // (forking-a-name-that-exists-is-a-500). The source selection above
+      // cannot see names, so a refused fork ends the walk loudly rather than
+      // pretending coverage.
+      const forked = await strategies.forkStrategy({
         ...who,
         strategyId: source.id,
         sourceRevision: source.revision,
       });
+      expect(forked.kind, 'the platform declined the fork; the walk cannot continue').toBe('forked');
+      if (forked.kind !== 'forked') return;
+      const fork = forked.strategy;
       // eslint-disable-next-line no-console
       console.log(`  forked: ${fork.name} ${fork.id} r${fork.revision} scope=${fork.scope}`);
 

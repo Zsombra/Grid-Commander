@@ -6,23 +6,30 @@ import { aGamePreset, aGridDetail, aGridSession, FakeMarketGridPort } from '../s
 const who = { userId: 'u1', accessToken: 'at' };
 
 describe('opening one session', () => {
-  it('answers the schedule, the entered fact and the results state together', async () => {
+  it('answers the schedule, the list row, the entered fact and the results state together', async () => {
     const grid = new FakeMarketGridPort();
-    grid.stage(aGridSession({ id: 'ms-1' }), aGridDetail({ id: 'ms-1', status: 'PENDING' }));
+    grid.stage(
+      aGridSession({ id: 'ms-1', playersNeeded: 5 }),
+      aGridDetail({ id: 'ms-1', status: 'PENDING' }),
+    );
     grid.submitted.add('ms-1');
 
     const view = await new OpenGridSessionQuery(grid).execute({ ...who, sessionId: 'ms-1' });
     expect(view.sessionId).toBe('ms-1');
     expect(view.detail.kind === 'detail' && view.detail.detail.status).toBe('PENDING');
+    // The session's own row off the list — the wider half of the overlap,
+    // carrying what the detail never does.
+    expect(view.summary.kind === 'summary' && view.summary.summary.playersNeeded).toBe(5);
     expect(view.entered).toEqual({ kind: 'submission', entered: true });
     expect(view.results).toEqual({ kind: 'not-settled' });
   });
 
-  it('keeps the three reads apart when one of them fails', async () => {
+  it('keeps the reads apart when the detail fails', async () => {
     /**
      * The property the arena had to learn the hard way, held here by
      * construction: a session whose schedule did not load still answers
-     * whether this account entered it.
+     * whether this account entered it — and still carries its list row,
+     * which is a different read of a different tool.
      */
     const grid = new FakeMarketGridPort();
     grid.stage(aGridSession({ id: 'ms-1' }));
@@ -30,7 +37,40 @@ describe('opening one session', () => {
 
     const view = await new OpenGridSessionQuery(grid).execute({ ...who, sessionId: 'ms-1' });
     expect(view.detail.kind).toBe('unreadable');
+    expect(view.summary.kind).toBe('summary');
     expect(view.entered).toEqual({ kind: 'submission', entered: false });
+  });
+
+  it('keeps the reads apart when the list fails', async () => {
+    // The mirror image: an unreadable list costs the list-only facts and
+    // nothing else. The detail, the submission check and the results state
+    // all still answer.
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1' }), aGridDetail({ id: 'ms-1', status: 'PENDING' }));
+    grid.list = { kind: 'unreadable', reason: 'BattleGrid timed out', cause: 'unreachable' };
+
+    const view = await new OpenGridSessionQuery(grid).execute({ ...who, sessionId: 'ms-1' });
+    expect(view.summary).toEqual({
+      kind: 'unreadable',
+      reason: 'BattleGrid timed out',
+      cause: 'unreachable',
+    });
+    expect(view.detail.kind).toBe('detail');
+    expect(view.entered).toEqual({ kind: 'submission', entered: false });
+    expect(view.results).toEqual({ kind: 'not-settled' });
+  });
+
+  it('names a session the list does not carry, rather than erring or saying nothing', async () => {
+    // The list answered and this session was not among its rows — its own
+    // state, distinct from an unreadable list. The arena lists the most
+    // recent fifty; a session can outlive its row.
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-other' }));
+    grid.details.set('ms-9', aGridDetail({ id: 'ms-9' }));
+
+    const view = await new OpenGridSessionQuery(grid).execute({ ...who, sessionId: 'ms-9' });
+    expect(view.summary).toEqual({ kind: 'not-listed' });
+    expect(view.detail.kind).toBe('detail');
   });
 
   it('asks for results even when the schedule could not be read', async () => {

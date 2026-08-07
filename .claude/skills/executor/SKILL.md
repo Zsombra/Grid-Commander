@@ -216,6 +216,11 @@ Read from the architecture checklist's Quick Reference Card (already in master p
 - Update all call sites for signature changes.
 - Follow all constraints listed in the master plan.
 - Do not add fallback/legacy/dual-path runtime branches.
+- A change that unifies N spellings into one ships, in the same diff, the
+  check that the spelling cannot recur. A guard written once the tree is clean
+  is one line; a guard deferred is the one that never arrives — and in a
+  parallel round, a sibling agent's new file can drift the day it is born
+  (`condition-composer.tsx`, round three).
 
 ### Step 6: Run Quality Gates
 

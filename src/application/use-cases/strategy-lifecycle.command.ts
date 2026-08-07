@@ -11,6 +11,12 @@ export interface ForkStrategyRequest {
   readonly userId: string;
   readonly accessToken: string;
   readonly strategy: Strategy;
+  /**
+   * A name of the user's own for the copy. Absent means the platform names it
+   * `<parent> (fork)` — which is a choice the form explains, not a default
+   * this command supplies.
+   */
+  readonly name?: string | undefined;
 }
 
 export type ForkStrategyResult =
@@ -28,15 +34,20 @@ export class ForkStrategyCommand {
   constructor(private readonly strategies: StrategiesPort) {}
 
   async execute(req: ForkStrategyRequest): Promise<ForkStrategyResult> {
-    const strategy = await this.strategies.forkStrategy({
+    // The `refused` arm comes from the port: the platform's answer, whole. It
+    // was declared here for the life of the product and never produced, so a
+    // refusal crashed the action instead of reaching the person who acted.
+    return this.strategies.forkStrategy({
       userId: req.userId,
       accessToken: req.accessToken,
       strategyId: req.strategy.id,
       // The revision the user was looking at, not "latest" — forking whatever
       // is current would copy a version they never saw.
       sourceRevision: req.strategy.revision,
+      // Threaded, not judged: whether a blank counts as a name is decided at
+      // the wire, where the schema that says so (minLength 1) is read.
+      ...(req.name === undefined ? {} : { name: req.name }),
     });
-    return { kind: 'forked', strategy };
   }
 }
 

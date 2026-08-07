@@ -131,11 +131,39 @@ export default async function ArenaPage() {
                     ? 'This account has entered this session.'
                     : 'This account has not entered this session.'}
               </p>
-              {/* Neither promised nor denied when the list sent no status: a
-                  session whose state is unknown is not a session known to be
-                  unsettled. */}
-              {s.status !== null && s.status !== 'SETTLED' ? (
+              {/* The results claim, made only where the status warrants it.
+                  This used to be one sentence for everything short of SETTLED
+                  — including CANCELLED, which never settles, on 48 of the 50
+                  rows the live list returned (2026-08-06). Bespoke prose only
+                  for the two values ever observed on a session (PENDING,
+                  CANCELLED) plus SETTLED, whose meaning the results tool
+                  itself states and whose treatment is silence: the thing
+                  promised has arrived, and the opened session reads its state.
+                  The declared enum is wider (LIVE, RESOLVING,
+                  SETTLEMENT_QUARANTINED) but prose for unobserved states is
+                  the mistake behind HANDOFF.md's dead paths, so those fall
+                  through to the platform's-own-word branch — BindingSummary's
+                  third-branch treatment — alongside any word a future
+                  deployment adds. A null status stays the named unknown above
+                  and claims nothing here: a session in an unknown state is not
+                  a session known to be unsettled. */}
+              {s.status === 'PENDING' ? (
                 <p className="text-text-secondary">Results arrive after settlement.</p>
+              ) : s.status === 'CANCELLED' ? (
+                // Terminal, said as terminal. Even the platform's own refusal
+                // gets this wrong — "Results are not available yet: … is
+                // CANCELLED" — and repeating its promise here made it this
+                // product's claim.
+                <p className="text-text-secondary">
+                  This session was cancelled. It will not settle, and no results will be published.
+                </p>
+              ) : s.status !== null && s.status !== 'SETTLED' ? (
+                <p className="text-text-secondary">
+                  {/* One template literal: the sentence is asserted whole, and
+                      the rendering resolver joins separate text nodes with
+                      spaces. */}
+                  {`${s.status} is the platform's own word for this session's state — Grid-Commander has no reading of it, and neither promises results nor rules them out.`}
+                </p>
               ) : null}
             </li>
           ))}

@@ -87,3 +87,31 @@ still green.
 
 It failed `INTERNAL_ERROR` on the v3 probe and answers on v5. Noted so the
 surface map's failure list is not read as permanent.
+
+---
+
+# Reconciled 2026-08-06 — the buildable half landed; the rest are records
+
+**The two column controls shipped**: `the-inside-of-a-section-is-composable`
+carries `bars` and `ordering` end to end — read from the discovered schema at
+runtime, offered in the column editor, validated through
+`get_strategy_column_contract`. That was the only section of this item that was
+a build.
+
+What remains, section by section:
+
+- **The `price` metric family** — needs no change; the column grammar surfaces
+  list whatever the platform returns, and `ATR_PCT`/the departed
+  `crossSectional` category prove the mechanism daily.
+- **`priceAction` became omissible** — a recorded trap. This product still
+  never sends `modules`, and the note here is the warning to whoever first
+  does.
+- **`entryStrategy` on deployment policy slots** — this product calls no policy
+  tool; the section stands as the clearest argument for the freshness gate.
+- **`get_open_orders` recovered** — re-confirmed twice since (2026-07-31 and
+  2026-08-06); the failure-list note has done its job.
+
+Kept open as the standing record of the v5 additions, but **nothing here is
+actionable** — the item should not be picked up as work again unless a surface
+starts composing `modules` or calling the policy tools, and both of those would
+be their own changes.

@@ -14,6 +14,7 @@ import type {
   ColumnProposal,
   ColumnRefusal,
   CompileResult,
+  ForkResult,
   LifecycleResult,
   MetricHints,
   MetricListResult,
@@ -244,12 +245,22 @@ export class FakeStrategiesPort implements StrategiesPort {
     return { strategy: { id: params.strategyId }, appliedImpact: { boundAgentCount: current?.boundAgentCount ?? 0 } };
   }
 
-  async forkStrategy(params: { strategyId: string; sourceRevision: number }): Promise<Strategy> {
+  /** Set to make the fork refuse with this reason — the platform's answer, whole. */
+  forkRefusal: string | null = null;
+
+  async forkStrategy(params: {
+    strategyId: string;
+    sourceRevision: number;
+    name?: string | undefined;
+  }): Promise<ForkResult> {
     this.calls.push({ op: 'fork', payload: { ...params } });
+    if (this.forkRefusal !== null) return { kind: 'refused', reason: this.forkRefusal };
     const source = this.strategies.find((s) => s.id === params.strategyId);
+    // The platform's naming, mirrored: a chosen name wins, blank is not a name.
+    const chosen = params.name !== undefined && params.name.trim() !== '' ? params.name : null;
     const fork: Strategy = {
       id: `${params.strategyId}-fork`,
-      name: `${source?.name ?? 'Strategy'} (fork)`,
+      name: chosen ?? `${source?.name ?? 'Strategy'} (fork)`,
       tagline: source?.tagline ?? null,
       description: source?.description ?? null,
       revision: 1,
@@ -260,7 +271,7 @@ export class FakeStrategiesPort implements StrategiesPort {
       forkedFromStrategyId: params.strategyId,
     };
     this.strategies = [...this.strategies, fork];
-    return fork;
+    return { kind: 'forked', strategy: fork };
   }
 
   async setActive(params: { strategyId: string; active: boolean }): Promise<LifecycleResult> {
