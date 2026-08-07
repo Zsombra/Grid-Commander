@@ -216,3 +216,17 @@ players at all when the leaderboard did not answer"*.
 So: nothing to fix here, and the keyed CI's `vitest` gate is red for a reason
 that is entirely BattleGrid's. Worth re-running the two probes once the
 subsystem recovers rather than treating them as a standing failure.
+
+## Recovered 2026-08-07 ~04:20Z — outage lasted under six hours
+
+Both reads answer normally again (`get_agent_explorer` 200 in ~4.1s,
+`get_leaderboard` 200 in ~2.5s), and the two red live probes pass:
+
+```
+✓ field-probe       reads the field and this account's place in it   (4.8s)
+✓ competitor-probe  opens the top agent in the field                 (9.5s)
+```
+
+So the keyed CI failure of 2026-08-06 ~22:50Z is fully accounted for as a
+transient platform outage of the explorer subsystem, roughly bounded between
+22:00Z and 04:20Z. Nothing in this product changed between red and green.
