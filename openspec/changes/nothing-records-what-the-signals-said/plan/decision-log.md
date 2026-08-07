@@ -251,3 +251,25 @@ validation, waivers, or handoff clarity.
 - Reason: What the gate should know that the matrices alone do not say.
 - Approved by: executor
 - Next action: verifier, then auditor.
+
+### DL-012
+
+- Timestamp: `2026-08-07 08:25 UTC`
+- Phase: `EXECUTION`
+- Type: `exception`
+- Decision: Verifier remediation. (1) The "No credential" error scenario,
+  reported as untestable in the first scenario walk, is now spawn-tested on
+  the real process (`tests/recording/cli-spawn.test.ts`) — both refusal
+  paths, ~10s. The claim "cannot be unit-driven without real config" was
+  false: the delegated-mode session read touches no database, so dummy
+  config boots. (2) The open live-proof task (8.2) is now tracked as
+  `the-recorder-is-unproven-against-live` (p2, waiting-on-operator) rather
+  than only as an annotated checkbox.
+- Impacted files: `tests/recording/cli-spawn.test.ts` (new),
+  `openspec/backlog/the-recorder-is-unproven-against-live.md` (new),
+  `verification.md`
+- Reason: An error scenario without a test is the exact class the verifier
+  exists to catch, and it caught one written by the same hands that built
+  the feature — which is the argument for running it even on one's own work.
+- Approved by: executor
+- Next action: auditor.
