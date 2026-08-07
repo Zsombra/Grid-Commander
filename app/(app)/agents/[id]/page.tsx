@@ -136,12 +136,24 @@ export default async function AgentPage({
       <section className="space-y-1">
         <h2 className="font-medium">Owned by the agent</h2>
         <p className="text-sm">
+          {/*
+            The platform's human name for the brain, when it reports one —
+            observed "GLM-5.2" on an agent this line used to describe as the
+            bare word CUSTOM. The read-back flattens the request's two-branch
+            brain union into one field, so that word cannot say whether the
+            brain is a preset or a named model, and this line claims neither:
+            it states the name the platform reports, and falls back to exactly
+            what it said before when the platform reports none — never an
+            invented name. See
+            `preset-custom-in-the-preset-branch-is-unestablished`.
+          */}
           Brain:{' '}
-          {agent.brain.kind === 'preset'
-            ? agent.brain.preset
-            : agent.brain.kind === 'custom'
-            ? agent.brain.modelId
-            : 'Not configured'}
+          {agent.modelDisplayName ??
+            (agent.brain.kind === 'preset'
+              ? agent.brain.preset
+              : agent.brain.kind === 'custom'
+              ? agent.brain.modelId
+              : 'Not configured')}
         </p>
         <p className="text-sm">
           {/*

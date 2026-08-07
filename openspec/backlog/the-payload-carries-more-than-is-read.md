@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-08-07
 change: performance-was-already-in-the-payload
 capability: agent-understanding
 blocked_by: []
@@ -122,3 +122,27 @@ should render "provider" until an account is seen where it is not null.
 `activeGameCount` and `hasActiveAssignments` were both falsy on the only agent
 available to measure, so they stay exactly as unexplained as they were. An
 observation of one zero is not an observation of the field.
+
+---
+
+# Two of the six landed 2026-08-07 — the item stays open for the other four
+
+`the-brains-name-and-the-spend-are-read` mapped the two fields this item and
+its probe singled out:
+
+- **`modelDisplayName`** — mapped on both reads (they agree on it) and
+  rendered on the agent page's brain line, which used to show the bare
+  flattened `CUSTOM`. Falls back to exactly what the line showed before when
+  the platform names nothing; claims nothing about preset-vs-custom.
+- **`last24hCostUsd`** — mapped from the list only, per
+  `the-cost-of-an-agent-reads-differently-from-two-tools` (now done, against
+  the same change); rendered on `/agents/[id]/limits` as a running total with
+  no gauge, because the probe above established the ceiling is not readable.
+
+Still unmapped, deliberately, because nothing has asked for them:
+**`provider`** (observed only null — nothing renders a field never seen
+populated), **`avatarUrl` / `modelImageUrl`** (presentation the product has
+no use for), **`activeGameCount`** and **`hasActiveAssignments`** (both
+unexplained; one falsy observation each). The exclusion comment in
+`src/domain/agent/agent.ts` and the noise assertion in
+`tests/agent/mapper.test.ts` both name these four.

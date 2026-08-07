@@ -2,11 +2,11 @@
 id: the-cost-of-an-agent-reads-differently-from-two-tools
 title: last24hCostUsd is 0.09 on the list row and 0 on the detail read, for the same agent at the same moment
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-07
+change: the-brains-name-and-the-spend-are-read
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, declared-vs-observed, divergence, spend]
@@ -95,3 +95,31 @@ agent, sampled twice.
   the unmapped field worth looking at
 - the `connectionId` defect — a wrong value from a plausible source, hidden by
   a fake that agreed with the code instead of the database
+
+---
+
+# Resolved 2026-08-07 — the list was chosen, and the mapping enforces it
+
+Taken in `the-brains-name-and-the-spend-are-read`. The source decision went
+the way the item argued: **spend is read from `list_intelligence_agents`
+only.** `mapRosterAgent` in
+`src/infrastructure/battlegrid/agent-mapper.ts` is the one place the field is
+read, and its doc comment carries the divergence — the observed pair
+(list `0.09022839`, detail `0`), the sampling, and why the stable zero is the
+copy not trusted. The shared `mapAgent` (which the detail read and every
+write result flow through) sets the field null with a pointer to the same
+story, so the detail's zero has no route to a surface even through a
+refactor; `tests/agent/roster.test.ts` (`spend_comes_off_the_list`) holds
+that at the adapter with one row served to both tools.
+
+The figure renders on `/agents/[id]/limits`, which already reads the roster
+for its heading — the list read, so no new plumbing and no detour through
+the detail. Shown without a gauge: the probe recorded in
+`the-payload-carries-more-than-is-read` established no read publishes the
+ceiling.
+
+The comparison probe this item wanted ("better still") was not built — it
+needs a live account with non-zero spend and belongs beside the key-gated
+probes; nothing deterministic can arbitrate which value is *right*, only
+which is read. If the divergence is ever re-measured and the list turns out
+wrong, `mapRosterAgent` is the single site to change.
