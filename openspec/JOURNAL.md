@@ -1,5 +1,103 @@
 # Journal
 
+## 2026-08-06 (round four) — six builds, and a write path proven live
+
+**Did**: five agents plus one build of my own, and the reserved live probes run
+serially. Seven changes archived (110 → 117), **ten** items closed, **eight**
+new ones filed. Backlog 26 → 24. The probes answered five standing questions and
+every answer opened something real — which is why closing ten only moved the
+count by two.
+
+| change | closes |
+|---|---|
+| `the-schedule-comes-off-the-list` | `the-session-list-already-carries-the-schedule` |
+| `the-last-stock-buttons-and-the-guard` | `agent-edit-still-stock` |
+| `the-record-carries-the-whole-condition-union` | `the-record-flattens-the-condition-union` |
+| `the-inside-of-a-section-is-composable` | `strategy-metric-editor` |
+| `a-drafted-condition-can-be-saved` | `a-drafted-condition-cannot-be-saved` |
+| `the-players-above-you-are-shown` | (filed and built the same day) |
+
+### The write path is not a seventh dead one
+
+`a-drafted-condition-can-be-saved` shipped a `full`-track write and its own live
+walk, deliberately unrun. I ran it:
+
+```
+fork:     Tobruk (fork) r1
+before:   conditions=5
+describe: proposal, naming the whole resulting list and the bound-agent count
+after:    r2 conditions=6, GC_PROBE_DRAFT added, tagline and sections unchanged
+remove:   r3 conditions=5, back to the original five
+cleanup:  fork archived, parked strategy restored — every audit entry succeeded
+```
+
+**It took three corrections to get there, and all three were in the probe.**
+
+1. The control case resubmitted the strategy's own condition list and expected a
+   plan. The platform refuses it — `Strategy update contains no effective
+   changes` — which is *better* evidence: the compiler can only know to refuse
+   by comparing the submitted list against the stored one. Made two-armed, not
+   loosened.
+2. It forked `Dunkirk`, and **`fork_strategy` answers `INTERNAL_ERROR` when a
+   strategy of the fork's name already exists.** Twenty-two were named
+   `Dunkirk (fork)`. Isolated by forking `Leningrad` and `Tobruk`, which have no
+   such name — both clean. Not the quota, which refuses properly and publishes
+   `{used: 25, limit: 25, remaining: 0}`. A refusal wearing the wrong clothes,
+   so this product correctly renders a fixable mistake as a broken server.
+3. Its column search did not recurse into groups, so `London`'s eight conditions
+   yielded none and the walk **skipped after forking** — reporting success having
+   proved nothing. That skip now throws.
+
+The read half also found a **fourth reference site**: `marketReadText` names
+conditions by `{KEY}` marker, so removing one is refused for a reason the
+describe does not mention. `unresolvedReferences` is correct and incomplete.
+
+### The probes: five answers, and two published claims corrected
+
+- **`conditionOutcomes[].verdict` exists.** Declared, never captured, now
+  observed populated (`NEITHER` on BTC and ETH). The preview can state the
+  strategy's own call per coin. The capture also carries `counts` and
+  `provisional`, neither previously recorded.
+- **Forking preserves conditions**, and the item claiming otherwise was wrong.
+  All 22 forks on account 1 carry their parent's two. The split is *when* —
+  `fork_strategy` pins a `sourceRevision`, all twelve SYSTEM strategies were
+  batch-edited on 2026-08-05, and account 2's forks predate the revision that
+  added conditions. Confirmed twice over by the live walk: a fork taken today
+  arrived with all 8 of Leningrad's and all 5 of Tobruk's.
+- **The leaderboard has rows** — ten per metric, where the probe recorded `[]`.
+  `/explorer` had modelled them the whole time and rendered none. Built the same
+  day, because mapped-and-unrendered is what `binding.state` sat in until the
+  platform said ORPHANED and the roster said "Bound".
+- **The agent cost ceiling is not readable anywhere.** One cost-named field on
+  the whole payload; `get_agent_budget` has none. So `/limits` cannot gain a
+  fifth gauge — that question is closed, not open.
+- **`get_agent_performance` works and `get_agent_fund_allocation` does not.**
+  The pair has separated: performance answers to the cent with a 27-point curve
+  where a budget exists; allocation is all zeros on that same budgeted, trading
+  agent. So `lifetimeAllocatedUsd: 0` can no longer be read as "never funded" —
+  the second correction.
+
+**And one field disagrees with itself.** `last24hCostUsd` is `0.09022839` on the
+list row and `0` on the detail read, for the same agent at the same moment,
+stable across repeated samples, with every other key identical. Whichever
+surface renders spend must read it from the list. Same shape as the
+`connectionId` defect: a wrong value from a plausible source, invisible because
+nothing compared it against a second one.
+
+### Corrections to the record
+
+`coinPicks.rosterSize` was recorded as `0` and is `36` — the roster is
+populated, only the picks are empty, and three fields (`others`, `topLeanUp/
+Down/Even`) were never named. The arena itself is 2 PENDING and 48 CANCELLED
+with `playerCount: 0` everywhere, so "watch for a session with players" has
+nothing to find. And 48 of those 50 sessions are told results arrive after
+settlement, which for a CANCELLED session never happens.
+
+**Next**: the `docs/specs` → `docs/checklists` rename is still in flight. The
+two P2s the probes filed — the prose/condition reference and the fork 500 — are
+the pointed ones. `conditions: []` is still unobserved: the probe'''s empty-list
+case was refused by the marker rule, not by anything about an empty list.
+
 ## 2026-08-06 (round three) — six builds, and a destructive risk that turned out not to be
 
 **Did**: five agents plus one build of my own. Six changes archived, six items

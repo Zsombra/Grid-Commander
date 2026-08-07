@@ -112,3 +112,65 @@ tripwire that fires the day either tool returns a populated value. The P&L
 discrepancy stays a real question, but it waits on evidence no session can
 fabricate — a populated account or platform documentation. Nothing P2-sized
 remains to do.
+
+---
+
+# Re-measured 2026-08-06 — the two tools have separated
+
+They were filed as a pair and they no longer behave as one.
+
+## `get_agent_performance` works, and the tripwire should be re-read
+
+Account 2, `THE .0`, budget configured (`maxConcurrentExposureUsd: 250`):
+
+```json
+{"agentId":"26a60e91-…","realizedPnlUsd":-0.3,"drawdownUsd":0.69,
+ "maxCumulativeDrawdownUsd":0,
+ "pnlCurveUsd":[0,-0.01,-0.12,0.08,0,-0.09,-0.09,0.2,0.06,0.02,0.39,0.3,0.24,
+                0.17,0.13,-0.02,-0.02,-0.02,-0.05,-0.17,0.16,0.17,0.04,-0.05,
+                -0.12,-0.23,-0.3],
+ "haltedAt":null}
+```
+
+Twenty-seven curve points, a signed figure, a live drawdown. This is a working
+tool, and it confirms the 2026-08-06 correction above rather than adding to it:
+where a risk budget exists the tool answers, where none does it reports zeros
+because there is no baseline to measure from.
+
+`tests/agent/performance.test.ts` asserts the emptiness. That assertion is
+still correct **for account 1**, whose agents have no budget — but it should be
+read as "this account's agents have no baseline", not as "this tool does not
+answer". If it is ever pointed at a budgeted agent it will fail, and it will be
+right to.
+
+## `get_agent_fund_allocation` is still empty on an account that trades
+
+Same agent, same moment, 26 closed trades behind it:
+
+```json
+{"agentId":"26a60e91-…","availableUsd":0,"committedUsd":0,
+ "lifetimeAllocatedUsd":0,"lifetimeRecalledUsd":0,
+ "haltedAt":null,"perTradePushEnabled":true}
+```
+
+Every figure zero, on the one account where the sibling tool answers to the
+cent. So the budget-baseline explanation does **not** cover this one: the
+budget is configured, the exposure cap is $250, and `lifetimeAllocatedUsd` is
+still 0.
+
+Which retires an inference this repository has already had to correct once —
+`lifetimeAllocatedUsd: 0` was read as "never funded" on account 2 and that was
+wrong. It is now measured as 0 on an agent that has demonstrably traded, so the
+field means something other than what its name suggests, or is not populated on
+this platform. Either way it stays unmodelled, and now for an observed reason
+rather than an assumed one.
+
+## Where that leaves the item
+
+Still p3, still open, and narrower: **one tool of the two is a live question.**
+`get_agent_performance` is answered. `get_agent_fund_allocation` has now been
+called on twelve agents across two accounts, including one with a configured
+budget and a trading history, and has never returned a non-zero figure.
+
+`accountEquityUsd: 0` is also still 0 in `get_agent_budget` on this account —
+third observation, still unexplained, still rendered nowhere.

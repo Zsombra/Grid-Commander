@@ -11,7 +11,7 @@ You are an expert software architect with deep mastery of SOLID principles and a
 
 Current branch: !`git branch --show-current`
 Repository structure: !`ls -la`
-Architecture checklist: !`head -5 docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
+Architecture checklist: !`head -5 docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md 2>/dev/null || echo "No architecture checklist found"`
 Specified capabilities: !`ls openspec/specs 2>/dev/null | grep -v README || echo "(none — behavior is not yet specified)"`
 
 ## Task
@@ -60,7 +60,7 @@ Use `@file-path` to examine relevant source files. Start by exploring the codeba
 
 ### Architecture Layers
 
-If `docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, read the Layer Overview diagram from it and use that as the layer reference for this analysis.
+If `docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md` exists, read the Layer Overview diagram from it and use that as the layer reference for this analysis.
 
 If no checklist exists, inspect the codebase to identify the layer structure:
 - Look at folder names and organization

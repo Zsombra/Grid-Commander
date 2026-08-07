@@ -73,3 +73,27 @@ the roadmap: `get_open_orders` belongs to the nine unused positions/orders tools
 ## Re-observed 2026-07-31
 
 One of the two recovered: `get_open_orders` answered normally (its INTERNAL_ERROR was transient). `get_market_context` failed identically again — `VALIDATION_ERROR: Provide sessionId or primaryTimeframe` — so its declared schema (no required arguments) persistently understates what the live server demands. A platform-side declared-vs-actual mismatch; the product does not call this tool. Narrowed to one tool, kept open as the record of it.
+
+## Re-observed 2026-08-06
+
+Third measurement, both tools called with `{}`:
+
+```
+get_market_context   VALIDATION_ERROR   Provide sessionId or primaryTimeframe
+get_open_orders      OK                 → { orders: … }
+```
+
+Unchanged from 2026-07-31 in both directions. `get_open_orders` has now
+answered on two consecutive probes and its `INTERNAL_ERROR` should be read as
+firmly transient — the surface map's failure list must not carry it.
+
+`get_market_context` has now been refused for omitting an argument its own
+schema does not require, on three separate days across two BattleGrid major
+versions (v5 and v11). It is not a deployment artefact. The declared schema
+persistently understates the precondition, which is `anyOf(sessionId,
+primaryTimeframe)` and is expressible in JSON Schema.
+
+The product still calls neither tool, so nothing is broken. Item stays open as
+the standing record of one platform-side declared-vs-actual mismatch, and as
+the reason nothing may build a call to `get_market_context` from `required`
+alone.

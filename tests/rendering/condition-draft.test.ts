@@ -90,7 +90,13 @@ describe('the composer, before anything is drafted', () => {
     draftWorld();
     const r = await draftRendered('s1');
     expect(r.text).toContain('Nothing composed here is saved');
-    expect(r.text).toContain('There is no control on this page that writes to the strategy');
+    // The composer's promise, narrowed to the form when saving got a route of
+    // its own (`a-drafted-condition-can-be-saved`) and no further. The form
+    // still writes nothing; what changed is that the sentence now says which
+    // thing cannot save, rather than claiming the page has no way onward — a
+    // claim a link would have quietly made false.
+    expect(r.text).toContain('Nothing is saved by this form');
+    expect(r.text).toContain('There is no control in it that writes to the strategy');
   });
 
   it('states the grammar it does not build, and where the whole grammar is read', async () => {

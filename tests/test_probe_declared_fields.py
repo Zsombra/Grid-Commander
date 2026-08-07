@@ -353,6 +353,340 @@ class RefreshDeclared(unittest.TestCase):
                 assert f.read() == before, "a refused refresh must write nothing"
 
 
+CAPABILITIES = os.path.join(
+    os.path.dirname(__file__), "..", "docs", "battlegrid-mcp-capabilities.json"
+)
+
+
+def declared(name):
+    """One tool, as the platform declared it — `$ref`s and nested `anyOf`s intact.
+
+    The committed dump rather than a fixture. The union this class exists for is
+    three `anyOf` levels deep with five `$ref`s pointing back into the first
+    branch, and a hand-written imitation would be tidier than the thing that
+    broke the walk — which is how a test comes to pass on a schema nobody sends.
+    """
+    with open(CAPABILITIES) as f:
+        for tool in json.load(f)["tools"]:
+            if tool["name"] == name:
+                return tool
+    raise AssertionError(f"{name} is not in the capabilities dump")
+
+
+def matching_variants(entry, payload):
+    """The variants a reader would match this payload to. Mirrors the guard.
+
+    `tests/architecture/payload-conformance.test.ts` picks a variant exactly this
+    way — `when` by equality, `when_one_of` by membership — so if the two ever
+    disagree about what the record means, one of them is checking something else.
+    A record is only usable when this answers with exactly one.
+    """
+    found = []
+    for variant in entry["variants"]:
+        if any(payload.get(key) != value for key, value in variant["when"].items()):
+            continue
+        if any(
+            payload.get(key) not in values
+            for key, values in (variant.get("when_one_of") or {}).items()
+        ):
+            continue
+        found.append(variant)
+    return found
+
+
+class TheConditionUnion(unittest.TestCase):
+    """The nested union the walk used to describe one sixth of.
+
+    `conditions[].definition` is an `anyOf` over the group object and a further
+    `anyOf` — which holds a third `anyOf` of the four clause forms, plus the
+    reference. The walk saw one object branch, recorded it with `record_closed`,
+    and closed the set: `conditions[].definition` accepted `kind/members/n/op`,
+    so a clause's `column` and a reference's `conditionKey` read as violations of
+    a set the platform does not close. An invented violation — the direction
+    `input_accepts` promises never to take, and the damaging one.
+    """
+
+    def setUp(self):
+        self.tool = declared("preview_strategy_report")
+        self.accepts = input_accepts(self.tool)
+
+    def test_the_declared_union_really_is_nested(self):
+        """The anti-vacuity pass, and it guards every case below.
+
+        If BattleGrid ever flattens this union, the walk under test would pass
+        these cases without ever following a nested branch — proving nothing
+        about the thing that was broken. Then this fails first, and says so.
+        """
+        definition = self.tool["inputSchema"]["properties"]["conditions"]["items"][
+            "properties"
+        ]["definition"]
+        branches = definition["anyOf"]
+        assert len(branches) == 2, "the declared union stopped being two-branched"
+        signposts = [b for b in branches if not b.get("properties") and b.get("anyOf")]
+        assert len(signposts) == 1, "no branch is a bare union — the walk has nothing to follow"
+        assert any(b.get("properties") for b in branches), "no branch is a plain object"
+
+    def test_every_declared_shape_reaches_the_record(self):
+        entry = self.accepts["conditions[].definition"]
+        assert [v["when"] for v in entry["variants"]] == [
+            {"kind": "clause"},
+            {"kind": "clause", "op": "between"},
+            {"kind": "clause", "op": "is"},
+            {"kind": "clause", "op": "in"},
+            {"kind": "conditionRef"},
+            {"kind": "group"},
+        ]
+
+    def test_the_keys_that_used_to_read_as_violations_are_accepted_somewhere(self):
+        entry = self.accepts["conditions[].definition"]
+        accepted = set()
+        for variant in entry["variants"]:
+            accepted |= set(variant["accepts"])
+        for key in ("column", "value", "low", "high", "label", "labels", "conditionKey"):
+            assert key in accepted, f"{key} is still unrepresentable"
+
+    def test_the_fourth_clause_form_is_told_apart_by_its_enum(self):
+        """The collision this change exists to solve.
+
+        Three clause forms pin `op` with `const`; the fourth pins it with
+        `enum: [lt, lte, gte, gt]` and so discriminates on `kind: "clause"`
+        alone — which every one of the other three also answers.
+        """
+        variants = self.accepts["conditions[].definition"]["variants"]
+        assert variants[0]["when_one_of"] == {"op": ["lt", "lte", "gte", "gt"]}
+        # And the branches that need no widening did not get any.
+        for variant in variants[1:]:
+            assert "when_one_of" not in variant, variant["when"]
+
+    def test_each_form_the_product_writes_matches_exactly_one_variant(self):
+        """The property the record has to have to be usable at all.
+
+        These are the seven shapes `src/domain/strategy/condition-draft.ts`
+        emits. Two matches is worse than none: a reader taking the first would
+        check a `between` clause against the comparison branch and report `low`
+        and `high` as violations of a closed set — the old defect, moved.
+        """
+        column = {"sectionKey": "includeRegimeContext", "header": "regTrend_now"}
+        forms = [
+            {"kind": "clause", "column": column, "op": "gt", "value": 50},
+            {"kind": "clause", "column": column, "op": "lte", "value": 0.5},
+            {"kind": "clause", "column": column, "op": "between", "low": 1, "high": 9},
+            {"kind": "clause", "column": column, "op": "is", "label": "trending up"},
+            {"kind": "clause", "column": column, "op": "in", "labels": ["a", "b"]},
+            {"kind": "conditionRef", "conditionKey": "FLOW_UP"},
+            {"kind": "group", "op": "N_OF", "n": 2, "members": []},
+        ]
+        entry = self.accepts["conditions[].definition"]
+        for form in forms:
+            matched = matching_variants(entry, form)
+            assert len(matched) == 1, f"{form['op']}: matched {len(matched)} variants"
+            unaccepted = sorted(set(form) - set(matched[0]["accepts"]))
+            assert unaccepted == [], f"{form['op']}: {unaccepted} read as violations"
+
+    def test_a_member_of_a_group_carries_the_same_union(self):
+        """The recursion. `members[]` is a `$ref` back to `definition` itself."""
+        entry = self.accepts["conditions[].definition.members[]"]
+        assert [v["when"].get("kind") for v in entry["variants"]] == [
+            "clause",
+            "clause",
+            "clause",
+            "clause",
+            "conditionRef",
+            "group",
+        ]
+
+    def test_a_clause_column_is_recorded_now_that_the_walk_reaches_it(self):
+        # Reachable only through a branch inside the inner union — the walk
+        # stopped before it, so the path did not exist in the record at all.
+        assert self.accepts["conditions[].definition.column"] == {
+            "closed": True,
+            "accepts": ["header", "sectionKey"],
+        }
+
+    def test_the_same_union_on_the_other_two_tools_that_take_conditions(self):
+        for name, path in (
+            ("compile_strategy_plan", "request.conditions[].definition"),
+            ("apply_strategy_plan", "request.plan.conditions[].definition"),
+        ):
+            entry = input_accepts(declared(name))[path]
+            assert len(entry["variants"]) == 6, name
+
+
+class Collisions(unittest.TestCase):
+    """What the record does when a discriminator cannot separate two branches."""
+
+    def test_branches_nothing_pins_are_merged_rather_than_left_to_first_match(self):
+        """The other invented violation, found while fixing the first.
+
+        A report column's `timeframe` is `{rel}` or `{abs}` — nothing is pinned
+        on either, so both recorded `when: {}`, both matched everything, and a
+        reader taking the first read `abs` as a violation of a closed set holding
+        only `rel`. Nothing can discriminate here, so the honest record is one
+        merged variant: accepted names union, required paths intersect.
+        """
+        entry = input_accepts(declared("preview_strategy_report"))[
+            "sections[].columns[].timeframe"
+        ]
+        assert entry["variants"] == [
+            {"when": {}, "closed": True, "accepts": ["abs", "rel"], "required": []}
+        ]
+
+    def test_a_union_that_consts_already_separate_is_left_exactly_as_it_was(self):
+        # The regression guard for every other union on the surface: widening a
+        # discriminator that already separates would make the record assert more
+        # than it needs to, and checking permitted *values* is another file's job.
+        entry = input_accepts(declared("compile_strategy_plan"))["request"]
+        assert [v["when"] for v in entry["variants"]] == [
+            {"operation": "CREATE"},
+            {"operation": "UPDATE"},
+            {"operation": "RESTORE"},
+        ]
+        for variant in entry["variants"]:
+            assert "when_one_of" not in variant
+
+    def test_a_branch_that_is_only_a_union_is_followed(self):
+        schema = {
+            "type": "object",
+            "properties": {
+                "definition": {
+                    "anyOf": [
+                        {
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["kind", "a"],
+                                    "properties": {"kind": {"const": "A"}, "a": {}},
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": False,
+                                    "required": ["kind", "b"],
+                                    "properties": {"kind": {"const": "B"}, "b": {}},
+                                },
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": ["kind"],
+                            "properties": {"kind": {"const": "C"}},
+                        },
+                    ]
+                }
+            },
+        }
+        entry = input_accepts(tool(schema))["definition"]
+        assert [v["when"]["kind"] for v in entry["variants"]] == ["A", "B", "C"]
+
+    def test_an_enum_on_a_property_a_branch_does_not_demand_never_discriminates(self):
+        """A `when_one_of` a payload can legitimately omit is unmatchable.
+
+        And an unmatchable variant reads as "no declared variant matches what is
+        sent" — an invented violation of exactly the kind being removed here. So
+        an optional enum does not widen, and the two branches merge instead.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "thing": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": ["kind"],
+                            "properties": {
+                                "kind": {"const": "T"},
+                                "mode": {"enum": ["x", "y"]},
+                                "left": {},
+                            },
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": ["kind"],
+                            "properties": {
+                                "kind": {"const": "T"},
+                                "mode": {"enum": ["z"]},
+                                "right": {},
+                            },
+                        },
+                    ]
+                }
+            },
+        }
+        entry = input_accepts(tool(schema))["thing"]
+        assert entry["variants"] == [
+            {
+                "when": {"kind": "T"},
+                "closed": True,
+                "accepts": ["kind", "left", "mode", "right"],
+                "required": ["kind"],
+            }
+        ]
+
+    def test_a_chain_of_collisions_merges_whole(self):
+        """Told-apart is symmetric and not transitive.
+
+        A and C pin `op` to different values; B pins nothing but `kind`, so it
+        collides with both. A reader has no rule for picking, so all three belong
+        in one merged record — first-fit grouping would have left C on its own.
+        """
+        def branch(properties, required):
+            return {
+                "type": "object",
+                "additionalProperties": False,
+                "required": required,
+                "properties": properties,
+            }
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "thing": {
+                    "anyOf": [
+                        branch({"kind": {"const": "T"}, "op": {"const": "a"}}, ["kind", "op"]),
+                        branch({"kind": {"const": "T"}, "only": {}}, ["kind"]),
+                        branch({"kind": {"const": "T"}, "op": {"const": "c"}}, ["kind", "op"]),
+                    ]
+                }
+            },
+        }
+        entry = input_accepts(tool(schema))["thing"]
+        assert entry["variants"] == [
+            {
+                "when": {"kind": "T"},
+                "closed": True,
+                "accepts": ["kind", "only", "op"],
+                "required": ["kind"],
+            }
+        ]
+
+    def test_a_merged_variant_is_open_when_any_branch_it_covers_is_open(self):
+        # `closed` licenses the accepted-set check. One open branch means the
+        # platform accepts keys nobody enumerated, and claiming closure would
+        # invent violations for every one of them.
+        schema = {
+            "type": "object",
+            "properties": {
+                "thing": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {"a": {}},
+                        },
+                        {"type": "object", "properties": {"b": {}}},
+                    ]
+                }
+            },
+        }
+        entry = input_accepts(tool(schema))["thing"]
+        assert entry["variants"] == [
+            {"when": {}, "closed": False, "accepts": ["a", "b"], "required": []}
+        ]
+
+
 class RealArtifact(unittest.TestCase):
     """The committed artifact carries the new fields, non-vacuously."""
 

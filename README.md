@@ -128,7 +128,7 @@ Files are the source of truth; GitHub issues are an optional mirror
 | Skill | Purpose |
 |---|---|
 | `proposer` | Creates the change folder: proposal, delta specs, tasks. Picks the track. **Entry point.** |
-| `checklist-generator` | Creates project-specific review checklists (architecture, data pipeline, UI) in `docs/specs/`. |
+| `checklist-generator` | Creates project-specific review checklists (architecture, data pipeline, UI) in `docs/checklists/`. |
 | `planner` | **[full]** Master plan, requirement coverage matrix, review scaffolds, decision log. Never touches code. |
 | `executor` | Implements the change, keeps tasks and artifacts truthful, runs quality gates. |
 | `verifier` | Advisory check: completeness · correctness · coherence. Non-blocking. |
@@ -260,17 +260,17 @@ your-project/
 │   ├── JOURNAL.md                 session handoff log
 │   └── changes/                   active + archive
 │
-├── docs/specs/                    ← review checklists (engineering standards)
+├── docs/checklists/                    ← review checklists (engineering standards)
 ├── CLAUDE.md                      ← project config
 └── [source code]
 ```
 
-### Two things named "spec" — keep them straight
+### Behavior contract vs engineering standards
 
 | Path | What it is | Written by |
 |---|---|---|
 | `openspec/specs/` | **What the system does.** Behavior contract. | `archiver`, on merge |
-| `docs/specs/` | **How we build.** Review checklists. | `checklist-generator` |
+| `docs/checklists/` | **How we build.** Review checklists. | `checklist-generator` |
 
 Both are binding. A change can satisfy every checklist and still fail to
 deliver its requirements — the auditor checks both.
@@ -316,7 +316,7 @@ work instead of ahead of it.
   behavior contract is what survives. If archiving stops happening, the layer
   rots into a pile of stale proposals and is worse than nothing.
 - **Two independent standards.** `openspec/specs/` says what the system must
-  do; `docs/specs/` says how it must be built. Neither substitutes for the other.
+  do; `docs/checklists/` says how it must be built. Neither substitutes for the other.
 - **Lanes don't cross.** The planner never touches code. The executor never
   clears its own gate. The auditor never edits the contract it audits against.
   The archiver never fixes a delta to make a merge fit.

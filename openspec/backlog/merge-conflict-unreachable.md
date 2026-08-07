@@ -2,10 +2,10 @@
 id: merge-conflict-unreachable
 title: The merge_conflict diagnostic cannot be produced by any CLI input
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-08-06
 change: ""
 capability: harness-integrity
 blocked_by: []
@@ -62,3 +62,32 @@ What would make this reachable, and worth revisiting if either lands:
 - Validation and merge parsing the main spec at different times (a concurrent
   edit between the two passes).
 - A future `--force` or `--skip-validation` flag on archive.
+
+---
+
+# Decided 2026-08-06 — keep the branch, and this is the record of deciding
+
+Reviewed with nothing new to add: the analysis above is complete and correct,
+and the situation has not moved. Validation remains a superset of the merge's
+preconditions, so the `except ValueError` in `archive_change` is still
+unreachable from the command line, and still worth keeping.
+
+**The decision is the one the item's own Notes reached: keep it.** Recorded
+explicitly so the next person to notice the branch has no natural test finds an
+answer rather than the question again — which is the whole reason this was
+filed rather than left invisible.
+
+The two things that would make it reachable are unchanged and worth re-reading
+if either lands:
+
+- validation and merge parsing the main spec at different times (a concurrent
+  edit between the two passes)
+- a future `--force` or `--skip-validation` flag on archive
+
+Neither exists. Both are the kind of change whose author should be sent here.
+
+Closing as `done` rather than leaving it open: an open item implies work
+outstanding, and there is none — the correct action was to decide, and the
+decision is *no change*. `tests/test_validation_codes.py` and
+`tests/test_archive_abort.py` keep the branch covered, both saying in comments
+why they are contrived.

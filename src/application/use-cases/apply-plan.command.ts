@@ -27,6 +27,22 @@ export interface DescribeApplyRequest {
   /** The intent currently on screen. Must still be the one that was compiled. */
   readonly currentIntent: Readonly<Record<string, unknown>>;
   readonly currentRevision?: number | undefined;
+  /**
+   * Consequences the surface that composed this plan can state and the platform
+   * cannot, appended before the token is minted.
+   *
+   * Added for the condition write, whose blast radius is not the one BattleGrid
+   * describes: `compile_strategy_plan` accounts for a plan, and a condition
+   * write is a resubmission of the strategy's *whole* condition list, so what
+   * the list becomes and which references it would leave dangling are facts only
+   * the composing surface holds. Part of the consequence rather than beside it,
+   * because the stored text is what the audit can prove was agreed to — a
+   * warning shown and not stored is one nobody can be held to.
+   *
+   * Absent for every other caller, and the composed string is byte-identical
+   * when it is absent.
+   */
+  readonly addendum?: string | undefined;
 }
 
 export interface ApplyProposal {
@@ -105,10 +121,13 @@ export class DescribeApplyQuery {
     }
 
     const count = blastRadius(plan.approvedPlan);
-    const consequence =
-      count === null
-        ? summary
-        : `${summary}\n\n${describeBlastRadius(count)}`;
+    const consequence = [
+      summary,
+      count === null ? null : describeBlastRadius(count),
+      req.addendum ?? null,
+    ]
+      .filter((part): part is string => part !== null && part.length > 0)
+      .join('\n\n');
 
     const confirmationToken = this.random.token(32);
     await this.confirmations.issue({

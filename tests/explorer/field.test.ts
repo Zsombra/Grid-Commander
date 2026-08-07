@@ -197,11 +197,53 @@ describe('the leaderboard', () => {
       timeframe: 'ALL_TIME',
     });
     if (result.kind !== 'leaderboard') throw new Error(result.kind);
-    expect(result.leaderboard.own).toEqual({ rank: 7, value: 37.51, percentile: 97 });
+    expect(result.leaderboard.own).toEqual({
+      rank: 7,
+      value: 37.51,
+      percentile: 97,
+      userId: 'me',
+    });
     // A row with no display name cannot be shown as a competitor.
     expect(result.leaderboard.entries.map((e) => e.displayName)).toEqual([
       'PrawnCocktail',
       'Joke',
+    ]);
+  });
+
+  it('carries the platform’s id on both sides of the match', async () => {
+    /**
+     * The id exists for one purpose — marking which row is this account's —
+     * and it is useless on one side alone. Asserted together for that reason:
+     * a mapper that carried it on the rows and dropped it from the standing
+     * would leave the surface unable to match, and would look correct in a
+     * test that checked either half.
+     */
+    const { adapter } = adapterOver(() => LIVE_LEADERBOARD);
+    const result = await adapter.readLeaderboard({
+      ...who,
+      metric: 'PROFIT',
+      timeframe: 'ALL_TIME',
+    });
+    if (result.kind !== 'leaderboard') throw new Error(result.kind);
+    expect(result.leaderboard.entries.map((e) => e.userId)).toEqual(['u-1', 'u-2']);
+    expect(result.leaderboard.own?.userId).toBe('me');
+  });
+
+  it('keeps a row the platform declined to identify', async () => {
+    // The id decides whether a row is *marked*, not whether it is shown.
+    // Losing a ranked player to protect a marking is the worse trade.
+    const { adapter } = adapterOver(() => ({
+      ...LIVE_LEADERBOARD,
+      leaderboard: [{ rank: 4, displayName: 'Anonymous', value: 9.5 }],
+    }));
+    const result = await adapter.readLeaderboard({
+      ...who,
+      metric: 'PROFIT',
+      timeframe: 'ALL_TIME',
+    });
+    if (result.kind !== 'leaderboard') throw new Error(result.kind);
+    expect(result.leaderboard.entries).toEqual([
+      { rank: 4, displayName: 'Anonymous', value: 9.5, userId: null },
     ]);
   });
 

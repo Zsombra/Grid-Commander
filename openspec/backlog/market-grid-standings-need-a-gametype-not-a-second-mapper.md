@@ -58,3 +58,53 @@ row. `currentUser` has been seen populated (rank 7 by profit, 97th percentile,
 `get_top_ranked_coins` — the other half of that old bullet — is likewise
 already consumed, by `McpMarketAdapter`, with `interval` + `metric` from the
 discovery. Nothing is outstanding there.
+
+---
+
+# Step 1 taken, 2026-08-06 — rows arrive, and the two game types are the same list
+
+`get_leaderboard` was called with every `gameType` × every `metric` at
+`timeframe: ALL_TIME, limit: 10`, on account 1.
+
+| gameType | PROFIT | VOLUME | SCORE |
+|---|---|---|---|
+| `ALL` | 10 rows | 10 rows | 10 rows |
+| `MARKET_GRID` | 10 rows | 10 rows | 10 rows |
+| `COIN_GRID` | **0 rows, `currentUser: null`** | 0 rows | 0 rows |
+
+**`ALL` and `MARKET_GRID` return byte-identical payloads** — same rank 1
+(`PrawnCocktail`, 371.7 by profit), same values, same `currentUser` (rank 7 by
+profit at the 97th percentile, rank 1 by both volume and score). `COIN_GRID`
+answers with nothing at all.
+
+## So the item's own premise is refuted, in both directions
+
+**"The rows have never been observed populated" is no longer true.** They are
+populated on every metric. Filed separately as
+`the-leaderboard-has-rows-and-no-surface-shows-them`, because that is a
+different and larger finding than this item: `/explorer` maps the rows onto
+`Leaderboard.entries` and renders none of them.
+
+**And the `gameType` argument buys nothing today.** The reason to add it was to
+let the arena ask "who is winning *this* game". Right now every player on the
+platform is a Market Grid player — `ALL` and `MARKET_GRID` are the same ten
+people — so a Market Grid leaderboard would be the leaderboard `/explorer`
+already reads, rendered twice.
+
+## What that changes about the recommendation
+
+The item's step 2 said: if rows arrive, widen `ExplorerPort.readLeaderboard`
+with the platform's own `gameType` enum, defaulting to today's `ALL`. That is
+still the right shape and it is still cheap — one declared enum value on a call
+the product already makes, no second mapper. But it should be built **for the
+arena, when the arena has a leaderboard panel to put it in**, not on its own:
+adding an argument whose two live values return the same bytes, with no surface
+asking the question, is a widening nobody can test the point of.
+
+The order is therefore: render the rows on `/explorer` first (the sibling item),
+and take `gameType` when the arena wants its own copy of that panel.
+
+`COIN_GRID` returning empty is worth one line in whatever ships: it is the
+platform declaring a game type that has no players yet, not a failure, and a
+surface that asked for it must say "nobody is ranked" rather than "could not be
+read".

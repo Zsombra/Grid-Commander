@@ -176,3 +176,43 @@ than making it awkward.
 
 Re-check by running the four probes above and the proposal probe. When the write
 test stops skipping, this item is done and task 6.1 can be closed.
+
+## Observed again 2026-08-06 ~22:50Z — the explorer subsystem, as a raw gateway 504
+
+Two key-gated live probes failed in the keyed CI run:
+
+```
+× a competitor answers through the product path > opens the top agent in the field
+× the field answers through the product path > reads the field and this account's place in it
+  → field BattleGrid is not answering right now (HTTP 504)
+```
+
+Both are the same underlying read and both took ~122s. Checked directly, with
+raw `fetch` rather than through the product, to rule the product out:
+
+```
+get_agent_explorer   HTTP 504   120606ms   <html>…504 Gateway Time-out…
+get_leaderboard      HTTP 504   120217ms   <html>…504 Gateway Time-out…
+```
+
+**An HTML error page from the gateway, not an MCP envelope.** The request never
+reached the MCP layer, so no argument this product could send would change the
+outcome. A flat two-minute timeout on both is a backend that is hanging rather
+than refusing.
+
+The pointed detail: **`get_leaderboard` answered normally roughly an hour
+earlier in the same session** — ten rows on every metric, which is what
+`the-players-above-you-are-shown` was built from. So this is an outage that
+began mid-session, not a standing condition, and the explorer subsystem
+(`get_agent_explorer` + `get_leaderboard`) went down together.
+
+**The product degrades correctly**, which is the one reassuring part.
+`ReadFieldQuery` reads the field and the leaderboard in a `Promise.all` and they
+fail independently; `/explorer` says the standing could not be read, names the
+cause, and renders no ranked players rather than claiming there are none. That
+is the behaviour `tests/rendering/explorer.test.ts` pins with *"claims no
+players at all when the leaderboard did not answer"*.
+
+So: nothing to fix here, and the keyed CI's `vitest` gate is red for a reason
+that is entirely BattleGrid's. Worth re-running the two probes once the
+subsystem recovers rather than treating them as a standing failure.

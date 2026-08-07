@@ -105,6 +105,54 @@ export default async function ExplorerPage({
           </p>
         )}
 
+        {/*
+          The rows the rank is a rank *among*.
+
+          They were empty when this page was written — the 2026-08-06 surface
+          probe recorded `"leaderboard": []` — and they are not now: ten arrive
+          on every metric. `ExplorerPort` has modelled them the whole time and
+          nothing read them, which is the same gap `binding.state` sat in until
+          the platform answered ORPHANED and the roster said "Bound".
+
+          Rendered only when the standing itself was readable, so an outage
+          produces one sentence about one failure rather than two about the
+          same one.
+        */}
+        {leaderboard.kind === 'leaderboard' ? (
+          leaderboard.leaderboard.entries.length === 0 ? (
+            <p className="text-sm">
+              {`BattleGrid ranks no players by profit in this window.`}
+            </p>
+          ) : (
+            <ol className="space-y-1 text-sm">
+              {leaderboard.leaderboard.entries.map((e, i) => {
+                /*
+                  Matched on the platform's id and nothing else. This account
+                  *is* in this list — measured 2026-08-06, rank 7 by profit
+                  inside a top ten — so leaving it unmarked would print one
+                  fact twice and claim two. Rank would tie; `displayName` is a
+                  string the other player picks.
+
+                  Both ids may be null, and `null === null` is true, so the
+                  presence check is what stops two unidentified rows from both
+                  reading as yours.
+                */
+                const own = leaderboard.leaderboard.own;
+                const isOwn = e.userId !== null && own !== null && e.userId === own.userId;
+                return (
+                  <li
+                    key={e.userId ?? `${e.displayName}#${i}`}
+                    className={isOwn ? 'font-medium' : undefined}
+                  >
+                    {e.rank ?? '—'}. {e.displayName} · {usd(e.value)}
+                    {isOwn ? `${' '}— this account` : ''}
+                  </li>
+                );
+              })}
+            </ol>
+          )
+        ) : null}
+
         {field.kind === 'field' ? (
           field.field.ownAgents.length === 0 ? (
             <p className="text-sm">None of this account&apos;s agents are ranked in the field.</p>

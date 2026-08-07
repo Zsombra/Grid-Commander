@@ -13,7 +13,7 @@ mechanical. Budget ten minutes for a project with a handful of plan docs.
    the folder name carries the identity.
 4. **Tracks exist.** Every change declares `lite` / `standard` / `full`.
    v2.x behavior is `full`.
-5. **`docs/specs/` is unchanged.** Your review checklists keep working exactly
+5. **`docs/checklists/` is unchanged.** Your review checklists keep working exactly
    as before, and `checklist-generator` is untouched.
 
 ## Migration

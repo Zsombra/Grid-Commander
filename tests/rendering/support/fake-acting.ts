@@ -18,9 +18,14 @@ import { ReadQualificationQuery } from '@/application/use-cases/read-qualificati
 import { ReadStoppagesQuery } from '@/application/use-cases/read-stoppages.query.js';
 import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import { CheckColumnQuery } from '@/application/use-cases/check-column.query.js';
+import { ComposeColumnQuery } from '@/application/use-cases/compose-column.query.js';
+import { ReadSectionLibraryQuery } from '@/application/use-cases/read-section-library.query.js';
 import { DescribeRetuneQuery, RetuneRuleCommand } from '@/application/use-cases/retune-rule.command.js';
 import { PreviewCompositionQuery } from '@/application/use-cases/preview-composition.query.js';
 import { TryConditionQuery } from '@/application/use-cases/try-condition.query.js';
+import { DescribeConditionWriteQuery } from '@/application/use-cases/describe-condition-write.query.js';
+import { CompilePlanCommand } from '@/application/use-cases/compile-plan.command.js';
+import { DescribeApplyQuery } from '@/application/use-cases/apply-plan.command.js';
 import { SimulateAggregateQuery } from '@/application/use-cases/simulate-aggregate.query.js';
 import { ReadMetricIndexQuery } from '@/application/use-cases/read-metric-index.query.js';
 import { ReadMetricQuery } from '@/application/use-cases/read-metric.query.js';
@@ -133,10 +138,21 @@ export function actingWith({
     readMetricIndex: new ReadMetricIndexQuery(strategies),
     readMetric: new ReadMetricQuery(strategies),
     checkColumn: new CheckColumnQuery(strategies),
+    readSectionLibrary: new ReadSectionLibraryQuery(strategies),
+    composeColumn: new ComposeColumnQuery(strategies),
     describeRetune: new DescribeRetuneQuery(strategies, confirmations, random, clock),
     retuneRule: new RetuneRuleCommand(strategies),
     previewComposition: new PreviewCompositionQuery(strategies),
     tryCondition: new TryConditionQuery(strategies),
+    // The write half of the same layer. Wired from the real classes for the
+    // reason the rest of this harness is: a page rendered here runs the
+    // application code a request runs, including the compile that decides
+    // whether there is anything to confirm.
+    describeConditionWrite: new DescribeConditionWriteQuery(
+      strategies,
+      new CompilePlanCommand(strategies),
+      new DescribeApplyQuery(confirmations, random, clock),
+    ),
     simulateAggregate: new SimulateAggregateQuery(strategies),
   };
 
