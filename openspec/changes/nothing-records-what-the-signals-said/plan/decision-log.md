@@ -273,3 +273,26 @@ validation, waivers, or handoff clarity.
   the feature — which is the argument for running it even on one's own work.
 - Approved by: executor
 - Next action: auditor.
+
+### DL-013
+
+- Timestamp: `2026-08-07 08:35 UTC`
+- Phase: `AUDIT`
+- Type: `handoff`
+- Decision: Production gate **PASS**, zero open violations. One MAJOR found
+  and fixed in-round (PG-001: a literal NUL byte in the store's grouping key
+  made the file binary to every text scan — found because the audit's
+  ripgrep pass refused to read it, which is the mechanical-scan argument in
+  one line). One MINOR tracked (PG-002: `rawAnswer` has no product consumer
+  yet; the analysis-layer item notes it). Spec parity 9/9 with all 21
+  scenarios covered; quality gates rerun green after remediation; scope
+  deviations all pre-recorded (DL-008/009). The deferred live proof stays a
+  tracked item (`the-recorder-is-unproven-against-live`), declared since the
+  proposal.
+- Impacted files: `plan/production-gate.md` (new),
+  `src/infrastructure/db/repositories/drizzle-signal-record-store.ts`
+  (PG-001 fix, commit `c1ee554`)
+- Reason: Gate rationale recorded where the tracker points.
+- Approved by: auditor
+- Next action: archiver — merge the deltas into `openspec/specs/` so the
+  spec layer describes the product again.

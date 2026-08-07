@@ -44,6 +44,11 @@ better raw material waiting.
 
 ## Notes
 
+From the production gate (PG-002, MINOR): `SignalRecordStore.rawAnswer` has
+no product consumer yet — the db suite keeps its contract exercised, and the
+first real reader belongs to this item's analysis layer (re-mapping recorded
+raw answers is how a future mapper improvement becomes retroactive).
+
 Do not start until the record holds enough captures to say anything —
 analysis over three data points upgrades no tier. Statistical honesty is the
 hard part: every figure needs its sample size beside it, the same rule the
