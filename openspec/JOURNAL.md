@@ -1,5 +1,59 @@
 # Journal
 
+## 2026-08-07 (round five) — five builds, and two items settled by reading the code
+
+**Did**: four agents finished, one stalled and its work was completed by hand.
+Five changes archived (117 → 122), six items closed, none filed. Backlog
+24 → 20 — the first round in five that shrank it, because the probes are
+answered and the findings they opened are now the work being done.
+
+| change | closes |
+|---|---|
+| `a-cancelled-session-is-promised-nothing` | `a-cancelled-session-is-told-to-wait-for-settlement` (p2) |
+| `the-session-page-reads-both-payloads` | `the-session-page-reads-the-narrower-of-two-payloads` |
+| `the-brains-name-and-the-spend-are-read` | `the-cost-of-an-agent-reads-differently-from-two-tools` |
+| `the-copy-can-be-named` | the product half of `forking-a-name-that-exists-is-a-500` |
+| `a-unification-ships-its-guard` | `a-sweep-cannot-see-files-born-in-the-same-round` |
+
+**Two items settled without building anything, by reading the code first.**
+The prose-marker item was filed P2 on the premise that an operator agrees to a
+removal and then meets the `MARKET_READ_MARKER_UNKNOWN` refusal — but
+`DescribeConditionWriteQuery` compiles as its *first* act, so the refusal lands
+on the describe, before any confirmation is minted. Re-graded P3. And the v5
+item's one buildable section (the `bars`/`ordering` controls) had already
+shipped in round four; the rest are records, and it now says so. The lesson is
+the round's title: a filed item is a claim, and the cheapest verification is
+often reading what is already there.
+
+**What the builds did**: the arena no longer promises results to the 48 of 50
+sessions that are CANCELLED and never settle (bespoke prose only for observed
+statuses; anything else gets the platform's-own-word treatment). `/arena/[id]`
+reads the list row alongside the detail, so the session's own page can finally
+say "needs 5 more players" and who hosts it. The brain renders its human name
+(`GLM-5.2`) instead of the flattened `CUSTOM`, and spend renders on `/limits` —
+read from the list, the copy that answers, with the detail's stable zero
+fenced off at the mapper so no refactor can route it to a surface. The fork
+form takes an optional name (the tool always accepted one; the product never
+sent it), and a refused fork now renders on the form in the platform's words
+instead of crashing the action.
+
+**One agent stalled** after writing a complete proposal for the process rule.
+Finished by hand: the unification-ships-its-guard rule now lives in the
+executor skill (Step 5), the UI checklist (Tailwind row 6, v1.1.0), and
+`change-lifecycle.md` §5 — whose new integrator paragraph was applied to this
+very round before it shipped: every round-introduced guard re-run against the
+merged tree, 217 architecture tests green.
+
+**The explorer outage resolved itself** in under six hours; both formerly-red
+live probes pass, so the keyed suite is fully green again with no change on
+this side. Recorded on `battlegrid-is-returning-internal-errors`.
+
+**Next**: the backlog's remaining P2s all wait on someone else — the operator
+(a browser consent, funding three agents), or BattleGrid (reporting the fork
+500, the internal errors record). The P3 tail is genuinely small. The largest
+unbuilt read surface is `trading-telemetry-is-unread`'s open-orders slice,
+which needs one discovery read on account 2 first.
+
 ## 2026-08-06 (round four) — six builds, and a write path proven live
 
 **Did**: five agents plus one build of my own, and the reserved live probes run

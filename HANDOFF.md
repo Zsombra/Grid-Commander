@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-06  
-**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 24 open backlog items. PRs #8–#70 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
+**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#71 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
 
 ---
 
@@ -20,13 +20,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **12** |
-| Changes (archived) | 117 |
-| Vitest tests | 1772 (+ key-gated live) + 62 db |
+| Changes (archived) | 122 |
+| Vitest tests | 1811 (+ key-gated live) + 62 db |
 | Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 24 |
+| Open backlog items | 20 |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#70 merged |
+| Open draft PRs | #72 (round five); #8–#71 merged |
 
 ### Read this before anything else
 

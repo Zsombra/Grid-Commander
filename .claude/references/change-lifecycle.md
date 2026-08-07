@@ -230,6 +230,14 @@ Catching a wrong turn in a one-paragraph plan is nearly free. Catching it in
 - The blocking gates are exactly two: the human review after `/propose`, and
   the auditor on `full`. Everything else informs.
 
+**When changes are built in parallel** (several agents branching from one
+commit, merged by an integrator): after the merge, re-run any guard the round
+introduced against the **merged** tree, not only against the branch that wrote
+it. A cross-cutting sweep cannot see files its sibling branches created, so a
+guard that was green on its own branch can be red the moment the round lands —
+that gap is invisible from inside any one branch, and the integrator is the
+only one standing where it shows.
+
 ---
 
 ## 6. Archiving

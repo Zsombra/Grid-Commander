@@ -2,11 +2,11 @@
 id: a-sweep-cannot-see-files-born-in-the-same-round
 title: A cross-cutting sweep silently misses files created in the same merge round
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-06
-change: ""
+change: a-unification-ships-its-guard
 capability: harness-integrity
 blocked_by: []
 tags: [process, multi-agent, sweep, guard]
@@ -76,3 +76,23 @@ without asking anything of the agents.
   was known and filed rather than missed
 - `tests/architecture/controls.test.ts` — the guard that now closes the
   buttons/labels case, with no allowlist
+
+---
+
+# Done 2026-08-07 — the habit is a rule, in three places
+
+Change `a-unification-ships-its-guard` (lite). Where the rule now lives:
+
+- **`.claude/skills/executor/SKILL.md`, Step 5** — *a change that unifies N
+  spellings into one ships, in the same diff, the check that the spelling
+  cannot recur*, with the round-three incident as the reason.
+- **`docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`**, Tailwind row 6 —
+  the same rule as a checklist entry; version 1.0.0 → 1.1.0, review-output
+  count follows (X/5 → X/6).
+- **`.claude/references/change-lifecycle.md`, end of §5** — the integrator
+  half: after merging a parallel round, re-run any guard the round introduced
+  against the **merged** tree, not only against the branch that wrote it.
+
+Built by the integrator from the round-five agent's completed proposal — the
+agent stalled after writing it, and the diff is three standing-text edits, so
+re-spawning would have cost more than finishing.
