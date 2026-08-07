@@ -9,21 +9,41 @@ import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
  * list cannot afford to ask fifty times — did it settle, and what does the
  * platform publish about it now that it has.
  *
+ * It also reads the session's own row off that list, because the two payloads
+ * overlap and neither contains the other (measured live 2026-08-06): the
+ * players still needed, the host, the price and how the money is split are
+ * list-only, and a page devoted to a session was missing the arena's headline
+ * fact about it. The reads fail independently — a page holding one and not
+ * the other renders what it has and says what it could not read.
+ *
  * Reads only, like everything in this capability. Nothing here enters a
  * session: the entry fee is real money.
  */
+
+/**
+ * A figure in the platform's own units, or the absence of one — the arena
+ * page's rule, kept here for the same reason: BattleGrid names no currency,
+ * so the number is quoted as it arrived, and one that did not arrive says so
+ * rather than reading as zero.
+ */
+const stated = (v: number | null): string => (v === null ? 'not stated' : `${v}`);
+
 export default async function GridSessionPage({ params }: { params: Promise<{ id: string }> }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
   const session = await app.openGridSession.execute({ ...user.authority, sessionId: id });
-  const { detail, entered, results } = session;
+  const { detail, summary, entered, results } = session;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <h1 className="text-xl font-medium">
-        {detail.kind === 'detail' ? detail.detail.name : `Session ${session.sessionId}`}
+        {detail.kind === 'detail'
+          ? detail.detail.name
+          : summary.kind === 'summary'
+            ? summary.summary.name
+            : `Session ${session.sessionId}`}
       </h1>
       <p className="text-sm">
         <a href="/arena" className="underline">
@@ -56,6 +76,115 @@ export default async function GridSessionPage({ params }: { params: Promise<{ id
               ? ` · ${detail.detail.playerCount} player(s)`
               : ''}
           </p>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-base font-medium">The game on offer</h2>
+        {/*
+          Everything in this section is list-only: the detail payload carries
+          none of it. The list is a read of its own and fails on its own —
+          a schedule above with nothing here, or the reverse, is the page
+          rendering what it has.
+        */}
+        {summary.kind === 'unreadable' ? (
+          <>
+            <p role="alert" className="text-sm">
+              {`What the arena lists for this session could not be read: ${summary.reason}`}
+            </p>
+            <WhyNotLoaded cause={summary.cause} subject="this session’s listing is" />
+          </>
+        ) : summary.kind === 'not-listed' ? (
+          /*
+            Its own named state, not an error: the list answered, and this
+            session was not among the rows it carries. The facts only the list
+            holds are unavailable for a reason the page can state exactly.
+          */
+          <p className="text-sm">
+            The arena’s session list answered and does not carry this session,
+            so what only the list holds — the players still needed, the host,
+            and how the money is split — cannot be shown for it. Everything the
+            other reads answered still renders on this page.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm">
+              {`Entry ${stated(summary.summary.entryFee)} · prize pool ${stated(summary.summary.prizePool)}`}
+              {summary.summary.timeRangeKey ? ` · ${summary.summary.timeRangeKey} window` : ''}
+            </p>
+            <p className="text-sm">
+              {typeof summary.summary.playersNeeded === 'number'
+                ? `Needs ${summary.summary.playersNeeded} more player(s)${
+                    typeof summary.summary.minimumPlayers === 'number'
+                      ? ` to reach its minimum of ${summary.summary.minimumPlayers}`
+                      : ''
+                  }.`
+                : 'How many more players it needs is not stated.'}
+            </p>
+            <p className="text-sm">
+              {summary.summary.hostDisplayName
+                ? `Hosted by ${summary.summary.hostDisplayName}.`
+                : 'The platform names no host for this session.'}
+            </p>
+            <h3 className="text-sm font-medium">How the money is split</h3>
+            {/*
+              The platform's own figures, quoted — never summed, checked
+              against the entry fee, or reconstructed. A derived figure on a
+              money surface is a claim BattleGrid never made.
+            */}
+            <p className="text-sm">
+              {typeof summary.summary.itmPercent === 'number'
+                ? `${summary.summary.itmPercent}% of players finish in the money${
+                    typeof summary.summary.calculatedItmCount === 'number'
+                      ? ` — ${summary.summary.calculatedItmCount} paying place(s) at the current player count`
+                      : ''
+                  }.`
+                : 'How much of the field finishes in the money is not stated.'}
+            </p>
+            <p className="text-sm">
+              {summary.summary.feeBreakdown
+                ? `Of each entry, the platform allots: winners ${stated(summary.summary.feeBreakdown.winnersAmount)} · platform ${stated(summary.summary.feeBreakdown.platformAmount)} · jackpot ${stated(summary.summary.feeBreakdown.jackpotAmount)} · war bond ${stated(summary.summary.feeBreakdown.warBondAmount)} · host ${stated(summary.summary.feeBreakdown.hostAmount)}.`
+                : 'How the entry fee is split is not stated.'}
+            </p>
+            <p className="text-sm">
+              {summary.summary.distributionCurveId
+                ? `Payout curve ${summary.summary.distributionCurveId}${
+                    typeof summary.summary.alpha === 'number'
+                      ? ` (alpha ${summary.summary.alpha})`
+                      : ''
+                  }.`
+                : 'The payout curve is not stated.'}
+            </p>
+            <h3 className="text-sm font-medium">The coins</h3>
+            <p className="text-sm">
+              {`Coin pool: ${
+                summary.summary.coinTickers.length > 0
+                  ? summary.summary.coinTickers.join(', ')
+                  : 'not previewed'
+              }`}
+            </p>
+            {/*
+              The roster fact is observed; the picks are not. `crowdUpPercent`
+              and `crowdDownPercent` have only ever been null and
+              `coinPicks.top` has never had an entry (all 50 rows, 2026-08-06),
+              so there is no crowd panel here — a declared-only shape is not
+              rendered. See
+              `market-grid-payloads-that-only-fill-once-someone-plays`.
+            */}
+            {summary.summary.hasPicks === false ? (
+              <p className="text-sm">
+                {typeof summary.summary.pickRosterSize === 'number'
+                  ? `${summary.summary.pickRosterSize} coin(s) on offer — nobody has picked yet.`
+                  : 'Nobody has picked a coin yet.'}
+              </p>
+            ) : summary.summary.hasPicks === true ? (
+              <p className="text-sm">
+                Players have picked coins. Grid-Commander does not read the
+                picks yet: a pick row has never been observed, and the surface
+                will not report figures it has not seen.
+              </p>
+            ) : null}
+          </>
         )}
       </section>
 
