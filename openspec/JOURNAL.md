@@ -1,141 +1,61 @@
 # Journal
 
-## 2026-08-06 (round four) — a research map of what can be built, and the discovery that nobody has built anything that works
+## 2026-08-07 — the research map, and the measurements that kept falsifying it
 
 **Did**: `_PM/TRADE_CATEGORIES_AND_MATHEMATICAL_FAMILIES.md` — 13 trade
-categories mapped onto a 16-operator mathematical algebra, with a benchmark
-specification. Probed live, read-only, against `battlegrid v11.0.0`. One backlog
-item filed: `the-surface-map-is-two-majors-stale` (p1).
+categories mapped onto a 16-operator mathematical algebra, a benchmark spec, and
+a measurement protocol. Probed live and read-only against `battlegrid v11.0.0`:
+84 metrics, 16 transforms, all 84 signal definitions, 715 realised trades from 20
+public agents, 2,820 joined coin-bars, and a 40-coin × 84-signal cross-section.
+Four backlog items filed: `the-surface-map-is-two-majors-stale` (p1),
+`nothing-records-what-the-signals-said` (p1),
+`a-stop-inside-the-noise-looks-like-a-tight-stop` (p1),
+`four-signals-depend-on-a-timeframe-columns-cannot-reach` (p2). PR #69, 7
+commits, merged `main` at 95bb95a.
 
-**Filed a surface finding, then had to correct its headline — worth recording
-because the correction is the more interesting version.** The item went in as
-"the recorded surface is two majors stale". Then I ran the freshness gate with
-the operator's key, and it passed: `recorded battlegrid 11.0.0 · live battlegrid
-11.0.0`. `surface.json` is current. I had read the v9 prose header in
-`BATTLEGRID_SURFACE_MAP.md` and the v9 `serverInfo` in `capabilities.json` and
-generalised from the narrative to the data, without checking the data.
+**State**: PR #69 open and mergeable, docs-only (3 files). Local `./scripts/ci.sh`
+green — Actions is `workflow_dispatch`-only here, so that is the real gate.
+Nothing was written to BattleGrid; the whole session was read-only by
+construction (tools filtered on the server's own `readOnlyHint`). Benchmark v0 is
+specified and **not built** — that was the operator's call, and the repo work it
+implies is filed rather than started.
 
-The real finding is narrower and sharper. `probe_mcp_surface.py` records payload
-**shapes**, deliberately — account data must not be committed, and that rule is
-right. But for `list_strategy_vocabulary` the payload *is* values, so the
-authoring contract is lost: `budgets` is recorded as `{"strategyConditions":
-"int"}` where the platform answers `16` — **4× tighter** than the `maxItems: 64`
-the compile schema declares. Six transforms exist in no committed file at all
-(`grep -r efficiency docs/` finds nothing). Only **6 of 13** enum timeframes are
-enabled. `rel: regime` resolves to `null` for every anchor — a column that
-renders empty rather than a call that fails, the same shape as the v9
-section-body defect.
+**Next**: `/propose` `nothing-records-what-the-signals-said` (p1). It is the
+structural unlock — there is no backtest API and the history reads cap at 100
+candles, so every strategy claim in the doc that sits at evidence tier T3/T4 is
+there only because no forward data exists. Every day without a recorder is a day
+of signal history permanently lost.
 
-And the gate cannot see any of it: it compares `serverInfo.version` and nothing
-more. A deployment that changes a budget number or retires a timeframe while
-leaving the version alone passes green. The vocabulary is the one payload that
-earns a carve-out from the shape-only rule — platform-owned, account-independent,
-small, and nobody's private data.
+**Watch out**:
 
-**The finding that matters most is not about the surface.** Across 715 pooled
-realised trades from 20 public agents, the population win rate is **29.8%**. An
-unconditional random-entry baseline on the same universe — 2,820 joined
-coin-bars, 1h anchor, 1.5% stop, 1.5R target — wins **30.6%**. The entry signals
-are adding nothing measurable. Six of 23 agents are profitable; the population
-is −$162 on 776 trades.
-
-**And the cause is geometry, not signals.** Median stop distance is **0.623%**.
-Mean single-bar adverse excursion on a 1h anchor is **0.47%**; by bar three it is
-0.85%. The stops sit inside the noise, so 74% of trades exit at STOP_LOSS with a
-15.5% win rate and a median life of 90 minutes. Every configuration bucket that
-beat the population shares one property — the trades lived longer and reached
-target more often: trailing off (4.3h life, 31% TP) against trailing on (1.5h,
-10%).
-
-Two restraints worth keeping in how that was written up. The obvious read of the
-duration data — "hold longer and you win" — is **survivorship**, and the doc says
-so: within stop-outs only, longer duration is *worse* (−5.91% ROE at 0–1h,
-−8.61% at 12h+). The defensible claim rests on the unconditional baseline
-instead, which does not depend on which agents happened to survive. And the
-headline module finding (structure zones, +0.898/trade) is **two agents, 51 of
-61 trades from one** — stated in the same paragraph as the number, not in a
-footnote, because a 45.9% win rate carried by one agent is a hypothesis.
-
-**Three things nobody is using.** `includeMtfConfluence` and
-`includePerpSpotFlow` are enabled on **0 of 23** agents, and the perp/spot module
-ships a vocabulary — `perp_led_fragile`, `spot_led_accumulation` — that names a
-real institutional distinction. No agent uses `conditions` at all, so the one
-deterministic layer on the platform is entirely untested. And no agent uses
-deployment-time conditioning, on a venue that lists ~15 equity and 5 commodity
-perps whose cash markets close.
-
-**Regimes predict range, not direction.** `bull_expansion` had the *worst* 4h
-forward payoff geometry (0.71 at 6 bars, decaying to 0.44 by 24) and
-`bear_expansion` the best. `volatile` is a one-bar transient that resolved into
-an expansion 8/8 times at 4h and 8/8 at 1d. `bull_ranging` is the one regime
-that is unprofitable at every horizon on both timeframes — 24% of bars that
-should not be traded.
-
-**Then swept the one gap the doc had named**: `get_strategy_signal_definition`,
-all 84, 84/84 answered. It carries much more than the list view — tunable params
-with bounds, timeframe dependencies, worked scoring examples, and a `watchOut`
-field where the platform states its own regime caveats.
-
-**The finding that changes advice: a signal that barely fires is worth almost
-nothing.** Scores are graded, not binary, and the gradient near the threshold is
-steep — `rsi_oversold` scores **0.10** at RSI 27 against 0.50 at RSI 15;
-`trend_adx_trending` scores 0.20 at ADX 30 against 1.00 at ADX 50. So a high
-aggregate means signals fired *deeply*, not that many fired, which is the
-mechanism behind the earlier §D.5 correlation. And tightening a signal's own
-threshold is usually a sharper instrument than raising the gate: **39 of 84
-signals are tunable with declared bounds**, and that is the real optimisation
-surface.
-
-Three things it caught that were wrong or missing in the doc I had just written.
-The four `structure_*` signals declare `HIGHER` + `PRIMARY`, so C5's anchor-only
-table would not have fed them. `mtf_pullback_long/short` depend on HIGHER and
-LOWER but **not** PRIMARY. And nine signals document scores above 1.0 — up to
-**2.0** — while `simulate_aggregate_score` declares `score ∈ [0,1]`, so offline
-tuning understates the aggregate wherever those are weighted. All three are
-corrected in place rather than appended.
-
-One thing raised and deliberately left unsettled: the four `regime_*` signals
-declare a `REGIME` dependency while `rel: regime` resolves to `null` on every
-anchor for columns. Whether the signal path resolves it by a route the column
-path does not is unverified, and the doc says so rather than guessing.
-
-**Then measured the live cross-section — 40 coins x 84 signals, 3,360
-evaluations — and it falsified my own top recommendation.** C2 called
-`mtf_pullback_long/short` "the highest recommendation in this document" and
-specified them `required: true`. They fire **0 of 40**. The components explain
-it: `htf_ma_aligned_bull` fires 20%, `ltf_rsi_oversold` 5%, and the conjunction
-is empty — a real but rare setup, not a broken signal. Marked required, that
-strategy would never have traded. Corrected to `required: false` with the
-allocation kept high, plus the §3.6 lever: loosen `ltf_rsi_oversold`'s own
-threshold toward 40 rather than touching the gate.
-
-**18 of 84 signals fired on nothing**, including four of C4's five. And
-`bollinger_squeeze` — which reads as a rare "setup forming" trigger — fires on
-**65%** of the universe, so its allocation dropped from 3 to 1. The benchmark's
-scorecard now carries a measured firing rate as a comment beside every weight,
-and `volume_surge` was dropped from it outright.
-
-**The rule that came out of this**: measure firing rates *before* assigning
-allocations, and never mark a signal `required` whose rate you have not
-measured. It is now step 3 of the E.2 protocol.
-
-**C8 held up where the others wobbled.** Its two signals fire selectively —
-`flow_perp_spot_bull_divergence` on 15% at a median score of 0.82 — which is the
-profile you want from a primary. The constraint is coverage: the module is
-crypto-only, 18 of 40 symbols, so scope it to `CRYPTO`. And `PERP_SPOT_CONFIRMS`
-read **false on all 18**, so a condition requiring it would never fire.
-
-Two other label findings worth keeping. `OI_PX_REGIME` populates for the *whole*
-universe — equities and commodities too — and is the best-distributed classifier
-on the platform (new shorts 40% / short covering 22% / new longs 22% / long
-liquidation 15%), which makes C9 a strong veto input even though its module
-scored worst empirically. And `hasConflictingSignals` was **true for all 40
-coins** — zero information as a filter.
-
-**Next**: the cheapest real test is the stop-geometry fix alone, holding signals
-constant — two fields. C8 is now the best-evidenced unexploited category and is
-ready to build; scope it to CRYPTO and gate on the `PERP_SPOT_FLOW` labels, not
-on `PERP_SPOT_CONFIRMS`.
+- **Three claims in the doc were falsified by later measurement in the same
+  session.** The "two majors stale" surface finding was wrong (the freshness gate
+  proves `surface.json` is current; the real gap is that the probe records
+  *shapes*, so the vocabulary's values are unrecorded). C2's
+  `mtf_pullback_long/short` were specified `required: true` and fire **0/40** —
+  that strategy would never have traded. C5's `structure_*` signals need a
+  `HIGHER` table its spec omitted. All corrected in place, with the original
+  claim and its disproof both visible. Expect more of this: the doc's Part D is
+  the only empirical section and it is thin.
+- **Nothing in Part D is statistically established.** 23 agents, 776 trades, ~2
+  weeks, one market regime (a downtrend). The headline module finding — structure
+  zones, +0.898/trade — is **two agents, 51 of 61 trades from one**. The best
+  agent in the whole population has 51 trades; you need 150–200 to see a 5pp
+  difference.
+- **`maxDailyLossUsd: 0` and `maxCumulativeDrawdownUsd: 0` mean OFF, not zero.**
+  The account's own live agent THE .0 carries both, plus a 1% stop ceiling
+  against a 1.25% six-bar noise floor, WALTHER, 34 daily trades, and a $250
+  exposure ceiling on a $49 balance. Diagnosed read-only and **left untouched** —
+  the operator asked for the breakdown first. `a-stop-inside-the-noise-looks-like-a-tight-stop`
+  covers making it visible; retuning it is a separate, unfiled decision.
+- **Signal scores are graded, not binary**, and steeply so — `rsi_oversold`
+  scores 0.10 at RSI 27 against 0.50 at RSI 15. A high aggregate means signals
+  fired *deeply*, not that many fired. Nine signals also document scores above
+  1.0 while `simulate_aggregate_score` declares `[0,1]`, so offline tuning
+  understates the aggregate wherever those are weighted.
+- **The two research scripts live in the session scratchpad, not the repo.**
+  They are gone when this container is reclaimed. `tools/probe_mcp_surface.py`
+  provides the transport; the analysis was ad hoc and would need rewriting.
 
 ## 2026-08-06 (round three) — six builds, and a destructive risk that turned out not to be
 
