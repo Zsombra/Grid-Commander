@@ -1,5 +1,38 @@
 # Journal
 
+## 2026-08-08 — top to bottom of what was waiting
+
+**Did**: the operator approved and PR #76 merged (`c908677` — the proposals
+FK fix is on main). Then the two findings the keyed sweep left open were
+settled and archived the same hour:
+
+- **`the-cost-is-only-fresh`** (125th change): the cost-null mystery is
+  solved by a raw discrimination read — BattleGrid serves `ownerView` (the
+  billing join) **only for fresh evaluations**: populated at ~30 minutes of
+  age, null on every sibling older than ~2 hours, same agent, same minute.
+  Not drift, not a product bug; the spec already promises cost only "where
+  the platform reports" it. The probe now asserts the shape when reported
+  and the honest degradation when not — rerun keyed, green.
+  `an-owned-evaluations-cost-reads-null` closed.
+- **`the-live-suite-paces-itself`** (126th): `vitest.live.config.ts`
+  (serial, tests/live only) + `npm run test:live`; the pacing rule moved
+  from HANDOFF prose into the command. `live-probes-run-concurrently-by-
+  default` closed.
+
+**State**: 13 capabilities, 126 archived changes, 22 open backlog items,
+0 active changes. 1,878 vitest + 81 db + 235 harness green.
+
+**Next**: everything actionable-from-here is done. The waiting list is now
+purely: the operator's cron + key rotation; browser-consent and funding
+items; BattleGrid-side reports; the buildable-but-unhurried tail
+(open-orders telemetry slice first, one discovery read away).
+
+**Watch out**: `list_intelligence_agents` returned **1** ACTIVE agent
+during the discrimination read (THE .0) — the roster's other agents are
+presumably OFF/ARCHIVED and unlisted by default. Not investigated; noted so
+a future "where did the agents go" starts here.
+
+
 ## 2026-08-07 (keyed round) — the proposals FK bug: confirmed, fixed, archived; the read sweep ran
 
 **Did**: PR #75 merged (`b311133`). Then the key settled the standing
