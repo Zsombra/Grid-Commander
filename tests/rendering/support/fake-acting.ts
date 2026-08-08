@@ -14,6 +14,7 @@ import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.que
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
+import { ReadTradeStoryQuery } from '@/application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
@@ -121,6 +122,7 @@ export function actingWith({
     // whose submission is certain to fail is worse than none.
     readCatalog: new ReadCatalogQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
+    readTradeStory: new ReadTradeStoryQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),

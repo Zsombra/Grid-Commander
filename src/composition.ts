@@ -58,6 +58,7 @@ import { DescribeEditQuery } from './application/use-cases/describe-edit.query.j
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
+import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
 import { ReadRecordCoverageQuery } from './application/use-cases/read-record-coverage.query.js';
@@ -276,6 +277,7 @@ export function app(cookies: CookieStore) {
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
+    readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar),

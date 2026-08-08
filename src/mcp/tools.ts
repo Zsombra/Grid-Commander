@@ -196,6 +196,24 @@ export const TOOLS: readonly ToolDefinition[] = [
       app.readTradingRecord.execute({ ...who, agentId: str(a['agentId']), limit: optionalNum(a['limit']) }),
   },
   {
+    name: 'read_trade_story',
+    description:
+      'How one completed trade unfolded: the frozen candle series with the stop and target ' +
+      'as placed and the entry and exit marked, then the order-lifecycle trail — placements, ' +
+      'fills, and every reprice with both prices and whether the platform judged the move an ' +
+      'improvement. Says when an evaluation never became a trade, when no such evaluation ' +
+      'exists on the agent, and when the story or its trail could not be read — each ' +
+      'distinctly. Trail prices are decimal strings as the platform sends them.',
+    useCase: 'readTradeStory',
+    input: {
+      ...AGENT_ID,
+      logId: { type: 'string', description: 'The evaluation id, from read_trading_record or read_decision_pipeline.' },
+    },
+    required: ['agentId', 'logId'],
+    call: (app, who, a) =>
+      app.readTradeStory.execute({ ...who, agentId: str(a['agentId']), logId: str(a['logId']) }),
+  },
+  {
     name: 'read_decision_pipeline',
     description:
       'Why an agent did or did not trade: how much it evaluated against how much it acted on, ' +

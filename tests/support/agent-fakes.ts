@@ -18,6 +18,10 @@ import type {
   QualificationResult,
   TradeOutcome,
   TradeOutcomesResult,
+  TradeChartResult,
+  PositionAuditResult,
+  TradeChart,
+  AuditEvent,
 } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
@@ -287,6 +291,21 @@ export class FakeAgentsPort implements AgentsPort {
     // would let every choice test pass without a choice being made.
     this.screened.push([...params.coinTickers]);
     return this.qualification;
+  }
+
+  /** The trade story's two halves, each settable on its own. */
+  tradeChart: TradeChartResult = { kind: 'not-found' };
+  positionAudit: PositionAuditResult = { kind: 'none' };
+  /** Every positionId the audit read was asked for — the join is the point. */
+  readonly auditedPositions: string[] = [];
+
+  async readTradeChart(): Promise<TradeChartResult> {
+    return this.tradeChart;
+  }
+
+  async readPositionAudit(params: { positionId: string }): Promise<PositionAuditResult> {
+    this.auditedPositions.push(params.positionId);
+    return this.positionAudit;
   }
 
   private expect(agentId: string, revision: number): Agent {
@@ -590,6 +609,69 @@ export function anEntryDecision(overrides: Partial<EntryDecision> = {}): EntryDe
 }
 
 /** Shaped from the live `list_trade_outcomes` row of 2026-08-02. */
+/** Shaped from the live READY chart of 2026-08-08 — the probed WIF winner. */
+export function aTradeChart(overrides: Partial<TradeChart> = {}): TradeChart {
+  return {
+    signalLogId: 'dbd15ad8-0000-0000-0000-000000000000',
+    positionId: 'p-wif-1',
+    coinTicker: 'WIF',
+    timeframe: '5m',
+    source: 'dwellir-hyperliquid-index',
+    windowStart: '2026-08-07T22:45:00.000Z',
+    windowEnd: '2026-08-08T05:35:00.000Z',
+    candles: [
+      {
+        openTime: '2026-08-07T22:45:00.000Z',
+        timeSeconds: 1786142700,
+        open: 0.1371,
+        high: 0.13714,
+        low: 0.1371,
+        close: 0.13711,
+        volume: 991,
+      },
+      {
+        openTime: '2026-08-07T22:50:00.000Z',
+        timeSeconds: 1786143000,
+        open: 0.13711,
+        high: 0.13792,
+        low: 0.13701,
+        close: 0.13788,
+        volume: 1240,
+      },
+    ],
+    levels: [
+      { role: 'STOP_LOSS', label: 'Stop Loss', price: 0.1368296 },
+      { role: 'TAKE_PROFIT', label: 'Take Profit', price: 0.1409912 },
+    ],
+    markers: [
+      { role: 'ENTRY', timeSeconds: 1786144500, price: 0.13783108 },
+      { role: 'EXIT', timeSeconds: 1786165500, price: 0.14099 },
+    ],
+    snapshotCapturedAt: '2026-08-08T05:41:24.459Z',
+    ...overrides,
+  };
+}
+
+/** Shaped from the live audit trail of 2026-08-08 — a break-even reprice. */
+export function anAuditEvent(overrides: Partial<AuditEvent> = {}): AuditEvent {
+  return {
+    kind: 'SL_REPLACED',
+    leg: 'SL',
+    orderId: '70c38afa-7bce-440c-abd6-009db2412fa6',
+    at: '2026-08-08T04:11:43.331Z',
+    heldMs: 17674218,
+    vsEntryPct: 0.14,
+    price: null,
+    fromPrice: '0.13682960',
+    toPrice: '0.13802000',
+    triggerDeltaPct: 0.87,
+    improved: true,
+    repriceSource: 'BREAK_EVEN',
+    replacementOrderId: '371fa73d-9759-4fc2-be57-49b0565a09fe',
+    ...overrides,
+  };
+}
+
 export function aTradeOutcome(overrides: Partial<TradeOutcome> = {}): TradeOutcome {
   return {
     id: 't1',

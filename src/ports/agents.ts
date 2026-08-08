@@ -211,7 +211,136 @@ export interface AgentsPort {
     agentId: string;
     coinTickers: readonly string[];
   }): Promise<QualificationResult>;
+
+  /**
+   * The platform's frozen chart of one trade: the candle series, the
+   * protection levels it placed on it, and the entry/exit markers.
+   *
+   * Discriminated the way the platform discriminates it — a chart, an
+   * evaluation that never became a filled trade, an evaluation that does
+   * not exist on this agent — and none of those three is a read failure.
+   */
+  readTradeChart(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<TradeChartResult>;
+
+  /**
+   * The order-lifecycle audit trail for one position, in the platform's
+   * order. The only read that shows position management *acting* — every
+   * reprice with both prices and the platform's own judgement of whether
+   * the move improved protection.
+   */
+  readPositionAudit(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    positionId: string;
+  }): Promise<PositionAuditResult>;
 }
+
+/** One frozen candle, exactly as the platform froze it. */
+export interface Candle {
+  readonly openTime: string | null;
+  readonly timeSeconds: number | null;
+  readonly open: number | null;
+  readonly high: number | null;
+  readonly low: number | null;
+  readonly close: number | null;
+  readonly volume: number | null;
+}
+
+/**
+ * A horizontal line the platform drew: where protection was placed.
+ *
+ * `role` and `label` are both the platform's. The label is its display
+ * text and is preferred where present; a role this product does not
+ * recognise is still drawn and named, per the port's standing rule for
+ * vocabulary it did not coin.
+ */
+export interface ChartLevel {
+  readonly role: string;
+  readonly label: string | null;
+  readonly price: number | null;
+}
+
+/** A point the platform placed: where the trade entered or left. */
+export interface ChartMarker {
+  readonly role: string;
+  readonly timeSeconds: number | null;
+  readonly price: number | null;
+}
+
+/**
+ * The frozen chart of one trade.
+ *
+ * The levels here are the levels **as placed** — the audit trail carries
+ * how they moved afterwards, and the two must be labelled apart wherever
+ * both appear (live 2026-08-08: the probed winner's chart stop was the
+ * `SL_PLACED` price, five moves behind the stop that ended the trade).
+ */
+export interface TradeChart {
+  readonly signalLogId: string | null;
+  readonly positionId: string | null;
+  readonly coinTicker: string | null;
+  readonly timeframe: string | null;
+  readonly source: string | null;
+  readonly windowStart: string | null;
+  readonly windowEnd: string | null;
+  readonly candles: readonly Candle[];
+  readonly levels: readonly ChartLevel[];
+  readonly markers: readonly ChartMarker[];
+  readonly snapshotCapturedAt: string | null;
+}
+
+export type TradeChartResult =
+  | { readonly kind: 'chart'; readonly chart: TradeChart }
+  /** The evaluation ran and never became a filled trade. Not an error. */
+  | { readonly kind: 'no-trade' }
+  /** No evaluation with that id belongs to that agent. */
+  | { readonly kind: 'not-found' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * One order-lifecycle event, discriminated on `kind` — which stays a
+ * string because the vocabulary is the platform's (`ENTRY_FILLED`,
+ * `SL_REPLACED`, …) and an event kind this product does not recognise is
+ * still shown in sequence.
+ *
+ * Prices are **decimal strings**, because that is how this surface sends
+ * them — `"0.13682960"` — and reformatting a price the platform chose to
+ * express exactly is a derivation nothing here needs. The chart's prices
+ * are numbers for the same reason: carried as sent.
+ *
+ * A placement/fill/cancel carries `price`; a reprice carries `fromPrice`,
+ * `toPrice`, the platform's `triggerDeltaPct`, its `repriceSource`, and
+ * its own `improved` judgement. `vsEntryPct` is null on the entry event
+ * itself — the baseline — and `heldMs` is null where the platform sent
+ * none.
+ */
+export interface AuditEvent {
+  readonly kind: string;
+  readonly leg: string | null;
+  readonly orderId: string | null;
+  readonly at: string | null;
+  readonly heldMs: number | null;
+  readonly vsEntryPct: number | null;
+  readonly price: string | null;
+  readonly fromPrice: string | null;
+  readonly toPrice: string | null;
+  readonly triggerDeltaPct: number | null;
+  readonly improved: boolean | null;
+  readonly repriceSource: string | null;
+  readonly replacementOrderId: string | null;
+}
+
+export type PositionAuditResult =
+  | { readonly kind: 'events'; readonly events: readonly AuditEvent[] }
+  /** The position exists and the platform has no events for it. */
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export type EvaluationResult =
   | { readonly kind: 'evaluation'; readonly evaluation: EvaluationScorecard }
