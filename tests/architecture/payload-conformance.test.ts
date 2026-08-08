@@ -220,7 +220,7 @@ function createPayload(brain: Brain): Record<string, unknown> {
   };
 }
 
-/** A 23-field read: the 20 writable fields plus the three that are not. */
+/** A 23-field read: the 18 writable fields plus the five that are not. */
 function readBackConfig(): Record<string, unknown> {
   const built = buildTradingConfig(defaultCatalog(), {
     tradingMode: 'OFF',
@@ -238,6 +238,9 @@ function readBackConfig(): Record<string, unknown> {
     strategyTimeframe: '4h',
     regimeAutoDerive: true,
     regimeTimeframe: '1d',
+    // Read-only since v14 dropped them from the write while the read kept them.
+    atrTimeframe: '4h',
+    atrMatchesStrategyTimeframe: true,
   };
 }
 
@@ -348,7 +351,10 @@ describe('the record carries the two dimensions this file checks', () => {
     const accepts = toolOrThrow('update_intelligence_agent').input_accepts ?? {};
     expect(accepts['']?.closed).toBe(true);
     expect(accepts['tradingConfig']?.closed).toBe(true);
-    expect(accepts['tradingConfig']?.accepts).toHaveLength(20);
+    // 20 until v14 dropped the two ATR fields. Pinned to the current record on
+    // purpose: this is the anti-vacuity check, and a silent resize is exactly
+    // what it exists to notice.
+    expect(accepts['tradingConfig']?.accepts).toHaveLength(18);
   });
 
   it('required paths below the top level', () => {
@@ -412,7 +418,8 @@ describe('every payload the product constructs can succeed', () => {
   it('update_intelligence_agent — an edit assembled from a 23-field read', () => {
     const edited = applyEdit({ fields: readBackConfig() }, { maxDailyLossUsd: 25 });
     expect(edited.missing).toEqual([]);
-    expect(edited.dropped).toHaveLength(3);
+    // Three read-only fields until v14; five since the two ATR fields joined.
+    expect(edited.dropped).toHaveLength(5);
     const payload = {
       agentId: 'a1',
       expectedRevision: 3,
@@ -544,12 +551,15 @@ describe('every payload the product constructs can succeed', () => {
 });
 
 describe('the check that guards the check', () => {
-  it('the raw 23-field read, passed straight through, fails for exactly the three', () => {
+  it('the raw 23-field read, passed straight through, fails for exactly the five', () => {
     /**
      * This is the historical defect, replayed. If this ever passes, the
      * accepted-set half of the sweep has gone blind — see `applyEdit`, whose
      * projection exists because this exact payload was rejected outright by
      * the platform, every time, for the life of the product.
+     *
+     * Three read-only fields until v14; five since it dropped the two ATR
+     * fields from the write while the read kept carrying them.
      */
     const payload = {
       agentId: 'a1',
@@ -557,8 +567,14 @@ describe('the check that guards the check', () => {
       tradingConfig: readBackConfig(),
     };
     const found = violations(toolOrThrow('update_intelligence_agent'), payload);
-    expect(found).toHaveLength(3);
-    for (const field of ['strategyTimeframe', 'regimeAutoDerive', 'regimeTimeframe']) {
+    expect(found).toHaveLength(5);
+    for (const field of [
+      'strategyTimeframe',
+      'regimeAutoDerive',
+      'regimeTimeframe',
+      'atrTimeframe',
+      'atrMatchesStrategyTimeframe',
+    ]) {
       expect(found.join('\n')).toContain(`tradingConfig.${field}`);
     }
   });

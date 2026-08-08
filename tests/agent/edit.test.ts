@@ -184,11 +184,13 @@ describe('what a read carries is not what a write may send', () => {
   });
 
   it('starts from a fixture that could actually exist', () => {
-    // A four-field config is unconstructible: create requires all twenty. The
-    // old fixture proved a read-modify-write preserved untouched fields — true,
-    // and useless, because it omitted the three keys that made every edit fail.
+    // A four-field config is unconstructible: create requires the whole set.
+    // The old fixture proved a read-modify-write preserved untouched fields —
+    // true, and useless, because it omitted the keys that made every edit fail.
     const fields = liveTradingConfig().fields;
-    expect(Object.keys(fields)).toHaveLength(TRADING_CONFIG_FIELDS.length + 3);
+    expect(Object.keys(fields)).toHaveLength(
+      TRADING_CONFIG_FIELDS.length + READ_ONLY_CONFIG_FIELDS.length,
+    );
     for (const field of READ_ONLY_CONFIG_FIELDS) expect(fields).toHaveProperty(field);
   });
 

@@ -66,9 +66,10 @@ export interface Catalog {
 /**
  * Every field `create_intelligence_agent` requires inside `tradingConfig`.
  *
- * All twenty, because the object is all-or-nothing: BattleGrid rejects a
- * partial one, and sending a subset would reset the fields it omits
- * (findings-agents F-6). There is no "just set the loss cap" call.
+ * All eighteen (twenty until BattleGrid v14.0.0 dropped the two ATR fields),
+ * because the object is all-or-nothing: BattleGrid rejects a partial one, and
+ * sending a subset would reset the fields it omits (findings-agents F-6).
+ * There is no "just set the loss cap" call.
  */
 /**
  * The caps BattleGrid reads as *no cap* when they are zero.
@@ -132,8 +133,11 @@ export const TRADING_CONFIG_FIELDS = [
   'gridMinConfidence',
   'positionSizePresets',
   'positionManagement',
-  'atrMatchesStrategyTimeframe',
-  'atrTimeframe',
+  // `atrMatchesStrategyTimeframe` and `atrTimeframe` left this list when
+  // BattleGrid v14.0.0 dropped them from create and update alike — the ATR
+  // sample now follows the bound strategy's timeframe with no per-agent say.
+  // Sending either rejects the whole payload (`additionalProperties: false`),
+  // which is how their presence here broke every create the day v14 shipped.
 ] as const;
 
 /**

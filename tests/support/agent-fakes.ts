@@ -387,23 +387,29 @@ export function liveTradingConfig(
       gridMinConfidence: 0.7,
       positionSizePresets: { sizingStrategy: 'MANUAL', smallPct: 1, mediumPct: 2.5, largePct: 5 },
       positionManagement: { positionManagementPreset: 'CUSTOM', enabled: false },
-      atrMatchesStrategyTimeframe: true,
-      atrTimeframe: '1h',
       ...overrides,
       // Read-only, and last on purpose: a test must not be able to override
       // them away, because the live server always sends them.
       strategyTimeframe: '1h',
       regimeAutoDerive: true,
       regimeTimeframe: '4h',
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
     },
   };
 }
 
-/** The three the read carries and the write rejects. */
+/**
+ * The five the read carries and the write rejects — three since the beginning,
+ * plus the two ATR fields BattleGrid v14.0.0 dropped from the write while the
+ * read kept sending them.
+ */
 export const READ_ONLY_CONFIG_FIELDS = [
   'strategyTimeframe',
   'regimeAutoDerive',
   'regimeTimeframe',
+  'atrMatchesStrategyTimeframe',
+  'atrTimeframe',
 ] as const;
 
 export function defaultCatalog(): Catalog {

@@ -1,5 +1,103 @@
 # Journal
 
+## 2026-08-08 (fourth round) — two agents born from the mathematical families, and v14 breaks the create path
+
+**Did**: the operator asked for new strategies and agents built from the
+platform's mathematical families, with the risk-reward failures of the
+incumbent (`THE .0`) diagnosed and designed out — and for the v14 re-probe
+first, since a live `initialize` answered **v14.0.0** against the morning's
+v13 record.
+
+**The re-probe** (`the-surface-record-is-v14`, 129th change, lite): 70
+reads called, 0 failed. **The tool count moved for the first time ever,
+110 → 114** — four reads added (`get_agents_hub`,
+`get_agent_conviction_calibration`, `get_radar_activity`,
+`list_deployment_policies`) — and the agent writes changed underneath the
+product: `tradingConfig` dropped `atrTimeframe` +
+`atrMatchesStrategyTimeframe` (20 → 18), and a CUSTOM brain now
+**requires** `behavior: {risk, outlook, conviction}`. The app's own create
+path was refused wholesale when this session ran it first — filed
+`agent-create-composes-fields-v14-refuses` (p1), the tenth member of the
+composed-write-the-platform-refuses class, **and closed it the same
+session** (`the-agent-write-follows-v14`, 130th change): the two names
+left `TRADING_CONFIG_FIELDS`, `READ_ONLY_CONFIG_FIELDS` grew to five, and
+the six red payload-conformance/wire-values guards — red because the v14
+record made them state the break, which is their whole job — are green
+again. The brain half needed no product change: the app has sent the
+behavior triple since findings-agents F-5; v14 merely made required what
+was already sent (the behavior-missing refusals were this session's raw
+script omitting it). Also refreshed
+`battlegrid-mcp-capabilities.json`, which had sat at **v9** while record
+and reference moved — the divergence the v13 round warned about, one
+artifact over.
+
+**The diagnosis that drove the design** (probed live before building):
+`THE .0` is **gross-profitable and fee-eaten** — 31 closed trades, gross
++$0.36, fees $0.57, net −$0.21, avg notional **$15** at flat 5×. Its
+28-of-67 exchange failures trace to VOLATILITY_AUTO sizing under the $10
+min notional (`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` fired again the same
+morning); both loss caps read "no limit set"; conviction floor 0.35 and
+RR floor 1.0 let 49%-conviction churn through; WALTHER's hair-trigger
+management closed 26 of 31 by stop. The realized win/loss asymmetry
+(1.85:1) says the edge is real; the chassis burned it.
+
+**Two strategies, born whole by compile→apply CREATE plans** — the plan
+grammar carries name, timeframe, gate, `minAtrPct`, coin scope, sections,
+conditions *and rules*, so no fork-and-retune loop:
+
+- **Trafalgar** (`3a354541…`, r1) — time-series momentum: MTF pullbacks
+  (tier 3) in MTF/HTF-aligned trends (tier 2), `trend_adx_trending`
+  **required**, gate 0.62, minAtrPct 0.35, `TRENDING_TAPE` condition
+  (`ADX_now ≥ 22` — headers resolved via `get_strategy_column_contract`),
+  coins BTC/ETH/SOL/BNB, 8 sections.
+- **Cannae** (`f901a336…`, r1) — carry/positioning fade: funding extremes
+  (tier 3) confirmed by OI divergence + perp/spot flow (tier 2) at
+  structure (tier 1), gate 0.62, minAtrPct 0.5, `FUNDING_STRETCHED`
+  condition (ANY of `rate ≥ 0.0004`, `rate ≤ −0.0004`), meme/perp coins.
+
+Compile taught three times: conditions require a `verdict`
+(`UP|DOWN|NEITHER`); `ACTIVE_SIGNAL_DATA_NOT_IN_REPORT` named the sections
+my weighted signals needed (CVD/volume for Trafalgar, structure zones for
+Cannae); and the platform seeds section-fed signals at tier 1 around the
+explicit hierarchy — 34/20 active rules where 15/12 were sent, core intact.
+
+**Two agents, v14-composed, created OFF → deployed → flipped on**:
+**Vanguard** (`c8f20b9e…`, Trafalgar, BTC/ETH/SOL @1h) and **Undertow**
+(`d0f6829f…`, Cannae, HYPE/WIF/TRUMP @1h), both GLM-5.2 with the
+now-required behavior triple (MODERATE/REALIST/MEASURED and
+CONSERVATIVE/REALIST/MEASURED). The shared chassis, each line answering an
+observed failure: MANUAL sizing 8/11/15% (≈$16–30 notional on $49 — clears
+the $10 min the auto-sizer kept missing), leverage 4, **maxDailyLossUsd
+1.5 and maxCumulativeDrawdownUsd 6 set** (the incumbents have none),
+RR ≥ 2, conviction ≥ 0.6, 4/3 trades/day (vs 34), slippage 200bps,
+signal timeout 5m, trailing ATR ×2 with break-even at 45/40% and
+time-decay only on the fade agent. Radar: six of `THE .0`'s sixteen coins
+re-pointed (its config untouched — the operator asked for new agents, not
+an improved incumbent). Agent slots now 3/3.
+
+**The qualification screen graded the build immediately.**
+`MIN_STOP_LOSS_PCT: requested 1.5, reachable 0.62` on BTC — my stop floor
+was unreachable on a 0.21%-ATR tape, fixed to 0.5 (Vanguard r3) and levels
+derive on ETH/SOL. And the discipline is visible on day one: Vanguard
+fails BTC/ETH/SOL on `AGGREGATE_BELOW_MIN` + the ATR floor (correct — 4h
+regime reads `bull_ranging`, a trend agent should sit out), Undertow sits
+out HYPE (50/62) and WIF (60/62) and **qualifies TRUMP long at 64/62**.
+Selectivity is the design; the incumbents' failure was trading anyway.
+
+**State**: 13 capabilities, 130 archived changes, 24 open backlog items,
+0 active. Full suite green on the v14 record (1902 vitest + 235 harness +
+typecheck + lint; the one pre-existing typecheck error on main —
+`trade-story-probe` reading `.reason` off an unnarrowed union — fixed in
+passing).
+
+**Watch out**: the radar policy grammar (v14 confirmed) supports
+regime-conditioned slots per coin — a trend agent could be slot-gated to
+expansion regimes and stop paying for evaluations in ranges. Unconsumed;
+a natural refinement once the two agents have a record.
+`get_agent_conviction_calibration` (new at v14) is the tool that will
+grade the 0.6 conviction floor against outcomes. And the recorder cron is
+still the operator's to start — every uncaptured day stays unbackfillable.
+
 ## 2026-08-08 (third round) — the record catches v13, and the stale reference confesses v11
 
 **Did**: the freshness alarm from the sweep was acted on the same hour.
