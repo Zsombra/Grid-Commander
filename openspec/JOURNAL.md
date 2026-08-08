@@ -30,8 +30,16 @@ All writes raw-MCP against the v14 schemas, every one logged and read back.
 - **Radar re-pointed** (9 upserts, all deployed): Breakwater takes BNB,
   ENA, LDO, SP500, BRENTOIL @1h; Undertow grows to seven coins
   (+FARTCOIN, MOODENG, MELANIA, AIXBT @1h). Vanguard keeps BTC/ETH/SOL.
-  `xyz_skhx` left dormant on the archived agent deliberately — unknown
-  asset, the old fill-failure magnet.
+  `xyz_skhx` (a Hyperliquid TradFi synthetic, `xyz:SKHX`) joined
+  Breakwater after the coin catalog identified it — radar now reads 16
+  scanning / 0 idle / 3 agents active. The four free slots (cap 20)
+  stay empty: the first-deployment constraint was retested at v14 and
+  holds, with two refusal shapes (`CONFLICT actualRevision: null` on a
+  policy-less coin; `expectedRevision` 0 schema-rejected as
+  `exclusiveMinimum`). Filling them is a battlegrid.trade act. Also
+  established: a plan's `coinSelection` is compile-time context, not
+  strategy state — an UPDATE carrying only it is refused as having no
+  updatable field.
 - **Qualification, minutes after launch**: Breakwater qualifies **BNB
   long/short at 84 vs 62** (ranging + band extreme — its exact setup);
   Undertow's new coins came in hot — FARTCOIN 72, MOODENG 65, MELANIA 85
