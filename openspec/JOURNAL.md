@@ -37,12 +37,18 @@ unused list (it landed after the map's last regeneration). Corrected with
 a note: 56 consumed, not 53+2.
 
 **State**: 13 capabilities, 127 archived changes, 23 open backlog items,
-0 active. 1,902 vitest + 81 db + 235 harness green; full serial keyed
-sweep rerun this session.
+0 active. 1,902 vitest + 81 db + 235 harness green. Full serial keyed
+sweep: **26 passed / 2 failed / 17 write-gated skips** — both failures are
+`surface-freshness` firing as designed: **BattleGrid redeployed, recorded
+11.0.0 → live 13.0.0**. Every product path answered green against v13,
+including the new trade-story probe. The re-probe is the next action.
 
-**Next**: `trading-telemetry-is-unread` still holds open orders (probe
-while a position is open) and the market-context reads. Operator-side:
-the recorder cron and key rotation are still theirs to do.
+**Next**: re-probe the surface against v13.0.0 (`BATTLEGRID_API_KEY=…
+python3 tools/probe_mcp_surface.py`) and diff what moved — nine
+conformance guards read that record. Then: `trading-telemetry-is-unread`
+still holds open orders (probe while a position is open) and the
+market-context reads. Operator-side: the recorder cron and key rotation
+are still theirs to do.
 
 **Watch out**: an open position's log has never been charted — the READY
 branch for a not-yet-settled trade is unobserved. The discrimination
