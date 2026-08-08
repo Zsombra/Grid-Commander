@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-05
+updated: 2026-08-08
 change: ""
 capability: agent-understanding
 blocked_by: []
@@ -13,6 +13,40 @@ tags: [battlegrid, reporting, expected-value]
 ---
 
 # The open side of an agent’s money is invisible
+
+## Discovery read 2026-08-08: two slices observed, one still unobservable
+
+Raw keyed reads against the second account (31 settled outcomes on `THE .0`):
+
+- **`get_open_orders` → `{orders: []}`** — empty again, with no position open
+  at probe time. The order-row shape has still never been seen; the
+  open-orders and `get_order_status` slice stays unmodelled. To observe it,
+  probe while a position is open (its resting SL/TP legs should appear).
+- **`get_trade_chart` → READY on 6/6 settled logs.** Shape observed whole:
+  `result.status`, `result.chart{signalLogId, positionId, coinTicker,
+  timeframe, source, windowStart/End (ISO + epoch-seconds), candles[]
+  {openTime, timeSeconds, open, high, low, close, volume}, levels[]
+  {role, label, price}, markers[] {role, timeSeconds, price},
+  snapshotCapturedAt}`. 83 candles on the probed trade.
+- **`get_position_audit_history` → 10 events on the probed position.**
+  `positionId` is carried by the trade chart (outcome rows do NOT carry it —
+  26 keys checked). Event base: `{leg, orderId, createdAt, heldMs|null,
+  vsEntryPct|null, kind, price-as-decimal-string}`; reprices swap `price`
+  for `{fromPrice, toPrice, triggerDeltaPct, improved, repriceSource
+  BREAK_EVEN|TRAILING, replacementOrderId}`. Kinds seen: TP_PLACED,
+  SL_PLACED, ENTRY_FILLED, SL_REPLACED ×5, SL_CANCELLED, TP_FILLED.
+- Outcome rows: full 26-key shape recorded in the probe log (adds `closedBy`
+  beside `closeReason`).
+
+The chart + audit slice was taken by `a-closed-trade-has-no-story`
+(2026-08-08): both tools consumed through `AgentsPort`,
+`/agents/[id]/trades/[logId]` renders the frozen chart with the levels as
+placed plus the reprice trail, and `read_trade_story` is on the MCP
+surface. What remains on this item: open orders / order status (blocked on
+observation — probe while a position is open), and the market-context
+reads (`get_coin_candles`, `get_coin_metadata`, `get_macd_heatmap`,
+`get_coin_performance_history`, `get_regime_snapshot`,
+`get_regime_history`).
 
 ## Update 2026-08-06: the blocking reason is gone
 

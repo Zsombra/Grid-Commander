@@ -127,6 +127,15 @@ export default async function TradesPage({
                   : ''}
               </p>
               {o.closedAt ? <p className="text-text-secondary">Closed {o.closedAt}</p> : null}
+              {/* The story is addressed by the evaluation, so a trade the
+                  platform did not link to one has no page to link to. */}
+              {o.signalLogId ? (
+                <p>
+                  <a href={`/agents/${id}/trades/${o.signalLogId}`} className="underline">
+                    How it unfolded
+                  </a>
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

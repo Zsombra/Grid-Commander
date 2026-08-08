@@ -7,8 +7,12 @@ own list goes stale, and this file inherits that.
 **110 tools** · 83 read ·
 17 write · 10 destructive
 
-**Grid-Commander calls 53 of them** — 41 read, 5 write, 7 destructive. The
-other 57 are unconsumed capability.
+**Grid-Commander calls 56 of them** — 44 read, 5 write, 7 destructive. The
+other 54 are unconsumed capability.
+
+(Corrected 2026-08-08: `get_agent_coin_qualification` has been consumed since
+the qualification feature landed, but sat in the unused list — it shipped
+after this file's last regeneration and the hand-maintained count missed it.)
 
 Classification is the server's own annotation, never inferred from a name — the
 product reads it at runtime and treats anything unannotated as destructive.
@@ -176,6 +180,7 @@ a request the tool rejects.
 | `fork_strategy` | write | `sourceRevision`, `strategyId` | `strategy` |
 | `get_account_state` | read | — | `agentSlots`, `balance`, `mcpWagerEnabled`, `stats`, `tradingWalletProvisioned`, `username` |
 | `get_agent_budget` | read | `agentId` | `budget` |
+| `get_agent_coin_qualification` | read | `agentId`, `coinTickers` | `verdicts` |
 | `get_agent_explorer` | read | — | `aggregations`, `currentUser`, `entries`, `filter`, `generatedAt`, `stats` |
 | `get_agent_journal` | read | `agentId` | `recentActivity`, `recentGames`, `recentThoughts`, `username` |
 | `get_agent_thought_log` | read | `agentId` | `entries`, `limit`, `page`, `total` |
@@ -185,6 +190,7 @@ a request the tool rejects.
 | `get_market_grid_results` | read | `sessionId` | `avgNetChangeCapture`, `captureEfficiency`, `coinBoard`, `coinCaptainBadges`, `dominantBiasDirection`, `dominantBiasPercent`, `gameDuration`, `gameName`, `gameType`, `itmCount`, `itmPercent`, `leaderboard`, `playerGrids`, `players`, `resolutions`, `session`, `sessionAccuracy`, `settledMarketData`, `totalCorrectCount`, `totalDownCount`, `totalPlayers`, `totalPredictionCount`, `totalUpCount` |
 | `get_market_grid_session` | read | `sessionId` | `chartIntervalMs`, `coinCaptainBadges`, `coinCount`, `coinPool`, `createdAt`, `displayName`, `entryFee`, `feeConfig`, `finalScoringSource`, `gamePresetId`, `gameType`, `gridCols`, `gridRows`, `gridSize`, `hostUserId`, `id`, `jackpotPayoutHighlights`, `lockAt`, `payoutBandSummary`, `payoutMultiplier`, `payoutStructure`, `perfectGameJackpot`, `playerCount`, `presetBadgeImageUrl`, `prizePool`, `settleAt`, `status`, `timeRangeKey`, `timeframe`, `totalPurse`, `warBondContribution`, `warBondCycleId`, `warBondDeployed`, `warBondPoolId` |
 | `get_metric_construction_hints` | read | `metric` | `metric` |
+| `get_position_audit_history` | read | `agentId`, `positionId` | `positionId`, `events` |
 | `get_public_agent_realized_trades` | read | `agentId` | `limit`, `page`, `total`, `trades` |
 | `get_public_agent_signal_log_detail` | read | `agentId`, `logId` | `log` |
 | `get_public_agent_signal_logs` | read | `agentId` | `entries`, `total` |
@@ -195,6 +201,7 @@ a request the tool rejects.
 | `get_strategy` | read | `strategyId` | `strategy` |
 | `get_strategy_column_contract` | read | `column` | `contract` |
 | `get_strategy_signal_definition` | read | `signalId` | `signal` |
+| `get_trade_chart` | read | `agentId`, `logId` | `result` |
 | `get_trading_config_catalog` | read | — | `positionManagementPresets`, `tradingDefaults` |
 | `get_user_thought_log` | read | — | `entries`, `limit`, `page`, `total` |
 | `list_approved_models` | read | — | `models` |
@@ -223,9 +230,9 @@ a request the tool rejects.
 Grouped by classification. These are the surfaces available if the product grows
 into them — positions, orders, market context, deployment policies, wagering.
 
-### read (42 unused)
+### read (39 unused)
 
-`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_coin_qualification`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_position_audit_history`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_chart`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
+`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
 
 ### write (12 unused)
 

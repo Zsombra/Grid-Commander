@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-07  
-**State**: green (1878 vitest + 80 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 25 open backlog items. PRs #8–#72 merged; #74 (the signal recorder) on its branch. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled.
+**State**: green (1902 vitest + 81 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 23 open backlog items. PRs #8–#78 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -21,7 +21,7 @@ All development branches have been merged. `main` is the single source of truth.
 |---|---|
 | Capabilities (archived) | **13** |
 | Changes (archived) | 123 |
-| Vitest tests | 1878 (+ key-gated live) + 80 db |
+| Vitest tests | 1902 (+ key-gated live) + 81 db |
 | Harness tests (Python) | 235 |
 | Active changes | none |
 | Open backlog items | 25 |
@@ -83,7 +83,7 @@ its neighbours.
 | `harness-integrity` | The `openspec.py` tooling itself (235 tests) |
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
-| `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
+| `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **each trade's story — frozen chart + the audit trail of every stop move**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
 | `strategy-authoring` | Fork (nameable), compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — composed, tried live, and saved through the full ceremony**; the section library and column editor |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 | `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |

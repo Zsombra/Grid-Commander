@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-08-08 (second round) — a closed trade tells its story
+
+**Did**: the open-orders discovery read came back empty again (`{orders:
+[]}`, no position open at probe time — shape still unobserved, slice still
+unbuildable, recorded on the item). Pivoted to the observable siblings on
+the same backlog item and shipped them as **`a-closed-trade-has-no-story`**
+(127th change, standard track):
+
+- **Discovery first**: `get_trade_chart` answered READY on 6/6 settled
+  evaluations (83 × 5m candles, levels with the platform's own display
+  labels, entry/exit markers, freeze stamp); `get_position_audit_history`
+  answered 10 events on the probed WIF winner — TP/SL placed, entry
+  filled, the stop **replaced five times** (break-even, then trailing ×4,
+  every move `improved: true`), SL cancelled, TP filled at +2.29%.
+  Level/marker role vocabulary captured across five trades before any
+  renderer keyed off it. `positionId` is carried by the chart and by
+  nothing else on a closed trade (26-key outcome row checked raw), so the
+  join is forced: chart first, trail through the chart's id.
+- **Built**: `readTradeChart` + `readPositionAudit` on `AgentsPort`
+  (audit prices as decimal strings, exactly as sent);
+  `ReadTradeStoryQuery` with the trail failing independently — and
+  `audit: null` when the chart names no position, which is a third state,
+  not an empty trail; `/agents/[id]/trades/[logId]` with a server-rendered
+  SVG chart (levels labelled **as placed** — the probed chart's stop line
+  is the `SL_PLACED` price, five moves behind the stop that ended the
+  trade) and the reprice timeline; per-row "How it unfolded" links;
+  `read_trade_story` on the MCP surface (25 tools).
+- **Proven**: live probe through the product path read the real story off
+  a real outcome — decimal strings kept their trailing zeros end to end.
+  +24 tests (13 adapter/query, 8 rendering, 3 MCP).
+
+**Also**: the surface map's consumed count was wrong before this change —
+`get_agent_coin_qualification` has been consumed since #60 but sat in the
+unused list (it landed after the map's last regeneration). Corrected with
+a note: 56 consumed, not 53+2.
+
+**State**: 13 capabilities, 127 archived changes, 23 open backlog items,
+0 active. 1,902 vitest + 81 db + 235 harness green; full serial keyed
+sweep rerun this session.
+
+**Next**: `trading-telemetry-is-unread` still holds open orders (probe
+while a position is open) and the market-context reads. Operator-side:
+the recorder cron and key rotation are still theirs to do.
+
+**Watch out**: an open position's log has never been charted — the READY
+branch for a not-yet-settled trade is unobserved. The discrimination
+handles whatever it answers; the probe prints which branch it saw.
+
+
 ## 2026-08-08 — top to bottom of what was waiting
 
 **Did**: the operator approved and PR #76 merged (`c908677` — the proposals
