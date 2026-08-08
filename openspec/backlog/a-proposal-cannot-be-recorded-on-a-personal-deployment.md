@@ -2,11 +2,11 @@
 id: a-proposal-cannot-be-recorded-on-a-personal-deployment
 title: proposals.user_id references users, and personal mode has no users row
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-07
 updated: 2026-08-07
-change: ""
+change: "a-proposal-records-on-a-personal-deployment"
 capability: mcp-control
 blocked_by: []
 tags: [proposals, personal-mode, database]
@@ -54,3 +54,16 @@ If confirmed, two candidate fixes, one decision: drop the FK (match
 `owner` at personal boot (gives personal mode an identity row, but invents a
 `battlegrid_subject` when the account read fails). The first is smaller and
 matches the newest tables' precedent.
+
+## Confirmed and fixed 2026-08-07
+
+Confirmed live through the real MCP server (personal-key mode, real
+PostgreSQL, zero users rows): `propose_agent_change failed: insert or update
+on table "proposals" violates foreign key constraint
+"proposals_user_id_users_id_fk"`. The feature had never worked on a personal
+deployment.
+
+Fixed by `a-proposal-records-on-a-personal-deployment`: the FK is dropped
+(migration 0003), ownership stays in the WHERE, and the db suite now records
+as `owner` against bare users — the same call that failed answers
+`proposalId` + the review path, proven live post-migration.

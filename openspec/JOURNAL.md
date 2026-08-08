@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-07 (keyed round) — the proposals FK bug: confirmed, fixed, archived; the read sweep ran
+
+**Did**: PR #75 merged (`b311133`). Then the key settled the standing
+suspicion in one call: through the real MCP server in personal-key mode
+against a real database with zero users rows, `propose_agent_change` failed
+with `violates foreign key constraint "proposals_user_id_users_id_fk"` —
+the model-proposes feature had **never worked on a personal deployment**.
+Fixed and archived the same hour (`a-proposal-records-on-a-personal-
+deployment`, 124th change): the FK is dropped (migration 0003), ownership
+stays in the WHERE where it always was enforced, the proposals db suite now
+runs against bare `users` and records as `owner` (the same load-bearing test
+the recorder tables carry), and the identical live call now answers
+`proposalId` + `/pending/<id>`. One existing test asserted the FK itself
+("refuses a user the database does not know") — its premise was the bug, and
+it now asserts the property that actually holds: a stranger's row is
+invisible, not unrecordable. mcp-control's record-a-proposal requirement
+gained the personal-deployment scenario.
+
+**Also**: the full keyed read sweep. First run went out **concurrently** —
+my mistake, HANDOFF says probes run serially — and came back 9-failed with
+platform-weather shapes (freshness reading an empty version mid-sweep,
+rosters unreadable): rate-limiting, not regressions. **Serial: 26 passed /
+2 failed / 16 write-gated skips.** Of the two: `column-grammar-probe` is
+per-call platform flapping (the failure moved to a different test on rerun;
+appended to `battlegrid-is-returning-internal-errors`), and
+`own-evaluation-probe` is a real, stable finding — **the cost-to-think
+reads null on an owned evaluation**, twice, on platform 11.0.0, filed as
+`an-owned-evaluations-cost-reads-null` (p2) with the discrimination recipe.
+
+**State**: 13 capabilities, 124 archived changes, 23 open backlog items,
+0 active changes. Full CI green.
+
+**Next**: the operator's cron (`docs/FIRST_SESSION.md` §3) — still the one
+step only they can take — and rotating the key that passed through chat.
+
+**Watch out**: run `tests/live/` with `--no-file-parallelism`, always; the
+concurrent sweep's failures cost a diagnosis round. Worth a follow-up item
+if it recurs: pinning serial execution for `tests/live/` in the vitest
+config rather than in operator memory.
+
 ## 2026-08-07 (follow-up) — the recorder is live-proven, first capture recorded
 
 **Did**: PR #74 merged (`07a5138`), and the operator supplied a key the same

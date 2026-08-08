@@ -112,9 +112,13 @@ export const proposals = pgTable(
   'proposals',
   {
     id: text('id').primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id),
+    // Plain text like `audit_entries`, deliberately not a foreign key into
+    // `users`: personal deployments record as `owner`, and the OAuth callback
+    // is the only writer of that table — the FK made propose_agent_change
+    // fail on every personal-key deployment (proven live 2026-08-07).
+    // Ownership is enforced where it always was: in the WHERE of every read
+    // and the resolve.
+    userId: text('user_id').notNull(),
     // A *product operation* — `edit`, `rebind`, `deploy` — never a BattleGrid
     // tool name. The web route and the MCP layer resolve the same vocabulary,
     // so a name cannot come to mean two things, and a platform rename does not
