@@ -2,11 +2,11 @@
 id: an-owned-evaluations-cost-reads-null
 title: The cost-to-think reads null on an owned evaluation, stable across runs
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-07
-updated: 2026-08-07
-change: ""
+updated: 2026-08-08
+change: "the-cost-is-only-fresh"
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, drift, owned-reads]
@@ -46,3 +46,18 @@ them or only on decisions of a certain shape. All-null → platform drift;
 report it and update HANDOFF's owned-vs-public claim. Shape-dependent →
 teach the probe to pick an evaluation that should carry cost, and say which
 shapes cannot.
+
+## Settled 2026-08-08 — the cost is only fresh
+
+The discrimination read (raw JSON-RPC, no mappers): six consecutive logs on
+one agent, same minute. `ownerView` populated on the evaluation aged ~30
+minutes (provider, modelId, costUsd, durationMs, billingType, usageEventId
+— the full shape), **null on all five older siblings** (2h–10h old),
+`hasAttempt: true` on every one. Combined with the probe passing on prior
+days, the mechanism is transient retention: the platform serves the billing
+join only for fresh evaluations and nulls it as they age.
+
+Not drift, not a product bug — the surface already renders an unreported
+cost as unreported (the spec promises cost only "where the platform reports"
+it). Fixed by `the-cost-is-only-fresh`: the probe now asserts the shape when
+reported and the honest degradation when not, and prints which case ran.

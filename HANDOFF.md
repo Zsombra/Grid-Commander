@@ -453,7 +453,7 @@ controller against one account and asserts the row count, so a silently
 skipped controller fails:
 
 ```bash
-BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
+BATTLEGRID_API_KEY=bg_live_… npm run test:live   # serial on purpose — the platform rate-limits
 ```
 
 | Probe | Proves |

@@ -2,11 +2,11 @@
 id: live-probes-run-concurrently-by-default
 title: Pin serial execution for tests/live in config, not operator memory
 type: chore
-status: open
+status: done
 priority: p3
 created: 2026-08-07
-updated: 2026-08-07
-change: ""
+updated: 2026-08-08
+change: "the-live-suite-paces-itself"
 capability: platform-mapping
 blocked_by: []
 tags: [live-probes, vitest, rate-limits]
@@ -44,3 +44,9 @@ Scope serial execution to `tests/live/` only — a `fileParallelism: false`
 override in a dedicated `vitest.live.config.ts` plus a `test:live` script,
 or vitest `projects` with a per-dir override. Keep the main suite parallel;
 slowing 1,878 unit tests to protect 27 probes would be the wrong trade.
+
+## Closed 2026-08-08
+
+`vitest.live.config.ts` (tests/live only, `fileParallelism: false`) and
+`npm run test:live`; HANDOFF's sweep commands name the script. The main
+suite stays parallel. Fixed by `the-live-suite-paces-itself`.
