@@ -1,5 +1,192 @@
 # Journal
 
+## 2026-08-08 (sixth round) — the sizing base is the exposure allowance, not the wallet
+
+**Did**: the scheduled fleet check found `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
+back — 3× on Undertow (MELANIA, MOODENG, AIXBT: the coins that had just
+qualified), 3× on Breakwater (SKHX). The detail finally made the formula
+legible: `{equityUsd: 40, minEquityUsd: 41.666667, smallPct: 8,
+maxLeverage: 3}` — **`equityUsd` is the agent's
+`maxConcurrentExposureUsd`, not the wallet balance**, and the effective
+leverage on these coins is 3 regardless of the configured 4. So the
+platform's floor is `10 / (smallPct × 3)` of *exposure allowance*, and my
+$40/$35 allowances sat $2–7 under it. THE .0's historic `equityUsd:
+246.67` against its 250 exposure cap says the same thing in hindsight.
+
+Fixed fleet-wide the same hour: `maxConcurrentExposureUsd` 45 and sizes
+10/12/15% on all three agents (floor now $33.33 — clears with margin;
+small orders ≈ $13.5 notional). Also observed and left alone: Undertow
+re-evaluated FARTCOIN four times in three hours (SKIP SHORT at conviction
+0.45–0.48 each time) — the conviction floor holding against a marginal
+setup at a few cents of model spend; a lever exists (gate bump or
+slot-level minConviction) if the churn persists for days.
+
+**Watch out**: `maxLeverage` in the platform's sizing formula read 3 on
+memes and TradFi synthetics with the agent configured at 4 — per-coin
+effective leverage caps exist and the sizing floor should be computed at
+3, not at the configured maximum.
+
+## 2026-08-08 (fifth round) — the incumbent retires, the fleet diversifies to three
+
+**Did**: operator-directed platform operations on the Fibonacci account —
+diversify to the account's capacity, retire `THE .0`, free its tickers.
+All writes raw-MCP against the v14 schemas, every one logged and read back.
+
+- **Retired**: `THE .0` archived (flat at the time, r4→r5) — its Midway
+  binding dies with it (Midway is SYSTEM, platform-owned, not deletable).
+  The three unbound private forks (`Midway/El Alamein/Stalingrad (fork)`)
+  archived too. Strategy quota 5→2 used before the new builds; agent
+  slots 3→2 used. The rank caps agents at **3** — that is "as many as the
+  platform allows" at Recruit III.
+- **Three strategies created whole** (compile→apply CREATE, all viable):
+  **Salamis** (`228ed794…`) — short-term reversal / liquidity provision
+  (Jegadeesh 1990, Lehmann 1990; Nagel 2012): band+structure extremes,
+  `trend_adx_ranging` **required**, `ADX_now ≤ 20` condition — the regime
+  mirror of Trafalgar. **Alesia** (`ad2df55a…`) — the operator's SQZ-03
+  thesis (rising OI vs stalling price, CVD absorption) given tiered
+  weights its account-2 original never had; bench. **Lepanto**
+  (`6675a59e…`) — strict funding fade (±0.06% threshold, flips tier-3,
+  gate 0.65), the ZSCORE-01 spirit under the platform's grammar; bench
+  A/B sibling for Cannae.
+- **Third agent**: **Breakwater** (`f4e7db03…`, Salamis, GLM-5.2,
+  CONSERVATIVE/REALIST/MEASURED) — reversion chassis: leverage 3, RR
+  floor 1.5 (family-appropriate), stops 0.5–2.5%, daily loss $1.25,
+  drawdown $5, 4 trades/day, time-decay ON (grace 45m). Created OFF →
+  deployed → flipped FULL_EXECUTION.
+- **Radar re-pointed** (9 upserts, all deployed): Breakwater takes BNB,
+  ENA, LDO, SP500, BRENTOIL @1h; Undertow grows to seven coins
+  (+FARTCOIN, MOODENG, MELANIA, AIXBT @1h). Vanguard keeps BTC/ETH/SOL.
+  `xyz_skhx` (a Hyperliquid TradFi synthetic, `xyz:SKHX`) joined
+  Breakwater after the coin catalog identified it — radar now reads 16
+  scanning / 0 idle / 3 agents active. The four free slots (cap 20)
+  did not stay empty for long: the operator pushed back ("maybe the new
+  update changed something"), and the tool's own v14 description answered —
+  *"pass null only for a first deploy"*. `expectedRevision: null` created
+  four first deployments (XRP, AVAX → Vanguard; xyz_jpy, xyz_gold →
+  Breakwater), taking the radar to its **20/20 cap, 20 scanning, 0 idle**.
+  `radar-first-deployment-not-creatable-over-mcp` closed (the fix landed
+  silently somewhere v3→v13 — the probes only ever tried integers);
+  successor filed for the product surface, which still assumes
+  replacement-only. Coin ids matter: TradFi synthetics deploy as
+  `coins.id` (`xyz_jpy`), never ticker. Also
+  established: a plan's `coinSelection` is compile-time context, not
+  strategy state — an UPDATE carrying only it is refused as having no
+  updatable field.
+- **Qualification, minutes after launch**: Breakwater qualifies **BNB
+  long/short at 84 vs 62** (ranging + band extreme — its exact setup);
+  Undertow's new coins came in hot — FARTCOIN 72, MOODENG 65, MELANIA 85
+  all above gate. Aggregate worst-case daily loss across the fleet:
+  $4.25 on $49.15 (~8.6%), each agent independently capped.
+
+**State**: fleet = Vanguard (trend, majors) + Undertow (carry fade, 7
+memes) + Breakwater (range reversion, alts+TradFi) — three mathematical
+families, regime-complementary, one brain (GLM-5.2) for clean
+attribution. Two bench strategies await slot growth or rebinds.
+
+**Watch out**: three qualifying coins on Undertow at launch means the
+first executed trade is likely imminent — the min-notional fix gets its
+live proof (or refutation) there. And the platform's 4h regime is
+bull_ranging: Breakwater's week, not Vanguard's. That asymmetry is the
+design.
+
+## 2026-08-08 (fourth round) — two agents born from the mathematical families, and v14 breaks the create path
+
+**Did**: the operator asked for new strategies and agents built from the
+platform's mathematical families, with the risk-reward failures of the
+incumbent (`THE .0`) diagnosed and designed out — and for the v14 re-probe
+first, since a live `initialize` answered **v14.0.0** against the morning's
+v13 record.
+
+**The re-probe** (`the-surface-record-is-v14`, 129th change, lite): 70
+reads called, 0 failed. **The tool count moved for the first time ever,
+110 → 114** — four reads added (`get_agents_hub`,
+`get_agent_conviction_calibration`, `get_radar_activity`,
+`list_deployment_policies`) — and the agent writes changed underneath the
+product: `tradingConfig` dropped `atrTimeframe` +
+`atrMatchesStrategyTimeframe` (20 → 18), and a CUSTOM brain now
+**requires** `behavior: {risk, outlook, conviction}`. The app's own create
+path was refused wholesale when this session ran it first — filed
+`agent-create-composes-fields-v14-refuses` (p1), the tenth member of the
+composed-write-the-platform-refuses class, **and closed it the same
+session** (`the-agent-write-follows-v14`, 130th change): the two names
+left `TRADING_CONFIG_FIELDS`, `READ_ONLY_CONFIG_FIELDS` grew to five, and
+the six red payload-conformance/wire-values guards — red because the v14
+record made them state the break, which is their whole job — are green
+again. The brain half needed no product change: the app has sent the
+behavior triple since findings-agents F-5; v14 merely made required what
+was already sent (the behavior-missing refusals were this session's raw
+script omitting it). Also refreshed
+`battlegrid-mcp-capabilities.json`, which had sat at **v9** while record
+and reference moved — the divergence the v13 round warned about, one
+artifact over.
+
+**The diagnosis that drove the design** (probed live before building):
+`THE .0` is **gross-profitable and fee-eaten** — 31 closed trades, gross
++$0.36, fees $0.57, net −$0.21, avg notional **$15** at flat 5×. Its
+28-of-67 exchange failures trace to VOLATILITY_AUTO sizing under the $10
+min notional (`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` fired again the same
+morning); both loss caps read "no limit set"; conviction floor 0.35 and
+RR floor 1.0 let 49%-conviction churn through; WALTHER's hair-trigger
+management closed 26 of 31 by stop. The realized win/loss asymmetry
+(1.85:1) says the edge is real; the chassis burned it.
+
+**Two strategies, born whole by compile→apply CREATE plans** — the plan
+grammar carries name, timeframe, gate, `minAtrPct`, coin scope, sections,
+conditions *and rules*, so no fork-and-retune loop:
+
+- **Trafalgar** (`3a354541…`, r1) — time-series momentum: MTF pullbacks
+  (tier 3) in MTF/HTF-aligned trends (tier 2), `trend_adx_trending`
+  **required**, gate 0.62, minAtrPct 0.35, `TRENDING_TAPE` condition
+  (`ADX_now ≥ 22` — headers resolved via `get_strategy_column_contract`),
+  coins BTC/ETH/SOL/BNB, 8 sections.
+- **Cannae** (`f901a336…`, r1) — carry/positioning fade: funding extremes
+  (tier 3) confirmed by OI divergence + perp/spot flow (tier 2) at
+  structure (tier 1), gate 0.62, minAtrPct 0.5, `FUNDING_STRETCHED`
+  condition (ANY of `rate ≥ 0.0004`, `rate ≤ −0.0004`), meme/perp coins.
+
+Compile taught three times: conditions require a `verdict`
+(`UP|DOWN|NEITHER`); `ACTIVE_SIGNAL_DATA_NOT_IN_REPORT` named the sections
+my weighted signals needed (CVD/volume for Trafalgar, structure zones for
+Cannae); and the platform seeds section-fed signals at tier 1 around the
+explicit hierarchy — 34/20 active rules where 15/12 were sent, core intact.
+
+**Two agents, v14-composed, created OFF → deployed → flipped on**:
+**Vanguard** (`c8f20b9e…`, Trafalgar, BTC/ETH/SOL @1h) and **Undertow**
+(`d0f6829f…`, Cannae, HYPE/WIF/TRUMP @1h), both GLM-5.2 with the
+now-required behavior triple (MODERATE/REALIST/MEASURED and
+CONSERVATIVE/REALIST/MEASURED). The shared chassis, each line answering an
+observed failure: MANUAL sizing 8/11/15% (≈$16–30 notional on $49 — clears
+the $10 min the auto-sizer kept missing), leverage 4, **maxDailyLossUsd
+1.5 and maxCumulativeDrawdownUsd 6 set** (the incumbents have none),
+RR ≥ 2, conviction ≥ 0.6, 4/3 trades/day (vs 34), slippage 200bps,
+signal timeout 5m, trailing ATR ×2 with break-even at 45/40% and
+time-decay only on the fade agent. Radar: six of `THE .0`'s sixteen coins
+re-pointed (its config untouched — the operator asked for new agents, not
+an improved incumbent). Agent slots now 3/3.
+
+**The qualification screen graded the build immediately.**
+`MIN_STOP_LOSS_PCT: requested 1.5, reachable 0.62` on BTC — my stop floor
+was unreachable on a 0.21%-ATR tape, fixed to 0.5 (Vanguard r3) and levels
+derive on ETH/SOL. And the discipline is visible on day one: Vanguard
+fails BTC/ETH/SOL on `AGGREGATE_BELOW_MIN` + the ATR floor (correct — 4h
+regime reads `bull_ranging`, a trend agent should sit out), Undertow sits
+out HYPE (50/62) and WIF (60/62) and **qualifies TRUMP long at 64/62**.
+Selectivity is the design; the incumbents' failure was trading anyway.
+
+**State**: 13 capabilities, 130 archived changes, 24 open backlog items,
+0 active. Full suite green on the v14 record (1902 vitest + 235 harness +
+typecheck + lint; the one pre-existing typecheck error on main —
+`trade-story-probe` reading `.reason` off an unnarrowed union — fixed in
+passing).
+
+**Watch out**: the radar policy grammar (v14 confirmed) supports
+regime-conditioned slots per coin — a trend agent could be slot-gated to
+expansion regimes and stop paying for evaluations in ranges. Unconsumed;
+a natural refinement once the two agents have a record.
+`get_agent_conviction_calibration` (new at v14) is the tool that will
+grade the 0.6 conviction floor against outcomes. And the recorder cron is
+still the operator's to start — every uncaptured day stays unbackfillable.
+
 ## 2026-08-08 (third round) — the record catches v13, and the stale reference confesses v11
 
 **Did**: the freshness alarm from the sweep was acted on the same hour.

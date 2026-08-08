@@ -1,14 +1,15 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v13.0.0`**
-on 2026-08-08. Regenerate after any BattleGrid deployment: the server says its
-own list goes stale, and this file inherits that.
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v14.0.0`**
+on 2026-08-08 — the second probe that day; v13 lasted about five hours.
+Regenerate after any BattleGrid deployment: the server says its own list goes
+stale, and this file inherits that.
 
-**110 tools** · 83 read ·
+**114 tools** · 87 read ·
 17 write · 10 destructive
 
 **Grid-Commander calls 56 of them** — 44 read, 5 write, 7 destructive. The
-other 54 are unconsumed capability.
+other 58 are unconsumed capability.
 
 (Corrected 2026-08-08: `get_agent_coin_qualification` has been consumed since
 the qualification feature landed, but sat in the unused list — it shipped
@@ -32,6 +33,7 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` **and nested its rendered section bodies one level down** |
 | → v11.0.0 | 110 | **`arenaChallengeEnabled` dropped** from create and update — and from the agent payloads themselves; `feasibilityAdvisory` added to create's declared output; a strategy-vocabulary metric enum shifted. Hidden for two days because only the record was re-probed, not the reference — see `two-agent-owned-fields-no-tool-can-write` |
 | → v13.0.0 | 110 | the quietest yet: declared schemas, constants and annotations byte-identical across all 110 tools; `get_market_context` grew 23 → 25 selectable modules (`marketBreadth`, `referencePairs`) |
+| → v14.0.0 | **114** | the count finally moved: four reads added (`get_agents_hub`, `get_agent_conviction_calibration`, `get_radar_activity`, `list_deployment_policies`) — and the agent writes changed underneath the product: `tradingConfig` dropped `atrTimeframe` + `atrMatchesStrategyTimeframe` (20 → 18 fields) and a CUSTOM brain now **requires** `behavior: {risk, outlook, conviction}`. The app's create path is refused wholesale — `agent-create-composes-fields-v14-refuses` (p1) |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools

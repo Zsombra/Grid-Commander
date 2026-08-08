@@ -92,7 +92,10 @@ live('a settled trade tells its story through the product path', () => {
           expect(story.audit.events.length).toBeGreaterThan(0);
         } else {
           // eslint-disable-next-line no-console
-          console.log(`    trail: ${story.audit.kind} — ${String(story.audit.reason)}`);
+          console.log(
+            `    trail: ${story.audit.kind}` +
+              (story.audit.kind === 'unreadable' ? ` — ${story.audit.reason}` : ''),
+          );
         }
         return;
       }

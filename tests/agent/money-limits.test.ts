@@ -86,10 +86,11 @@ describe('the platform decides which questions it will not answer', () => {
   });
 
   it('covers every field the write schema requires', () => {
-    // All twenty. `tradingConfig` is all-or-nothing: BattleGrid rejects a
-    // partial one and resets what a partial send omits, so a field missing from
-    // this list is a field silently wiped on every create.
-    expect(TRADING_CONFIG_FIELDS).toHaveLength(20);
+    // All eighteen — twenty until BattleGrid v14 dropped the two ATR fields.
+    // `tradingConfig` is all-or-nothing: BattleGrid rejects a partial one and
+    // resets what a partial send omits, so a field missing from this list is a
+    // field silently wiped on every create.
+    expect(TRADING_CONFIG_FIELDS).toHaveLength(18);
     expect(TRADING_CONFIG_FIELDS).toContain('positionManagement');
     expect(TRADING_CONFIG_FIELDS).toContain('positionSizePresets');
   });
