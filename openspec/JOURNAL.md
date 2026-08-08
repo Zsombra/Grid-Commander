@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-08 (sixth round) — the sizing base is the exposure allowance, not the wallet
+
+**Did**: the scheduled fleet check found `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
+back — 3× on Undertow (MELANIA, MOODENG, AIXBT: the coins that had just
+qualified), 3× on Breakwater (SKHX). The detail finally made the formula
+legible: `{equityUsd: 40, minEquityUsd: 41.666667, smallPct: 8,
+maxLeverage: 3}` — **`equityUsd` is the agent's
+`maxConcurrentExposureUsd`, not the wallet balance**, and the effective
+leverage on these coins is 3 regardless of the configured 4. So the
+platform's floor is `10 / (smallPct × 3)` of *exposure allowance*, and my
+$40/$35 allowances sat $2–7 under it. THE .0's historic `equityUsd:
+246.67` against its 250 exposure cap says the same thing in hindsight.
+
+Fixed fleet-wide the same hour: `maxConcurrentExposureUsd` 45 and sizes
+10/12/15% on all three agents (floor now $33.33 — clears with margin;
+small orders ≈ $13.5 notional). Also observed and left alone: Undertow
+re-evaluated FARTCOIN four times in three hours (SKIP SHORT at conviction
+0.45–0.48 each time) — the conviction floor holding against a marginal
+setup at a few cents of model spend; a lever exists (gate bump or
+slot-level minConviction) if the churn persists for days.
+
+**Watch out**: `maxLeverage` in the platform's sizing formula read 3 on
+memes and TradFi synthetics with the agent configured at 4 — per-coin
+effective leverage caps exist and the sizing floor should be computed at
+3, not at the configured maximum.
+
 ## 2026-08-08 (fifth round) — the incumbent retires, the fleet diversifies to three
 
 **Did**: operator-directed platform operations on the Fibonacci account —
