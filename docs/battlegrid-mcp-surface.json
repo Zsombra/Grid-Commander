@@ -2,20 +2,20 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "13.0.0",
+    "version": "14.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-08T07:26:37Z",
-  "tool_count": 110,
+  "probed_at": "2026-08-08T12:33:55Z",
+  "tool_count": 114,
   "by_classification": {
-    "read": 83,
+    "read": 87,
     "write": 17,
     "destructive": 10,
     "unclassified": 0
   },
   "probed": {
-    "called": 67,
-    "skipped": 43,
+    "called": 70,
+    "skipped": 44,
     "failed": 0
   },
   "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product. `server` is which BattleGrid answered: it is the only field that can tell you this record is stale. `tool_count` cannot \u2014 it stayed at 110 across v3.0.0 \u2192 v5.0.0 while enums, required arguments and semantics moved underneath it.",
@@ -2363,21 +2363,6 @@
           "YAMAMOTO",
           "CUSTOM"
         ],
-        "tradingConfig.atrTimeframe": [
-          "1m",
-          "3m",
-          "5m",
-          "15m",
-          "30m",
-          "1h",
-          "2h",
-          "4h",
-          "8h",
-          "12h",
-          "1d",
-          "3d",
-          "1w"
-        ],
         "tradingConfig.positionManagement.positionManagementPreset": [
           "COLT",
           "WEBLEY",
@@ -2410,8 +2395,6 @@
         "brain.kind",
         "displayName",
         "strategyId",
-        "tradingConfig.atrMatchesStrategyTimeframe",
-        "tradingConfig.atrTimeframe",
         "tradingConfig.balanceThresholdUsd",
         "tradingConfig.gridMinConfidence",
         "tradingConfig.maxConcurrentExposureUsd",
@@ -2509,8 +2492,6 @@
         "tradingConfig": {
           "closed": true,
           "accepts": [
-            "atrMatchesStrategyTimeframe",
-            "atrTimeframe",
             "balanceThresholdUsd",
             "gridMinConfidence",
             "maxConcurrentExposureUsd",
@@ -3619,6 +3600,79 @@
       "returned_not_declared": []
     },
     {
+      "name": "get_agent_conviction_calibration",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Does one of your agents' STATED conviction actually predict its outcomes \u2014 the feedback loop for every conviction bar you can set (the agent base in tradingConfig.minTradeConviction, a deployment slot",
+      "input_required": [
+        "agentId"
+      ],
+      "input_optional": [],
+      "input_constants": {},
+      "input_required_paths": [
+        "agentId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "agentId"
+          ]
+        }
+      },
+      "declared_output": [
+        "calibration"
+      ],
+      "observed": [
+        "calibration"
+      ],
+      "observed_shape": {
+        "calibration": {
+          "deploymentRules": [
+            {
+              "readiness": "str",
+              "rule": {
+                "presetDisplayName": "str",
+                "rulePriority": "null"
+              },
+              "sampleSize": "int"
+            },
+            "\u2026\u00d71"
+          ],
+          "minSampleSize": "int",
+          "slices": [
+            {
+              "assetClass": "str",
+              "bands": [
+                {
+                  "band": "str",
+                  "readiness": "str",
+                  "sampleSize": "int"
+                },
+                "\u2026\u00d73"
+              ],
+              "sampleSize": "int"
+            },
+            "\u2026\u00d72"
+          ],
+          "totalSampleSize": "int",
+          "windowDays": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
       "name": "get_agent_decision_context",
       "classification": "read",
       "annotations": {
@@ -3857,8 +3911,6 @@
             "tradeCount": "int",
             "tradingMode": "str",
             "tradingSpec": {
-              "atrMatchesStrategyTimeframe": "bool",
-              "atrTimeframe": "str",
               "balanceThresholdUsd": "int",
               "maxEntryDeviationAtrMultiple": "float",
               "maxLeverage": "int",
@@ -4536,6 +4588,102 @@
       "returned_not_declared": []
     },
     {
+      "name": "get_agents_hub",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Where every agent you own is right now, in one call. Each roster row carries the server-computed `hubStatus` at its declared precedence \u2014 AWAITING_APPROVAL, then IN_TRADE, then RADAR_ARMED, then ARENA",
+      "input_required": [],
+      "input_optional": [],
+      "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
+      "declared_output": [
+        "rows",
+        "summary"
+      ],
+      "observed": [
+        "rows",
+        "summary"
+      ],
+      "observed_shape": {
+        "rows": [
+          {
+            "activeTradeCount": "int",
+            "agentId": "str",
+            "agentName": "str",
+            "arenaPolicyCount": "int",
+            "avatarUrl": "str",
+            "cost24hUsd": "float",
+            "deployments": {
+              "arenas": [],
+              "openPositions": [],
+              "radars": [
+                {
+                  "coinId": "str",
+                  "symbol": "str"
+                },
+                "\u2026\u00d715"
+              ]
+            },
+            "envelope": {
+              "budgetUsd": "int",
+              "largePct": "int",
+              "maxDailyTrades": "int",
+              "maxLeverage": "int",
+              "mediumPct": "float",
+              "minAllocationUsd": "int",
+              "regimeTimeframe": "str",
+              "sizingStrategy": "str",
+              "smallPct": "int",
+              "strategyName": "str",
+              "strategyTimeframe": "str",
+              "tradingMode": "str"
+            },
+            "hubStatus": "str",
+            "modelDisplayName": "str",
+            "modelImageUrl": "str",
+            "pendingApprovalCount": "int",
+            "radarPolicyCount": "int",
+            "status": "str",
+            "totalNetPnl": "float"
+          },
+          "\u2026\u00d711"
+        ],
+        "summary": {
+          "activeAgents": "int",
+          "activePercent": "int",
+          "agentsWithOpenPositions": "int",
+          "avgCostPerMessageUsd": "int",
+          "avgPnlPerAgentUsd": "float",
+          "dailyLimit": "int",
+          "messagesUsedPercent": "int",
+          "messagesUsedToday": "int",
+          "openPositionCount": "int",
+          "totalAgents": "int",
+          "totalCost24hUsd": "float",
+          "totalPendingApprovalCount": "int",
+          "totalRealizedNetPnl": "float"
+        }
+      },
+      "arguments_from": "none-required",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
       "name": "get_coin_candles",
       "classification": "read",
       "annotations": {
@@ -4602,7 +4750,7 @@
             "symbol": "str",
             "timeframe": "str",
             "timestamp": "str",
-            "volume": "float"
+            "volume": "int"
           },
           "\u2026\u00d720"
         ]
@@ -4959,7 +5107,7 @@
             "category": "str",
             "correlationToTarget": "float",
             "momentumState": "str",
-            "priceChange1h": "float",
+            "priceChange1h": "int",
             "priceChange24h": "float",
             "relationship": "str",
             "ticker": "str",
@@ -5466,8 +5614,6 @@
           "strategyRevision": "int",
           "systemKey": "null",
           "tradingConfig": {
-            "atrMatchesStrategyTimeframe": "bool",
-            "atrTimeframe": "str",
             "balanceThresholdUsd": "int",
             "gridMinConfidence": "float",
             "maxConcurrentExposureUsd": "int",
@@ -5672,7 +5818,7 @@
               "fundingRate": "float",
               "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "float",
+              "oraclePrice": "int",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -7282,6 +7428,54 @@
       "returned_not_declared": []
     },
     {
+      "name": "get_radar_activity",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read the transition journal and evaluation curve for one coin you have deployed \u2014 the surface that answers \"why did my radar agent not fire\". `events` is newest-first and carries one row per CHANGED d",
+      "input_required": [
+        "coinId"
+      ],
+      "input_optional": [
+        "cursor",
+        "filter",
+        "limit"
+      ],
+      "input_constants": {
+        "filter": [
+          "ALL",
+          "KEY",
+          "FIRES"
+        ]
+      },
+      "input_required_paths": [
+        "coinId"
+      ],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": [
+            "coinId",
+            "cursor",
+            "filter",
+            "limit"
+          ]
+        }
+      },
+      "declared_output": [
+        "events",
+        "nextCursor",
+        "samples",
+        "samplesAgentId",
+        "samplesAgentName"
+      ],
+      "not_called_because": "no coinId available on this account"
+    },
+    {
       "name": "get_radar_deployment",
       "classification": "read",
       "annotations": {
@@ -7373,7 +7567,7 @@
             "regime": "str",
             "timestamp": "int"
           },
-          "\u2026\u00d7166"
+          "\u2026\u00d7168"
         ],
         "symbol": "str",
         "timeframe": "str"
@@ -8909,8 +9103,6 @@
             "minimumTradingEquityUsd": "int"
           },
           "defaults": {
-            "defaultAtrMatchesStrategyTimeframe": "bool",
-            "defaultAtrTimeframe": "str",
             "defaultEntrySlippageBps": "int",
             "defaultGridMinConfidence": "float",
             "defaultLargePct": "int",
@@ -9296,6 +9488,56 @@
           },
           "\u2026\u00d726"
         ]
+      },
+      "arguments_from": "none-required",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
+    },
+    {
+      "name": "list_deployment_policies",
+      "classification": "read",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "description": "Read every Arena deployment policy you own, plus the fleet roll-up \u2014 the whole arena side of your deployments in one call, with no preset id needed. Each policy carries its ordered slots (agent, rules",
+      "input_required": [],
+      "input_optional": [],
+      "input_constants": {},
+      "input_required_paths": [],
+      "input_accepts": {
+        "": {
+          "closed": true,
+          "accepts": []
+        }
+      },
+      "declared_output": [
+        "policies",
+        "summary"
+      ],
+      "observed": [
+        "policies",
+        "summary"
+      ],
+      "observed_shape": {
+        "policies": [],
+        "summary": {
+          "agentsScheduled": "int",
+          "arenas": "int",
+          "deployed": "int",
+          "noSession": "int",
+          "retired": "int",
+          "scheduled": "int",
+          "sittingOut": "int",
+          "unconfigured": "int",
+          "warming": "int"
+        }
       },
       "arguments_from": "none-required",
       "envelope": {
@@ -9707,8 +9949,6 @@
             "strategyRevision": "int",
             "systemKey": "null",
             "tradingConfig": {
-              "atrMatchesStrategyTimeframe": "bool",
-              "atrTimeframe": "str",
               "balanceThresholdUsd": "int",
               "gridMinConfidence": "float",
               "maxConcurrentExposureUsd": "int",
@@ -12551,7 +12791,7 @@
         "idempotentHint": false,
         "openWorldHint": false
       },
-      "description": "Update an existing private intelligence agent: display name, brain (model/behavior or preset), trading configuration, and challenge participation. Supply at least one mutable field. A complete trading",
+      "description": "Update an existing private intelligence agent: display name, brain (model/behavior or preset), and trading configuration. Supply at least one mutable field. A complete tradingConfig is optional for no",
       "input_required": [
         "agentId",
         "expectedRevision"
@@ -12592,21 +12832,6 @@
           "YAMAMOTO",
           "CUSTOM"
         ],
-        "tradingConfig.atrTimeframe": [
-          "1m",
-          "3m",
-          "5m",
-          "15m",
-          "30m",
-          "1h",
-          "2h",
-          "4h",
-          "8h",
-          "12h",
-          "1d",
-          "3d",
-          "1w"
-        ],
         "tradingConfig.positionManagement.positionManagementPreset": [
           "COLT",
           "WEBLEY",
@@ -12637,8 +12862,6 @@
       "input_required_paths": [
         "agentId",
         "expectedRevision",
-        "tradingConfig.atrMatchesStrategyTimeframe",
-        "tradingConfig.atrTimeframe",
         "tradingConfig.balanceThresholdUsd",
         "tradingConfig.gridMinConfidence",
         "tradingConfig.maxConcurrentExposureUsd",
@@ -12701,8 +12924,6 @@
         "tradingConfig": {
           "closed": true,
           "accepts": [
-            "atrMatchesStrategyTimeframe",
-            "atrTimeframe",
             "balanceThresholdUsd",
             "gridMinConfidence",
             "maxConcurrentExposureUsd",
