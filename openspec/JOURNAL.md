@@ -26,6 +26,17 @@ memes and TradFi synthetics with the agent configured at 4 — per-coin
 effective leverage caps exist and the sizing floor should be computed at
 3, not at the configured maximum.
 
+**Evening tuning (same day)**: after 21 evaluations / 21 skips fleet-wide
+with convictions ceilinged at 0.58, the conviction floor moved 0.6 → 0.55
+on Undertow and Breakwater only (Vanguard keeps 0.6; RR floors, caps and
+stops unchanged). Evidence considered: `get_agent_conviction_calibration`
+on THE .0 answers INSUFFICIENT_DATA everywhere (min 20 outcomes per band;
+it has 31 total, 8 of 27 crypto in the HIGH band — so GLM-5.2 *can* exceed
+the bar, but not often), and the live stream showed 0.55–0.58 setups dying
+just under the old floor while spend accrued. Revisit with the calibration
+tool once 20+ outcomes exist per band; revert to 0.6 if 0.55 admits churn
+that loses.
+
 ## 2026-08-08 (fifth round) — the incumbent retires, the fleet diversifies to three
 
 **Did**: operator-directed platform operations on the Fibonacci account —
