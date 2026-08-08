@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-08 (seventh round) — the first fill: every fix proven on one trade
+
+**Did**: at 20:01Z, 25 minutes after the conviction floor moved to 0.55,
+**Undertow entered its first trade** — MELANIA SHORT, conviction 0.55,
+order `512908894227`, **EXECUTED** (fill rate so far: 1 for 1, zero
+FAILED). Everything the day's fixes were for is proven on this one row:
+
+- **Sizing**: notional **$13.51** — the predicted 45 × 10% × 3 to the
+  cent, comfortably above the $10 exchange minimum that killed 29 of
+  THE .0's 67 entries. Zero `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` since the
+  exposure fix.
+- **Risk-reward**: entry 0.07615, stop 0.07707868 (+1.22%), TP 0.07336396
+  — planned RR exactly 3.0, above the ≥2 floor. Risk-to-stop ≈ $0.17
+  (0.3% of the account).
+- **Conviction calibration**: a 0.55 setup — precisely the class the old
+  0.6 floor was rejecting all afternoon.
+- **Management live**: `effectiveStopLoss` already reads 0.07703 vs the
+  decided 0.07707868 — tightened in the short's favor within the hour.
+- **On-thesis**: the reasoning is textbook Cannae — falling CVD,
+  new-shorts OI regime, price below VWAP, at resistance-zone proximity.
+  The same sweep SKIPPED a 0.45 HYPE long — floor discipline intact.
+
+**State**: 1 open position (uPnL −$0.01 at check time), 24 evaluations /
+1 entry / 0 failures fleet-wide. Vanguard still correctly silent in
+ranging majors; Breakwater 2 evaluations, no qualifying setup yet.
+
 ## 2026-08-08 (sixth round) — the sizing base is the exposure allowance, not the wallet
 
 **Did**: the scheduled fleet check found `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
