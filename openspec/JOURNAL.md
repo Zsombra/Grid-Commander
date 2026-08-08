@@ -1,5 +1,39 @@
 # Journal
 
+## 2026-08-08 (third round) — the record catches v13, and the stale reference confesses v11
+
+**Did**: the freshness alarm from the sweep was acted on the same hour.
+Re-probed the surface at **v13.0.0** (67 reads called, 0 failed),
+regenerated the reference from a fresh dump, shipped as
+`the-surface-record-is-v13` (128th change, lite).
+
+The diff settled two deploys at once:
+
+- **v11 → v13 is the quietest on record**: declared schemas, constants and
+  annotations byte-identical across all 110 tools; observed key-structure
+  unchanged on every consumed tool. The only movement:
+  `get_market_context` 23 → 25 modules (`marketBreadth`,
+  `referencePairs`) — unconsumed.
+- **v9 → v11 carried real movement the stale reference hid**: the
+  committed `BATTLEGRID_MCP_REFERENCE.md` was still generated from v9, so
+  nobody saw that **`arenaChallengeEnabled` was dropped** from create,
+  update, *and the agent payloads*, that create's declared output gained
+  `feasibilityAdvisory`, and that a vocabulary enum shifted. The
+  conformance guards never lied — they read the record, which was v11 —
+  but record and reference had diverged by a deploy. Filed
+  `two-agent-owned-fields-no-tool-can-write` (p3): `AGENT_OWNED` still
+  offers arena + overlay as proposable, both now unwritable and unreadable
+  on the platform; every agent maps them to constants. Nothing renders
+  either field; fix is its own change.
+
+**State**: 13 capabilities, 128 archived changes, 24 open backlog items,
+0 active. Full suite green on the v13 record.
+
+**Watch out**: keep record and reference in lockstep — the alarm only
+guards the record. This round's rule: a re-probe is not done until
+`generate_mcp_reference.py` has run against the same server.
+
+
 ## 2026-08-08 (second round) — a closed trade tells its story
 
 **Did**: the open-orders discovery read came back empty again (`{orders:

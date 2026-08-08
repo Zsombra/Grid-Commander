@@ -2,10 +2,10 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "11.0.0",
+    "version": "13.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-06T22:07:34Z",
+  "probed_at": "2026-08-08T07:26:37Z",
   "tool_count": 110,
   "by_classification": {
     "read": 83,
@@ -14,8 +14,8 @@
     "unclassified": 0
   },
   "probed": {
-    "called": 61,
-    "skipped": 49,
+    "called": 67,
+    "skipped": 43,
     "failed": 0
   },
   "note": "`observed` is what a live call returned. `declared_output` is what the server's outputSchema promises. They are recorded separately on purpose: a shape nobody has seen is not a shape that is known, and the whole reason this file exists is that a declared payload was correct while the envelope carrying it went unread for the life of the product. `server` is which BattleGrid answered: it is the only field that can tell you this record is stale. `tool_count` cannot \u2014 it stayed at 110 across v3.0.0 \u2192 v5.0.0 while enums, required arguments and semantics moved underneath it.",
@@ -265,6 +265,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -351,6 +353,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -487,7 +491,9 @@
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
           "includeStructureZones",
-          "includePerpSpotFlow"
+          "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs"
         ],
         "request.plan.sections[].timeframe": [
           "1m",
@@ -1477,6 +1483,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -1563,6 +1571,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -1699,7 +1709,9 @@
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
           "includeStructureZones",
-          "includePerpSpotFlow"
+          "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs"
         ],
         "request.sections[].timeframe": [
           "1m",
@@ -2757,6 +2769,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -2843,6 +2857,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -2979,7 +2995,9 @@
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
           "includeStructureZones",
-          "includePerpSpotFlow"
+          "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs"
         ],
         "sections[].timeframe": [
           "1m",
@@ -3269,7 +3287,7 @@
           "tierClass": "str",
           "totalGames": "int",
           "totalWagered": "int",
-          "winRate": "float"
+          "winRate": "int"
         },
         "tradingWalletProvisioned": "bool",
         "username": "str"
@@ -3333,12 +3351,16 @@
             "createdAt": "str",
             "eventType": "str",
             "id": "str",
-            "marketGridSessionId": "null",
-            "metadata": {},
+            "marketGridSessionId": "str",
+            "metadata": {
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
+            },
             "thoughtLogId": "null",
             "userId": "str"
           },
-          "\u2026\u00d72"
+          "\u2026\u00d720"
         ],
         "limit": "int",
         "page": "int",
@@ -3450,8 +3472,8 @@
           "agentId": "str",
           "budgetOverSubscribed": "bool",
           "capitalAtRiskUsd": "int",
-          "dailyRealizedPnlUsd": "int",
-          "drawdownUsd": "int",
+          "dailyRealizedPnlUsd": "float",
+          "drawdownUsd": "float",
           "effectiveNotionalUsd": "int",
           "gauges": {
             "dailyLoss": {
@@ -3469,7 +3491,7 @@
             "drawdown": {
               "breached": "bool",
               "configured": "bool",
-              "fill": "int",
+              "fill": "float",
               "remaining": "int"
             },
             "exposure": {
@@ -3488,7 +3510,7 @@
           "maxDailyTrades": "int",
           "openUnrealizedPnlUsd": "int",
           "perTradePushEnabled": "bool",
-          "realizedPnlUsd": "int",
+          "realizedPnlUsd": "float",
           "stopBelowSingleTradeLoss": "bool",
           "stopEffectivelyUnbounded": "bool",
           "tradesToday": "int"
@@ -3546,7 +3568,7 @@
             "coinName": "str",
             "coinTicker": "str",
             "evaluatedAt": "str",
-            "firstFailReason": "null",
+            "firstFailReason": "str",
             "gates": {
               "aggregateScore": {
                 "minScorePercent": "int",
@@ -3567,18 +3589,20 @@
             "long": {
               "candidateLevels": {
                 "ok": "bool",
-                "rejectionStage": "null"
+                "rejectionStage": "null",
+                "slPolicyRejection": "null"
               },
-              "firstFailReason": "null",
+              "firstFailReason": "str",
               "qualifies": "bool"
             },
             "qualifies": "bool",
             "short": {
               "candidateLevels": {
                 "ok": "bool",
-                "rejectionStage": "null"
+                "rejectionStage": "null",
+                "slPolicyRejection": "null"
               },
-              "firstFailReason": "null",
+              "firstFailReason": "str",
               "qualifies": "bool"
             },
             "strategyTimeframe": "str"
@@ -3758,7 +3782,7 @@
               "rank": "int",
               "totalNetPnl": "float"
             },
-            "\u2026\u00d72"
+            "\u2026\u00d71"
           ],
           "userId": "str"
         },
@@ -3786,12 +3810,14 @@
               "includeFundingRates": "bool",
               "includeHigherTimeframe": "bool",
               "includeMacd": "bool",
+              "includeMarketBreadth": "bool",
               "includeMfi": "bool",
               "includeMovingAverages": "bool",
               "includeMtfConfluence": "bool",
               "includeOpenInterest": "bool",
               "includePerpSpotFlow": "bool",
               "includePriceAction": "bool",
+              "includeReferencePairs": "bool",
               "includeRegimeContext": "bool",
               "includeRelativeStrength": "bool",
               "includeRsi": "bool",
@@ -3870,7 +3896,7 @@
               "netPnl": "float"
             }
           },
-          "\u2026\u00d738"
+          "\u2026\u00d736"
         ],
         "filter": {
           "sortBy": "str",
@@ -3879,7 +3905,7 @@
         "generatedAt": "str",
         "stats": {
           "activeAgentCount": "int",
-          "activeAgentPercent": "int",
+          "activeAgentPercent": "float",
           "avgNetPnl": "float",
           "avgTradeSizeUsd": "float",
           "lossCount": "int",
@@ -4003,7 +4029,55 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": {
+              "billingType": "str",
+              "costUsd": "float",
+              "durationMs": "int",
+              "errorMessage": "null",
+              "modelDisplayName": "str",
+              "modelId": "str",
+              "provider": "str",
+              "usageEventId": "str"
+            },
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d720"
+        ],
         "limit": "int",
         "page": "int",
         "total": "int"
@@ -4065,15 +4139,104 @@
             "createdAt": "str",
             "eventType": "str",
             "id": "str",
-            "marketGridSessionId": "null",
-            "metadata": {},
+            "marketGridSessionId": "str",
+            "metadata": {
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
+            },
             "thoughtLogId": "null",
             "userId": "str"
           },
-          "\u2026\u00d72"
+          "\u2026\u00d710"
         ],
-        "recentGames": [],
-        "recentThoughts": [],
+        "recentGames": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": {
+              "billingType": "str",
+              "costUsd": "float",
+              "durationMs": "int",
+              "errorMessage": "null",
+              "modelDisplayName": "str",
+              "modelId": "str",
+              "provider": "str",
+              "usageEventId": "str"
+            },
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d710"
+        ],
+        "recentThoughts": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "confidenceThreshold": "float",
+            "confidenceThresholdPercent": "int",
+            "createdAt": "str",
+            "gridPick": "null",
+            "id": "str",
+            "marketGridSessionId": "null",
+            "marketSnapshot": {
+              "coinTicker": "str",
+              "conditionOutcomes": [
+                {
+                  "conditionKey": "str",
+                  "outcome": "str",
+                  "payload": [
+                    "\u2026",
+                    "\u2026\u00d71"
+                  ]
+                },
+                "\u2026\u00d75"
+              ],
+              "primaryTimeframe": "str",
+              "provisional": "bool",
+              "strategyRevision": "int",
+              "thesisDirection": "str"
+            },
+            "outcome": "str",
+            "parsedPicks": [],
+            "reasoning": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
         "username": "str"
       },
       "arguments_from": "discovered:agentId",
@@ -4165,11 +4328,14 @@
       "observed_shape": {
         "performance": {
           "agentId": "str",
-          "drawdownUsd": "int",
+          "drawdownUsd": "float",
           "haltedAt": "null",
           "maxCumulativeDrawdownUsd": "int",
-          "pnlCurveUsd": [],
-          "realizedPnlUsd": "int"
+          "pnlCurveUsd": [
+            "int",
+            "\u2026\u00d731"
+          ],
+          "realizedPnlUsd": "float"
         }
       },
       "arguments_from": "discovered:agentId",
@@ -4319,7 +4485,44 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "agentId": "str",
+            "coinGridSessionId": "null",
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "confidenceThreshold": "float",
+            "confidenceThresholdPercent": "int",
+            "createdAt": "str",
+            "gridPick": "null",
+            "id": "str",
+            "marketGridSessionId": "null",
+            "marketSnapshot": {
+              "coinTicker": "str",
+              "conditionOutcomes": [
+                {
+                  "conditionKey": "str",
+                  "outcome": "str",
+                  "payload": [
+                    "\u2026",
+                    "\u2026\u00d71"
+                  ]
+                },
+                "\u2026\u00d75"
+              ],
+              "primaryTimeframe": "str",
+              "provisional": "bool",
+              "strategyRevision": "int",
+              "thesisDirection": "str"
+            },
+            "outcome": "str",
+            "parsedPicks": [],
+            "reasoning": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d720"
+        ],
         "limit": "int",
         "page": "int",
         "total": "int"
@@ -4453,7 +4656,9 @@
           "cvd",
           "cvdCrowdConvergence",
           "mtfConfluence",
-          "perpSpotFlow"
+          "perpSpotFlow",
+          "marketBreadth",
+          "referencePairs"
         ],
         "strategyTimeframe": [
           "1m",
@@ -4830,6 +5035,8 @@
           "includeCvdCrowdConvergence",
           "includeMtfConfluence",
           "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs",
           "sessionContext"
         ]
       },
@@ -4955,7 +5162,7 @@
             "key": "str",
             "value": "null"
           },
-          "\u2026\u00d723"
+          "\u2026\u00d725"
         ]
       },
       "arguments_from": "discovered:agentId,gameType+refusal-named:primaryTimeframe",
@@ -5003,7 +5210,7 @@
             "executedOrderId": "str",
             "signalLogId": "str"
           },
-          "\u2026\u00d721"
+          "\u2026\u00d731"
         ]
       },
       "arguments_from": "none-required",
@@ -5075,7 +5282,67 @@
       "declared_output": [
         "decision"
       ],
-      "not_called_because": "no decisionId available on this account"
+      "not_called_because": "no decisionId available on this account",
+      "observed": [
+        "decision"
+      ],
+      "observed_shape": {
+        "decision": {
+          "agentId": "str",
+          "atrPct": "float",
+          "challenge": "null",
+          "closedAt": "null",
+          "coinTicker": "str",
+          "conviction": "float",
+          "convictionPercent": "int",
+          "createdAt": "str",
+          "decision": "str",
+          "direction": "str",
+          "entryFee": "null",
+          "entryFillPrice": "null",
+          "entryFillQuantity": "null",
+          "entryPrice": "null",
+          "executedAt": "null",
+          "executedOrderId": "null",
+          "expiresAt": "str",
+          "id": "str",
+          "llmDurationMs": "int",
+          "positionSizePct": "null",
+          "positionSizePreset": "null",
+          "reasoning": "str",
+          "riskRewardRatio": "null",
+          "signalChecklist": [
+            {
+              "interpretation": "str",
+              "label": "str",
+              "signalId": "str",
+              "verdict": "str"
+            },
+            "\u2026\u00d74"
+          ],
+          "signalLogId": "str",
+          "signalModulesUsed": [
+            "str",
+            "\u2026\u00d74"
+          ],
+          "status": "str",
+          "stopLoss": "null",
+          "stopLossOrderId": "null",
+          "takeProfit": "null",
+          "takeProfitOrderId": "null",
+          "timeHorizon": "str",
+          "tradeStatus": "str",
+          "usageEventId": "str",
+          "userId": "str"
+        }
+      },
+      "arguments_from": "discovered:decisionId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_intelligence_agent",
@@ -5134,12 +5401,14 @@
             "includeFundingRates": "bool",
             "includeHigherTimeframe": "bool",
             "includeMacd": "bool",
+            "includeMarketBreadth": "bool",
             "includeMfi": "bool",
             "includeMovingAverages": "bool",
             "includeMtfConfluence": "bool",
             "includeOpenInterest": "bool",
             "includePerpSpotFlow": "bool",
             "includePriceAction": "bool",
+            "includeReferencePairs": "bool",
             "includeRegimeContext": "bool",
             "includeRelativeStrength": "bool",
             "includeRsi": "bool",
@@ -5159,7 +5428,7 @@
           "last24hCostUsd": "int",
           "modelDisplayName": "str",
           "modelId": "str",
-          "modelImageUrl": "null",
+          "modelImageUrl": "str",
           "overlayText": "str",
           "performance": {
             "gameStats": {
@@ -5172,9 +5441,15 @@
               "winRatePercent": "null"
             },
             "tradeStats": {
-              "avgPnl": "null",
+              "avgPnl": "float",
               "open": "int",
-              "pnlSparkline": [],
+              "pnlSparkline": [
+                {
+                  "timestamp": "str",
+                  "value": "float"
+                },
+                "\u2026\u00d720"
+              ],
               "trades": "int",
               "winLoss": {
                 "losses": "int",
@@ -5204,7 +5479,7 @@
             "maxSlippageBps": "int",
             "maxStopLossPct": "int",
             "minAllocationUsd": "int",
-            "minRiskRewardRatio": "float",
+            "minRiskRewardRatio": "int",
             "minStopLossPct": "float",
             "minTradeConviction": "float",
             "positionManagement": {
@@ -5218,15 +5493,15 @@
               "timeDecayMaxTightenPct": "int",
               "timeDecayStaleThresholdTpProgressPct": "int",
               "timeDecayTightenPct": "int",
-              "trailingAtrMultiple": "int",
+              "trailingAtrMultiple": "float",
               "trailingBufferPct": "float",
               "trailingEnabled": "bool",
-              "trailingFixedPct": "int",
+              "trailingFixedPct": "float",
               "trailingType": "str"
             },
             "positionSizePresets": {
               "largePct": "int",
-              "mediumPct": "int",
+              "mediumPct": "float",
               "sizingStrategy": "str",
               "smallPct": "int"
             },
@@ -5388,13 +5663,16 @@
         },
         "data": [
           {
-            "crossover": "null",
+            "crossover": {
+              "timeframe": "str",
+              "type": "str"
+            },
             "marketStats": {
               "baseVolume24h": "float",
               "fundingRate": "float",
               "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "int",
+              "oraclePrice": "float",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -5436,7 +5714,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Get comprehensive market context with 23 selectable modules. Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research \u2014 exactly one of the tw",
+      "description": "Get comprehensive market context with 25 selectable modules. Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research \u2014 exactly one of the tw",
       "input_required": [],
       "input_optional": [
         "modules",
@@ -5467,7 +5745,9 @@
           "cvd",
           "cvdCrowdConvergence",
           "mtfConfluence",
-          "perpSpotFlow"
+          "perpSpotFlow",
+          "marketBreadth",
+          "referencePairs"
         ],
         "primaryTimeframe": [
           "5m",
@@ -5753,6 +6033,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -5863,7 +6145,7 @@
           "outputKind": "str",
           "spreadOperands": [
             "str",
-            "\u2026\u00d715"
+            "\u2026\u00d717"
           ],
           "timeframeMode": "str",
           "transforms": [
@@ -6055,7 +6337,46 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "accuracy": "null",
+            "agentId": "str",
+            "captainChangePercent": "null",
+            "cells": [
+              {
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
+                "coinId": "str",
+                "finalPoints": "null",
+                "isCaptain": "bool",
+                "isCorrect": "null",
+                "position": "int",
+                "prediction": "str"
+              },
+              "\u2026\u00d79"
+            ],
+            "confidenceScore": "float",
+            "confidenceScorePercent": "int",
+            "finalScore": "null",
+            "gameType": "str",
+            "isItm": "bool",
+            "jackpotPayout": "null",
+            "marketGridSessionId": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
+            "ownerView": "null",
+            "playerId": "str",
+            "poolPayout": "null",
+            "rank": "null",
+            "reasoning": "str",
+            "submittedAt": "str",
+            "thoughtLogId": "str",
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
+          },
+          "\u2026\u00d720"
+        ],
         "limit": "int",
         "page": "int",
         "total": "int"
@@ -6212,7 +6533,29 @@
         "limit": "int",
         "page": "int",
         "total": "int",
-        "trades": []
+        "trades": [
+          {
+            "closeReason": "str",
+            "closedAt": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "direction": "str",
+            "durationSeconds": "int",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "int",
+            "exitFillPrice": "float",
+            "isWin": "bool",
+            "leverage": "int",
+            "movePercent": "float",
+            "netPnl": "float",
+            "openedAt": "str",
+            "outcomeId": "str",
+            "positionId": "str",
+            "roePercent": "float",
+            "signalLogId": "str"
+          },
+          "\u2026\u00d720"
+        ]
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -6254,7 +6597,291 @@
       "declared_output": [
         "log"
       ],
-      "not_called_because": "no logId available on this account"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "log"
+      ],
+      "observed_shape": {
+        "log": {
+          "agentAvatarUrl": "str",
+          "agentId": "str",
+          "agentModelName": "str",
+          "agentName": "str",
+          "aggregateScore": "float",
+          "aggregateScorePercent": "int",
+          "assessmentConfidence": "float",
+          "assessmentConfidencePercent": "int",
+          "assessmentDirection": "str",
+          "atrPct": "float",
+          "attributions": [
+            {
+              "attributionPercent": "int",
+              "effectiveAllocation": "int",
+              "name": "str",
+              "score": "int",
+              "scorePercent": "int",
+              "signalId": "str"
+            },
+            "\u2026\u00d715"
+          ],
+          "challenge": "null",
+          "coinTicker": "str",
+          "createdAt": "str",
+          "dominantBias": "str",
+          "effectiveMinAggregateScore": "float",
+          "effectiveMinAggregateScorePercent": "int",
+          "effectiveMinRequiredCount": "int",
+          "evaluatedAt": "str",
+          "evaluationGateReason": "null",
+          "evaluationGateStatus": "str",
+          "hasConflictingSignals": "bool",
+          "id": "str",
+          "linkedEntryDecision": {
+            "agentId": "str",
+            "atrPct": "float",
+            "challenge": "null",
+            "closedAt": "null",
+            "coinTicker": "str",
+            "conviction": "float",
+            "convictionPercent": "int",
+            "createdAt": "str",
+            "decision": "str",
+            "direction": "str",
+            "entryFee": "null",
+            "entryFillPrice": "null",
+            "entryFillQuantity": "null",
+            "entryPrice": "null",
+            "executedAt": "null",
+            "executedOrderId": "null",
+            "expiresAt": "str",
+            "id": "str",
+            "llmDurationMs": "int",
+            "positionSizePct": "null",
+            "positionSizePreset": "null",
+            "reasoning": "str",
+            "riskRewardRatio": "null",
+            "signalChecklist": [
+              {
+                "interpretation": "str",
+                "label": "str",
+                "signalId": "str",
+                "verdict": "str"
+              },
+              "\u2026\u00d74"
+            ],
+            "signalLogId": "str",
+            "signalModulesUsed": [
+              "str",
+              "\u2026\u00d74"
+            ],
+            "status": "str",
+            "stopLoss": "null",
+            "stopLossOrderId": "null",
+            "takeProfit": "null",
+            "takeProfitOrderId": "null",
+            "timeHorizon": "str",
+            "tradeStatus": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "pipeline": {
+            "agentId": "str",
+            "attempt": {
+              "attemptId": "str",
+              "completedAt": "str",
+              "createdAt": "str",
+              "llmPartialReasoning": "null",
+              "ownerView": "null",
+              "reasonCodeDetails": {},
+              "reasonCodes": [],
+              "result": "str",
+              "setupOptions": [
+                {
+                  "riskRewardRatio": "float",
+                  "setupIndex": "int",
+                  "stopLossDistancePct": "float",
+                  "stopLossMethod": "str",
+                  "stopLossPrice": "float",
+                  "takeProfitDistancePct": "float",
+                  "takeProfitMethod": "str",
+                  "takeProfitPrice": "float"
+                },
+                "\u2026\u00d714"
+              ]
+            },
+            "candidateLevelsRejectionStage": "null",
+            "candidateLevelsSlCandidateCount": "null",
+            "candidateLevelsSlClosestPct": "null",
+            "candidateLevelsSlMinPct": "null",
+            "coinTicker": "str",
+            "decision": {
+              "conviction": "float",
+              "convictionPercent": "int",
+              "createdAt": "str",
+              "decision": "str",
+              "decisionId": "str",
+              "direction": "str",
+              "entryPrice": "null",
+              "reasoning": "str",
+              "riskRewardRatio": "null",
+              "selectedSetupIndex": "null",
+              "signalChecklist": [
+                {
+                  "interpretation": "str",
+                  "label": "str",
+                  "measured": {
+                    "indicators": "\u2026",
+                    "kind": "\u2026"
+                  },
+                  "signalId": "str",
+                  "verdict": "str"
+                },
+                "\u2026\u00d74"
+              ],
+              "stopLoss": "null",
+              "stopLossDistancePct": "null",
+              "takeProfit": "null",
+              "takeProfitDistancePct": "null",
+              "timeHorizon": "str"
+            },
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "execution": "null",
+            "liveOverlay": "null",
+            "outcome": "null",
+            "signalLogId": "str"
+          },
+          "primarySignalCount": "int",
+          "scorecard": {
+            "aggregateScore": "float",
+            "allEvaluatedSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "rsi14": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d784"
+            ],
+            "coinTicker": "str",
+            "comparison": [
+              {
+                "category": "str",
+                "correlationToTarget": "float",
+                "momentumState": "str",
+                "priceChange1h": "float",
+                "priceChange24h": "float",
+                "relationship": "str",
+                "ticker": "str",
+                "trendBias1h": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "dominantBias": "str",
+            "evaluatedAt": "str",
+            "hasConflictingSignals": "bool",
+            "primarySignals": [],
+            "supportingSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "macd_histogram": "float",
+                  "prev_macd_histogram": "float",
+                  "prev_price": "float",
+                  "price": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d715"
+            ],
+            "timeframesUsed": [
+              "str",
+              "\u2026\u00d71"
+            ],
+            "tradeAssessment": {
+              "candidateLevels": {
+                "atr": "float",
+                "atrPct": "float",
+                "candidateStopLosses": [
+                  {
+                    "atrMultiple": "\u2026",
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d73"
+                ],
+                "candidateTakeProfits": [
+                  {
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d75"
+                ],
+                "direction": "str",
+                "entryPrice": "float",
+                "maxStopLossDistance": "float",
+                "minRiskRewardRatio": "int"
+              },
+              "confidence": "float",
+              "direction": "str"
+            },
+            "triggeredSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "macd_histogram": "float",
+                  "prev_macd_histogram": "float",
+                  "prev_price": "float",
+                  "price": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d715"
+            ]
+          },
+          "signalSource": "str",
+          "sourceThoughtLogId": "str",
+          "terminalStatus": "str",
+          "triggeredSignalCount": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_signal_logs",
@@ -6385,7 +7012,34 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "agentId": "str",
+            "aggregateScore": "float",
+            "aggregateScorePercent": "int",
+            "assessmentConfidence": "float",
+            "assessmentConfidencePercent": "int",
+            "assessmentDirection": "str",
+            "atrPct": "float",
+            "coinTicker": "str",
+            "createdAt": "str",
+            "dominantBias": "str",
+            "effectiveMinAggregateScore": "float",
+            "effectiveMinAggregateScorePercent": "int",
+            "effectiveMinRequiredCount": "int",
+            "evaluatedAt": "str",
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "hasConflictingSignals": "bool",
+            "id": "str",
+            "primarySignalCount": "int",
+            "signalSource": "str",
+            "sourceThoughtLogId": "str",
+            "terminalStatus": "str",
+            "triggeredSignalCount": "int"
+          },
+          "\u2026\u00d720"
+        ],
         "total": "int"
       },
       "arguments_from": "discovered:agentId",
@@ -6479,32 +7133,38 @@
         "winRatePercent"
       ],
       "observed_shape": {
-        "avgAggregateScore": "int",
+        "avgAggregateScore": "float",
         "avgAggregateScorePercent": "int",
-        "avgConviction": "int",
+        "avgConviction": "float",
         "avgConvictionPercent": "int",
-        "avgDurationSeconds": "null",
-        "avgNetPnl": "null",
-        "avgRiskRewardRatio": "null",
+        "avgDurationSeconds": "float",
+        "avgNetPnl": "float",
+        "avgRiskRewardRatio": "float",
         "blockedCount": "int",
         "cancelledCount": "int",
         "enterCount": "int",
         "executedCount": "int",
         "expiredCount": "int",
         "failedCount": "int",
-        "fillRatePct": "null",
+        "fillRatePct": "int",
         "lossCount": "int",
         "outcomeCount": "int",
         "pendingCount": "int",
         "skipCount": "int",
         "skippedCount": "int",
-        "topCoinsByEvaluation": [],
+        "topCoinsByEvaluation": [
+          {
+            "coinTicker": "str",
+            "count": "int"
+          },
+          "\u2026\u00d714"
+        ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
-        "totalNetPnl": "null",
+        "totalNetPnl": "float",
         "winCount": "int",
-        "winRate": "null",
-        "winRatePercent": "null"
+        "winRate": "float",
+        "winRatePercent": "float"
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -6546,7 +7206,22 @@
       "declared_output": [
         "result"
       ],
-      "not_called_because": "no logId available on this account"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "result"
+      ],
+      "observed_shape": {
+        "result": {
+          "status": "str"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_public_agent_unrealized_pnl",
@@ -6698,7 +7373,7 @@
             "regime": "str",
             "timestamp": "int"
           },
-          "\u2026\u00d7239"
+          "\u2026\u00d7166"
         ],
         "symbol": "str",
         "timeframe": "str"
@@ -6843,7 +7518,300 @@
       "declared_output": [
         "log"
       ],
-      "not_called_because": "no logId available on this account"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "log"
+      ],
+      "observed_shape": {
+        "log": {
+          "agentAvatarUrl": "str",
+          "agentId": "str",
+          "agentModelName": "str",
+          "agentName": "str",
+          "aggregateScore": "float",
+          "aggregateScorePercent": "int",
+          "assessmentConfidence": "float",
+          "assessmentConfidencePercent": "int",
+          "assessmentDirection": "str",
+          "atrPct": "float",
+          "attributions": [
+            {
+              "attributionPercent": "int",
+              "effectiveAllocation": "int",
+              "name": "str",
+              "score": "int",
+              "scorePercent": "int",
+              "signalId": "str"
+            },
+            "\u2026\u00d715"
+          ],
+          "challenge": "null",
+          "coinTicker": "str",
+          "createdAt": "str",
+          "dominantBias": "str",
+          "effectiveMinAggregateScore": "float",
+          "effectiveMinAggregateScorePercent": "int",
+          "effectiveMinRequiredCount": "int",
+          "evaluatedAt": "str",
+          "evaluationGateReason": "null",
+          "evaluationGateStatus": "str",
+          "hasConflictingSignals": "bool",
+          "id": "str",
+          "linkedEntryDecision": {
+            "agentId": "str",
+            "atrPct": "float",
+            "challenge": "null",
+            "closedAt": "null",
+            "coinTicker": "str",
+            "conviction": "float",
+            "convictionPercent": "int",
+            "createdAt": "str",
+            "decision": "str",
+            "direction": "str",
+            "entryFee": "null",
+            "entryFillPrice": "null",
+            "entryFillQuantity": "null",
+            "entryPrice": "null",
+            "executedAt": "null",
+            "executedOrderId": "null",
+            "expiresAt": "str",
+            "id": "str",
+            "llmDurationMs": "int",
+            "positionSizePct": "null",
+            "positionSizePreset": "null",
+            "reasoning": "str",
+            "riskRewardRatio": "null",
+            "signalChecklist": [
+              {
+                "interpretation": "str",
+                "label": "str",
+                "signalId": "str",
+                "verdict": "str"
+              },
+              "\u2026\u00d74"
+            ],
+            "signalLogId": "str",
+            "signalModulesUsed": [
+              "str",
+              "\u2026\u00d74"
+            ],
+            "status": "str",
+            "stopLoss": "null",
+            "stopLossOrderId": "null",
+            "takeProfit": "null",
+            "takeProfitOrderId": "null",
+            "timeHorizon": "str",
+            "tradeStatus": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "pipeline": {
+            "agentId": "str",
+            "attempt": {
+              "attemptId": "str",
+              "completedAt": "str",
+              "createdAt": "str",
+              "llmPartialReasoning": "null",
+              "ownerView": {
+                "billingType": "str",
+                "costUsd": "float",
+                "durationMs": "int",
+                "errorMessage": "null",
+                "modelDisplayName": "str",
+                "modelId": "str",
+                "provider": "str",
+                "usageEventId": "str"
+              },
+              "reasonCodeDetails": {},
+              "reasonCodes": [],
+              "result": "str",
+              "setupOptions": [
+                {
+                  "riskRewardRatio": "float",
+                  "setupIndex": "int",
+                  "stopLossDistancePct": "float",
+                  "stopLossMethod": "str",
+                  "stopLossPrice": "float",
+                  "takeProfitDistancePct": "float",
+                  "takeProfitMethod": "str",
+                  "takeProfitPrice": "float"
+                },
+                "\u2026\u00d714"
+              ]
+            },
+            "candidateLevelsRejectionStage": "null",
+            "candidateLevelsSlCandidateCount": "null",
+            "candidateLevelsSlClosestPct": "null",
+            "candidateLevelsSlMinPct": "null",
+            "coinTicker": "str",
+            "decision": {
+              "conviction": "float",
+              "convictionPercent": "int",
+              "createdAt": "str",
+              "decision": "str",
+              "decisionId": "str",
+              "direction": "str",
+              "entryPrice": "null",
+              "reasoning": "str",
+              "riskRewardRatio": "null",
+              "selectedSetupIndex": "null",
+              "signalChecklist": [
+                {
+                  "interpretation": "str",
+                  "label": "str",
+                  "measured": {
+                    "indicators": "\u2026",
+                    "kind": "\u2026"
+                  },
+                  "signalId": "str",
+                  "verdict": "str"
+                },
+                "\u2026\u00d74"
+              ],
+              "stopLoss": "null",
+              "stopLossDistancePct": "null",
+              "takeProfit": "null",
+              "takeProfitDistancePct": "null",
+              "timeHorizon": "str"
+            },
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "execution": "null",
+            "liveOverlay": "null",
+            "outcome": "null",
+            "signalLogId": "str"
+          },
+          "primarySignalCount": "int",
+          "scorecard": {
+            "aggregateScore": "float",
+            "allEvaluatedSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "rsi14": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d784"
+            ],
+            "coinTicker": "str",
+            "comparison": [
+              {
+                "category": "str",
+                "correlationToTarget": "float",
+                "momentumState": "str",
+                "priceChange1h": "float",
+                "priceChange24h": "float",
+                "relationship": "str",
+                "ticker": "str",
+                "trendBias1h": "str"
+              },
+              "\u2026\u00d75"
+            ],
+            "dominantBias": "str",
+            "evaluatedAt": "str",
+            "hasConflictingSignals": "bool",
+            "primarySignals": [],
+            "supportingSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "macd_histogram": "float",
+                  "prev_macd_histogram": "float",
+                  "prev_price": "float",
+                  "price": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d715"
+            ],
+            "timeframesUsed": [
+              "str",
+              "\u2026\u00d71"
+            ],
+            "tradeAssessment": {
+              "candidateLevels": {
+                "atr": "float",
+                "atrPct": "float",
+                "candidateStopLosses": [
+                  {
+                    "atrMultiple": "\u2026",
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d73"
+                ],
+                "candidateTakeProfits": [
+                  {
+                    "distancePct": "\u2026",
+                    "method": "\u2026",
+                    "price": "\u2026"
+                  },
+                  "\u2026\u00d75"
+                ],
+                "direction": "str",
+                "entryPrice": "float",
+                "maxStopLossDistance": "float",
+                "minRiskRewardRatio": "int"
+              },
+              "confidence": "float",
+              "direction": "str"
+            },
+            "triggeredSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "macd_histogram": "float",
+                  "prev_macd_histogram": "float",
+                  "prev_price": "float",
+                  "price": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "int",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d715"
+            ]
+          },
+          "signalSource": "str",
+          "sourceThoughtLogId": "str",
+          "terminalStatus": "str",
+          "triggeredSignalCount": "int"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_signal_performance",
@@ -6928,32 +7896,38 @@
         "winRatePercent"
       ],
       "observed_shape": {
-        "avgAggregateScore": "int",
+        "avgAggregateScore": "float",
         "avgAggregateScorePercent": "int",
-        "avgConviction": "int",
+        "avgConviction": "float",
         "avgConvictionPercent": "int",
-        "avgDurationSeconds": "null",
-        "avgNetPnl": "null",
-        "avgRiskRewardRatio": "null",
+        "avgDurationSeconds": "float",
+        "avgNetPnl": "float",
+        "avgRiskRewardRatio": "float",
         "blockedCount": "int",
         "cancelledCount": "int",
         "enterCount": "int",
         "executedCount": "int",
         "expiredCount": "int",
         "failedCount": "int",
-        "fillRatePct": "null",
+        "fillRatePct": "int",
         "lossCount": "int",
         "outcomeCount": "int",
         "pendingCount": "int",
         "skipCount": "int",
         "skippedCount": "int",
-        "topCoinsByEvaluation": [],
+        "topCoinsByEvaluation": [
+          {
+            "coinTicker": "str",
+            "count": "int"
+          },
+          "\u2026\u00d714"
+        ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
-        "totalNetPnl": "null",
+        "totalNetPnl": "float",
         "winCount": "int",
-        "winRate": "null",
-        "winRatePercent": "null"
+        "winRate": "float",
+        "winRatePercent": "float"
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -7101,6 +8075,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -7187,6 +8163,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -7409,7 +8387,9 @@
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
           "includeStructureZones",
-          "includePerpSpotFlow"
+          "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs"
         ]
       },
       "input_required_paths": [
@@ -7791,7 +8771,22 @@
       "declared_output": [
         "result"
       ],
-      "not_called_because": "no logId available on this account"
+      "not_called_because": "no logId available on this account",
+      "observed": [
+        "result"
+      ],
+      "observed_shape": {
+        "result": {
+          "status": "str"
+        }
+      },
+      "arguments_from": "discovered:agentId,logId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_trade_outcome_by_decision",
@@ -7822,7 +8817,20 @@
       "declared_output": [
         "outcome"
       ],
-      "not_called_because": "no decisionId available on this account"
+      "not_called_because": "no decisionId available on this account",
+      "observed": [
+        "outcome"
+      ],
+      "observed_shape": {
+        "outcome": "null"
+      },
+      "arguments_from": "discovered:decisionId",
+      "envelope": {
+        "had_structured_content": true,
+        "had_text_block": true
+      },
+      "declared_not_returned": [],
+      "returned_not_declared": []
     },
     {
       "name": "get_trading_config_catalog",
@@ -7988,10 +8996,11 @@
             "createdAt": "str",
             "eventType": "str",
             "id": "str",
-            "marketGridSessionId": "null",
+            "marketGridSessionId": "str",
             "metadata": {
-              "modelDisplayName": "str",
-              "strategyName": "str"
+              "confidence": "float",
+              "reason": "str",
+              "threshold": "float"
             },
             "thoughtLogId": "null",
             "userId": "str"
@@ -8060,18 +9069,18 @@
       "observed_shape": {
         "entries": [
           {
-            "accuracy": "float",
+            "accuracy": "null",
             "agentId": "str",
-            "captainChangePercent": "float",
+            "captainChangePercent": "null",
             "cells": [
               {
-                "basePoints": "int",
-                "captainPoints": "int",
-                "changePercent": "float",
+                "basePoints": "null",
+                "captainPoints": "null",
+                "changePercent": "null",
                 "coinId": "str",
-                "finalPoints": "int",
+                "finalPoints": "null",
                 "isCaptain": "bool",
-                "isCorrect": "bool",
+                "isCorrect": "null",
                 "position": "int",
                 "prediction": "str"
               },
@@ -8079,13 +9088,13 @@
             ],
             "confidenceScore": "float",
             "confidenceScorePercent": "int",
-            "finalScore": "int",
+            "finalScore": "null",
             "gameType": "str",
             "isItm": "bool",
-            "jackpotPayout": "int",
+            "jackpotPayout": "null",
             "marketGridSessionId": "str",
-            "netChangeCapture": "float",
-            "outcome": "str",
+            "netChangeCapture": "null",
+            "outcome": "null",
             "ownerView": {
               "billingType": "str",
               "costUsd": "float",
@@ -8097,13 +9106,13 @@
               "usageEventId": "str"
             },
             "playerId": "str",
-            "poolPayout": "int",
-            "rank": "int",
+            "poolPayout": "null",
+            "rank": "null",
             "reasoning": "str",
             "submittedAt": "str",
             "thoughtLogId": "str",
-            "totalChangeCapture": "float",
-            "totalPayout": "int"
+            "totalChangeCapture": "null",
+            "totalPayout": "null"
           },
           "\u2026\u00d720"
         ],
@@ -8167,338 +9176,29 @@
             "confidenceThreshold": "float",
             "confidenceThresholdPercent": "int",
             "createdAt": "str",
-            "gridPick": {
-              "picks": [
-                {
-                  "coinId": "str",
-                  "confidence": "float",
-                  "isCaptain": "bool",
-                  "prediction": "str",
-                  "reasoning": "str",
-                  "ticker": "str"
-                },
-                "\u2026\u00d79"
-              ]
-            },
+            "gridPick": "null",
             "id": "str",
-            "marketGridSessionId": "str",
+            "marketGridSessionId": "null",
             "marketSnapshot": {
-              "availableCoins": [
+              "coinTicker": "str",
+              "conditionOutcomes": [
                 {
-                  "adxTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "adxZone": "null",
-                  "alignmentConfidence": "str",
-                  "atrTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "bollingerBandTouch": "str",
-                  "bollingerPercentBTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "bollingerWidth": "float",
-                  "buyPressureRatio": "float",
-                  "buyPressureTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "buyTradeCountTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "candleSeqC1": "float",
-                  "candleSeqC2": "float",
-                  "candleSeqC3": "float",
-                  "candleSeqC4": "float",
-                  "candleSeqC5": "float",
-                  "captainFlowConfirmation": "bool",
-                  "cciTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "cciZone": "str",
-                  "changeRank": "int",
-                  "chg15m": "float",
-                  "chg1h": "float",
-                  "chg24h": "float",
-                  "chg4h": "float",
-                  "chg5m": "float",
-                  "coinId": "str",
-                  "crossover": "null",
-                  "crowdAccuracy": "float",
-                  "crowdCaptainRate": "float",
-                  "crowdLiveAccuracy": "int",
-                  "crowdLiveCaptainRate": "int",
-                  "crowdLivePickRate": "int",
-                  "crowdLiveUpBias": "int",
-                  "crowdPickRate": "int",
-                  "crowdUpBias": "int",
-                  "currentBarForming": "bool",
-                  "cvdTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "cvdZone": "str",
-                  "distSwingHighPct": "float",
-                  "distSwingLowPct": "float",
-                  "emaCross513": "null",
-                  "emaSpreadTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "flowCrowdAlignment": "str",
-                  "funding24hAvg": "float",
-                  "fundingRate": "float",
-                  "fundingRateAnnualized": "float",
-                  "fundingRateLabel": "str",
-                  "fundingRateTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "highDeviation": "float",
-                  "htfAdx": "null",
-                  "htfAdxZone": "null",
-                  "htfMaAlign": "null",
-                  "htfRsi14": "null",
-                  "htfRsiZone": "null",
-                  "htfTimeframe": "null",
-                  "latestPrice": "float",
-                  "lowDeviation": "float",
-                  "maAlign": "null",
-                  "macdHistTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "markOraclePremiumPct": "float",
-                  "mfi14Trajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "mfiZone": "str",
-                  "name": "str",
-                  "nearestResistanceZone": "null",
-                  "nearestSupportZone": "null",
-                  "obvTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "oi24hAvg": "float",
-                  "oiChangePct": "float",
-                  "oiPriceRegime": "str",
-                  "oiTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "oiVelocity": "str",
-                  "openInterest": "float",
-                  "ppoTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "priceChangePercent": "float",
-                  "priceVsEma13Pct": "null",
-                  "priceVsEma20Pct": "null",
-                  "priceVsEma5Pct": "null",
-                  "priceVsSma200Pct": "null",
-                  "priceVsSma20Pct": "null",
-                  "priceVsSma50Pct": "null",
-                  "priceZone": "str",
-                  "regimeMomentum": "str",
-                  "regimeMomentumTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "regimeTimeframe": "str",
-                  "regimeTrend": "str",
-                  "regimeTrendTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "regimeVolatility": "str",
-                  "regimeVolatilityTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "rocTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "rocZeroCross": "null",
-                  "rsi14Trajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "rsi7Trajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "rsi7Zone": "str",
-                  "rsiZone": "str",
-                  "sellTradeCountTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "smartRetailDivergence": "str",
-                  "stochasticD": "float",
-                  "stochasticKTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "stochasticZone": "str",
-                  "structureZoneCount": "null",
-                  "structureZoneTimeframes": "null",
-                  "subTfCandleChanges": [
+                  "conditionKey": "str",
+                  "outcome": "str",
+                  "payload": [
                     "\u2026",
-                    "\u2026\u00d74"
-                  ],
-                  "subTfCandleSequence": "str",
-                  "subTfGreenCount": "int",
-                  "subTfNetChange": "float",
-                  "swingHigh": "float",
-                  "swingLow": "float",
-                  "ticker": "str",
-                  "volumeRank": "int",
-                  "volumeRatioTrajectory": {
-                    "now": "\u2026",
-                    "t1": "\u2026",
-                    "t2": "\u2026",
-                    "t3": "\u2026",
-                    "trend": "\u2026"
-                  },
-                  "vwap": "float",
-                  "vwapDeviationPct": "float"
+                    "\u2026\u00d71"
+                  ]
                 },
-                "\u2026\u00d736"
-              ],
-              "crowdLiveSessions": [
-                {
-                  "avgNetChangeCapture": "float",
-                  "dominantBiasDirection": "str",
-                  "dominantBiasPercent": "null",
-                  "playerCount": "int",
-                  "sessionAccuracy": "float",
-                  "sessionId": "str"
-                },
-                "\u2026\u00d71"
-              ],
-              "crowdSettledGames": [
-                {
-                  "avgNetChangeCapture": "float",
-                  "dominantBiasDirection": "str",
-                  "dominantBiasPercent": "float",
-                  "playerCount": "int",
-                  "sessionAccuracy": "float",
-                  "sessionId": "str",
-                  "settledAt": "str"
-                },
-                "\u2026\u00d74"
-              ],
-              "gameType": "str",
-              "gridSize": "int",
-              "includedTimeframes": [
-                "str",
                 "\u2026\u00d75"
               ],
-              "lockAt": "str",
-              "millisecondsToLock": "int",
-              "millisecondsToSettle": "int",
-              "presetDisplayName": "str",
               "primaryTimeframe": "str",
-              "scoring": {
-                "captainMultiplier": "int",
-                "captainWrongPenaltyEffect": "str",
-                "wrongPenaltyEnabled": "bool"
-              },
-              "sessionId": "str",
-              "sessionStatus": "str",
-              "settleAt": "str",
-              "subTimeframe": "str",
-              "subTimeframeCandleCount": "int",
-              "timeframe": "str"
+              "provisional": "bool",
+              "strategyRevision": "int",
+              "thesisDirection": "str"
             },
             "outcome": "str",
-            "parsedPicks": [
-              {
-                "coinId": "str",
-                "confidence": "float",
-                "confidencePercent": "int",
-                "isCaptain": "bool",
-                "prediction": "str",
-                "reasoning": "str",
-                "ticker": "str"
-              },
-              "\u2026\u00d79"
-            ],
+            "parsedPicks": [],
             "reasoning": "str",
             "usageEventId": "str",
             "userId": "str"
@@ -8590,7 +9290,7 @@
             "provider": "str",
             "reasoningEffort": "null",
             "sortOrder": "int",
-            "speedScore": "int",
+            "speedScore": "null",
             "temperature": "float",
             "topP": "null"
           },
@@ -8670,7 +9370,57 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "agentId": "str",
+            "atrPct": "float",
+            "challenge": "null",
+            "closedAt": "null",
+            "coinTicker": "str",
+            "conviction": "float",
+            "convictionPercent": "int",
+            "createdAt": "str",
+            "decision": "str",
+            "direction": "str",
+            "entryFee": "null",
+            "entryFillPrice": "null",
+            "entryFillQuantity": "null",
+            "entryPrice": "null",
+            "executedAt": "null",
+            "executedOrderId": "null",
+            "expiresAt": "str",
+            "id": "str",
+            "llmDurationMs": "int",
+            "positionSizePct": "null",
+            "positionSizePreset": "null",
+            "reasoning": "str",
+            "riskRewardRatio": "null",
+            "signalChecklist": [
+              {
+                "interpretation": "str",
+                "label": "str",
+                "signalId": "str",
+                "verdict": "str"
+              },
+              "\u2026\u00d74"
+            ],
+            "signalLogId": "str",
+            "signalModulesUsed": [
+              "str",
+              "\u2026\u00d74"
+            ],
+            "status": "str",
+            "stopLoss": "null",
+            "stopLossOrderId": "null",
+            "takeProfit": "null",
+            "takeProfitOrderId": "null",
+            "timeHorizon": "str",
+            "tradeStatus": "str",
+            "usageEventId": "str",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
         "total": "int"
       },
       "arguments_from": "discovered:agentId",
@@ -8803,14 +9553,16 @@
         "entries": [
           {
             "agentId": "str",
-            "coinTicker": "null",
+            "coinTicker": "str",
             "createdAt": "str",
             "gateStage": "str",
             "id": "str",
             "reasonCode": "str",
             "reasonDetail": {
               "equityUsd": "float",
-              "thresholdUsd": "int"
+              "maxLeverage": "int",
+              "minEquityUsd": "float",
+              "smallPct": "int"
             },
             "sourceThoughtLogId": "null",
             "userId": "str"
@@ -8890,12 +9642,14 @@
               "includeFundingRates": "bool",
               "includeHigherTimeframe": "bool",
               "includeMacd": "bool",
+              "includeMarketBreadth": "bool",
               "includeMfi": "bool",
               "includeMovingAverages": "bool",
               "includeMtfConfluence": "bool",
               "includeOpenInterest": "bool",
               "includePerpSpotFlow": "bool",
               "includePriceAction": "bool",
+              "includeReferencePairs": "bool",
               "includeRegimeContext": "bool",
               "includeRelativeStrength": "bool",
               "includeRsi": "bool",
@@ -8912,10 +9666,10 @@
             "hasActiveAssignments": "bool",
             "id": "str",
             "isSystemDefault": "bool",
-            "last24hCostUsd": "int",
+            "last24hCostUsd": "float",
             "modelDisplayName": "str",
             "modelId": "str",
-            "modelImageUrl": "null",
+            "modelImageUrl": "str",
             "overlayText": "str",
             "performance": {
               "gameStats": {
@@ -8928,9 +9682,15 @@
                 "winRatePercent": "null"
               },
               "tradeStats": {
-                "avgPnl": "null",
+                "avgPnl": "float",
                 "open": "int",
-                "pnlSparkline": [],
+                "pnlSparkline": [
+                  {
+                    "timestamp": "\u2026",
+                    "value": "\u2026"
+                  },
+                  "\u2026\u00d720"
+                ],
                 "trades": "int",
                 "winLoss": {
                   "losses": "int",
@@ -8960,7 +9720,7 @@
               "maxSlippageBps": "int",
               "maxStopLossPct": "int",
               "minAllocationUsd": "int",
-              "minRiskRewardRatio": "float",
+              "minRiskRewardRatio": "int",
               "minStopLossPct": "float",
               "minTradeConviction": "float",
               "positionManagement": {
@@ -8974,15 +9734,15 @@
                 "timeDecayMaxTightenPct": "int",
                 "timeDecayStaleThresholdTpProgressPct": "int",
                 "timeDecayTightenPct": "int",
-                "trailingAtrMultiple": "int",
+                "trailingAtrMultiple": "float",
                 "trailingBufferPct": "float",
                 "trailingEnabled": "bool",
-                "trailingFixedPct": "int",
+                "trailingFixedPct": "float",
                 "trailingType": "str"
               },
               "positionSizePresets": {
                 "largePct": "int",
-                "mediumPct": "int",
+                "mediumPct": "float",
                 "sizingStrategy": "str",
                 "smallPct": "int"
               },
@@ -8995,7 +9755,7 @@
             "updatedAt": "str",
             "userId": "str"
           },
-          "\u2026\u00d75"
+          "\u2026\u00d71"
         ],
         "slotUsage": {
           "level": "int",
@@ -9239,21 +9999,22 @@
               "cooldownUntil": "null",
               "isIdle": "bool",
               "lastFireAt": "null",
-              "lastFlipAt": "str",
+              "lastFlipAt": "null",
               "matchedIsDefault": "bool",
-              "matchedSlotId": "str",
+              "matchedSlotId": "null",
               "matchedSlotPriority": "null",
-              "onDutyAgentAvatarUrl": "str",
-              "onDutyAgentDisplayName": "str",
-              "onDutyAgentId": "str",
+              "onDutyAgentAvatarUrl": "null",
+              "onDutyAgentDisplayName": "null",
+              "onDutyAgentId": "null",
               "openPositionAgentAvatarUrl": "null",
               "openPositionAgentDisplayName": "null",
               "openPositionAgentId": "null",
-              "qualificationBlock": "str",
-              "qualified": "bool",
-              "reason": "null",
-              "regimeConviction": "str",
-              "regimeUsed": "str",
+              "qualificationBlock": "null",
+              "qualified": "null",
+              "reason": "str",
+              "regimeConviction": "null",
+              "regimeUsed": "null",
+              "rotating": "bool",
               "section": "str"
             },
             "revision": "int",
@@ -9276,7 +10037,7 @@
               "\u2026\u00d71"
             ]
           },
-          "\u2026\u00d73"
+          "\u2026\u00d716"
         ],
         "summary": {
           "agentsActive": "int",
@@ -9415,7 +10176,34 @@
         "total"
       ],
       "observed_shape": {
-        "entries": [],
+        "entries": [
+          {
+            "agentId": "str",
+            "aggregateScore": "float",
+            "aggregateScorePercent": "int",
+            "assessmentConfidence": "float",
+            "assessmentConfidencePercent": "int",
+            "assessmentDirection": "str",
+            "atrPct": "float",
+            "coinTicker": "str",
+            "createdAt": "str",
+            "dominantBias": "str",
+            "effectiveMinAggregateScore": "float",
+            "effectiveMinAggregateScorePercent": "int",
+            "effectiveMinRequiredCount": "int",
+            "evaluatedAt": "str",
+            "evaluationGateReason": "null",
+            "evaluationGateStatus": "str",
+            "hasConflictingSignals": "bool",
+            "id": "str",
+            "primarySignalCount": "int",
+            "signalSource": "str",
+            "sourceThoughtLogId": "str",
+            "terminalStatus": "str",
+            "triggeredSignalCount": "int"
+          },
+          "\u2026\u00d710"
+        ],
         "total": "int"
       },
       "arguments_from": "discovered:agentId",
@@ -9484,7 +10272,7 @@
             "updatedAt": "str",
             "visibility": "str"
           },
-          "\u2026\u00d737"
+          "\u2026\u00d715"
         ]
       },
       "arguments_from": "none-required",
@@ -9733,7 +10521,7 @@
               "\u2026\u00d76"
             ]
           },
-          "\u2026\u00d78"
+          "\u2026\u00d710"
         ],
         "previewExecutionLimits": {
           "deadlineMs": "int",
@@ -9755,7 +10543,7 @@
             "sectionKey": "str",
             "title": "str"
           },
-          "\u2026\u00d725"
+          "\u2026\u00d727"
         ],
         "timeframeRefs": [
           {
@@ -9831,7 +10619,37 @@
         "total"
       ],
       "observed_shape": {
-        "outcomes": [],
+        "outcomes": [
+          {
+            "agentId": "str",
+            "closeReason": "str",
+            "closedAt": "str",
+            "closedBy": "str",
+            "coinTicker": "str",
+            "conviction": "float",
+            "createdAt": "str",
+            "decisionId": "str",
+            "direction": "str",
+            "durationSeconds": "int",
+            "effectiveLeverage": "int",
+            "entryFee": "float",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "int",
+            "exitFee": "float",
+            "exitFillPrice": "float",
+            "exitFillQuantity": "int",
+            "id": "str",
+            "netPnl": "float",
+            "openedAt": "str",
+            "realizedPnl": "float",
+            "signalLogId": "str",
+            "slippageEntry": "float",
+            "slippageExit": "float",
+            "totalFees": "float",
+            "userId": "str"
+          },
+          "\u2026\u00d710"
+        ],
         "total": "int"
       },
       "arguments_from": "discovered:agentId",
@@ -10165,7 +10983,7 @@
           "fallback"
         ],
         "request.slots[].conditions[].kind": [
-          "time_window",
+          "hours",
           "regime"
         ],
         "request.slots[].conditions[].minConviction": [
@@ -10227,20 +11045,18 @@
           "variants": [
             {
               "when": {
-                "kind": "time_window"
+                "kind": "hours"
               },
               "closed": true,
               "accepts": [
                 "days",
-                "fromHour",
-                "kind",
-                "toHour"
+                "hours",
+                "kind"
               ],
               "required": [
                 "days",
-                "fromHour",
-                "kind",
-                "toHour"
+                "hours",
+                "kind"
               ]
             },
             {
@@ -10370,6 +11186,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -10456,6 +11274,8 @@
           "LAST",
           "MARK",
           "ORACLE",
+          "SPOT_CLOSE_CB",
+          "SPOT_CLOSE_BN",
           "BAR_FORMING",
           "RSI14",
           "RSI7",
@@ -10592,7 +11412,9 @@
           "includeCrowdIntelligence",
           "includeCvdCrowdConvergence",
           "includeStructureZones",
-          "includePerpSpotFlow"
+          "includePerpSpotFlow",
+          "includeMarketBreadth",
+          "includeReferencePairs"
         ],
         "sections[].timeframe": [
           "1m",
@@ -11040,14 +11862,18 @@
       },
       "declared_output": [
         "budgetUsage",
+        "conditionColumns",
         "conditionOutcomes",
+        "conditionVerdictTally",
         "rankScopingNote",
         "renderedSections",
         "tokenCountModel"
       ],
       "observed": [
         "budgetUsage",
+        "conditionColumns",
         "conditionOutcomes",
+        "conditionVerdictTally",
         "rankScopingNote",
         "renderedSections",
         "tokenCountModel"
@@ -11075,7 +11901,32 @@
             "used": "int"
           }
         },
+        "conditionColumns": [
+          {
+            "outputs": [
+              {
+                "conditionOperators": [
+                  "str",
+                  "\u2026\u00d75"
+                ],
+                "conditionVocabulary": [],
+                "header": "str",
+                "meaning": "str"
+              },
+              "\u2026\u00d717"
+            ],
+            "sectionKey": "str",
+            "title": "str"
+          },
+          "\u2026\u00d78"
+        ],
         "conditionOutcomes": [],
+        "conditionVerdictTally": {
+          "DOWN": "int",
+          "NEITHER": "int",
+          "UNRESOLVED": "int",
+          "UP": "int"
+        },
         "rankScopingNote": "str",
         "renderedSections": [
           {
@@ -11903,7 +12754,8 @@
         }
       },
       "declared_output": [
-        "agent"
+        "agent",
+        "feasibilityAdvisory"
       ],
       "observed": null,
       "not_called_because": "classification is 'destructive' \u2014 this tool can change things"
@@ -12326,7 +13178,7 @@
           "1w"
         ],
         "request.slots[].conditions[].kind": [
-          "time_window",
+          "hours",
           "regime"
         ],
         "request.slots[].conditions[].minConviction": [
@@ -12391,20 +13243,18 @@
           "variants": [
             {
               "when": {
-                "kind": "time_window"
+                "kind": "hours"
               },
               "closed": true,
               "accepts": [
                 "days",
-                "fromHour",
-                "kind",
-                "toHour"
+                "hours",
+                "kind"
               ],
               "required": [
                 "days",
-                "fromHour",
-                "kind",
-                "toHour"
+                "hours",
+                "kind"
               ]
             },
             {

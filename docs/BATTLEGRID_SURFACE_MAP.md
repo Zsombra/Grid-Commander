@@ -1,7 +1,7 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v9.0.0`**
-on 2026-08-06. Regenerate after any BattleGrid deployment: the server says its
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v13.0.0`**
+on 2026-08-08. Regenerate after any BattleGrid deployment: the server says its
 own list goes stale, and this file inherits that.
 
 **110 tools** · 83 read ·
@@ -30,6 +30,8 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v5.0.0 | 110 | `conditionVerdicts` dropped from a closed plan schema; `entryStrategy` replaced two booleans on policy slots; `priceAction` became omissible |
 | → v5.1.0 | 110 | four crowd metrics added — `CROWD_PICK_LIVE`, `CROWD_UPBIAS_LIVE`, `CROWD_ACC_LIVE`, `CROWD_CAPT_LIVE`. Purely additive |
 | → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` **and nested its rendered section bodies one level down** |
+| → v11.0.0 | 110 | **`arenaChallengeEnabled` dropped** from create and update — and from the agent payloads themselves; `feasibilityAdvisory` added to create's declared output; a strategy-vocabulary metric enum shifted. Hidden for two days because only the record was re-probed, not the reference — see `two-agent-owned-fields-no-tool-can-write` |
+| → v13.0.0 | 110 | the quietest yet: declared schemas, constants and annotations byte-identical across all 110 tools; `get_market_context` grew 23 → 25 selectable modules (`marketBreadth`, `referencePairs`) |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools
