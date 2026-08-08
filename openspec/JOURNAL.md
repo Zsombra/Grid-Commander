@@ -33,10 +33,16 @@ All writes raw-MCP against the v14 schemas, every one logged and read back.
   `xyz_skhx` (a Hyperliquid TradFi synthetic, `xyz:SKHX`) joined
   Breakwater after the coin catalog identified it — radar now reads 16
   scanning / 0 idle / 3 agents active. The four free slots (cap 20)
-  stay empty: the first-deployment constraint was retested at v14 and
-  holds, with two refusal shapes (`CONFLICT actualRevision: null` on a
-  policy-less coin; `expectedRevision` 0 schema-rejected as
-  `exclusiveMinimum`). Filling them is a battlegrid.trade act. Also
+  did not stay empty for long: the operator pushed back ("maybe the new
+  update changed something"), and the tool's own v14 description answered —
+  *"pass null only for a first deploy"*. `expectedRevision: null` created
+  four first deployments (XRP, AVAX → Vanguard; xyz_jpy, xyz_gold →
+  Breakwater), taking the radar to its **20/20 cap, 20 scanning, 0 idle**.
+  `radar-first-deployment-not-creatable-over-mcp` closed (the fix landed
+  silently somewhere v3→v13 — the probes only ever tried integers);
+  successor filed for the product surface, which still assumes
+  replacement-only. Coin ids matter: TradFi synthetics deploy as
+  `coins.id` (`xyz_jpy`), never ticker. Also
   established: a plan's `coinSelection` is compile-time context, not
   strategy state — an UPDATE carrying only it is refused as having no
   updatable field.
