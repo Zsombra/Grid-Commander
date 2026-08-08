@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v9.0.0`, protocol `2025-06-18`) on 2026-08-06.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v13.0.0`, protocol `2025-06-18`) on 2026-08-08.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -314,15 +314,16 @@ Returns: `filter`, `leaderboard`, `currentUser`, `generatedAt`
 
 *Get Market Context* — read-only · open-world
 
-Get comprehensive market context with 23 selectable modules. Provide sessionId for session-
+Get comprehensive market context with 25 selectable modules. Provide sessionId for session-
 scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research —
 exactly one of the two. Returns GFM markdown sections — the same format Intelligence Agents
 use during auto-play. Available modules: priceAction, subTimeframe, rsi, macd, volume,
 volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest,
 relativeStrength, supportResistance, trendStrength, mfi, higherTimeframe, regimeContext,
-structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence, perpSpotFlow.
-Default: ["priceAction", "rsi", "relativeStrength"]. Module 1 (Price Action) is selectable
-like any other module — included by default, omitted when your list leaves it out.
+structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence, perpSpotFlow,
+marketBreadth, referencePairs. Default: ["priceAction", "rsi", "relativeStrength"]. Module 1
+(Price Action) is selectable like any other module — included by default, omitted when your
+list leaves it out.
 
 Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coins`, `sections`
 
@@ -555,7 +556,6 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
 | `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
 | `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
-| `arenaChallengeEnabled` | boolean |  | Whether this agent participates in Root Challenge Rounds. Omit to use the create default. |
 | `idempotencyKey` | string |  | Caller-generated key, 8-255 chars. A retry with the same key returns the original result rather than repeating the command. |
 
 ### `update_intelligence_agent`
@@ -569,7 +569,7 @@ expectedRevision from the latest read for optimistic concurrency; SYSTEM agents 
 immutable. Strategy REBINDING is not part of this command — use rebind_intelligence_agent,
 which is separately confirmed.
 
-Returns: `agent`
+Returns: `agent`, `feasibilityAdvisory`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -622,7 +622,6 @@ Returns: `agent`
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
 | `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
 | `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
-| `arenaChallengeEnabled` | boolean |  | Enable or disable Root Challenge Round participation. |
 
 ### `rebind_intelligence_agent`
 
@@ -1063,7 +1062,7 @@ Returns: `metric`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
-| `metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|BAR_FORMING,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
+| `metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|SPOT_CLOSE_CB,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
 
 ### `get_strategy_column_contract`
 
@@ -1077,7 +1076,7 @@ Returns: `contract`
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `column` | object | YES |  |
-| `column.metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|BAR_FORMING,…) | YES |  |
+| `column.metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|SPOT_CLOSE_CB,…) | YES |  |
 | `column.transformId` | string | YES |  |
 | `column.chainedTransformId` | string |  |  |
 | `column.timeframe` | anyOf[object | object] | YES |  |
@@ -1122,7 +1121,7 @@ Returns server-owned budget usage — including the estimated-token budget as us
 without saving or mutating strategy state. The preview execution limits (result byte cap,
 deadline) are served by discovery, not by this result.
 
-Returns: `renderedSections`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `rankScopingNote`
+Returns: `renderedSections`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `conditionColumns`, `conditionVerdictTally`, `rankScopingNote`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -1899,12 +1898,10 @@ Returns: `presetId`, `slotCount`, `revision`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
@@ -1954,12 +1951,10 @@ Returns: `resolution`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
@@ -1992,12 +1987,10 @@ Returns: `result`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
@@ -2052,11 +2045,12 @@ regime flips. `request.slots` is the complete slot set and replaces whatever is 
 slot binds an agentId, a minConviction trade bar (0-1, or null to inherit the agent's base),
 and is either the single DEFAULT slot (isDefault:true, priority:null, conditions:[]) which
 always matches as the catch-all, or a RULE slot (isDefault:false, a unique positive priority
-where lowest wins, and 1-2 conditions). A condition is a time window {kind:"time_window",
-fromHour:0-23, toHour:1-24 with fromHour<toHour — same-day UTC only, no overnight wrap,
-days:[0-6, 0=Sunday, UTC]} or a regime {kind:"regime", regimes:[...], minConviction?}. A
-slot may carry at most one of each kind; with both, BOTH must match (AND). Set
-`request.enabled` false to pause without losing slots, true to resume.
+where lowest wins, and 1-2 conditions). A condition is an hour set {kind:"hours",
+hours:[0-23], days:[0-6, 0=Sunday]} — both UTC, both non-empty and without duplicates, and
+both plain membership, so a gapped schedule like hours:[7,13] is one condition and an
+overnight one like hours:[23,0,1] needs no special form — or a regime {kind:"regime",
+regimes:[...], minConviction?}. A slot may carry at most one of each kind; with both, BOTH
+must match (AND). Set `request.enabled` false to pause without losing slots, true to resume.
 `request.expectedRevision` is the revision you read — pass null only for a first deploy; a
 stale value is a CONFLICT and nothing is written. Returns the new revision.
 
