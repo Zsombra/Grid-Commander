@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-08-08 (fifth round) — the incumbent retires, the fleet diversifies to three
+
+**Did**: operator-directed platform operations on the Fibonacci account —
+diversify to the account's capacity, retire `THE .0`, free its tickers.
+All writes raw-MCP against the v14 schemas, every one logged and read back.
+
+- **Retired**: `THE .0` archived (flat at the time, r4→r5) — its Midway
+  binding dies with it (Midway is SYSTEM, platform-owned, not deletable).
+  The three unbound private forks (`Midway/El Alamein/Stalingrad (fork)`)
+  archived too. Strategy quota 5→2 used before the new builds; agent
+  slots 3→2 used. The rank caps agents at **3** — that is "as many as the
+  platform allows" at Recruit III.
+- **Three strategies created whole** (compile→apply CREATE, all viable):
+  **Salamis** (`228ed794…`) — short-term reversal / liquidity provision
+  (Jegadeesh 1990, Lehmann 1990; Nagel 2012): band+structure extremes,
+  `trend_adx_ranging` **required**, `ADX_now ≤ 20` condition — the regime
+  mirror of Trafalgar. **Alesia** (`ad2df55a…`) — the operator's SQZ-03
+  thesis (rising OI vs stalling price, CVD absorption) given tiered
+  weights its account-2 original never had; bench. **Lepanto**
+  (`6675a59e…`) — strict funding fade (±0.06% threshold, flips tier-3,
+  gate 0.65), the ZSCORE-01 spirit under the platform's grammar; bench
+  A/B sibling for Cannae.
+- **Third agent**: **Breakwater** (`f4e7db03…`, Salamis, GLM-5.2,
+  CONSERVATIVE/REALIST/MEASURED) — reversion chassis: leverage 3, RR
+  floor 1.5 (family-appropriate), stops 0.5–2.5%, daily loss $1.25,
+  drawdown $5, 4 trades/day, time-decay ON (grace 45m). Created OFF →
+  deployed → flipped FULL_EXECUTION.
+- **Radar re-pointed** (9 upserts, all deployed): Breakwater takes BNB,
+  ENA, LDO, SP500, BRENTOIL @1h; Undertow grows to seven coins
+  (+FARTCOIN, MOODENG, MELANIA, AIXBT @1h). Vanguard keeps BTC/ETH/SOL.
+  `xyz_skhx` left dormant on the archived agent deliberately — unknown
+  asset, the old fill-failure magnet.
+- **Qualification, minutes after launch**: Breakwater qualifies **BNB
+  long/short at 84 vs 62** (ranging + band extreme — its exact setup);
+  Undertow's new coins came in hot — FARTCOIN 72, MOODENG 65, MELANIA 85
+  all above gate. Aggregate worst-case daily loss across the fleet:
+  $4.25 on $49.15 (~8.6%), each agent independently capped.
+
+**State**: fleet = Vanguard (trend, majors) + Undertow (carry fade, 7
+memes) + Breakwater (range reversion, alts+TradFi) — three mathematical
+families, regime-complementary, one brain (GLM-5.2) for clean
+attribution. Two bench strategies await slot growth or rebinds.
+
+**Watch out**: three qualifying coins on Undertow at launch means the
+first executed trade is likely imminent — the min-notional fix gets its
+live proof (or refutation) there. And the platform's 4h regime is
+bull_ranging: Breakwater's week, not Vanguard's. That asymmetry is the
+design.
+
 ## 2026-08-08 (fourth round) — two agents born from the mathematical families, and v14 breaks the create path
 
 **Did**: the operator asked for new strategies and agents built from the
