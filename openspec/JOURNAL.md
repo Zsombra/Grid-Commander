@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-09 (early) — day one closes: three resolutions, every one by the book
+
+**Did**: watched the first fleet trades to resolution (reads only). All
+three of Undertow's day-one entries closed, every close performed by the
+exchange-held stop — no exits improvised, no positions babysat:
+
+| trade | held | net | how it ended |
+|---|---|---|---|
+| AIXBT short | 58m | **−$0.176** | stop at entry+1.5%, one designed risk unit |
+| TRUMP long | 3.4h | **−$0.167** | stop (tightened 1.4781→1.4822 first), one unit |
+| MELANIA short | 5.3h | **+$0.073** | **the trail locked profit**: stop walked 0.07708 → 0.07663 → 0.07627 → below entry, hit at 0.07567 |
+
+Day-one realized: **1W/2L, net −$0.27** (−0.55% of the account), $0.053
+total fees. Fill rate 3/3; zero exchange failures; both loss caps never
+threatened; the daily trade cap held at three and blocked ten further
+attempts pre-evaluation. The MELANIA close is the first time this
+account's own money shows the trail doing what the WIF chart showed on
+`THE .0` — a stop acting as a profit lock, not just a loss fence.
+
+**The number to watch, stated before more data arrives**: the realized
+winner (+$0.073) was smaller than either loss (−$0.17) — the trail locked
+MELANIA at ~0.4R instead of letting it approach the 3R target. n=3 proves
+nothing, but if the fade book keeps cutting winners under 1R while losses
+run a full unit, the time-decay/break-even pairing on Undertow is too
+tight and the first retune is loosening it — not the gate, not the floor.
+
+**Also**: the UTC day rolled and Undertow re-entered AIXBT short (trade 4,
++$0.09 and trailing at last read) — same coin it lost on, taken again on
+fresh signals, which is what a memoryless per-candidate design should do.
+
 ## 2026-08-08 (seventh round) — the first fill: every fix proven on one trade
 
 **Did**: at 20:01Z, 25 minutes after the conviction floor moved to 0.55,
