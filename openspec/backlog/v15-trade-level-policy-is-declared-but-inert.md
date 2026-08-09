@@ -67,6 +67,26 @@ compile responses with `changedAxes: ['IDENTITY']` and
 `get_strategy` read-backs unchanged at defaults. The refusal for
 policy-only updates is in `pol_compile_*.json`.
 
+**Retested 2026-08-09 11:2x with a full, correctly-shaped UPDATE envelope**
+(the earlier runs are not the only evidence, and shape is no longer a
+confound). `compile_strategy_plan` takes a whole `request` body, not a
+patch, so the retest reads each strategy, projects the read onto the write
+shape — `signalRules` → `rules`, `revision` → `expectedRevision` — and
+changes only the three policy fields. Two schema refusals along the way
+proved the envelope was reaching the validator (`request` required, then
+`coinSelection.limit` required). With the envelope correct, all three
+strategies answer:
+
+    {"code": "VALIDATION_ERROR",
+     "message": "Strategy update contains no effective changes."}
+
+That is the stronger form of the finding: the payload **passes schema
+validation** and reaches the semantic validator, which then sees no change
+in RR 1.5 → 2.5 / 2.0 / 1.6, ATR floor 1 → 1.5 / 1.3 / 1.0, ceiling
+5% → 4 / 3 / 2.5. The fields are parsed and discarded, not rejected.
+Retest script: `scratchpad/v15_policy_retest.py` (compile only — a dry run
+that mints a token and applies nothing).
+
 ## Notes
 
 - The replacement design is *better* once it works: `minStopLossAtrMultiple`

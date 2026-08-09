@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-09 (check-in 11:2xZ) — the p1 hardens, and the spend meter dies
+
+**The v15 policy regression is confirmed on a properly-shaped payload.**
+Every earlier retest sent the three fields as a patch; `compile_strategy_plan`
+actually takes a whole `request` envelope, so shape was a live confound in
+all of them. The new retest reads each strategy, projects the read onto the
+write shape (`signalRules` → `rules`, `revision` → `expectedRevision`) and
+changes only the policy. Two schema refusals on the way proved the envelope
+was reaching the validator (`request` required, then `coinSelection.limit`
+required). With it correct, all three strategies still answer **"Strategy
+update contains no effective changes"** for RR 1.5 → 2.5/2.0/1.6, ATR floor
+1 → 1.5/1.3/1.0, ceiling 5% → 4/3/2.5. The fields are **parsed and
+discarded, not rejected** — the stronger form of the finding. p1 stands,
+evidence upgraded. `scratchpad/v15_policy_retest.py`, compile only.
+
+**`last24hCostUsd` went to zero on all three agents** — it read 2.37 / 0.81
+/ 0.21 an hour earlier. Zero is not plausible: two positions were entered
+at 10:30:08 and 11:01:31, and Undertow's block log holds 278 entries with
+the newest at 11:19:10. `get_agent_explorer` does not carry the field at
+all, so there is no cross-check and **fleet spend is now unmeasurable, not
+low**. Filed `the-spend-meter-reads-zero-while-agents-run` (p2). This
+blocks the accept-vs-cut decision the operator was asked to make — there is
+no number to rule on.
+
+**Fleet**: 4 open, all green — AIXBT +$0.048, MOODENG +$0.033, HYPE +$0.090,
+TRUMP +$0.062 = **+$0.233 uPnL, the best book yet**. Realized still
+1W/8L, −$0.795 net on $0.143 of fees, and **all nine closes are STOP_LOSS
+— zero take-profits in the fleet's entire history.** The two post-fix
+closes remain the two smallest losses ever recorded here (−$0.004,
+−$0.046).
+
+**Min-notional is genuinely clear**: the three `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
+blocks on Breakwater all predate the exposure fix (2026-08-08 15:xx,
+`equityUsd 35 / minEquity 41.67`). None since.
+
+**Undertow's 278 blocks are almost all `OPEN_POSITION_CONFLICT`** — it
+re-evaluates coins it already holds, ~31 blocked evaluations an hour. That
+is the cheapest spend lever available and it changes no strategy behaviour,
+but it cannot be justified while the meter is dead.
+
 ## 2026-08-09 (the keyed sweep at v15) — 23 of 29 live files green, and the six that were not run
 
 **Did**: ran the full keyed live suite against the v15 server —
