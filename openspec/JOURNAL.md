@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-09 (the stop diagnosis) — time-decay was killing the trades, and v15 landed mid-fix
+
+**Did**: seven closed trades, **seven STOP_LOSS closes, zero take-profits**,
+1W/6L −$0.745. Pulled `get_position_audit_history` on three losses and the
+cause is unambiguous — **every one was closed by a stop that time-decay had
+dragged toward price; the structurally-placed stop was never reached**:
+
+| trade | placed stop | decayed to | exit | original hit? |
+|---|---|---|---|---|
+| WIF short | 0.14391 | 0.14360 | 0.14362 | **no** |
+| AIXBT short | 0.018312 | 0.018187 | 0.018211 | **no** |
+| TRUMP long | 1.47812 | 1.48290 | 1.48270 | **no** |
+
+Time-decay tightens on a *timer* regardless of price action, so a thesis
+that needed two hours got a stop walked into the noise band and tagged for
+a near-full unit. The ATR trail is innocent — it only moves on favourable
+travel, and it is what locked MELANIA's win. **`timeDecayEnabled` → false
+on Undertow and Breakwater**; trailing and break-even kept. Reversal
+criterion: if trades now sit dead for hours without resolving, decay comes
+back with a much longer grace rather than at 45–60 minutes.
+
+**BattleGrid shipped v15.0.0 mid-fix** — caught because the write was
+refused with `unrecognized_keys`. `tradingConfig` went **18 → 15**:
+`maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` are gone from
+create and update alike — stop bounds and the risk:reward floor are now
+platform-owned, not agent-owned. Tool count still 114. The fix landed on
+the v15 shape. **The record is stale again** (says v14): re-probe and
+re-run the conformance guards next session — and note `TRADING_CONFIG_FIELDS`
+will need the same treatment as the v14 round, minus three more names.
+
 ## 2026-08-09 (volume-profile PoC) — a real candle archive, and a negative result worth having
 
 **Did**: operator asked for a proof of concept on volume profiles / TPO, and
