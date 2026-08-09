@@ -1,5 +1,40 @@
 # Journal
 
+## 2026-08-09 (v15 reviewed) — the RR floor moved onto the strategy, and the compiler ignores it
+
+**Did**: operator asked for a full review of the v15 update. Fresh dump,
+key-level diff against v14, live write tests. **114 tools, none added,
+none removed** — v15 is one coherent change on 16 tools.
+
+**The change**: trade-level policy moved **off the agent, onto the
+strategy**. `tradingConfig` 18 → 15 keys (`maxStopLossPct`,
+`minStopLossPct`, `minRiskRewardRatio` all rejected now); the strategy
+gained `maxStopLossPct`, `minRiskRewardRatio` and — better than what it
+replaces — **`minStopLossAtrMultiple`**, a volatility-adaptive stop floor
+instead of a percentage. `compile_strategy_plan` gained a whole
+`diff.tradeLevelPolicy` axis; `feasibilityAdvisory` now reports
+`minStopLossAtrMultiple` plus per-coin `requestedMinAtrMultiple` with
+FEASIBLE / STRUCTURAL_ONLY / ATR_UNAVAILABLE verdicts.
+
+**The problem: it is declared but inert.** Sending real value changes
+(RR 1.5 → 2.5, floor 1 → 1.5× ATR, ceiling 5 → 4%) on an UPDATE compiles
+without complaint and changes nothing — `changedAxes: ['IDENTITY']` from
+the paired tagline edit alone, `diff.tradeLevelPolicy: null`, read-back
+unchanged at defaults. Sent alone, the same fields are refused as *"no
+effective changes"*. Reproduced twice on all three strategies. Filed
+**`v15-trade-level-policy-is-declared-but-inert` (p1)**.
+
+**What that costs us right now**: Undertow was built with RR 2.0 and
+Breakwater with 1.5, chosen per family — **v15 discarded both**, and the
+whole fleet is pinned to platform defaults (RR 1.5, 1× ATR floor, 5%
+ceiling) with **no write path in either place**. Asymmetry is the entire
+thesis of these strategies; it is currently un-settable.
+
+**Also**: three taglines were edited to name the intended floors while
+testing, then reverted the same hour — the tagline reaches the agent's
+prompt, so it must not advertise policy the platform is not enforcing.
+Strategies sit at r3, content identical to r1.
+
 ## 2026-08-09 (the stop diagnosis) — time-decay was killing the trades, and v15 landed mid-fix
 
 **Did**: seven closed trades, **seven STOP_LOSS closes, zero take-profits**,
