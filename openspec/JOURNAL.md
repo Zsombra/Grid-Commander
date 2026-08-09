@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-09 (check-in 17:00Z) — the first take-profit, and the number that names the problem
+
+**MOODENG closed `TAKE_PROFIT`, +$0.3649, +3.39%, 329 minutes.** The first
+take-profit in this fleet's history, on the fifteenth trade. It filled at
+exactly the level the geometry read recorded this morning — MOODENG's TP was
+placed 3.39% from entry and the move was 3.39%. The exit path is proven
+end-to-end: placed, rested, filled, reported.
+
+It is also **the largest single result either way** — bigger than the worst
+loss (−$0.1763) by more than double.
+
+**The one number that names the whole problem:**
+
+| | |
+|---|---|
+| RR the agent **places** | **3.34** |
+| RR the fleet **realises** | **1.30** |
+| break-even win rate at placed RR | 23% |
+| break-even win rate at realised RR | **43%** |
+| actual win rate | **20%** |
+
+At the RR it designs, the fleet needs 23% and is doing 20% — within touching
+distance. At the RR it actually gets, it needs 43% and has no chance. **The
+gap between 3.34 and 1.30 is the trail**, and it is the entire deficit.
+
+The mechanism is visible in the three wins: MOODENG ran to its target for
++$0.3649, while HYPE was trailed out at **+$0.0040** and MELANIA at +$0.0731
+— both `STOP_LOSS`, both truncated far short of their targets. Losses take
+their full stop distance; winners get cut at whatever the ratchet has
+reached. That asymmetry, applied to a system whose *design* asymmetry is
+3.34:1, is what turns it into 1.30:1.
+
+**Realized: 15 closed, 3W/12L, −$0.9147**, improved from −$1.1064 — one
+take-profit recovered more than the AIXBT loss that followed it. Fees are
+**$0.2383, 26% of the gross loss** (gross −$0.6764).
+
+AIXBT closed −$0.1731 on a −1.60% move, now the largest adverse move; the
+loser distribution is min 0.10% / median 0.82% / max 1.60%.
+
+**Book is flat** — zero open positions for the first time today. Undertow
+has logged no new blocks since 15:48, which is consistent rather than
+concerning: nearly all 450 were `OPEN_POSITION_CONFLICT`, and a flat book
+has nothing to conflict with.
+
+**Breakwater idle ~12 hours.** **Meter** dead. **v15 policy p1** retested a
+sixth time, unchanged.
+
 ## 2026-08-09 (check-in 15:55Z) — the trail can hold breakeven, and a number I got wrong
 
 **HYPE closed green — the second win ever, and the first that proves the
