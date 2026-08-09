@@ -1,5 +1,30 @@
 # Journal
 
+## 2026-08-09 (v15 landed in the repo) — the record catches up, and the guards prevent dead write path #11
+
+**Did**: re-probed at **v15.0.0** (70 reads, 0 failed), regenerated the
+reference and capabilities dump, and taught the product the new shape —
+archived as `the-trade-level-policy-moves-to-the-strategy` (131st change).
+
+**The guards earned their keep again.** The moment the v15 record landed,
+`payload-conformance` reported six violations on
+`apply_strategy_plan` — the three trade-level policy fields are
+**`required` on the plan**, and `toApplyPlan` did not project them. That is
+the eleventh dead write path in this codebase's history, and the first one
+**caught before a live refusal** rather than after. Same shape as the
+`conditions` omission of 2026-07-31, found the same way.
+
+Changes: the three fields join `PLAN_FIELDS_FROM_POST_STATE`; they leave
+`TRADING_CONFIG_FIELDS` (18 → 15); `READ_ONLY_CONFIG_FIELDS` grows to eight;
+five guard expectations follow the record. Three tests used
+`maxStopLossPct` as their worked example and now use fields that survived
+(`maxSlippageBps`, `maxDailyTrades`) — a test whose subject the platform
+deleted proves nothing about the platform.
+
+**State**: 131 archived changes, 26 open backlog items. 1,902 vitest + 235
+harness + typecheck + lint green; keyed `surface-freshness` green against
+the live v15 server.
+
 ## 2026-08-09 (v15 reviewed) — the RR floor moved onto the strategy, and the compiler ignores it
 
 **Did**: operator asked for a full review of the v15 update. Fresh dump,

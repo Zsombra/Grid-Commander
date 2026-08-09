@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v14.0.0`, protocol `2025-06-18`) on 2026-08-08.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v15.0.0`, protocol `2025-06-18`) on 2026-08-09.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -526,11 +526,8 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -589,11 +586,8 @@ Returns: `agent`, `feasibilityAdvisory`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -1275,6 +1269,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<1>.minAggregateScore` | number |  |  |
 | `request<1>.minRequiredCount` | integer |  |  |
 | `request<1>.minAtrPct` | number |  |  |
+| `request<1>.minStopLossAtrMultiple` | number |  |  |
+| `request<1>.maxStopLossPct` | number |  |  |
+| `request<1>.minRiskRewardRatio` | number |  |  |
 | `request<1>.sections` | array<anyOf[object | object]> | YES |  |
 | `request<1>.conditions` | array<object> |  |  |
 | `request<1>.conditions[].conditionKey` | string | YES |  |
@@ -1308,6 +1305,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<2>.minAggregateScore` | ? |  |  |
 | `request<2>.minRequiredCount` | ? |  |  |
 | `request<2>.minAtrPct` | ? |  |  |
+| `request<2>.minStopLossAtrMultiple` | ? |  |  |
+| `request<2>.maxStopLossPct` | ? |  |  |
+| `request<2>.minRiskRewardRatio` | ? |  |  |
 | `request<2>.sections` | ? |  |  |
 | `request<2>.conditions` | ? |  |  |
 | `request<2>.rules` | ? |  |  |
@@ -1328,6 +1328,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<3>.minAggregateScore` | ? |  |  |
 | `request<3>.minRequiredCount` | ? |  |  |
 | `request<3>.minAtrPct` | ? |  |  |
+| `request<3>.minStopLossAtrMultiple` | ? |  |  |
+| `request<3>.maxStopLossPct` | ? |  |  |
+| `request<3>.minRiskRewardRatio` | ? |  |  |
 | `request<3>.sections` | ? |  |  |
 | `request<3>.conditions` | ? |  |  |
 | `request<3>.rules` | ? |  |  |
@@ -1369,6 +1372,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<1>.minAggregateScore` | number | YES |  |
 | `request.plan<1>.minRequiredCount` | integer | YES |  |
 | `request.plan<1>.minAtrPct` | number | YES |  |
+| `request.plan<1>.minStopLossAtrMultiple` | number | YES |  |
+| `request.plan<1>.maxStopLossPct` | number | YES |  |
+| `request.plan<1>.minRiskRewardRatio` | number | YES |  |
 | `request.plan<1>.rules` | array<object> | YES |  |
 | `request.plan<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request.plan<1>.rules[].allocation` | integer | YES |  |
@@ -1391,6 +1397,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<2>.minAggregateScore` | ? | YES |  |
 | `request.plan<2>.minRequiredCount` | ? | YES |  |
 | `request.plan<2>.minAtrPct` | ? | YES |  |
+| `request.plan<2>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<2>.maxStopLossPct` | ? | YES |  |
+| `request.plan<2>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<2>.rules` | ? | YES |  |
 | `request.plan` *(anyOf variant 3)* | object | |  |
 | `request.plan<3>.operation` | string | YES |  |
@@ -1409,6 +1418,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<3>.minAggregateScore` | ? | YES |  |
 | `request.plan<3>.minRequiredCount` | ? | YES |  |
 | `request.plan<3>.minAtrPct` | ? | YES |  |
+| `request.plan<3>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<3>.maxStopLossPct` | ? | YES |  |
+| `request.plan<3>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<3>.rules` | ? | YES |  |
 | `request.planToken` | string | YES |  |
 | `request.confirm` | boolean | YES |  |

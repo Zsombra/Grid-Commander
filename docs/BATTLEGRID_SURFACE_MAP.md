@@ -1,7 +1,7 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v14.0.0`**
-on 2026-08-08 — the second probe that day; v13 lasted about five hours.
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v15.0.0`**
+on 2026-08-09. v13 lasted about five hours, v14 about twenty.
 Regenerate after any BattleGrid deployment: the server says its own list goes
 stale, and this file inherits that.
 
@@ -33,6 +33,7 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` **and nested its rendered section bodies one level down** |
 | → v11.0.0 | 110 | **`arenaChallengeEnabled` dropped** from create and update — and from the agent payloads themselves; `feasibilityAdvisory` added to create's declared output; a strategy-vocabulary metric enum shifted. Hidden for two days because only the record was re-probed, not the reference — see `two-agent-owned-fields-no-tool-can-write` |
 | → v13.0.0 | 110 | the quietest yet: declared schemas, constants and annotations byte-identical across all 110 tools; `get_market_context` grew 23 → 25 selectable modules (`marketBreadth`, `referencePairs`) |
+| → v15.0.0 | 114 | no tool added or removed; **16 tools changed, one coherent move**: the trade-level policy left the agent for the strategy — `maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` out of `tradingConfig` (18 → 15), onto the strategy with the percentage stop floor replaced by **`minStopLossAtrMultiple`**. `compile_strategy_plan` gained `diff.tradeLevelPolicy`; `feasibilityAdvisory` gained per-coin ATR feasibility. All three are **required** on apply — `toApplyPlan` had to learn them or every apply would refuse. The compiler accepts them and does not apply them: `v15-trade-level-policy-is-declared-but-inert` (p1) |
 | → v14.0.0 | **114** | the count finally moved: four reads added (`get_agents_hub`, `get_agent_conviction_calibration`, `get_radar_activity`, `list_deployment_policies`) — and the agent writes changed underneath the product: `tradingConfig` dropped `atrTimeframe` + `atrMatchesStrategyTimeframe` (20 → 18 fields) and a CUSTOM brain now **requires** `behavior: {risk, outlook, conviction}`. The app's create path is refused wholesale — `agent-create-composes-fields-v14-refuses` (p1) |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on

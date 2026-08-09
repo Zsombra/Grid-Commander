@@ -124,11 +124,13 @@ export const TRADING_CONFIG_FIELDS = [
   'maxConcurrentExposureUsd',
   'maxCumulativeDrawdownUsd',
   'maxDailyLossUsd',
-  'maxStopLossPct',
-  'minStopLossPct',
+  // `maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` left this
+  // list at BattleGrid v15.0.0, which moved the trade-level policy off the
+  // agent and onto the strategy (see `compiled-plan.ts`). The agent write
+  // rejects all three now; the strategy carries them, with the percentage
+  // stop floor replaced by an ATR multiple.
   'signalTimeoutMinutes',
   'maxEntryDeviationAtrMultiple',
-  'minRiskRewardRatio',
   'minTradeConviction',
   'gridMinConfidence',
   'positionSizePresets',

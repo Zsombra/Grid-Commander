@@ -378,11 +378,8 @@ export function liveTradingConfig(
       maxConcurrentExposureUsd: 250,
       maxCumulativeDrawdownUsd: 500,
       maxDailyLossUsd: 300,
-      maxStopLossPct: 1,
-      minStopLossPct: 0.5,
       signalTimeoutMinutes: 10,
       maxEntryDeviationAtrMultiple: 1.5,
-      minRiskRewardRatio: 1.5,
       minTradeConviction: 0.35,
       gridMinConfidence: 0.7,
       positionSizePresets: { sizingStrategy: 'MANUAL', smallPct: 1, mediumPct: 2.5, largePct: 5 },
@@ -395,14 +392,19 @@ export function liveTradingConfig(
       regimeTimeframe: '4h',
       atrMatchesStrategyTimeframe: true,
       atrTimeframe: '1h',
+      // Trade-level policy: agent-owned until v14, strategy-owned since v15.
+      // The read still carries it; the write rejects it.
+      maxStopLossPct: 1,
+      minStopLossPct: 0.5,
+      minRiskRewardRatio: 1.5,
     },
   };
 }
 
 /**
- * The five the read carries and the write rejects — three since the beginning,
- * plus the two ATR fields BattleGrid v14.0.0 dropped from the write while the
- * read kept sending them.
+ * The eight the read carries and the write rejects: three since the beginning,
+ * the two ATR fields v14.0.0 dropped, and the three trade-level policy fields
+ * v15.0.0 moved onto the strategy.
  */
 export const READ_ONLY_CONFIG_FIELDS = [
   'strategyTimeframe',
@@ -410,6 +412,9 @@ export const READ_ONLY_CONFIG_FIELDS = [
   'regimeTimeframe',
   'atrMatchesStrategyTimeframe',
   'atrTimeframe',
+  'maxStopLossPct',
+  'minStopLossPct',
+  'minRiskRewardRatio',
 ] as const;
 
 export function defaultCatalog(): Catalog {
@@ -474,7 +479,6 @@ export function defaultCatalog(): Catalog {
       maxStopLossPct: 5,
       minStopLossPct: 1,
       maxEntryDeviationAtrMultiple: 1.5,
-      minRiskRewardRatio: 1.5,
       minTradeConviction: 0.35,
       gridMinConfidence: 0.7,
       maxSlippageBps: 300,

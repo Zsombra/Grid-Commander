@@ -55,7 +55,7 @@ describe('what a proposal hands to the write', () => {
     expect(editArguments({ displayName: 'x' }).tradingConfigChanges).toBeUndefined();
   });
 
-  it('keeps the other seventeen limits the agent runs under', async () => {
+  it('keeps the other fourteen limits the agent runs under', async () => {
     const { agent, agents, describe, update } = harness();
     const proposed = { tradingConfig: { tradingMode: 'OFF' } };
 
@@ -83,7 +83,7 @@ describe('what a proposal hands to the write', () => {
     const after = await agents.getAgent({ agentId: agent.id });
     const fields = after.tradingConfig?.fields ?? {};
     expect(fields['tradingMode'], 'the proposed member took effect').toBe('OFF');
-    expect(Object.keys(fields).length, 'the merge sent the whole config').toBeGreaterThan(17);
+    expect(Object.keys(fields).length, 'the merge sent the whole config').toBeGreaterThan(14);
     expect(fields['maxDailyLossUsd'], 'the loss cap survived stopping the agent').toBe(300);
     expect(fields['maxCumulativeDrawdownUsd']).toBe(500);
   });

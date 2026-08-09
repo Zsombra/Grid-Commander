@@ -48,6 +48,17 @@ const PLAN_FIELDS_FROM_POST_STATE = [
   // because `request.plan` was exempted as pass-through. Mapped against the
   // real compile response: it lives in `postState`.
   'conditions',
+  // The trade-level policy, moved onto the strategy by BattleGrid v15.0.0
+  // (it lived in the agent's `tradingConfig` until v14). All three are
+  // **required** on `apply_strategy_plan`, so omitting them refuses every
+  // apply — the same shape as the `conditions` omission above, caught by
+  // the conformance guard the hour v15 landed rather than by a live refusal.
+  //
+  // Note `minStopLossAtrMultiple`: v15 replaced the percentage floor with an
+  // ATR-relative one, so a stop floor now adapts to each coin's volatility.
+  'maxStopLossPct',
+  'minStopLossAtrMultiple',
+  'minRiskRewardRatio',
 ] as const;
 
 /**

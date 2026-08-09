@@ -88,7 +88,9 @@ describe('editing one limit preserves the others', () => {
     expect(sent['maxLeverage']).toBe(3);
     // The fields the user did not touch must survive.
     expect(sent['maxDailyLossUsd']).toBe(300);
-    expect(sent['maxStopLossPct']).toBe(1);
+    // v15 moved the stop bounds onto the strategy, so an untouched *writable*
+    // field stands in for what must survive a merge.
+    expect(sent['maxSlippageBps']).toBe(300);
     expect(sent['maxDailyTrades']).toBe(30);
   });
 
@@ -98,11 +100,13 @@ describe('editing one limit preserves the others', () => {
       ...who,
       confirmationToken: 'confirmed',
       agentId: 'a1',
-      tradingConfigChanges: { maxStopLossPct: 90 },
+      // `maxDailyTrades` carries a catalog bound (max 100) and survived v15,
+      // where `maxStopLossPct` — this check's original subject — did not.
+      tradingConfigChanges: { maxDailyTrades: 900 },
       changes: {},
     });
     expect(res.kind).toBe('invalid');
-    expect(res.kind === 'invalid' && res.issues[0]?.field).toBe('maxStopLossPct');
+    expect(res.kind === 'invalid' && res.issues[0]?.field).toBe('maxDailyTrades');
     expect(port.calls).toEqual([]);
   });
 

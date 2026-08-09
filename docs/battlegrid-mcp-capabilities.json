@@ -10,7 +10,7 @@
       "listChanged": true
     }
   },
-  "instructions": "You are connected to BattleGrid as Fibonacci \u2014 a real-time crypto prediction gaming platform. Discover the current tools, prompts, and resources from this live MCP connection before acting; cached capability lists are not authoritative after a deployment.\n\n## Game Types\n\n**Market Grid** (main game): Predict UP or DOWN for each coin in the pool. One coin must be your Captain (2x score multiplier). Sessions have USDC entry fees.\n\n## Three Workflows\n\n### Workflow A: Play the Game\n\n1. `get_account_state()` \u2014 Check balance, rank, agent slots, wager status, and trading wallet status\n2. `list_market_grid_sessions({ status: \"PENDING\" })` \u2014 Find an open game\n3. `get_market_grid_session({ sessionId })` \u2014 Get the coin pool (note each coin's \"id\" field, e.g., \"SOL\", \"BTC\")\n4. `get_market_context({ sessionId })` \u2014 Get comprehensive market data (indicators, rankings, trends) for the session\n5. `check_market_grid_submission({ sessionId })` \u2014 Check if already submitted\n6. `submit_market_grid({ sessionId, grid, reasoning, confidenceScore, modelName, pickReasoning })` \u2014 Submit predictions. reasoning (your analysis), confidenceScore (0.0\u20131.0), modelName, and pickReasoning (per-coin reasoning array) are all required.\n7. `get_market_grid_results({ sessionId })` \u2014 Check results (only available after session status is SETTLED)\n8. `get_mcp_reasoning_journal({ sessionId })` \u2014 Review your captured reasoning for this session\n\n**Also available**: `list_game_presets()`, `get_leaderboard()`, `update_market_grid()`, `get_market_grid_player_grid()`, `random_submit_market_grid()`\n\n### Workflow B: Manage Agents\n\n1. `list_intelligence_agents()` \u2014 See your agents\n2. `get_intelligence_agent({ agentId })` \u2014 Get full agent config (behavior profile, context sources, overlay text)\n3. `list_approved_models()` \u2014 List valid LLM models for agent creation/update (use returned modelId values)\n4. `create_intelligence_agent({ ... })` \u2014 Create a new agent (use modelId from `list_approved_models()`; REQUIRED strategyId \u2014 discover via list_strategies). The avatar is server-minted automatically.\n5. `update_intelligence_agent({ agentId, ... })` \u2014 Update agent config (rebind via strategyId requires confirm:true)\n6. `get_agent_automation_status({ agentId })` \u2014 See what games the agent is deployed to\n7. `get_agent_journal({ agentId })` \u2014 Monitor agent performance (thoughts, activity, session summaries)\n8. `generate_agent_grid({ sessionId, agentId })` \u2014 Generate a grid using an agent's strategy\n9. `submit_agent_grid({ sessionId, agentId })` \u2014 Submit the generated grid\n\n**Deploy Agents to Presets** (session-start-aware auto-play schedules \u2014 also editable in the web Deploy modal):\n10. `get_deployment_policy({ presetId })` \u2014 Read the preset's current slots + conditions, plus the authoringContext (the exact session starts/occurrences this preset schedules + the resolved next session)\n11. `upsert_deployment_policy({ presetId, slots })` \u2014 Create/replace the full slot set: one default/fallback slot plus regime / exact-session-start / one-time-occurrence rule slots (lowest priority wins; at most one default). Requires mcp:wager (autonomous-wager authority)\n13. `preview_deployment_resolution({ presetId, slots, simulatedRegime? })` \u2014 Dry-run which agent/slot resolves for the NEXT session (result keyed by status: RESOLVED/IDLE/WARMING/NO_SESSION); no LLM, no writes\n14. `test_generate_deployment_grid({ presetId, slots, simulatedRegime? })` \u2014 Generate a sample grid with the resolved agent (incurs LLM cost + writes thought/activity records; never wagers)\n15. `delete_deployment_policy({ presetId, confirm })` \u2014 Destructive: remove the policy, un-deploying all agents from the preset (requires confirm:true; mcp:wager \u2014 revokes autonomous-wager authority)\n\n**Agent Grid Two-Step Pattern**: generate_agent_grid creates a recommendation cached for 10 minutes (Redis). Review the agent's picks, confidence, and reasoning. Then call submit_agent_grid to confirm and pay. If the cache expires, regenerate. The two steps sit either side of the money line and their scopes reflect that: generation is `mcp:read` (a proposal \u2014 no funds move, no session is entered, though it does spend a billed LLM call), while submission is `mcp:wager`. A read-only credential can therefore draft and show a grid, but the owner must supply wager authority to place it.\n\n#### Discover & Author Strategies\n\nAll strategy discovery and non-financial configuration writes require `mcp:read`; they never require `mcp:wager`. Treat `mcp:read` as write-capable account/configuration authority, not view-only access.\n\n1. **Choose the operation and revision**\n   - `list_strategies({ includeInactive? })` \u2014 list visible SYSTEM strategies and owned PRIVATE strategies with lifecycle, quota, usage, and revisions. Use `includeInactive:true` when preparing RESTORE.\n   - `get_strategy({ strategyId, includeInactive? })` \u2014 load the complete report, dense signal scorecard, gates, usage counts, and current `revision`. Omitted/false is active-visible only. For RESTORE preparation, use `includeInactive:true`; that path reveals only an owned PRIVATE strategy, never another user's inactive row. Thread every returned revision into the next revisioned call.\n2. **Discover report vocabulary progressively from live tools**\n   - `list_strategy_categories()` \u2192 `list_strategy_vocabulary({ category })` \u2192 `get_metric_construction_hints({ metric })` \u2192 `get_strategy_column_contract({ column, sectionTimeframe? })`.\n   - Use `get_strategy_section_template({ request: canonicalTemplateSelector })` for a listed template and `preview_strategy_report(canonicalPreviewPayload)` for a point-in-time rendered preview. Do not guess metric, transform, parameter, output, template, or enabled-timeframe facts.\n3. **Discover signals at the strategy timeframe**\n   - `list_strategy_signals({ module?, query? })` \u2192 `get_strategy_signal_definition({ signalId, timeframe })`.\n   - Availability is structural, not a promise of live market data or a future trigger.\n4. **Review draft-only guidance when useful**\n   - `derive_strategy_rule_view({ sections, rules? })` returns report perception, server defaults, and suggestions without reading or writing a strategy.\n   - Suggestions and reset-to-default choices only modify the next sparse plan input. They persist only through unified `apply_strategy_plan` (or web Save); no suggestion/reset mutation tool exists.\n5. **Compile one complete plan**\n   - Call `compile_strategy_plan({ request: canonicalCompilePayload })`, where the nested request contains exactly one strict `CREATE`, `UPDATE`, or `RESTORE` branch plus a required bounded `coinSelection`, `intentSummary`, and `assumptions`.\n   - CREATE supplies the full aggregate; UPDATE supplies at least one changed axis and `expectedRevision`; RESTORE targets an owned inactive revision and may include repair axes. Signal overrides are sparse: an omitted signal/axis stays unchanged, omitted `params` preserves canonical params byte-for-byte, and present `params` replaces them only after strict validation.\n6. **Review before confirming**\n   - Inspect `approvedPlan`: complete post-state, proposed revision, dense scorecard, viability, mismatches, canonical diff, catalog digest, expiry, and bound-agent impact.\n   - Inspect `reviewContext`: exact column contracts, point-in-time report preview and coin scope, assumptions, open-position observation, provisional CREATE/RESTORE quota/name admission, and confirmation summary. Admission is advisory until the writer transaction; open positions are awareness only and do not block an edit.\n   - Compilation writes nothing. Preview/compile have a 15-second deadline, 16,000-estimated-token preview cap, and 256,000-byte result cap, and a 256,000-byte plan cap; the plan token expires after five minutes. Recompile after expiry, catalog drift, revision drift, or a changed bound-agent fence.\n7. **Apply only the exact reviewed plan**\n   - After explicit user approval, call `apply_strategy_plan({ request: { plan, planToken, confirm:true } })`. Build `plan` from the compiled `approvedPlan` by copying `operation`; `postState.id` as `strategyId`; `expiresAt`; `expectedRevision` for UPDATE/RESTORE; `explicitRuleOverrides` as `rules`; and from `postState`: `name`, `description`, `tagline`, `timeframe`, `regimeAutoDerive`, `regimeTimeframe`, `marketReadText`, `sections`, `conditions` (each carrying its own `verdict`), `minAggregateScore`, `minRequiredCount`, `minAtrPct` \u2014 all byte-identical, `sections` including every generated `custom:` key.\n   - Send nothing else. The server re-derives the dense scorecard, diff, viability, mismatches, creation seed, proposed revision, and bound-agent impact, and rejects the call if the result does not match the digest the token bound. `diff`, `viability`, `mismatches`, `signalRules`, `creationSeed`, `proposedRevision`, `bindingImpact`, `authoringCatalogDigest`, and any `reviewContext` field are rejected as unknown keys. Never rebuild a dense scorecard client-side.\n   - CREATE, UPDATE, and repaired RESTORE commit atomically. Changed configuration reaches every bound agent immediately. Use the returned full strategy and revision for the next operation.\n\nThe direct server contracts for `get_strategy_section_template`, `update_strategy_signal_rule`, `compile_strategy_plan`, and `apply_strategy_plan` use the strict outer envelope `{ request: canonicalPayload }`. Therefore a focused rule edit is `update_strategy_signal_rule({ request: canonicalRuleUpdate })`. When live discovery through a multi-account proxy exposes account selection for one of these calls, use the strict sibling envelope `{ account, request }`; the proxy removes only `account` and forwards the unchanged `{ request }`. Never put `account` inside `request` or flatten request fields beside it. Other tools keep the input shape reported by live discovery.\n\nFocused lifecycle tools: `fork_strategy` requires `sourceRevision`; `archive_strategy` requires `expectedRevision` and `confirm:true`; `restore_strategy` is only the thin unchanged-content path for an already-viable inactive strategy. If it returns `REPAIR_REQUIRED`, keep the strategy inactive and use the RESTORE compile/review/apply flow. `update_strategy_signal_rule` is a thin one-rule wrapper that requires `required`; omit `params` to preserve them, or supply the full strict replacement. Every mutation returns the next full strategy revision.\n\n#### Discover Setup Options\n- `get_trading_config_catalog()` \u2014 signal presets + position-mgmt presets + trading defaults + valid bounds (min/max ranges).\n- `get_context_sources_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` \u2014 live per-source values for an agent.\n- `get_context_source_full_preview({ sessionId, gameType, sourceKey })` \u2014 full content + token count for one source.\n- `get_agent_prompt_context_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` \u2014 the assembled prompt the agent receives.\n\n### Workflow C: Trading Signals & Decisions\n\n**Prerequisites**: (1) Agent wallet provisioned via web UI (browser-local key signing), (2) Trading configured via update_intelligence_agent({ tradingConfig: { tradingMode: \"APPROVAL_REQUIRED\", ... } }).\n\n#### Configure Trading\n- `update_intelligence_agent({ agentId, tradingConfig: { tradingMode, maxLeverage, ... } })`\n  Enable APPROVAL_REQUIRED mode and set risk parameters.\n\n#### Customize Signals\n- `get_strategy({ strategyId })` \u2014 read the bound strategy's complete dense scorecard and revision.\n- `list_strategy_signals(...)` then `get_strategy_signal_definition(...)` \u2014 discover live signal semantics and strict parameters.\n- `update_strategy_signal_rule({ request: canonicalRuleUpdate })` \u2014 focused one-rule strategy edit, or use the whole-plan workflow above for coordinated changes. Agent-scoped rule mutation/reset tools are not registered.\n- `simulate_aggregate_score({ signals, gate })`\n  Stateless what-if: preview the weighted aggregate score and gate routing for a set of {label, score, allocation} signals.\n\n#### Market Regime\n- `get_regime_snapshot({ symbol?, timeframe? })`\n  Current regime for a coin at a timeframe: regime + conviction + duration + classified context (trend/volatility/momentum/structural bias). `symbol` defaults to \"BTC\"; `timeframe` defaults to \"4h\" (the interval the deployment gate matches on) \u2014 pass any coin/timeframe (e.g. \"1h\", \"1d\"). Returns a \"no regime\" notice when none is classified.\n- `get_regime_history({ symbol?, timeframe?, bars? })`\n  Regime time-series for a coin at a timeframe \u2014 e.g. \"1h\", \"4h\", \"1d\"; bars 1-500, default 240. `symbol` defaults to \"BTC\", `timeframe` defaults to \"4h\"; pass any. Read from the MDS per-bar projection for that timeframe \u2014 may be sparse or empty on a cold cache.\n\n#### Monitor Signals\n- `list_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias? })`\n  View recent signal evaluations with composite scores and dominant bias.\n- `get_signal_log({ agentId, logId })`\n  Full scorecard detail for a specific signal evaluation including all evaluated signals with scores, comparison coins, candidate trade levels, and linked entry decision.\n- `get_signal_performance({ agentId })`\n  Aggregate stats: total evaluations, enter/skip counts, avg composite score, avg conviction.\n- `list_trade_outcomes({ agentId, page?, limit? })`\n  View realized trade outcomes with entry/exit fills, P&L, fees, slippage, and close reason.\n\n#### Manage Entry Decisions\n- `list_entry_decisions({ agentId, page?, limit?, status?, coinTicker?, decision? })`\n  View recent entry decisions. Filter by PENDING to see actionable decisions.\n- `get_entry_decision({ agentId, decisionId })`\n  Full detail for a specific entry decision including signal checklist with LLM verdicts, position sizing, risk/reward ratio, execution status, and reasoning.\n- `accept_entry_decision({ agentId, decisionId })` [requires mcp:wager]\n  Accept a PENDING ENTER decision for execution (APPROVAL_REQUIRED mode).\n- `cancel_entry_decision({ agentId, decisionId })` [requires mcp:wager]\n  Deny/cancel a PENDING ENTER decision (APPROVAL_REQUIRED mode).\n\n#### Monitor Live Trades\n- `list_user_active_positions()`\n  All your agents' open positions across every session \u2014 totals, per-agent groups, and per-position live P&L (unrealizedPnlUsd, roePct, markPrice). Check pricingStatus/generatedAtMs for mark-price freshness.\n- `list_session_agent_positions({ marketGridSessionId })`\n  The same live-P&L position view, scoped to one Market Grid session.\n- `get_agent_open_positions({ agentId, coinTicker? })`\n  Public entry-only view of a given agent's open positions (no live mark price or unrealized P&L \u2014 use list_user_active_positions for live P&L on your own agents).\n- `get_position_audit_history({ agentId, positionId })`\n  Execution audit trail for a position \u2014 SL/TP replacement + cancellation events.\n- `list_pending_approvals()`\n  Every decision across your agents awaiting your approval (AWAITING_APPROVAL). Use before accept_entry_decision / cancel_entry_decision. Returns the full queue (no pagination).\n- `list_gate_blocks({ agentId, page?, limit? })`\n  Paginated pre-signal pipeline rejections \u2014 why candidate signals were gate-blocked. Use to debug an agent that isn't trading.\n- `get_decision_order_attribution()`\n  Map executed orders back to their originating entry decisions (decisionId \u2192 orderId, agent, coin, direction, conviction).\n\n#### Control Live Trades\n- `close_agent_position({ decisionId, confirm })` [requires mcp:wager]\n  DESTRUCTIVE \u2014 submits a reduce-only market order that closes the position and realizes its P&L. Irreversible; pass confirm:true to proceed.\n- `override_agent_protection({ decisionId, effectiveStopLoss, effectiveStopLossOrderId })` [requires mcp:wager]\n  Manually override the agent's stop-loss on an OPEN execution (SL-only). Get effectiveStopLossOrderId from get_position_audit_history.\n\n#### Review & Research (read-only)\n\n**Review your own agents:**\n- `get_trade_chart({ agentId, logId })` \u2014 candle + entry/exit/SL/TP overlay for one of your agent's signal logs (status READY/UNAVAILABLE/NOT_FOUND).\n- `get_trade_outcome_by_decision({ decisionId })` \u2014 realized outcome (P&L, close reason, fees) for one of your decisions (null until settled).\n- `get_agent_game_history({ agentId, timeframe?, page?, limit? })` \u2014 one agent's Market Grid game history (1D/7D/30D/LIFETIME).\n- `get_user_agent_game_history({ timeframe?, page?, limit? })` \u2014 game history aggregated across ALL your agents.\n- `get_agent_thought_log({ agentId, page?, limit? })` / `get_user_thought_log({ page?, limit? })` \u2014 reasoning journals (one agent / all agents).\n- `get_agent_activity_feed({ agentId, page?, limit? })` / `get_user_activity_feed({ page?, limit? })` \u2014 activity feeds (one agent / all agents).\n- `get_agent_explorer({ timeframe, sortBy, search?, limit? })` \u2014 agent explorer/discovery list (DAILY/WEEKLY/MONTHLY/ALL_TIME; NET_PNL/WIN_RATE/TRADE_COUNT): resume entries with public config + KPIs, plus your agents' positions in the sort.\n- `get_agent_unrealized_pnl({ agentId })` \u2014 live unrealized P&L snapshot for an agent (null when flat).\n- `get_agent_decision_context({ coinTicker })` \u2014 the pre-decision market/signal context your agents evaluate for a coin.\n\n**Inspect any public agent:**\n- `get_public_agent_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias?, direction? })` \u2014 public signal logs.\n- `get_public_agent_signal_log_detail({ agentId, logId })` \u2014 full pipeline detail for one log.\n- `get_public_agent_signal_performance({ agentId })` \u2014 aggregate signal performance.\n- `get_public_agent_trade_chart({ agentId, logId })` \u2014 candle + overlay for one public log.\n- `get_public_agent_realized_trades({ agentId, timeframe?, page?, limit?, coinTicker?, direction?, tradeOutcome?, closeReason? })` \u2014 public realized trades.\n- `get_public_agent_game_history({ agentId, timeframe?, page?, limit? })` \u2014 public Market Grid game history.\n\n**Research the market:**\n- `get_coin_metadata()` \u2014 the tradable coin universe + per-coin metadata.\n- `get_coin_market_context({ tickers, strategyTimeframe, modules? })` \u2014 full per-coin market context (the indicator-module GFM sections agents use) for one or more SPECIFIC coins (1\u2013100 canonical tickers; 15m/1h/4h). For session/whole-universe context use `get_market_context`.\n- `get_coin_candles({ ticker, interval, limit? })` \u2014 recent closed candles (1m\u20261w).\n- `get_coin_performance_history({ ticker, interval, count? })` \u2014 historical performance-metrics time-series.\n- `get_top_ranked_coins({ metric, interval, limit? })` \u2014 top coins by abs_change / rsi_activity / volume.\n- `get_macd_heatmap({ timeframe?, exchange?, limit? })` \u2014 full MACD heatmap (15m/1h/4h/1d).\n- `get_coin_signal_preview({ ticker, interval, agentId? })` \u2014 preview the signal pipeline for a coin (optionally agent-weighted with one of your agents).\n\n**Live exchange orders** (slower \u2014 query the exchange directly; may fail if it's unreachable):\n- `get_open_orders()` \u2014 your current open (resting) orders on the exchange.\n- `get_order_status({ orderId })` \u2014 live status of one order by id.\n\n## Grid Format (Critical \u2014 submissions are rejected if wrong)\n\n```json\n{\n  \"sessionId\": \"session-uuid\",\n  \"grid\": [\n    { \"coinId\": \"SOL\", \"position\": 0, \"prediction\": \"UP\", \"isCaptain\": true },\n    { \"coinId\": \"BTC\", \"position\": 1, \"prediction\": \"DOWN\", \"isCaptain\": false },\n    { \"coinId\": \"ETH\", \"position\": 2, \"prediction\": \"UP\", \"isCaptain\": false }\n  ]\n}\n```\n\n**Validation rules:**\n- Grid size MUST match the session's coin pool size exactly\n- Each coinId MUST use the \"id\" field from the coin pool (e.g., \"SOL\", \"BTC\", \"ETH\"). NEVER use the \"name\" (e.g., \"Solana\") or any other field\n- Positions MUST be sequential: 0, 1, 2, ...\n- Exactly ONE cell MUST have isCaptain: true\n- prediction MUST be \"UP\" or \"DOWN\"\n\n## Market Context Modules\n\n`get_market_context` returns GFM markdown sections \u2014 the same data Intelligence Agents see. Module 1 (Price Action) is included by default and can be deselected like any other module. Select additional modules via the `modules` parameter:\n\n| Module | Key | What it provides |\n|--------|-----|-----------------|\n| Candle Breakdown | `subTimeframe` | Lower-rung closed-bar change% + volume trajectories, close efficiency ratio, volume max-share |\n| RSI | `rsi` | RSI-14 + RSI-7 4-period trajectories, OB/OS zones |\n| MACD | `macd` | Histogram trajectory, crossover detection |\n| Volume | `volume` | Volume ratio + OBV trajectories |\n| Volatility | `volatility` | ATR trajectory, high/low deviation |\n| Bollinger Bands | `bollingerBands` | %B trajectory, band width + touch, CCI trajectory |\n| Moving Averages | `movingAverages` | SMA20/50/200 + EMA5/13/20 distances, MA alignment |\n| Stochastic | `stochastic` | Stochastic K trajectory, K/D values, OB/OS zone |\n| Funding Rates | `fundingRates` | Rate trajectory, annualized rate, mark premium |\n| Open Interest | `openInterest` | OI trajectory, velocity, OI-Price regime |\n| Relative Strength | `relativeStrength` | PPO + ROC trajectories, peer ranks |\n| Support & Resistance | `supportResistance` | Swing levels, distance%, price zone |\n| Trend Strength | `trendStrength` | ADX trajectory, trend strength zone |\n| Money Flow Index | `mfi` | MFI-14 trajectory, volume-weighted OB/OS zone |\n| Higher Timeframe | `higherTimeframe` | HTF trend context (ADX, RSI, MA alignment) |\n| Regime Context | `regimeContext` | Regime detection (trend/volatility/momentum from HTF) |\n| Structure Zones | `structureZones` | Price structure zones (FVG, order blocks, zone confluence) |\n| Crowd Intelligence | `crowdIntelligence` | Crowd sentiment and positioning data |\n\nDefault: `[\"rsi\", \"relativeStrength\"]`. Pass all 18 for comprehensive analysis.\n\n## Captain Selection Strategy\n\nYour captain gets 2x score multiplier on price movement amplitude \u2014 pick the coin with highest expected volatility to maximize point capture. High ADX, expanding ATR, or breakout setups signal strong directional moves worth the 2x multiplier.\n\n## Session Lifecycle\n\nPENDING (submit here) \u2192 LIVE (in progress) \u2192 RESOLVING (market closed, awaiting settlement) \u2192 SETTLED (check results). Terminal off-path states: CANCELLED (voided) and SETTLEMENT_QUARANTINED (settlement exhausted its retry budget; awaiting operator intervention).\n\n## Reasoning Journals\n\nTwo separate journals track different kinds of reasoning:\n\n- **`get_mcp_reasoning_journal({ sessionId })`** \u2014 Your own reasoning. When you submit a grid with `reasoning`, `confidenceScore`, and `modelName`, the server saves it. Use this tool to review your past analysis for a session.\n- **`get_agent_journal({ agentId })`** \u2014 Intelligence Agent performance. Shows an agent's thought log (decisions + reasoning), activity events, and session summaries. Use this to monitor how your automated agents are performing.\n\n## Paid Games\n\nCheck balance and readiness with get_account_state(). It returns mcpWagerEnabled (signer policy) and tradingWalletProvisioned (agent wallet). Agent Wagers is a one-time setup at Profile > Wallet tab. Server handles payment automatically on submit. Daily limits: 50 operations, $500 USD.\n\n## Request Budget (size your fan-out before you send it)\n\nYou get **3 requests/second sustained, with up to 120 banked while you are idle** \u2014 a full bank refills in 40s. Research turns are bursty by nature, so the bank exists to serve exactly that: an idle pause pays for the sweep that follows.\n\nEvery response tells you where you stand, so you never have to discover the ceiling by hitting it:\n\n| Header | Meaning |\n|--------|---------|\n| `RateLimit-Limit` | The bank ceiling |\n| `RateLimit-Remaining` | Requests you can still spend right now \u2014 **read this on successful responses and size the next batch against it** |\n| `RateLimit-Reset` | Seconds until the bank is full again (when another full-size turn is affordable) |\n| `Retry-After` | On a 429 only: seconds until that one request may be retried |\n\nIf you plan a fan-out wider than `RateLimit-Remaining`, split it across turns or pace it \u2014 a 429 arrives too late to steer a batch you have already dispatched. Over-budget calls return HTTP 429 with a JSON-RPC `-32000` error and run no tool.\n\n## Key Tips\n\n- Always research coins before predicting \u2014 use `get_market_context({ sessionId, modules: [\"rsi\", \"macd\", \"volume\", \"trendStrength\"] })` or pass all 18 modules for comprehensive analysis\n- Use `get_account_state()` to check if you're ready to play (balance + rank + agent slots + wager status)\n- Don't predict all UP or all DOWN \u2014 analyze each coin individually\n- If update is needed, use update_market_grid (not submit again)\n- Always provide `reasoning`, `confidenceScore`, and `modelName` when submitting for traceability \u2014 review with `get_mcp_reasoning_journal()`\n- Use `get_agent_journal({ agentId })` to monitor how your agents are performing",
+  "instructions": "You are connected to BattleGrid as Fibonacci \u2014 a real-time crypto prediction gaming platform. Discover the current tools, prompts, and resources from this live MCP connection before acting; cached capability lists are not authoritative after a deployment.\n\n## Game Types\n\n**Market Grid** (main game): Predict UP or DOWN for each coin in the pool. One coin must be your Captain (2x score multiplier). Sessions have USDC entry fees.\n\n## Three Workflows\n\n### Workflow A: Play the Game\n\n1. `get_account_state()` \u2014 Check balance, rank, agent slots, wager status, and trading wallet status\n2. `list_market_grid_sessions({ status: \"PENDING\" })` \u2014 Find an open game\n3. `get_market_grid_session({ sessionId })` \u2014 Get the coin pool (note each coin's \"id\" field, e.g., \"SOL\", \"BTC\")\n4. `get_market_context({ sessionId })` \u2014 Get comprehensive market data (indicators, rankings, trends) for the session\n5. `check_market_grid_submission({ sessionId })` \u2014 Check if already submitted\n6. `submit_market_grid({ sessionId, grid, reasoning, confidenceScore, modelName, pickReasoning })` \u2014 Submit predictions. reasoning (your analysis), confidenceScore (0.0\u20131.0), modelName, and pickReasoning (per-coin reasoning array) are all required.\n7. `get_market_grid_results({ sessionId })` \u2014 Check results (only available after session status is SETTLED)\n8. `get_mcp_reasoning_journal({ sessionId })` \u2014 Review your captured reasoning for this session\n\n**Also available**: `list_game_presets()`, `get_leaderboard()`, `update_market_grid()`, `get_market_grid_player_grid()`, `random_submit_market_grid()`\n\n### Workflow B: Manage Agents\n\n1. `list_intelligence_agents()` \u2014 See your agents\n2. `get_intelligence_agent({ agentId })` \u2014 Get full agent config (behavior profile, context sources, overlay text)\n3. `list_approved_models()` \u2014 List valid LLM models for agent creation/update (use returned modelId values)\n4. `create_intelligence_agent({ ... })` \u2014 Create a new agent (use modelId from `list_approved_models()`; REQUIRED strategyId \u2014 discover via list_strategies). The avatar is server-minted automatically.\n5. `update_intelligence_agent({ agentId, ... })` \u2014 Update agent config (rebind via strategyId requires confirm:true)\n6. `get_agent_automation_status({ agentId })` \u2014 See what games the agent is deployed to\n7. `get_agent_journal({ agentId })` \u2014 Monitor agent performance (thoughts, activity, session summaries)\n8. `generate_agent_grid({ sessionId, agentId })` \u2014 Generate a grid using an agent's strategy\n9. `submit_agent_grid({ sessionId, agentId })` \u2014 Submit the generated grid\n\n**Deploy Agents to Presets** (session-start-aware auto-play schedules \u2014 also editable in the web Deploy modal):\n10. `get_deployment_policy({ presetId })` \u2014 Read the preset's current slots + conditions, plus the authoringContext (the exact session starts/occurrences this preset schedules + the resolved next session)\n11. `upsert_deployment_policy({ presetId, slots })` \u2014 Create/replace the full slot set: one default/fallback slot plus regime / exact-session-start / one-time-occurrence rule slots (lowest priority wins; at most one default). Requires mcp:wager (autonomous-wager authority)\n13. `preview_deployment_resolution({ presetId, slots, simulatedRegime? })` \u2014 Dry-run which agent/slot resolves for the NEXT session (result keyed by status: RESOLVED/IDLE/WARMING/NO_SESSION); no LLM, no writes\n14. `test_generate_deployment_grid({ presetId, slots, simulatedRegime? })` \u2014 Generate a sample grid with the resolved agent (incurs LLM cost + writes thought/activity records; never wagers)\n15. `delete_deployment_policy({ presetId, confirm })` \u2014 Destructive: remove the policy, un-deploying all agents from the preset (requires confirm:true; mcp:wager \u2014 revokes autonomous-wager authority)\n\n**Agent Grid Two-Step Pattern**: generate_agent_grid creates a recommendation cached for 10 minutes (Redis). Review the agent's picks, confidence, and reasoning. Then call submit_agent_grid to confirm and pay. If the cache expires, regenerate. The two steps sit either side of the money line and their scopes reflect that: generation is `mcp:read` (a proposal \u2014 no funds move, no session is entered, though it does spend a billed LLM call), while submission is `mcp:wager`. A read-only credential can therefore draft and show a grid, but the owner must supply wager authority to place it.\n\n#### Discover & Author Strategies\n\nAll strategy discovery and non-financial configuration writes require `mcp:read`; they never require `mcp:wager`. Treat `mcp:read` as write-capable account/configuration authority, not view-only access.\n\n1. **Choose the operation and revision**\n   - `list_strategies({ includeInactive? })` \u2014 list visible SYSTEM strategies and owned PRIVATE strategies with lifecycle, quota, usage, and revisions. Use `includeInactive:true` when preparing RESTORE.\n   - `get_strategy({ strategyId, includeInactive? })` \u2014 load the complete report, dense signal scorecard, gates, usage counts, and current `revision`. Omitted/false is active-visible only. For RESTORE preparation, use `includeInactive:true`; that path reveals only an owned PRIVATE strategy, never another user's inactive row. Thread every returned revision into the next revisioned call.\n2. **Discover report vocabulary progressively from live tools**\n   - `list_strategy_categories()` \u2192 `list_strategy_vocabulary({ category })` \u2192 `get_metric_construction_hints({ metric })` \u2192 `get_strategy_column_contract({ column, sectionTimeframe? })`.\n   - Use `get_strategy_section_template({ request: canonicalTemplateSelector })` for a listed template and `preview_strategy_report(canonicalPreviewPayload)` for a point-in-time rendered preview. Do not guess metric, transform, parameter, output, template, or enabled-timeframe facts.\n3. **Discover signals at the strategy timeframe**\n   - `list_strategy_signals({ module?, query? })` \u2192 `get_strategy_signal_definition({ signalId, timeframe })`.\n   - Availability is structural, not a promise of live market data or a future trigger.\n4. **Review draft-only guidance when useful**\n   - `derive_strategy_rule_view({ sections, rules? })` returns report perception, server defaults, and suggestions without reading or writing a strategy.\n   - Suggestions and reset-to-default choices only modify the next sparse plan input. They persist only through unified `apply_strategy_plan` (or web Save); no suggestion/reset mutation tool exists.\n5. **Compile one complete plan**\n   - Call `compile_strategy_plan({ request: canonicalCompilePayload })`, where the nested request contains exactly one strict `CREATE`, `UPDATE`, or `RESTORE` branch plus a required bounded `coinSelection`, `intentSummary`, and `assumptions`.\n   - CREATE supplies the full aggregate; UPDATE supplies at least one changed axis and `expectedRevision`; RESTORE targets an owned inactive revision and may include repair axes. Signal overrides are sparse: an omitted signal/axis stays unchanged, omitted `params` preserves canonical params byte-for-byte, and present `params` replaces them only after strict validation.\n6. **Review before confirming**\n   - Inspect `approvedPlan`: complete post-state, proposed revision, dense scorecard, viability, mismatches, canonical diff, catalog digest, expiry, and bound-agent impact.\n   - Inspect `reviewContext`: exact column contracts, point-in-time report preview and coin scope, assumptions, open-position observation, provisional CREATE/RESTORE quota/name admission, and confirmation summary. Admission is advisory until the writer transaction; open positions are awareness only and do not block an edit.\n   - Compilation writes nothing. Preview/compile have a 15-second deadline, 16,000-estimated-token preview cap, and 256,000-byte result cap, and a 256,000-byte plan cap; the plan token expires after five minutes. Recompile after expiry, catalog drift, revision drift, or a changed bound-agent fence.\n7. **Apply only the exact reviewed plan**\n   - After explicit user approval, call `apply_strategy_plan({ request: { plan, planToken, confirm:true } })`. Build `plan` from the compiled `approvedPlan` by copying `operation`; `postState.id` as `strategyId`; `expiresAt`; `expectedRevision` for UPDATE/RESTORE; `explicitRuleOverrides` as `rules`; and from `postState`: `name`, `description`, `tagline`, `timeframe`, `regimeAutoDerive`, `regimeTimeframe`, `marketReadText`, `sections`, `conditions` (each carrying its own `verdict`), `minAggregateScore`, `minRequiredCount`, `minAtrPct`, `minStopLossAtrMultiple`, `maxStopLossPct`, `minRiskRewardRatio` \u2014 all byte-identical, `sections` including every generated `custom:` key.\n   - Send nothing else. The server re-derives the dense scorecard, diff, viability, mismatches, creation seed, proposed revision, and bound-agent impact, and rejects the call if the result does not match the digest the token bound. `diff`, `viability`, `mismatches`, `signalRules`, `creationSeed`, `proposedRevision`, `bindingImpact`, `authoringCatalogDigest`, and any `reviewContext` field are rejected as unknown keys. Never rebuild a dense scorecard client-side.\n   - CREATE, UPDATE, and repaired RESTORE commit atomically. Changed configuration reaches every bound agent immediately. Use the returned full strategy and revision for the next operation.\n\nThe direct server contracts for `get_strategy_section_template`, `update_strategy_signal_rule`, `compile_strategy_plan`, and `apply_strategy_plan` use the strict outer envelope `{ request: canonicalPayload }`. Therefore a focused rule edit is `update_strategy_signal_rule({ request: canonicalRuleUpdate })`. When live discovery through a multi-account proxy exposes account selection for one of these calls, use the strict sibling envelope `{ account, request }`; the proxy removes only `account` and forwards the unchanged `{ request }`. Never put `account` inside `request` or flatten request fields beside it. Other tools keep the input shape reported by live discovery.\n\nFocused lifecycle tools: `fork_strategy` requires `sourceRevision`; `archive_strategy` requires `expectedRevision` and `confirm:true`; `restore_strategy` is only the thin unchanged-content path for an already-viable inactive strategy. If it returns `REPAIR_REQUIRED`, keep the strategy inactive and use the RESTORE compile/review/apply flow. `update_strategy_signal_rule` is a thin one-rule wrapper that requires `required`; omit `params` to preserve them, or supply the full strict replacement. Every mutation returns the next full strategy revision.\n\n#### Discover Setup Options\n- `get_trading_config_catalog()` \u2014 signal presets + position-mgmt presets + trading defaults + valid bounds (min/max ranges).\n- `get_context_sources_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` \u2014 live per-source values for an agent.\n- `get_context_source_full_preview({ sessionId, gameType, sourceKey })` \u2014 full content + token count for one source.\n- `get_agent_prompt_context_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` \u2014 the assembled prompt the agent receives.\n\n### Workflow C: Trading Signals & Decisions\n\n**Prerequisites**: (1) Agent wallet provisioned via web UI (browser-local key signing), (2) Trading configured via update_intelligence_agent({ tradingConfig: { tradingMode: \"APPROVAL_REQUIRED\", ... } }).\n\n#### Configure Trading\n- `update_intelligence_agent({ agentId, tradingConfig: { tradingMode, maxLeverage, ... } })`\n  Enable APPROVAL_REQUIRED mode and set risk parameters.\n\n#### Customize Signals\n- `get_strategy({ strategyId })` \u2014 read the bound strategy's complete dense scorecard and revision.\n- `list_strategy_signals(...)` then `get_strategy_signal_definition(...)` \u2014 discover live signal semantics and strict parameters.\n- `update_strategy_signal_rule({ request: canonicalRuleUpdate })` \u2014 focused one-rule strategy edit, or use the whole-plan workflow above for coordinated changes. Agent-scoped rule mutation/reset tools are not registered.\n- `simulate_aggregate_score({ signals, gate })`\n  Stateless what-if: preview the weighted aggregate score and gate routing for a set of {label, score, allocation} signals.\n\n#### Market Regime\n- `get_regime_snapshot({ symbol?, timeframe? })`\n  Current regime for a coin at a timeframe: regime + conviction + duration + classified context (trend/volatility/momentum/structural bias). `symbol` defaults to \"BTC\"; `timeframe` defaults to \"4h\" (the interval the deployment gate matches on) \u2014 pass any coin/timeframe (e.g. \"1h\", \"1d\"). Returns a \"no regime\" notice when none is classified.\n- `get_regime_history({ symbol?, timeframe?, bars? })`\n  Regime time-series for a coin at a timeframe \u2014 e.g. \"1h\", \"4h\", \"1d\"; bars 1-500, default 240. `symbol` defaults to \"BTC\", `timeframe` defaults to \"4h\"; pass any. Read from the MDS per-bar projection for that timeframe \u2014 may be sparse or empty on a cold cache.\n\n#### Monitor Signals\n- `list_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias? })`\n  View recent signal evaluations with composite scores and dominant bias.\n- `get_signal_log({ agentId, logId })`\n  Full scorecard detail for a specific signal evaluation including all evaluated signals with scores, comparison coins, candidate trade levels, and linked entry decision.\n- `get_signal_performance({ agentId })`\n  Aggregate stats: total evaluations, enter/skip counts, avg composite score, avg conviction.\n- `list_trade_outcomes({ agentId, page?, limit? })`\n  View realized trade outcomes with entry/exit fills, P&L, fees, slippage, and close reason.\n\n#### Manage Entry Decisions\n- `list_entry_decisions({ agentId, page?, limit?, status?, coinTicker?, decision? })`\n  View recent entry decisions. Filter by PENDING to see actionable decisions.\n- `get_entry_decision({ agentId, decisionId })`\n  Full detail for a specific entry decision including signal checklist with LLM verdicts, position sizing, risk/reward ratio, execution status, and reasoning.\n- `accept_entry_decision({ agentId, decisionId })` [requires mcp:wager]\n  Accept a PENDING ENTER decision for execution (APPROVAL_REQUIRED mode).\n- `cancel_entry_decision({ agentId, decisionId })` [requires mcp:wager]\n  Deny/cancel a PENDING ENTER decision (APPROVAL_REQUIRED mode).\n\n#### Monitor Live Trades\n- `list_user_active_positions()`\n  All your agents' open positions across every session \u2014 totals, per-agent groups, and per-position live P&L (unrealizedPnlUsd, roePct, markPrice). Check pricingStatus/generatedAtMs for mark-price freshness.\n- `list_session_agent_positions({ marketGridSessionId })`\n  The same live-P&L position view, scoped to one Market Grid session.\n- `get_agent_open_positions({ agentId, coinTicker? })`\n  Public entry-only view of a given agent's open positions (no live mark price or unrealized P&L \u2014 use list_user_active_positions for live P&L on your own agents).\n- `get_position_audit_history({ agentId, positionId })`\n  Execution audit trail for a position \u2014 SL/TP replacement + cancellation events.\n- `list_pending_approvals()`\n  Every decision across your agents awaiting your approval (AWAITING_APPROVAL). Use before accept_entry_decision / cancel_entry_decision. Returns the full queue (no pagination).\n- `list_gate_blocks({ agentId, page?, limit? })`\n  Paginated pre-signal pipeline rejections \u2014 why candidate signals were gate-blocked. Use to debug an agent that isn't trading.\n- `get_decision_order_attribution()`\n  Map executed orders back to their originating entry decisions (decisionId \u2192 orderId, agent, coin, direction, conviction).\n\n#### Control Live Trades\n- `close_agent_position({ decisionId, confirm })` [requires mcp:wager]\n  DESTRUCTIVE \u2014 submits a reduce-only market order that closes the position and realizes its P&L. Irreversible; pass confirm:true to proceed.\n- `override_agent_protection({ decisionId, effectiveStopLoss, effectiveStopLossOrderId })` [requires mcp:wager]\n  Manually override the agent's stop-loss on an OPEN execution (SL-only). Get effectiveStopLossOrderId from get_position_audit_history.\n\n#### Review & Research (read-only)\n\n**Review your own agents:**\n- `get_trade_chart({ agentId, logId })` \u2014 candle + entry/exit/SL/TP overlay for one of your agent's signal logs (status READY/UNAVAILABLE/NOT_FOUND).\n- `get_trade_outcome_by_decision({ decisionId })` \u2014 realized outcome (P&L, close reason, fees) for one of your decisions (null until settled).\n- `get_agent_game_history({ agentId, timeframe?, page?, limit? })` \u2014 one agent's Market Grid game history (1D/7D/30D/LIFETIME).\n- `get_user_agent_game_history({ timeframe?, page?, limit? })` \u2014 game history aggregated across ALL your agents.\n- `get_agent_thought_log({ agentId, page?, limit? })` / `get_user_thought_log({ page?, limit? })` \u2014 reasoning journals (one agent / all agents).\n- `get_agent_activity_feed({ agentId, page?, limit? })` / `get_user_activity_feed({ page?, limit? })` \u2014 activity feeds (one agent / all agents).\n- `get_agent_explorer({ timeframe, sortBy, search?, limit? })` \u2014 agent explorer/discovery list (DAILY/WEEKLY/MONTHLY/ALL_TIME; NET_PNL/WIN_RATE/TRADE_COUNT): resume entries with public config + KPIs, plus your agents' positions in the sort.\n- `get_agent_unrealized_pnl({ agentId })` \u2014 live unrealized P&L snapshot for an agent (null when flat).\n- `get_agent_decision_context({ coinTicker })` \u2014 the pre-decision market/signal context your agents evaluate for a coin.\n\n**Inspect any public agent:**\n- `get_public_agent_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias?, direction? })` \u2014 public signal logs.\n- `get_public_agent_signal_log_detail({ agentId, logId })` \u2014 full pipeline detail for one log.\n- `get_public_agent_signal_performance({ agentId })` \u2014 aggregate signal performance.\n- `get_public_agent_trade_chart({ agentId, logId })` \u2014 candle + overlay for one public log.\n- `get_public_agent_realized_trades({ agentId, timeframe?, page?, limit?, coinTicker?, direction?, tradeOutcome?, closeReason? })` \u2014 public realized trades.\n- `get_public_agent_game_history({ agentId, timeframe?, page?, limit? })` \u2014 public Market Grid game history.\n\n**Research the market:**\n- `get_coin_metadata()` \u2014 the tradable coin universe + per-coin metadata.\n- `get_coin_market_context({ tickers, strategyTimeframe, modules? })` \u2014 full per-coin market context (the indicator-module GFM sections agents use) for one or more SPECIFIC coins (1\u2013100 canonical tickers; 15m/1h/4h). For session/whole-universe context use `get_market_context`.\n- `get_coin_candles({ ticker, interval, limit? })` \u2014 recent closed candles (1m\u20261w).\n- `get_coin_performance_history({ ticker, interval, count? })` \u2014 historical performance-metrics time-series.\n- `get_top_ranked_coins({ metric, interval, limit? })` \u2014 top coins by abs_change / rsi_activity / volume.\n- `get_macd_heatmap({ timeframe?, exchange?, limit? })` \u2014 full MACD heatmap (15m/1h/4h/1d).\n- `get_coin_signal_preview({ ticker, interval, agentId? })` \u2014 preview the signal pipeline for a coin (optionally agent-weighted with one of your agents).\n\n**Live exchange orders** (slower \u2014 query the exchange directly; may fail if it's unreachable):\n- `get_open_orders()` \u2014 your current open (resting) orders on the exchange.\n- `get_order_status({ orderId })` \u2014 live status of one order by id.\n\n## Grid Format (Critical \u2014 submissions are rejected if wrong)\n\n```json\n{\n  \"sessionId\": \"session-uuid\",\n  \"grid\": [\n    { \"coinId\": \"SOL\", \"position\": 0, \"prediction\": \"UP\", \"isCaptain\": true },\n    { \"coinId\": \"BTC\", \"position\": 1, \"prediction\": \"DOWN\", \"isCaptain\": false },\n    { \"coinId\": \"ETH\", \"position\": 2, \"prediction\": \"UP\", \"isCaptain\": false }\n  ]\n}\n```\n\n**Validation rules:**\n- Grid size MUST match the session's coin pool size exactly\n- Each coinId MUST use the \"id\" field from the coin pool (e.g., \"SOL\", \"BTC\", \"ETH\"). NEVER use the \"name\" (e.g., \"Solana\") or any other field\n- Positions MUST be sequential: 0, 1, 2, ...\n- Exactly ONE cell MUST have isCaptain: true\n- prediction MUST be \"UP\" or \"DOWN\"\n\n## Market Context Modules\n\n`get_market_context` returns GFM markdown sections \u2014 the same data Intelligence Agents see. Module 1 (Price Action) is included by default and can be deselected like any other module. Select additional modules via the `modules` parameter:\n\n| Module | Key | What it provides |\n|--------|-----|-----------------|\n| Candle Breakdown | `subTimeframe` | Lower-rung closed-bar change% + volume trajectories, close efficiency ratio, volume max-share |\n| RSI | `rsi` | RSI-14 + RSI-7 4-period trajectories, OB/OS zones |\n| MACD | `macd` | Histogram trajectory, crossover detection |\n| Volume | `volume` | Volume ratio + OBV trajectories |\n| Volatility | `volatility` | ATR trajectory, high/low deviation |\n| Bollinger Bands | `bollingerBands` | %B trajectory, band width + touch, CCI trajectory |\n| Moving Averages | `movingAverages` | SMA20/50/200 + EMA5/13/20 distances, MA alignment |\n| Stochastic | `stochastic` | Stochastic K trajectory, K/D values, OB/OS zone |\n| Funding Rates | `fundingRates` | Rate trajectory, annualized rate, mark premium |\n| Open Interest | `openInterest` | OI trajectory, velocity, OI-Price regime |\n| Relative Strength | `relativeStrength` | PPO + ROC trajectories, peer ranks |\n| Support & Resistance | `supportResistance` | Swing levels, distance%, price zone |\n| Trend Strength | `trendStrength` | ADX trajectory, trend strength zone |\n| Money Flow Index | `mfi` | MFI-14 trajectory, volume-weighted OB/OS zone |\n| Higher Timeframe | `higherTimeframe` | HTF trend context (ADX, RSI, MA alignment) |\n| Regime Context | `regimeContext` | Regime detection (trend/volatility/momentum from HTF) |\n| Structure Zones | `structureZones` | Price structure zones (FVG, order blocks, zone confluence) |\n| Crowd Intelligence | `crowdIntelligence` | Crowd sentiment and positioning data |\n\nDefault: `[\"rsi\", \"relativeStrength\"]`. Pass all 18 for comprehensive analysis.\n\n## Captain Selection Strategy\n\nYour captain gets 2x score multiplier on price movement amplitude \u2014 pick the coin with highest expected volatility to maximize point capture. High ADX, expanding ATR, or breakout setups signal strong directional moves worth the 2x multiplier.\n\n## Session Lifecycle\n\nPENDING (submit here) \u2192 LIVE (in progress) \u2192 RESOLVING (market closed, awaiting settlement) \u2192 SETTLED (check results). Terminal off-path states: CANCELLED (voided) and SETTLEMENT_QUARANTINED (settlement exhausted its retry budget; awaiting operator intervention).\n\n## Reasoning Journals\n\nTwo separate journals track different kinds of reasoning:\n\n- **`get_mcp_reasoning_journal({ sessionId })`** \u2014 Your own reasoning. When you submit a grid with `reasoning`, `confidenceScore`, and `modelName`, the server saves it. Use this tool to review your past analysis for a session.\n- **`get_agent_journal({ agentId })`** \u2014 Intelligence Agent performance. Shows an agent's thought log (decisions + reasoning), activity events, and session summaries. Use this to monitor how your automated agents are performing.\n\n## Paid Games\n\nCheck balance and readiness with get_account_state(). It returns mcpWagerEnabled (signer policy) and tradingWalletProvisioned (agent wallet). Agent Wagers is a one-time setup at Profile > Wallet tab. Server handles payment automatically on submit. Daily limits: 50 operations, $500 USD.\n\n## Request Budget (size your fan-out before you send it)\n\nYou get **3 requests/second sustained, with up to 120 banked while you are idle** \u2014 a full bank refills in 40s. Research turns are bursty by nature, so the bank exists to serve exactly that: an idle pause pays for the sweep that follows.\n\nEvery response tells you where you stand, so you never have to discover the ceiling by hitting it:\n\n| Header | Meaning |\n|--------|---------|\n| `RateLimit-Limit` | The bank ceiling |\n| `RateLimit-Remaining` | Requests you can still spend right now \u2014 **read this on successful responses and size the next batch against it** |\n| `RateLimit-Reset` | Seconds until the bank is full again (when another full-size turn is affordable) |\n| `Retry-After` | On a 429 only: seconds until that one request may be retried |\n\nIf you plan a fan-out wider than `RateLimit-Remaining`, split it across turns or pace it \u2014 a 429 arrives too late to steer a batch you have already dispatched. Over-budget calls return HTTP 429 with a JSON-RPC `-32000` error and run no tool.\n\n## Key Tips\n\n- Always research coins before predicting \u2014 use `get_market_context({ sessionId, modules: [\"rsi\", \"macd\", \"volume\", \"trendStrength\"] })` or pass all 18 modules for comprehensive analysis\n- Use `get_account_state()` to check if you're ready to play (balance + rank + agent slots + wager status)\n- Don't predict all UP or all DOWN \u2014 analyze each coin individually\n- If update is needed, use update_market_grid (not submit again)\n- Always provide `reasoning`, `confidenceScore`, and `modelName` when submitting for traceability \u2014 review with `get_mcp_reasoning_journal()`\n- Use `get_agent_journal({ agentId })` to monitor how your agents are performing",
   "prompts": [
     {
       "arguments": [
@@ -82,7 +82,7 @@
   ],
   "serverInfo": {
     "name": "battlegrid",
-    "version": "14.0.0"
+    "version": "15.0.0"
   },
   "tools": [
     {
@@ -5027,16 +5027,7 @@
                     "maxSlippageBps": {
                       "type": "number"
                     },
-                    "maxStopLossPct": {
-                      "type": "number"
-                    },
                     "minAllocationUsd": {
-                      "type": "number"
-                    },
-                    "minRiskRewardRatio": {
-                      "type": "number"
-                    },
-                    "minStopLossPct": {
                       "type": "number"
                     },
                     "minTradeConviction": {
@@ -5201,13 +5192,10 @@
                     "maxConcurrentExposureUsd",
                     "maxCumulativeDrawdownUsd",
                     "maxDailyLossUsd",
-                    "maxStopLossPct",
-                    "minStopLossPct",
                     "minTradeConviction",
                     "gridMinConfidence",
                     "signalTimeoutMinutes",
                     "maxEntryDeviationAtrMultiple",
-                    "minRiskRewardRatio",
                     "positionSizePresets",
                     "positionManagement",
                     "strategyTimeframe",
@@ -5797,16 +5785,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -5971,13 +5950,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -7339,21 +7315,9 @@
                 "description": "Max entry slippage in bps (registry-bound). Integer \u2014 required when tradingConfig is provided",
                 "type": "integer"
               },
-              "maxStopLossPct": {
-                "description": "Maximum stop-loss percentage (registry-bound) \u2014 required when tradingConfig is provided",
-                "type": "number"
-              },
               "minAllocationUsd": {
                 "description": "Minimum order size in USD (registry-bound) \u2014 required when tradingConfig is provided",
                 "maximum": 99999999.99,
-                "type": "number"
-              },
-              "minRiskRewardRatio": {
-                "description": "Minimum risk:reward ratio (registry-bound) \u2014 required when tradingConfig is provided",
-                "type": "number"
-              },
-              "minStopLossPct": {
-                "description": "Minimum stop-loss percentage (registry-bound) \u2014 required when tradingConfig is provided",
                 "type": "number"
               },
               "minTradeConviction": {
@@ -7530,11 +7494,8 @@
               "maxConcurrentExposureUsd",
               "maxCumulativeDrawdownUsd",
               "maxDailyLossUsd",
-              "maxStopLossPct",
-              "minStopLossPct",
               "signalTimeoutMinutes",
               "maxEntryDeviationAtrMultiple",
-              "minRiskRewardRatio",
               "minTradeConviction",
               "gridMinConfidence",
               "positionSizePresets",
@@ -7987,16 +7948,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -8161,13 +8113,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -8432,21 +8381,9 @@
                 "description": "Max entry slippage in bps (registry-bound). Integer \u2014 required when tradingConfig is provided",
                 "type": "integer"
               },
-              "maxStopLossPct": {
-                "description": "Maximum stop-loss percentage (registry-bound) \u2014 required when tradingConfig is provided",
-                "type": "number"
-              },
               "minAllocationUsd": {
                 "description": "Minimum order size in USD (registry-bound) \u2014 required when tradingConfig is provided",
                 "maximum": 99999999.99,
-                "type": "number"
-              },
-              "minRiskRewardRatio": {
-                "description": "Minimum risk:reward ratio (registry-bound) \u2014 required when tradingConfig is provided",
-                "type": "number"
-              },
-              "minStopLossPct": {
-                "description": "Minimum stop-loss percentage (registry-bound) \u2014 required when tradingConfig is provided",
                 "type": "number"
               },
               "minTradeConviction": {
@@ -8623,11 +8560,8 @@
               "maxConcurrentExposureUsd",
               "maxCumulativeDrawdownUsd",
               "maxDailyLossUsd",
-              "maxStopLossPct",
-              "minStopLossPct",
               "signalTimeoutMinutes",
               "maxEntryDeviationAtrMultiple",
-              "minRiskRewardRatio",
               "minTradeConviction",
               "gridMinConfidence",
               "positionSizePresets",
@@ -9079,16 +9013,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -9253,13 +9178,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -9352,6 +9274,9 @@
                         "requestedMaxPct": {
                           "type": "number"
                         },
+                        "requestedMinAtrMultiple": {
+                          "type": "number"
+                        },
                         "requestedMinPct": {
                           "type": "number"
                         },
@@ -9378,7 +9303,6 @@
                         "status": {
                           "enum": [
                             "FEASIBLE",
-                            "INFEASIBLE",
                             "STRUCTURAL_ONLY"
                           ],
                           "type": "string"
@@ -9390,6 +9314,7 @@
                         "atrPct",
                         "reachableMinPct",
                         "reachableMaxPct",
+                        "requestedMinAtrMultiple",
                         "requestedMinPct",
                         "requestedMaxPct",
                         "responsibleBound",
@@ -9407,12 +9332,12 @@
               "minRiskRewardRatio": {
                 "type": "number"
               },
-              "minStopLossPct": {
+              "minStopLossAtrMultiple": {
                 "type": "number"
               }
             },
             "required": [
-              "minStopLossPct",
+              "minStopLossAtrMultiple",
               "maxStopLossPct",
               "minRiskRewardRatio",
               "coins"
@@ -9914,16 +9839,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -10088,13 +10004,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -10623,16 +10536,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -10797,13 +10701,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -11332,16 +11233,7 @@
                   "maxSlippageBps": {
                     "type": "number"
                   },
-                  "maxStopLossPct": {
-                    "type": "number"
-                  },
                   "minAllocationUsd": {
-                    "type": "number"
-                  },
-                  "minRiskRewardRatio": {
-                    "type": "number"
-                  },
-                  "minStopLossPct": {
                     "type": "number"
                   },
                   "minTradeConviction": {
@@ -11506,13 +11398,10 @@
                   "maxConcurrentExposureUsd",
                   "maxCumulativeDrawdownUsd",
                   "maxDailyLossUsd",
-                  "maxStopLossPct",
-                  "minStopLossPct",
                   "minTradeConviction",
                   "gridMinConfidence",
                   "signalTimeoutMinutes",
                   "maxEntryDeviationAtrMultiple",
-                  "minRiskRewardRatio",
                   "positionSizePresets",
                   "positionManagement",
                   "strategyTimeframe",
@@ -21279,6 +21168,12 @@
                         "null"
                       ]
                     },
+                    "minStopLossAtrMultiple": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
                     "minStopLossPct": {
                       "type": [
                         "number",
@@ -21573,6 +21468,7 @@
                     "levelsRejectionStageShort",
                     "slReachableMinPct",
                     "slReachableMaxPct",
+                    "minStopLossAtrMultiple",
                     "minStopLossPct",
                     "maxStopLossPct",
                     "bestRiskRewardLong",
@@ -21645,6 +21541,7 @@
                         "EDGE_CONSUMED_SCAN_BLOCKED",
                         "EDGE_DEFERRED_IN_FLIGHT",
                         "EDGE_PRESERVED_POSITION_BLOCKED",
+                        "EDGE_PRESERVED_ACCOUNT_BLOCKED",
                         "FIRE_DEDUPED",
                         "ABORTED_POLICY_CHANGED",
                         "ABORTED_ON_DUTY_DEPARTED"
@@ -21692,6 +21589,9 @@
                     },
                     "minScorePercent": {
                       "$ref": "#/properties/events/items/anyOf/0/properties/minScorePercent"
+                    },
+                    "minStopLossAtrMultiple": {
+                      "$ref": "#/properties/events/items/anyOf/0/properties/minStopLossAtrMultiple"
                     },
                     "minStopLossPct": {
                       "$ref": "#/properties/events/items/anyOf/0/properties/minStopLossPct"
@@ -21789,6 +21689,7 @@
                     "levelsRejectionStageShort",
                     "slReachableMinPct",
                     "slReachableMaxPct",
+                    "minStopLossAtrMultiple",
                     "minStopLossPct",
                     "maxStopLossPct",
                     "bestRiskRewardLong",
@@ -21909,6 +21810,9 @@
                     "minScorePercent": {
                       "$ref": "#/properties/events/items/anyOf/0/properties/minScorePercent"
                     },
+                    "minStopLossAtrMultiple": {
+                      "$ref": "#/properties/events/items/anyOf/0/properties/minStopLossAtrMultiple"
+                    },
                     "minStopLossPct": {
                       "$ref": "#/properties/events/items/anyOf/0/properties/minStopLossPct"
                     },
@@ -22005,6 +21909,7 @@
                     "levelsRejectionStageShort",
                     "slReachableMinPct",
                     "slReachableMaxPct",
+                    "minStopLossAtrMultiple",
                     "minStopLossPct",
                     "maxStopLossPct",
                     "bestRiskRewardLong",
@@ -27515,6 +27420,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -27529,6 +27438,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -28071,6 +27988,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -28529,6 +28449,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -28543,6 +28467,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -29085,6 +29017,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -29543,6 +29478,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -29557,6 +29496,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -30099,6 +30046,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -30552,6 +30502,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -30566,6 +30520,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -31108,6 +31070,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -31701,6 +31666,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -31715,6 +31684,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -32257,6 +32234,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -33370,6 +33350,9 @@
                     "maxLength": 2000,
                     "type": "string"
                   },
+                  "maxStopLossPct": {
+                    "type": "number"
+                  },
                   "minAggregateScore": {
                     "maximum": 1,
                     "minimum": 0,
@@ -33384,6 +33367,12 @@
                     "maximum": 20,
                     "minimum": 0,
                     "type": "integer"
+                  },
+                  "minRiskRewardRatio": {
+                    "type": "number"
+                  },
+                  "minStopLossAtrMultiple": {
+                    "type": "number"
                   },
                   "name": {
                     "maxLength": 50,
@@ -33891,6 +33880,9 @@
                     "maxLength": 2000,
                     "type": "string"
                   },
+                  "maxStopLossPct": {
+                    "$ref": "#/properties/request/anyOf/0/properties/maxStopLossPct"
+                  },
                   "minAggregateScore": {
                     "$ref": "#/properties/request/anyOf/0/properties/minAggregateScore"
                   },
@@ -33899,6 +33891,12 @@
                   },
                   "minRequiredCount": {
                     "$ref": "#/properties/request/anyOf/0/properties/minRequiredCount"
+                  },
+                  "minRiskRewardRatio": {
+                    "$ref": "#/properties/request/anyOf/0/properties/minRiskRewardRatio"
+                  },
+                  "minStopLossAtrMultiple": {
+                    "$ref": "#/properties/request/anyOf/0/properties/minStopLossAtrMultiple"
                   },
                   "name": {
                     "$ref": "#/properties/request/anyOf/0/properties/name"
@@ -33965,6 +33963,9 @@
                   "marketReadText": {
                     "$ref": "#/properties/request/anyOf/1/properties/marketReadText"
                   },
+                  "maxStopLossPct": {
+                    "$ref": "#/properties/request/anyOf/0/properties/maxStopLossPct"
+                  },
                   "minAggregateScore": {
                     "$ref": "#/properties/request/anyOf/0/properties/minAggregateScore"
                   },
@@ -33973,6 +33974,12 @@
                   },
                   "minRequiredCount": {
                     "$ref": "#/properties/request/anyOf/0/properties/minRequiredCount"
+                  },
+                  "minRiskRewardRatio": {
+                    "$ref": "#/properties/request/anyOf/0/properties/minRiskRewardRatio"
+                  },
+                  "minStopLossAtrMultiple": {
+                    "$ref": "#/properties/request/anyOf/0/properties/minStopLossAtrMultiple"
                   },
                   "name": {
                     "$ref": "#/properties/request/anyOf/1/properties/name"
@@ -34051,12 +34058,13 @@
                             "MARKET_READ",
                             "CONDITIONS",
                             "SETUP_GATES",
+                            "TRADE_LEVEL_POLICY",
                             "SIGNAL_RULES",
                             "LIFECYCLE"
                           ],
                           "type": "string"
                         },
-                        "maxItems": 8,
+                        "maxItems": 9,
                         "type": "array"
                       },
                       "conditions": {
@@ -34345,6 +34353,46 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "tradeLevelPolicy": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "after": {
+                                "$ref": "#/properties/approvedPlan/anyOf/0/properties/diff/properties/tradeLevelPolicy/anyOf/0/properties/before"
+                              },
+                              "before": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "maxStopLossPct": {
+                                    "$ref": "#/properties/approvedPlan/anyOf/0/properties/postState/properties/maxStopLossPct"
+                                  },
+                                  "minRiskRewardRatio": {
+                                    "$ref": "#/properties/approvedPlan/anyOf/0/properties/postState/properties/minRiskRewardRatio"
+                                  },
+                                  "minStopLossAtrMultiple": {
+                                    "$ref": "#/properties/approvedPlan/anyOf/0/properties/postState/properties/minStopLossAtrMultiple"
+                                  }
+                                },
+                                "required": [
+                                  "minStopLossAtrMultiple",
+                                  "maxStopLossPct",
+                                  "minRiskRewardRatio"
+                                ],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "before",
+                              "after"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "required": [
@@ -34355,6 +34403,7 @@
                       "marketRead",
                       "conditions",
                       "setupGates",
+                      "tradeLevelPolicy",
                       "signalRules",
                       "lifecycle"
                     ],
@@ -35041,6 +35090,10 @@
                         "maxLength": 2000,
                         "type": "string"
                       },
+                      "maxStopLossPct": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      },
                       "minAggregateScore": {
                         "maximum": 1,
                         "minimum": 0,
@@ -35055,6 +35108,14 @@
                         "maximum": 20,
                         "minimum": 0,
                         "type": "integer"
+                      },
+                      "minRiskRewardRatio": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      },
+                      "minStopLossAtrMultiple": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
                       },
                       "name": {
                         "maxLength": 50,
@@ -35575,6 +35636,9 @@
                       "minAggregateScore",
                       "minRequiredCount",
                       "minAtrPct",
+                      "minStopLossAtrMultiple",
+                      "maxStopLossPct",
+                      "minRiskRewardRatio",
                       "forkedFromStrategyId",
                       "isActive"
                     ],
@@ -37274,6 +37338,10 @@
                         "maxLength": 2000,
                         "type": "string"
                       },
+                      "maxStopLossPct": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      },
                       "minAggregateScore": {
                         "maximum": 1,
                         "minimum": 0,
@@ -37288,6 +37356,14 @@
                         "maximum": 20,
                         "minimum": 0,
                         "type": "integer"
+                      },
+                      "minRiskRewardRatio": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      },
+                      "minStopLossAtrMultiple": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
                       },
                       "name": {
                         "maxLength": 50,
@@ -37786,6 +37862,9 @@
                       "minAggregateScore",
                       "minRequiredCount",
                       "minAtrPct",
+                      "minStopLossAtrMultiple",
+                      "maxStopLossPct",
+                      "minRiskRewardRatio",
                       "rules"
                     ],
                     "type": "object"
@@ -37809,6 +37888,9 @@
                       "marketReadText": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/marketReadText"
                       },
+                      "maxStopLossPct": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/maxStopLossPct"
+                      },
                       "minAggregateScore": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minAggregateScore"
                       },
@@ -37817,6 +37899,12 @@
                       },
                       "minRequiredCount": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minRequiredCount"
+                      },
+                      "minRiskRewardRatio": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minRiskRewardRatio"
+                      },
+                      "minStopLossAtrMultiple": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minStopLossAtrMultiple"
                       },
                       "name": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/name"
@@ -37864,6 +37952,9 @@
                       "minAggregateScore",
                       "minRequiredCount",
                       "minAtrPct",
+                      "minStopLossAtrMultiple",
+                      "maxStopLossPct",
+                      "minRiskRewardRatio",
                       "rules"
                     ],
                     "type": "object"
@@ -37887,6 +37978,9 @@
                       "marketReadText": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/marketReadText"
                       },
+                      "maxStopLossPct": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/maxStopLossPct"
+                      },
                       "minAggregateScore": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minAggregateScore"
                       },
@@ -37895,6 +37989,12 @@
                       },
                       "minRequiredCount": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minRequiredCount"
+                      },
+                      "minRiskRewardRatio": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minRiskRewardRatio"
+                      },
+                      "minStopLossAtrMultiple": {
+                        "$ref": "#/properties/request/properties/plan/anyOf/0/properties/minStopLossAtrMultiple"
                       },
                       "name": {
                         "$ref": "#/properties/request/properties/plan/anyOf/0/properties/name"
@@ -37942,6 +38042,9 @@
                       "minAggregateScore",
                       "minRequiredCount",
                       "minAtrPct",
+                      "minStopLossAtrMultiple",
+                      "maxStopLossPct",
+                      "minRiskRewardRatio",
                       "rules"
                     ],
                     "type": "object"
@@ -37988,6 +38091,7 @@
                     "MARKET_READ",
                     "CONDITIONS",
                     "SETUP_GATES",
+                    "TRADE_LEVEL_POLICY",
                     "SIGNAL_RULES",
                     "LIFECYCLE"
                   ],
@@ -38442,6 +38546,10 @@
                 "maxLength": 2000,
                 "type": "string"
               },
+              "maxStopLossPct": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
               "minAggregateScore": {
                 "maximum": 1,
                 "minimum": 0,
@@ -38456,6 +38564,14 @@
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
+              },
+              "minRiskRewardRatio": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "minStopLossAtrMultiple": {
+                "exclusiveMinimum": 0,
+                "type": "number"
               },
               "name": {
                 "maxLength": 50,
@@ -38998,6 +39114,9 @@
               "minAggregateScore",
               "minRequiredCount",
               "minAtrPct",
+              "minStopLossAtrMultiple",
+              "maxStopLossPct",
+              "minRiskRewardRatio",
               "forkedFromStrategyId",
               "revision",
               "isActive",
@@ -46815,16 +46934,7 @@
                     "maxSlippageBps": {
                       "type": "number"
                     },
-                    "maxStopLossPct": {
-                      "type": "number"
-                    },
                     "minAllocationUsd": {
-                      "type": "number"
-                    },
-                    "minRiskRewardRatio": {
-                      "type": "number"
-                    },
-                    "minStopLossPct": {
                       "type": "number"
                     },
                     "positionManagement": {
@@ -46960,11 +47070,8 @@
                     "balanceThresholdUsd",
                     "maxLeverage",
                     "maxSlippageBps",
-                    "maxStopLossPct",
-                    "minStopLossPct",
                     "signalTimeoutMinutes",
                     "maxEntryDeviationAtrMultiple",
-                    "minRiskRewardRatio",
                     "positionManagement",
                     "strategyTimeframe",
                     "regimeAutoDerive",
