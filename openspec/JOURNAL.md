@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-09 (the keyed sweep at v15) — 23 of 29 live files green, and the six that were not run
+
+**Did**: ran the full keyed live suite against the v15 server —
+`npm run test:live`, serial by config. **21 files passed, 8 skipped, 0
+failed; 46 tests, 630s.** Then ran two of the eight skips on their own,
+because their gates are about *pacing and authority*, not danger:
+
+- `condition-probe` (`BATTLEGRID_CONDITION_SWEEP=1`) — read-only, and only
+  gated because run concurrently it starved its neighbours. **16 of 17
+  strategies carry conditions · 69 total · 34 decide direction · 35 named
+  blocks · nothing unrecognised.** The condition grammar did not drift at
+  v15.
+- `oauth-metadata` (`BATTLEGRID_OAUTH_LIVE=1`) — a credential-free public
+  GET. The recorded discovery document still describes the platform.
+
+**23 of 29 files are now proven at v15.** The remaining six all sit behind
+`BATTLEGRID_LIVE_WRITES=1` (write, apply, radar, restore, retune,
+custom-table) and were **not** run: they mutate the live account, which is
+currently trading real money with open positions, and `radar-probe` in
+particular writes deployments on a radar that is full at 20/20 with the
+live fleet's own. That gate exists precisely so writes do not ride along on
+a read sweep; leaving it closed is the gate working, not a gap.
+
+**Two things the sweep read back that are worth keeping**: the surface
+record still matches the live server (`surface-freshness` green, so v15 is
+fully recorded), and `trading-record-probe` printed the live book —
+**Breakwater 0W/2L, net −$0.1469 after $0.0229 fees, STOP_LOSS ×2**, the
+post-time-decay-fix pair. Both closes near scratch; still zero
+take-profits in the fleet's whole history.
+
+**Cost of a rebuilt container, for the next session**: PostgreSQL was down
+and the shell had no env. `pg_ctlcluster 16 main start` brought it back
+with the `gridcommander` database and all nine tables intact; the URL is
+`postgres://gc:gc@localhost:5432/gridcommander`. Nothing in the repo says
+that, which is why it is here.
+
 ## 2026-08-09 (the whole surface, called) — 25 of 25 MCP tools answer at v15
 
 **Did**: after the v15 mapper run, exercised **every tool this product
