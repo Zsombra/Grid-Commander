@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-08-09 (learning-rate round) — the trade counter goes to the ceiling
+
+**Did**: operator's call — treat this phase as paid learning, not
+capital preservation, and stop letting the daily trade counter throttle
+sample collection. `maxDailyTrades` **3/4 → 100 on all three agents**
+(the platform's registry ceiling, discovered by probing: 500 and 200 both
+refused with *"maxDailyTrades (N) must be <= 100"*, 100 accepted).
+
+**What did not change, and why that matters**: the loss caps are the real
+backstop and they stay — Undertow/Vanguard $1.50 daily, $6 cumulative;
+Breakwater $1.25 / $5. So "unlimited trades" is bounded by *money* rather
+than by *count*, which is the correct shape: at ~$0.17 per losing unit,
+roughly 8–9 consecutive losses trip a daily halt and the agent stops
+itself for the UTC day. The conviction floors (0.55), RR floors, stops
+and the $45 exposure allowance are untouched, so quality per trade is
+unchanged — only the quantity ceiling moved.
+
+**The practical throttle is now exposure, not count**: at ~$13.5 notional
+per order against a $45 allowance, ~3 positions can be open at once. The
+counter only binds after positions close, so the realistic effect is
+faster turnover, not 100 simultaneous trades.
+
+**Watch**: model spend (was ~$0.09/agent/day at 3 trades; more evaluations
+means more), and whether the winner-vs-loser asymmetry from day one
+persists at higher volume — that is the metric the extra sample is being
+bought to answer.
+
 ## 2026-08-09 (early) — day one closes: three resolutions, every one by the book
 
 **Did**: watched the first fleet trades to resolution (reads only). All
