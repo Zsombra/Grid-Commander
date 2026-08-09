@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-08-09 (check-in 19:15Z) — the prediction is not settled, and I set the wrong horizon
+
+**Zero of the five have closed.** All are still open at 75–95 minutes, and
+the book is **+$0.1218 green**, with a sixth (FARTCOIN) added at 19:06.
+
+**The prediction stands unsettled, and what evidence there is leans against
+it.** I predicted most of that book would stop out on moves carrying no
+information. Stops at 0.38% and 0.40% have now survived an hour and a half
+without being touched. That is not a refutation yet — but it is not the
+early confirmation I expected either, and it deserves to be said in that
+direction rather than left implied.
+
+**The methodological error is mine and worth recording.** I wrote "next
+cycle settles it." It could not have. The closed population's hold times are
+
+    26 46 57 86 129 135 139 206 206 210 287 317 329 636 754   (minutes)
+    median 206 · mean 238 · only 4 of 15 closed inside 95 minutes
+
+so a 60-minute window was never going to resolve a five-position book —
+about three quarters of trades here live longer than one check-in. A
+prediction whose horizon is shorter than the process it describes cannot
+settle; it just gets re-reported as "pending" until it accidentally
+resolves. **The right horizon is three to four cycles**, and the watch has
+been re-armed on that basis.
+
+**Realized unchanged**: 15 closed, 3W/12L, −$0.9147, realised RR **1.30**
+against 3.34 placed, win rate 20%, break-even 43% at the realised RR.
+Nothing has closed since 16:53 — a four-hour gap, the longest of the day.
+
+**Meter** dead. **v15 policy p1** retested an eighth time, unchanged.
+
 ## 2026-08-09 (check-in 18:10Z) — Breakwater was waiting, not blocked, and the new book is stopped inside the noise
 
 **Correction: "Breakwater's gate is too tight" was premature.** I flagged
