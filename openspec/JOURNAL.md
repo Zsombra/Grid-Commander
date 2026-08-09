@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-09 (check-in 21:55Z) — a better statistic than the one I chose
+
+**ENA closed `STOP_LOSS`, −$0.1246, on a −0.89% move after 224 minutes**,
+against a stop placed at 0.82%. By the test I wrote down — "did the adverse
+move exceed the 0.82% median?" — this scores as *not* confirming, because
+0.89 > 0.82. Reported that way to keep the rule honest: **1 clean confirm, 1
+marginal, 0 disconfirming, 3 open.**
+
+**But the pair points at a sharper statistic than the one I picked.** Both
+closes died a hair past their *own* stop, not past some fleet median:
+
+| | stop placed | killing move | excess |
+|---|---|---|---|
+| WIF | 0.63% | 0.64% | **0.01pp** |
+| ENA | 0.82% | 0.89% | **0.07pp** |
+
+Comparing each trade's move to a fleet-wide median was the wrong
+denominator — it mixes coins with different volatility. **Move-minus-own-stop
+is the right one**, and on it both trades say the same thing: price reached
+the stop, tripped it, and went essentially nowhere further. That is what a
+stop inside the noise band looks like, and it is a cleaner claim than the
+one I set out to test. Recorded as a refinement, not as a confirmation —
+n=2, and the metric was chosen after seeing the data, which is exactly the
+sin the pre-registered version was meant to avoid. The three open positions
+still settle it on the original rule.
+
+**Realized: 17 closed, 3W/14L, −$1.1527**, win rate 18%, realised RR **1.29**
+against 3.34 placed, break-even now 44%. Loser adverse moves: median 0.82%,
+**9 of 14 at or under it**.
+
+**The surviving book is green**: +$0.1467 across four — FARTCOIN +$0.080,
+TRUMP (long) +$0.053, BNB +$0.008, SKHX +$0.006.
+
+**Meter** dead. **v15 policy p1** retested a tenth time, unchanged — ten
+identical results across eleven hours, and no BattleGrid deploy in between.
+Worth dropping to once every few cycles unless the server version moves.
+
 ## 2026-08-09 (check-in 20:35Z) — first result on the prediction: one confirming instance
 
 **WIF closed `STOP_LOSS`, −$0.1134, on a −0.64% move after 103 minutes.**
