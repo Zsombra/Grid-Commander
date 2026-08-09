@@ -1,5 +1,44 @@
 # Journal
 
+## 2026-08-09 (check-in 15:55Z) — the trail can hold breakeven, and a number I got wrong
+
+**HYPE closed green — the second win ever, and the first that proves the
+trail works at all.** +$0.0040 after 636 minutes, exit +0.17% above entry.
+The ratcheted stop (last seen at +0.20% vs entry) caught it above water.
+That is the mechanism doing exactly its job.
+
+It also shows how little the job is worth as tuned: HYPE peaked at
+**+$0.140** at 12:35Z and closed at **+$0.004** — the trail captured **3% of
+the peak**. So the picture is not "the trail is broken"; it is "the trail is
+so slow that it converts a good position into a scratch." Three of four
+positions have now round-tripped their gain; HYPE is the one where the
+ratchet got above entry in time to prevent a loss.
+
+**Correction to last cycle.** I wrote that the largest adverse move across
+the eleven closes was 0.82%. That was the maximum over the six rows I had
+printed, not over all eleven. Across all thirteen closes now:
+
+- adverse moves on losers: **min 0.10%, median 0.78%, max 1.50%**
+- **10 of 11 losers closed on a sub-1% move**
+
+The conclusion holds and is arguably sharper on the real distribution, but
+the number I quoted was wrong.
+
+**Also worth naming**: MOODENG's 07:18 close was **−$0.0043 net on a +0.10%
+favourable move** — the price went the right way and fees took it negative.
+At this notional, fees decide scratch trades.
+
+**FARTCOIN closed −$0.1165 in 26 minutes** on a −0.82% move — the fast end
+of the same failure.
+
+**Realized: 13 closed, 2W/11L, −$1.1064.** Book **+$0.2507** on two
+positions, and MOODENG is at **+$0.2631** — the largest unrealised this
+fleet has held, 5.5 hours in. Whether it converts or round-trips is the next
+real datapoint.
+
+**Breakwater idle ~10.8 hours**, still five blocks all day. **Meter** dead.
+**v15 policy p1** retested a fifth time, unchanged.
+
 ## 2026-08-09 (check-in 14:50Z) — the round trip is the pattern, not the incident
 
 TRUMP closed and repeated AIXBT's shape exactly. Two clean observations of
