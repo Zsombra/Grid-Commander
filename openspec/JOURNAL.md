@@ -1,5 +1,44 @@
 # Journal
 
+## 2026-08-09 (check-in 18:10Z) — Breakwater was waiting, not blocked, and the new book is stopped inside the noise
+
+**Correction: "Breakwater's gate is too tight" was premature.** I flagged
+its ~12-hour silence twice as something to report as an over-tight gate. It
+then took **three positions in twenty minutes** (SKHX, ENA, BNB) — its first
+fills since ~04:00. It was waiting for a tape it liked. A quiet agent and a
+blocked agent look identical until the tape turns; five blocks in a day was
+never evidence of the second.
+
+**The book refilled from flat to five in 26 minutes** — Undertow took WIF
+(short) and TRUMP (**long**, its first long in hours), Breakwater the other
+three. Vanguard is still flat, 0 trades all-time.
+
+**Placed RR on the new book is 3.61**, higher than the 3.34 fleet average:
+
+| agent | coin | stop | TP | RR |
+|---|---|---|---|---|
+| Breakwater | SKHX | **0.38%** | 1.16% | 3.09 |
+| Breakwater | BNB | **0.40%** | 1.65% | 4.13 |
+| Undertow | TRUMP | **0.51%** | 2.09% | 4.08 |
+| Undertow | WIF | **0.63%** | 2.89% | 4.61 |
+| Breakwater | ENA | **0.82%** | 1.75% | 2.14 |
+
+**A falsifiable prediction, recorded before the outcome.** The twelve losers
+so far have a median adverse move of **0.82%**. Four of these five stops sit
+*below* that median — SKHX and BNB at under half of it. If the noise-band
+diagnosis is right, most of this book stops out on moves that carry no
+information. If instead several run to their targets, the diagnosis is
+wrong and the trail is not the binding constraint. Next cycle settles it.
+
+**Realized unchanged** — no closes since 16:53. 15 closed, 3W/12L,
+−$0.9147, realised RR **1.30** against 3.34 placed.
+
+**Breakwater's new blocks are six ENA `OPEN_POSITION_CONFLICT` in twelve
+minutes** — it holds ENA and keeps re-evaluating it. The same waste pattern
+that produced Undertow's 450, now starting on the second agent.
+
+**Meter** dead. **v15 policy p1** retested a seventh time, unchanged.
+
 ## 2026-08-09 (check-in 17:00Z) — the first take-profit, and the number that names the problem
 
 **MOODENG closed `TAKE_PROFIT`, +$0.3649, +3.39%, 329 minutes.** The first
