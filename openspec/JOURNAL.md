@@ -1,5 +1,30 @@
 # Journal
 
+## 2026-08-09 (check-in 20:35Z) — first result on the prediction: one confirming instance
+
+**WIF closed `STOP_LOSS`, −$0.1134, on a −0.64% move after 103 minutes.**
+Its stop was placed at 0.63%. The move that killed it was **0.64%** — one
+basis point past the stop, and comfortably inside the 0.82% median adverse
+move of the prior losers. That is the noise-band pattern exactly: the trade
+was not beaten by a real move, it was closed by the first wobble past a stop
+sitting inside the noise.
+
+**Tally on the prediction: 1 confirming, 0 disconfirming, 4 still open.**
+One instance is not a result, and I am not going to treat it as one. The
+four survivors (SKHX, ENA, BNB, TRUMP) are now 2.5–3 hours old and
+approaching the 206-minute median hold, so the next cycle or two should
+carry most of the weight.
+
+**Realized: 16 closed, 3W/13L, −$1.0281**, win rate down to 19%. **Realised
+RR unchanged at 1.30** against 3.34 placed — WIF was a loss at close to its
+full stop distance, which is the numerator-preserving, denominator-growing
+half of the asymmetry that produced the gap in the first place.
+
+**Book −$0.0141** across five (FARTCOIN +$0.065, BNB +$0.019, SKHX −$0.014,
+TRUMP −$0.031, ENA −$0.054), down from +$0.1218 an hour ago.
+
+**Meter** dead. **v15 policy p1** retested a ninth time, unchanged.
+
 ## 2026-08-09 (check-in 19:15Z) — the prediction is not settled, and I set the wrong horizon
 
 **Zero of the five have closed.** All are still open at 75–95 minutes, and
