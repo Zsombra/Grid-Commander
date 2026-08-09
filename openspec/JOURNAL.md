@@ -1,5 +1,59 @@
 # Journal
 
+## 2026-08-09 (volume-profile PoC) — a real candle archive, and a negative result worth having
+
+**Did**: operator asked for a proof of concept on volume profiles / TPO, and
+for a check that `get_coin_candles` is really the only history source. Both
+answered; one of my earlier claims was wrong.
+
+**The surface has a historical candle archive, and I had missed it.** I
+reported the 100-bar live window as the ceiling. It is not:
+`get_trade_chart` and `get_public_agent_trade_chart` return **frozen OHLCV
+windows** (`result.chart.candles` — my first probe read `result.candles`,
+got nothing, and I wrongly reported zero). Harvested from 14 public agents
+× 30 logs: **4,867 unique 5m candles across 26 coins, 2026-04-05 →
+2026-08-09**, including TradFi (TSLA, GOOGL, ORCL, BABA, COIN). Free,
+read-only, idempotent by (coin, openTime). A third source exists too:
+`get_regime_history` (206 points, 1h). **No tick or L2 data anywhere, so
+true TPO is not reconstructable** — time-at-price needs intra-bar
+sequencing the API does not carry. Volume profile from OHLCV is an
+approximation (volume spread across each bar's range); TPO is not
+buildable at all.
+
+**Coverage caveat**: the harvest plateaued at 50 windows after agent 7 —
+later agents added nothing. The archive is concentrated in a few
+high-volume agents, and it is *opportunistic*: islands around trades, not
+a continuous series.
+
+**The PoC result is negative, and that is the point of running it.**
+Walk-forward over 13 windows / 7 coins (build a profile on 144×5m, measure
+the next 144):
+
+| test | result | reading |
+|---|---|---|
+| prior VA contains next window's closes | **28%** | prior value does **not** persist (70% in-sample by construction) |
+| VA-edge excursions held | **15 of 230 (7%)** | edges break far more than they hold |
+| POC revisited | 62% | **vs 54% for a random level in the same range — +8 points** |
+
+So the reversion reading of volume profile fails on this data, and the
+POC-magnet effect is within noise of a random level once controlled. **No
+profile-derived level earns a place in a live gate on this evidence.**
+
+**My own methodology, stated honestly**: the first pass counted *bars*
+beyond an edge rather than crossings, inflating breaks ~6×; the rerun
+counts excursions with a cooldown, and even then sustained moves still
+inflate the break count. The clean measure is the 28% containment figure,
+which needs no counting convention. Thirteen windows is a small sample,
+mostly memecoins, at a 12h block that is not a real session boundary —
+a fair retest would use UTC-daily profiles on majors.
+
+**What is worth keeping regardless**: the archive itself. 4,867 candles of
+real OHLCV is raw material for measuring our own coins' volatility,
+grading signal claims, and any future analysis — the recorder's
+(`signal_capture_runs` → `signal_captures` → `signal_readings`) shape
+extends naturally with a `candles` table keyed (coin, interval, openTime)
+and profiles as a derived, recomputable view.
+
 ## 2026-08-09 (learning-rate round) — the trade counter goes to the ceiling
 
 **Did**: operator's call — treat this phase as paid learning, not
