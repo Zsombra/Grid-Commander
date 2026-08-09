@@ -1,5 +1,40 @@
 # Journal
 
+## 2026-08-09 (check-in 14:50Z) — the round trip is the pattern, not the incident
+
+TRUMP closed and repeated AIXBT's shape exactly. Two clean observations of
+the same failure now, tracked across my own hourly snapshots:
+
+| | peak observed | closed | swing | held |
+|---|---|---|---|---|
+| AIXBT | **+$0.1206** (12:35Z) | −$0.0931 | −$0.214 | 2h19m |
+| TRUMP | **+$0.077** (09:27Z) | −$0.1058 | −$0.183 | **12h34m** |
+
+TRUMP's decay is on the record hour by hour: +$0.077 → +$0.062 → +$0.038 →
+−$0.031 → closed −$0.1058. It was **the longest hold in this fleet's
+history at 754 minutes**, and it still lost. That kills a reading I might
+otherwise have defended — that the time-decay fix simply needs more time to
+show. Letting trades breathe does not by itself produce wins; without a
+trail that locks, it produces long slow bleeds.
+
+The price moves themselves are tiny — TRUMP closed on a **−0.53%** adverse
+move, AIXBT **−0.78%**. Across all eleven closes the largest adverse move is
+0.82%. These trades are not being beaten by the market; they are being
+closed inside its noise.
+
+**Realized: 11 closed, 1W/10L, −$0.9939** — a dollar down on a $43.56
+account. Book **+$0.0169** (HYPE +$0.064, MOODENG +$0.022, AIXBT −$0.025,
+new FARTCOIN short −$0.044).
+
+**Breakwater idle 9.8 hours** — since 05:04Z, five blocks all day, no
+position. Two agents' worth of radar deployments producing nothing.
+
+**Meter** dead (blocks 369 → 405, still exactly 0). **v15 policy p1**
+retested a fourth time, unchanged.
+
+The trail re-tune remains the recommended change and remains unmade — it is
+live money and the operator has not ruled.
+
 ## 2026-08-09 (check-in 13:45Z) — the headline question answered: they gave it back
 
 The open question was whether the four positions would convert to
