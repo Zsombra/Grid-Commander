@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-08-09 (check-in 13:45Z) — the headline question answered: they gave it back
+
+The open question was whether the four positions would convert to
+take-profit, trail out green, or give it all back. **AIXBT gave it back**,
+and it is the cleanest evidence yet for what the trail actually does.
+
+| | |
+|---|---|
+| opened | 11:01:31, SHORT, entry 0.018476 |
+| at 12:35Z snapshot | mark 0.018256 = **−1.19% favourable**, uPnL **+$0.1206** |
+| closed 13:21:21 | exit 0.018620 = **+0.78% adverse**, net **−$0.0931** |
+| held | 2h20m |
+| stop at exit | 0.018620 — **+0.78% from entry, never reached breakeven** |
+
+A 1.19% gain became a 0.78% loss. The trail did move — the stop started
+~1.7% out and reached 0.78% — but it never crossed to breakeven despite the
+position being more than a full percent in profit. `get_trade_chart` for
+this trade answers `UNAVAILABLE`, so the peak excursion is only known from
+my own 12:35Z snapshot; the true peak may have been higher, which makes the
+finding worse, not better.
+
+**This is the cost of the time-decay fix, and it should be stated plainly.**
+Disabling time decay slowed the trail. That cut loss *size* about 4× and let
+trades breathe for hours instead of minutes — both real gains. It also
+slowed the stop's march enough that it no longer keeps up with a favourable
+move, so gains are not locked. Same knob, opposite signs. The fix was right;
+the tuning now sits at the other extreme.
+
+**The whole book gave back with it**: +$0.3805 → **+$0.0969**. HYPE
++$0.140 → +$0.077, MOODENG +$0.082 → +$0.052, TRUMP +$0.038 → **−$0.031**.
+Realized now **10 closed, 1W/9L, −$0.8881**, still every close `STOP_LOSS`.
+
+**Meter**: still exactly 0 while Undertow's blocks went **317 → 369** (52
+more in ~68 min, newest 13:42:09). Dead confirmed a third time; no longer
+worth re-reading every cycle.
+
+**v15 policy p1**: retested, unchanged on all three strategies.
+
+**Breakwater has now been idle 8.6 hours** — since 05:04Z, no blocks, no
+position, nothing at risk. Not stuck; finding nothing. At this duration it
+is worth treating as a gate that may be too tight rather than a quiet tape.
+
 ## 2026-08-09 (the take-profit diagnostic) — the exit path is fine, and my hypothesis was wrong
 
 **Question**: nine closed trades, nine `STOP_LOSS`, zero take-profits. I
