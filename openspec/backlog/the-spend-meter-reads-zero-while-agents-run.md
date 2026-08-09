@@ -45,15 +45,28 @@ asked to rule on accept-as-tuition versus cutting evaluation volume, and
 **that decision needs this number**. With the meter at zero there is
 nothing to rule on and no way to tell whether a mitigation worked.
 
-## What is not yet known
+## It is broken, not a window reset
 
-- whether v15 broke, moved or renamed the field
-- whether it is a rolling-window reset that will refill over the next hours
-- whether the platform stopped billing these agents
+The two branches were distinguishable by re-reading: a rolling window
+refills, a broken field stays pinned while work accrues. Re-read at
+**12:35Z, ~75 minutes later**:
 
-The first two are distinguishable by re-reading over the next few hours: a
-window reset climbs again, a broken field stays pinned at zero while
-positions and blocks keep accruing.
+| | 11:2xZ | 12:35Z |
+|---|---|---|
+| `last24hCostUsd` (all three) | 0 | **0** |
+| Undertow gate blocks (total) | 278 | **317** |
+| newest block | 11:19:10 | **12:34:09** |
+| open positions | 4 | 4 |
+
+**39 fresh blocked evaluations in that window and the meter did not move off
+exactly zero.** A rolling 24h window that had genuinely reset would have
+been climbing again within minutes of the first evaluation. The field is
+broken.
+
+What remains unknown is only *why* — whether v15 renamed it, moved the
+accounting, or stopped billing these agents. None of those are answerable
+from the read surface: `get_intelligence_agent` is the only tool that
+carries the field.
 
 ## Notes
 

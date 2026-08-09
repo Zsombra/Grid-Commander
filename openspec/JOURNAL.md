@@ -1,5 +1,38 @@
 # Journal
 
+## 2026-08-09 (check-in 12:35Z) — the meter is broken, and the book is green
+
+**The spend meter is broken, not resetting.** That was the open question an
+hour ago and it now has an answer. In ~75 minutes Undertow's gate blocks
+went **278 → 317** with the newest stamped 12:34:09, and `last24hCostUsd`
+stayed at **exactly 0 on all three agents**. A rolling 24h window that had
+genuinely reset would have been climbing again within minutes of the first
+evaluation. Backlog p2 updated with the before/after table. Why it broke is
+not answerable from the read surface — `get_intelligence_agent` is the only
+tool that carries the field at all.
+
+**The book keeps improving and nothing has closed.** Four positions, all
+green, **+$0.3805 uPnL** (was +$0.233 an hour ago):
+
+| coin | dir | uPnL | open for |
+|---|---|---|---|
+| HYPE | SHORT | +$0.140 | 7.4h |
+| AIXBT | SHORT | +$0.121 | 1.6h |
+| MOODENG | LONG | +$0.082 | 2.1h |
+| TRUMP | SHORT | +$0.038 | 10.5h |
+
+Realized is unchanged at **1W/8L, −$0.795, nine of nine closes STOP_LOSS**.
+No take-profit has ever filled here. TRUMP at 10.5 hours and HYPE at 7.4
+would have been the "trades hang open unresolved" reversal signal for the
+time-decay fix — but both are green with trailing stops, which is the fix
+working rather than failing. The signal to watch is whether they convert.
+
+**v15 policy p1 retested again — unchanged.** Same "no effective changes"
+on all three strategies with the correctly-shaped envelope.
+
+**Breakwater has been idle since 05:04Z** — five blocks total, none new, no
+open position, nothing at risk. It is not stuck; it is finding no setups.
+
 ## 2026-08-09 (check-in 11:2xZ) — the p1 hardens, and the spend meter dies
 
 **The v15 policy regression is confirmed on a properly-shaped payload.**
