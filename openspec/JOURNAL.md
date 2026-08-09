@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-09 (the take-profit diagnostic) — the exit path is fine, and my hypothesis was wrong
+
+**Question**: nine closed trades, nine `STOP_LOSS`, zero take-profits. I
+proposed that TP orders were never placed — a dead exit path, the defect
+class this repo keeps finding. **That was wrong, and the evidence is
+unambiguous.**
+
+`get_open_orders` shows a `Take Profit Market` order resting on the
+exchange for every open position, `reduceOnly: true`, `status: OPEN`,
+alongside its `Stop Market`. `get_position_audit_history` shows the
+placement order on every position: **TP_PLACED, then SL_PLACED, then
+ENTRY_FILLED**, all within ~4 seconds. The plumbing is correct.
+
+**The real finding is geometry.** Placed at entry:
+
+| coin | stop | TP | RR |
+|---|---|---|---|
+| HYPE | 0.51% | 1.88% | 3.73 |
+| MOODENG | 0.87% | 3.39% | 3.88 |
+| TRUMP | 1.23% | 3.69% | 3.00 |
+| AIXBT | 1.69% | 4.62% | 2.73 |
+
+**Mean placed RR is 3.34** — more than double the platform floor of 1.5. A
+correction to what I wrote an hour ago: I said the fleet was "pinned to RR
+1.5" and therefore needed a 40% win rate to break even. 1.5 is the *floor*;
+the agents choose ~3.3. Break-even is **1/(1+3.34) ≈ 23%**, not 40%. The
+v15 p1 still blocks setting the floor, but it was never holding RR down to
+1.5.
+
+**Why no TP has ever filled**: the stop converges on price and the TP does
+not move. `SL_REPLACED` events march the stop in relentlessly — TRUMP from
+−1.23% to −0.42% over 13 replacements, HYPE from −0.51% all the way to
+**+0.20%**, i.e. past entry. Meanwhile the TP sits 1.9–4.6% out. Price has
+to travel four to nine times the remaining stop distance without one
+retrace. The trail is the exit mechanism; the TP is nearly decorative.
+
+**This also confirms the time-decay fix from 07:15Z**, which had only n=2 of
+closed evidence before. The replacement *rate* collapses across the fix:
+
+- TRUMP: **11 replacements in 3.3h before**, 2 in 4.4h after
+- HYPE: **4 in 46 min before**, 2 in 5h after
+
+Both have now survived 7–11 hours and are green, which is precisely the
+intended behaviour and could not be read off the two closes alone.
+
+**And `STOP_LOSS` does not mean "loss".** HYPE's stop now sits at +0.20% vs
+entry — if it triggers it books a profit. MELANIA already proved this:
+closed **+$0.0731 with `closeReason: STOP_LOSS`**. The close-reason
+taxonomy describes which order filled, not whether money was made, and
+"9 of 9 stop-losses" reads far worse than it is.
+
 ## 2026-08-09 (check-in 12:35Z) — the meter is broken, and the book is green
 
 **The spend meter is broken, not resetting.** That was the open question an
