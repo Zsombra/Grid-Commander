@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-09 (the whole surface, called) — 25 of 25 MCP tools answer at v15
+
+**Did**: after the v15 mapper run, exercised **every tool this product
+exposes** against the live account — new probe
+`tests/live/mcp-full-surface-probe.test.ts`. It spawns
+`bin/grid-commander-mcp.ts` as a subprocess, drives it as a real client,
+discovers the ids each tool needs from earlier answers, and asserts both
+that the registry is 25 and that **no registered tool goes uncalled**.
+
+**Result: 25 tools · 23 answered · 2 empty · 0 skipped · 0 failed.** The
+two empties are facts, not gaps — `read_signal_history` and
+`read_record_coverage` are empty because the recorder cron has never run.
+v15 broke nothing the product reads.
+
+**Two flaws in my own probe, found and fixed before it was committed:**
+
+- It took the *first* uuid in the trading record as a log id, which is the
+  trade's own id — so `read_trade_story` and `read_evaluation` answered
+  `not-found` / `none` and the sweep called that a pass. It proved their
+  refusal path and nothing else. Now keyed on `"signalLogId"`, and both
+  return real payloads (a story with its chart, an ENA scorecard).
+- Its empty-detector matched prose, so `{"kind":"recorded"}` — a
+  *successful* proposal write — was classified empty because "recorded"
+  contains "record". Now matched on the payload's own `kind`.
+
+Both are the same mistake this codebase keeps cataloguing: **a check that
+matches how something is spelled rather than what it reaches.** Written
+down here because the probe is the thing that would have hidden it.
+
+**Also**: `BOUND_KEYS` in `agent-mapper.ts` still maps
+`minimumStopLossPct` / `maximumStopLossPct` / `minimumRiskRewardRatio` onto
+agent field names. The registry still publishes those bounds at v15, but
+the fields moved to the strategy, so they are inert rather than wrong —
+commented as such rather than deleted, because a strategy-side validator
+will want them the day the platform honours the policy.
+
 ## 2026-08-09 (v15 landed in the repo) — the record catches up, and the guards prevent dead write path #11
 
 **Did**: re-probed at **v15.0.0** (70 reads, 0 failed), regenerated the
