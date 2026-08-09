@@ -1,5 +1,57 @@
 # Journal
 
+## 2026-08-10 (check-in 23:20Z) — the prediction settles, and the geometry is self-defeating
+
+**Four of the five prediction-book positions have closed. All four
+`STOP_LOSS`. Zero take-profits.**
+
+| coin | stop placed | killing move | **excess over own stop** | held |
+|---|---|---|---|---|
+| WIF | 0.63% | 0.64% | **+0.01pp** | 103m |
+| TRUMP | 0.51% | 0.53% | **+0.02pp** | 276m |
+| SKHX | 0.38% | 0.44% | **+0.06pp** | 301m |
+| ENA | 0.82% | 0.89% | **+0.07pp** | 224m |
+
+**Every one died within 0.07 percentage points of its own stop; mean excess
+0.04pp.** On the pre-registered rule: **3 confirm, 1 marginal, 0
+disconfirm.** On the refined move-minus-own-stop metric: 4 of 4. Both
+agree, which is the only reason I am willing to call it settled — the
+refined metric was chosen after seeing data and cannot carry a verdict
+alone.
+
+Price is not moving against these positions. It is oscillating, touching the
+stop, and reverting. The trades are being ended by the market's breathing.
+
+**But the obvious fix does not work, and this is the real finding.** Widen
+the stops past the noise — call it 1.0% — and the geometry collapses,
+because *the tight stop is what produces the RR in the first place*:
+
+| coin | TP placed | stop 0.38% → RR 3.09 | stop 1.0% → RR |
+|---|---|---|---|
+| SKHX | 1.16% | 3.09 | **1.16** |
+| BNB | 1.65% | 4.13 | **1.65** |
+| TRUMP | 2.09% | 4.08 | **2.09** |
+
+**The 3.34 placed RR is manufactured by placing the stop inside the noise.**
+You cannot keep both the RR and a survivable stop at these TP distances.
+The only coherent resolutions are to widen stop *and* target together —
+which means longer holds, larger moves, fewer completions — or to be far
+more selective and trade less. Tuning the trail alone, which is what I have
+been recommending all day, addresses the *exit* of winners but not this:
+these four never got far enough for the trail to matter.
+
+MOODENG is the existence proof that the wider version works — TP 3.39%,
+reached, +$0.3649.
+
+**Realized: 19 closed, 3W/16L, −$1.3241**, win rate 16%, realised RR 1.33.
+
+**The surviving book is +$0.5435** — and **FARTCOIN alone is +$0.4245**, the
+largest unrealised this fleet has held, larger than MOODENG's realised
+take-profit. BNB +$0.089 is the last of the prediction five.
+
+Server still v15.0.0, so the policy retest was skipped this cycle per the
+new cadence. **Meter** dead.
+
 ## 2026-08-09 (check-in 21:55Z) — a better statistic than the one I chose
 
 **ENA closed `STOP_LOSS`, −$0.1246, on a −0.89% move after 224 minutes**,
