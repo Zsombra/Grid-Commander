@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-10 (the dials explained) — the fix I called impossible is one dial, and it is the inert one
+
+The operator supplied BattleGrid's own design rationale for the three
+trade-level dials. It was checked against the v16 record before being
+believed, and it holds: `feasibilityAdvisory` declares `atrPct`,
+`reachableMinPct`/`reachableMaxPct`, `requestedMinAtrMultiple`,
+`shortfallPct` and **`responsibleBound: MIN_STOP_LOSS_PCT |
+MAX_STOP_LOSS_PCT`** — the last being, verbatim, the claim that the platform
+"names the responsible dial on every blocked construction". The three
+statuses `FEASIBLE` / `STRUCTURAL_ONLY` / `ATR_UNAVAILABLE` map one-to-one
+onto its "Reachable / Structure-dependent / Volatility unavailable".
+
+**It corrects a conclusion recorded here yesterday.** The 23:20Z entry
+argued the geometry was self-defeating: widening the stop past the noise
+collapses RR, since SKHX at a 1.0% stop falls 3.09 → 1.16. **That
+arithmetic held the take-profit fixed, and the platform does not.** The TP
+ladder is generated as multiples of the tightest *surviving* stop, so
+raising the floor moves the anchor and the 1.5R/2R/3R rungs move with it.
+RR is preserved by construction. The fix called impossible is precisely
+what `minStopLossAtrMultiple` does.
+
+**And the fleet's own numbers confirm the mechanism.** The tightest
+candidate the generator can produce is always 1×ATR, and all three
+strategies sit at the floor of 1:
+
+| agent | strategy | `minAtrPct` gate | stops taken |
+|---|---|---|---|
+| Undertow | Cannae | 0.50% | TRUMP 0.51%, HYPE 0.51%, WIF 0.63% |
+| Breakwater | Salamis | 0.25% | SKHX 0.38%, BNB 0.40%, ENA 0.82% |
+
+Every stop equals its coin's ATR. TRUMP and HYPE sit **one basis point above
+Cannae's gate** — the fleet selects the least volatile coins that clear the
+filter and then stops one average bar range away. Which is why four of five
+died within 0.07pp of their own stop: **a 1×ATR stop is not a stop outside
+the noise, it is the noise.**
+
+**The p1 is therefore one dial, not three.** `maxStopLossPct` is costlessly
+stuck — two ceilings exist and the effective cap is `min(yours, 3×ATR)`, so
+at ATR 0.38–0.82% the 3×ATR cap has been binding all along and our 5% has
+never engaged. `minRiskRewardRatio` is not binding either, with placed RRs
+of 2.14–4.61 against a floor of 1.5. Only the stop floor costs anything,
+and it is pinned at the minimum. Backlog updated to say so.
+
+**Filed `the-feasibility-advisory-is-unread` (p2).** The advisory answers
+"which armed coins can this strategy build a stop for today, and which dial
+blocked the rest" — per coin, already computed — and nothing here reads it.
+It would have surfaced the 1×ATR problem weeks earlier. The gap is that it
+speaks band language ("reachable stops span 0.76–2.27%") where an operator
+needs aggregate opportunity language ("9 of 12 armed coins can construct
+under this ceiling; at 2.00% that drops to 4"). Presentation only — every
+input is already in the DTO.
+
+One aside worth keeping: the v15 rename of `minStopLossPct` to an ATR
+multiple was BattleGrid fixing the exact failure this product hit live on
+day one — `MIN_STOP_LOSS_PCT: requested 1.5, reachable 0.62` on BTC. Their
+diagnosis is right. It shipped with a compiler that ignores the field.
+
+**No numeric bounds are declared for any of the three**, so the floor's
+legal range cannot be read off the registry.
+
 ## 2026-08-10 (branch reconciliation) — nine branches resolved, and one that had been right for four days
 
 **Every open branch is now accounted for.** Three PRs merged to `main` in

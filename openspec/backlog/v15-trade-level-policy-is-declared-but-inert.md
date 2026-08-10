@@ -55,9 +55,57 @@ stop ceiling 5%** — with no way to change any of it.
 
 Concretely: Undertow was deliberately built with `minRiskRewardRatio: 2.0`
 and Breakwater with 1.5, chosen per family. v15 discarded both without any
-action on our side. RR asymmetry is the core of the whole design (the field
-loses money at a 30% win rate; only asymmetry pays), and it is now
-un-settable.
+action on our side.
+
+### It is one dial, not three — and it is the fleet's central defect
+
+Sharpened 2026-08-10 against the platform's own design rationale, and
+against 26 live trades. Of the three inert fields, **only
+`minStopLossAtrMultiple` currently costs anything.**
+
+**`maxStopLossPct` is costlessly stuck.** There are two ceilings and the
+effective cap is `min(yours, 3 × ATR)`. Every coin the fleet has traded had
+ATR 0.38–0.82%, so the 3×ATR cap (1.1–2.5%) has been binding the whole time
+and our 5% has never once come into play. It is insurance, dormant by
+design on calm tape, and it only matters in a storm.
+
+**`minRiskRewardRatio` is not binding either.** It deletes candidate rows
+below its value; placed RRs have run 2.14–4.61, all clear of 1.5.
+
+**`minStopLossAtrMultiple: 1` is the problem, and it is the minimum.** The
+tightest stop the generator can produce is always 1×ATR, so at a floor of
+1.0 the fleet takes a stop exactly one average bar range from entry —
+**a 1×ATR stop is not a stop outside the noise, it is the noise.** The live
+record is unambiguous:
+
+| agent | strategy | `minAtrPct` gate | stops taken |
+|---|---|---|---|
+| Undertow | Cannae | 0.50% | TRUMP 0.51%, HYPE 0.51%, WIF 0.63% |
+| Breakwater | Salamis | 0.25% | SKHX 0.38%, BNB 0.40%, ENA 0.82% |
+
+Every stop equals its coin's ATR, and TRUMP and HYPE sit **one basis point
+above Cannae's ATR gate** — the fleet is selecting the least volatile coins
+that clear the filter and then stopping one average bar away. Four of five
+positions in one book died within **0.07pp of their own stop**; 10 of 11
+losers closed on a sub-1% move.
+
+### This also corrects an earlier conclusion recorded here
+
+The 2026-08-10 journal argued the geometry was self-defeating — that
+widening the stop past the noise collapses the RR, since SKHX at a 1.0%
+stop falls from 3.09 to 1.16. **That arithmetic held the take-profit fixed,
+and the platform does not.** The TP ladder is generated as multiples of the
+tightest *surviving* stop: raise the floor and the anchor moves, so the
+1.5R/2R/3R rungs move with it and RR is preserved by construction.
+
+So the fix that was called impossible is exactly what this dial does — and
+this defect is what prevents it. At a floor of 2.0 the same coins would
+carry ~1.0–1.6% stops instead of 0.38–0.82%, which is wider than almost
+every move that has closed a trade so far.
+
+**No numeric bounds are declared for any of the three fields**, so the
+legal range for the floor cannot be read off the registry and will have to
+be discovered against the platform once the write path works.
 
 ## Evidence
 
