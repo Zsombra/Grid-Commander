@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: strategy-authoring
+github: "111"
 blocked_by: []
 tags: [battlegrid, conditions, marketReadText, describe]
 ---

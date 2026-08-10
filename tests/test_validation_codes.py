@@ -704,12 +704,12 @@ def emitted_codes() -> tuple:
 class MirrorRuleTest(ProjectTestCase):
     """The mirror rule's shape, beyond "the code fires".
 
-    A fixture proves a code *can* fire. It does not prove the rule is scoped
-    the way its doctrine claims, or that it accepts a valid link — and a rule
-    that fires on everything is routed around within a week. Both directions
-    are asserted here for the reason GitHub #87 records: ten of sixteen
-    architecture guards passed green with their matcher dead, because nothing
-    ever fed them a case they were supposed to accept *or* reject.
+    A fixture proves a code *can* fire. It does not prove the rule accepts what
+    it is supposed to accept — and a rule that fires on everything is routed
+    around within a week. Both directions are asserted here for the reason
+    GitHub #87 records: ten of sixteen architecture guards passed green with
+    their matcher dead, because nothing ever fed them a case they were
+    supposed to accept *or* reject.
     """
 
     def test_accepts_a_linked_item(self):
@@ -723,16 +723,18 @@ class MirrorRuleTest(ProjectTestCase):
             body="# An item\n\n## What\n\nPoints at another item; no GitHub issue of its own.\n")
         self.assertNoCode(self.project.run(*VALIDATE), "backlog_optout_unexplained")
 
-    def test_does_not_flag_items_older_than_the_rule(self):
-        # The scoping the doctrine claims: thirty-one items predate the rule,
-        # and flagging them every run would train everyone to skim warnings.
+    def test_flags_an_old_item_too(self):
+        # No date exemption. There was one while twenty-eight items predated
+        # the rule; they were backfilled on 2026-08-10 and the scoping came
+        # out, because the only case it still covered was the one that most
+        # needs a mirror — an old item reopened later.
         self.project.backlog(slug="an-old-item", created="2026-07-27", github="")
-        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
+        self.assertCode(self.project.run(*VALIDATE), "backlog_not_mirrored", "warning")
 
-    def test_does_flag_an_item_created_on_the_boundary(self):
-        # The boundary is inclusive, so the rule binds from the day it landed
-        # rather than the day after.
-        self.project.backlog(created="2026-08-10", github="")
+    def test_flags_an_item_with_no_created_date(self):
+        # A malformed item is caught rather than exempted — the direction a
+        # date comparison used to get wrong by treating "" as very old.
+        self.project.backlog(created="", github="")
         self.assertCode(self.project.run(*VALIDATE), "backlog_not_mirrored", "warning")
 
     def test_does_not_flag_a_closed_item(self):

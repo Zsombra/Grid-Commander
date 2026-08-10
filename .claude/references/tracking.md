@@ -240,11 +240,16 @@ deleted teaches nobody why the mistake was reachable.
 
 ### Enforced, not documented
 
-`validate` warns on any open item created on or after **2026-08-10** with no
-`github:` value, and errors on a malformed one. Items older than that date are
-not flagged: thirty-one open items predate the rule, and thirty-one recurring
-warnings would train everyone to skim the warning block, which costs more than
-the backfill buys.
+`validate` warns on **any** open item with no `github:` value, errors on a
+malformed one, and warns on an unexplained opt-out. No date exemption and no
+grandfathering: the twenty-eight items that predated the rule were backfilled
+on 2026-08-10 (issues #89–#116), so there is nothing left to exempt.
+
+The rule was briefly scoped to items created on or after that date, to avoid
+twenty-eight recurring warnings teaching everyone to skim the warning block.
+Once the backfill landed, the scoping covered exactly one remaining case — an
+old item **reopened** later — and that is the case that most needs a mirror, so
+it came out.
 
 A rule nothing enforces is a rule that gets skipped. That is not a guess here —
 `failure-is-explained.test.ts` exists because thirty branches hand-rolled their

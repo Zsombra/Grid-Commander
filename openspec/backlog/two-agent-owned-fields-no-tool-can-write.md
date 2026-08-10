@@ -8,6 +8,7 @@ created: 2026-08-08
 updated: 2026-08-08
 change: ""
 capability: mcp-control
+github: "113"
 blocked_by: []
 tags: [battlegrid, platform-drift, proposals, field-ownership, observed-shape]
 ---

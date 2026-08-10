@@ -8,6 +8,7 @@ created: 2026-08-09
 updated: 2026-08-09
 change: ""
 capability: strategy-authoring
+github: "95"
 blocked_by: []
 tags: [battlegrid, v15, platform-regression, money, live]
 ---

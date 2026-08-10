@@ -426,19 +426,6 @@ def _as_list(value) -> list:
 #: the old one. `none` is handled separately as a deliberate opt-out.
 GITHUB_REF = re.compile(r"\d+")
 
-#: The date the mirror-every-finding rule landed (tracking.md §7).
-#:
-#: Items created before it are not flagged. That is a deliberate choice and not
-#: a grandfather clause hiding debt: thirty-one open items predate the rule, and
-#: emitting thirty-one warnings on every run would teach everyone to skim past
-#: the warning block — which costs more than the backfill buys. The backfill is
-#: tracked as its own item rather than as recurring noise.
-#:
-#: Compared as an ISO string, which sorts correctly and needs no date parsing.
-#: An item with no `created` date is treated as new, so a malformed item is
-#: caught rather than exempted.
-MIRROR_RULE_FROM = "2026-08-10"
-
 ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
 ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
 ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
@@ -577,10 +564,16 @@ def validate_backlog(root: Path, strict: bool) -> list:
         # to someone who has not cloned the repo. The backlog stays canonical —
         # this is a mirror, not a second tracker (tracking.md §7).
         #
+        # Uniform, with no date exemption. There was one while twenty-eight
+        # items predated the rule; they were backfilled 2026-08-10, and a
+        # scoped rule would then have exempted only one case that still
+        # matters — an old item **reopened** later, which needs a mirror
+        # exactly as a new one does.
+        #
         # Enforced rather than documented, for the reason `failure-is-explained`
         # gives about its own rule: thirty hand-rolled branches accumulated
         # because nothing stopped the thirty-first.
-        if item.is_open and not item.github and item.created >= MIRROR_RULE_FROM:
+        if item.is_open and not item.github:
             found.append(diag("warning", "backlog_not_mirrored",
                               f"{item.id}: open with no GitHub issue", rel,
                               "file one and set `github: <number>`, or `github: none` "

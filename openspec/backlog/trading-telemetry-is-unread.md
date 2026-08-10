@@ -8,6 +8,7 @@ created: 2026-08-01
 updated: 2026-08-08
 change: ""
 capability: agent-understanding
+github: "116"
 blocked_by: []
 tags: [battlegrid, reporting, expected-value]
 ---

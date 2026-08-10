@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: agent-comparison
+github: "105"
 blocked_by: []
 tags: [battlegrid, market-grid, explorer, unobserved-shape]
 ---

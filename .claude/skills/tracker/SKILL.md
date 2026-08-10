@@ -154,7 +154,7 @@ because entries are essays is a journal that does not work.
 7. **Never file a finding in only one place.** Every item is mirrored as a
    GitHub issue and linked by `github:`. A finding that lives only in the repo
    is invisible to the person who decides what gets worked on. Validation
-   enforces it for items created on or after 2026-08-10.
+   enforces it for every open item, with no exemption by age.
 8. **When a finding turns out to be wrong, correct the issue rather than
    filing a second one.** Keep the original under a `<details>` fold saying
    what was wrong — a ticket whose history is deleted teaches nobody why the

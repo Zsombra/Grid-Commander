@@ -7,6 +7,7 @@ priority: p3
 created: 2026-08-04
 updated: 2026-08-04
 capability: strategy-authoring
+github: "115"
 blocked_by: []
 tags: [battlegrid, v5, mapping, vocabulary]
 ---

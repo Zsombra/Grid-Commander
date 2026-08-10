@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: market-grid
+github: "104"
 blocked_by: []
 tags: [battlegrid, market-grid, unobserved-shape]
 ---

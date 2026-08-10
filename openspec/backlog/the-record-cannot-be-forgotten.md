@@ -8,6 +8,7 @@ created: 2026-08-07
 updated: 2026-08-07
 change: ""
 capability: signal-recording
+github: "112"
 blocked_by: []
 tags: [signals, retention, storage]
 ---

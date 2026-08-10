@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: agent-authoring
+github: "106"
 blocked_by: []
 tags: [battlegrid, agent-authoring, catalog]
 ---

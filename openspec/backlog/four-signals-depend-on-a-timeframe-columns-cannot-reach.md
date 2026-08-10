@@ -8,6 +8,7 @@ created: 2026-08-07
 updated: 2026-08-07
 change: ""
 capability: strategy-authoring
+github: "90"
 blocked_by: []
 tags: [battlegrid, signals, timeframes, vocabulary]
 ---

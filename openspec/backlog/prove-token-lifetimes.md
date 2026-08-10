@@ -8,6 +8,7 @@ created: 2026-07-27
 updated: 2026-07-27
 change: ""
 capability: battlegrid-connection
+github: "93"
 blocked_by: []
 tags: [oauth, battlegrid, assumption]
 ---

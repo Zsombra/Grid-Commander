@@ -8,6 +8,7 @@ created: 2026-07-29
 updated: 2026-07-31
 change: performance-was-already-in-the-payload
 capability: agent-understanding
+github: "107"
 blocked_by: []
 tags: [battlegrid, agent-understanding, mapping]
 ---
