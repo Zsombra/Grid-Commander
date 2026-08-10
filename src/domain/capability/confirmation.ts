@@ -150,6 +150,18 @@ export const confirmationTarget = {
     signalId: string,
     intent: Readonly<Record<string, unknown>>,
   ): string => `strategy:${strategyId}@r${revision}/rule:${signalId}#${digestOf(intent)}`,
+
+  /**
+   * Trimming the signal record: bound to the boundary *and the described
+   * extent*. The record only appends at now, so the runs before a past moment
+   * cannot grow — a changed count means another trim intervened between
+   * describe and perform, and the agreement no longer describes what would
+   * go. The one destructive act against this product's own store, and the
+   * loss is permanent in a way BattleGrid's archives are not: nothing trimmed
+   * can ever be re-recorded.
+   */
+  signalRecordTrim: (userId: string, before: Date, runs: number): string =>
+    `signal-record:${userId}<-${before.toISOString()}#runs:${runs}`,
 };
 
 /** Long enough to read the consequence, short enough not to be left lying around. */

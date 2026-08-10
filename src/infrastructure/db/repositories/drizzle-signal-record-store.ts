@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type {
   CaptureProvenance,
@@ -8,7 +8,7 @@ import type {
   SignalCapture,
   SignalReading,
 } from '@/domain/recording/capture.js';
-import type { CoinRecord, RecordedSeries, SignalRecordStore } from '@/ports/signal-record.js';
+import type { CoinRecord, RecordedSeries, SignalRecordStore, TrimOutcome, TrimPreview } from '@/ports/signal-record.js';
 import { signalCaptureRuns, signalCaptures, signalReadings } from '../schema/index.js';
 
 type Db = NodePgDatabase<Record<string, never>>;
@@ -259,6 +259,97 @@ export class DrizzleSignalRecordStore implements SignalRecordStore {
       .from(signalCaptures)
       .where(and(eq(signalCaptures.id, params.captureId), eq(signalCaptures.userId, params.userId)));
     return row?.raw ?? null;
+  }
+
+  async trimPreview(params: { userId: string; before: Date }): Promise<TrimPreview> {
+    const runs = await this.doomedRuns(this.db, params);
+    if (runs.length === 0) {
+      return { runs: 0, captures: 0, failures: 0, readings: 0, coinTickers: [], oldest: null, newest: null };
+    }
+    const runIds = runs.map((r) => r.id);
+    const rows = await this.db
+      .select({
+        id: signalCaptures.id,
+        outcome: signalCaptures.outcome,
+        coinTicker: signalCaptures.coinTicker,
+        capturedAt: signalCaptures.capturedAt,
+      })
+      .from(signalCaptures)
+      .where(and(eq(signalCaptures.userId, params.userId), inArray(signalCaptures.runId, runIds)));
+
+    const captureIds = rows.map((r) => r.id);
+    const readings =
+      captureIds.length === 0
+        ? []
+        : await this.db
+            .select({ id: signalReadings.id })
+            .from(signalReadings)
+            .where(
+              and(eq(signalReadings.userId, params.userId), inArray(signalReadings.captureId, captureIds)),
+            );
+
+    const at = rows.map((r) => r.capturedAt.getTime());
+    return {
+      runs: runs.length,
+      captures: rows.filter((r) => r.outcome === 'recorded').length,
+      failures: rows.filter((r) => r.outcome === 'failed').length,
+      readings: readings.length,
+      coinTickers: [...new Set(rows.map((r) => r.coinTicker))].sort(),
+      oldest: at.length > 0 ? new Date(Math.min(...at)) : null,
+      newest: at.length > 0 ? new Date(Math.max(...at)) : null,
+    };
+  }
+
+  async trim(params: { userId: string; before: Date }): Promise<TrimOutcome> {
+    return this.db.transaction(async (tx) => {
+      const runs = await this.doomedRuns(tx, params);
+      if (runs.length === 0) return { runs: 0, captures: 0, failures: 0, readings: 0 };
+      const runIds = runs.map((r) => r.id);
+
+      const rows = await tx
+        .select({ id: signalCaptures.id, outcome: signalCaptures.outcome })
+        .from(signalCaptures)
+        .where(and(eq(signalCaptures.userId, params.userId), inArray(signalCaptures.runId, runIds)));
+      const captureIds = rows.map((r) => r.id);
+
+      // Children before parents — the readings reference captures, the
+      // captures reference runs, and nothing here cascades by schema.
+      const readings =
+        captureIds.length === 0
+          ? []
+          : await tx
+              .delete(signalReadings)
+              .where(
+                and(
+                  eq(signalReadings.userId, params.userId),
+                  inArray(signalReadings.captureId, captureIds),
+                ),
+              )
+              .returning({ id: signalReadings.id });
+      if (captureIds.length > 0) {
+        await tx
+          .delete(signalCaptures)
+          .where(and(eq(signalCaptures.userId, params.userId), inArray(signalCaptures.id, captureIds)));
+      }
+      await tx
+        .delete(signalCaptureRuns)
+        .where(and(eq(signalCaptureRuns.userId, params.userId), inArray(signalCaptureRuns.id, runIds)));
+
+      return {
+        runs: runs.length,
+        captures: rows.filter((r) => r.outcome === 'recorded').length,
+        failures: rows.filter((r) => r.outcome === 'failed').length,
+        readings: readings.length,
+      };
+    });
+  }
+
+  /** The runs an age trim takes: started before the boundary, this account's. */
+  private doomedRuns(db: Db | Parameters<Parameters<Db['transaction']>[0]>[0], params: { userId: string; before: Date }) {
+    return db
+      .select({ id: signalCaptureRuns.id })
+      .from(signalCaptureRuns)
+      .where(and(eq(signalCaptureRuns.userId, params.userId), lt(signalCaptureRuns.startedAt, params.before)));
   }
 }
 

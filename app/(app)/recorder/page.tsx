@@ -26,6 +26,12 @@ export default async function RecorderPage() {
         this record grows from the day recording starts — and a gap can never be filled in later.
       </p>
       <RecordCoverage result={coverage} />
+      <p className="text-sm">
+        <a href="/recorder/trim" className="underline">
+          Trim the record
+        </a>{' '}
+        — remove everything before a date, after reading exactly what becomes unknowable.
+      </p>
     </main>
   );
 }

@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-10 (the record can be forgotten) — and the nine-day observation landed
+
+**`the-record-can-be-forgotten-with-ceremony` archived**, closing #112. The
+recorder's whole promise is that a gap can never be filled in later, which
+makes a trim the one act in this product whose loss is permanent by the
+product's own argument. It now exists, and only with ceremony: `/recorder/trim`
+describes exactly what becomes unknowable — runs, captures, failed attempts,
+readings, coins, the span — mints a confirmation bound to the boundary **and
+the described extent**, and the perform spends it once. Two runs described and
+one would go extra → `mismatched`, nothing deleted.
+
+The boundary is the run, not the row: coverage derives gaps from runs, and rows
+deleted under a surviving run would leave the record claiming attempts whose
+findings are invisible — a recorder lying about itself.
+
+Declined on the record: raw-only trimming (needs a tombstone column and a
+three-state `rawAnswer`; build when growth hurts) and per-coin purge (no
+surface asks; a coin's record is exactly what a purge re-widens). The describe
+stays off the MCP tool table — the first destructive act against our own store
+is precisely what a model must never reach.
+
+### The order-row shape, after nine days
+
+BattleGrid came back mid-change (oauth-live went from loud-skip to ok), and the
+third probe attempt of the day landed the observation #116 has waited for since
+2026-08-01: **`get_open_orders` answered rows** — six, uniform, 13 keys:
+decimal-string prices, `price` vs `triggerPrice`, `reduceOnly: true` on all
+six (every resting order is a protective leg), epoch-ms timestamps, 0x-hex
+`clientOrderId`, and **no positionId/agentId on the row** — attribution goes
+through the position or `get_decision_order_attribution`. Recorded on #116
+before any modelling, per the item's own rule. The open-orders slice is now
+buildable; `get_order_status` needs one call with a now-known orderId.
+
+The same window showed the flapping is per-tool: `get_account_state` answered
+(3/3 slots, wager true — the arena sentence's live truth confirmed) while
+`list_intelligence_agents` and `list_user_active_positions` refused. The
+slots-agreement check stays half-observed in #121's thread.
+
+PostgreSQL died twice more mid-suite (the container quirk; restart and re-run).
+
 ## 2026-08-10 (the arena's second sentence) — whether the credential could even stake
 
 **`whether-the-credential-could-stake` archived**, closing the buildable half of

@@ -233,3 +233,99 @@ describe('the record belongs to the account that captured it', () => {
     expect(await s.rawAnswer({ userId: 'someone-else', captureId })).toBeNull();
   });
 });
+
+describe('an age trim removes whole runs, and only this account’s', () => {
+  const EARLY = new Date('2026-07-01T06:00:00Z');
+  const LATE = new Date('2026-08-07T06:00:00Z');
+  const BOUNDARY = new Date('2026-07-15T00:00:00Z');
+
+  /** Two runs astride the boundary, each with a capture; the early one also fails once. */
+  async function twoEras(s: DrizzleSignalRecordStore, userId = 'owner') {
+    const early = await s.recordRun({
+      userId,
+      startedAt: EARLY,
+      platformVersion: 'v11.0.0',
+      provenance: { kind: 'named', interval: '4h', coins: ['BTC'] },
+    });
+    await s.appendCapture({
+      runId: early, userId, coinTicker: 'BTC', interval: '4h',
+      capturedAt: new Date('2026-07-01T06:00:05Z'),
+      currentPrice: 1, priceChangePercent: 0, dominantBias: 'NEUTRAL',
+      aggregateScorePercent: 0, hasConflictingSignals: false,
+      readings: [reading()], raw: RAW,
+    });
+    await s.appendFailure({
+      runId: early, userId, coinTicker: 'ETH', interval: '4h',
+      attemptedAt: new Date('2026-07-01T06:00:06Z'), reason: 'declined',
+    });
+    const late = await s.recordRun({
+      userId,
+      startedAt: LATE,
+      platformVersion: 'v16.0.0',
+      provenance: { kind: 'named', interval: '4h', coins: ['BTC'] },
+    });
+    const kept = await s.appendCapture({
+      runId: late, userId, coinTicker: 'BTC', interval: '4h',
+      capturedAt: CAPTURED,
+      currentPrice: 2, priceChangePercent: 0, dominantBias: 'NEUTRAL',
+      aggregateScorePercent: 0, hasConflictingSignals: false,
+      readings: [reading()], raw: RAW,
+    });
+    return { early, late, kept };
+  }
+
+  it('previews the doomed span without touching it', async () => {
+    const s = store();
+    await twoEras(s);
+
+    const preview = await s.trimPreview({ userId: 'owner', before: BOUNDARY });
+    expect(preview).toMatchObject({ runs: 1, captures: 1, failures: 1, readings: 1 });
+    expect(preview.coinTickers).toEqual(['BTC', 'ETH']);
+    expect(preview.oldest?.toISOString()).toBe('2026-07-01T06:00:05.000Z');
+
+    // A preview is a read. Everything still stands.
+    const series = await s.recordedSeries('owner');
+    expect(series.series.find((x) => x.coinTicker === 'BTC')?.capturedAt).toHaveLength(2);
+  });
+
+  it('previews an empty span as zeros with no dates', async () => {
+    const s = store();
+    await twoEras(s);
+    const preview = await s.trimPreview({ userId: 'owner', before: new Date('2026-01-01T00:00:00Z') });
+    expect(preview).toEqual({
+      runs: 0, captures: 0, failures: 0, readings: 0, coinTickers: [], oldest: null, newest: null,
+    });
+  });
+
+  it('trims runs before the boundary — captures, failures and readings with them', async () => {
+    const s = store();
+    const { kept } = await twoEras(s);
+
+    const outcome = await s.trim({ userId: 'owner', before: BOUNDARY });
+    expect(outcome).toEqual({ runs: 1, captures: 1, failures: 1, readings: 1 });
+
+    // The survivors: one run, its capture readable whole, readings intact.
+    const history = await s.history({ userId: 'owner', coinTicker: 'BTC' });
+    expect(history.captures).toHaveLength(1);
+    expect(history.captures[0]?.id).toBe(kept);
+    expect(history.captures[0]?.readings).toHaveLength(1);
+    expect(history.failures).toHaveLength(0);
+    // And the doomed side is gone from coverage's inputs too.
+    const series = await s.recordedSeries('owner');
+    expect(series.series.find((x) => x.coinTicker === 'ETH')).toBeUndefined();
+  });
+
+  it('leaves another account’s older rows exactly where they were', async () => {
+    const s = store();
+    await twoEras(s, 'owner');
+    await twoEras(s, 'someone-else');
+
+    const outcome = await s.trim({ userId: 'owner', before: BOUNDARY });
+    expect(outcome.runs).toBe(1);
+
+    const theirs = await s.history({ userId: 'someone-else', coinTicker: 'BTC' });
+    expect(theirs.captures).toHaveLength(2);
+    const theirSeries = await s.recordedSeries('someone-else');
+    expect(theirSeries.series.find((x) => x.coinTicker === 'ETH')?.failedAttemptCount).toBe(1);
+  });
+});
