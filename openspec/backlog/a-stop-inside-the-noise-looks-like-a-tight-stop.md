@@ -6,7 +6,7 @@ status: open
 priority: p1
 created: 2026-08-06
 updated: 2026-08-10
-change: ""
+change: "a-number-alone-says-nothing"
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, risk, agent, measurement]
