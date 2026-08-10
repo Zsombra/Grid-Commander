@@ -133,6 +133,16 @@ export interface Ending {
   /** Trades here that carried no measurable move. Stated, never dropped silently. */
   readonly unmeasurable: number;
   /**
+   * The measurable moves themselves, in the order the trades arrived.
+   *
+   * Carried so a surface can show the trades instead of a statistic when the
+   * group is smaller than `MEDIAN_NEEDS`. "Too few to state a median" and
+   * nothing else tells an operator that a number is being withheld without
+   * telling them what it was withheld from — and at two or three trades the
+   * moves are shorter to read than the sentence explaining their absence.
+   */
+  readonly moves: readonly number[];
+  /**
    * Wins and losses in this group, from the trade's net and **never** from its
    * close reason.
    *
@@ -198,6 +208,7 @@ export function exitGeometry(outcomes: readonly TradeOutcome[]): ExitGeometry {
         count: group.length,
         medianMovePct: moves.length >= MEDIAN_NEEDS ? median(moves) : null,
         unmeasurable: group.length - moves.length,
+        moves,
         wins: nets.filter((n) => n !== null && n > 0).length,
         losses: nets.filter((n) => n !== null && n < 0).length,
       };

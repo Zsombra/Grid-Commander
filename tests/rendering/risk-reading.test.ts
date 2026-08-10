@@ -86,6 +86,10 @@ describe('a ceiling against the platform’s own default', () => {
     expect(r.text).toContain('maxDailyLossUsd');
     // The reason, not just the fact — it will not decide how much may be lost.
     expect(r.text).toContain('how much an agent may lose');
+    // The value, not only the name. These are the money fields, and naming
+    // them while withholding their numbers would make the most consequential
+    // settings the only unreadable ones on the panel.
+    expect(r.text).toContain('$250');
   });
 
   /**
@@ -136,11 +140,13 @@ describe('how its trades ended', () => {
     expect(r.text).toContain('2026-08-05');
   });
 
-  it('withholds a median below the threshold instead of implying a statistic', async () => {
-    world(withTrades([stopped('a', 99, -1)]));
+  it('shows the trades themselves below the threshold, rather than only withholding', async () => {
+    world(withTrades([stopped('a', 99, -1), stopped('b', 98, -2)]));
     const r = await limitsPage('a1');
-    expect(r.text).toContain('Too few measurable trades');
+    expect(r.text).toContain('Too few to state a median');
     expect(r.text).not.toContain('Median move');
+    // The moves an operator would otherwise be told nothing about.
+    expect(r.text).toContain('−1%, −2%');
   });
 
   it('states how many trades carried no measurable move', async () => {
@@ -176,7 +182,7 @@ describe('how its trades ended', () => {
 });
 
 describe('what ends a position early', () => {
-  it('names the two switches when management is on', async () => {
+  it('names the two switches, beside the life they produced', async () => {
     const agents = new FakeAgentsPort([
       anAgent({
         id: 'a1',
@@ -190,10 +196,29 @@ describe('what ends a position early', () => {
         }),
       }),
     ]);
+    const outcomes = [stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)];
+    agents.tradeOutcomes = { kind: 'outcomes', outcomes, total: outcomes.length };
     world(agents);
     const r = await limitsPage('a1');
     expect(r.text).toContain('Trailing stop:');
     expect(r.text).toContain('Time decay:');
+    // Beside the switches, not two sections away — the pairing is the point.
+    expect(r.text).toContain('positions last a median of');
+  });
+
+  it('claims no position life for an agent that has closed nothing', async () => {
+    const agents = new FakeAgentsPort([
+      anAgent({
+        id: 'a1',
+        tradingConfig: liveTradingConfig({
+          positionManagement: { positionManagementPreset: 'WALTHER', enabled: true },
+        }),
+      }),
+    ]);
+    world(agents);
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('Trailing stop:');
+    expect(r.text).toContain('not lasted long enough to measure');
   });
 
   it('says the values govern nothing when management is off', async () => {

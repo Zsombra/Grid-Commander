@@ -70,3 +70,26 @@ rather than the behaviour shipping unspecified.
 **81 db against real PostgreSQL**, **235 python harness**, drizzle-check,
 migrate and build all green via `./scripts/ci.sh`. `freshness` and `serving`
 skipped with named reasons — both need credentials this environment has not got.
+
+## What /verify found, in this change's own work
+
+Three scenarios the delta spec required and the first implementation did not
+deliver. All three were written into the spec by the same session that then
+failed to build them, which is the case for running the check on your own work
+rather than only on someone else's.
+
+- **`A value the platform has no default for`** said the agent's value is shown
+  on its own. The panel named the fields and withheld their numbers — so
+  `maxConcurrentExposureUsd: 250`, the item's own example and one of the six
+  money questions, was the one setting on the page an operator could not read.
+- **`A sample too small for a median`** said the individual trades are shown.
+  The panel said only that a median was being withheld, leaving the reader with
+  less than the platform gave them. It now prints the moves, which at two or
+  three trades are shorter than the sentence explaining their absence.
+- **`Management shown against realised position life`** said the life is shown
+  *beside* the switches. It was rendering two sections away, in the geometry
+  block — and the rendering test asserted the switches without ever asserting
+  the life, so it passed against a scenario it did not check.
+
+Fixed, and each now has a test that fails without the fix. Re-run after:
+**1,963 vitest**, `./scripts/ci.sh` green.

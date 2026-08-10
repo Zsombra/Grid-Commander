@@ -46,7 +46,21 @@ export function RiskReadingPanel({ reading }: { reading: RiskReading }) {
         subject="this agent’s position management is"
         nothing="This agent carries no position-management settings."
         reading={reading.management}
-        render={(m) => <ManagementBody management={m} />}
+        /*
+          The realised life comes from the geometry read and is rendered here,
+          beside the switches that produce it — that pairing is the section's
+          whole point, and a figure two sections up is not beside anything.
+          Null wherever the trades did not answer, so an unreadable record costs
+          the comparison and not the settings.
+        */
+        render={(m) => (
+          <ManagementBody
+            management={m}
+            medianDurationSeconds={
+              reading.geometry.kind === 'read' ? reading.geometry.value.medianDurationSeconds : null
+            }
+          />
+        )}
       />
     </section>
   );
@@ -169,12 +183,27 @@ function Defaults({ rows }: { rows: readonly AgainstDefault[] }) {
         ))}
       </ul>
       {uncompared.length > 0 && (
-        <p className="text-sm text-text-secondary">
-          BattleGrid declares no default for{' '}
-          <strong className="text-text-primary">{uncompared.map((c) => c.field).join(', ')}</strong>
-          , so {uncompared.length === 1 ? 'it is' : 'they are'} shown without a comparison. It will
-          not decide on anyone&rsquo;s behalf how much an agent may lose.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-text-secondary">
+            BattleGrid declares no default for {uncompared.length === 1 ? 'this' : 'these'}, so{' '}
+            {uncompared.length === 1 ? 'it is' : 'they are'} shown without a comparison. It will not
+            decide on anyone&rsquo;s behalf how much an agent may lose.
+          </p>
+          {/*
+            The value, not just the name. These are the six money questions —
+            `maxConcurrentExposureUsd` among them — and naming the field while
+            withholding its number would make the most consequential settings
+            the only ones on the panel an operator cannot read.
+          */}
+          <ul className="space-y-2">
+            {uncompared.map((c) => (
+              <li key={c.field} className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-mono text-sm text-text-primary">{c.field}</span>
+                <span className="text-sm text-text-secondary">{figure(c.field, c.value)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {elsewhere.length > 0 && (
@@ -277,7 +306,24 @@ function Row({ ending, geometry }: { ending: Ending; geometry: ExitGeometry }) {
       <p className="text-sm text-text-secondary">
         {ending.medianMovePct === null ? (
           <>
-            Too few measurable trades here to state a median move
+            {/*
+              The trades themselves rather than a statistic. Withholding the
+              median and saying only that it was withheld leaves an operator
+              with less than the platform gave them; at this size the moves are
+              shorter to read than the sentence explaining their absence.
+            */}
+            {ending.moves.length > 0 ? (
+              <>
+                Too few to state a median. The{' '}
+                {ending.moves.length === 1 ? 'move was' : 'moves were'}{' '}
+                <strong className="text-text-primary">
+                  {ending.moves.map((m) => pct(m)).join(', ')}
+                </strong>{' '}
+                from entry
+              </>
+            ) : (
+              <>No trade here carried a measurable move</>
+            )}
             {ending.unmeasurable > 0 && <> ({ending.unmeasurable} unmeasurable)</>}.
           </>
         ) : (
@@ -291,7 +337,14 @@ function Row({ ending, geometry }: { ending: Ending; geometry: ExitGeometry }) {
   );
 }
 
-function ManagementBody({ management }: { management: Management }) {
+function ManagementBody({
+  management,
+  medianDurationSeconds,
+}: {
+  management: Management;
+  /** From the trades, or null where they did not answer. Never claimed. */
+  medianDurationSeconds: number | null;
+}) {
   return (
     <>
       {management.enabled ? (
@@ -307,6 +360,16 @@ function ManagementBody({ management }: { management: Management }) {
             <strong className="text-text-primary">
               {management.timeDecayEnabled ? 'on' : 'off'}
             </strong>
+          </li>
+          <li>
+            {medianDurationSeconds === null ? (
+              <>Its positions have not lasted long enough to measure yet.</>
+            ) : (
+              <>
+                Its positions last a median of{' '}
+                <strong className="text-text-primary">{duration(medianDurationSeconds)}</strong>
+              </>
+            )}
           </li>
         </ul>
       ) : (

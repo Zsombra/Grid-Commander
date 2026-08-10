@@ -229,6 +229,15 @@ describe('shareOf', () => {
 
   it('is null against an empty fold rather than dividing by zero', () => {
     const g = exitGeometry([]);
-    expect(shareOf({ reason: 'x', count: 0, medianMovePct: null, unmeasurable: 0, wins: 0, losses: 0 }, g)).toBeNull();
+    const empty = {
+      reason: 'x',
+      count: 0,
+      medianMovePct: null,
+      unmeasurable: 0,
+      moves: [],
+      wins: 0,
+      losses: 0,
+    };
+    expect(shareOf(empty, g)).toBeNull();
   });
 });
