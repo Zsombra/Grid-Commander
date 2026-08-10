@@ -23,6 +23,16 @@ Where the agent's value equals the platform's default, that SHALL be stated as
 agreement rather than omitted — a setting nobody changed is a fact about the
 agent, and its absence would read as a setting the surface could not check.
 
+**A field read from the agent but no longer set on it SHALL be separated from
+those that are, and where it is now set SHALL be named.** BattleGrid's read is
+wider than its write, and v15 moved the trade-level policy onto the strategy
+while the agent read kept returning it. The comparison stays valuable — a stop
+ceiling far under the platform's own default is precisely the reading this
+surface exists to give — but presented beside settings the operator can change,
+it invites them to change one they cannot. Which fields those are SHALL be
+derived from the set a write is assembled from, so a field the platform moves
+back needs no edit here.
+
 #### Scenario: A value above the platform's default
 - **GIVEN** a capped field whose agent value exceeds the catalog's declared
   default
@@ -40,6 +50,13 @@ agent, and its absence would read as a setting the surface could not check.
 - **GIVEN** an agent value equal to the catalog's declared default
 - **WHEN** the limits surface renders
 - **THEN** the surface states that the value is the platform's default
+
+#### Scenario: A field the agent carries but cannot set
+- **GIVEN** a field the agent's read returns and its write rejects
+- **WHEN** the limits surface renders
+- **THEN** it is shown apart from the fields the agent still owns
+- **AND** the surface says where it is set instead
+- **AND** its comparison against the platform's default is still shown
 
 #### Scenario: The catalog could not be read
 - **GIVEN** the catalog read fails while the agent's limits read succeeds

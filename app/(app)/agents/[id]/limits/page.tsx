@@ -2,6 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentPageHeading } from '@/presentation/components/agent-page-heading.js';
 import { Ceilings } from '@/presentation/components/ceilings.js';
+import { RiskReadingPanel } from '@/presentation/components/risk-reading.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
 /**
@@ -31,9 +32,13 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const [budget, roster] = await Promise.all([
+  const [budget, roster, reading] = await Promise.all([
     app.readBudget.execute({ ...user.authority, agentId: id }),
     app.listAgents.execute(user.authority),
+    // What each setting is *against*. A fourth read rather than a wider one:
+    // the gauges answer "how close is it to being stopped", this answers "was
+    // the ceiling a sensible place to put one", and they fail independently.
+    app.readRiskReading.execute({ ...user.authority, agentId: id }),
   ]);
   const agent =
     roster.roster.kind === 'agents' ? roster.roster.agents.find((a) => a.id === id) : undefined;
@@ -59,6 +64,15 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
           halted={budget.halted}
         />
       )}
+
+      {/**
+       * Each setting against the thing that makes it safe or unsafe.
+       *
+       * Below the gauges deliberately. The gauges answer whether this agent is
+       * near a limit; this answers whether the limit was worth setting there —
+       * which is only worth reading once you know the first.
+       */}
+      <RiskReadingPanel reading={reading} />
 
       {/**
        * Spend, from the roster read this page already makes for its heading —
