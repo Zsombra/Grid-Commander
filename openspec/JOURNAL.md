@@ -66,7 +66,17 @@ from the switches the spec said it sits *beside* — with a rendering test that
 asserted the switches and never the life, so it passed against a scenario it did
 not check. All three fixed, each with a test that fails without its fix.
 
-**Gates**: typecheck, lint, spec validation clean; **1,963 vitest**, **81 db
+**The guard is now the precedent it should have followed.** `identifiers.test.ts`
+has carried a `the rule catches PG-301 as it was actually written` block since
+it was written — *a guard nobody has seen fail is a guard nobody knows works*.
+The new one now carries the same, feeding its matcher four violations including
+the two planted by hand, plus two negative cases so it cannot start firing on
+every threshold in the codebase. It also gained the corpus assertion fifteen of
+the sixteen negative-assertion guards already had and it alone lacked. Filed as
+**GitHub #87**, because the distinction generalises: a corpus check proves the
+sweep read files, and proves nothing about whether the pattern can match.
+
+**Gates**: typecheck, lint, spec validation clean; **1,968 vitest**, **81 db
 against real PostgreSQL**, **235 python harness**, drizzle-check, migrate and
 build — `./scripts/ci.sh` green. `freshness` and `serving` skipped with named
 reasons; both need credentials this environment has not got, so the surface
