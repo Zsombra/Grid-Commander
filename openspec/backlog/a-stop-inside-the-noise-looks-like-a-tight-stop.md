@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p1
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-10
 change: ""
 capability: agent-understanding
 blocked_by: []
@@ -99,3 +99,27 @@ setting.
 
 This is a **read** surface. Retuning a live agent is a separate question and a
 separate item — do not fold a write into this one.
+
+## Independently confirmed on the live fleet, 2026-08-09/10
+
+Filed 2026-08-06 from a **776-trade population study**: median stop distance
+0.623% against a mean single-bar adverse excursion of 0.47%. It sat
+unmerged for four days while a separate session reached the same conclusion
+from the other direction — a **26-trade fleet this product built and ran**:
+
+- placed RR **3.34**, realised RR **1.05–1.33** — the gap is the entire deficit
+- of a five-position book with stops at 0.38–0.82%, four stopped out
+  **within 0.07pp of their own stop** (WIF +0.01, TRUMP +0.02, SKHX +0.06,
+  ENA +0.07): price reached the stop, tripped it, and went nowhere further
+- 10 of 11 losers closed on a sub-1% move
+- the one trade that reached its take-profit (MOODENG, TP 3.39%) returned
+  more than double the worst loss
+
+And the sharper finding the population study could not see, because it did
+not place the orders: **the tight stop is what manufactures the RR.** Widen
+SKHX's stop to 1.0% and RR falls 3.09 → 1.16; BNB 4.13 → 1.65. Stop and
+target have to move together, or the book has to be far more selective.
+
+Two independent samples, three orders of magnitude apart in size, same
+conclusion. Kept open and **this is now the highest-value open item on the
+trading side.**

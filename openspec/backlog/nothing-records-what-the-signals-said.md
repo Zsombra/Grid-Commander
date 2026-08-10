@@ -2,10 +2,10 @@
 id: nothing-records-what-the-signals-said
 title: Nothing records what the signals said, so no strategy claim can ever be tested
 type: feature
-status: open
+status: done
 priority: p1
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-10
 change: ""
 capability: strategy-authoring
 blocked_by: []
@@ -88,3 +88,18 @@ Scope questions worth settling before building, not while:
 
 Do not start by building the analysis. Build the recorder, let it run, and the
 analysis becomes ordinary SQL.
+
+## Closed 2026-08-10, on merge
+
+Filed 2026-08-06 on the research branch, which then sat unmerged for four
+days while the thing it asked for was built on another one. **The signal
+recorder landed in `the-signal-recorder` (#74) and was live-proven in #75 —
+16 deployments, 1,344 readings** — so this item arrived at `main` already
+answered. `bin/grid-commander-record.ts` is the recorder.
+
+Closed on merge rather than landed as an open p1, because a backlog is a
+list of what is still true. Two successors carry what remains:
+`the-recorder-is-unproven-against-live` (already **done**) and
+`recorded-signals-are-not-yet-evidence` (**open** — the recorder writes, but
+the cron has never been started, so the readings are not yet evidence of
+anything).
