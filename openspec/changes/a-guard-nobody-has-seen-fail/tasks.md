@@ -40,24 +40,24 @@ nobody has seen catch anything is the defect this change is about.
 
 ## 3. `identifiers.test.ts` — repair the reference implementation
 
-- [ ] 3.1 Hoist the two patterns so the live scan and the proof call the same
+- [x] 3.1 Hoist the two patterns so the live scan and the proof call the same
       thing. `check()` currently re-declares both verbatim.
       *Scenario: The proof re-states the rule instead of calling it*
-- [ ] 3.2 Keep every existing PG-301 / PG-003 case working through the shared
+- [x] 3.2 Keep every existing PG-301 / PG-003 case working through the shared
       matcher, including the two permitted forms.
-- [ ] 3.3 Verify: killing both live `matchAll` call sites must now FAIL.
+- [x] 3.3 Verify: killing both live `matchAll` call sites must now FAIL.
 
 ## 4. `mcp-conformance.test.ts` — the permissive direction
 
-- [ ] 4.1 Prove `sends()` in both directions: an argument genuinely built at the
+- [x] 4.1 Prove `sends()` in both directions: an argument genuinely built at the
       call site, and one absent from it.
       *Scenario: The matcher matches everything*
-- [ ] 4.2 Prove `argsAt()` returns the call block rather than the type
+- [x] 4.2 Prove `argsAt()` returns the call block rather than the type
       signature — the miss the file's own comment records.
-- [ ] 4.3 Prove the unclassified-tool arm, which matches nothing today and so
+- [x] 4.3 Prove the unclassified-tool arm, which matches nothing today and so
       would not notice its own death.
       *Scenario: The rule has nothing to find today*
-- [ ] 4.4 Verify: `sends()` → `() => true` must now FAIL.
+- [x] 4.4 Verify: `sends()` → `() => true` must now FAIL.
 
 ## 5. `controls.test.ts` — silenceable in both directions
 
