@@ -1,5 +1,27 @@
 # Journal
 
+## 2026-08-10 (check-in 03:40Z) — a quiet cycle, and the long book builds
+
+**One close**: TRUMP long, `STOP_LOSS`, **−$0.1612 on a −0.85% move in 33
+minutes** — full stop distance, the standard loser shape, this time on the
+long side. Realized: **25 closed, 7W/18L, −$1.0280**, win rate 28%,
+realised RR **1.20** (break-even 45%; placed 3.34 needs 23%). Still one
+take-profit in twenty-five.
+
+**The book is now seven positions and five are longs** (WIF, HYPE, FARTCOIN,
+MELANIA, SKHX) against two shorts (LDO +$0.093, BRENTOIL +$0.046), book
+total **+$0.1592**. The directional flip has held for ~90 minutes; FARTCOIN
+re-entered *long* eleven minutes after its short closed.
+
+**The long/short split so far** — thin data, but worth pinning before the
+long book resolves: **LONG 6 closed, 1W, −$0.1885 · SHORT 19 closed, 6W,
+−$0.8396.** Nineteen shorts carry most of the realized loss. Five of the
+seven open positions are longs, so this cycle-or-two doubles the long
+sample; capture rates and adverse-move sizes on longs are the thing to
+extract from it.
+
+Server still v15.0.0; policy retest skipped. **Meter** dead.
+
 ## 2026-08-10 (check-in 02:10Z) — FARTCOIN did not convert, and the trail's capture rate is the number
 
 **FARTCOIN closed `STOP_LOSS` at +$0.2179** — a +1.59% favourable move over
