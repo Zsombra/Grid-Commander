@@ -1,5 +1,6 @@
 import type {
   AgainstDefault,
+  CapAgainstBalance,
   Management,
   Reading,
   RiskReading,
@@ -33,6 +34,13 @@ export function RiskReadingPanel({ reading }: { reading: RiskReading }) {
         nothing="This agent carries no numeric settings to compare."
         reading={reading.ceilings}
         render={(rows) => <Defaults rows={rows} />}
+      />
+      <Section
+        heading="What it may risk, against the money behind it"
+        subject="this account’s balance is"
+        nothing="This agent has no exposure cap to compare."
+        reading={reading.exposure}
+        render={(e) => <Exposure exposure={e} />}
       />
       <Section
         heading="How its trades ended"
@@ -241,6 +249,64 @@ function Defaults({ rows }: { rows: readonly AgainstDefault[] }) {
           </ul>
         </div>
       )}
+    </>
+  );
+}
+
+function Exposure({ exposure }: { exposure: CapAgainstBalance }) {
+  return (
+    <>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-mono text-sm text-text-primary">maxConcurrentExposureUsd</span>
+        <span className="text-sm text-text-secondary">
+          {figure('maxConcurrentExposureUsd', exposure.capUsd)}
+          {exposure.balanceUsd !== null && (
+            <>
+              {' '}
+              against a balance of {figure('balanceUsd', exposure.balanceUsd)}
+              {exposure.multiple !== null && (
+                <>
+                  {' · '}
+                  <strong className="text-text-primary">
+                    {Math.round(exposure.multiple * 100) / 100}×
+                  </strong>
+                </>
+              )}
+            </>
+          )}
+        </span>
+      </div>
+
+      {/*
+        The finding, said rather than left as arithmetic. `5.7×` alone makes a
+        reader work out which side is larger, on the one screen built so they
+        do not have to.
+      */}
+      {exposure.exceedsBalance && (
+        <p role="alert" className="text-sm text-text-primary">
+          This cap is larger than the balance, so it{' '}
+          <strong>cannot stop this agent</strong> — the account would run out
+          first.
+        </p>
+      )}
+
+      {!exposure.hasAccount && (
+        <p className="text-sm text-text-secondary">
+          BattleGrid reports no funded account, so there is nothing to compare
+          this cap against. That is not a balance of zero.
+        </p>
+      )}
+
+      {/*
+        Named as the account's. One balance funds every agent on it, so a
+        per-agent reading would overstate the money available by the number of
+        agents sharing it.
+      */}
+      <p className="text-sm text-text-secondary">
+        The balance is the <strong className="text-text-primary">account&rsquo;s</strong>, shared by
+        every agent on it — not this agent&rsquo;s own. BattleGrid publishes no
+        per-agent split.
+      </p>
     </>
   );
 }

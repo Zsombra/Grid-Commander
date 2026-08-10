@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
+import { McpAccountStateAdapter } from '@/infrastructure/battlegrid/account-adapter.js';
 import { ReadRiskReadingQuery } from '@/application/use-cases/read-risk-reading.query.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
@@ -57,10 +58,11 @@ live('an agent’s settings are readable against what makes them safe', () => {
     const roster = await agents.listAgents(who);
     if (roster.kind !== 'agents') throw new Error(`roster ${roster.kind}`);
 
-    const query = new ReadRiskReadingQuery(agents);
+    const query = new ReadRiskReadingQuery(agents, new McpAccountStateAdapter(battlegrid));
     let sawDefaults = false;
     let sawMeasurableGeometry = false;
     let sawUndefaulted = false;
+    let sawBalance = false;
 
     for (const agent of roster.agents) {
       const reading = await query.execute({ ...who, agentId: agent.id });
@@ -88,6 +90,26 @@ live('an agent’s settings are readable against what makes them safe', () => {
               .filter((c) => c.multiple !== null && c.multiple !== 1)
               .map((c) => `\n      ${c.field} ${c.value} vs ${c.platformDefault} (${c.multiple}×)`)
               .join(''),
+        );
+      }
+
+      if (reading.exposure.kind === 'read') {
+        const e = reading.exposure.value;
+        sawBalance = true;
+        // The comparison must be finite wherever it is drawn at all — an
+        // Infinity here would render as a number on the page.
+        if (e.multiple !== null) {
+          expect(Number.isFinite(e.multiple), `${agent.displayName} exposure multiple`).toBe(true);
+          // And it must agree with the two figures it was derived from, so a
+          // sign or an inversion cannot pass unnoticed.
+          expect(e.exceedsBalance, `${agent.displayName} exceedsBalance`).toBe(e.multiple > 1);
+        }
+        // eslint-disable-next-line no-console
+        console.log(
+          `  ${agent.displayName}: cap $${e.capUsd} vs balance ` +
+            `${e.balanceUsd === null ? 'unstated' : `$${e.balanceUsd}`}` +
+            `${e.multiple === null ? '' : ` (${e.multiple.toFixed(2)}×)`}` +
+            `${e.exceedsBalance ? '  ← cannot bind' : ''}`,
         );
       }
 
@@ -130,6 +152,13 @@ live('an agent’s settings are readable against what makes them safe', () => {
      * closed nothing is a legitimate state, and this probe must not fail on
      * one. It is logged so a run can be read.
      */
+    /**
+     * The balance read is the point of the exposure comparison, and it is the
+     * newest thing here — a run where it never answered would mean the panel's
+     * fourth section is empty on a live account and no fixture would notice.
+     */
+    expect(sawBalance, 'get_account_state answered for no agent on the account').toBe(true);
+
     // eslint-disable-next-line no-console
     console.log(`  measurable geometry seen: ${sawMeasurableGeometry}`);
   });

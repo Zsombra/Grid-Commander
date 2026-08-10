@@ -1,7 +1,12 @@
 import type { BattlegridSubject } from '@/domain/connection/subject.js';
 import { asSubject } from '@/domain/connection/subject.js';
-import type { AccountPort } from '@/ports/account.js';
+import type {
+  AccountPort,
+  AccountStatePort,
+  AccountStateResult,
+} from '@/ports/account.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import { malformed, unreadable } from './unreadable.js';
 import { OWNER_USER_ID } from '@/application/use-cases/owner-only-user.js';
 
 /**
@@ -54,4 +59,83 @@ export class McpAccountAdapter implements AccountPort {
       return null;
     }
   }
+}
+
+/**
+ * `get_account_state`, read for the money behind an agent's caps.
+ *
+ * A separate adapter from `McpAccountAdapter` above, mirroring the port split:
+ * that one swallows failure into `null` because identity must never block a
+ * deployment, and this one must report it, because a surface that cannot tell
+ * *unreadable* from *empty* is the failure this product is built against.
+ *
+ * The tool was reachable and unread for the life of the product. The comment
+ * above — explaining, correctly, that `get_account_state` carries no account id
+ * — is why: it settled that this tool was not the answer to *which account is
+ * this*, and nothing revisited whether it answered anything else. It answers
+ * six things, and the balance is one of them.
+ */
+export class McpAccountStateAdapter implements AccountStatePort {
+  constructor(private readonly battlegrid: BattleGridPort) {}
+
+  async readAccountState(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<AccountStateResult> {
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool: 'get_account_state',
+        args: {},
+      });
+      const payload = result.content as Record<string, unknown> | null;
+      if (payload === null || typeof payload !== 'object') {
+        return malformed('BattleGrid returned no account state');
+      }
+
+      const balance = (payload['balance'] ?? {}) as Record<string, unknown>;
+      const slots = (payload['agentSlots'] ?? {}) as Record<string, unknown>;
+
+      return {
+        kind: 'state',
+        state: {
+          balanceUsd: decimal(balance['usdc']),
+          // Only an explicit `true` is a funded account. An absent field is not
+          // a promise, and defaulting it the other way would render a balance
+          // for an account the platform never said exists.
+          hasAccount: balance['hasAccount'] === true,
+          tradingWalletProvisioned: payload['tradingWalletProvisioned'] === true,
+          mcpWagerEnabled: payload['mcpWagerEnabled'] === true,
+          agentSlotLimit: whole(slots['limit']),
+          agentSlotsUsed: whole(slots['used']),
+        },
+      };
+    } catch (err) {
+      return unreadable(err);
+    }
+  }
+}
+
+/**
+ * A money figure the platform sends as a decimal string — `"43.667427"`.
+ *
+ * Parsed once, here, rather than at each call site: a caller comparing a cap
+ * against a balance needs a number, and two call sites parsing for themselves
+ * is how two screens come to disagree about the same money.
+ *
+ * `null` on anything unparseable, and on a non-finite result. Never `0` — a
+ * balance of nothing and a balance nobody could read are different facts, and
+ * this whole surface exists to keep such pairs apart.
+ */
+function decimal(raw: unknown): number | null {
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** A count, where the platform sends one. Null rather than a guessed zero. */
+function whole(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
 }

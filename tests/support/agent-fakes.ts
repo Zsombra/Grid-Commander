@@ -1,6 +1,11 @@
 import type { Agent, SlotUsage } from '@/domain/agent/agent.js';
 import type { Brain } from '@/domain/agent/brain.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
+import type {
+  AccountState,
+  AccountStatePort,
+  AccountStateResult,
+} from '@/ports/account.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
@@ -705,4 +710,30 @@ export function aTradeOutcome(overrides: Partial<TradeOutcome> = {}): TradeOutco
     signalLogId: 'c21c5ccd-ca90-4ffb-82b4-895a9ae21a92',
     ...overrides,
   };
+}
+
+/**
+ * The account's own figures, as `get_account_state` sends them.
+ *
+ * Defaults are the live account of 2026-08-10: a **$43.67** balance against
+ * agents carrying a $250 exposure cap, which is the reading the risk panel
+ * exists to make. Overrides let a test say the one thing it is about.
+ */
+export class FakeAccountStatePort implements AccountStatePort {
+  state: AccountState = {
+    balanceUsd: 43.667427,
+    hasAccount: true,
+    tradingWalletProvisioned: true,
+    mcpWagerEnabled: true,
+    agentSlotLimit: 3,
+    agentSlotsUsed: 3,
+  };
+  readable = true;
+
+  async readAccountState(): Promise<AccountStateResult> {
+    if (!this.readable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return { kind: 'state', state: this.state };
+  }
 }
