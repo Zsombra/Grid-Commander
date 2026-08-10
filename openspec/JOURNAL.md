@@ -1,5 +1,75 @@
 # Journal
 
+## 2026-08-10 (live-proven) — freshness green, and THE .0 shows the whole thesis in one reading
+
+**The operator supplied a key and the branch is now live-verified.** Everything
+below is a read; `BATTLEGRID_LIVE_WRITES` was deliberately not set, and the ten
+write probes skipped correctly.
+
+**Freshness is green**: `recorded battlegrid 16.0.0 · live battlegrid 16.0.0`.
+The surface record describes the server running right now, which was the one
+thing on this branch nothing could verify.
+
+**The full live suite, serially**: `npm run test:live` → **20 files passed, 10
+skipped, 30 tests, 550s.** Plus `oauth-metadata` keyless earlier: the recorded
+discovery document still matches what the platform publishes.
+
+### `THE .0` is the agent the p1 was filed about, and the panel reads it exactly
+
+```
+THE .0: 7 compared, 5 undefaulted
+    maxDailyTrades 34 vs 10 (3.4×)
+    maxLeverage      5 vs  1 (5×)
+THE .0: 31 closed
+    26× STOP_LOSS    5W/21L  median move −0.359%
+     5× TAKE_PROFIT  5W/0L   median move  2.786%
+```
+
+Three things in one screen that no surface said before:
+
+- **84% of closes are stop-outs** (26 of 31) — the population study's 74%, worse
+  on this agent.
+- **The target sits 7.8× further away than the stop actually travels.** Median
+  stop move −0.359% against a median take-profit move of 2.786%. That is the
+  placed-versus-realised geometry problem stated per-agent, without a candle,
+  a borrowed constant, or an extra platform call.
+- **Five of the twenty-six stop-outs were wins.** Trailed stops closing in
+  profit — the `HYPE` case, on a different agent, in a different week. Had the
+  panel derived the result from the close reason it would report **26 losses
+  where there are 21**. The rule written for that is not defensive; it fires on
+  a fifth of this agent's stop-outs.
+
+Another agent carries `maxDailyTrades 100 vs 10 (10×)`.
+
+### A trap found by reading before running
+
+`./scripts/ci.sh:57` runs `npx vitest run` under `vitest.config.ts`, which
+includes `tests/**/*.test.ts` and excludes only `node_modules` and `tests/db/**`
+— so **`tests/live/**` is in the ordinary suite**. Without a key the probes
+skip, which is why it has never shown. With a key they all run *in parallel*,
+which is the sweep `vitest.live.config.ts` pins `fileParallelism: false` to
+prevent, and which cost a diagnosis round on 2026-08-07 with nine phantom
+failures.
+
+The 2026-08-07 follow-up landed correctly — the pinning lives in a config rather
+than in operator memory. The gap is that it pins the *config*, and `ci.sh`
+reaches the same files through a different one, while `HANDOFF.md` tells the
+next session to run `ci.sh` with a key. Filed as **GitHub #118**; the probes
+here were run through `vitest.live.config.ts` deliberately, so the sweep did not
+happen to the account.
+
+**Also filed**: **#117** — `tests/live/oauth-metadata.test.ts` needs no
+credential and `ci.sh` never runs it, while `oauth-conformance.test.ts` trusts
+the recording it verifies. It passes today.
+
+**Proven, not assumed**: `freshness` genuinely needs a key. An unauthenticated
+`initialize` answers `Missing or invalid Authorization header`, so the MCP
+handshake is auth-gated and the server version is unreadable without one.
+
+**PR #83 is out of draft**, 11 commits, 61 files, mergeable clean, and its
+description rewritten to cover the whole branch in four independently
+reviewable parts rather than the third it described while a draft.
+
 ## 2026-08-10 (a-number-alone-says-nothing) — the p1 shrank on contact, and the panel found its own evidence
 
 **The highest-value open item on the trading side is closed**, and half of it
