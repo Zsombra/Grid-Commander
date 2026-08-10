@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-10 (the arena's second sentence) — whether the credential could even stake
+
+**`whether-the-credential-could-stake` archived**, closing the buildable half of
+#121. The arena said *"Watching only — entering a session stakes real money and
+is not offered here yet"* — true, and silent about whether the account could
+take that path at all. It now names **both gates**: BattleGrid's own
+`mcpWagerEnabled` setting, read live and failing independently, and the wager
+scope this product never requests (D-3, guarded). One sentence per gate,
+because naming only the product's refusal invites "flip something here and
+play", and naming only the account's setting implies this credential could act
+on it.
+
+`hasAccount: false` renders as its own fact — a missing account is not wagering
+switched off — and an unreadable account state costs two sentences, never the
+sessions beside them.
+
+### The half that was already built
+
+#121 claims `/agents` "gives no warning before a create fails." **Wrong** —
+`ListAgentsQuery` derives `CreationAvailability` from the roster's own
+`slotUsage` and `CreateAffordance` renders at-capacity before the form, rank
+and remedy included, pinned by `tests/agent/capacity.test.ts`. Read before
+building; the issue gets corrected instead of the product getting a second
+copy of a warning it already has.
+
+### BattleGrid spent the evening down
+
+The issue's suggested first step — do `list_intelligence_agents.slotUsage` and
+`get_account_state.agentSlots` agree? — was attempted live and both reads
+answered **502** (the #100 flapping pattern). The one-off probe was written,
+run twice, and deleted; the question stays in #121's thread for the next live
+window. The same outage put `oauth-live` into its loud-skip state during CI —
+the gate saying "unverified" rather than pretending, exactly as built.
+
+Also from this stretch: PostgreSQL died again mid-CI (the standing container
+quirk; `pg_ctlcluster 16 main start` and re-run — green), and `/agents`
+rendering the warning was confirmed from code, not memory.
+
 ## 2026-08-10 (the image) — built on the first attempt that could reach a registry
 
 **`image-never-built` (p1, #89) is closed.** The Dockerfile built and ran
