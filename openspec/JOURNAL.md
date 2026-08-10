@@ -1,5 +1,83 @@
 # Journal
 
+## 2026-08-10 (a-number-alone-says-nothing) — the p1 shrank on contact, and the panel found its own evidence
+
+**The highest-value open item on the trading side is closed**, and half of it
+turned out to be built already. `a-stop-inside-the-noise-looks-like-a-tight-stop`
+asked for six rows. Reading the code before writing spec found that two were
+shipped — `Ceilings` has rendered "no limit set" and "Nothing will stop this
+agent on …" since `zero-does-not-mean-nothing`, and the exposure gauge already
+sets the cap against what is at risk. Proposing them would have been
+re-specifying shipped behaviour.
+
+**The ground had moved under a third.** The item was filed 2026-08-06 at v11.
+At **v15** BattleGrid took `maxStopLossPct`, `minStopLossPct` →
+`minStopLossAtrMultiple` and `minRiskRewardRatio` off the agent and onto the
+strategy — so an *agent* risk panel cannot show a field the agent no longer
+has — and the platform ignores all three where they now live
+(`v15-trade-level-policy-is-declared-but-inert`, retested against v16 and still
+refused). Deferred twice over, filed as **GitHub #85**.
+
+**A fourth row asks for something that does not exist.** Exposure against
+account balance: `AccountPort` answers identity only, and equity appears solely
+inside gate-block details. Deriving one from open positions would be inventing a
+figure on the one surface whose purpose is to be trusted instead of the raw
+setting. Filed as **GitHub #84**.
+
+**What shipped instead is stronger than what was asked for.** The item's own
+warning — *do not compute a noise floor from 100 bars and present it as
+authoritative* — points at the answer: the agent's own record needs no borrowed
+constant. `list_trade_outcomes` already carries `closeReason`, `direction`,
+`entryFillPrice` and `exitFillPrice`, and from those four comes **the median
+realised move at each kind of ending**, which is the population study's central
+statistic computed per agent with no candle history and no extra call. Three
+requirements, all from reads the product already makes.
+
+**And the headline survived anyway.** The v15 fields still come back on the
+agent read, so `maxStopLossPct: 1` renders against BattleGrid's declared default
+of 5 — `0.2×`, the item's exact finding against the platform's own number. Shown
+apart from the settings an operator can change, with where they are now set
+named, derived from `TRADING_CONFIG_FIELDS` so a field the platform moves back
+needs no edit here.
+
+### Three things worth not rediscovering
+
+**A close reason is not an outcome.** `HYPE` closed at **+$0.0731** with
+`closeReason: STOP_LOSS` because trailing had walked the stop into profit. The
+ending comes from `closeReason` and the result from `netPnl`, never one from the
+other — otherwise a protected winner is reported as a loss on the screen built
+to explain losses. Held by a test.
+
+**The guard written for this change passed vacuously on first write.** Its
+transcription check used `[A-Za-z_$][\w$]*` before the alternation, so the
+mandatory first character consumed the `N` of `NOISE_FLOOR_PCT` and the pattern
+could never match its own first letter however far the greedy quantifier
+backtracked. Found by planting a constant and watching the test stay green. That
+is the sixth instance of this repository's recurring defect — *a check that
+matches how something is spelled* — produced while writing a guard against it.
+**Plant the violation before trusting the guard.**
+
+**`/verify` found three scenarios its own session had written and not built.**
+The undefaulted money fields were named without their values, so
+`maxConcurrentExposureUsd: 250` was the one setting on the panel an operator
+could not read. The small-sample branch withheld a median without showing the
+trades it was withheld from. And the median position life rendered two sections
+from the switches the spec said it sits *beside* — with a rendering test that
+asserted the switches and never the life, so it passed against a scenario it did
+not check. All three fixed, each with a test that fails without its fix.
+
+**Gates**: typecheck, lint, spec validation clean; **1,963 vitest**, **81 db
+against real PostgreSQL**, **235 python harness**, drizzle-check, migrate and
+build — `./scripts/ci.sh` green. `freshness` and `serving` skipped with named
+reasons; both need credentials this environment has not got, so the surface
+record's age is unverified this session.
+
+**Also filed**: **GitHub #86** — five stale claims across `CLAUDE.md`,
+`HANDOFF.md` and `README.md`. Two would send a reader down a dead end: the
+110-tool figure (114 since v14, the first version ever to move the count), and
+the hard-limits entry saying a market's first radar deployment cannot be created
+over MCP, which v14 lifted and 2026-08-08 proved live.
+
 ## 2026-08-10 (v16 landed) — dead write path #12, caught before a live refusal
 
 **BattleGrid deployed v16.0.0** — found by the 05:06Z check-in, because the

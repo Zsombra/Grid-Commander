@@ -2,7 +2,7 @@
 id: a-stop-inside-the-noise-looks-like-a-tight-stop
 title: A stop inside the noise floor reads as discipline, and nothing says otherwise
 type: feature
-status: open
+status: done
 priority: p1
 created: 2026-08-06
 updated: 2026-08-10
@@ -145,4 +145,7 @@ at each close reason, from `entryFillPrice`/`exitFillPrice`/`direction`/
 borrowed constant, which is what the item's own warning about false precision
 was pointing at.
 
-Kept open until the two filed items close.
+**Closed.** Every row is now either shipped or carried by a successor with its
+own item — `no-account-balance-is-readable` (GitHub #84) and
+`the-stop-vs-noise-comparison-has-no-home` (GitHub #85). Keeping this open as
+well would duplicate their scope, which is the one thing a backlog must not do.
