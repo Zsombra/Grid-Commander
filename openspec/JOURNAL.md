@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-10 (check-in 18:00Z) — "no short has ever taken profit" is not a finding, and I have been repeating it
+
+**I have called "twenty-one shorts, zero take-profits" the clearest
+regularity in the record for several cycles. It is not a regularity at all,
+and the arithmetic is embarrassing.**
+
+There is **one** take-profit in the entire dataset. That makes the base rate
+1 in 34, or 2.9%. Among 22 shorts you would therefore expect **0.65**
+take-profits, and the probability of observing zero purely by chance is:
+
+    P(0 TPs in 22 shorts) = (1 − 0.029)^22 ≈ 52%
+
+**A coin flip.** With a single positive event in the whole sample you cannot
+say anything about its direction — the statistic has no power. I was
+treating the absence of a rare event in a subgroup as evidence about that
+subgroup, which is the shape of the error, and I kept promoting it in every
+check-in brief. Retracted.
+
+**What does survive** is the per-trade difference, and it is stated with its
+own caveat: **LONG −$0.0310/trade over 12** against **SHORT −$0.0469/trade
+over 22** — a $0.0159 gap. That is a real arithmetic difference on the
+sample, but at n=12 and n=22 with per-trade noise of roughly ±$0.11 it is
+nowhere near separable from zero either. It is a thing to keep watching, not
+a thing to act on.
+
+**This cycle: BRENTOIL short closed −$0.1329 on a −1.23% adverse move** in
+118 minutes — the third largest adverse move in the record, and squarely in
+the "never reached break-even → full stop" regime rather than the
+noise-stop story.
+
+**Realized: 34 closed, 10W/24L, −$1.4033.** WR 29%, realised RR **1.05**,
+break-even 49%. The RR series is now **1.25 → 1.20 → 1.11 → 1.09 → 1.07 →
+1.06 → 1.05** across seven cycles, monotonically down without exception.
+That one *is* a real pattern — it is a trend in a continuous statistic over
+34 observations, not the absence of a rare event.
+
+**Book +$0.7472 across four, and the two shorts are ~90% of it**: ENA
+**+$0.4097**, still extending, and LDO +$0.2615. TRUMP sits at exactly
++$0.0515, unchanged to the cent across 75 minutes — the same pinned-against-
+a-ratcheted-stop signature LDO showed earlier.
+
+Server v16.0.0, no retest per cadence. **Meter** dead. Replay build still
+unauthorised; nothing built or changed.
+
 ## 2026-08-10 (check-in 16:40Z) — a new longest hold, and it lost
 
 **MELANIA closed −$0.1023 after 999 minutes** — 16.6 hours, past FARTCOIN's
