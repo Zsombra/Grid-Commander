@@ -1,5 +1,33 @@
 # Journal
 
+## 2026-08-10 (check-in 23:45Z) — the monotone RR decline ended, and I should stop calling it monotone
+
+**GOLD closed −$0.0670 on a −0.33% adverse move** after 173 minutes —
+squarely noise-band, and a *below-average* loss.
+
+**That broke the streak.** Realised RR went **1.03 → 1.04**, the first rise
+in the series:
+
+    1.25 · 1.20 · 1.11 · 1.09 · 1.07 · 1.06 · 1.05 · 1.04 · 1.03 · 1.04
+
+Nine consecutive declines, then a tick up. The mechanism is unremarkable —
+a loss smaller than the average loss lifts the win/loss ratio by arithmetic,
+nothing about the system changed — and 0.01 is well inside noise. But I have
+described this series as "monotone, the one real pattern here" in five
+consecutive entries and in every check-in brief. **It is no longer monotone,
+and I am not going to keep saying it is.** What survives is weaker and still
+worth tracking: realised RR has fallen from 1.25 to ~1.04 over 37 trades and
+sits far below the 3.34 placed.
+
+**Realized: 37 closed, 11W/26L, −$1.5119.** WR 30%, break-even 49%.
+
+**Book recovered to +$0.6058 across five** — ENA +$0.4088 (12.1 hours),
+FARTCOIN's new long already +$0.1424, HYPE short +$0.0632, a fresh SKHX
+long, TRUMP −$0.0283. Account **$43.17**.
+
+Server steady at v17.0.0 — no re-probe, no p1 retest. Both harness guards
+applied: files verified fresh at 23:44, `limit: 50` on the outcomes read.
+
 ## 2026-08-10 (check-in 22:25Z) — a fifth record hold, and it gave back everything
 
 **WIF closed −$0.1438 after 1138 minutes** — 19 hours, past LDO's 1030 — and
