@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-10 (check-in 22:25Z) — a fifth record hold, and it gave back everything
+
+**WIF closed −$0.1438 after 1138 minutes** — 19 hours, past LDO's 1030 — and
+handed back the whole of its +$0.0583 peak. That is the third new
+longest-hold record in six hours, and the roster now reads:
+
+| | held | outcome |
+|---|---|---|
+| WIF | **1138m** | **−$0.1438** |
+| LDO | 1030m | +$0.1022 (36%) |
+| MELANIA | 999m | −$0.1023 |
+| FARTCOIN | 769m | +$0.0932 (27%) |
+| TRUMP | 754m | −$0.1058 |
+
+**Five longest holds: three outright losses, two partial captures, zero
+take-profits.** The only take-profit this fleet has recorded still took 329
+minutes. Nothing about holding longer has produced a conversion, across five
+attempts spanning 12 to 19 hours.
+
+**Realized: 36 closed, 11W/25L, −$1.4449.** WR 31%, realised RR **1.03**,
+break-even 49%. The RR series is **1.25 → 1.20 → 1.11 → 1.09 → 1.07 → 1.06 →
+1.05 → 1.04 → 1.03** across nine cycles — still monotone, still the one
+pattern in this record that is a trend rather than an absence.
+
+**Book +$0.3639 across five, and it is one position.** ENA **+$0.4257**
+after 10.7 hours carries the whole book; the other four are between
+−$0.063 and +$0.034. The fleet also keeps recycling the same names —
+FARTCOIN re-entered long at 22:14, HYPE re-entered short at 22:03, both
+within minutes of the slots freeing.
+
+Account balance **$42.97**, from $43.56 at the start of the session.
+
+Server steady at v17.0.0, so no re-probe and no p1 retest this cycle — the
+cadence rule is version-gated and three of the last four deploys broke a
+write path, so the trigger stays armed.
+
 ## 2026-08-10 (v17 landed) — dead write path #13, and the platform shipped the dial I spent the day measuring
 
 **BattleGrid deployed v17.0.0, and it retroactively explains last cycle's
