@@ -135,6 +135,52 @@ describe('a live probe that can mutate requires more than a credential', () => {
     expect(commandCanWrite('MadeUpCommand'), 'unresolvable fails closed').toBe(true);
   });
 
+  /**
+   * The offender detector itself, fed the shapes it exists to catch.
+   *
+   * `commandCanWrite` above is pinned in both directions; `reachIn` — the
+   * function whose output *is* the offender list — was not. Audited 2026-08-10
+   * by mutation: replacing the `\b[A-Z][A-Za-z]*Command\b` scan with a literal
+   * that matches nothing left this file **3/3 green**, and so did making
+   * `reachIn` return `[]` unconditionally. Both `expect(offenders).toEqual([])`
+   * assertions below would have gone on passing while guarding nothing.
+   *
+   * That is not a hypothetical arm. The file's own comment records why it
+   * exists: `apply-probe.test.ts` mutates through `ForkStrategyCommand` and
+   * names no tool, so the tool-name scan alone missed it. A dead
+   * `Command` pattern re-opens exactly that miss — on the guard that stands
+   * between an ungated probe and a real trading account.
+   *
+   * See GitHub #87: a corpus check proves the sweep read files and proves
+   * nothing about whether the pattern can match.
+   */
+  it('reports a write reached through a Command, naming no tool', () => {
+    const code = `
+      const live = process.env['BATTLEGRID_API_KEY'] ? describe : describe.skip;
+      await new ForkStrategyCommand(strategies).execute({ strategyId: id });
+    `;
+    expect(reachIn(code), 'the arm added because apply-probe named no tool').not.toEqual([]);
+  });
+
+  it('reports a write reached by naming a mutating tool outright', () => {
+    const tool = MUTATING[0] as string;
+    expect(reachIn(`await call('${tool}', {})`), 'the tool-name arm').not.toEqual([]);
+  });
+
+  it('reports a write reached through a helper', () => {
+    expect(
+      reachIn('const agent = await acquireProbeAgent(agents);'),
+      'the indirect arm — a helper whose own code reaches a create',
+    ).not.toEqual([]);
+  });
+
+  it('reports nothing for a probe that only reads', () => {
+    // The negative case, without which every assertion above is satisfied by a
+    // `reachIn` that returns everything — the mutation that silenced
+    // `controls.test.ts` in the other direction.
+    expect(reachIn('const roster = await agents.listAgents(who);')).toEqual([]);
+  });
+
   it('gates every probe that can mutate on the explicit opt-in', () => {
     /**
      * Two ways a probe reaches a write, and the first version of this guard
