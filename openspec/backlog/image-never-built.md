@@ -2,10 +2,10 @@
 id: image-never-built
 title: The Dockerfile has never been built
 type: debt
-status: open
+status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-08-05
+updated: 2026-08-10
 change: ""
 capability: app-access
 github: "89"
@@ -116,3 +116,28 @@ switching without evidence trades a known size for an unknown reason.
 
 Record the result in the journal either way. A build that worked is worth as much
 as one that did not, because right now neither is known.
+
+## Resolved 2026-08-10 — built, run, and proven
+
+The blocker was never the Dockerfile. Built on the first attempt that could
+reach a registry, **unchanged** — zero edits to the Dockerfile, the entrypoint,
+or the ignore file.
+
+- **Built**: 355MB, `node:22-alpine`, from `mirror.gcr.io` (the Docker Hub CDN
+  is still policy-blocked; the mirror is not — the issue anticipated exactly
+  this out).
+- **Alpine runs it**: the standalone server boots in 374ms on musl.
+- **The gate holds in the real image**: serve against an unmigrated database
+  refuses with exit 1 and the documented message; `migrate` applies the
+  journal; serve then boots.
+- **It serves**: `/` 307 → `/connect`; `/agents` `/strategies` `/audit`
+  `/connect` `/pending` all 200 — the same answers the 2026-08-05
+  hand-assembled layout gave, now from the image itself.
+- **`commander` owns its process**: `whoami` inside the container answers
+  `commander`, and it can read everything copied `--chown`ed to it.
+
+The sandbox-specific build recipe (mirror pull + `--network=host` + explicit
+proxy build-args, because this docker CLI does not auto-forward proxy env into
+BuildKit) is recorded in #89's closing comment and the journal — it is
+environment lore, not repository configuration, which is why nothing in the
+repo changed.

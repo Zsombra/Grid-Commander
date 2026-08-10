@@ -270,13 +270,19 @@ the refusal rather than asserting only that a working pair works.
 
 ### Requirement: An Architecture Guard Fails When Its Own Matcher Stops Working
 Every architecture guard SHALL fail when the matcher producing its offender list
-is made to match nothing, and SHALL fail when that matcher is made to match
-everything.
+is made to match nothing, SHALL fail when that matcher is made to match
+everything, and SHALL pass when the product contains no violation and the
+matcher is unaltered.
 
-Both directions are required because they silence different rules. A rule shaped
-as *no offenders* goes quiet when its matcher finds nothing; a rule shaped as
-*nothing is missing* goes quiet when its matcher finds everything. A guard proven
-in only one direction is proven against only half of how it fails.
+Both broken directions are required because they silence different rules. A rule
+shaped as *no offenders* goes quiet when its matcher finds nothing; a rule shaped
+as *nothing is missing* goes quiet when its matcher finds everything. A guard
+proven in only one direction is proven against only half of how it fails.
+
+The clean-pass direction is required because without it the requirement is
+satisfied by a rule that fails unconditionally, or by one broad enough to report
+the whole tree — and neither is a guard. Distinguishing a violation from ordinary
+code is the entire job.
 
 The proof SHALL exercise the same matcher the live scan uses. A proof that
 re-states the rule demonstrates that a copy of it works, and leaves the copy that
@@ -296,6 +302,12 @@ were blind.
 - **GIVEN** a guard whose rule asserts that nothing required is absent
 - **WHEN** its matcher is altered to report every input as present
 - **THEN** the guard fails
+
+#### Scenario: The product is clean and the rule is intact
+- **GIVEN** a product containing no violation of the rule
+- **WHEN** the guard runs with its matcher unaltered
+- **THEN** it passes
+- **AND** its proof includes at least one input the matcher must not report
 
 #### Scenario: The proof re-states the rule instead of calling it
 - **GIVEN** a guard whose proof declares its own copy of the pattern
@@ -317,12 +329,17 @@ were blind.
 
 ### Requirement: The Mutation Check Is A Command In The Repository
 The project SHALL provide a runnable check that alters a named matcher in a test
-file, runs that file, and reports whether the alteration was noticed.
+file, runs that file, and reports whether the alteration was noticed. The check
+SHALL NOT run as part of the ordinary test suite or any quality gate.
 
 Reading a guard cannot establish whether its pattern can match. Every finding
 about these guards was produced by breaking a matcher and re-running, and until
-this lands that method exists only in a session transcript — so the next audit
+this landed that method existed only in a session transcript — so the next audit
 re-derives it or does not happen.
+
+It stays out of the gates because it rewrites files on disk mid-run, which is
+stateful, and because a slow gate is a gate people route around. It is run
+deliberately, by a person writing or doubting a guard.
 
 The check SHALL restore the file it altered whether the run passes, fails, or
 raises, and SHALL refuse when the text it was asked to alter is not present,
@@ -346,3 +363,9 @@ rather than reporting on a file it did not change.
 - **WHEN** the check is asked to alter text the file does not contain
 - **THEN** it refuses and reports nothing about the guard
 - **AND** the file is left untouched
+
+#### Scenario: An ordinary suite run
+- **GIVEN** a checkout where the default suite or a quality gate is run
+- **WHEN** the run completes
+- **THEN** no guard file was altered by the mutation check
+- **AND** the suite's outcome does not depend on the check being present

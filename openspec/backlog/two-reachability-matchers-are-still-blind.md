@@ -2,11 +2,11 @@
 id: two-reachability-matchers-are-still-blind
 title: Two reachability matchers still pass with their rules dead, and the vacuity check retypes one of them
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "two-reachability-matchers-are-still-blind"
 capability: harness-integrity
 github: "87"
 blocked_by: []
