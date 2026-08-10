@@ -286,6 +286,27 @@ describe('every unreadable branch explains itself', () => {
   });
 });
 
+/**
+ * The subject rules, named once so they can be fed a violation.
+ *
+ * Audited 2026-08-10 by mutation (GitHub #87): killing both extractors left
+ * `wrong` empty in both tests and every count still satisfied — because the
+ * wrapper floor (`toBe(3)`) is built on a *different* regex from the two doing
+ * the reading. Two rules blind, one floor green, no signal anywhere.
+ *
+ * `subject={...}` is read where the words are inline; `subject="..."` is read at
+ * the call sites of the three wrappers that take one as a prop.
+ */
+const subjectsIn = (source: string): string[] =>
+  [...source.matchAll(/subject=\{?["'`]([^"'`]*)/g)].map((m) => (m[1] as string).trim());
+
+const quotedSubjectsIn = (source: string): string[] =>
+  [...source.matchAll(/\bsubject="([^"]*)"/g)].map((m) => m[1] as string);
+
+/** The component renders `This does not mean {subject} gone`, so it carries its own verb. */
+const completesTheSentence = (subject: string): boolean =>
+  /\b(is|are|was|were|has|have)$/.test(subject.trim());
+
 describe('the explanation is the shared one', () => {
   it('is defined in exactly one place', () => {
     // Two copies is how the roster and the strategy list would come to say
@@ -317,11 +338,8 @@ describe('the explanation is the shared one', () => {
      */
     const wrong = unreadableBranches()
       .filter(explains)
-      .flatMap((b) => [...b.renders.matchAll(/subject=\{?["'`]([^"'`]*)/g)].map((m) => ({
-        at: key(b),
-        subject: (m[1] as string).trim(),
-      })))
-      .filter(({ subject }) => !/\b(is|are|was|were|has|have)$/.test(subject))
+      .flatMap((b) => subjectsIn(b.renders).map((subject) => ({ at: key(b), subject })))
+      .filter(({ subject }) => !completesTheSentence(subject))
       .map(({ at, subject }) => `${at}: "This does not mean ${subject} gone"`);
 
     expect(wrong, 'the subject does not complete the sentence').toEqual([]);
@@ -339,11 +357,8 @@ describe('the explanation is the shared one', () => {
     expect(wrappers.length, 'no wrapper takes a subject — this check is measuring nothing').toBe(3);
 
     const wrong = wrappers
-      .flatMap((f) => [...read(f).matchAll(/\bsubject="([^"]*)"/g)].map((m) => ({
-        file: slashed(f),
-        subject: m[1] as string,
-      })))
-      .filter(({ subject }) => !/\b(is|are|was|were|has|have)$/.test(subject.trim()))
+      .flatMap((f) => quotedSubjectsIn(read(f)).map((subject) => ({ file: slashed(f), subject })))
+      .filter(({ subject }) => !completesTheSentence(subject))
       .map(({ file, subject }) => `${file}: "This does not mean ${subject} gone"`);
 
     expect(wrong, 'the subject does not complete the sentence').toEqual([]);
@@ -382,5 +397,53 @@ describe('an exemption is a claim, and is checked', () => {
     // one nobody reads, and this guard's whole value is that every entry in it
     // has been argued for.
     expect(EXEMPT.length).toBeLessThan(8);
+  });
+});
+
+/**
+ * The subject rules, fed the sentences they exist to catch.
+ *
+ * The defect was real and shipped: `/limits` and `/thinking` read "this does not
+ * mean this agent's limits gone", because a shared component is only as good as
+ * what is passed to it and nothing read the sentence back. This is what reads it
+ * back — and until now nothing read *this*.
+ */
+describe('the subject rules catch what they were written for', () => {
+  it('reads a subject written inline', () => {
+    expect(subjectsIn('<WhyNotLoaded subject="this agent’s limits are" />')).toEqual([
+      "this agent’s limits are",
+    ]);
+    // A template subject is read whole, interpolation and all, and then judged
+    // on its ending like any other — which is right: the verb is what the
+    // sentence needs, and it is outside the `${}`.
+    expect(subjectsIn('<WhyNotLoaded subject={`the ${name} is`} />')).toEqual(['the ${name} is']);
+    expect(subjectsIn('<Foo bar="x" />'), 'nothing to read').toEqual([]);
+  });
+
+  it('reads a subject passed as a quoted prop at a call site', () => {
+    expect(quotedSubjectsIn('<StageNote subject="the pipeline is" />')).toEqual(['the pipeline is']);
+    expect(quotedSubjectsIn('<StageNote subject={subject} />'), 'the prop, not the words').toEqual([]);
+  });
+
+  it('accepts a subject that completes the sentence', () => {
+    // "This does not mean the trade record is gone" — reads.
+    for (const s of ['the trade record is', 'these figures are', 'the balance was', 'the agent has']) {
+      expect(completesTheSentence(s), s).toBe(true);
+    }
+  });
+
+  it('rejects the subject that actually shipped', () => {
+    // "This does not mean this agent's limits gone" — the sentence that reached
+    // two live pages. Without this case the rule is satisfied by a predicate
+    // that accepts everything, and the defect walks back in.
+    expect(completesTheSentence("this agent’s limits")).toBe(false);
+    expect(completesTheSentence('the thinking')).toBe(false);
+    expect(completesTheSentence('')).toBe(false);
+  });
+
+  it('does not accept a verb that merely appears somewhere in the subject', () => {
+    // Anchored at the end, because the sentence continues with "gone" — a
+    // subject with `is` in the middle does not complete it.
+    expect(completesTheSentence('what is missing here')).toBe(false);
   });
 });

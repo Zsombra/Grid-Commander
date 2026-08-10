@@ -1,5 +1,122 @@
 # Journal
 
+## 2026-08-10 (the guards) — ten of sixteen were passing with their rules dead
+
+**`a-guard-nobody-has-seen-fail` archived.** Seven architecture guards repaired,
+each proven by re-running the mutation that had survived, and the method that
+found them committed as `tools/mutate-guard.mjs`.
+
+### The one that mattered
+
+`boundaries.test.ts` reported **13 passed (13)** with this returning nothing:
+
+```ts
+const imports = (file) =>
+  [...readFileSync(file,'utf8').matchAll(/from\s+['"]([^'"]+)['"]/g)].map(m => m[1]!);
+```
+
+Five rules go quiet on that line — P6, `src/mcp` reaches no port, the domain
+imports nothing outward, use cases depend on ports, W-D. That is Clean
+Architecture as this project defines it, and the file total never moved because
+the other eight rules kept passing for their own reasons.
+
+#87 had filed this as "11 of 12 matchers killable, item 3". The truer statement
+is that they were never twelve independent matchers.
+
+### Two ways a guard goes quiet, and only one feels like a bug
+
+**Blind** — the matcher finds nothing, every `toEqual([])` passes.
+
+**Permissive** — the matcher finds everything, which silences rules shaped as
+*nothing is missing*. `sends()` returning `true` left thirteen MCP conformance
+checks green while asserting nothing. `controls.test.ts` was silenceable both
+ways at once.
+
+### A corpus floor is necessary and nowhere near sufficient
+
+Every one of these files counted what it scanned, and every one was blind
+anyway, because the floor was built on a different regex from the rule it
+vouches for. `failure-is-explained` counts wrappers with a third pattern while
+both extractors go dark.
+
+### And the reference implementation guarded its own copy
+
+`identifiers.test.ts` — the file this repo points at as the example — had
+`check()` re-declaring both regexes verbatim. Break only the live copies and it
+stayed green: the proof demonstrated that a transcription worked while the rule
+was dead. Two copies of a rule, inside the mechanism built to catch two copies
+of a rule.
+
+### The method had no home
+
+Both audits ran from a script in a session transcript. The only thing that had
+ever proven these guards work was not in the repository — the same defect, one
+level up. `tools/mutate-guard.mjs` restores in a `finally` and on SIGINT, keeps
+its backup outside the repo where `git add` cannot reach it, and refuses a find
+string the file does not contain rather than reporting on a mutation that never
+happened.
+
+### Close-out
+
+```
+boundaries imports()            SURVIVED → KILLED
+identifiers live scans          SURVIVED → KILLED
+controls scan                   SURVIVED → KILLED
+failure-is-explained extractors SURVIVED → KILLED
+mcp-conformance sends()         SURVIVED → KILLED
+one-destination vendor list     SURVIVED → KILLED
+proposals-are-inert × 2         SURVIVED → KILLED
+control (no-population)         KILLED   → KILLED
+```
+
+### Two of my own assertions were wrong, and the proofs caught them
+
+Which is the argument for writing proofs against real behaviour rather than
+against what you assume it does:
+
+- `composition.ts` does not import `@/ports/agents.js`, and
+  `src/domain/agent/catalog.ts` imports nothing at all.
+- `isVendorClient('openai/gpt-5')` returns **true**. Not a defect — the
+  predicate only ever sees keys of `dependencies`, and an unscoped npm name
+  cannot contain a slash. The bound got recorded rather than the claim widened.
+
+### What is left, and it is a scoping gap of mine
+
+Measuring `reachability.test.ts` at close-out — a file this change never scoped,
+because #87 calls it the best-defended in the directory — found **two rules
+still blind**: the `<form>` tag scan and the server-action extractor both
+SURVIVED. Filed as `two-reachability-matchers-are-still-blind` (p2, #87) rather
+than folded in: 996 lines and 17 rules is its own change.
+
+`confirmation-is-human.test.ts` keeps its one narrow residual, deliberately. It
+is the file whose approach worked — it asserts both patterns against real source
+— and that is the pattern the other seven now copy.
+
+**#87 stays open.** Seven of nine repaired is not nine.
+
+### Two sessions proposed this change half an hour apart
+
+`2d2ddac` was already on the branch when the push went up: the same change id,
+the same findings, proposal-only, written 33 minutes before mine. A parallel run
+of the same task.
+
+It was superseded rather than discarded — merged, not force-pushed over, and its
+proposal kept at
+`openspec/changes/archive/2026-08-10-a-guard-nobody-has-seen-fail/superseded-proposal.md`.
+
+Being second is not the same as being wrong, and it was right about two things
+mine was not. Its spec split the ground into three requirements, and two of its
+scenarios are sharper than what landed: that a guard must still **pass** when
+the product is clean and the rule is intact, and that the mutation check stays
+**out** of the ordinary suite. The first is a real gap — as merged, the
+requirement only says what must make a guard fail, so a rule that fails
+unconditionally satisfies it. Filed as #123.
+
+It also repeats #87's count of eleven matchers in `boundaries.test.ts`. Measured,
+five *tests* consume `imports()`; the file reports 13/13 because the other eight
+rules are independent. Same finding, wrong number — which is the whole argument
+for measuring rather than citing.
+
 ## 2026-08-10 (the exposure row) — every live agent's cap is above the money behind it
 
 **`a-cap-above-the-money-cannot-bind` archived**, closing the last unbuilt row of
