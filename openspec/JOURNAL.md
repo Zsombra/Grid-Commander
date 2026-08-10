@@ -1,5 +1,59 @@
 # Journal
 
+## 2026-08-10 (branch reconciliation) — nine branches resolved, and one that had been right for four days
+
+**Every open branch is now accounted for.** Three PRs merged to `main` in
+sequence: **#80** (v14/v15 + the full-surface probe), **#81** (the v16
+`conditions[].required` fix), and **#69** (the trade-categories research
+map, open since 2026-08-06).
+
+**The count-based reading of "unmerged" was wrong, and worth writing down.**
+`git rev-list` reported branches 81, 71, 23 and 21 commits "ahead" of
+`main`. All of it was squash-merge artifact: `main` squashes, so a merged
+branch's original commits never appear in `main` by SHA and every one of
+them counts as ahead forever. **Ahead-count is not evidence of unmerged
+work in this repo.** The checks that actually settled it were: does the
+branch tip equal the head SHA GitHub recorded as merged, and does the branch
+hold any *file* `main` lacks.
+
+That second check earned its keep — three branches did hold files `main`
+does not:
+
+| branch | files | verdict |
+|---|---|---|
+| `hand-off-file-review`, `repo-reconciliation-wrap-up`, `tool-review-budget` | 3 each | `docs/specs/*` — the pre-rename paths of `docs/checklists/*`. `main`'s copies were edited *after* the rename by #71 and #72, so `main` is strictly newer |
+| `work-review-next-steps` | 26 | the original assistant capability — source, spec, tests, and a full-track change. **Deliberately removed** in `3d54fab` (#5), as the journal states, and replaced by the MCP server (`an-assistant-over-the-use-cases`, done) |
+| `harness-openspec-merge` | 37 | the abandoned v0 architecture: a pnpm monorepo with a standalone `packages/battlegrid-mcp` client and its tests. `main` went single-app + npm with the client inline at `src/infrastructure/battlegrid/` (20 files), and carries `battlegrid-connection` + `mcp-control` as the successor capabilities |
+
+**#69 had been right for four days.** It was filed 2026-08-06 from a
+**776-trade population study** and reached exactly the conclusion this
+week's live trading reached independently from a **26-trade fleet**: median
+stop distance 0.623% against a mean single-bar adverse excursion of 0.47%,
+so the stops sit inside the noise and 74% of trades die at `STOP_LOSS`.
+Two samples three orders of magnitude apart, same finding. Its backlog item
+`a-stop-inside-the-noise-looks-like-a-tight-stop` is annotated with the
+live confirmation and is now the highest-value open item on the trading
+side.
+
+Merging it also required **not** landing it as written. Its p1
+`nothing-records-what-the-signals-said` asked for a signal recorder — and
+while the branch sat unmerged, #74 built one and #75 proved it live (16
+deployments, 1,344 readings). It lands as **done**, because a backlog is a
+list of what is still true. The `JOURNAL.md` conflict was the only one:
+153 entries in `main` plus the one entry only that branch had, 154 out,
+none lost, the research entry placed inside the 2026-08-07 group where its
+own merge-base puts it.
+
+**Cleanup is blocked on permissions, not on judgement.** Six branches are
+lossless to delete — `app-review-backlog-reconcile`,
+`signal-recorder-strategy`, `trade-categories-math-families`, and the three
+rename-artifact ones. This session's credentials push branches but **cannot
+delete refs or push tags** (403 on both), so nothing was deleted and no
+archive tags exist remotely. The two branches carrying genuinely unique
+code — `harness-openspec-merge` and `work-review-next-steps` — should not be
+deleted without a deliberate call, since their content exists nowhere else
+and there is no tag standing behind them.
+
 ## 2026-08-10 (v16 landed) — dead write path #12, caught before a live refusal
 
 **BattleGrid deployed v16.0.0** — found by the 05:06Z check-in, because the
