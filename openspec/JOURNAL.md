@@ -1,5 +1,53 @@
 # Journal
 
+## 2026-08-10 (check-in 02:10Z) — FARTCOIN did not convert, and the trail's capture rate is the number
+
+**FARTCOIN closed `STOP_LOSS` at +$0.2179** — a +1.59% favourable move over
+403 minutes. It was **+$0.5090** at the last check-in, so it gave back
+**57% of its peak** and never reached its target. The second-largest win
+this fleet has recorded, and it still left more on the table than it kept.
+
+**That completes a three-point picture of what the trail actually captures**,
+using peaks I observed directly in earlier snapshots:
+
+| | peak seen | closed | captured |
+|---|---|---|---|
+| MOODENG | — (ran to target) | +$0.3649 | **100%** (TAKE_PROFIT) |
+| FARTCOIN | +$0.5090 | +$0.2179 | **43%** |
+| HYPE | +$0.1400 | +$0.0040 | **3%** |
+
+The only trade that kept everything is the only one that reached its target.
+Every trail-managed exit surrendered between half and nearly all of the
+move. That is the placed-vs-realised gap expressed per trade rather than in
+aggregate, and it is the cleanest statement of the problem so far.
+
+**The fleet is recovering, and quickly.** Three closes this cycle — SKHX
+**+$0.1085 in 8 minutes** (+1.01%), FARTCOIN +$0.2179, and BRENTOIL
+**−$0.0062 on a +0.00% move**, a pure fee loss on a flat tape.
+
+| | 23:20Z | 00:45Z | **02:10Z** |
+|---|---|---|---|
+| closed | 19 | 21 | **24** |
+| net | −$1.3241 | −$1.1870 | **−$0.8669** |
+| win rate | 16% | 24% | **29%** |
+| realised RR | 1.33 | 1.05 | **1.24** |
+
+**$0.46 recovered in under three hours**, and unlike last cycle the win rate
+and the RR moved up together — FARTCOIN was large enough to lift the average
+win rather than dilute it. Win rate 29% is now comfortably above the 23%
+needed at the placed RR of 3.34, and still well below the 45% needed at
+1.24.
+
+**Still one take-profit in twenty-four trades.**
+
+**The book flipped direction.** Six open and **four are longs** (HYPE,
+FARTCOIN, TRUMP, MELANIA) against two shorts (LDO, BRENTOIL). This fleet has
+been overwhelmingly short all day; five entries inside twenty minutes at
+~02:02 reversed that. Worth watching whether the long book behaves
+differently — every finding above is drawn from a short-dominated sample.
+
+Server still v15.0.0; policy retest skipped. **Meter** dead.
+
 ## 2026-08-10 (check-in 00:45Z) — BNB breaks the run, and win rate rose while RR fell
 
 **BNB, the fifth and last of the prediction book, closed green** —
