@@ -206,7 +206,11 @@ filed and closed the same session by `the-agent-write-follows-v14`.)
 
 Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
-re-probing before any other work is trustworthy.
+re-probing before any other work is trustworthy. That is fast: the freshness
+gate reads one file, and the thirty live probes no longer ride along inside the
+`vitest` gate. They are their own gate now, opt-in on **`CI_LIVE=1`**, serial,
+about nine minutes. Until 2026-08-10 this instruction fired all thirty of them
+in parallel at the real account — see the journal entry for that day.
 
 ### Everything proposed is built. Most of the backlog waits on other people.
 

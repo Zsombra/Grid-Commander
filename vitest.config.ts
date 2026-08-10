@@ -13,7 +13,20 @@ export default defineConfig({
     // here rather than made conditional, so `npm test` needs no PostgreSQL on a
     // laptop or in the `app` CI job, and so a database test can never quietly
     // become a skipped one.
-    exclude: ['**/node_modules/**', 'tests/db/**'],
+    //
+    // `tests/live/**` is excluded for the same reason and a sharper one. Thirty
+    // probe files `describe.skip` without a credential, so inside this suite
+    // they were thirty checks that never ran, reported as a pass — and *with* a
+    // credential they all ran at once, which is the concurrent sweep
+    // `vitest.live.config.ts` pins `fileParallelism: false` to prevent, against
+    // a real trading account. `npm run test:live` is the way in, and
+    // `scripts/ci.sh` names it as a gate so its absence is stated rather than
+    // assumed.
+    //
+    // This is not what compiles them: `tsconfig.json` includes `**/*.ts`, so a
+    // probe that stops parsing still fails `npm run typecheck`. Asserted in
+    // `tests/architecture/live-probes-are-named.test.ts`.
+    exclude: ['**/node_modules/**', 'tests/db/**', 'tests/live/**'],
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
