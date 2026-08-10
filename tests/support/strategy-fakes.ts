@@ -658,6 +658,7 @@ export function berlinFullSendDown(): Record<string, unknown> {
     conditionKey: 'FULL_SEND_DOWN',
     name: 'Full send — down',
     verdict: 'DOWN',
+    required: false,
     definition: {
       kind: 'group',
       op: 'N_OF',
@@ -695,6 +696,7 @@ export function berlinRegimeDown(): Record<string, unknown> {
     conditionKey: 'REGIME_DOWN',
     name: 'Regime trending down',
     verdict: null,
+    required: false,
     definition: {
       kind: 'clause',
       column: { sectionKey: 'includeRegimeContext', header: 'regTrend_now' },

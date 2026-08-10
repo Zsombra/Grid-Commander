@@ -139,5 +139,9 @@ export function mapConditions(raw: unknown): readonly StrategyCondition[] {
       name: typeof e['name'] === 'string' && e['name'].length > 0 ? e['name'] : (e['conditionKey'] as string),
       definition: mapDefinition(e['definition']),
       verdict: mapVerdict(e['verdict']),
+      // Absent reads as `false` rather than as unknown: the platform's own
+      // default for a condition nobody marked, and the only value that is
+      // safe to send back. Guessing `true` would silently harden a strategy.
+      required: e['required'] === true,
     }));
 }

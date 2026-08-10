@@ -270,6 +270,9 @@ function resolve(
         conditionKey: wanted.conditionKey ?? source.conditionKey,
         name: wanted.name ?? source.name,
         verdict: wanted.verdict,
+        // Carried from the source, like the definition — retargeting a
+        // condition is not a request to change whether it must hold.
+        required: source.required,
       },
     },
   };
