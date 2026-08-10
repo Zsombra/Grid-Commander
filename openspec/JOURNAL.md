@@ -1,5 +1,48 @@
 # Journal
 
+## 2026-08-10 (the image) — built on the first attempt that could reach a registry
+
+**`image-never-built` (p1, #89) is closed.** The Dockerfile built and ran
+**unchanged** — zero edits to it, the entrypoint, or `.dockerignore`. The 2026-08-05
+diagnosis was exact: the blocker was registry egress, nothing else.
+
+What the environment needed, none of it repository configuration:
+
+1. **The base image from `mirror.gcr.io`** — Docker Hub's CDN
+   (`production.cloudfront.docker.com`) is still policy-403'd; the GCR mirror is
+   allowed. `docker pull mirror.gcr.io/library/node:22-alpine`, tag as
+   `node:22-alpine`, and the Dockerfile's `FROM` resolves locally.
+2. **`--network=host`** — the sandbox proxy lives on `127.0.0.1:36745`, which
+   inside a bridge-network build container is the container itself.
+3. **Explicit proxy build-args** — this docker CLI does **not** auto-forward
+   proxy env into BuildKit (measured: the RUN env carried my NO_PROXY override
+   and no HTTPS_PROXY at all). Passed as the predefined args, npm goes through
+   the CONNECT tunnel, where TLS is end-to-end and verifies against real
+   certificates. Also measured on the way: the sandbox transparently intercepts
+   *direct* npmjs traffic, which is why in-container npm saw
+   `SELF_SIGNED_CERT_IN_CHAIN` 45 times while the host — with
+   `NODE_EXTRA_CA_CERTS` — never does. TLS verification was never disabled.
+
+Every open question from #89, answered by the image itself:
+
+- Alpine/musl runs the standalone server — ready in 374ms.
+- The `COPY --from=builder` paths resolve as written.
+- `commander` reads everything chowned to it; `whoami` in the container answers
+  `commander`.
+- 355MB.
+
+And the gate, in the real image: serve against an unmigrated database **refuses
+with exit 1** and the documented message; `migrate` prints `migrations applied`;
+serve then boots, `/` 307s to `/connect`, and `/agents` `/strategies` `/audit`
+`/connect` `/pending` all answer 200 — the same answers the hand-assembled
+layout gave five days ago, now from the artifact that ships.
+
+One wrong turn recorded: three build failures read as npm's opaque
+`Exit handler never called!` before the debug log named the certificate chain.
+The lesson is the project's standing one — the first legible error is rarely the
+cause; the cause was three layers down, and each layer was measured rather than
+guessed (`npm ping` through the tunnel, then `env` dumped from inside a RUN).
+
 ## 2026-08-10 (the guards, closed out) — the last blind matchers, and the contract that let them count
 
 Two changes archived, finishing what `a-guard-nobody-has-seen-fail` started.
