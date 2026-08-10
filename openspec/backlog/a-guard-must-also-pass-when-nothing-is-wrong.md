@@ -2,11 +2,11 @@
 id: a-guard-must-also-pass-when-nothing-is-wrong
 title: The guard-proof requirement is satisfied by a rule that always fails
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "a-guard-must-also-pass-when-nothing-is-wrong"
 capability: harness-integrity
 github: "123"
 blocked_by: []
