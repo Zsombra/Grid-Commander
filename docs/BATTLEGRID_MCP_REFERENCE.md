@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v13.0.0`, protocol `2025-06-18`) on 2026-08-08.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v15.0.0`, protocol `2025-06-18`) on 2026-08-09.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -9,7 +9,7 @@ Reconnaissance only — no wager tool was called.
 > dump alongside this file (`battlegrid-mcp-capabilities.json`) is the diffable artifact;
 > regenerate both rather than trusting them blindly.
 
-**110 tools · 5 prompts · 3 resources · 0 resource templates**
+**114 tools · 5 prompts · 3 resources · 0 resource templates**
 
 ## Scopes
 
@@ -18,7 +18,7 @@ Reconnaissance only — no wager tool was called.
 | `mcp:read` | Discovery **and non-financial configuration writes** — creates agents, authors strategies. Not view-only. |
 | `mcp:wager` | Commits funds or grants autonomous authority. |
 
-**16 of 110 tools require `mcp:wager`**; the remaining 94 are `mcp:read`.
+**16 of 114 tools require `mcp:wager`**; the remaining 98 are `mcp:read`.
 
 Platform caps on MCP-signed wagers: **10 per day**, **$500/day** (`mcpSignedWagerDailyCountLimit`, `mcpSignedWagerDailyVolumeLimitUsd`).
 
@@ -51,13 +51,13 @@ Platform caps on MCP-signed wagers: **10 per day**, **$500/day** (`mcpSignedWage
 
 ## Every tool carries MCP annotations — use them, not name heuristics
 
-All 110 tools declare `readOnlyHint`, `destructiveHint`, `idempotentHint`
+All 114 tools declare `readOnlyHint`, `destructiveHint`, `idempotentHint`
 and `openWorldHint`, plus `execution.taskSupport` (`forbidden` on every tool — none may be
 run as a detached task).
 
 | Classification | Count |
 |---|---:|
-| Read-only (`readOnlyHint: true`) | 83 |
+| Read-only (`readOnlyHint: true`) | 87 |
 | Mutating (`readOnlyHint: false`) | 27 |
 | Destructive (`destructiveHint: true`) | 10 |
 | Requires `mcp:wager` | 16 |
@@ -526,11 +526,8 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -554,8 +551,6 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.positionManagement.timeDecayTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayMaxTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
-| `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
-| `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
 | `idempotencyKey` | string |  | Caller-generated key, 8-255 chars. A retry with the same key returns the original result rather than repeating the command. |
 
 ### `update_intelligence_agent`
@@ -563,11 +558,10 @@ Returns: `agent`, `slotUsage`
 *Update Intelligence Agent* — **writes** · **destructive** · non-idempotent
 
 Update an existing private intelligence agent: display name, brain (model/behavior or
-preset), trading configuration, and challenge participation. Supply at least one mutable
-field. A complete tradingConfig is optional for non-config updates. Requires
-expectedRevision from the latest read for optimistic concurrency; SYSTEM agents are
-immutable. Strategy REBINDING is not part of this command — use rebind_intelligence_agent,
-which is separately confirmed.
+preset), and trading configuration. Supply at least one mutable field. A complete
+tradingConfig is optional for non-config updates. Requires expectedRevision from the latest
+read for optimistic concurrency; SYSTEM agents are immutable. Strategy REBINDING is not part
+of this command — use rebind_intelligence_agent, which is separately confirmed.
 
 Returns: `agent`, `feasibilityAdvisory`
 
@@ -592,11 +586,8 @@ Returns: `agent`, `feasibilityAdvisory`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -620,8 +611,6 @@ Returns: `agent`, `feasibilityAdvisory`
 | `tradingConfig.positionManagement.timeDecayTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayMaxTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
-| `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
-| `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
 
 ### `rebind_intelligence_agent`
 
@@ -897,6 +886,52 @@ Returns: `filter`, `stats`, `aggregations`, `entries`, `currentUser`, `generated
 | `sortBy` | enum(NET_PNL|WIN_RATE|TRADE_COUNT) |  | Sort column (default NET_PNL) (default `NET_PNL`) |
 | `search` | string |  | Filter by agent name (substring match) |
 | `limit` | integer |  | Entries to return (1-100) (default `100`) |
+
+### `get_agents_hub`
+
+*Get Agents Hub* — read-only
+
+Where every agent you own is right now, in one call. Each roster row carries the server-
+computed `hubStatus` at its declared precedence — AWAITING_APPROVAL, then IN_TRADE, then
+RADAR_ARMED, then ARENA_DEPLOYED, then IDLE — alongside the itemized footprint behind it:
+the open positions (symbol, side, leverage), the radar coins with their coinId, and the
+arena presets with their gamePresetId, so you can jump straight to get_radar_deployment or
+get_deployment_policy. Each list's length equals its matching count field. Rows also carry
+realized net P&L, trailing-24h LLM spend, and the read-only permission envelope (strategy
+name, trading mode, leverage and daily-trade ceilings, exposure budget, sizing preset,
+timeframes) — null exactly when the agent is ARCHIVED. `summary` totals the roster and adds
+the daily conversational-message meter. Prefer this over rebuilding the same picture from
+list_intelligence_agents + list_radar_deployments + list_deployment_policies +
+list_pending_approvals + list_user_active_positions: the status precedence is decided here,
+once.
+
+Returns: `rows`, `summary`
+
+_No parameters._
+
+### `get_agent_conviction_calibration`
+
+*Get Agent Conviction Calibration* — read-only
+
+Does one of your agents' STATED conviction actually predict its outcomes — the feedback loop
+for every conviction bar you can set (the agent base in tradingConfig.minTradeConviction, a
+deployment slot's minConviction, a per-coin rule's). Groups the agent's closed trades over
+the rolling window into the decide_trade prompt's own rubric bands (LOW / MODERATE / HIGH —
+fixed boundaries, not quantiles, so two agents are comparable) per asset class, and
+separately by the arena deployment rule that fired them, so you can see whether the bull-
+rule slot really trades better than the bear one. Every group is discriminated on readiness:
+below the minimum sample size a group carries INSUFFICIENT_DATA and a sampleSize and NO rate
+at all — there is deliberately no win rate to read off a sample too small to support one. A
+READY group adds winRate (and its pre-computed percent), average net P&L, and the provenance
+mix naming which inheritance layer's bar each trade passed. `slices` is empty when the agent
+closed no trades in the window; `deploymentRules` is empty when no closed trade carries an
+arena rule stamp — conversational and radar trades never do.
+
+Returns: `calibration`
+
+| Param | Type | Req | Description |
+|---|---|:--:|---|
+| `agentId` | string | YES | Intelligence agent UUID you own |
 
 ### `get_agent_decision_context`
 
@@ -1234,6 +1269,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<1>.minAggregateScore` | number |  |  |
 | `request<1>.minRequiredCount` | integer |  |  |
 | `request<1>.minAtrPct` | number |  |  |
+| `request<1>.minStopLossAtrMultiple` | number |  |  |
+| `request<1>.maxStopLossPct` | number |  |  |
+| `request<1>.minRiskRewardRatio` | number |  |  |
 | `request<1>.sections` | array<anyOf[object | object]> | YES |  |
 | `request<1>.conditions` | array<object> |  |  |
 | `request<1>.conditions[].conditionKey` | string | YES |  |
@@ -1267,6 +1305,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<2>.minAggregateScore` | ? |  |  |
 | `request<2>.minRequiredCount` | ? |  |  |
 | `request<2>.minAtrPct` | ? |  |  |
+| `request<2>.minStopLossAtrMultiple` | ? |  |  |
+| `request<2>.maxStopLossPct` | ? |  |  |
+| `request<2>.minRiskRewardRatio` | ? |  |  |
 | `request<2>.sections` | ? |  |  |
 | `request<2>.conditions` | ? |  |  |
 | `request<2>.rules` | ? |  |  |
@@ -1287,6 +1328,9 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<3>.minAggregateScore` | ? |  |  |
 | `request<3>.minRequiredCount` | ? |  |  |
 | `request<3>.minAtrPct` | ? |  |  |
+| `request<3>.minStopLossAtrMultiple` | ? |  |  |
+| `request<3>.maxStopLossPct` | ? |  |  |
+| `request<3>.minRiskRewardRatio` | ? |  |  |
 | `request<3>.sections` | ? |  |  |
 | `request<3>.conditions` | ? |  |  |
 | `request<3>.rules` | ? |  |  |
@@ -1328,6 +1372,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<1>.minAggregateScore` | number | YES |  |
 | `request.plan<1>.minRequiredCount` | integer | YES |  |
 | `request.plan<1>.minAtrPct` | number | YES |  |
+| `request.plan<1>.minStopLossAtrMultiple` | number | YES |  |
+| `request.plan<1>.maxStopLossPct` | number | YES |  |
+| `request.plan<1>.minRiskRewardRatio` | number | YES |  |
 | `request.plan<1>.rules` | array<object> | YES |  |
 | `request.plan<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request.plan<1>.rules[].allocation` | integer | YES |  |
@@ -1350,6 +1397,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<2>.minAggregateScore` | ? | YES |  |
 | `request.plan<2>.minRequiredCount` | ? | YES |  |
 | `request.plan<2>.minAtrPct` | ? | YES |  |
+| `request.plan<2>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<2>.maxStopLossPct` | ? | YES |  |
+| `request.plan<2>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<2>.rules` | ? | YES |  |
 | `request.plan` *(anyOf variant 3)* | object | |  |
 | `request.plan<3>.operation` | string | YES |  |
@@ -1368,6 +1418,9 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<3>.minAggregateScore` | ? | YES |  |
 | `request.plan<3>.minRequiredCount` | ? | YES |  |
 | `request.plan<3>.minAtrPct` | ? | YES |  |
+| `request.plan<3>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<3>.maxStopLossPct` | ? | YES |  |
+| `request.plan<3>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<3>.rules` | ? | YES |  |
 | `request.planToken` | string | YES |  |
 | `request.confirm` | boolean | YES |  |
@@ -1927,6 +1980,26 @@ Returns: `presetId`, `deleted`
 | `expectedRevision` | integer | YES | The policy revision you read. A stale value is a conflict — nothing is deleted. |
 | `confirm` | boolean | YES | Must be true — deleting removes the ENTIRE policy and un-deploys every agent from this preset. |
 
+### `list_deployment_policies`
+
+*List Deployment Policies* — read-only
+
+Read every Arena deployment policy you own, plus the fleet roll-up — the whole arena side of
+your deployments in one call, with no preset id needed. Each policy carries its ordered
+slots (agent, rules of engagement, per-coin rules, entry strategy, conditions), its
+`revision` to echo as `expectedRevision` on the next write, the server-computed `resolution`
+for the canonical next pending session, the live regime at the effective anchor, and the
+preset's identity (display name, badge, timeframe, entry fee, current player count).
+`presetIsActive: false` marks an admin-retired arena: the policy is dormant — it schedules
+no sessions and never fires — rather than deleted. `summary` counts your policies across
+every next-entry state (deployed, scheduled, sittingOut, warming, noSession, retired,
+unconfigured) plus the distinct agents scheduled. Use `get_deployment_policy` for one
+preset's authoring context (its session catalog and coin pool).
+
+Returns: `policies`, `summary`
+
+_No parameters._
+
 ### `preview_deployment_resolution`
 
 *Preview Deployment Resolution* — read-only
@@ -2034,6 +2107,35 @@ whole Radar fleet in one call.
 Returns: `policies`, `summary`
 
 _No parameters._
+
+### `get_radar_activity`
+
+*Get Radar Activity* — read-only
+
+Read the transition journal and evaluation curve for one coin you have deployed — the
+surface that answers "why did my radar agent not fire". `events` is newest-first and carries
+one row per CHANGED discrete fact (never one per sweep): gate crossings with the gate they
+name, verdict flips, fire dispositions (FIRED, or the edge consumed/deferred/preserved and
+why), on-duty rotations, regime and section changes, and the policy-lifecycle rows. Each row
+carries the margins AS OBSERVED at that instant — score, required count and ATR against the
+minimums in force then, with the server's per-gate verdicts already projected — so a later
+agent edit cannot falsify history, and the from→to `prev*` fields make every row self-
+contained. `samples` is the bounded per-sweep score/threshold ring for the agent named by
+`samplesAgentId` — chronological (oldest first), the order a progression curve is drawn in;
+an empty array is a legitimate state (fresh deploy, rotation, ring expiry), not an error.
+`filter` narrows BEFORE the page limit: KEY drops the ambient section/regime/baseline rows,
+FIRES keeps only dispositions. Page with the opaque `nextCursor`; it encodes (occurredAt,
+id) because a timestamp alone would skip or duplicate rows when a page boundary cuts through
+one sweep's same-instant batch.
+
+Returns: `events`, `samples`, `samplesAgentId`, `samplesAgentName`, `nextCursor`
+
+| Param | Type | Req | Description |
+|---|---|:--:|---|
+| `coinId` | string | YES | Coin id (coins.id — a text identifier, not a UUID). Discover via get_coin_metadata. |
+| `limit` | integer |  | Journal rows per page, 1-200 (default 50). (default `50`) |
+| `cursor` | string |  | Opaque `nextCursor` from the previous page. It encodes (occurredAt, id) — a timestamp alone would skip or duplicate rows when a page boundary cuts th… |
+| `filter` | enum(ALL|KEY|FIRES) |  | ALL (everything), KEY (drops the ambient rows — section, regime, and baseline observations), or FIRES (fire dispositions only). Applied BEFORE the pa… (default `ALL`) |
 
 ### `upsert_radar_deployment`
 

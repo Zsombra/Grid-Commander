@@ -378,32 +378,43 @@ export function liveTradingConfig(
       maxConcurrentExposureUsd: 250,
       maxCumulativeDrawdownUsd: 500,
       maxDailyLossUsd: 300,
-      maxStopLossPct: 1,
-      minStopLossPct: 0.5,
       signalTimeoutMinutes: 10,
       maxEntryDeviationAtrMultiple: 1.5,
-      minRiskRewardRatio: 1.5,
       minTradeConviction: 0.35,
       gridMinConfidence: 0.7,
       positionSizePresets: { sizingStrategy: 'MANUAL', smallPct: 1, mediumPct: 2.5, largePct: 5 },
       positionManagement: { positionManagementPreset: 'CUSTOM', enabled: false },
-      atrMatchesStrategyTimeframe: true,
-      atrTimeframe: '1h',
       ...overrides,
       // Read-only, and last on purpose: a test must not be able to override
       // them away, because the live server always sends them.
       strategyTimeframe: '1h',
       regimeAutoDerive: true,
       regimeTimeframe: '4h',
+      atrMatchesStrategyTimeframe: true,
+      atrTimeframe: '1h',
+      // Trade-level policy: agent-owned until v14, strategy-owned since v15.
+      // The read still carries it; the write rejects it.
+      maxStopLossPct: 1,
+      minStopLossPct: 0.5,
+      minRiskRewardRatio: 1.5,
     },
   };
 }
 
-/** The three the read carries and the write rejects. */
+/**
+ * The eight the read carries and the write rejects: three since the beginning,
+ * the two ATR fields v14.0.0 dropped, and the three trade-level policy fields
+ * v15.0.0 moved onto the strategy.
+ */
 export const READ_ONLY_CONFIG_FIELDS = [
   'strategyTimeframe',
   'regimeAutoDerive',
   'regimeTimeframe',
+  'atrMatchesStrategyTimeframe',
+  'atrTimeframe',
+  'maxStopLossPct',
+  'minStopLossPct',
+  'minRiskRewardRatio',
 ] as const;
 
 export function defaultCatalog(): Catalog {
@@ -468,7 +479,6 @@ export function defaultCatalog(): Catalog {
       maxStopLossPct: 5,
       minStopLossPct: 1,
       maxEntryDeviationAtrMultiple: 1.5,
-      minRiskRewardRatio: 1.5,
       minTradeConviction: 0.35,
       gridMinConfidence: 0.7,
       maxSlippageBps: 300,

@@ -86,10 +86,12 @@ describe('the platform decides which questions it will not answer', () => {
   });
 
   it('covers every field the write schema requires', () => {
-    // All twenty. `tradingConfig` is all-or-nothing: BattleGrid rejects a
-    // partial one and resets what a partial send omits, so a field missing from
-    // this list is a field silently wiped on every create.
-    expect(TRADING_CONFIG_FIELDS).toHaveLength(20);
+    // All fifteen — twenty at v13, eighteen at v14, and v15 moved the three
+    // trade-level policy fields onto the strategy.
+    // `tradingConfig` is all-or-nothing: BattleGrid rejects a partial one and
+    // resets what a partial send omits, so a field missing from this list is a
+    // field silently wiped on every create.
+    expect(TRADING_CONFIG_FIELDS).toHaveLength(15);
     expect(TRADING_CONFIG_FIELDS).toContain('positionManagement');
     expect(TRADING_CONFIG_FIELDS).toContain('positionSizePresets');
   });
@@ -107,7 +109,9 @@ describe('a config is complete or it is refused', () => {
     expect(built.kind).toBe('config');
     if (built.kind !== 'config') return;
     expect(built.config.fields['maxLeverage']).toBe(1);
-    expect(built.config.fields['maxStopLossPct']).toBe(5);
+    // v15 removed maxStopLossPct from the write set; maxDailyTrades is the
+    // surviving field the catalog still defaults.
+    expect(built.config.fields['maxDailyTrades']).toBe(10);
   });
 
   it('carries every required field, so nothing is silently reset', () => {

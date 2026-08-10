@@ -139,15 +139,16 @@ export interface EditResult {
  *
  * **But the read is wider than the write, and that is not symmetrical.**
  * `get_intelligence_agent` returns twenty-three fields;
- * `update_intelligence_agent` accepts twenty and declares
- * `additionalProperties: false`. The three extra — `strategyTimeframe`,
- * `regimeAutoDerive`, `regimeTimeframe` — are real facts about an agent and are
- * not writable.
+ * `update_intelligence_agent` accepts eighteen (twenty before v14 dropped the
+ * two ATR fields) and declares `additionalProperties: false`. The extras —
+ * `strategyTimeframe`, `regimeAutoDerive`, `regimeTimeframe`, and since v14
+ * `atrTimeframe` and `atrMatchesStrategyTimeframe` — are real facts about an
+ * agent and are not writable.
  *
  * This function used to be `{ ...current.fields, ...changes }`, which passed all
  * twenty-three straight back, so **every edit was rejected outright**, for the
  * life of this product. The projection onto `TRADING_CONFIG_FIELDS` is the fix:
- * that list is already the twenty names a create is assembled from, so there is
+ * that list is already the names a create is assembled from, so there is
  * no second list to keep in sync.
  *
  * Completeness is checked here too. The create path has always refused an
@@ -205,8 +206,8 @@ export type BuildResult =
  * A complete `tradingConfig`, from what the platform defaults plus what the
  * operator answered.
  *
- * **Complete or nothing.** BattleGrid requires all twenty fields whenever the
- * object is supplied and resets what a partial send omits (findings-agents
+ * **Complete or nothing.** BattleGrid requires all eighteen fields whenever
+ * the object is supplied and resets what a partial send omits (findings-agents
  * F-6), so there is no "set the loss cap and leave the rest". Either every
  * field has a value or this refuses and says which do not.
  *
