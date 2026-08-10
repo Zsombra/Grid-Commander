@@ -66,19 +66,67 @@ fi
 
 # The surface record's age, which nothing else here can see.
 #
-# `tests/live/surface-freshness.test.ts` is one of nineteen live files that
-# `describe.skip` without a credential, so inside the `vitest` gate above it
-# vanishes silently — and a silent skip on the check that guards the input to
-# every conformance test is precisely the "green stops meaning anything" case
-# this script's header warns about. Named here so the summary says which it
-# was: verified, or not checked.
+# Named here so the summary says which it was: verified, or not checked. A
+# silent skip on the check that guards the input to every conformance test is
+# precisely the "green stops meaning anything" case this script's header warns
+# about.
+#
+# `--config vitest.live.config.ts` is load-bearing, not tidiness: the default
+# config now excludes `tests/live/**`, so naming the file without the live
+# config selects nothing and the gate passes having run no tests.
 #
 # It measures and does not repair. Re-probing from inside the gate would make a
 # stale record impossible to fail on, which is the one thing it exists to do.
 if [[ -n "${BATTLEGRID_API_KEY:-}" ]]; then
-  gate "freshness" npx vitest run --silent tests/live/surface-freshness.test.ts
+  gate "freshness" npx vitest run --silent --config vitest.live.config.ts \
+    tests/live/surface-freshness.test.ts
 else
   skip "freshness" "no BATTLEGRID_API_KEY; the surface record's age is unverified"
+fi
+
+# The rest of the live probes.
+#
+# They used to ride inside the `vitest` gate, because `vitest.config.ts`
+# included them: without a credential, thirty checks that never ran reported as
+# a pass; with one, all thirty ran *in parallel* against a real trading account
+# — the sweep `vitest.live.config.ts` pins `fileParallelism: false` to prevent,
+# after a concurrent run on 2026-08-07 produced nine phantom failures that a
+# serial re-run collapsed to two.
+#
+# Opt-in rather than automatic for the reason `serving` is: it takes about nine
+# minutes against a rate-limited platform, and a gate that makes the fast path
+# expensive is a gate people route around. Named either way, so "did not run"
+# is stated rather than assumed.
+if [[ "${CI_LIVE:-}" == "1" ]]; then
+  if [[ -n "${BATTLEGRID_API_KEY:-}" ]]; then
+    gate "live" npm run --silent test:live
+  else
+    skip "live" "CI_LIVE=1 but no BATTLEGRID_API_KEY; the probes cannot run"
+  fi
+else
+  skip "live" "opt in with CI_LIVE=1 and a key — ~9 min, serial, against the real account"
+fi
+
+# The OAuth discovery document, re-fetched.
+#
+# `tests/architecture/oauth-conformance.test.ts` runs entirely offline against
+# `docs/battlegrid-oauth-metadata.json`, which makes that recording the thing
+# every other OAuth check trusts. A recording nothing re-fetches can quietly
+# stop describing the platform, and then the guard built on it passes while a
+# user is sent to an endpoint that has moved.
+#
+# This one needs **no credential**, which is the reason to run it by default
+# rather than an excuse to leave it optional. Reachability is probed first so
+# that a network that did not answer is reported as *unchecked* — the same
+# distinction between unreadable and empty the product makes everywhere else.
+# A gate that goes red because a call did not complete teaches its readers to
+# disregard red.
+DISCOVERY_URL="https://mcp.battlegrid.trade/.well-known/oauth-authorization-server"
+if curl -sSf --max-time 10 -o /dev/null "$DISCOVERY_URL" 2>/dev/null; then
+  gate "oauth-live" env BATTLEGRID_OAUTH_LIVE=1 npx vitest run --silent \
+    --config vitest.live.config.ts tests/live/oauth-metadata.test.ts
+else
+  skip "oauth-live" "the discovery endpoint did not answer; the recorded document is unverified"
 fi
 
 gate "build" npm run --silent build
