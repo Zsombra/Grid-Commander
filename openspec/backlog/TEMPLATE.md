@@ -8,6 +8,7 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 change: ""
 capability: ""
+github: ""                   # issue number mirroring this item, or `none` + a reason in the body
 blocked_by: []
 tags: []
 ---

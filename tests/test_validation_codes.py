@@ -335,6 +335,26 @@ def _(p, t):
     p.backlog(change="a-change", status="open")
 
 
+@case("backlog_not_mirrored", "warning")
+def _(p, t):
+    # Created on the day the mirror rule landed, so it is in scope for it.
+    p.backlog(created="2026-08-10", github="")
+
+
+@case("backlog_github_malformed")
+def _(p, t):
+    # A URL rather than the bare number. Deliberate: a URL carries the repo,
+    # and an item that outlives a move would point at the old one.
+    p.backlog(created="2026-08-10", github="https://github.com/o/r/issues/87")
+
+
+@case("backlog_optout_unexplained", "warning")
+def _(p, t):
+    # Opting out is a claim, and a claim with no stated reason is silence.
+    p.backlog(created="2026-08-10", github="none",
+              body="# An item\n\n## What\n\nA thing, with no reason for the opt-out.\n")
+
+
 @case("backlog_in_progress_without_change", "warning")
 def _(p, t):
     p.backlog(status="in-progress", change="")
@@ -679,6 +699,46 @@ def emitted_codes() -> tuple:
         else:
             dynamic += 1
     return literal, dynamic
+
+
+class MirrorRuleTest(ProjectTestCase):
+    """The mirror rule's shape, beyond "the code fires".
+
+    A fixture proves a code *can* fire. It does not prove the rule is scoped
+    the way its doctrine claims, or that it accepts a valid link — and a rule
+    that fires on everything is routed around within a week. Both directions
+    are asserted here for the reason GitHub #87 records: ten of sixteen
+    architecture guards passed green with their matcher dead, because nothing
+    ever fed them a case they were supposed to accept *or* reject.
+    """
+
+    def test_accepts_a_linked_item(self):
+        self.project.backlog(created="2026-08-10", github="87")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_github_malformed")
+
+    def test_accepts_an_explained_opt_out(self):
+        self.project.backlog(
+            created="2026-08-10", github="none",
+            body="# An item\n\n## What\n\nPoints at another item; no GitHub issue of its own.\n")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_optout_unexplained")
+
+    def test_does_not_flag_items_older_than_the_rule(self):
+        # The scoping the doctrine claims: thirty-one items predate the rule,
+        # and flagging them every run would train everyone to skim warnings.
+        self.project.backlog(slug="an-old-item", created="2026-07-27", github="")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
+
+    def test_does_flag_an_item_created_on_the_boundary(self):
+        # The boundary is inclusive, so the rule binds from the day it landed
+        # rather than the day after.
+        self.project.backlog(created="2026-08-10", github="")
+        self.assertCode(self.project.run(*VALIDATE), "backlog_not_mirrored", "warning")
+
+    def test_does_not_flag_a_closed_item(self):
+        # A finished item needs no mirror; the issue it had is closed with it.
+        self.project.backlog(created="2026-08-10", github="", status="done")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
 
 
 class CodeCoverageTest(unittest.TestCase):

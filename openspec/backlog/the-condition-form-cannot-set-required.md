@@ -8,6 +8,7 @@ created: 2026-08-10
 updated: 2026-08-10
 change: ""
 capability: strategy-authoring
+github: "88"
 blocked_by: []
 tags: [battlegrid, v16, ui, strategy-authoring]
 ---

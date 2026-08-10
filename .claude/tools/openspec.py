@@ -421,6 +421,24 @@ def _as_list(value) -> list:
     return [value] if str(value).strip() else []
 
 
+#: A `github:` value that names an issue. The bare number, not a URL — a URL
+#: carries the repo, and an item that moves repos would then carry a link to
+#: the old one. `none` is handled separately as a deliberate opt-out.
+GITHUB_REF = re.compile(r"\d+")
+
+#: The date the mirror-every-finding rule landed (tracking.md §7).
+#:
+#: Items created before it are not flagged. That is a deliberate choice and not
+#: a grandfather clause hiding debt: thirty-one open items predate the rule, and
+#: emitting thirty-one warnings on every run would teach everyone to skim past
+#: the warning block — which costs more than the backfill buys. The backfill is
+#: tracked as its own item rather than as recurring noise.
+#:
+#: Compared as an ISO string, which sorts correctly and needs no date parsing.
+#: An item with no `created` date is treated as new, so a malformed item is
+#: caught rather than exempted.
+MIRROR_RULE_FROM = "2026-08-10"
+
 ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
 ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
 ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
@@ -447,6 +465,9 @@ class BacklogItem:
         self.updated = str(meta.get("updated", "")).strip()
         self.blocked_by = _as_list(meta.get("blocked_by", []))
         self.tags = _as_list(meta.get("tags", []))
+        # The mirror on GitHub. `""` means unmirrored; `none` is a deliberate
+        # opt-out that must say why in the body. See tracking.md §7.
+        self.github = str(meta.get("github", "")).strip()
 
     @staticmethod
     def _title_from_body(body: str) -> str:
@@ -551,6 +572,27 @@ def validate_backlog(root: Path, strict: bool) -> list:
         if item.capability and not main_spec_path(root, item.capability).is_file():
             found.append(diag("warning", "backlog_capability_not_found",
                               f"{item.id}: capability '{item.capability}' has no spec yet", rel))
+
+        # Every open item is mirrored as a GitHub issue, so a finding is visible
+        # to someone who has not cloned the repo. The backlog stays canonical —
+        # this is a mirror, not a second tracker (tracking.md §7).
+        #
+        # Enforced rather than documented, for the reason `failure-is-explained`
+        # gives about its own rule: thirty hand-rolled branches accumulated
+        # because nothing stopped the thirty-first.
+        if item.is_open and not item.github and item.created >= MIRROR_RULE_FROM:
+            found.append(diag("warning", "backlog_not_mirrored",
+                              f"{item.id}: open with no GitHub issue", rel,
+                              "file one and set `github: <number>`, or `github: none` "
+                              "with a reason in the body"))
+        elif item.github and item.github != "none" and not GITHUB_REF.fullmatch(item.github):
+            found.append(diag("error", "backlog_github_malformed",
+                              f"{item.id}: github '{item.github}' is not an issue number "
+                              f"or 'none'", rel, "use the bare number, e.g. `github: 87`"))
+        elif item.github == "none" and item.is_open and "github" not in item.body.lower():
+            found.append(diag("warning", "backlog_optout_unexplained",
+                              f"{item.id}: opts out of a GitHub issue without saying why", rel,
+                              "an opt-out is a claim — state it in the body"))
         if strict and item.is_open and not item.updated:
             found.append(diag("warning", "backlog_never_updated",
                               f"{item.id}: no `updated` date", rel))

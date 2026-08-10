@@ -85,6 +85,7 @@ created: 2026-07-20
 updated: 2026-07-25
 change: ""                   # change-id once work starts
 capability: ""               # openspec/specs/<capability> this concerns
+github: "87"                 # the issue mirroring this item — bare number, or `none` + a reason (§7)
 blocked_by: []               # other item ids
 tags: [checkout, payments]
 ---
@@ -175,7 +176,84 @@ Slash commands: `/board` (start), `/backlog` (view and file), `/handoff` (end).
 
 ---
 
-## 7. Validation
+## 7. Every finding is mirrored as a GitHub issue
+
+**When you find something, file it in both places, in the same breath.** A
+backlog item is invisible to anyone who has not cloned the repo; a GitHub issue
+is where the operator actually looks. A finding that exists only in
+`openspec/backlog/` is a finding nobody outside the session will read.
+
+```
+finding ──► backlog item          the canonical record: validated, linked to
+            (owns it)             a capability and a change, versioned with the code
+                │
+                └──► GitHub issue  the mirror: visible, assignable, discussable
+                     (points back)
+```
+
+**The backlog stays canonical.** This is a mirror, not a second tracker — §1's
+rule still binds, and the way it survives here is that the two are never both
+authoritative. The item carries the state (`status`, `priority`, `change`,
+`capability`); the issue carries the argument and the evidence, because that is
+what a reader without the repo needs. When they disagree, the item is right.
+
+### What to mirror
+
+Everything §4 says to file. If it earned a backlog item, it earns an issue —
+the two decisions are the same decision, so there is no separate judgement to
+make and no place for one to be skipped.
+
+### The link, both ways
+
+- The item's frontmatter carries `github: "87"` — the **bare number**, not a
+  URL. A URL carries the repo, and an item that outlives a move would then
+  point at the old one.
+- The issue body names the backlog id in its first lines, so a reader who lands
+  on the issue can find the canonical record.
+
+### Opting out
+
+`github: none` is allowed and must **say why in the body**. An opt-out is a
+claim, checked the same way an exemption is in `failure-is-explained.test.ts`:
+silence is not an opt-out. The honest cases are narrow — an item that duplicates
+an existing issue's scope, or one whose whole content is a pointer to another
+item.
+
+### Writing the issue
+
+The issue is read by someone with no context and no checkout, so it carries what
+a backlog item can assume and an issue cannot:
+
+- **What is actually true**, with `file:line` or a payload — not "X is broken".
+- **Why it matters**, which is what earns the priority.
+- **What would settle it** — the first concrete step, and what it needs
+  (a key, a decision, an upstream fix). Name the blocker if there is one.
+- **Where the reasoning came from**, especially if it might be wrong. #84 was
+  filed on a premise that turned out false; the correction was cheap because
+  the original reasoning was written down and could be checked.
+
+### When a finding corrects an earlier one
+
+Update the issue rather than filing a second. Keep the original text under a
+`<details>` fold with a note saying what was wrong. A ticket whose history is
+deleted teaches nobody why the mistake was reachable.
+
+### Enforced, not documented
+
+`validate` warns on any open item created on or after **2026-08-10** with no
+`github:` value, and errors on a malformed one. Items older than that date are
+not flagged: thirty-one open items predate the rule, and thirty-one recurring
+warnings would train everyone to skim the warning block, which costs more than
+the backfill buys.
+
+A rule nothing enforces is a rule that gets skipped. That is not a guess here —
+`failure-is-explained.test.ts` exists because thirty branches hand-rolled their
+own failure sentence, and its header names the cause: *nothing stopped the
+thirty-first.*
+
+---
+
+## 8. Validation
 
 `validate` checks the backlog alongside the specs:
 
@@ -198,7 +276,7 @@ system dies: work finishes and nobody updates the record.
 
 ---
 
-## 8. Merge conflicts
+## 9. Merge conflicts
 
 Backlog items are one file each, so parallel agents do not collide.
 

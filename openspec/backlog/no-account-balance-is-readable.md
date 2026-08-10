@@ -8,6 +8,7 @@ created: 2026-08-10
 updated: 2026-08-10
 change: ""
 capability: agent-understanding
+github: "84"
 blocked_by: []
 tags: [battlegrid, risk, agent, surface, unread-payload]
 ---

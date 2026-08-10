@@ -183,6 +183,11 @@ python3 .claude/tools/openspec.py archive <change> --apply
 - Do not archive a change that fails validation
 - Do not leave a deferral unfiled — if you decide not to do something, file a
   backlog item before moving on
+- Do not file a finding in only one place — **every backlog item gets a GitHub
+  issue mirroring it**, linked by `github: <number>` in its frontmatter. The
+  item is canonical; the issue is what anyone without a checkout can read.
+  `github: none` is allowed and must say why in the body. See
+  `.claude/references/tracking.md` §7 — `validate` enforces it
 - Do not end a session that changed anything without a JOURNAL.md entry
 - Do not duplicate a change's tasks in a backlog item — link and stop
 - Do not let a design ticket change behavior — mark it requires-spec-change

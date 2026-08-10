@@ -8,6 +8,7 @@ created: 2026-08-10
 updated: 2026-08-10
 change: ""
 capability: strategy-authoring
+github: "85"
 blocked_by: [v15-trade-level-policy-is-declared-but-inert]
 tags: [battlegrid, v15, risk, measurement]
 ---
