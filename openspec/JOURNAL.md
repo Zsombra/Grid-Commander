@@ -1,5 +1,67 @@
 # Journal
 
+## 2026-08-10 (check-in 12:30Z) — the exit config is writable after all, and the attribution needs splitting
+
+**The fix is not blocked.** `positionManagement` is field #15 of the fifteen
+writable agent `tradingConfig` fields — the v15/v16 trade-level-policy p1
+never touched it. What is inside it has been shaping every exit all
+session:
+
+```
+breakEvenEnabled              = true
+breakEvenTriggerTpProgressPct = 40 / 50 / 45     Undertow / Breakwater / Vanguard
+trailingEnabled               = true
+trailingType                  = "ATR"
+trailingAtrMultiple           = 2 / 1.5 / 2
+trailingBufferPct             = 0.1
+```
+
+Every outcome observed fits a four-regime model:
+
+| regime | outcome | examples |
+|---|---|---|
+| never reaches the break-even trigger | full stop loss | SKHX −$0.027, most losers |
+| reaches break-even, then retraces | **scratch ≈ $0** | HYPE +$0.0040, +$0.0034 |
+| travels well past break-even | ATR trail exit, partial | BRENTOIL 56%, FARTCOIN 43% |
+| straight to target | `TAKE_PROFIT` | MOODENG 100% |
+
+**Attribution corrected this cycle.** I leaned hard on break-even last turn.
+Counting properly: **scratch wins under $0.02 are 2 of 9** — both HYPE. The
+other seven wins (MELANIA +$0.073, MOODENG +$0.365, SKHX +$0.088 and
++$0.109, BNB +$0.049, FARTCOIN +$0.218, BRENTOIL +$0.086) are genuine
+partial captures. So **break-even explains the two extreme 3% cases, and the
+ATR trail at 1.5–2× explains the 43–56% ones.** Two mechanisms, not one.
+Both live in `positionManagement`; both are writable today. The
+recommendation is unchanged but the diagnosis should not be collapsed into
+a single cause.
+
+**This cycle's close was a real loss, not a noise stop.** ENA short,
+**−$0.1457 on a −1.19% adverse move**, 242 minutes — the second largest
+adverse move in the record. Not every loser is the stop-inside-the-noise
+story, and this one is not.
+
+**The divergence continues, now four cycles deep:**
+
+| closed | win rate | realised RR | break-even needed |
+|---|---|---|---|
+| 26 | 27% | 1.25 | 44% |
+| 27 | 30% | 1.20 | 45% |
+| 29 | 31% | 1.11 | 47% |
+| **30** | **30%** | **1.09** | **48%** |
+
+**Realized: 30 closed, 9W/21L, −$1.1359.** Book recovered to **+$0.5466**
+across six — FARTCOIN +$0.321, LDO +$0.194, a fresh ENA short +$0.033, and
+TRUMP deteriorating to −$0.072.
+
+**Long/short**: LONG 9 closed, 2W, **1 TP**, −$0.2369 · SHORT 21 closed, 7W,
+**0 TP**, −$0.8990. Twenty-one shorts, still no take-profit.
+
+**Outstanding and unanswered**: the operator was offered a break-even A/B
+(raise Breakwater's trigger to ~75%, keep Undertow at 40% as control) and
+has not ruled. Nothing was changed.
+
+Server v16.0.0, no retest per cadence. **Meter** dead.
+
 ## 2026-08-10 (check-in 11:05Z) — the split resolved as predicted, and win rate is now provably the wrong metric
 
 **Both closes came from the marginal group**, which is what the split
