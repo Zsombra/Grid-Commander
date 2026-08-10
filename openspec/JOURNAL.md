@@ -1,5 +1,63 @@
 # Journal
 
+## 2026-08-10 (check-in 13:55Z) — the A/B was withdrawn, and the exit rule turns out to be backtestable
+
+**The operator caught a confound in the break-even A/B I proposed, and it
+was deeper than the one they named.** The plan was to raise Breakwater's
+break-even trigger and use Undertow as control. They pointed out the two
+agents run different strategies. They do — Cannae vs Salamis — and beyond
+the signals the pair also differs in `minAtrPct` (0.50% vs 0.25%, so
+different coin universes by volatility), in radar coins entirely, in trade
+volume (21 closes vs 9), and in direction mix.
+
+But the disqualifying one is that **`trailingAtrMultiple` is already 2 on
+Undertow and 1.5 on Breakwater.** The proposal would have varied *two* exit
+parameters at once and attributed the result to one. That is not an A/B
+test; it is two different machines that also happen to differ in the
+variable of interest. **Proposal withdrawn.**
+
+A properly matched live test is possible — Vanguard is idle at zero trades
+and could be a paired arm on the same strategy and coins, differing in one
+field. It is still the wrong move: it doubles model spend, which is the one
+cost that cannot currently be measured and already runs several times the
+trading loss. Spending the invisible thing to measure the visible one is
+backwards.
+
+### The exit rule can be replayed on trades that already happened
+
+Checked rather than assumed: **20 of 20 closed trades return candle charts
+from `get_trade_chart`** — 15 to 164 candles each, **zero unavailable**. The
+`UNAVAILABLE` hit earlier was a trade that had closed minutes before; the
+chart freezes after a delay.
+
+That makes counterfactual replay the right instrument. The exit rule is a
+**pure function of the price path**, and every path is recorded. So the
+question "where would the stop have sat at a 75% break-even trigger, and
+would price have reached it before the target" is answerable for the whole
+closed history at once — free, immediate, and with **zero confounds**,
+because it is the same trades rather than a comparable set.
+
+The limitation to hold onto: candles hide intrabar path. Where a
+hypothetical stop and the target fall inside one bar, which came first is
+unknowable, and resolving those in the rule's favour would bias the result
+optimistic. They must be counted as ambiguous and reported separately.
+
+**A narrow but real gap in the p1 that PR #69 filed.** That item says no
+backtest API means no strategy claim can be tested. True of *entries* —
+whether a signal would have fired is unknowable. It is **not** true of
+*exits*: the entry already happened and is on the record, so the exit rule
+can be tested without one. The gap sits exactly where this fleet's defect
+lives.
+
+**This cycle: nothing closed.** Book **+$0.6331** across six. ENA's fresh
+short ran +$0.033 → **+$0.239**; FARTCOIN faded +$0.344 → **+$0.190**,
+giving back 45% of its peak while still open — the round trip visible
+mid-flight again. Realized unchanged: 30 closed, 9W/21L, −$1.1359, WR 30%,
+realised RR 1.09.
+
+Server v16.0.0, no retest per cadence. **Meter** dead. The replay build was
+offered and has not been ruled on; nothing was built or changed.
+
 ## 2026-08-10 (check-in 12:30Z) — the exit config is writable after all, and the attribution needs splitting
 
 **The fix is not blocked.** `positionManagement` is field #15 of the fifteen
