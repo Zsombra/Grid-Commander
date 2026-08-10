@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-08-10 (check-in 15:20Z) — the longest hold in the fleet's history captured 27%
+
+**FARTCOIN closed +$0.0932 on a +0.77% move after 769 minutes** — **the
+longest hold this fleet has ever run**, past TRUMP's 754. Peak observed was
++$0.3437, so it **captured 27%**, and it did not reach target.
+
+**That answers a question posed four cycles ago.** After the time-decay fix
+I asked whether long holds *convert* or merely *postpone*. The two longest
+holds in the fleet's history are now both in: TRUMP at 754 minutes closed
+**−$0.1058**, and FARTCOIN at 769 minutes closed **+$0.0932 at 27%
+capture**. Neither reached a take-profit. On the evidence available,
+duration alone does not convert — it postpones. The only trade that ever
+reached target, MOODENG, did it in 329 minutes, well under the median.
+
+**Capture table, now with a repeat on the same coin in both directions:**
+
+| | capture |
+|---|---|
+| MOODENG | **100%** (the only TAKE_PROFIT) |
+| BRENTOIL | 56% |
+| FARTCOIN | 43%, then **27%** |
+| HYPE | 3%, then 3% |
+| SKHX | 0% |
+
+FARTCOIN has now round-tripped substantially twice, as HYPE scratched
+twice. Per-coin repeatability is holding up as the pattern.
+
+**The divergence is five cycles deep and monotonic in RR:**
+
+| closed | win rate | realised RR | break-even |
+|---|---|---|---|
+| 26 | 27% | 1.25 | 44% |
+| 27 | 30% | 1.20 | 45% |
+| 29 | 31% | 1.11 | 47% |
+| 30 | 30% | 1.09 | 48% |
+| **31** | **32%** | **1.07** | **48%** |
+
+**Realized: 31 closed, 10W/21L, −$1.0428.** The long book improved on
+FARTCOIN's win — LONG 10 closed, 3W, **1 TP**, −$0.1438 (from −$0.2369).
+SHORT unchanged at 21 closed, 7W, **0 TP**, −$0.8990. Twenty-one shorts,
+still no take-profit.
+
+**Book +$0.5012** across six, and it has inverted: the two shorts now carry
+it — ENA **+$0.3521** (from +$0.2388) and LDO **+$0.2823** — while every
+long bleeds (TRUMP −$0.0616, WIF −$0.0667, MELANIA +$0.0114). A fresh
+BRENTOIL short opened at −$0.0163.
+
+Server v16.0.0, no retest per cadence. **Meter** dead. Replay build still
+unauthorised; nothing built or changed.
+
 ## 2026-08-10 (check-in 13:55Z) — the A/B was withdrawn, and the exit rule turns out to be backtestable
 
 **The operator caught a confound in the break-even A/B I proposed, and it
