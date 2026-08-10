@@ -1,5 +1,77 @@
 # Journal
 
+## 2026-08-10 (ci.sh) — thirty probes stop being silent passengers, and one gate nearly deleted itself
+
+**`a-probe-that-vanishes-is-not-a-probe` archived.** `platform-mapping` already
+carried the rule — *a check that disappears from the summary when it cannot run
+is indistinguishable from one that ran and passed* — written for the freshness
+gate. Thirty other live probe files disappeared exactly that way, and one of
+them did worse than vanish.
+
+`vitest.config.ts` included `tests/**` and excluded only node_modules and
+`tests/db/**`, so `gate "vitest"` reached all thirty. **Keyless** they
+`describe.skip` silently inside a gate reporting `ok`. **With a key they all ran
+in parallel** against the real trading account — the sweep
+`vitest.live.config.ts` pins `fileParallelism: false` to prevent, after the
+2026-08-07 concurrent run produced nine phantom failures a serial re-run
+collapsed to two. And `HANDOFF.md`'s "Start Here" told the next session to run
+`ci.sh` with a key.
+
+**The keyless half was known.** The freshness gate's own comment names it —
+*"one of nineteen live files that `describe.skip` without a credential, so
+inside the `vitest` gate above it vanishes silently"*. The keyed half was not
+considered, and the count had grown from nineteen to thirty.
+
+### The change nearly deleted the check it was written to protect
+
+Excluding `tests/live/**` makes `npx vitest run tests/live/surface-freshness.test.ts`
+select **nothing** — the gate passes having run zero tests. Tasks 1.1 and 1.2
+were bound to one commit for that reason, and the guard now asserts the live
+config is named on every single-file live gate. A fix that silently removes the
+thing it protects is the worst available outcome here, and it was one line away.
+
+### Shipped
+
+- `tests/live/**` out of the default config. Still compiled — `tsc --showConfig`
+  resolves all thirty, so a probe that stops parsing still fails `typecheck`.
+- A named **`live`** gate, opt-in on `CI_LIVE=1`, through `npm run test:live`
+  so the serial pinning applies. Opt-in for the reason `serving` is: nine
+  minutes against a rate-limited platform, and a gate that makes the fast path
+  expensive is one people route around.
+- **`oauth-live` runs by default** (#117). It needs no credential and nothing
+  had ever run it, while `oauth-conformance.test.ts` trusts the recording it
+  verifies. Reachability is probed first, so an unanswered network is
+  *unchecked* rather than red — tested against a 404 and a dead host.
+
+### Every assertion asks a tool, not a config file
+
+`tests/architecture/live-probes-are-named.test.ts` uses `vitest list --filesOnly`
+for selection and `tsc --showConfig` for compilation — both the real resolvers,
+0.4s for the latter. A check that read the `exclude` array as text would pass on
+a config whose glob had stopped matching, which is the defect it exists to
+guard against.
+
+**Proven by mutation, and two of the first four did not fail.** Both were
+checked rather than assumed: an exclusion widened to `tests/**` exits vitest
+with `No test files found, exiting with code 1` — the gate fails loudly even
+though the guard cannot report on itself — and removing one `skip "live"` arm
+left the other, since the live gate has two.
+
+**And the guard's own first draft carried the #87 bug**: reading a
+line-continued shell gate with `[^\n]*(?:\\\n[^\n]*)*`, where the greedy
+class eats the backslash so the alternation never matches and only the first
+line is seen. Second time in one session that shape appeared *while writing a
+check against it*. That is the argument for mutation-testing every guard, made
+twice in a day.
+
+**Gates**: `./scripts/ci.sh` green three ways — keyless, with a key
+(`freshness ok`, no sweep), and with `CI_LIVE=1` and a key reporting **every
+gate ok** including the full serial live suite. First time the script has run
+every gate it has. 1,986 vitest, 81 db, 243 python harness.
+
+**Also**: `HANDOFF.md`'s "Start Here" corrected — it was what aimed the next
+session at the trap.
+
 ## 2026-08-10 (live-proven) — freshness green, and THE .0 shows the whole thesis in one reading
 
 **The operator supplied a key and the branch is now live-verified.** Everything

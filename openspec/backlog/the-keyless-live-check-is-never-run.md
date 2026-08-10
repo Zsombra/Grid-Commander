@@ -2,11 +2,11 @@
 id: the-keyless-live-check-is-never-run
 title: The one live check that needs no credential is the one nothing runs
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "a-probe-that-vanishes-is-not-a-probe"
 capability: battlegrid-connection
 github: "117"
 blocked_by: []
@@ -59,3 +59,16 @@ answers `Missing or invalid Authorization header`, so the MCP handshake is
 auth-gated and the server version is unreadable without one. The discovery
 document is the only part of the platform contract verifiable without
 credentials, which is what makes running it worth something.
+
+## Done, 2026-08-10 — `a-probe-that-vanishes-is-not-a-probe`
+
+Shipped together, because both were the same surface: `ci.sh`'s gate list.
+`tests/live/**` left the default vitest config, the freshness gate moved onto
+the live config in the same commit (without which it would have selected
+nothing and passed having run no tests), the live suite became a named gate
+opt-in on `CI_LIVE=1`, and `oauth-live` now runs by default behind a
+reachability probe so an unanswered network is *unchecked* rather than red.
+
+Proven three ways: `./scripts/ci.sh` green keyless, green with a key
+(`freshness ok`, no parallel sweep), and green with `CI_LIVE=1` and a key —
+**every gate ok**, including the full serial live suite.

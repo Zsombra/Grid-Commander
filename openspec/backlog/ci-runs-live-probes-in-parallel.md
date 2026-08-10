@@ -2,11 +2,11 @@
 id: ci-runs-live-probes-in-parallel
 title: ci.sh runs the live probes through the parallel config — the serial pinning only covers `npm run test:live`
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "a-probe-that-vanishes-is-not-a-probe"
 capability: harness-integrity
 github: "118"
 blocked_by: []
@@ -61,3 +61,16 @@ first, so the sweep described here did not happen to the account.
 Option 2 in the issue — give `ci.sh` its own `npm run test:live` gate and
 exclude live from the vitest gate — matches the existing `freshness` /
 `serving` shape most closely.
+
+## Done, 2026-08-10 — `a-probe-that-vanishes-is-not-a-probe`
+
+Shipped together, because both were the same surface: `ci.sh`'s gate list.
+`tests/live/**` left the default vitest config, the freshness gate moved onto
+the live config in the same commit (without which it would have selected
+nothing and passed having run no tests), the live suite became a named gate
+opt-in on `CI_LIVE=1`, and `oauth-live` now runs by default behind a
+reachability probe so an unanswered network is *unchecked* rather than red.
+
+Proven three ways: `./scripts/ci.sh` green keyless, green with a key
+(`freshness ok`, no parallel sweep), and green with `CI_LIVE=1` and a key —
+**every gate ok**, including the full serial live suite.
