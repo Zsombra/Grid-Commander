@@ -1389,6 +1389,64 @@ capture claims no gap on purpose. And the proposals-FK suspicion above means
 `propose_agent_change` may error on exactly the deployment mode the operator
 runs — one live call settles it.
 
+## 2026-08-07 — the research map, and the measurements that kept falsifying it
+
+**Did**: `_PM/TRADE_CATEGORIES_AND_MATHEMATICAL_FAMILIES.md` — 13 trade
+categories mapped onto a 16-operator mathematical algebra, a benchmark spec, and
+a measurement protocol. Probed live and read-only against `battlegrid v11.0.0`:
+84 metrics, 16 transforms, all 84 signal definitions, 715 realised trades from 20
+public agents, 2,820 joined coin-bars, and a 40-coin × 84-signal cross-section.
+Four backlog items filed: `the-surface-map-is-two-majors-stale` (p1),
+`nothing-records-what-the-signals-said` (p1),
+`a-stop-inside-the-noise-looks-like-a-tight-stop` (p1),
+`four-signals-depend-on-a-timeframe-columns-cannot-reach` (p2). PR #69, 7
+commits, merged `main` at 95bb95a.
+
+**State**: PR #69 open and mergeable, docs-only (3 files). Local `./scripts/ci.sh`
+green — Actions is `workflow_dispatch`-only here, so that is the real gate.
+Nothing was written to BattleGrid; the whole session was read-only by
+construction (tools filtered on the server's own `readOnlyHint`). Benchmark v0 is
+specified and **not built** — that was the operator's call, and the repo work it
+implies is filed rather than started.
+
+**Next**: `/propose` `nothing-records-what-the-signals-said` (p1). It is the
+structural unlock — there is no backtest API and the history reads cap at 100
+candles, so every strategy claim in the doc that sits at evidence tier T3/T4 is
+there only because no forward data exists. Every day without a recorder is a day
+of signal history permanently lost.
+
+**Watch out**:
+
+- **Three claims in the doc were falsified by later measurement in the same
+  session.** The "two majors stale" surface finding was wrong (the freshness gate
+  proves `surface.json` is current; the real gap is that the probe records
+  *shapes*, so the vocabulary's values are unrecorded). C2's
+  `mtf_pullback_long/short` were specified `required: true` and fire **0/40** —
+  that strategy would never have traded. C5's `structure_*` signals need a
+  `HIGHER` table its spec omitted. All corrected in place, with the original
+  claim and its disproof both visible. Expect more of this: the doc's Part D is
+  the only empirical section and it is thin.
+- **Nothing in Part D is statistically established.** 23 agents, 776 trades, ~2
+  weeks, one market regime (a downtrend). The headline module finding — structure
+  zones, +0.898/trade — is **two agents, 51 of 61 trades from one**. The best
+  agent in the whole population has 51 trades; you need 150–200 to see a 5pp
+  difference.
+- **`maxDailyLossUsd: 0` and `maxCumulativeDrawdownUsd: 0` mean OFF, not zero.**
+  The account's own live agent THE .0 carries both, plus a 1% stop ceiling
+  against a 1.25% six-bar noise floor, WALTHER, 34 daily trades, and a $250
+  exposure ceiling on a $49 balance. Diagnosed read-only and **left untouched** —
+  the operator asked for the breakdown first. `a-stop-inside-the-noise-looks-like-a-tight-stop`
+  covers making it visible; retuning it is a separate, unfiled decision.
+- **Signal scores are graded, not binary**, and steeply so — `rsi_oversold`
+  scores 0.10 at RSI 27 against 0.50 at RSI 15. A high aggregate means signals
+  fired *deeply*, not that many fired. Nine signals also document scores above
+  1.0 while `simulate_aggregate_score` declares `[0,1]`, so offline tuning
+  understates the aggregate wherever those are weighted.
+- **The two research scripts live in the session scratchpad, not the repo.**
+  They are gone when this container is reclaimed. `tools/probe_mcp_surface.py`
+  provides the transport; the analysis was ad hoc and would need rewriting.
+
+
 ## 2026-08-07 (wrap-up) — the documentation matches the product, for the first session
 
 **Did**: the branch documentation brought current end to end, so the next
