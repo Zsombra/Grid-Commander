@@ -1,5 +1,73 @@
 # Journal
 
+## 2026-08-10 (the exposure row) — every live agent's cap is above the money behind it
+
+**`a-cap-above-the-money-cannot-bind` archived**, closing the last unbuilt row of
+the p1 `a-stop-inside-the-noise-looks-like-a-tight-stop`. `get_account_state` is
+read for the first time in the product's life, and the exposure cap now renders
+against the balance funding it.
+
+### The live run found more than the item described
+
+The item named `THE .0`: a $250 cap against a $43.67 balance. True. But:
+
+```
+Breakwater: cap $45  vs balance $43.60 (1.03×)  ← cannot bind
+Undertow:   cap $45  vs balance $43.60 (1.03×)  ← cannot bind
+Vanguard:   cap $45  vs balance $43.60 (1.03×)  ← cannot bind
+THE .0:     cap $250 vs balance $43.60 (5.73×)  ← cannot bind
+Volatilis:  cap $250 vs balance $43.60 (5.73×)  ← cannot bind
+```
+
+A **$45** cap on a **$43.60** balance looks carefully chosen. It is over by
+$1.40, so it cannot bind either — and nobody would find that by reading the
+number, which is the entire argument for the panel. **All five live agents have
+a non-binding exposure cap**; only the throwaway probes at $10 are genuinely
+capped.
+
+The balance moves between reads within one probe run — $43.597857, $43.594913,
+$43.588892 — because the account trades while it is read. Carried as sent, not
+rounded to a tidier figure that would imply more stability than exists.
+
+### The port split turned on a contract, not on tidiness
+
+`AccountPort` says *one question, so one port* and answers identity. The
+decisive fact is sharper than that: `subjectFor` **swallows every failure into
+`null`**, deliberately, because a deployment that cannot establish its own
+account id must still work. A balance read has the opposite contract — its whole
+value is telling *unreadable* from *empty*.
+
+One interface cannot honestly carry both, and merging them would mean every
+future reader has to remember which methods lie about failure. So
+`AccountStatePort` sits beside it, with that reason written into the port.
+
+### What the spec forbids, and why each is guarded
+
+- **No apportionment.** `get_agent_fund_allocation` claims to divide the balance
+  per agent and answered `committedUsd: 0` for an agent holding $17.45 of margin
+  at the same moment (#107). An architecture test now asserts the product
+  reaches that tool nowhere, with a vacuity guard checking the tool still exists
+  on the surface — otherwise the rule would be asserting the absence of
+  something that was never there.
+- **No comparison against an unbounded cap.** `removesTheLimit()` already names
+  those; a multiple against a limit that does not exist would read as though the
+  agent were capped when the point is that it is not.
+- **The balance is the account's.** One balance funds every agent, so a
+  per-agent reading would overstate it by the number of agents sharing it. Said
+  on the surface, not just in the type.
+- **`hasAccount: false` is not a balance of zero**, and an unreadable balance
+  costs only the comparison — the panel's other three sections still answer.
+
+**Deferred and filed**: `agentSlots` (live: `{limit 3, used 3, remaining 0}` —
+the account is at its cap and `/agents` gives no warning) and `mcpWagerEnabled`
+come free with the read and are deliberately unrendered. Slots belong beside the
+roster, the wager flag beside the arena; putting them on a limits page because
+the read carried them is how a surface becomes a payload dump. GitHub **#121**.
+
+**Gates**: `./scripts/ci.sh` green — **1,998 vitest**, 81 db, 243 python
+harness. The live probe was run through `vitest.live.config.ts`, never the
+parallel default, which is the rule the previous change landed hours earlier.
+
 ## 2026-08-10 (ci.sh) — thirty probes stop being silent passengers, and one gate nearly deleted itself
 
 **`a-probe-that-vanishes-is-not-a-probe` archived.** `platform-mapping` already

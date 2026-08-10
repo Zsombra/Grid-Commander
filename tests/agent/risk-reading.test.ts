@@ -3,6 +3,7 @@ import { ReadRiskReadingQuery } from '@/application/use-cases/read-risk-reading.
 import {
   anAgent,
   aTradeOutcome,
+  FakeAccountStatePort,
   FakeAgentsPort,
   liveTradingConfig,
 } from '../support/agent-fakes.js';
@@ -25,7 +26,7 @@ function portWith(config = liveTradingConfig()): FakeAgentsPort {
 describe('against the platform’s defaults', () => {
   it('sets a ceiling against the default BattleGrid declares for it', async () => {
     const agents = portWith();
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     expect(reading.ceilings.kind).toBe('read');
     if (reading.ceilings.kind !== 'read') return;
@@ -38,7 +39,7 @@ describe('against the platform’s defaults', () => {
 
   it('states agreement rather than omitting it — a setting nobody changed is a fact', async () => {
     const agents = portWith(liveTradingConfig({ maxDailyTrades: 10 }));
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     if (reading.ceilings.kind !== 'read') throw new Error('expected a reading');
     const trades = reading.ceilings.value.find((c) => c.field === 'maxDailyTrades');
@@ -53,7 +54,7 @@ describe('against the platform’s defaults', () => {
    */
   it('invents no comparison for a field the catalog declines to default', async () => {
     const agents = portWith();
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     if (reading.ceilings.kind !== 'read') throw new Error('expected a reading');
     for (const field of ['maxDailyLossUsd', 'maxCumulativeDrawdownUsd', 'maxConcurrentExposureUsd']) {
@@ -66,7 +67,7 @@ describe('against the platform’s defaults', () => {
 
   it('compares only numbers — a mode and a nested block have no multiple', async () => {
     const agents = portWith();
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     if (reading.ceilings.kind !== 'read') throw new Error('expected a reading');
     const fields = reading.ceilings.value.map((c) => c.field);
@@ -78,7 +79,7 @@ describe('against the platform’s defaults', () => {
   it('admits no multiple against a default of zero rather than rendering an Infinity', async () => {
     const agents = portWith();
     agents.catalog = { ...agents.catalog, defaults: { ...agents.catalog.defaults, maxLeverage: 0 } };
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     if (reading.ceilings.kind !== 'read') throw new Error('expected a reading');
     const leverage = reading.ceilings.value.find((c) => c.field === 'maxLeverage');
@@ -88,7 +89,7 @@ describe('against the platform’s defaults', () => {
 
   it('says nothing to compare when the agent carries no config', async () => {
     const agents = new FakeAgentsPort([anAgent({ id: 'a1', tradingConfig: null })]);
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.ceilings.kind).toBe('none');
   });
 });
@@ -106,7 +107,7 @@ describe('the exit geometry', () => {
       total: 3,
     };
 
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.geometry.kind).toBe('read');
     if (reading.geometry.kind !== 'read') return;
     expect(reading.geometry.value.endings[0]?.reason).toBe('STOP_LOSS');
@@ -116,14 +117,14 @@ describe('the exit geometry', () => {
   it('says an agent has closed nothing, distinctly from a record that failed', async () => {
     const agents = portWith();
     agents.tradeOutcomes = { kind: 'none' };
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.geometry.kind).toBe('none');
   });
 
   it('treats an empty page as nothing closed rather than an empty fold', async () => {
     const agents = portWith();
     agents.tradeOutcomes = { kind: 'outcomes', outcomes: [], total: 0 };
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.geometry.kind).toBe('none');
   });
 });
@@ -140,7 +141,7 @@ describe('what ends a position early', () => {
         },
       }),
     );
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     expect(reading.management.kind).toBe('read');
     if (reading.management.kind !== 'read') return;
@@ -152,7 +153,7 @@ describe('what ends a position early', () => {
 
   it('reads management as off when the master switch is off', async () => {
     const agents = portWith();
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     if (reading.management.kind !== 'read') throw new Error('expected a reading');
     expect(reading.management.value.enabled).toBe(false);
   });
@@ -164,14 +165,14 @@ describe('what ends a position early', () => {
    */
   it('claims no drift for a CUSTOM agent, deferring to positionDrift', async () => {
     const agents = portWith();
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     if (reading.management.kind !== 'read') throw new Error('expected a reading');
     expect(reading.management.value.differing).toEqual([]);
   });
 
   it('says nothing where the agent carries no management block', async () => {
     const agents = portWith(liveTradingConfig({ positionManagement: undefined }));
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.management.kind).toBe('none');
   });
 });
@@ -195,7 +196,7 @@ describe('one read failing hides neither of the others', () => {
       total: 1,
     };
 
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     expect(reading.ceilings.kind).toBe('unreadable');
     expect(reading.geometry.kind).toBe('read');
@@ -214,7 +215,7 @@ describe('one read failing hides neither of the others', () => {
       cause: 'unreachable',
     };
 
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     expect(reading.geometry.kind).toBe('unreadable');
     expect(reading.ceilings.kind).toBe('read');
@@ -233,7 +234,7 @@ describe('one read failing hides neither of the others', () => {
       total: 1,
     };
 
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
 
     expect(reading.ceilings.kind).toBe('unreadable');
     expect(reading.management.kind).toBe('unreadable');
@@ -243,8 +244,96 @@ describe('one read failing hides neither of the others', () => {
 
   it('says nothing rather than failing when the agent is absent from the roster', async () => {
     const agents = new FakeAgentsPort([anAgent({ id: 'someone-else' })]);
-    const reading = await new ReadRiskReadingQuery(agents).execute(AUTHORITY);
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(AUTHORITY);
     expect(reading.ceilings.kind).toBe('none');
     expect(reading.management.kind).toBe('none');
+  });
+});
+
+/**
+ * The exposure cap against the money behind it.
+ *
+ * The live account of 2026-08-10 is the fixture default: a **$43.67** balance
+ * under agents carrying a **$250** cap. A cap larger than the balance cannot
+ * ever stop the agent — it renders as a limit and reads as prudence, which is
+ * the same failure as a stop set inside the noise.
+ */
+describe('what it may risk, against the money behind it', () => {
+  it('sets the cap against the balance and says which is larger', async () => {
+    const reading = await new ReadRiskReadingQuery(portWith(), new FakeAccountStatePort()).execute(
+      AUTHORITY,
+    );
+
+    expect(reading.exposure.kind).toBe('read');
+    if (reading.exposure.kind !== 'read') return;
+    expect(reading.exposure.value.capUsd).toBe(250);
+    expect(reading.exposure.value.balanceUsd).toBeCloseTo(43.667427, 6);
+    expect(reading.exposure.value.multiple).toBeCloseTo(250 / 43.667427, 6);
+    // The finding, not left as arithmetic for the reader.
+    expect(reading.exposure.value.exceedsBalance).toBe(true);
+  });
+
+  it('does not call a cap the balance covers unable to bind', async () => {
+    const account = new FakeAccountStatePort();
+    account.state = { ...account.state, balanceUsd: 1000 };
+    const reading = await new ReadRiskReadingQuery(portWith(), account).execute(AUTHORITY);
+
+    if (reading.exposure.kind !== 'read') throw new Error('expected a reading');
+    expect(reading.exposure.value.exceedsBalance).toBe(false);
+    expect(reading.exposure.value.multiple).toBeCloseTo(0.25, 6);
+  });
+
+  /**
+   * `unboundedCaps()` already reports a zero cap as unbounded. A multiple
+   * against a limit that does not exist would describe nothing, and would read
+   * as though the agent were capped when the point is that it is not.
+   */
+  it('draws no comparison for an unbounded cap', async () => {
+    const agents = portWith(liveTradingConfig({ maxConcurrentExposureUsd: 0 }));
+    const reading = await new ReadRiskReadingQuery(agents, new FakeAccountStatePort()).execute(
+      AUTHORITY,
+    );
+    expect(reading.exposure.kind).toBe('none');
+  });
+
+  it('states no funded account rather than a balance of zero', async () => {
+    const account = new FakeAccountStatePort();
+    account.state = { ...account.state, hasAccount: false, balanceUsd: null };
+    const reading = await new ReadRiskReadingQuery(portWith(), account).execute(AUTHORITY);
+
+    if (reading.exposure.kind !== 'read') throw new Error('expected a reading');
+    expect(reading.exposure.value.hasAccount).toBe(false);
+    expect(reading.exposure.value.balanceUsd).toBeNull();
+    expect(reading.exposure.value.multiple).toBeNull();
+    // Not "the cap exceeds nothing" — there is nothing to exceed.
+    expect(reading.exposure.value.exceedsBalance).toBe(false);
+  });
+
+  it('admits no multiple against a zero balance rather than an Infinity', async () => {
+    const account = new FakeAccountStatePort();
+    account.state = { ...account.state, balanceUsd: 0 };
+    const reading = await new ReadRiskReadingQuery(portWith(), account).execute(AUTHORITY);
+
+    if (reading.exposure.kind !== 'read') throw new Error('expected a reading');
+    expect(reading.exposure.value.multiple).toBeNull();
+  });
+
+  it('costs only the comparison when the balance cannot be read', async () => {
+    const agents = portWith();
+    agents.tradeOutcomes = {
+      kind: 'outcomes',
+      outcomes: [aTradeOutcome({ closeReason: 'STOP_LOSS' })],
+      total: 1,
+    };
+    const account = new FakeAccountStatePort();
+    account.readable = false;
+
+    const reading = await new ReadRiskReadingQuery(agents, account).execute(AUTHORITY);
+
+    expect(reading.exposure.kind).toBe('unreadable');
+    // The other three still answer — the panel's load-bearing property.
+    expect(reading.ceilings.kind).toBe('read');
+    expect(reading.geometry.kind).toBe('read');
+    expect(reading.management.kind).toBe('read');
   });
 });

@@ -47,7 +47,7 @@ import type { CurrentUserResult } from '@/application/use-cases/current-user.que
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import { NOT_CONNECTED } from '@/domain/session/session.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
-import { FakeAgentsPort } from '../../support/agent-fakes.js';
+import { FakeAccountStatePort, FakeAgentsPort } from '../../support/agent-fakes.js';
 import { SequentialRandom } from '../../support/agent-fakes.js';
 import { FakeMarketGridPort } from '../../support/grid-fakes.js';
 import { FakeMarketPort } from '../../support/market-fakes.js';
@@ -85,6 +85,7 @@ export class RenderRadarPort implements RadarPort {
 
 export function actingWith({
   agents = new FakeAgentsPort([]),
+  accountState = new FakeAccountStatePort(),
   strategies = new FakeStrategiesPort(),
   radar = new RenderRadarPort(),
   grid = new FakeMarketGridPort(),
@@ -101,6 +102,7 @@ export function actingWith({
   clock = new FakeClock(),
 }: {
   agents?: FakeAgentsPort;
+  accountState?: FakeAccountStatePort;
   strategies?: FakeStrategiesPort;
   radar?: RenderRadarPort;
   grid?: FakeMarketGridPort;
@@ -119,7 +121,7 @@ export function actingWith({
     readProposals: new ReadProposalsQuery(proposals, clock),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
-    readRiskReading: new ReadRiskReadingQuery(agents),
+    readRiskReading: new ReadRiskReadingQuery(agents, accountState),
     // The edit and create forms both refuse to render without it — a form
     // whose submission is certain to fail is worse than none.
     readCatalog: new ReadCatalogQuery(agents),

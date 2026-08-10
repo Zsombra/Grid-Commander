@@ -2,11 +2,11 @@
 id: no-account-balance-is-readable
 title: get_account_state publishes the wallet balance and nothing calls it — the exposure comparison is buildable
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "a-cap-above-the-money-cannot-bind"
 capability: agent-understanding
 github: "84"
 blocked_by: []
@@ -97,3 +97,17 @@ nothing reads it either.
 happened to have, not over the platform's own 114-tool map. "This product
 cannot read X" is a claim about the platform and must be checked against
 `docs/battlegrid-mcp-surface.json`, which answered it in one grep.
+
+## Done, 2026-08-10 — `a-cap-above-the-money-cannot-bind`
+
+`get_account_state` is now read behind `AccountStatePort`, and the exposure cap
+renders against the balance on `/agents/[id]/limits`.
+
+The live run found more than the item described. `THE .0` at $250 against $43.60
+is 5.73× — but **Breakwater, Undertow and Vanguard each carry a $45 cap against
+that same $43.60**, over by $1.40, so they cannot bind either. A $45 cap looks
+carefully chosen; that is exactly the class of thing this panel exists to catch.
+All five live agents have a non-binding exposure cap.
+
+`agentSlots` and `mcpWagerEnabled` come along with the read and are deliberately
+unrendered — `two-account-facts-nothing-renders` (GitHub #121).

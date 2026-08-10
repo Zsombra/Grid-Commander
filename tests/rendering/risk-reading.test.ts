@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   anAgent,
   aTradeOutcome,
+  FakeAccountStatePort,
   FakeAgentsPort,
   liveTradingConfig,
 } from '../support/agent-fakes.js';
@@ -278,5 +279,54 @@ describe('one read failing hides neither of the others', () => {
     // The budget read is untouched by any of it, so what would stop the agent
     // still renders — the panel is an addition to that page, not a gate on it.
     expect(r.text).toContain('Loss in a day');
+  });
+});
+
+/**
+ * The exposure cap against the money behind it, as a person reads it.
+ *
+ * The fixture is the live account of 2026-08-10: a $43.67 balance under an
+ * agent carrying a $250 cap.
+ */
+describe('what it may risk, against the money behind it', () => {
+  it('sets the cap against the balance and states that it cannot bind', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('maxConcurrentExposureUsd');
+    expect(r.text).toContain('against a balance of');
+    expect(r.text).toContain('$43.6674');
+    // The finding, said rather than left as a ratio to interpret.
+    expect(r.text).toContain('cannot stop this agent');
+  });
+
+  it('names the balance as the account’s, not the agent’s', async () => {
+    // One balance funds every agent, so a per-agent reading would overstate it
+    // by the number of agents sharing it.
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('shared by every agent');
+    expect(r.text).toContain('no per-agent split');
+  });
+
+  it('says nothing to compare when the platform reports no funded account', async () => {
+    const agents = withTrades();
+    const account = new FakeAccountStatePort();
+    account.state = { ...account.state, hasAccount: false, balanceUsd: null };
+    current = actingWith({ agents, accountState: account }) as typeof current;
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('no funded account');
+    expect(r.text).toContain('not a balance of zero');
+    expect(r.text).not.toContain('cannot stop this agent');
+  });
+
+  it('keeps the other three sections when the balance cannot be read', async () => {
+    const agents = withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]);
+    const account = new FakeAccountStatePort();
+    account.readable = false;
+    current = actingWith({ agents, accountState: account }) as typeof current;
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('This does not mean');
+    expect(r.text).toContain('Computed by Grid-Commander');
+    expect(r.text).toContain('against a default of 10');
   });
 });

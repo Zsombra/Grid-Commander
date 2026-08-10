@@ -79,7 +79,10 @@ import { OpenGridSessionQuery } from './application/use-cases/open-grid-session.
 import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
 import { ReadCompetitorQuery } from './application/use-cases/read-competitor.query.js';
 import { ReadEvaluationQuery } from './application/use-cases/read-evaluation.query.js';
-import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
+import {
+  McpAccountAdapter,
+  McpAccountStateAdapter,
+} from './infrastructure/battlegrid/account-adapter.js';
 import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
 import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
 import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
@@ -277,10 +280,11 @@ export function app(cookies: CookieStore) {
     updateAgent: new UpdateAgentCommand(i.agents),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
-    // The same agent, asked what its settings are *against*. One port because
-    // all three readings — the catalog's defaults, the roster's config, the
-    // closed trades — come from the agents surface.
-    readRiskReading: new ReadRiskReadingQuery(i.agents),
+    // The same agent, asked what its settings are *against*. Two ports: three
+    // readings come from the agents surface, and the fourth — the account
+    // balance an exposure cap is measured against — is an account-level fact
+    // that no agent read carries.
+    readRiskReading: new ReadRiskReadingQuery(i.agents, new McpAccountStateAdapter(i.battlegrid)),
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
     readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),

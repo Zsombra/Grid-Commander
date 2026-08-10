@@ -1,6 +1,7 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
-import { TRADING_CONFIG_FIELDS } from '@/domain/agent/catalog.js';
+import { removesTheLimit, TRADING_CONFIG_FIELDS } from '@/domain/agent/catalog.js';
 import { POSITION_MANAGEMENT_FIELDS, positionDrift } from '@/domain/agent/trading-config.js';
+import type { AccountStatePort } from '@/ports/account.js';
 import type { AgentsPort } from '@/ports/agents.js';
 import type { FailureCause } from '@/ports/failure.js';
 import { exitGeometry, type ExitGeometry } from './read-trading-record.query.js';
@@ -84,6 +85,41 @@ export interface Management {
   readonly differing: readonly string[];
 }
 
+/**
+ * The exposure cap, against the money behind it.
+ *
+ * `THE .0` carries a cap of 250 on an account holding 43.67. A cap larger than
+ * the balance cannot ever stop the agent: it renders as a limit and reads as
+ * prudence, which is the same failure as a stop set inside the noise.
+ *
+ * The balance is **the account's**. One balance funds every agent on it, so a
+ * per-agent surface implying otherwise would overstate the money available by
+ * the number of agents sharing it.
+ */
+export interface CapAgainstBalance {
+  readonly capUsd: number;
+  /** The account balance, or null where the platform stated none. */
+  readonly balanceUsd: number | null;
+  /** Whether the platform reports a funded account at all. */
+  readonly hasAccount: boolean;
+  /**
+   * The cap as a multiple of the balance, where both are numbers and the
+   * balance is not zero.
+   *
+   * Computed here rather than in a component for the reason the panel's other
+   * readings are: a surface working out `cap ÷ balance` for itself will one day
+   * work it out upside down, and on this figure upside down reads as headroom.
+   */
+  readonly multiple: number | null;
+  /**
+   * The finding, stated rather than left as arithmetic.
+   *
+   * `5.7×` alone makes the reader work out which side is larger on the one
+   * screen built so they do not have to.
+   */
+  readonly exceedsBalance: boolean;
+}
+
 /** A source that answered, one that had nothing, or one that could not be read. */
 export type Reading<T> =
   | { readonly kind: 'read'; readonly value: T }
@@ -94,6 +130,7 @@ export interface RiskReading {
   readonly ceilings: Reading<readonly AgainstDefault[]>;
   readonly geometry: Reading<ExitGeometry>;
   readonly management: Reading<Management>;
+  readonly exposure: Reading<CapAgainstBalance>;
 }
 
 /**
@@ -108,7 +145,10 @@ export interface RiskReading {
 const GEOMETRY_WINDOW = 50;
 
 export class ReadRiskReadingQuery {
-  constructor(private readonly agents: AgentsPort) {}
+  constructor(
+    private readonly agents: AgentsPort,
+    private readonly account: AccountStatePort,
+  ) {}
 
   async execute(req: {
     userId: string;
@@ -118,10 +158,11 @@ export class ReadRiskReadingQuery {
     // Concurrent and independently settled. `Promise.all` is safe because each
     // port call resolves its own failure into a result branch rather than
     // throwing — a rejection here would take down the two reads that answered.
-    const [catalog, roster, trades] = await Promise.all([
+    const [catalog, roster, trades, account] = await Promise.all([
       this.agents.readCatalog(req),
       this.agents.listAgents(req),
       this.agents.readTradeOutcomes({ ...req, limit: GEOMETRY_WINDOW }),
+      this.account.readAccountState(req),
     ]);
 
     const agent =
@@ -137,6 +178,7 @@ export class ReadRiskReadingQuery {
             ? { kind: 'none' }
             : { kind: 'read', value: exitGeometry(trades.outcomes) },
       management: management(catalog, fields, roster),
+      exposure: capAgainstBalance(account, fields, roster),
     };
   }
 }
@@ -226,3 +268,50 @@ function management(
 
 /** The fourteen behavioural fields, re-exported so a surface names them once. */
 export { POSITION_MANAGEMENT_FIELDS };
+
+
+/**
+ * The exposure cap, against the account balance behind it.
+ *
+ * Two reads, and they fail independently of each other and of everything else
+ * on the panel: an unreadable balance costs this comparison and not the exit
+ * geometry beside it.
+ *
+ * **No apportionment.** The balance is the account's and is reported as the
+ * account's. `get_agent_fund_allocation` is the one tool claiming to divide it
+ * per agent and it answered `committedUsd: 0` for an agent holding $17.45 of
+ * margin at the same moment, so dividing it ourselves would be an invention
+ * dressed as a reading.
+ */
+function capAgainstBalance(
+  account: Awaited<ReturnType<AccountStatePort['readAccountState']>>,
+  fields: Readonly<Record<string, unknown>> | null,
+  roster: Awaited<ReturnType<AgentsPort['listAgents']>>,
+): Reading<CapAgainstBalance> {
+  if (roster.kind === 'unreadable') return roster;
+  if (account.kind === 'unreadable') return account;
+  if (fields === null) return { kind: 'none' };
+
+  const cap = fields['maxConcurrentExposureUsd'];
+  if (typeof cap !== 'number') return { kind: 'none' };
+  // An unbounded cap is already reported as unbounded by the gauges. A multiple
+  // against a limit that does not exist would describe nothing, and would read
+  // as though the agent were capped when the point is that it is not.
+  if (removesTheLimit('maxConcurrentExposureUsd', cap)) return { kind: 'none' };
+
+  const { balanceUsd, hasAccount } = account.state;
+  // A balance of zero admits no multiple, and dividing by it would produce an
+  // Infinity that renders as a number.
+  const comparable = hasAccount && balanceUsd !== null && balanceUsd > 0;
+
+  return {
+    kind: 'read',
+    value: {
+      capUsd: cap,
+      balanceUsd: hasAccount ? balanceUsd : null,
+      hasAccount,
+      multiple: comparable ? cap / (balanceUsd as number) : null,
+      exceedsBalance: comparable && cap > (balanceUsd as number),
+    },
+  };
+}

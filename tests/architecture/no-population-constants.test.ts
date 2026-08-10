@@ -145,3 +145,36 @@ describe('the rule catches what it was written for', () => {
     expect(transcribedFloors('const GEOMETRY_WINDOW = 50;')).toEqual([]);
   });
 });
+
+/**
+ * The balance is read, never apportioned.
+ *
+ * `get_agent_fund_allocation` is the one tool claiming to divide the account
+ * balance per agent, and it answered `committedUsd: 0` for an agent holding
+ * **$17.45** of margin at that same moment (GitHub #107). It is wrong rather
+ * than empty, so a per-agent split of our own would be an invention dressed as
+ * a reading — and it would be the most trusted number on a screen built to be
+ * trusted instead of the raw setting.
+ *
+ * Reachability, not spelling: the product may not reach that tool at all.
+ */
+describe('the account balance is reported, not divided', () => {
+  it('reaches no per-agent allocation tool', () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('src'), ...filesUnder('app')]) {
+      const source = stripComments(readFileSync(file, 'utf8'));
+      if (source.includes('get_agent_fund_allocation')) offenders.push(file);
+    }
+    expect(
+      offenders,
+      'that tool reports zero committed for agents demonstrably holding margin (#107)',
+    ).toEqual([]);
+  });
+
+  it('is a rule with something to be wrong about', () => {
+    // Vacuity guard: the tool must still exist on the surface, or this check
+    // is asserting the absence of something that was never there.
+    const surface = readFileSync('docs/battlegrid-mcp-surface.json', 'utf8');
+    expect(surface).toContain('get_agent_fund_allocation');
+  });
+});
