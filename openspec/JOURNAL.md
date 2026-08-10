@@ -1,5 +1,53 @@
 # Journal
 
+## 2026-08-10 (check-in 00:45Z) — BNB breaks the run, and win rate rose while RR fell
+
+**BNB, the fifth and last of the prediction book, closed green** —
+**+$0.0495 on a +0.51% *favourable* move after 391 minutes**, against a
+0.40% stop. It was not stopped out inside the noise; it survived six and a
+half hours and was trailed out in profit.
+
+**Final score on the pre-registered prediction: 3 confirm, 1 marginal, 1
+that does not fit.** Not five for five, and the last one has to be said
+plainly rather than folded into the tally by computing `|move| − stop` on a
+move that went the right way. That arithmetic is only meaningful for adverse
+moves; applied to BNB it manufactures a "+0.11pp" that means nothing. The
+noise-band effect is real and well evidenced on three or four trades — it is
+not universal.
+
+A second SKHX trade also closed green, **+$0.0876 in 22 minutes** on a
++0.91% move.
+
+**And those two wins produced the most interesting number of the night.**
+
+| | before | now |
+|---|---|---|
+| closed | 19 | **21** |
+| record | 3W/16L | **5W/16L** |
+| win rate | 16% | **24%** |
+| realised RR | 1.33 | **1.05** |
+| break-even needed | 43% | **49%** |
+
+**Win rate went up eight points and the fleet got further from break-even.**
+Both new wins were small trail-outs (+$0.088, +$0.049), so they raise the
+count of winners while dragging the average win down. Win rate is a
+seductive metric here and a misleading one: what the trail produces is a
+scratch machine — more trades finishing green, each too small to pay for a
+loss. Net is −$1.1870, better than −$1.3241 an hour ago, but the *structure*
+got worse.
+
+Note where that leaves the two thresholds: actual win rate **24%** is now
+*above* the **23%** needed at the placed RR of 3.34, and far below the
+**49%** needed at the realised 1.05. The entire deficit is the gap between
+placed and realised — which is exactly the geometry finding from last cycle,
+now visible from the other direction.
+
+**Book +$0.6900** across four. **FARTCOIN is +$0.5090** after 5.5 hours —
+larger than MOODENG's realised take-profit and still open. A new SKHX short
+opened 00:38 is already +$0.1760.
+
+Server still v15.0.0; policy retest skipped per cadence. **Meter** dead.
+
 ## 2026-08-10 (check-in 23:20Z) — the prediction settles, and the geometry is self-defeating
 
 **Four of the five prediction-book positions have closed. All four
