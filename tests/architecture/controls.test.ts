@@ -43,18 +43,37 @@ const stripComments = (s: string): string =>
     .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
     .join('\n');
 
+/**
+ * The scanners, named once so the rule and its count read the same source.
+ *
+ * They were two regexes: one scanning for offenders, a second, narrower one
+ * counting what had been found. Audited 2026-08-10 by mutation (GitHub #87) —
+ * killing the scan left the count satisfied by its own separate literal, so the
+ * file passed 18/18 having examined nothing. A corpus floor built on a different
+ * pattern from the rule it vouches for is not a floor.
+ *
+ * It is silenceable the other way too: widening an exclusion until it matches
+ * everything also passes 18/18, because `filter(...).length >= 20` is satisfied
+ * by a predicate that accepts every input. Both directions are proven at the
+ * bottom of this file.
+ */
+const controlTags = (src: string): string[] =>
+  [...src.matchAll(/<(?:input|select|textarea)\b[^>]*>/gs)].map((m) => m[0]);
+
+const hasClassName = (tag: string): boolean => /className=/.test(tag);
+/** A hidden input carries a value and is never seen. */
+const isHidden = (tag: string): boolean => /type=["']hidden["']/.test(tag);
+const WEARS_CONTROL = /className=\{CONTROL\}/;
+
 describe('every form control uses the shared treatment', () => {
   it('renders no control styled by browser defaults', () => {
     const offenders: string[] = [];
 
     for (const file of uiFiles) {
-      const src = stripComments(read(file));
-      for (const m of src.matchAll(/<(?:input|select|textarea)\b[^>]*>/gs)) {
-        const tag = m[0];
-        if (!/className=/.test(tag)) continue;
-        // A hidden input carries a value and is never seen.
-        if (/type=["']hidden["']/.test(tag)) continue;
-        if (/className=\{CONTROL\}/.test(tag)) continue;
+      for (const tag of controlTags(stripComments(read(file)))) {
+        if (!hasClassName(tag)) continue;
+        if (isHidden(tag)) continue;
+        if (WEARS_CONTROL.test(tag)) continue;
         offenders.push(`${file}: ${tag.replace(/\s+/g, ' ').slice(0, 80)}`);
       }
     }
@@ -64,10 +83,11 @@ describe('every form control uses the shared treatment', () => {
 
   it('finds the controls it is checking', () => {
     // Passing vacuously is the failure mode; this check would be green on a
-    // product with no forms at all.
-    const controls = uiFiles.flatMap((f) => [
-      ...stripComments(read(f)).matchAll(/<(?:input|select|textarea)\b[^>]*className=\{CONTROL\}/gs),
-    ]);
+    // product with no forms at all. Counted through the same scanner the rule
+    // uses, so a dead scan cannot leave this floor standing.
+    const controls = uiFiles
+      .flatMap((f) => controlTags(stripComments(read(f))))
+      .filter((tag) => WEARS_CONTROL.test(tag));
     expect(controls.length).toBeGreaterThanOrEqual(7);
   });
 });
@@ -125,35 +145,45 @@ describe('the treatment itself is made of tokens', () => {
  * The two exclusions are read off the elements themselves rather than off a
  * list of files, so neither can rot into an allowlist.
  */
-describe('every button and label uses the shared treatment', () => {
-  const WEARS_BUTTON = /className=\{(?:BUTTON_PRIMARY|BUTTON_SECONDARY)\}/;
-  // `className={LABEL}` or the composed form — `pipeline/[logId]` adds a width
-  // to the label it puts beside a select, and composing onto the treatment is
-  // not the same as replacing it.
-  const WEARS_LABEL = /className=\{(?:LABEL|`[^`]*\$\{LABEL\}[^`]*`)\}/;
+const WEARS_BUTTON = /className=\{(?:BUTTON_PRIMARY|BUTTON_SECONDARY)\}/;
+// `className={LABEL}` or the composed form — `pipeline/[logId]` adds a width to
+// the label it puts beside a select, and composing onto the treatment is not the
+// same as replacing it.
+const WEARS_LABEL = /className=\{(?:LABEL|`[^`]*\$\{LABEL\}[^`]*`)\}/;
 
+const buttonTags = (src: string): string[] => [...src.matchAll(/<button\b[^>]*>/gs)].map((m) => m[0]);
+
+/**
+ * Matched whole, open tag through close, because the one exclusion is a property
+ * of the content: a label wrapping its own checkbox with the text after it is an
+ * inline row, and `LABEL`'s `block` would break it.
+ */
+const labelBlocks = (src: string): string[] =>
+  [...src.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/gs)].map((m) => m[0]);
+
+const openTagOf = (block: string): string => block.slice(0, block.indexOf('>') + 1);
+const wrapsACheckbox = (block: string): boolean => /type=["']checkbox["']/.test(block);
+
+describe('every button and label uses the shared treatment', () => {
   it('renders no button or label styled by hand', () => {
     const offenders: string[] = [];
 
     for (const file of uiFiles) {
       const src = stripComments(read(file));
 
-      for (const m of src.matchAll(/<button\b[^>]*>/gs)) {
+      for (const tag of buttonTags(src)) {
         // Unlike the input scan, a button with no className is an offender
         // rather than a skip. That scan skips them because a checkbox is
         // deliberately unstyled; no button in this product is, so a bare
         // `<button>` is precisely the browser-default control this file is
         // named for.
-        if (WEARS_BUTTON.test(m[0])) continue;
-        offenders.push(`${file}: ${m[0].replace(/\s+/g, ' ').slice(0, 80)}`);
+        if (WEARS_BUTTON.test(tag)) continue;
+        offenders.push(`${file}: ${tag.replace(/\s+/g, ' ').slice(0, 80)}`);
       }
 
-      // Matched whole, open tag through close, because the one exclusion is a
-      // property of the content: a label wrapping its own checkbox with the
-      // text after it is an inline row, and `LABEL`'s `block` would break it.
-      for (const m of src.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/gs)) {
-        const open = m[0].slice(0, m[0].indexOf('>') + 1);
-        if (/type=["']checkbox["']/.test(m[0])) continue;
+      for (const block of labelBlocks(src)) {
+        const open = openTagOf(block);
+        if (wrapsACheckbox(block)) continue;
         if (WEARS_LABEL.test(open)) continue;
         offenders.push(`${file}: ${open.replace(/\s+/g, ' ').slice(0, 80)}`);
       }
@@ -168,10 +198,12 @@ describe('every button and label uses the shared treatment', () => {
     // breaking the tag across lines — reports a clean tree by finding nothing
     // in it. The floors are well under the real counts, so this fails on a
     // broken scan and not on a deleted page.
-    const buttons = uiFiles.flatMap((f) => [...stripComments(read(f)).matchAll(/<button\b[^>]*>/gs)]);
-    const labels = uiFiles.flatMap((f) => [...stripComments(read(f)).matchAll(/<label\b[^>]*>/gs)]);
-    expect(buttons.filter((m) => WEARS_BUTTON.test(m[0])).length).toBeGreaterThanOrEqual(20);
-    expect(labels.filter((m) => WEARS_LABEL.test(m[0])).length).toBeGreaterThanOrEqual(30);
+    // Counted through the same scanners the rule above uses. They were separate
+    // literals, which is why killing the scan left these floors standing.
+    const buttons = uiFiles.flatMap((f) => buttonTags(stripComments(read(f))));
+    const labels = uiFiles.flatMap((f) => labelBlocks(stripComments(read(f))).map(openTagOf));
+    expect(buttons.filter((t) => WEARS_BUTTON.test(t)).length).toBeGreaterThanOrEqual(20);
+    expect(labels.filter((t) => WEARS_LABEL.test(t)).length).toBeGreaterThanOrEqual(30);
   });
 
   it('leaves the anchors to a person', () => {
@@ -255,5 +287,83 @@ describe('the button and label treatments are made of tokens', () => {
     expect(uses('className={BUTTON_PRIMARY}')).toBeGreaterThanOrEqual(8);
     expect(uses('className={BUTTON_SECONDARY}')).toBeGreaterThanOrEqual(8);
     expect(uses('className={LABEL}')).toBeGreaterThanOrEqual(8);
+  });
+});
+
+/**
+ * The scanners and exclusions, fed markup they must report and markup they must
+ * not.
+ *
+ * Audited 2026-08-10 by mutation (GitHub #87). This file is silenceable in
+ * **both** directions and was proven in neither:
+ *
+ *  - Kill the scan and it passes 18/18, because every count was built on its own
+ *    separate literal rather than on the scanner it vouches for.
+ *  - Widen an exclusion to match everything and it passes 18/18 too, because a
+ *    `length >= 20` floor is satisfied by a predicate that accepts every input.
+ *
+ * The second is the one that gets missed. A blind matcher and a permissive one
+ * silence a rule equally, and only the blind one feels like a bug.
+ */
+describe('the scanners catch what they were written for', () => {
+  it('finds a control however the tag is written', () => {
+    expect(controlTags('<input className="x" />')).toHaveLength(1);
+    expect(controlTags('<select className={CONTROL}>')).toHaveLength(1);
+    // Broken across lines by a formatter — the shape a `[^>]*` without `s`
+    // would miss, and the reason the flag is there.
+    expect(controlTags('<textarea\n  name="notes"\n  className={CONTROL}\n/>')).toHaveLength(1);
+    expect(controlTags('<input /><select />')).toHaveLength(2);
+  });
+
+  it('finds no control in markup that has none', () => {
+    expect(controlTags('<div className="input-like">not a control</div>')).toEqual([]);
+  });
+
+  it('reports a hand-styled control and passes the treated one', () => {
+    // The rule itself, end to end, on markup rather than on the tree.
+    const offending = '<input className="border rounded px-2" />';
+    const treated = '<input className={CONTROL} />';
+    const hidden = '<input type="hidden" className="x" value={t} />';
+    const unstyled = '<input type="checkbox" />';
+
+    const judge = (tag: string) => hasClassName(tag) && !isHidden(tag) && !WEARS_CONTROL.test(tag);
+    expect(judge(offending), 'hand-styled — the defect this file is named for').toBe(true);
+    expect(judge(treated)).toBe(false);
+    expect(judge(hidden), 'carries a value and is never seen').toBe(false);
+    expect(judge(unstyled), 'a checkbox is deliberately unstyled').toBe(false);
+  });
+
+  it('keeps each exclusion narrow enough to still exclude something', () => {
+    // The permissive direction. An exclusion widened until it matches every tag
+    // silences the rule as completely as a dead scan, and no count would notice.
+    expect(isHidden('<input type="text" />')).toBe(false);
+    expect(WEARS_CONTROL.test('<input className="hand-rolled" />')).toBe(false);
+    expect(hasClassName('<input />')).toBe(false);
+  });
+
+  it('finds a button and reads whether it wears a treatment', () => {
+    expect(buttonTags('<button type="submit">Go</button>')).toHaveLength(1);
+    expect(WEARS_BUTTON.test('<button className={BUTTON_PRIMARY}>')).toBe(true);
+    expect(WEARS_BUTTON.test('<button className={BUTTON_SECONDARY}>')).toBe(true);
+    // A bare button is the offender, not a skip.
+    expect(WEARS_BUTTON.test('<button>')).toBe(false);
+    expect(WEARS_BUTTON.test('<button className="rounded bg-blue-600">')).toBe(false);
+  });
+
+  it('reads a label whole, so the checkbox exclusion can see its content', () => {
+    const inline = '<label className="flex"><input type="checkbox" /> Enable</label>';
+    const block = '<label className="mb-1">Name</label>';
+    expect(labelBlocks(`${inline}\n${block}`)).toHaveLength(2);
+    // The exclusion is a property of the content, which is why the whole block
+    // is matched rather than the open tag alone.
+    expect(wrapsACheckbox(inline)).toBe(true);
+    expect(wrapsACheckbox(block)).toBe(false);
+    expect(openTagOf(block)).toBe('<label className="mb-1">');
+  });
+
+  it('accepts the composed label and rejects a hand-rolled one', () => {
+    expect(WEARS_LABEL.test('<label className={LABEL}>')).toBe(true);
+    expect(WEARS_LABEL.test('<label className={`${LABEL} w-32`}>')).toBe(true);
+    expect(WEARS_LABEL.test('<label className="text-sm text-gray-500">')).toBe(false);
   });
 });

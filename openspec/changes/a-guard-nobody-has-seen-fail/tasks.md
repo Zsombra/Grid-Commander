@@ -61,47 +61,47 @@ nobody has seen catch anything is the defect this change is about.
 
 ## 5. `controls.test.ts` — silenceable in both directions
 
-- [ ] 5.1 Prove the control-tag scan against real markup: a bare
+- [x] 5.1 Prove the control-tag scan against real markup: a bare
       `<input className="…">` must be reported, `className={CONTROL}` and a
       hidden input must not.
-- [ ] 5.2 Make the counting check use the same matcher as the scan rather than
+- [x] 5.2 Make the counting check use the same matcher as the scan rather than
       its duplicate literal, so widening one cannot leave the other satisfied.
-- [ ] 5.3 Verify both mutations: scan → matches nothing must FAIL; exclusions
+- [x] 5.3 Verify both mutations: scan → matches nothing must FAIL; exclusions
       widened to match everything must FAIL.
 
 ## 6. `failure-is-explained.test.ts` — two extractors, one floor that misses both
 
-- [ ] 6.1 Prove both subject extractors: a subject that completes the sentence
+- [x] 6.1 Prove both subject extractors: a subject that completes the sentence
       and one that does not, in each of the two shapes (`subject="…"` literal
       and the wrapper prop).
-- [ ] 6.2 Verify: both extractors → match nothing must now FAIL.
+- [x] 6.2 Verify: both extractors → match nothing must now FAIL.
 
 ## 7. `one-destination.test.ts` — a rule with nothing to find
 
-- [ ] 7.1 Prove the vendor-client predicate against names it must catch
+- [x] 7.1 Prove the vendor-client predicate against names it must catch
       (`@anthropic-ai/sdk`, `openai`, `groq-sdk`) and names it must not (`next`,
       `postgres`, and a BattleGrid model id, which is a string and not a
       package).
       *Scenario: The rule has nothing to find today*
-- [ ] 7.2 Verify: emptying the vendor list must now FAIL.
+- [x] 7.2 Verify: emptying the vendor list must now FAIL.
 
 ## 8. `proposals-are-inert.test.ts` — the last two matchers
 
-- [ ] 8.1 Prove the describe-use-case matcher: a use-case name that mints a
+- [x] 8.1 Prove the describe-use-case matcher: a use-case name that mints a
       confirmation must be caught, an ordinary read must not.
-- [ ] 8.2 Prove the propose-token matcher against a block that names a token and
+- [x] 8.2 Prove the propose-token matcher against a block that names a token and
       one that does not.
-- [ ] 8.3 Give the `record-proposal` checks a positive control — the literals
+- [x] 8.3 Give the `record-proposal` checks a positive control — the literals
       they forbid must be shown to appear in a file that genuinely mints a
       confirmation, or the rule is asserting the absence of a spelling nothing
       uses.
-- [ ] 8.4 Verify: both mutations must now FAIL.
+- [x] 8.4 Verify: both mutations must now FAIL.
 
 ## 9. Close out
 
-- [ ] 9.1 Re-run every mutation in the proposal's table and record the result.
+- [x] 9.1 Re-run every mutation in the proposal's table and record the result.
       Seven SURVIVED must become seven KILLED; the control must stay KILLED.
-- [ ] 9.2 `./scripts/ci.sh` green. No guard may change what it forbids — a
+- [x] 9.2 `./scripts/ci.sh` green. No guard may change what it forbids — a
       repair that alters a rule's meaning is a bug in the repair.
 - [ ] 9.3 Update #87 with the closing measurement, and close it if nothing is
       left but the stated `confirmation-is-human` residual. If that residual
