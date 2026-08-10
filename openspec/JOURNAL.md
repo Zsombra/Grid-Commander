@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-10 (check-in 08:15Z) — the all-green book did not round-trip, and I said it would
+
+**BRENTOIL closed green: +$0.0862 on a +0.71% move after 351 minutes**,
+trailed out rather than reaching target. Peak observed was +$0.1550, so it
+**captured 56%** — the best of any trail-managed exit so far:
+
+| | peak seen | closed | captured |
+|---|---|---|---|
+| MOODENG | ran to target | +$0.3649 | **100%** (TAKE_PROFIT) |
+| BRENTOIL | +$0.1550 | +$0.0862 | **56%** |
+| FARTCOIN | +$0.5090 | +$0.2179 | 43% |
+| HYPE | +$0.1400 | +$0.0040 | 3% |
+
+**The prediction I recorded an hour ago was wrong, and it is worth saying
+so.** I wrote that an all-green book "is what the hour before a round trip
+has looked like every previous time." This hour it was not: the book banked
+a winner and the survivors *grew* — HYPE +$0.076 → +$0.134, LDO +$0.148 →
++$0.179, FARTCOIN +$0.297 → +$0.313. Book total held at **+$0.7608** across
+eight while realising one position out of it. One counter-instance is not a
+refutation of a four-for-four pattern, but the pattern is no longer clean
+and the entry that claimed it should not stand unqualified.
+
+**Realized improved: 27 closed, 8W/19L, −$0.9671** (from −$1.0533), **win
+rate 30%** — now comfortably above the **23%** needed at the placed RR of
+3.34, and still far below the **45%** needed at the realised 1.20. Realised
+RR ticked *down* despite the win, because +$0.0862 is below the average
+win: the same scratch-machine arithmetic as the 00:45Z entry.
+
+**Long/short, still thin and still lopsided**: SHORT 20 closed, 7W, **0
+TP**, −$0.7533 · LONG 7 closed, 1W, **1 TP**, −$0.2138. Twenty shorts have
+produced no take-profit; the only one this fleet has ever had was a long.
+Six of the eight open are longs (TRUMP and ENA joined), so the deciding
+sample is still in flight.
+
+Server still v16.0.0, policy p1 not retested per cadence. **Meter** dead.
+
 ## 2026-08-10 (check-in 07:0xZ) — seven open, seven green, and nothing has closed
 
 **Nothing closed in ninety minutes**, and the book is the best this fleet
