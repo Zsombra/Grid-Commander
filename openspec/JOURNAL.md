@@ -94,6 +94,29 @@ is the file whose approach worked — it asserts both patterns against real sour
 
 **#87 stays open.** Seven of nine repaired is not nine.
 
+### Two sessions proposed this change half an hour apart
+
+`2d2ddac` was already on the branch when the push went up: the same change id,
+the same findings, proposal-only, written 33 minutes before mine. A parallel run
+of the same task.
+
+It was superseded rather than discarded — merged, not force-pushed over, and its
+proposal kept at
+`openspec/changes/archive/2026-08-10-a-guard-nobody-has-seen-fail/superseded-proposal.md`.
+
+Being second is not the same as being wrong, and it was right about two things
+mine was not. Its spec split the ground into three requirements, and two of its
+scenarios are sharper than what landed: that a guard must still **pass** when
+the product is clean and the rule is intact, and that the mutation check stays
+**out** of the ordinary suite. The first is a real gap — as merged, the
+requirement only says what must make a guard fail, so a rule that fails
+unconditionally satisfies it. Filed as #123.
+
+It also repeats #87's count of eleven matchers in `boundaries.test.ts`. Measured,
+five *tests* consume `imports()`; the file reports 13/13 because the other eight
+rules are independent. Same finding, wrong number — which is the whole argument
+for measuring rather than citing.
+
 ## 2026-08-10 (the exposure row) — every live agent's cap is above the money behind it
 
 **`a-cap-above-the-money-cannot-bind` archived**, closing the last unbuilt row of
