@@ -103,7 +103,12 @@ nobody has seen catch anything is the defect this change is about.
       Seven SURVIVED must become seven KILLED; the control must stay KILLED.
 - [x] 9.2 `./scripts/ci.sh` green. No guard may change what it forbids — a
       repair that alters a rule's meaning is a bug in the repair.
-- [ ] 9.3 Update #87 with the closing measurement, and close it if nothing is
-      left but the stated `confirmation-is-human` residual. If that residual
-      stays open, it gets its own backlog item and issue rather than keeping a
-      closed finding open.
+- [x] 9.3 Update #87 with the closing measurement. **It stays open**, and not
+      only for the residual this change predicted. Measuring
+      `reachability.test.ts` at close-out — a file this change never scoped,
+      because #87 classifies it as the best-defended in the directory — found
+      two rules still blind: the `<form>` tag scan and the server-action
+      extractor both SURVIVED. That is a scoping gap in this proposal, not a new
+      finding, and it is filed as `two-reachability-matchers-are-still-blind`
+      (p2) against #87 rather than folded in here: the file is 996 lines and 17
+      rules, which is its own change.
