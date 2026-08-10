@@ -328,14 +328,15 @@ describe('the explanation is the shared one', () => {
   });
 
   it('checks the subjects on the wrappers that take one as a prop', () => {
-    // `StageNote` and `SectionNote` render the sentence once for three and four
-    // sections respectively. The check above sees `subject={subject}` there and
-    // nothing to read; the words live at the call sites, so they are read here.
-    // Matched on the component's own attribute, not on a bare `subject={subject}`
-    // anywhere in the file — several components take an unrelated `subject`
-    // prop, and reading their copy against this rule would be a false positive.
+    // `StageNote`, `SectionNote` and the risk panel's `Section` each render the
+    // sentence once for the several sections they wrap. The check above sees
+    // `subject={subject}` there and nothing to read; the words live at the call
+    // sites, so they are read here. Matched on the component's own attribute,
+    // not on a bare `subject={subject}` anywhere in the file — several
+    // components take an unrelated `subject` prop, and reading their copy
+    // against this rule would be a false positive.
     const wrappers = uiFiles.filter((f) => /<WhyNotLoaded[^>]*subject=\{subject\}/.test(read(f)));
-    expect(wrappers.length, 'no wrapper takes a subject — this check is measuring nothing').toBe(2);
+    expect(wrappers.length, 'no wrapper takes a subject — this check is measuring nothing').toBe(3);
 
     const wrong = wrappers
       .flatMap((f) => [...read(f).matchAll(/\bsubject="([^"]*)"/g)].map((m) => ({

@@ -6,7 +6,7 @@
 - **Description**: A web workbench for building, tuning, and understanding
   BattleGrid trading agents and the strategies that drive them, over BattleGrid's
   MCP server.
-- **Status**: built and live-proven — 12 capabilities, 122 archived changes,
+- **Status**: built and live-proven — 13 capabilities, 132 archived changes,
   every write walked against the real platform. `HANDOFF.md` is the current
   state; `docs/FIRST_SESSION.md` is how an operator starts using it. The idea
   brief this grew from is `_IDEA/Grid-Commander_Idea_Brief.md`.
@@ -24,17 +24,21 @@
 
 Grid-Commander is a **third-party multi-tenant client** for BattleGrid
 (battlegrid.trade), reached over MCP at `https://mcp.battlegrid.trade/mcp`.
-The surface is fully mapped — 110 tools — in `docs/BATTLEGRID_MCP_REFERENCE.md`,
+The surface is fully mapped — **114 tools at v16.0.0** — in
+`docs/BATTLEGRID_MCP_REFERENCE.md`,
 with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation and
 `tools/generate_mcp_reference.py` to regenerate both.
 
 Three facts that shape almost every decision:
 
-1. **`mcp:read` is write-capable.** 27 of 110 tools mutate, but only 16 need
+1. **`mcp:read` is write-capable.** 27 of 114 tools mutate, but only 16 need
    `mcp:wager`. Eleven mutate on `mcp:read` alone, six of them destructive.
    Never treat scope alone as a safety boundary.
 2. **The tool list goes stale after a BattleGrid deployment.** The server says
-   so itself. Rediscover at runtime; never hard-code a tool list.
+   so itself. Rediscover at runtime; never hard-code a tool list. The count
+   held at 110 across six major versions while enums and semantics changed
+   underneath — then **v14 moved it to 114**, so a count that has not moved
+   proves nothing and a count that has says only that something changed.
 3. **This product holds credentials that configure other people's agents**, and
    with wager scope, move their money. Read-only by default, explicit step-up,
    audit every write.
@@ -179,6 +183,11 @@ python3 .claude/tools/openspec.py archive <change> --apply
 - Do not archive a change that fails validation
 - Do not leave a deferral unfiled — if you decide not to do something, file a
   backlog item before moving on
+- Do not file a finding in only one place — **every backlog item gets a GitHub
+  issue mirroring it**, linked by `github: <number>` in its frontmatter. The
+  item is canonical; the issue is what anyone without a checkout can read.
+  `github: none` is allowed and must say why in the body. See
+  `.claude/references/tracking.md` §7 — `validate` enforces it
 - Do not end a session that changed anything without a JOURNAL.md entry
 - Do not duplicate a change's tasks in a backlog item — link and stop
 - Do not let a design ticket change behavior — mark it requires-spec-change

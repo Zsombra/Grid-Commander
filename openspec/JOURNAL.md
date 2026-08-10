@@ -1,5 +1,163 @@
 # Journal
 
+## 2026-08-10 (live-proven) — freshness green, and THE .0 shows the whole thesis in one reading
+
+**The operator supplied a key and the branch is now live-verified.** Everything
+below is a read; `BATTLEGRID_LIVE_WRITES` was deliberately not set, and the ten
+write probes skipped correctly.
+
+**Freshness is green**: `recorded battlegrid 16.0.0 · live battlegrid 16.0.0`.
+The surface record describes the server running right now, which was the one
+thing on this branch nothing could verify.
+
+**The full live suite, serially**: `npm run test:live` → **20 files passed, 10
+skipped, 30 tests, 550s.** Plus `oauth-metadata` keyless earlier: the recorded
+discovery document still matches what the platform publishes.
+
+### `THE .0` is the agent the p1 was filed about, and the panel reads it exactly
+
+```
+THE .0: 7 compared, 5 undefaulted
+    maxDailyTrades 34 vs 10 (3.4×)
+    maxLeverage      5 vs  1 (5×)
+THE .0: 31 closed
+    26× STOP_LOSS    5W/21L  median move −0.359%
+     5× TAKE_PROFIT  5W/0L   median move  2.786%
+```
+
+Three things in one screen that no surface said before:
+
+- **84% of closes are stop-outs** (26 of 31) — the population study's 74%, worse
+  on this agent.
+- **The target sits 7.8× further away than the stop actually travels.** Median
+  stop move −0.359% against a median take-profit move of 2.786%. That is the
+  placed-versus-realised geometry problem stated per-agent, without a candle,
+  a borrowed constant, or an extra platform call.
+- **Five of the twenty-six stop-outs were wins.** Trailed stops closing in
+  profit — the `HYPE` case, on a different agent, in a different week. Had the
+  panel derived the result from the close reason it would report **26 losses
+  where there are 21**. The rule written for that is not defensive; it fires on
+  a fifth of this agent's stop-outs.
+
+Another agent carries `maxDailyTrades 100 vs 10 (10×)`.
+
+### A trap found by reading before running
+
+`./scripts/ci.sh:57` runs `npx vitest run` under `vitest.config.ts`, which
+includes `tests/**/*.test.ts` and excludes only `node_modules` and `tests/db/**`
+— so **`tests/live/**` is in the ordinary suite**. Without a key the probes
+skip, which is why it has never shown. With a key they all run *in parallel*,
+which is the sweep `vitest.live.config.ts` pins `fileParallelism: false` to
+prevent, and which cost a diagnosis round on 2026-08-07 with nine phantom
+failures.
+
+The 2026-08-07 follow-up landed correctly — the pinning lives in a config rather
+than in operator memory. The gap is that it pins the *config*, and `ci.sh`
+reaches the same files through a different one, while `HANDOFF.md` tells the
+next session to run `ci.sh` with a key. Filed as **GitHub #118**; the probes
+here were run through `vitest.live.config.ts` deliberately, so the sweep did not
+happen to the account.
+
+**Also filed**: **#117** — `tests/live/oauth-metadata.test.ts` needs no
+credential and `ci.sh` never runs it, while `oauth-conformance.test.ts` trusts
+the recording it verifies. It passes today.
+
+**Proven, not assumed**: `freshness` genuinely needs a key. An unauthenticated
+`initialize` answers `Missing or invalid Authorization header`, so the MCP
+handshake is auth-gated and the server version is unreadable without one.
+
+**PR #83 is out of draft**, 11 commits, 61 files, mergeable clean, and its
+description rewritten to cover the whole branch in four independently
+reviewable parts rather than the third it described while a draft.
+
+## 2026-08-10 (a-number-alone-says-nothing) — the p1 shrank on contact, and the panel found its own evidence
+
+**The highest-value open item on the trading side is closed**, and half of it
+turned out to be built already. `a-stop-inside-the-noise-looks-like-a-tight-stop`
+asked for six rows. Reading the code before writing spec found that two were
+shipped — `Ceilings` has rendered "no limit set" and "Nothing will stop this
+agent on …" since `zero-does-not-mean-nothing`, and the exposure gauge already
+sets the cap against what is at risk. Proposing them would have been
+re-specifying shipped behaviour.
+
+**The ground had moved under a third.** The item was filed 2026-08-06 at v11.
+At **v15** BattleGrid took `maxStopLossPct`, `minStopLossPct` →
+`minStopLossAtrMultiple` and `minRiskRewardRatio` off the agent and onto the
+strategy — so an *agent* risk panel cannot show a field the agent no longer
+has — and the platform ignores all three where they now live
+(`v15-trade-level-policy-is-declared-but-inert`, retested against v16 and still
+refused). Deferred twice over, filed as **GitHub #85**.
+
+**A fourth row asks for something that does not exist.** Exposure against
+account balance: `AccountPort` answers identity only, and equity appears solely
+inside gate-block details. Deriving one from open positions would be inventing a
+figure on the one surface whose purpose is to be trusted instead of the raw
+setting. Filed as **GitHub #84**.
+
+**What shipped instead is stronger than what was asked for.** The item's own
+warning — *do not compute a noise floor from 100 bars and present it as
+authoritative* — points at the answer: the agent's own record needs no borrowed
+constant. `list_trade_outcomes` already carries `closeReason`, `direction`,
+`entryFillPrice` and `exitFillPrice`, and from those four comes **the median
+realised move at each kind of ending**, which is the population study's central
+statistic computed per agent with no candle history and no extra call. Three
+requirements, all from reads the product already makes.
+
+**And the headline survived anyway.** The v15 fields still come back on the
+agent read, so `maxStopLossPct: 1` renders against BattleGrid's declared default
+of 5 — `0.2×`, the item's exact finding against the platform's own number. Shown
+apart from the settings an operator can change, with where they are now set
+named, derived from `TRADING_CONFIG_FIELDS` so a field the platform moves back
+needs no edit here.
+
+### Three things worth not rediscovering
+
+**A close reason is not an outcome.** `HYPE` closed at **+$0.0731** with
+`closeReason: STOP_LOSS` because trailing had walked the stop into profit. The
+ending comes from `closeReason` and the result from `netPnl`, never one from the
+other — otherwise a protected winner is reported as a loss on the screen built
+to explain losses. Held by a test.
+
+**The guard written for this change passed vacuously on first write.** Its
+transcription check used `[A-Za-z_$][\w$]*` before the alternation, so the
+mandatory first character consumed the `N` of `NOISE_FLOOR_PCT` and the pattern
+could never match its own first letter however far the greedy quantifier
+backtracked. Found by planting a constant and watching the test stay green. That
+is the sixth instance of this repository's recurring defect — *a check that
+matches how something is spelled* — produced while writing a guard against it.
+**Plant the violation before trusting the guard.**
+
+**`/verify` found three scenarios its own session had written and not built.**
+The undefaulted money fields were named without their values, so
+`maxConcurrentExposureUsd: 250` was the one setting on the panel an operator
+could not read. The small-sample branch withheld a median without showing the
+trades it was withheld from. And the median position life rendered two sections
+from the switches the spec said it sits *beside* — with a rendering test that
+asserted the switches and never the life, so it passed against a scenario it did
+not check. All three fixed, each with a test that fails without its fix.
+
+**The guard is now the precedent it should have followed.** `identifiers.test.ts`
+has carried a `the rule catches PG-301 as it was actually written` block since
+it was written — *a guard nobody has seen fail is a guard nobody knows works*.
+The new one now carries the same, feeding its matcher four violations including
+the two planted by hand, plus two negative cases so it cannot start firing on
+every threshold in the codebase. It also gained the corpus assertion fifteen of
+the sixteen negative-assertion guards already had and it alone lacked. Filed as
+**GitHub #87**, because the distinction generalises: a corpus check proves the
+sweep read files, and proves nothing about whether the pattern can match.
+
+**Gates**: typecheck, lint, spec validation clean; **1,968 vitest**, **81 db
+against real PostgreSQL**, **235 python harness**, drizzle-check, migrate and
+build — `./scripts/ci.sh` green. `freshness` and `serving` skipped with named
+reasons; both need credentials this environment has not got, so the surface
+record's age is unverified this session.
+
+**Also filed**: **GitHub #86** — five stale claims across `CLAUDE.md`,
+`HANDOFF.md` and `README.md`. Two would send a reader down a dead end: the
+110-tool figure (114 since v14, the first version ever to move the count), and
+the hard-limits entry saying a market's first radar deployment cannot be created
+over MCP, which v14 lifted and 2026-08-08 proved live.
+
 ## 2026-08-10 (v16 landed) — dead write path #12, caught before a live refusal
 
 **BattleGrid deployed v16.0.0** — found by the 05:06Z check-in, because the

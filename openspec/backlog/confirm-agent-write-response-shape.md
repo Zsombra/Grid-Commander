@@ -8,6 +8,7 @@ created: 2026-07-27
 updated: 2026-07-27
 change: ""
 capability: agent-authoring
+github: "103"
 blocked_by: []
 tags: [battlegrid, defensive-code]
 ---

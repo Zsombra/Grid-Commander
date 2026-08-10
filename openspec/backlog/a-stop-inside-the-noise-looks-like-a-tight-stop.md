@@ -2,11 +2,11 @@
 id: a-stop-inside-the-noise-looks-like-a-tight-stop
 title: A stop inside the noise floor reads as discipline, and nothing says otherwise
 type: feature
-status: open
+status: done
 priority: p1
 created: 2026-08-06
 updated: 2026-08-10
-change: ""
+change: "a-number-alone-says-nothing"
 capability: agent-understanding
 blocked_by: []
 tags: [battlegrid, risk, agent, measurement]
@@ -123,3 +123,29 @@ target have to move together, or the book has to be far more selective.
 Two independent samples, three orders of magnitude apart in size, same
 conclusion. Kept open and **this is now the highest-value open item on the
 trading side.**
+
+## Reconciled against what shipped, 2026-08-10
+
+`a-number-alone-says-nothing` shipped three of the six rows and found that two
+others were already built. The table above is superseded by this one:
+
+| Row | State |
+|---|---|
+| `maxDailyLossUsd` / `maxCumulativeDrawdownUsd` named as OFF | **Already shipped before this item was read.** `Ceilings` renders "no limit set" and "Nothing will stop this agent on …"; spec'd at *A Limit Nobody Set Is Not A Limit Of Zero* |
+| `maxConcurrentExposureUsd` against what is at risk | **Already shipped.** The exposure gauge renders `used of ceiling · remaining left` |
+| `maxDailyTrades` against the platform default | **Shipped.** Read from the catalog's declared defaults, stated as a multiple |
+| `positionManagementPreset` against its behaviour | **Shipped**, as the two switches that end a position early beside the agent's own median position life |
+| `minStopLossPct` / `maxStopLossPct` / `minRiskRewardRatio` against measured excursion | **Partly shipped, partly deferred.** They render against the platform's *declared defaults* (`maxStopLossPct: 1` against 5 → `0.2×`), marked as set on the strategy since v15. The comparison against a *measured* excursion is deferred → `the-stop-vs-noise-comparison-has-no-home` (GitHub #85) |
+| `maxConcurrentExposureUsd` against **account balance** | **Not possible.** No tool publishes a balance → `no-account-balance-is-readable` (GitHub #84) |
+
+And the thing the item did not ask for, which turned out to be the strongest
+answer available: **the agent's own realised exit geometry** — the median move
+at each close reason, from `entryFillPrice`/`exitFillPrice`/`direction`/
+`closeReason`. It states the finding per agent with no candle history and no
+borrowed constant, which is what the item's own warning about false precision
+was pointing at.
+
+**Closed.** Every row is now either shipped or carried by a successor with its
+own item — `no-account-balance-is-readable` (GitHub #84) and
+`the-stop-vs-noise-comparison-has-no-home` (GitHub #85). Keeping this open as
+well would duplicate their scope, which is the one thing a backlog must not do.

@@ -8,6 +8,7 @@ created: 2026-07-29
 updated: 2026-07-29
 change: oauth-endpoints-are-assumed
 capability: battlegrid-connection
+github: "91"
 blocked_by: []
 tags: [architecture, personal-mode]
 ---

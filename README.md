@@ -23,7 +23,7 @@ Against a connected BattleGrid account:
 | **Strategies** | Fork (nameable) · edit sections & tagline · compile → review → apply · retune any signal rule · **conditions: compose, try live, save** · preview what the agent reads · signal library (82) · metric index (75) · section library & column editor |
 | **The field** | `/explorer` — every other agent on the platform, the leaderboard with this account's row marked, one competitor's whole record, any evaluation's 72-signal scorecard |
 | **The arena** | `/arena` — every Market Grid session, schedule, entry fee, the money split. Watch-only by decision; a CANCELLED session is promised nothing |
-| **Any model** | `docs/MCP_SERVER.md` — the product as an MCP server: 18 read tools, no writes, enforced by a guard rather than a convention |
+| **Any model** | `docs/MCP_SERVER.md` — the product as an MCP server: 25 tools — 24 reads and one that records a suggestion into this product's own store — no writes to BattleGrid, enforced by a guard rather than a convention |
 | **Audit** | Every write made on the user's behalf: actor, tool, outcome |
 
 Every write goes through **describe → confirm → perform**: the consequence is
@@ -33,12 +33,14 @@ what was reviewed. Every write path has been walked against the live platform.
 
 ## Three facts that shape every decision
 
-1. **`mcp:read` is write-capable.** 27 of BattleGrid's 110 tools mutate; only
+1. **`mcp:read` is write-capable.** 27 of BattleGrid's 114 tools mutate; only
    16 need `mcp:wager`. Scope is never treated as a safety boundary.
-2. **The tool surface goes stale after a BattleGrid deployment, and the tool
-   count never moves.** Six major versions observed; always 110 tools while
-   enums and semantics changed underneath. Vocabulary is discovered at
-   runtime, never written into source, and CI fails on a stale surface record.
+2. **The tool surface goes stale after a BattleGrid deployment, and the count
+   barely moves.** Six major versions observed at exactly 110 tools while enums
+   and semantics changed underneath; **v14 then moved it to 114**. So a count
+   that has not moved proves nothing, and one that has says only that
+   *something* changed. Vocabulary is discovered at runtime, never written into
+   source, and CI fails on a stale surface record.
 3. **This product holds credentials that configure other people's agents.**
    Read-only by default, explicit step-up, every write audited.
 

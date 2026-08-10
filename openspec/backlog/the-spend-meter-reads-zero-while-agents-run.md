@@ -8,6 +8,7 @@ created: 2026-08-09
 updated: 2026-08-09
 change: ""
 capability: agent-introspection
+github: "96"
 blocked_by: []
 tags: [battlegrid, v15, money, live, measurement]
 ---

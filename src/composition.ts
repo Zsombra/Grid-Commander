@@ -57,6 +57,7 @@ import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
+import { ReadRiskReadingQuery } from './application/use-cases/read-risk-reading.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
 import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
@@ -276,6 +277,10 @@ export function app(cookies: CookieStore) {
     updateAgent: new UpdateAgentCommand(i.agents),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
+    // The same agent, asked what its settings are *against*. One port because
+    // all three readings — the catalog's defaults, the roster's config, the
+    // closed trades — come from the agents surface.
+    readRiskReading: new ReadRiskReadingQuery(i.agents),
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
     readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),

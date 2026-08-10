@@ -8,6 +8,7 @@ created: 2026-08-08
 updated: 2026-08-08
 change: ""
 capability: agent-deployment
+github: "109"
 blocked_by: []
 tags: [battlegrid, radar, v14, capability-appeared]
 ---

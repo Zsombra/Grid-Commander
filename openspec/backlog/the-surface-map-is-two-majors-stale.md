@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: platform-mapping
+github: "92"
 blocked_by: []
 tags: [battlegrid, surface, vocabulary, freshness]
 ---

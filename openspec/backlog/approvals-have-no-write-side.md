@@ -7,6 +7,7 @@ priority: p3
 created: 2026-08-03
 updated: 2026-08-06
 capability: agent-understanding
+github: "101"
 blocked_by: []
 tags: [battlegrid, approvals, human-in-the-loop, wager]
 ---

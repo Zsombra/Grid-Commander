@@ -64,7 +64,15 @@ Copy `openspec/backlog/TEMPLATE.md` to `openspec/backlog/<item-id>.md`.
    error string, a reproduction. It is what saves the next person the
    rediscovery.
 5. Set `updated` to today.
-6. `python3 .claude/tools/openspec.py validate --all`
+6. **Mirror it as a GitHub issue and link it back.** File the issue, then set
+   `github: "<number>"` in the item's frontmatter. Write the issue for someone
+   with no checkout: what is actually true (with `file:line` or a payload), why
+   it matters, what would settle it and what that needs, and where the
+   reasoning came from — the last one is what makes a wrong premise cheap to
+   correct later. Name the backlog id in the issue's first lines.
+   `github: none` is allowed for an item that only points at another, and must
+   say so in the body. Full doctrine: `.claude/references/tracking.md` §7.
+7. `python3 .claude/tools/openspec.py validate --all`
 
 **Priority is earned by consequence.** Ask what breaks if this is never done.
 If the answer is "nothing much", it is p3, whoever is asking.
@@ -143,11 +151,19 @@ because entries are essays is a journal that does not work.
 5. **Never invent status.** If you do not know whether something works, the
    entry says you do not know.
 6. **`id` always matches the filename.** Validation enforces it.
+7. **Never file a finding in only one place.** Every item is mirrored as a
+   GitHub issue and linked by `github:`. A finding that lives only in the repo
+   is invisible to the person who decides what gets worked on. Validation
+   enforces it for every open item, with no exemption by age.
+8. **When a finding turns out to be wrong, correct the issue rather than
+   filing a second one.** Keep the original under a `<details>` fold saying
+   what was wrong — a ticket whose history is deleted teaches nobody why the
+   mistake was reachable.
 
 ## Completion
 
 - [ ] Every item touched has an accurate `status` and a current `updated`.
-- [ ] Everything deferred this session is filed.
+- [ ] Everything deferred this session is filed, **and mirrored as an issue**.
 - [ ] `validate --all` reports no new errors.
 - [ ] (Mode E) Journal entry written, with all four fields.
 

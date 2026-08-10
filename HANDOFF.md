@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-07  
-**State**: green (1902 vitest + 81 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 24 open backlog items. PRs #8–#79 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v15.0.0** (re-probed 2026-08-09; v14 had moved the tool count for the first time ever, 110 → 114, and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and does not yet apply: `v15-trade-level-policy-is-declared-but-inert`, p1). **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
+**Date**: 2026-08-10  
+**State**: green (1968 vitest + 81 db + 235 harness tests, eight of ten `./scripts/ci.sh` gates — `freshness` and `serving` skip without a key; further vitest are key-gated live probes). No active changes. 31 open backlog items. PRs #8–#82 merged; **#83 open as a draft**. **The surface record is v16.0.0**, re-probed 2026-08-10 — v16 made `conditions[].required` a required path on all three condition-carrying writes, the twelfth dead write path and the second caught by the guards before a live refusal. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply, retested against v16: `v15-trade-level-policy-is-declared-but-inert`, p1. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -20,21 +20,26 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | 123 |
-| Vitest tests | 1902 (+ key-gated live) + 81 db |
+| Changes (archived) | **132** |
+| Vitest tests | **1968** (+ key-gated live) + 81 db |
 | Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 25 |
+| Open backlog items | **31** |
 | Design tickets open | 0 |
-| Open draft PRs | none; #8–#72 merged |
+| Open draft PRs | **#83**; #8–#82 merged |
+| Open GitHub issues | **#84–#87** — filed 2026-08-10, see below |
 
 ### Read this before anything else
 
-**BattleGrid deploys often, and the tool count never moves.** Three
+**BattleGrid deploys often, and the tool count barely moves.** Three
 deployments were observed in one session on 2026-08-05 — v3.0.0 → v5.0.0 →
 v5.1.0 — and all three reported exactly **110 tools** while enums, required
-arguments and semantics changed underneath. A check that counts proves
-nothing.
+arguments and semantics changed underneath. **v14 then moved it to 114**, the
+first change in six major versions. So a count that has not moved proves
+nothing, and one that has says only that *something* changed — neither is a
+freshness check. **v16 is the current record** (2026-08-10): 114 tools, none
+added or removed, three schemas changed, and one of those changes would have
+refused every strategy write carrying a condition.
 
 `./scripts/ci.sh` now runs a **`freshness`** gate. With `BATTLEGRID_API_KEY`
 set it compares `docs/battlegrid-mcp-surface.json`'s recorded server version
@@ -86,7 +91,7 @@ its neighbours.
 | `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **each trade's story — frozen chart + the audit trail of every stop move**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
 | `strategy-authoring` | Fork (nameable), compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — composed, tried live, and saved through the full ceremony**; the section library and column editor |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
-| `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |
+| `mcp-control` | Grid-Commander exposed as an MCP server — 25 tools (24 reads + one proposal recorder), no writes to BattleGrid, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
 | `platform-mapping` | The recorded model of BattleGrid's MCP surface, and the guarantee that it announces its own age |
 | `signal-recording` | The forward record of what the signals said — capture (CLI, cron-owned schedule), the raw answer kept whole, coverage with gaps stated as gaps, history per coin and per signal, readable by the web and by a model |
@@ -100,7 +105,7 @@ Against a real connected BattleGrid account a user can:
 - **Connect** their account (OAuth/DCR/PKCE, no raw credential ever touches the browser)
 - **Agents**: view roster, create, rename, update trading limits, edit position management (a preset with the platform's own values or fourteen custom fields, drift between label and values said plainly), rebind to a strategy, archive, reactivate
 - **Agent understanding**: read the agent's thought log (reasoning, confidence, decision outcomes), view how close it is to each configured limit, see which limits have no cap set vs which are at risk, and see whether it is acting at all — each radar deployment's market, timeframe and standing, or a plain statement that it is configured but scanning nothing
-- **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment cannot be created — BattleGrid's API refuses every `expectedRevision` when no policy exists (`radar-first-deployment-not-creatable-over-mcp`), so that one act still lives on battlegrid.trade
+- **Agent deployment**: deploy an agent onto a market that already carries a deployment (the replacement is named before agreement; timeframes come from the platform's runtime declaration) and undeploy it (the confirmation names what stops). A market's *first* deployment is **creatable since v14** (`expectedRevision: null`, four proven live 2026-08-08) and the deploy surface does not yet offer it — `the-deploy-surface-cannot-create-first-deployments`
 - **Strategies**: fork a system strategy, edit its tagline and compose which report sections it includes, compile it (BattleGrid-side dry run showing blast radius), review it, apply it; archive and restore; browse the signal library (`/strategies/signals`) — all 82 signals a rule can reference, each with the platform's own authoring card (what it detects, when it fires, examples, parameters with bounds and defaults); browse the metric index (`/strategies/metrics`) — 75 metrics across ten families with per-transform formulas — and check any composed column against the platform's contract, where a refusal renders as the platform's own lesson (offending path, received value, legal domain); **retune any signal rule the strategy carries** (allocation, Required, declared params) through the full describe→confirm→perform ceremony, the token digest-bound to the exact values at the revision read (live-proven 2026-08-01: allocation 0→1 on a zero-bound fork, r1→r2 read back); **preview what an agent reads** (`/strategies/[id]/preview`) — the report rendered live over a bounded coin selection with token estimate, budget gauges, and which of the 82 signals the composition can feed, all without saving anything
 - **Arena** (`/arena`): watch every Market Grid session — schedule, coin pool, player count, and whether this account has entered (read from `check_market_grid_submission` alone; the player-grid tool 500s for "not played" and is never called). Playing stakes a real entry fee and is deliberately not offered yet
 - **Trading record** (`/agents/[id]/trades`): every trade an agent closed — net P&L, both fees, slippage each side, leverage, the conviction it opened on, why and by whom it closed, how long it was held — with a summary *derived from those trades* and labelled as such, because BattleGrid's own performance figures read zero for accounts with real losses
@@ -108,7 +113,7 @@ Against a real connected BattleGrid account a user can:
 - **The field** (`/explorer`): the population this account competes against — its totals (37 agents, 31% win rate, **−$162.07 net**: the field as a whole loses money), the ranked agent resumes with the platform's own subtitle and objective, a per-model-vendor breakdown of who is actually profiting, and where this account stands from both tools (rank 7 by profit / 97th percentile, and its own agents' places in the field). Three platform behaviours it is built around: the returned list can be shorter than the field it reports and no limit widens it (**intermittently** — 5 of 37 four runs running, then 37 of 37 an hour later), so both counts are always stated; an absent win rate is shown as not measured rather than 0%; and every rate is printed beside its trade count, because sorting by win rate promotes the smallest sample
 - **A competitor's record** (`/explorer/[agentId]`, opened from any field row): what one public agent looks at versus what it acts on — the funnel from evaluations through decisions to executions (`Market Predator`: 245 → 102 → 73 entered → 51 executed, fill rate 76%, 23W/28L, +$50.06), its closed trades with the platform's own win verdict, its evaluations against the threshold in force, and what it holds now. Two counters the platform names alike are kept apart (`skipCount` = SKIP decisions, `skippedCount` = SKIPPED terminal status), and open-position *rows* are carried but not interpreted — no agent in the field has ever held one, so the shape is unobserved and not guessed (`open-position-rows-are-unobserved`)
 - **One evaluation's scorecard** (`/explorer/[agentId]/evaluations/[logId]`): every signal a competitor consulted on one candidate — **72 of them**, across seventeen modules, the ~60 that did *not* fire included, each with its score, bias, primary/required flags, raw indicator values and the platform's own sentence ("RSI(14) at 38.1 — not oversold (threshold 30)"). Plus how the aggregate was attributed across the ones that fired, and the chain from gate → attempt → decision → execution → outcome, with stages the platform did not record omitted rather than shown empty. A listed evaluation that publishes no detail says so, distinctly from one that could not be read
-- **Drive it from any model** (`docs/MCP_SERVER.md`): Grid-Commander runs as an MCP server over stdio, so Claude Desktop, Claude Code, or any MCP-speaking client — with whatever model the operator chooses — can ask it the questions the web surfaces answer. Eighteen tools, all reads: the product's derived figures and its `unreadable`-vs-`empty` distinctions cross the boundary intact, and a failed read is never an MCP error, because a model told a tool failed will often say "you have no agents". **No writes**, enforced by a guard rather than a convention — the confirmation ceremony assumes a human reads the consequence, and a model is not one
+- **Drive it from any model** (`docs/MCP_SERVER.md`): Grid-Commander runs as an MCP server over stdio, so Claude Desktop, Claude Code, or any MCP-speaking client — with whatever model the operator chooses — can ask it the questions the web surfaces answer. Twenty-five tools, all but one a read: the product's derived figures and its `unreadable`-vs-`empty` distinctions cross the boundary intact, and a failed read is never an MCP error, because a model told a tool failed will often say "you have no agents". **No writes**, enforced by a guard rather than a convention — the confirmation ceremony assumes a human reads the consequence, and a model is not one
 - **Audit log**: every write made on the user's behalf, with actor, tool, and outcome
 
 Added in the final three rounds (2026-08-06 → 08-07):
@@ -168,7 +173,7 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 - Agent edit form only exposes rename and trading limits — the read and write schemas for `tradingConfig` differ (3 fields come back on read, are rejected on write with `additionalProperties: false`)
 - Position-management preset is a label alongside 14 independent values, not a shorthand — the edit surface therefore offers the fourteen fields and says when the label and values disagree (shipped 2026-07-31)
-- A market's **first** radar deployment cannot be created over MCP — every `expectedRevision` is refused when no policy exists (`radar-first-deployment-not-creatable-over-mcp`); that one act still happens on battlegrid.trade
+- ~~A market's **first** radar deployment cannot be created over MCP~~ — **this limit lifted at v14.** `upsert_radar_deployment` documents `expectedRevision: null` as the first-deploy signal, proven live 2026-08-08 with four created deployments (XRP, AVAX, xyz_jpy, xyz_gold; radar filled to its 20/20 cap). The *product* still types `expectedRevision: number` and describes replacements only, so the act is in scope and not yet offered: `the-deploy-surface-cannot-create-first-deployments`
 - Playing a Market Grid session stakes a real entry fee (10), so the submit tools stay unoffered until the full confirmation ceremony covers them; the arena is watch-only by decision
 - **Custom report tables are created by definition, not by key** — the platform mints `custom:<uuid>`; inventing one is refused. Modifying means restating the table *with* the minted key. Full grammar in `docs/REPORT_TABLE_GRAMMAR.md`
 - An archived strategy is listed by `list_strategies` but its detail answers `NOT_FOUND`
@@ -179,7 +184,15 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 | Item | What | Fix path |
 |---|---|---|
-| `image-never-built` | Docker image build never proven | Needs a Docker daemon; not resolvable in this environment. |
+| `image-never-built` | Docker image build never proven | Needs registry egress or a pre-seeded cache. Not resolvable in this environment — the daemon starts, the network policy denies Docker Hub's blob host. |
+| `v15-trade-level-policy-is-declared-but-inert` | The stop bounds and R:R floor v15 moved onto the strategy are ignored by the compiler, with no working write path | **Upstream.** Retested against v16 on 2026-08-10 — still `"Strategy update contains no effective changes"` on all three strategies. A whole major version came and went, so this is not a half-shipped feature. |
+| `the-surface-map-is-two-majors-stale` | Mis-titled and corrected in the item: the record is current. The real gap is that the probe records payload *shapes*, not values, so the authoring vocabulary's contents are in no committed artifact | Extend `tools/probe_mcp_surface.py` to record enum members and declared defaults, not just types. |
+
+(`a-stop-inside-the-noise-looks-like-a-tight-stop` — the p1 this table carried
+for four days — **closed 2026-08-10** by `a-number-alone-says-nothing`. Two of
+its six rows turned out to be shipped already, one moved onto the strategy at
+v15, and one asked for a read whose premise was wrong. What remains is carried
+by GitHub #84 and #85.)
 
 (`agent-create-composes-fields-v14-refuses` — v14 dropped two `tradingConfig`
 fields the write paths still composed, breaking agent create wholesale — was
@@ -195,15 +208,25 @@ Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
 re-probing before any other work is trustworthy.
 
-### Everything proposed is built. The backlog waits on other people.
+### Everything proposed is built. Most of the backlog waits on other people.
 
-All 122 changes are archived, including `the-model-can-propose-and-only-a-human-agrees`
+All 132 changes are archived, including `the-model-can-propose-and-only-a-human-agrees`
 (2026-08-06): a model can record an intent through the MCP server, and only a
 human — at `/pending/<id>`, through the ordinary describe→confirm→perform
 ceremony, against the account as it is *then* — can perform it.
 `tests/architecture/proposals-are-inert.test.ts` holds that as a property.
 
-The 20 open backlog items split cleanly:
+**Four GitHub issues were opened on 2026-08-10** and are the sharpest thing to
+pick up, because three of them are fully unblocked:
+
+| | | |
+|---|---|---|
+| **#84** | The balance **is** readable — `get_account_state` publishes it and nothing calls it | Establish whether "play balance" is the perps wallet (one live read), then the exposure-vs-balance comparison is an ordinary `/propose` |
+| **#85** | The stop-vs-noise comparison has no home — wrong subject since v15, inert where it lives, needs history | Blocked upstream; the cheapest opening is reading `minStopLossAtrMultiple` as the platform's own volatility-relative answer |
+| **#86** | Five stale claims in the summary docs | **Closed by this session's refresh** |
+| **#87** | Architecture guards prove their corpus, not their matcher | Unblocked. 16 guards, 77 negative assertions; audit each for whether anything fails when the matcher matches nothing |
+
+The 31 open backlog items split cleanly:
 
 - **Waiting on the operator**: `prove-token-lifetimes` and
   `oauth-path-may-be-dead-weight` (a human browser consent),
@@ -214,7 +237,7 @@ The 20 open backlog items split cleanly:
   `APPROVAL_REQUIRED` changes how a live account trades).
 - **Waiting on BattleGrid**: `forking-a-name-that-exists-is-a-500` (report it —
   a duplicate name should refuse, not 500), `battlegrid-is-returning-internal-errors`
-  (the standing outage record), `radar-first-deployment-not-creatable-over-mcp`,
+  (the standing outage record),
   `market-grid-payloads-that-only-fill-once-someone-plays` (nobody on the
   platform has ever entered a session this listing can see),
   `two-read-tools-do-not-answer` (`get_market_context`'s schema understates its
@@ -245,7 +268,7 @@ Manifests resolve (401), blobs 403. `image-never-built` needs registry egress or
 a pre-seeded cache — not just a daemon. Do not spend the setup time again
 without one.
 
-### The lesson that keeps recurring, now five times
+### The lesson that keeps recurring, now six times
 
 **A check that matches how something is *spelled* rather than what it
 *reaches* is the defect shape this codebase produces.** The read-only guard
@@ -253,13 +276,26 @@ matched a tool-name prefix; the live-writes guard matched tool names in test
 source and missed a file that mutated through `ForkStrategyCommand`; a
 rendering assertion searched text for a URL the harness never emitted;
 `readOnlyHint: true` was served for every tool because every tool used to be a
-read; and the live-writes guard's *replacement* assumed one gate per file and
-broke on the first probe that honestly needed two.
+read; the live-writes guard's *replacement* assumed one gate per file and
+broke on the first probe that honestly needed two; and **the sixth was a guard
+written against this very lesson** — `no-population-constants.test.ts` shipped
+with a regex whose mandatory leading `[A-Za-z_$]` consumed the first letter of
+its own alternation, so it matched nothing, ever, and passed green against a
+constant planted in a rendered component.
 
 Corollary, learned the same day: **when a rule and an honest new case
 disagree, suspect the rule.** Every one of those was fixed by deriving from
 reachability — the surface record's own classification, the composition root's
 wiring, what a block actually calls — never by adding an exemption.
+
+**And the distinction the sixth adds, which the first five did not:** a corpus
+check proves the sweep read files. It proves *nothing* about whether the
+pattern can match. Fifteen of the sixteen guards making negative assertions
+already assert their corpus is non-empty, and that protection is real — but the
+corpus here was 231 files and entirely healthy while the pattern was dead. The
+only thing that proves a matcher works is feeding it a violation, which
+`identifiers.test.ts` has done all along: *a guard nobody has seen fail is a
+guard nobody knows works.* Audit filed as GitHub **#87**.
 
 ---
 

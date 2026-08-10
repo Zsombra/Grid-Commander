@@ -8,6 +8,7 @@ created: 2026-07-29
 updated: 2026-07-31
 change: performance-was-already-in-the-payload
 capability: agent-understanding
+github: "107"
 blocked_by: []
 tags: [battlegrid, agent-understanding, mapping]
 ---
@@ -174,3 +175,20 @@ budget and a trading history, and has never returned a non-zero figure.
 
 `accountEquityUsd: 0` is also still 0 in `get_agent_budget` on this account —
 third observation, still unexplained, still rendered nowhere.
+
+## Re-confirmed live, 2026-08-10 — the tool is wrong, not empty
+
+`get_agent_fund_allocation` on **Undertow**, holding five open positions at that
+moment, answered `availableUsd: 0, committedUsd: 0, lifetimeAllocatedUsd: 0`.
+`list_user_active_positions` seconds earlier reported **`marginedUsd: 17.45`**
+for the same agent.
+
+"Never returned a figure" is consistent with an idle account. This is not: two
+reads of the same platform, at the same time, about the same agent, disagreeing
+by $17.45. The tool whose stated job is *funds committed to in-flight wagers and
+trade margin* reports zero committed while the platform's own positions read
+reports the margin.
+
+Same shape as `get_agent_performance` answering zeros on agents with real closed
+losses — two nominally authoritative money tools, both answering zero where the
+platform's own alternative answers correctly. Nothing should be built on either.

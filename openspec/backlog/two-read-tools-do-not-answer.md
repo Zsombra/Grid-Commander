@@ -8,6 +8,7 @@ created: 2026-07-29
 updated: 2026-07-31
 change: every-value-sent-is-one-the-platform-accepts
 capability: battlegrid-connection
+github: "114"
 blocked_by: []
 tags: [battlegrid, probe, declared-vs-observed]
 ---

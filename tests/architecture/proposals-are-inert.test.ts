@@ -38,6 +38,30 @@ const touchesProposals = sources.filter((f) => {
   return /ProposalStore|resolveProposal|openProposal|proposals\./.test(code);
 });
 
+/**
+ * Anything that could run a proposal on its own.
+ *
+ * Named at module scope rather than written inline in the loop so that the
+ * self-test at the bottom of this file can feed the **same** patterns a known
+ * violation. A self-test that retypes the rule guards its own copy — the exact
+ * defect the audit in GitHub #87 found in `identifiers.test.ts`, whose
+ * `check()` re-declares the regexes the live scan uses.
+ */
+const SCHEDULES: readonly RegExp[] = [
+  /\bsetTimeout\s*\(/,
+  /\bsetInterval\s*\(/,
+  /\bcron\b/i,
+  /\bschedule[dr]?\b/i,
+  /\bworker\b/i,
+  /\bconsume(r)?\s*\(/,
+  /\bpoll\w*\s*\(/,
+];
+
+/** True when this fragment could perform a proposal without a person. */
+function schedulesSomething(code: string): boolean {
+  return SCHEDULES.some((p) => p.test(code));
+}
+
 describe('nothing performs a proposal without a person', () => {
   it('found the files it is checking', () => {
     // Empty would pass every assertion below vacuously.
@@ -53,15 +77,7 @@ describe('nothing performs a proposal without a person', () => {
     const offenders: string[] = [];
     for (const file of touchesProposals) {
       const code = stripComments(read(file));
-      for (const pattern of [
-        /\bsetTimeout\s*\(/,
-        /\bsetInterval\s*\(/,
-        /\bcron\b/i,
-        /\bschedule[dr]?\b/i,
-        /\bworker\b/i,
-        /\bconsume(r)?\s*\(/,
-        /\bpoll\w*\s*\(/,
-      ]) {
+      for (const pattern of SCHEDULES) {
         if (pattern.test(code)) offenders.push(`${file}: ${String(pattern)}`);
       }
     }
@@ -152,5 +168,54 @@ describe('no MCP response can carry a confirmation', () => {
         /confirmationToken|confirmation:/,
       );
     }
+  });
+});
+
+/**
+ * The rules, fed the violations they exist to catch.
+ *
+ * Audited 2026-08-10 by mutation (GitHub #87): **all eleven offender matchers
+ * in this file were broken at once and it passed 7/7 green.** The three corpus
+ * floors stayed satisfied throughout, because the corpus filter is a different
+ * regex from the matchers doing the scanning — so counting what was scanned
+ * proved nothing about whether anything could be found in it.
+ *
+ * This is the guard holding `the-model-can-propose-and-only-a-human-agrees` as
+ * a property. A guard nobody has seen fail is a guard nobody knows works.
+ */
+describe('the rules catch what they were written for', () => {
+  it('catches a proposal performed by the passage of time', () => {
+    expect(
+      schedulesSomething("setInterval(() => { void app.updateAgent.execute(proposals.next()); }, 60_000);"),
+    ).toBe(true);
+  });
+
+  it('catches the other shapes a scheduler takes', () => {
+    for (const code of [
+      'setTimeout(run, 1000)',
+      'const cron = "*/5 * * * *"',
+      'export const scheduled = true',
+      'new Worker(queue)',
+      'await consumer(topic)',
+      'await pollProposals()',
+    ]) {
+      expect(schedulesSomething(code), code).toBe(true);
+    }
+  });
+
+  it('does not fire on the ordinary code this file scans', () => {
+    // Without this, every assertion above is satisfied by a predicate that
+    // returns true for everything — the direction that silenced
+    // `controls.test.ts` when its exclusions were widened rather than its
+    // scan narrowed.
+    expect(schedulesSomething("const open = await app.openProposal.execute({ id });")).toBe(false);
+    expect(schedulesSomething("await proposals.record(intent);")).toBe(false);
+  });
+
+  it('finds the perform call the route rule looks for', () => {
+    // The rule at `only a submitted form performs one` keys on this exact
+    // shape; a dead pattern there means no file is ever examined.
+    expect(/\bupdateAgent\.execute\s*\(/.test('await app.updateAgent.execute({ agentId })')).toBe(true);
+    expect(/\bupdateAgent\.execute\s*\(/.test('updateAgent: new UpdateAgentCommand(agents),')).toBe(false);
   });
 });

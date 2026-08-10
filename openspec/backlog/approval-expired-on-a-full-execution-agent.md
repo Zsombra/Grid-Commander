@@ -8,6 +8,7 @@ created: 2026-08-06
 updated: 2026-08-06
 change: ""
 capability: agent-understanding
+github: "98"
 blocked_by: []
 tags: [battlegrid, gate-blocks, unexplained, live]
 ---
