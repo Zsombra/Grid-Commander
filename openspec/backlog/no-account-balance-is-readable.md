@@ -52,9 +52,37 @@ originally pointed at is *not* a balance. `openspec/JOURNAL.md` established it �
 `equityUsd` is the agent's own `maxConcurrentExposureUsd`. Setting it against
 that field would have compared the cap with itself.
 
+## Unblocked, 2026-08-10 — there is only one pool
+
+Read live, both sides at the same moment:
+
+| | |
+|---|---|
+| `get_account_state` → `balance.usdc` | **43.667427** |
+| `list_user_active_positions` → `totals.marginedUsd` | **25.229691** (7 positions, notional 89.29) |
+
+$25.23 of margin sits inside a $43.67 balance, and **`balance.usdc` is the only
+balance the platform publishes anywhere on the 114-tool surface**.
+`tradingWalletProvisioned` is a boolean — whether the wallet exists — not a
+second figure. There is no second pool to confuse it with, so the comparison is
+honest as *the agent's cap against the only balance the platform reports*.
+
+`get_agent_fund_allocation`, the one tool that claims to split money per agent,
+reports `committedUsd: 0` for an agent holding $17.45 of margin at that same
+moment (`performance-and-allocation-are-unmodelled`, GitHub #107). It cannot
+refine this and must not be used to.
+
+**The finding this makes renderable**: `THE .0` carries
+`maxConcurrentExposureUsd: 250` against a **$43.67** balance — a cap 5.7× the
+money behind it, which cannot bind and reads as a limit.
+
+Also unread at the account level: `agentSlots {limit 3, used 3, remaining 0}`
+and `mcpWagerEnabled: true`.
+
 ## Notes
 
-**Establish the pool before building the comparison.** The description says
+~~**Establish the pool before building the comparison.**~~ Answered above. The
+description said
 "play balance (USDC)" and "use this to check if you're ready to play", which is
 arena language, and `tradingWalletProvisioned` sits beside it as a separate
 flag. Whether the play balance and the perps trading wallet are one pool is
