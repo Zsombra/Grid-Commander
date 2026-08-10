@@ -1,5 +1,38 @@
 # Journal
 
+## 2026-08-10 (check-in 07:0xZ) — seven open, seven green, and nothing has closed
+
+**Nothing closed in ninety minutes**, and the book is the best this fleet
+has held: **+$0.7638 across seven, every one green.**
+
+| | | |
+|---|---|---|
+| FARTCOIN | LONG | +$0.297 |
+| BRENTOIL | SHORT | +$0.155 |
+| LDO | SHORT | +$0.148 |
+| HYPE | LONG | +$0.076 |
+| SKHX | LONG | +$0.057 (opened 06:23) |
+| WIF | LONG | +$0.024 |
+| MELANIA | LONG | +$0.007 |
+
+Recorded without celebration: this is unrealised, and the three largest
+unrealised positions this fleet ever held — AIXBT at +$0.121, TRUMP at
++$0.077, FARTCOIN at +$0.509 — gave back 100%, 100% and 57% respectively.
+An all-green book is what the hour before a round trip has looked like every
+previous time. What would make it different is a close at `TAKE_PROFIT`.
+
+**Realized unchanged**: 26 closed, 7W/19L, −$1.0533, WR 27%, realised RR
+1.25 against 3.34 placed. The long/short split is therefore also unchanged
+and still thin on the long side — LONG 7 closed, 1W, **1 TP**, −$0.2138;
+SHORT 19 closed, 6W, **0 TP**, −$0.8396. Five of the seven open are longs,
+so the sample that settles it is still in flight.
+
+**The platform is up at v16.0.0** — worth stating plainly given the source
+of this morning's design rationale. No further deploy since the v16 fix, so
+the policy p1 was not retested this cycle, per the version-gated cadence.
+
+**Meter** still dead.
+
 ## 2026-08-10 (the dials explained) — the fix I called impossible is one dial, and it is the inert one
 
 The operator supplied BattleGrid's own design rationale for the three
