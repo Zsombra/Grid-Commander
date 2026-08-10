@@ -77,6 +77,23 @@ In the order the questions actually come up:
 7. **`/arena`** — the Market Grid sessions, watch-only. Playing stakes a real
    entry fee and is deliberately not offered.
 
+### Start the recorder today, even if you read nothing else
+
+The platform serves *current* signal readings only — nothing on BattleGrid
+answers "what did the signals say yesterday". Every claim about signal
+behaviour therefore rests on forward data, and each day without a recorder is
+history nobody can re-fetch. One cron line starts it:
+
+```cron
+17 * * * *  cd /path/to/grid-commander && DATABASE_URL=… BATTLEGRID_API_KEY=bg_live_… npx tsx bin/grid-commander-record.ts
+```
+
+Each run captures what every signal says for your deployed coins, at the
+timeframes their deployments watch (or name coins: `--coins BTC,ETH
+--interval 4h`). It exits nonzero when it recorded nothing, so cron's mail is
+your dead-recorder alarm — and `/recorder` shows the record's own coverage,
+gaps stated as gaps. Reads only: a capture changes nothing on your account.
+
 ## 4. When you're ready to change something
 
 Every write is the same shape: **describe → confirm → perform.** The page
@@ -108,9 +125,13 @@ the MCP server; only you, at `/pending`, can agree).
 ## 5. Drive it from a model, if you like
 
 `docs/MCP_SERVER.md` — point Claude Desktop, Claude Code, or any MCP client at
-the product and ask it the questions the pages answer. Eighteen tools, all
-reads. "How is Fade Master II doing and what's stopping it" is a fair
+the product and ask it the questions the pages answer. All reads (plus one
+tool that records a proposal and stops — trust `tools/list` over any count
+written here). "How is Fade Master II doing and what's stopping it" is a fair
 question; the answers carry the same unreadable-vs-empty honesty as the pages.
+Once the recorder has been running a while, so is "what did `rsi_oversold`
+say on BTC over the last week, and what did price do after" —
+`read_signal_history` serves the record, gaps and all.
 
 ## 6. What to expect from the platform itself
 

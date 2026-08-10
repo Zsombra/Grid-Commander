@@ -488,6 +488,7 @@ describe('every capability is reachable from wherever you already are', () => {
       '/audit',
       '/explorer',
       '/pending',
+      '/recorder',
       '/strategies',
     ]);
   });
@@ -896,6 +897,7 @@ describe('a page about one thing can get back to it', () => {
       '/arena/[id]',
       '/explorer/[agentId]',
       '/pending/[id]',
+      '/recorder/[ticker]',
       '/strategies/[id]',
       '/strategies/metrics/[metric]',
       '/strategies/sections/[sectionKey]',

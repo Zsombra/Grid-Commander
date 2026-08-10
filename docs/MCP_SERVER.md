@@ -50,9 +50,13 @@ behaviour.
 
 ## It cannot change anything. It can propose.
 
-Twenty tools. Nineteen are reads; the twentieth records a suggestion and
-stops. No tool here creates, updates, rebinds, archives, deploys, applies or
-disconnects anything on your BattleGrid account.
+Twenty-five tools. All but one are reads; the odd one out records a suggestion
+and stops. (This count has rotted twice already — prose tallies do, so trust
+`tools/list` over this sentence.) No tool here creates, updates, rebinds, archives, deploys, applies
+or disconnects anything on your BattleGrid account. Two of the reads —
+`read_signal_history` and `read_record_coverage` — read Grid-Commander's own
+database rather than BattleGrid: they serve the signal record the capture CLI
+grows, gaps and all.
 
 This is not caution for its own sake. Every write in Grid-Commander goes
 through **describe → confirm → perform**, with a token digest-bound to the
@@ -133,6 +137,7 @@ directly. It would lose everything this product knows:
 | `read_agent_thinking` | what an agent reasoned, cycle by cycle |
 | `read_agent_limits` | how close it is to each ceiling |
 | `read_trading_record` | every closed trade, and a derived summary |
+| `read_trade_story` | how one trade unfolded: the frozen chart, and every move position management made |
 | `read_decision_pipeline` | why it did or didn't trade, and its evaluate-vs-act funnel |
 | `read_evaluation` | one scorecard: every signal consulted, and what the decision cost |
 | `read_deployments` | where it is actually scanning |
@@ -141,6 +146,7 @@ directly. It would lose everything this product knows:
 | `read_signal_library` / `read_signal` | every signal a rule can reference |
 | `read_metric_index` / `read_metric` | every metric a column can be built from |
 | `simulate_aggregate` | what a re-weighting would score, without saving it |
+| `read_signal_history` / `read_record_coverage` | what the signals *said* — the recorder's own store, gaps stated as gaps |
 | `read_field` / `read_competitor` | the field, and one rival's whole public record |
 | `watch_arena` | Market Grid sessions |
 | `read_audit` | every write the product has made on your behalf |

@@ -6,11 +6,15 @@ import {
 } from '@/application/use-cases/deploy-agent.command.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
+import { ReadRecordCoverageQuery } from '@/application/use-cases/read-record-coverage.query.js';
+import { ReadSignalHistoryQuery } from '@/application/use-cases/read-signal-history.query.js';
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
+import { InMemorySignalRecordStore } from '../../support/recording-fakes.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
+import { ReadTradeStoryQuery } from '@/application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
@@ -87,6 +91,7 @@ export function actingWith({
   proposals = new FakeProposalStore(),
   market = new FakeMarketPort(),
   positions = new FakePositionsPort(),
+  signalRecord = new InMemorySignalRecordStore(),
   /**
    * When the page is being rendered. Injectable because a surface can now say
    * how old its figures are — "priced 4 minutes ago" — and a test that let
@@ -102,6 +107,7 @@ export function actingWith({
   proposals?: FakeProposalStore;
   market?: FakeMarketPort;
   positions?: FakePositionsPort;
+  signalRecord?: InMemorySignalRecordStore;
   clock?: FakeClock;
 } = {}) {
   const confirmations = new FakeConfirmationStore(clock);
@@ -116,6 +122,7 @@ export function actingWith({
     // whose submission is certain to fail is worse than none.
     readCatalog: new ReadCatalogQuery(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
+    readTradeStory: new ReadTradeStoryQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
@@ -154,6 +161,8 @@ export function actingWith({
       new DescribeApplyQuery(confirmations, random, clock),
     ),
     simulateAggregate: new SimulateAggregateQuery(strategies),
+    readSignalHistory: new ReadSignalHistoryQuery(signalRecord),
+    readRecordCoverage: new ReadRecordCoverageQuery(signalRecord, clock),
   };
 
   const user: CurrentUserResult = {
@@ -171,6 +180,7 @@ export function actingWith({
     explorer,
     market,
     positions,
+    signalRecord,
     confirmations,
     clock,
   };

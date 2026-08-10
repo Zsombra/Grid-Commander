@@ -1,5 +1,1394 @@
 # Journal
 
+## 2026-08-10 (v16 landed) — dead write path #12, caught before a live refusal
+
+**BattleGrid deployed v16.0.0** — found by the 05:06Z check-in, because the
+snapshot prints the server line and the cadence rule said to retest the
+policy only when it moves. It moved.
+
+**PR #80 merged to `main` first** (squash, `5b4fcfe`, 32 commits) with all
+six gates verified on the branch head rather than quoted from an earlier
+run. Two of them needed work to run at all rather than silently skip:
+PostgreSQL was down again after a container restart, and pytest was not
+installed, so the "235 harness" figure in the PR body was unverifiable until
+it was. Both then matched exactly. The designated branch was reset to
+`origin/main` afterwards so this work starts clean rather than stacking on
+merged history.
+
+**The v16 diff is one field, and it is fatal.** 114 tools, none added or
+removed, three schemas changed — all three condition-carrying writes
+(`compile_strategy_plan`, `apply_strategy_plan`,
+`preview_strategy_report`) made **`conditions[].required`** a required path.
+
+`serialiseCondition` emitted `conditionKey`, `name`, `definition`,
+`verdict` — four of the five keys v16 accepts. **Every strategy write
+carrying a condition would have been refused whole.** That is the twelfth
+dead write path in this codebase's history and **the second caught by the
+guards before a live refusal**, on the same run that refreshed the record:
+`payload-conformance` reported `conditions[].required is required and
+missing` three times the moment the v16 record landed.
+
+**The read had been returning it all along.** Our own `FUNDING_STRETCHED`
+carries `"required": false` on the live account. The field was never
+modelled, so the domain type had four fields where the platform had five —
+the write only broke when v16 made the omission fatal. A read this product
+had been discarding turned into a write it could not make.
+
+Changes: `required: boolean` joins `StrategyCondition`; the mapper reads it
+(absent → `false`, the platform's default and the only safe guess — `true`
+would silently harden a strategy); `serialiseCondition` emits it. The two
+retarget paths carry it from the source alongside the definition. The form
+has no control for it yet and composes `false`, filed as
+`the-condition-form-cannot-set-required` (p3).
+
+Two fixture families had to follow, and both were genuinely stale rather
+than merely inconvenient: the Berlin recordings in `strategy-fakes.ts` claim
+to be *the platform's own bytes* and no longer were, and two round-trip
+tests asserted byte-identity against payloads missing a key the platform
+sends.
+
+**The v15 policy p1 survived the whole version bump** — retested against
+v16, still `"Strategy update contains no effective changes"` on all three
+strategies. A major version came and went without fixing it, which is worth
+knowing: this is not a half-shipped feature.
+
+**Gates**: typecheck, lint, spec validation clean; **1,902 vitest**, **81 db
+against real PostgreSQL**, **235 python harness** — all green, all run after
+the change.
+
+## 2026-08-10 (check-in 03:40Z) — a quiet cycle, and the long book builds
+
+**One close**: TRUMP long, `STOP_LOSS`, **−$0.1612 on a −0.85% move in 33
+minutes** — full stop distance, the standard loser shape, this time on the
+long side. Realized: **25 closed, 7W/18L, −$1.0280**, win rate 28%,
+realised RR **1.20** (break-even 45%; placed 3.34 needs 23%). Still one
+take-profit in twenty-five.
+
+**The book is now seven positions and five are longs** (WIF, HYPE, FARTCOIN,
+MELANIA, SKHX) against two shorts (LDO +$0.093, BRENTOIL +$0.046), book
+total **+$0.1592**. The directional flip has held for ~90 minutes; FARTCOIN
+re-entered *long* eleven minutes after its short closed.
+
+**The long/short split so far** — thin data, but worth pinning before the
+long book resolves: **LONG 6 closed, 1W, −$0.1885 · SHORT 19 closed, 6W,
+−$0.8396.** Nineteen shorts carry most of the realized loss. Five of the
+seven open positions are longs, so this cycle-or-two doubles the long
+sample; capture rates and adverse-move sizes on longs are the thing to
+extract from it.
+
+Server still v15.0.0; policy retest skipped. **Meter** dead.
+
+## 2026-08-10 (check-in 02:10Z) — FARTCOIN did not convert, and the trail's capture rate is the number
+
+**FARTCOIN closed `STOP_LOSS` at +$0.2179** — a +1.59% favourable move over
+403 minutes. It was **+$0.5090** at the last check-in, so it gave back
+**57% of its peak** and never reached its target. The second-largest win
+this fleet has recorded, and it still left more on the table than it kept.
+
+**That completes a three-point picture of what the trail actually captures**,
+using peaks I observed directly in earlier snapshots:
+
+| | peak seen | closed | captured |
+|---|---|---|---|
+| MOODENG | — (ran to target) | +$0.3649 | **100%** (TAKE_PROFIT) |
+| FARTCOIN | +$0.5090 | +$0.2179 | **43%** |
+| HYPE | +$0.1400 | +$0.0040 | **3%** |
+
+The only trade that kept everything is the only one that reached its target.
+Every trail-managed exit surrendered between half and nearly all of the
+move. That is the placed-vs-realised gap expressed per trade rather than in
+aggregate, and it is the cleanest statement of the problem so far.
+
+**The fleet is recovering, and quickly.** Three closes this cycle — SKHX
+**+$0.1085 in 8 minutes** (+1.01%), FARTCOIN +$0.2179, and BRENTOIL
+**−$0.0062 on a +0.00% move**, a pure fee loss on a flat tape.
+
+| | 23:20Z | 00:45Z | **02:10Z** |
+|---|---|---|---|
+| closed | 19 | 21 | **24** |
+| net | −$1.3241 | −$1.1870 | **−$0.8669** |
+| win rate | 16% | 24% | **29%** |
+| realised RR | 1.33 | 1.05 | **1.24** |
+
+**$0.46 recovered in under three hours**, and unlike last cycle the win rate
+and the RR moved up together — FARTCOIN was large enough to lift the average
+win rather than dilute it. Win rate 29% is now comfortably above the 23%
+needed at the placed RR of 3.34, and still well below the 45% needed at
+1.24.
+
+**Still one take-profit in twenty-four trades.**
+
+**The book flipped direction.** Six open and **four are longs** (HYPE,
+FARTCOIN, TRUMP, MELANIA) against two shorts (LDO, BRENTOIL). This fleet has
+been overwhelmingly short all day; five entries inside twenty minutes at
+~02:02 reversed that. Worth watching whether the long book behaves
+differently — every finding above is drawn from a short-dominated sample.
+
+Server still v15.0.0; policy retest skipped. **Meter** dead.
+
+## 2026-08-10 (check-in 00:45Z) — BNB breaks the run, and win rate rose while RR fell
+
+**BNB, the fifth and last of the prediction book, closed green** —
+**+$0.0495 on a +0.51% *favourable* move after 391 minutes**, against a
+0.40% stop. It was not stopped out inside the noise; it survived six and a
+half hours and was trailed out in profit.
+
+**Final score on the pre-registered prediction: 3 confirm, 1 marginal, 1
+that does not fit.** Not five for five, and the last one has to be said
+plainly rather than folded into the tally by computing `|move| − stop` on a
+move that went the right way. That arithmetic is only meaningful for adverse
+moves; applied to BNB it manufactures a "+0.11pp" that means nothing. The
+noise-band effect is real and well evidenced on three or four trades — it is
+not universal.
+
+A second SKHX trade also closed green, **+$0.0876 in 22 minutes** on a
++0.91% move.
+
+**And those two wins produced the most interesting number of the night.**
+
+| | before | now |
+|---|---|---|
+| closed | 19 | **21** |
+| record | 3W/16L | **5W/16L** |
+| win rate | 16% | **24%** |
+| realised RR | 1.33 | **1.05** |
+| break-even needed | 43% | **49%** |
+
+**Win rate went up eight points and the fleet got further from break-even.**
+Both new wins were small trail-outs (+$0.088, +$0.049), so they raise the
+count of winners while dragging the average win down. Win rate is a
+seductive metric here and a misleading one: what the trail produces is a
+scratch machine — more trades finishing green, each too small to pay for a
+loss. Net is −$1.1870, better than −$1.3241 an hour ago, but the *structure*
+got worse.
+
+Note where that leaves the two thresholds: actual win rate **24%** is now
+*above* the **23%** needed at the placed RR of 3.34, and far below the
+**49%** needed at the realised 1.05. The entire deficit is the gap between
+placed and realised — which is exactly the geometry finding from last cycle,
+now visible from the other direction.
+
+**Book +$0.6900** across four. **FARTCOIN is +$0.5090** after 5.5 hours —
+larger than MOODENG's realised take-profit and still open. A new SKHX short
+opened 00:38 is already +$0.1760.
+
+Server still v15.0.0; policy retest skipped per cadence. **Meter** dead.
+
+## 2026-08-10 (check-in 23:20Z) — the prediction settles, and the geometry is self-defeating
+
+**Four of the five prediction-book positions have closed. All four
+`STOP_LOSS`. Zero take-profits.**
+
+| coin | stop placed | killing move | **excess over own stop** | held |
+|---|---|---|---|---|
+| WIF | 0.63% | 0.64% | **+0.01pp** | 103m |
+| TRUMP | 0.51% | 0.53% | **+0.02pp** | 276m |
+| SKHX | 0.38% | 0.44% | **+0.06pp** | 301m |
+| ENA | 0.82% | 0.89% | **+0.07pp** | 224m |
+
+**Every one died within 0.07 percentage points of its own stop; mean excess
+0.04pp.** On the pre-registered rule: **3 confirm, 1 marginal, 0
+disconfirm.** On the refined move-minus-own-stop metric: 4 of 4. Both
+agree, which is the only reason I am willing to call it settled — the
+refined metric was chosen after seeing data and cannot carry a verdict
+alone.
+
+Price is not moving against these positions. It is oscillating, touching the
+stop, and reverting. The trades are being ended by the market's breathing.
+
+**But the obvious fix does not work, and this is the real finding.** Widen
+the stops past the noise — call it 1.0% — and the geometry collapses,
+because *the tight stop is what produces the RR in the first place*:
+
+| coin | TP placed | stop 0.38% → RR 3.09 | stop 1.0% → RR |
+|---|---|---|---|
+| SKHX | 1.16% | 3.09 | **1.16** |
+| BNB | 1.65% | 4.13 | **1.65** |
+| TRUMP | 2.09% | 4.08 | **2.09** |
+
+**The 3.34 placed RR is manufactured by placing the stop inside the noise.**
+You cannot keep both the RR and a survivable stop at these TP distances.
+The only coherent resolutions are to widen stop *and* target together —
+which means longer holds, larger moves, fewer completions — or to be far
+more selective and trade less. Tuning the trail alone, which is what I have
+been recommending all day, addresses the *exit* of winners but not this:
+these four never got far enough for the trail to matter.
+
+MOODENG is the existence proof that the wider version works — TP 3.39%,
+reached, +$0.3649.
+
+**Realized: 19 closed, 3W/16L, −$1.3241**, win rate 16%, realised RR 1.33.
+
+**The surviving book is +$0.5435** — and **FARTCOIN alone is +$0.4245**, the
+largest unrealised this fleet has held, larger than MOODENG's realised
+take-profit. BNB +$0.089 is the last of the prediction five.
+
+Server still v15.0.0, so the policy retest was skipped this cycle per the
+new cadence. **Meter** dead.
+
+## 2026-08-09 (check-in 21:55Z) — a better statistic than the one I chose
+
+**ENA closed `STOP_LOSS`, −$0.1246, on a −0.89% move after 224 minutes**,
+against a stop placed at 0.82%. By the test I wrote down — "did the adverse
+move exceed the 0.82% median?" — this scores as *not* confirming, because
+0.89 > 0.82. Reported that way to keep the rule honest: **1 clean confirm, 1
+marginal, 0 disconfirming, 3 open.**
+
+**But the pair points at a sharper statistic than the one I picked.** Both
+closes died a hair past their *own* stop, not past some fleet median:
+
+| | stop placed | killing move | excess |
+|---|---|---|---|
+| WIF | 0.63% | 0.64% | **0.01pp** |
+| ENA | 0.82% | 0.89% | **0.07pp** |
+
+Comparing each trade's move to a fleet-wide median was the wrong
+denominator — it mixes coins with different volatility. **Move-minus-own-stop
+is the right one**, and on it both trades say the same thing: price reached
+the stop, tripped it, and went essentially nowhere further. That is what a
+stop inside the noise band looks like, and it is a cleaner claim than the
+one I set out to test. Recorded as a refinement, not as a confirmation —
+n=2, and the metric was chosen after seeing the data, which is exactly the
+sin the pre-registered version was meant to avoid. The three open positions
+still settle it on the original rule.
+
+**Realized: 17 closed, 3W/14L, −$1.1527**, win rate 18%, realised RR **1.29**
+against 3.34 placed, break-even now 44%. Loser adverse moves: median 0.82%,
+**9 of 14 at or under it**.
+
+**The surviving book is green**: +$0.1467 across four — FARTCOIN +$0.080,
+TRUMP (long) +$0.053, BNB +$0.008, SKHX +$0.006.
+
+**Meter** dead. **v15 policy p1** retested a tenth time, unchanged — ten
+identical results across eleven hours, and no BattleGrid deploy in between.
+Worth dropping to once every few cycles unless the server version moves.
+
+## 2026-08-09 (check-in 20:35Z) — first result on the prediction: one confirming instance
+
+**WIF closed `STOP_LOSS`, −$0.1134, on a −0.64% move after 103 minutes.**
+Its stop was placed at 0.63%. The move that killed it was **0.64%** — one
+basis point past the stop, and comfortably inside the 0.82% median adverse
+move of the prior losers. That is the noise-band pattern exactly: the trade
+was not beaten by a real move, it was closed by the first wobble past a stop
+sitting inside the noise.
+
+**Tally on the prediction: 1 confirming, 0 disconfirming, 4 still open.**
+One instance is not a result, and I am not going to treat it as one. The
+four survivors (SKHX, ENA, BNB, TRUMP) are now 2.5–3 hours old and
+approaching the 206-minute median hold, so the next cycle or two should
+carry most of the weight.
+
+**Realized: 16 closed, 3W/13L, −$1.0281**, win rate down to 19%. **Realised
+RR unchanged at 1.30** against 3.34 placed — WIF was a loss at close to its
+full stop distance, which is the numerator-preserving, denominator-growing
+half of the asymmetry that produced the gap in the first place.
+
+**Book −$0.0141** across five (FARTCOIN +$0.065, BNB +$0.019, SKHX −$0.014,
+TRUMP −$0.031, ENA −$0.054), down from +$0.1218 an hour ago.
+
+**Meter** dead. **v15 policy p1** retested a ninth time, unchanged.
+
+## 2026-08-09 (check-in 19:15Z) — the prediction is not settled, and I set the wrong horizon
+
+**Zero of the five have closed.** All are still open at 75–95 minutes, and
+the book is **+$0.1218 green**, with a sixth (FARTCOIN) added at 19:06.
+
+**The prediction stands unsettled, and what evidence there is leans against
+it.** I predicted most of that book would stop out on moves carrying no
+information. Stops at 0.38% and 0.40% have now survived an hour and a half
+without being touched. That is not a refutation yet — but it is not the
+early confirmation I expected either, and it deserves to be said in that
+direction rather than left implied.
+
+**The methodological error is mine and worth recording.** I wrote "next
+cycle settles it." It could not have. The closed population's hold times are
+
+    26 46 57 86 129 135 139 206 206 210 287 317 329 636 754   (minutes)
+    median 206 · mean 238 · only 4 of 15 closed inside 95 minutes
+
+so a 60-minute window was never going to resolve a five-position book —
+about three quarters of trades here live longer than one check-in. A
+prediction whose horizon is shorter than the process it describes cannot
+settle; it just gets re-reported as "pending" until it accidentally
+resolves. **The right horizon is three to four cycles**, and the watch has
+been re-armed on that basis.
+
+**Realized unchanged**: 15 closed, 3W/12L, −$0.9147, realised RR **1.30**
+against 3.34 placed, win rate 20%, break-even 43% at the realised RR.
+Nothing has closed since 16:53 — a four-hour gap, the longest of the day.
+
+**Meter** dead. **v15 policy p1** retested an eighth time, unchanged.
+
+## 2026-08-09 (check-in 18:10Z) — Breakwater was waiting, not blocked, and the new book is stopped inside the noise
+
+**Correction: "Breakwater's gate is too tight" was premature.** I flagged
+its ~12-hour silence twice as something to report as an over-tight gate. It
+then took **three positions in twenty minutes** (SKHX, ENA, BNB) — its first
+fills since ~04:00. It was waiting for a tape it liked. A quiet agent and a
+blocked agent look identical until the tape turns; five blocks in a day was
+never evidence of the second.
+
+**The book refilled from flat to five in 26 minutes** — Undertow took WIF
+(short) and TRUMP (**long**, its first long in hours), Breakwater the other
+three. Vanguard is still flat, 0 trades all-time.
+
+**Placed RR on the new book is 3.61**, higher than the 3.34 fleet average:
+
+| agent | coin | stop | TP | RR |
+|---|---|---|---|---|
+| Breakwater | SKHX | **0.38%** | 1.16% | 3.09 |
+| Breakwater | BNB | **0.40%** | 1.65% | 4.13 |
+| Undertow | TRUMP | **0.51%** | 2.09% | 4.08 |
+| Undertow | WIF | **0.63%** | 2.89% | 4.61 |
+| Breakwater | ENA | **0.82%** | 1.75% | 2.14 |
+
+**A falsifiable prediction, recorded before the outcome.** The twelve losers
+so far have a median adverse move of **0.82%**. Four of these five stops sit
+*below* that median — SKHX and BNB at under half of it. If the noise-band
+diagnosis is right, most of this book stops out on moves that carry no
+information. If instead several run to their targets, the diagnosis is
+wrong and the trail is not the binding constraint. Next cycle settles it.
+
+**Realized unchanged** — no closes since 16:53. 15 closed, 3W/12L,
+−$0.9147, realised RR **1.30** against 3.34 placed.
+
+**Breakwater's new blocks are six ENA `OPEN_POSITION_CONFLICT` in twelve
+minutes** — it holds ENA and keeps re-evaluating it. The same waste pattern
+that produced Undertow's 450, now starting on the second agent.
+
+**Meter** dead. **v15 policy p1** retested a seventh time, unchanged.
+
+## 2026-08-09 (check-in 17:00Z) — the first take-profit, and the number that names the problem
+
+**MOODENG closed `TAKE_PROFIT`, +$0.3649, +3.39%, 329 minutes.** The first
+take-profit in this fleet's history, on the fifteenth trade. It filled at
+exactly the level the geometry read recorded this morning — MOODENG's TP was
+placed 3.39% from entry and the move was 3.39%. The exit path is proven
+end-to-end: placed, rested, filled, reported.
+
+It is also **the largest single result either way** — bigger than the worst
+loss (−$0.1763) by more than double.
+
+**The one number that names the whole problem:**
+
+| | |
+|---|---|
+| RR the agent **places** | **3.34** |
+| RR the fleet **realises** | **1.30** |
+| break-even win rate at placed RR | 23% |
+| break-even win rate at realised RR | **43%** |
+| actual win rate | **20%** |
+
+At the RR it designs, the fleet needs 23% and is doing 20% — within touching
+distance. At the RR it actually gets, it needs 43% and has no chance. **The
+gap between 3.34 and 1.30 is the trail**, and it is the entire deficit.
+
+The mechanism is visible in the three wins: MOODENG ran to its target for
++$0.3649, while HYPE was trailed out at **+$0.0040** and MELANIA at +$0.0731
+— both `STOP_LOSS`, both truncated far short of their targets. Losses take
+their full stop distance; winners get cut at whatever the ratchet has
+reached. That asymmetry, applied to a system whose *design* asymmetry is
+3.34:1, is what turns it into 1.30:1.
+
+**Realized: 15 closed, 3W/12L, −$0.9147**, improved from −$1.1064 — one
+take-profit recovered more than the AIXBT loss that followed it. Fees are
+**$0.2383, 26% of the gross loss** (gross −$0.6764).
+
+AIXBT closed −$0.1731 on a −1.60% move, now the largest adverse move; the
+loser distribution is min 0.10% / median 0.82% / max 1.60%.
+
+**Book is flat** — zero open positions for the first time today. Undertow
+has logged no new blocks since 15:48, which is consistent rather than
+concerning: nearly all 450 were `OPEN_POSITION_CONFLICT`, and a flat book
+has nothing to conflict with.
+
+**Breakwater idle ~12 hours.** **Meter** dead. **v15 policy p1** retested a
+sixth time, unchanged.
+
+## 2026-08-09 (check-in 15:55Z) — the trail can hold breakeven, and a number I got wrong
+
+**HYPE closed green — the second win ever, and the first that proves the
+trail works at all.** +$0.0040 after 636 minutes, exit +0.17% above entry.
+The ratcheted stop (last seen at +0.20% vs entry) caught it above water.
+That is the mechanism doing exactly its job.
+
+It also shows how little the job is worth as tuned: HYPE peaked at
+**+$0.140** at 12:35Z and closed at **+$0.004** — the trail captured **3% of
+the peak**. So the picture is not "the trail is broken"; it is "the trail is
+so slow that it converts a good position into a scratch." Three of four
+positions have now round-tripped their gain; HYPE is the one where the
+ratchet got above entry in time to prevent a loss.
+
+**Correction to last cycle.** I wrote that the largest adverse move across
+the eleven closes was 0.82%. That was the maximum over the six rows I had
+printed, not over all eleven. Across all thirteen closes now:
+
+- adverse moves on losers: **min 0.10%, median 0.78%, max 1.50%**
+- **10 of 11 losers closed on a sub-1% move**
+
+The conclusion holds and is arguably sharper on the real distribution, but
+the number I quoted was wrong.
+
+**Also worth naming**: MOODENG's 07:18 close was **−$0.0043 net on a +0.10%
+favourable move** — the price went the right way and fees took it negative.
+At this notional, fees decide scratch trades.
+
+**FARTCOIN closed −$0.1165 in 26 minutes** on a −0.82% move — the fast end
+of the same failure.
+
+**Realized: 13 closed, 2W/11L, −$1.1064.** Book **+$0.2507** on two
+positions, and MOODENG is at **+$0.2631** — the largest unrealised this
+fleet has held, 5.5 hours in. Whether it converts or round-trips is the next
+real datapoint.
+
+**Breakwater idle ~10.8 hours**, still five blocks all day. **Meter** dead.
+**v15 policy p1** retested a fifth time, unchanged.
+
+## 2026-08-09 (check-in 14:50Z) — the round trip is the pattern, not the incident
+
+TRUMP closed and repeated AIXBT's shape exactly. Two clean observations of
+the same failure now, tracked across my own hourly snapshots:
+
+| | peak observed | closed | swing | held |
+|---|---|---|---|---|
+| AIXBT | **+$0.1206** (12:35Z) | −$0.0931 | −$0.214 | 2h19m |
+| TRUMP | **+$0.077** (09:27Z) | −$0.1058 | −$0.183 | **12h34m** |
+
+TRUMP's decay is on the record hour by hour: +$0.077 → +$0.062 → +$0.038 →
+−$0.031 → closed −$0.1058. It was **the longest hold in this fleet's
+history at 754 minutes**, and it still lost. That kills a reading I might
+otherwise have defended — that the time-decay fix simply needs more time to
+show. Letting trades breathe does not by itself produce wins; without a
+trail that locks, it produces long slow bleeds.
+
+The price moves themselves are tiny — TRUMP closed on a **−0.53%** adverse
+move, AIXBT **−0.78%**. Across all eleven closes the largest adverse move is
+0.82%. These trades are not being beaten by the market; they are being
+closed inside its noise.
+
+**Realized: 11 closed, 1W/10L, −$0.9939** — a dollar down on a $43.56
+account. Book **+$0.0169** (HYPE +$0.064, MOODENG +$0.022, AIXBT −$0.025,
+new FARTCOIN short −$0.044).
+
+**Breakwater idle 9.8 hours** — since 05:04Z, five blocks all day, no
+position. Two agents' worth of radar deployments producing nothing.
+
+**Meter** dead (blocks 369 → 405, still exactly 0). **v15 policy p1**
+retested a fourth time, unchanged.
+
+The trail re-tune remains the recommended change and remains unmade — it is
+live money and the operator has not ruled.
+
+## 2026-08-09 (check-in 13:45Z) — the headline question answered: they gave it back
+
+The open question was whether the four positions would convert to
+take-profit, trail out green, or give it all back. **AIXBT gave it back**,
+and it is the cleanest evidence yet for what the trail actually does.
+
+| | |
+|---|---|
+| opened | 11:01:31, SHORT, entry 0.018476 |
+| at 12:35Z snapshot | mark 0.018256 = **−1.19% favourable**, uPnL **+$0.1206** |
+| closed 13:21:21 | exit 0.018620 = **+0.78% adverse**, net **−$0.0931** |
+| held | 2h20m |
+| stop at exit | 0.018620 — **+0.78% from entry, never reached breakeven** |
+
+A 1.19% gain became a 0.78% loss. The trail did move — the stop started
+~1.7% out and reached 0.78% — but it never crossed to breakeven despite the
+position being more than a full percent in profit. `get_trade_chart` for
+this trade answers `UNAVAILABLE`, so the peak excursion is only known from
+my own 12:35Z snapshot; the true peak may have been higher, which makes the
+finding worse, not better.
+
+**This is the cost of the time-decay fix, and it should be stated plainly.**
+Disabling time decay slowed the trail. That cut loss *size* about 4× and let
+trades breathe for hours instead of minutes — both real gains. It also
+slowed the stop's march enough that it no longer keeps up with a favourable
+move, so gains are not locked. Same knob, opposite signs. The fix was right;
+the tuning now sits at the other extreme.
+
+**The whole book gave back with it**: +$0.3805 → **+$0.0969**. HYPE
++$0.140 → +$0.077, MOODENG +$0.082 → +$0.052, TRUMP +$0.038 → **−$0.031**.
+Realized now **10 closed, 1W/9L, −$0.8881**, still every close `STOP_LOSS`.
+
+**Meter**: still exactly 0 while Undertow's blocks went **317 → 369** (52
+more in ~68 min, newest 13:42:09). Dead confirmed a third time; no longer
+worth re-reading every cycle.
+
+**v15 policy p1**: retested, unchanged on all three strategies.
+
+**Breakwater has now been idle 8.6 hours** — since 05:04Z, no blocks, no
+position, nothing at risk. Not stuck; finding nothing. At this duration it
+is worth treating as a gate that may be too tight rather than a quiet tape.
+
+## 2026-08-09 (the take-profit diagnostic) — the exit path is fine, and my hypothesis was wrong
+
+**Question**: nine closed trades, nine `STOP_LOSS`, zero take-profits. I
+proposed that TP orders were never placed — a dead exit path, the defect
+class this repo keeps finding. **That was wrong, and the evidence is
+unambiguous.**
+
+`get_open_orders` shows a `Take Profit Market` order resting on the
+exchange for every open position, `reduceOnly: true`, `status: OPEN`,
+alongside its `Stop Market`. `get_position_audit_history` shows the
+placement order on every position: **TP_PLACED, then SL_PLACED, then
+ENTRY_FILLED**, all within ~4 seconds. The plumbing is correct.
+
+**The real finding is geometry.** Placed at entry:
+
+| coin | stop | TP | RR |
+|---|---|---|---|
+| HYPE | 0.51% | 1.88% | 3.73 |
+| MOODENG | 0.87% | 3.39% | 3.88 |
+| TRUMP | 1.23% | 3.69% | 3.00 |
+| AIXBT | 1.69% | 4.62% | 2.73 |
+
+**Mean placed RR is 3.34** — more than double the platform floor of 1.5. A
+correction to what I wrote an hour ago: I said the fleet was "pinned to RR
+1.5" and therefore needed a 40% win rate to break even. 1.5 is the *floor*;
+the agents choose ~3.3. Break-even is **1/(1+3.34) ≈ 23%**, not 40%. The
+v15 p1 still blocks setting the floor, but it was never holding RR down to
+1.5.
+
+**Why no TP has ever filled**: the stop converges on price and the TP does
+not move. `SL_REPLACED` events march the stop in relentlessly — TRUMP from
+−1.23% to −0.42% over 13 replacements, HYPE from −0.51% all the way to
+**+0.20%**, i.e. past entry. Meanwhile the TP sits 1.9–4.6% out. Price has
+to travel four to nine times the remaining stop distance without one
+retrace. The trail is the exit mechanism; the TP is nearly decorative.
+
+**This also confirms the time-decay fix from 07:15Z**, which had only n=2 of
+closed evidence before. The replacement *rate* collapses across the fix:
+
+- TRUMP: **11 replacements in 3.3h before**, 2 in 4.4h after
+- HYPE: **4 in 46 min before**, 2 in 5h after
+
+Both have now survived 7–11 hours and are green, which is precisely the
+intended behaviour and could not be read off the two closes alone.
+
+**And `STOP_LOSS` does not mean "loss".** HYPE's stop now sits at +0.20% vs
+entry — if it triggers it books a profit. MELANIA already proved this:
+closed **+$0.0731 with `closeReason: STOP_LOSS`**. The close-reason
+taxonomy describes which order filled, not whether money was made, and
+"9 of 9 stop-losses" reads far worse than it is.
+
+## 2026-08-09 (check-in 12:35Z) — the meter is broken, and the book is green
+
+**The spend meter is broken, not resetting.** That was the open question an
+hour ago and it now has an answer. In ~75 minutes Undertow's gate blocks
+went **278 → 317** with the newest stamped 12:34:09, and `last24hCostUsd`
+stayed at **exactly 0 on all three agents**. A rolling 24h window that had
+genuinely reset would have been climbing again within minutes of the first
+evaluation. Backlog p2 updated with the before/after table. Why it broke is
+not answerable from the read surface — `get_intelligence_agent` is the only
+tool that carries the field at all.
+
+**The book keeps improving and nothing has closed.** Four positions, all
+green, **+$0.3805 uPnL** (was +$0.233 an hour ago):
+
+| coin | dir | uPnL | open for |
+|---|---|---|---|
+| HYPE | SHORT | +$0.140 | 7.4h |
+| AIXBT | SHORT | +$0.121 | 1.6h |
+| MOODENG | LONG | +$0.082 | 2.1h |
+| TRUMP | SHORT | +$0.038 | 10.5h |
+
+Realized is unchanged at **1W/8L, −$0.795, nine of nine closes STOP_LOSS**.
+No take-profit has ever filled here. TRUMP at 10.5 hours and HYPE at 7.4
+would have been the "trades hang open unresolved" reversal signal for the
+time-decay fix — but both are green with trailing stops, which is the fix
+working rather than failing. The signal to watch is whether they convert.
+
+**v15 policy p1 retested again — unchanged.** Same "no effective changes"
+on all three strategies with the correctly-shaped envelope.
+
+**Breakwater has been idle since 05:04Z** — five blocks total, none new, no
+open position, nothing at risk. It is not stuck; it is finding no setups.
+
+## 2026-08-09 (check-in 11:2xZ) — the p1 hardens, and the spend meter dies
+
+**The v15 policy regression is confirmed on a properly-shaped payload.**
+Every earlier retest sent the three fields as a patch; `compile_strategy_plan`
+actually takes a whole `request` envelope, so shape was a live confound in
+all of them. The new retest reads each strategy, projects the read onto the
+write shape (`signalRules` → `rules`, `revision` → `expectedRevision`) and
+changes only the policy. Two schema refusals on the way proved the envelope
+was reaching the validator (`request` required, then `coinSelection.limit`
+required). With it correct, all three strategies still answer **"Strategy
+update contains no effective changes"** for RR 1.5 → 2.5/2.0/1.6, ATR floor
+1 → 1.5/1.3/1.0, ceiling 5% → 4/3/2.5. The fields are **parsed and
+discarded, not rejected** — the stronger form of the finding. p1 stands,
+evidence upgraded. `scratchpad/v15_policy_retest.py`, compile only.
+
+**`last24hCostUsd` went to zero on all three agents** — it read 2.37 / 0.81
+/ 0.21 an hour earlier. Zero is not plausible: two positions were entered
+at 10:30:08 and 11:01:31, and Undertow's block log holds 278 entries with
+the newest at 11:19:10. `get_agent_explorer` does not carry the field at
+all, so there is no cross-check and **fleet spend is now unmeasurable, not
+low**. Filed `the-spend-meter-reads-zero-while-agents-run` (p2). This
+blocks the accept-vs-cut decision the operator was asked to make — there is
+no number to rule on.
+
+**Fleet**: 4 open, all green — AIXBT +$0.048, MOODENG +$0.033, HYPE +$0.090,
+TRUMP +$0.062 = **+$0.233 uPnL, the best book yet**. Realized still
+1W/8L, −$0.795 net on $0.143 of fees, and **all nine closes are STOP_LOSS
+— zero take-profits in the fleet's entire history.** The two post-fix
+closes remain the two smallest losses ever recorded here (−$0.004,
+−$0.046).
+
+**Min-notional is genuinely clear**: the three `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
+blocks on Breakwater all predate the exposure fix (2026-08-08 15:xx,
+`equityUsd 35 / minEquity 41.67`). None since.
+
+**Undertow's 278 blocks are almost all `OPEN_POSITION_CONFLICT`** — it
+re-evaluates coins it already holds, ~31 blocked evaluations an hour. That
+is the cheapest spend lever available and it changes no strategy behaviour,
+but it cannot be justified while the meter is dead.
+
+## 2026-08-09 (the keyed sweep at v15) — 23 of 29 live files green, and the six that were not run
+
+**Did**: ran the full keyed live suite against the v15 server —
+`npm run test:live`, serial by config. **21 files passed, 8 skipped, 0
+failed; 46 tests, 630s.** Then ran two of the eight skips on their own,
+because their gates are about *pacing and authority*, not danger:
+
+- `condition-probe` (`BATTLEGRID_CONDITION_SWEEP=1`) — read-only, and only
+  gated because run concurrently it starved its neighbours. **16 of 17
+  strategies carry conditions · 69 total · 34 decide direction · 35 named
+  blocks · nothing unrecognised.** The condition grammar did not drift at
+  v15.
+- `oauth-metadata` (`BATTLEGRID_OAUTH_LIVE=1`) — a credential-free public
+  GET. The recorded discovery document still describes the platform.
+
+**23 of 29 files are now proven at v15.** The remaining six all sit behind
+`BATTLEGRID_LIVE_WRITES=1` (write, apply, radar, restore, retune,
+custom-table) and were **not** run: they mutate the live account, which is
+currently trading real money with open positions, and `radar-probe` in
+particular writes deployments on a radar that is full at 20/20 with the
+live fleet's own. That gate exists precisely so writes do not ride along on
+a read sweep; leaving it closed is the gate working, not a gap.
+
+**Two things the sweep read back that are worth keeping**: the surface
+record still matches the live server (`surface-freshness` green, so v15 is
+fully recorded), and `trading-record-probe` printed the live book —
+**Breakwater 0W/2L, net −$0.1469 after $0.0229 fees, STOP_LOSS ×2**, the
+post-time-decay-fix pair. Both closes near scratch; still zero
+take-profits in the fleet's whole history.
+
+**Cost of a rebuilt container, for the next session**: PostgreSQL was down
+and the shell had no env. `pg_ctlcluster 16 main start` brought it back
+with the `gridcommander` database and all nine tables intact; the URL is
+`postgres://gc:gc@localhost:5432/gridcommander`. Nothing in the repo says
+that, which is why it is here.
+
+## 2026-08-09 (the whole surface, called) — 25 of 25 MCP tools answer at v15
+
+**Did**: after the v15 mapper run, exercised **every tool this product
+exposes** against the live account — new probe
+`tests/live/mcp-full-surface-probe.test.ts`. It spawns
+`bin/grid-commander-mcp.ts` as a subprocess, drives it as a real client,
+discovers the ids each tool needs from earlier answers, and asserts both
+that the registry is 25 and that **no registered tool goes uncalled**.
+
+**Result: 25 tools · 23 answered · 2 empty · 0 skipped · 0 failed.** The
+two empties are facts, not gaps — `read_signal_history` and
+`read_record_coverage` are empty because the recorder cron has never run.
+v15 broke nothing the product reads.
+
+**Two flaws in my own probe, found and fixed before it was committed:**
+
+- It took the *first* uuid in the trading record as a log id, which is the
+  trade's own id — so `read_trade_story` and `read_evaluation` answered
+  `not-found` / `none` and the sweep called that a pass. It proved their
+  refusal path and nothing else. Now keyed on `"signalLogId"`, and both
+  return real payloads (a story with its chart, an ENA scorecard).
+- Its empty-detector matched prose, so `{"kind":"recorded"}` — a
+  *successful* proposal write — was classified empty because "recorded"
+  contains "record". Now matched on the payload's own `kind`.
+
+Both are the same mistake this codebase keeps cataloguing: **a check that
+matches how something is spelled rather than what it reaches.** Written
+down here because the probe is the thing that would have hidden it.
+
+**Also**: `BOUND_KEYS` in `agent-mapper.ts` still maps
+`minimumStopLossPct` / `maximumStopLossPct` / `minimumRiskRewardRatio` onto
+agent field names. The registry still publishes those bounds at v15, but
+the fields moved to the strategy, so they are inert rather than wrong —
+commented as such rather than deleted, because a strategy-side validator
+will want them the day the platform honours the policy.
+
+## 2026-08-09 (v15 landed in the repo) — the record catches up, and the guards prevent dead write path #11
+
+**Did**: re-probed at **v15.0.0** (70 reads, 0 failed), regenerated the
+reference and capabilities dump, and taught the product the new shape —
+archived as `the-trade-level-policy-moves-to-the-strategy` (131st change).
+
+**The guards earned their keep again.** The moment the v15 record landed,
+`payload-conformance` reported six violations on
+`apply_strategy_plan` — the three trade-level policy fields are
+**`required` on the plan**, and `toApplyPlan` did not project them. That is
+the eleventh dead write path in this codebase's history, and the first one
+**caught before a live refusal** rather than after. Same shape as the
+`conditions` omission of 2026-07-31, found the same way.
+
+Changes: the three fields join `PLAN_FIELDS_FROM_POST_STATE`; they leave
+`TRADING_CONFIG_FIELDS` (18 → 15); `READ_ONLY_CONFIG_FIELDS` grows to eight;
+five guard expectations follow the record. Three tests used
+`maxStopLossPct` as their worked example and now use fields that survived
+(`maxSlippageBps`, `maxDailyTrades`) — a test whose subject the platform
+deleted proves nothing about the platform.
+
+**State**: 131 archived changes, 26 open backlog items. 1,902 vitest + 235
+harness + typecheck + lint green; keyed `surface-freshness` green against
+the live v15 server.
+
+## 2026-08-09 (v15 reviewed) — the RR floor moved onto the strategy, and the compiler ignores it
+
+**Did**: operator asked for a full review of the v15 update. Fresh dump,
+key-level diff against v14, live write tests. **114 tools, none added,
+none removed** — v15 is one coherent change on 16 tools.
+
+**The change**: trade-level policy moved **off the agent, onto the
+strategy**. `tradingConfig` 18 → 15 keys (`maxStopLossPct`,
+`minStopLossPct`, `minRiskRewardRatio` all rejected now); the strategy
+gained `maxStopLossPct`, `minRiskRewardRatio` and — better than what it
+replaces — **`minStopLossAtrMultiple`**, a volatility-adaptive stop floor
+instead of a percentage. `compile_strategy_plan` gained a whole
+`diff.tradeLevelPolicy` axis; `feasibilityAdvisory` now reports
+`minStopLossAtrMultiple` plus per-coin `requestedMinAtrMultiple` with
+FEASIBLE / STRUCTURAL_ONLY / ATR_UNAVAILABLE verdicts.
+
+**The problem: it is declared but inert.** Sending real value changes
+(RR 1.5 → 2.5, floor 1 → 1.5× ATR, ceiling 5 → 4%) on an UPDATE compiles
+without complaint and changes nothing — `changedAxes: ['IDENTITY']` from
+the paired tagline edit alone, `diff.tradeLevelPolicy: null`, read-back
+unchanged at defaults. Sent alone, the same fields are refused as *"no
+effective changes"*. Reproduced twice on all three strategies. Filed
+**`v15-trade-level-policy-is-declared-but-inert` (p1)**.
+
+**What that costs us right now**: Undertow was built with RR 2.0 and
+Breakwater with 1.5, chosen per family — **v15 discarded both**, and the
+whole fleet is pinned to platform defaults (RR 1.5, 1× ATR floor, 5%
+ceiling) with **no write path in either place**. Asymmetry is the entire
+thesis of these strategies; it is currently un-settable.
+
+**Also**: three taglines were edited to name the intended floors while
+testing, then reverted the same hour — the tagline reaches the agent's
+prompt, so it must not advertise policy the platform is not enforcing.
+Strategies sit at r3, content identical to r1.
+
+## 2026-08-09 (the stop diagnosis) — time-decay was killing the trades, and v15 landed mid-fix
+
+**Did**: seven closed trades, **seven STOP_LOSS closes, zero take-profits**,
+1W/6L −$0.745. Pulled `get_position_audit_history` on three losses and the
+cause is unambiguous — **every one was closed by a stop that time-decay had
+dragged toward price; the structurally-placed stop was never reached**:
+
+| trade | placed stop | decayed to | exit | original hit? |
+|---|---|---|---|---|
+| WIF short | 0.14391 | 0.14360 | 0.14362 | **no** |
+| AIXBT short | 0.018312 | 0.018187 | 0.018211 | **no** |
+| TRUMP long | 1.47812 | 1.48290 | 1.48270 | **no** |
+
+Time-decay tightens on a *timer* regardless of price action, so a thesis
+that needed two hours got a stop walked into the noise band and tagged for
+a near-full unit. The ATR trail is innocent — it only moves on favourable
+travel, and it is what locked MELANIA's win. **`timeDecayEnabled` → false
+on Undertow and Breakwater**; trailing and break-even kept. Reversal
+criterion: if trades now sit dead for hours without resolving, decay comes
+back with a much longer grace rather than at 45–60 minutes.
+
+**BattleGrid shipped v15.0.0 mid-fix** — caught because the write was
+refused with `unrecognized_keys`. `tradingConfig` went **18 → 15**:
+`maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` are gone from
+create and update alike — stop bounds and the risk:reward floor are now
+platform-owned, not agent-owned. Tool count still 114. The fix landed on
+the v15 shape. **The record is stale again** (says v14): re-probe and
+re-run the conformance guards next session — and note `TRADING_CONFIG_FIELDS`
+will need the same treatment as the v14 round, minus three more names.
+
+## 2026-08-09 (volume-profile PoC) — a real candle archive, and a negative result worth having
+
+**Did**: operator asked for a proof of concept on volume profiles / TPO, and
+for a check that `get_coin_candles` is really the only history source. Both
+answered; one of my earlier claims was wrong.
+
+**The surface has a historical candle archive, and I had missed it.** I
+reported the 100-bar live window as the ceiling. It is not:
+`get_trade_chart` and `get_public_agent_trade_chart` return **frozen OHLCV
+windows** (`result.chart.candles` — my first probe read `result.candles`,
+got nothing, and I wrongly reported zero). Harvested from 14 public agents
+× 30 logs: **4,867 unique 5m candles across 26 coins, 2026-04-05 →
+2026-08-09**, including TradFi (TSLA, GOOGL, ORCL, BABA, COIN). Free,
+read-only, idempotent by (coin, openTime). A third source exists too:
+`get_regime_history` (206 points, 1h). **No tick or L2 data anywhere, so
+true TPO is not reconstructable** — time-at-price needs intra-bar
+sequencing the API does not carry. Volume profile from OHLCV is an
+approximation (volume spread across each bar's range); TPO is not
+buildable at all.
+
+**Coverage caveat**: the harvest plateaued at 50 windows after agent 7 —
+later agents added nothing. The archive is concentrated in a few
+high-volume agents, and it is *opportunistic*: islands around trades, not
+a continuous series.
+
+**The PoC result is negative, and that is the point of running it.**
+Walk-forward over 13 windows / 7 coins (build a profile on 144×5m, measure
+the next 144):
+
+| test | result | reading |
+|---|---|---|
+| prior VA contains next window's closes | **28%** | prior value does **not** persist (70% in-sample by construction) |
+| VA-edge excursions held | **15 of 230 (7%)** | edges break far more than they hold |
+| POC revisited | 62% | **vs 54% for a random level in the same range — +8 points** |
+
+So the reversion reading of volume profile fails on this data, and the
+POC-magnet effect is within noise of a random level once controlled. **No
+profile-derived level earns a place in a live gate on this evidence.**
+
+**My own methodology, stated honestly**: the first pass counted *bars*
+beyond an edge rather than crossings, inflating breaks ~6×; the rerun
+counts excursions with a cooldown, and even then sustained moves still
+inflate the break count. The clean measure is the 28% containment figure,
+which needs no counting convention. Thirteen windows is a small sample,
+mostly memecoins, at a 12h block that is not a real session boundary —
+a fair retest would use UTC-daily profiles on majors.
+
+**What is worth keeping regardless**: the archive itself. 4,867 candles of
+real OHLCV is raw material for measuring our own coins' volatility,
+grading signal claims, and any future analysis — the recorder's
+(`signal_capture_runs` → `signal_captures` → `signal_readings`) shape
+extends naturally with a `candles` table keyed (coin, interval, openTime)
+and profiles as a derived, recomputable view.
+
+## 2026-08-09 (learning-rate round) — the trade counter goes to the ceiling
+
+**Did**: operator's call — treat this phase as paid learning, not
+capital preservation, and stop letting the daily trade counter throttle
+sample collection. `maxDailyTrades` **3/4 → 100 on all three agents**
+(the platform's registry ceiling, discovered by probing: 500 and 200 both
+refused with *"maxDailyTrades (N) must be <= 100"*, 100 accepted).
+
+**What did not change, and why that matters**: the loss caps are the real
+backstop and they stay — Undertow/Vanguard $1.50 daily, $6 cumulative;
+Breakwater $1.25 / $5. So "unlimited trades" is bounded by *money* rather
+than by *count*, which is the correct shape: at ~$0.17 per losing unit,
+roughly 8–9 consecutive losses trip a daily halt and the agent stops
+itself for the UTC day. The conviction floors (0.55), RR floors, stops
+and the $45 exposure allowance are untouched, so quality per trade is
+unchanged — only the quantity ceiling moved.
+
+**The practical throttle is now exposure, not count**: at ~$13.5 notional
+per order against a $45 allowance, ~3 positions can be open at once. The
+counter only binds after positions close, so the realistic effect is
+faster turnover, not 100 simultaneous trades.
+
+**Watch**: model spend (was ~$0.09/agent/day at 3 trades; more evaluations
+means more), and whether the winner-vs-loser asymmetry from day one
+persists at higher volume — that is the metric the extra sample is being
+bought to answer.
+
+## 2026-08-09 (early) — day one closes: three resolutions, every one by the book
+
+**Did**: watched the first fleet trades to resolution (reads only). All
+three of Undertow's day-one entries closed, every close performed by the
+exchange-held stop — no exits improvised, no positions babysat:
+
+| trade | held | net | how it ended |
+|---|---|---|---|
+| AIXBT short | 58m | **−$0.176** | stop at entry+1.5%, one designed risk unit |
+| TRUMP long | 3.4h | **−$0.167** | stop (tightened 1.4781→1.4822 first), one unit |
+| MELANIA short | 5.3h | **+$0.073** | **the trail locked profit**: stop walked 0.07708 → 0.07663 → 0.07627 → below entry, hit at 0.07567 |
+
+Day-one realized: **1W/2L, net −$0.27** (−0.55% of the account), $0.053
+total fees. Fill rate 3/3; zero exchange failures; both loss caps never
+threatened; the daily trade cap held at three and blocked ten further
+attempts pre-evaluation. The MELANIA close is the first time this
+account's own money shows the trail doing what the WIF chart showed on
+`THE .0` — a stop acting as a profit lock, not just a loss fence.
+
+**The number to watch, stated before more data arrives**: the realized
+winner (+$0.073) was smaller than either loss (−$0.17) — the trail locked
+MELANIA at ~0.4R instead of letting it approach the 3R target. n=3 proves
+nothing, but if the fade book keeps cutting winners under 1R while losses
+run a full unit, the time-decay/break-even pairing on Undertow is too
+tight and the first retune is loosening it — not the gate, not the floor.
+
+**Also**: the UTC day rolled and Undertow re-entered AIXBT short (trade 4,
++$0.09 and trailing at last read) — same coin it lost on, taken again on
+fresh signals, which is what a memoryless per-candidate design should do.
+
+## 2026-08-08 (seventh round) — the first fill: every fix proven on one trade
+
+**Did**: at 20:01Z, 25 minutes after the conviction floor moved to 0.55,
+**Undertow entered its first trade** — MELANIA SHORT, conviction 0.55,
+order `512908894227`, **EXECUTED** (fill rate so far: 1 for 1, zero
+FAILED). Everything the day's fixes were for is proven on this one row:
+
+- **Sizing**: notional **$13.51** — the predicted 45 × 10% × 3 to the
+  cent, comfortably above the $10 exchange minimum that killed 29 of
+  THE .0's 67 entries. Zero `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` since the
+  exposure fix.
+- **Risk-reward**: entry 0.07615, stop 0.07707868 (+1.22%), TP 0.07336396
+  — planned RR exactly 3.0, above the ≥2 floor. Risk-to-stop ≈ $0.17
+  (0.3% of the account).
+- **Conviction calibration**: a 0.55 setup — precisely the class the old
+  0.6 floor was rejecting all afternoon.
+- **Management live**: `effectiveStopLoss` already reads 0.07703 vs the
+  decided 0.07707868 — tightened in the short's favor within the hour.
+- **On-thesis**: the reasoning is textbook Cannae — falling CVD,
+  new-shorts OI regime, price below VWAP, at resistance-zone proximity.
+  The same sweep SKIPPED a 0.45 HYPE long — floor discipline intact.
+
+**State**: 1 open position (uPnL −$0.01 at check time), 24 evaluations /
+1 entry / 0 failures fleet-wide. Vanguard still correctly silent in
+ranging majors; Breakwater 2 evaluations, no qualifying setup yet.
+
+## 2026-08-08 (sixth round) — the sizing base is the exposure allowance, not the wallet
+
+**Did**: the scheduled fleet check found `EXCHANGE_MIN_NOTIONAL_UNREACHABLE`
+back — 3× on Undertow (MELANIA, MOODENG, AIXBT: the coins that had just
+qualified), 3× on Breakwater (SKHX). The detail finally made the formula
+legible: `{equityUsd: 40, minEquityUsd: 41.666667, smallPct: 8,
+maxLeverage: 3}` — **`equityUsd` is the agent's
+`maxConcurrentExposureUsd`, not the wallet balance**, and the effective
+leverage on these coins is 3 regardless of the configured 4. So the
+platform's floor is `10 / (smallPct × 3)` of *exposure allowance*, and my
+$40/$35 allowances sat $2–7 under it. THE .0's historic `equityUsd:
+246.67` against its 250 exposure cap says the same thing in hindsight.
+
+Fixed fleet-wide the same hour: `maxConcurrentExposureUsd` 45 and sizes
+10/12/15% on all three agents (floor now $33.33 — clears with margin;
+small orders ≈ $13.5 notional). Also observed and left alone: Undertow
+re-evaluated FARTCOIN four times in three hours (SKIP SHORT at conviction
+0.45–0.48 each time) — the conviction floor holding against a marginal
+setup at a few cents of model spend; a lever exists (gate bump or
+slot-level minConviction) if the churn persists for days.
+
+**Watch out**: `maxLeverage` in the platform's sizing formula read 3 on
+memes and TradFi synthetics with the agent configured at 4 — per-coin
+effective leverage caps exist and the sizing floor should be computed at
+3, not at the configured maximum.
+
+**Evening tuning (same day)**: after 21 evaluations / 21 skips fleet-wide
+with convictions ceilinged at 0.58, the conviction floor moved 0.6 → 0.55
+on Undertow and Breakwater only (Vanguard keeps 0.6; RR floors, caps and
+stops unchanged). Evidence considered: `get_agent_conviction_calibration`
+on THE .0 answers INSUFFICIENT_DATA everywhere (min 20 outcomes per band;
+it has 31 total, 8 of 27 crypto in the HIGH band — so GLM-5.2 *can* exceed
+the bar, but not often), and the live stream showed 0.55–0.58 setups dying
+just under the old floor while spend accrued. Revisit with the calibration
+tool once 20+ outcomes exist per band; revert to 0.6 if 0.55 admits churn
+that loses.
+
+## 2026-08-08 (fifth round) — the incumbent retires, the fleet diversifies to three
+
+**Did**: operator-directed platform operations on the Fibonacci account —
+diversify to the account's capacity, retire `THE .0`, free its tickers.
+All writes raw-MCP against the v14 schemas, every one logged and read back.
+
+- **Retired**: `THE .0` archived (flat at the time, r4→r5) — its Midway
+  binding dies with it (Midway is SYSTEM, platform-owned, not deletable).
+  The three unbound private forks (`Midway/El Alamein/Stalingrad (fork)`)
+  archived too. Strategy quota 5→2 used before the new builds; agent
+  slots 3→2 used. The rank caps agents at **3** — that is "as many as the
+  platform allows" at Recruit III.
+- **Three strategies created whole** (compile→apply CREATE, all viable):
+  **Salamis** (`228ed794…`) — short-term reversal / liquidity provision
+  (Jegadeesh 1990, Lehmann 1990; Nagel 2012): band+structure extremes,
+  `trend_adx_ranging` **required**, `ADX_now ≤ 20` condition — the regime
+  mirror of Trafalgar. **Alesia** (`ad2df55a…`) — the operator's SQZ-03
+  thesis (rising OI vs stalling price, CVD absorption) given tiered
+  weights its account-2 original never had; bench. **Lepanto**
+  (`6675a59e…`) — strict funding fade (±0.06% threshold, flips tier-3,
+  gate 0.65), the ZSCORE-01 spirit under the platform's grammar; bench
+  A/B sibling for Cannae.
+- **Third agent**: **Breakwater** (`f4e7db03…`, Salamis, GLM-5.2,
+  CONSERVATIVE/REALIST/MEASURED) — reversion chassis: leverage 3, RR
+  floor 1.5 (family-appropriate), stops 0.5–2.5%, daily loss $1.25,
+  drawdown $5, 4 trades/day, time-decay ON (grace 45m). Created OFF →
+  deployed → flipped FULL_EXECUTION.
+- **Radar re-pointed** (9 upserts, all deployed): Breakwater takes BNB,
+  ENA, LDO, SP500, BRENTOIL @1h; Undertow grows to seven coins
+  (+FARTCOIN, MOODENG, MELANIA, AIXBT @1h). Vanguard keeps BTC/ETH/SOL.
+  `xyz_skhx` (a Hyperliquid TradFi synthetic, `xyz:SKHX`) joined
+  Breakwater after the coin catalog identified it — radar now reads 16
+  scanning / 0 idle / 3 agents active. The four free slots (cap 20)
+  did not stay empty for long: the operator pushed back ("maybe the new
+  update changed something"), and the tool's own v14 description answered —
+  *"pass null only for a first deploy"*. `expectedRevision: null` created
+  four first deployments (XRP, AVAX → Vanguard; xyz_jpy, xyz_gold →
+  Breakwater), taking the radar to its **20/20 cap, 20 scanning, 0 idle**.
+  `radar-first-deployment-not-creatable-over-mcp` closed (the fix landed
+  silently somewhere v3→v13 — the probes only ever tried integers);
+  successor filed for the product surface, which still assumes
+  replacement-only. Coin ids matter: TradFi synthetics deploy as
+  `coins.id` (`xyz_jpy`), never ticker. Also
+  established: a plan's `coinSelection` is compile-time context, not
+  strategy state — an UPDATE carrying only it is refused as having no
+  updatable field.
+- **Qualification, minutes after launch**: Breakwater qualifies **BNB
+  long/short at 84 vs 62** (ranging + band extreme — its exact setup);
+  Undertow's new coins came in hot — FARTCOIN 72, MOODENG 65, MELANIA 85
+  all above gate. Aggregate worst-case daily loss across the fleet:
+  $4.25 on $49.15 (~8.6%), each agent independently capped.
+
+**State**: fleet = Vanguard (trend, majors) + Undertow (carry fade, 7
+memes) + Breakwater (range reversion, alts+TradFi) — three mathematical
+families, regime-complementary, one brain (GLM-5.2) for clean
+attribution. Two bench strategies await slot growth or rebinds.
+
+**Watch out**: three qualifying coins on Undertow at launch means the
+first executed trade is likely imminent — the min-notional fix gets its
+live proof (or refutation) there. And the platform's 4h regime is
+bull_ranging: Breakwater's week, not Vanguard's. That asymmetry is the
+design.
+
+## 2026-08-08 (fourth round) — two agents born from the mathematical families, and v14 breaks the create path
+
+**Did**: the operator asked for new strategies and agents built from the
+platform's mathematical families, with the risk-reward failures of the
+incumbent (`THE .0`) diagnosed and designed out — and for the v14 re-probe
+first, since a live `initialize` answered **v14.0.0** against the morning's
+v13 record.
+
+**The re-probe** (`the-surface-record-is-v14`, 129th change, lite): 70
+reads called, 0 failed. **The tool count moved for the first time ever,
+110 → 114** — four reads added (`get_agents_hub`,
+`get_agent_conviction_calibration`, `get_radar_activity`,
+`list_deployment_policies`) — and the agent writes changed underneath the
+product: `tradingConfig` dropped `atrTimeframe` +
+`atrMatchesStrategyTimeframe` (20 → 18), and a CUSTOM brain now
+**requires** `behavior: {risk, outlook, conviction}`. The app's own create
+path was refused wholesale when this session ran it first — filed
+`agent-create-composes-fields-v14-refuses` (p1), the tenth member of the
+composed-write-the-platform-refuses class, **and closed it the same
+session** (`the-agent-write-follows-v14`, 130th change): the two names
+left `TRADING_CONFIG_FIELDS`, `READ_ONLY_CONFIG_FIELDS` grew to five, and
+the six red payload-conformance/wire-values guards — red because the v14
+record made them state the break, which is their whole job — are green
+again. The brain half needed no product change: the app has sent the
+behavior triple since findings-agents F-5; v14 merely made required what
+was already sent (the behavior-missing refusals were this session's raw
+script omitting it). Also refreshed
+`battlegrid-mcp-capabilities.json`, which had sat at **v9** while record
+and reference moved — the divergence the v13 round warned about, one
+artifact over.
+
+**The diagnosis that drove the design** (probed live before building):
+`THE .0` is **gross-profitable and fee-eaten** — 31 closed trades, gross
++$0.36, fees $0.57, net −$0.21, avg notional **$15** at flat 5×. Its
+28-of-67 exchange failures trace to VOLATILITY_AUTO sizing under the $10
+min notional (`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` fired again the same
+morning); both loss caps read "no limit set"; conviction floor 0.35 and
+RR floor 1.0 let 49%-conviction churn through; WALTHER's hair-trigger
+management closed 26 of 31 by stop. The realized win/loss asymmetry
+(1.85:1) says the edge is real; the chassis burned it.
+
+**Two strategies, born whole by compile→apply CREATE plans** — the plan
+grammar carries name, timeframe, gate, `minAtrPct`, coin scope, sections,
+conditions *and rules*, so no fork-and-retune loop:
+
+- **Trafalgar** (`3a354541…`, r1) — time-series momentum: MTF pullbacks
+  (tier 3) in MTF/HTF-aligned trends (tier 2), `trend_adx_trending`
+  **required**, gate 0.62, minAtrPct 0.35, `TRENDING_TAPE` condition
+  (`ADX_now ≥ 22` — headers resolved via `get_strategy_column_contract`),
+  coins BTC/ETH/SOL/BNB, 8 sections.
+- **Cannae** (`f901a336…`, r1) — carry/positioning fade: funding extremes
+  (tier 3) confirmed by OI divergence + perp/spot flow (tier 2) at
+  structure (tier 1), gate 0.62, minAtrPct 0.5, `FUNDING_STRETCHED`
+  condition (ANY of `rate ≥ 0.0004`, `rate ≤ −0.0004`), meme/perp coins.
+
+Compile taught three times: conditions require a `verdict`
+(`UP|DOWN|NEITHER`); `ACTIVE_SIGNAL_DATA_NOT_IN_REPORT` named the sections
+my weighted signals needed (CVD/volume for Trafalgar, structure zones for
+Cannae); and the platform seeds section-fed signals at tier 1 around the
+explicit hierarchy — 34/20 active rules where 15/12 were sent, core intact.
+
+**Two agents, v14-composed, created OFF → deployed → flipped on**:
+**Vanguard** (`c8f20b9e…`, Trafalgar, BTC/ETH/SOL @1h) and **Undertow**
+(`d0f6829f…`, Cannae, HYPE/WIF/TRUMP @1h), both GLM-5.2 with the
+now-required behavior triple (MODERATE/REALIST/MEASURED and
+CONSERVATIVE/REALIST/MEASURED). The shared chassis, each line answering an
+observed failure: MANUAL sizing 8/11/15% (≈$16–30 notional on $49 — clears
+the $10 min the auto-sizer kept missing), leverage 4, **maxDailyLossUsd
+1.5 and maxCumulativeDrawdownUsd 6 set** (the incumbents have none),
+RR ≥ 2, conviction ≥ 0.6, 4/3 trades/day (vs 34), slippage 200bps,
+signal timeout 5m, trailing ATR ×2 with break-even at 45/40% and
+time-decay only on the fade agent. Radar: six of `THE .0`'s sixteen coins
+re-pointed (its config untouched — the operator asked for new agents, not
+an improved incumbent). Agent slots now 3/3.
+
+**The qualification screen graded the build immediately.**
+`MIN_STOP_LOSS_PCT: requested 1.5, reachable 0.62` on BTC — my stop floor
+was unreachable on a 0.21%-ATR tape, fixed to 0.5 (Vanguard r3) and levels
+derive on ETH/SOL. And the discipline is visible on day one: Vanguard
+fails BTC/ETH/SOL on `AGGREGATE_BELOW_MIN` + the ATR floor (correct — 4h
+regime reads `bull_ranging`, a trend agent should sit out), Undertow sits
+out HYPE (50/62) and WIF (60/62) and **qualifies TRUMP long at 64/62**.
+Selectivity is the design; the incumbents' failure was trading anyway.
+
+**State**: 13 capabilities, 130 archived changes, 24 open backlog items,
+0 active. Full suite green on the v14 record (1902 vitest + 235 harness +
+typecheck + lint; the one pre-existing typecheck error on main —
+`trade-story-probe` reading `.reason` off an unnarrowed union — fixed in
+passing).
+
+**Watch out**: the radar policy grammar (v14 confirmed) supports
+regime-conditioned slots per coin — a trend agent could be slot-gated to
+expansion regimes and stop paying for evaluations in ranges. Unconsumed;
+a natural refinement once the two agents have a record.
+`get_agent_conviction_calibration` (new at v14) is the tool that will
+grade the 0.6 conviction floor against outcomes. And the recorder cron is
+still the operator's to start — every uncaptured day stays unbackfillable.
+
+## 2026-08-08 (third round) — the record catches v13, and the stale reference confesses v11
+
+**Did**: the freshness alarm from the sweep was acted on the same hour.
+Re-probed the surface at **v13.0.0** (67 reads called, 0 failed),
+regenerated the reference from a fresh dump, shipped as
+`the-surface-record-is-v13` (128th change, lite).
+
+The diff settled two deploys at once:
+
+- **v11 → v13 is the quietest on record**: declared schemas, constants and
+  annotations byte-identical across all 110 tools; observed key-structure
+  unchanged on every consumed tool. The only movement:
+  `get_market_context` 23 → 25 modules (`marketBreadth`,
+  `referencePairs`) — unconsumed.
+- **v9 → v11 carried real movement the stale reference hid**: the
+  committed `BATTLEGRID_MCP_REFERENCE.md` was still generated from v9, so
+  nobody saw that **`arenaChallengeEnabled` was dropped** from create,
+  update, *and the agent payloads*, that create's declared output gained
+  `feasibilityAdvisory`, and that a vocabulary enum shifted. The
+  conformance guards never lied — they read the record, which was v11 —
+  but record and reference had diverged by a deploy. Filed
+  `two-agent-owned-fields-no-tool-can-write` (p3): `AGENT_OWNED` still
+  offers arena + overlay as proposable, both now unwritable and unreadable
+  on the platform; every agent maps them to constants. Nothing renders
+  either field; fix is its own change.
+
+**State**: 13 capabilities, 128 archived changes, 24 open backlog items,
+0 active. Full suite green on the v13 record.
+
+**Watch out**: keep record and reference in lockstep — the alarm only
+guards the record. This round's rule: a re-probe is not done until
+`generate_mcp_reference.py` has run against the same server.
+
+
+## 2026-08-08 (second round) — a closed trade tells its story
+
+**Did**: the open-orders discovery read came back empty again (`{orders:
+[]}`, no position open at probe time — shape still unobserved, slice still
+unbuildable, recorded on the item). Pivoted to the observable siblings on
+the same backlog item and shipped them as **`a-closed-trade-has-no-story`**
+(127th change, standard track):
+
+- **Discovery first**: `get_trade_chart` answered READY on 6/6 settled
+  evaluations (83 × 5m candles, levels with the platform's own display
+  labels, entry/exit markers, freeze stamp); `get_position_audit_history`
+  answered 10 events on the probed WIF winner — TP/SL placed, entry
+  filled, the stop **replaced five times** (break-even, then trailing ×4,
+  every move `improved: true`), SL cancelled, TP filled at +2.29%.
+  Level/marker role vocabulary captured across five trades before any
+  renderer keyed off it. `positionId` is carried by the chart and by
+  nothing else on a closed trade (26-key outcome row checked raw), so the
+  join is forced: chart first, trail through the chart's id.
+- **Built**: `readTradeChart` + `readPositionAudit` on `AgentsPort`
+  (audit prices as decimal strings, exactly as sent);
+  `ReadTradeStoryQuery` with the trail failing independently — and
+  `audit: null` when the chart names no position, which is a third state,
+  not an empty trail; `/agents/[id]/trades/[logId]` with a server-rendered
+  SVG chart (levels labelled **as placed** — the probed chart's stop line
+  is the `SL_PLACED` price, five moves behind the stop that ended the
+  trade) and the reprice timeline; per-row "How it unfolded" links;
+  `read_trade_story` on the MCP surface (25 tools).
+- **Proven**: live probe through the product path read the real story off
+  a real outcome — decimal strings kept their trailing zeros end to end.
+  +24 tests (13 adapter/query, 8 rendering, 3 MCP).
+
+**Also**: the surface map's consumed count was wrong before this change —
+`get_agent_coin_qualification` has been consumed since #60 but sat in the
+unused list (it landed after the map's last regeneration). Corrected with
+a note: 56 consumed, not 53+2.
+
+**State**: 13 capabilities, 127 archived changes, 23 open backlog items,
+0 active. 1,902 vitest + 81 db + 235 harness green. Full serial keyed
+sweep: **26 passed / 2 failed / 17 write-gated skips** — both failures are
+`surface-freshness` firing as designed: **BattleGrid redeployed, recorded
+11.0.0 → live 13.0.0**. Every product path answered green against v13,
+including the new trade-story probe. The re-probe is the next action.
+
+**Next**: re-probe the surface against v13.0.0 (`BATTLEGRID_API_KEY=…
+python3 tools/probe_mcp_surface.py`) and diff what moved — nine
+conformance guards read that record. Then: `trading-telemetry-is-unread`
+still holds open orders (probe while a position is open) and the
+market-context reads. Operator-side: the recorder cron and key rotation
+are still theirs to do.
+
+**Watch out**: an open position's log has never been charted — the READY
+branch for a not-yet-settled trade is unobserved. The discrimination
+handles whatever it answers; the probe prints which branch it saw.
+
+
+## 2026-08-08 — top to bottom of what was waiting
+
+**Did**: the operator approved and PR #76 merged (`c908677` — the proposals
+FK fix is on main). Then the two findings the keyed sweep left open were
+settled and archived the same hour:
+
+- **`the-cost-is-only-fresh`** (125th change): the cost-null mystery is
+  solved by a raw discrimination read — BattleGrid serves `ownerView` (the
+  billing join) **only for fresh evaluations**: populated at ~30 minutes of
+  age, null on every sibling older than ~2 hours, same agent, same minute.
+  Not drift, not a product bug; the spec already promises cost only "where
+  the platform reports" it. The probe now asserts the shape when reported
+  and the honest degradation when not — rerun keyed, green.
+  `an-owned-evaluations-cost-reads-null` closed.
+- **`the-live-suite-paces-itself`** (126th): `vitest.live.config.ts`
+  (serial, tests/live only) + `npm run test:live`; the pacing rule moved
+  from HANDOFF prose into the command. `live-probes-run-concurrently-by-
+  default` closed.
+
+**State**: 13 capabilities, 126 archived changes, 22 open backlog items,
+0 active changes. 1,878 vitest + 81 db + 235 harness green.
+
+**Next**: everything actionable-from-here is done. The waiting list is now
+purely: the operator's cron + key rotation; browser-consent and funding
+items; BattleGrid-side reports; the buildable-but-unhurried tail
+(open-orders telemetry slice first, one discovery read away).
+
+**Watch out**: `list_intelligence_agents` returned **1** ACTIVE agent
+during the discrimination read (THE .0) — the roster's other agents are
+presumably OFF/ARCHIVED and unlisted by default. Not investigated; noted so
+a future "where did the agents go" starts here.
+
+
+## 2026-08-07 (keyed round) — the proposals FK bug: confirmed, fixed, archived; the read sweep ran
+
+**Did**: PR #75 merged (`b311133`). Then the key settled the standing
+suspicion in one call: through the real MCP server in personal-key mode
+against a real database with zero users rows, `propose_agent_change` failed
+with `violates foreign key constraint "proposals_user_id_users_id_fk"` —
+the model-proposes feature had **never worked on a personal deployment**.
+Fixed and archived the same hour (`a-proposal-records-on-a-personal-
+deployment`, 124th change): the FK is dropped (migration 0003), ownership
+stays in the WHERE where it always was enforced, the proposals db suite now
+runs against bare `users` and records as `owner` (the same load-bearing test
+the recorder tables carry), and the identical live call now answers
+`proposalId` + `/pending/<id>`. One existing test asserted the FK itself
+("refuses a user the database does not know") — its premise was the bug, and
+it now asserts the property that actually holds: a stranger's row is
+invisible, not unrecordable. mcp-control's record-a-proposal requirement
+gained the personal-deployment scenario.
+
+**Also**: the full keyed read sweep. First run went out **concurrently** —
+my mistake, HANDOFF says probes run serially — and came back 9-failed with
+platform-weather shapes (freshness reading an empty version mid-sweep,
+rosters unreadable): rate-limiting, not regressions. **Serial: 26 passed /
+2 failed / 16 write-gated skips.** Of the two: `column-grammar-probe` is
+per-call platform flapping (the failure moved to a different test on rerun;
+appended to `battlegrid-is-returning-internal-errors`), and
+`own-evaluation-probe` is a real, stable finding — **the cost-to-think
+reads null on an owned evaluation**, twice, on platform 11.0.0, filed as
+`an-owned-evaluations-cost-reads-null` (p2) with the discrimination recipe.
+
+**State**: 13 capabilities, 124 archived changes, 23 open backlog items,
+0 active changes. Full CI green.
+
+**Next**: the operator's cron (`docs/FIRST_SESSION.md` §3) — still the one
+step only they can take — and rotating the key that passed through chat.
+
+**Watch out**: run `tests/live/` with `--no-file-parallelism`, always; the
+concurrent sweep's failures cost a diagnosis round. Worth a follow-up item
+if it recurs: pinning serial execution for `tests/live/` in the vitest
+config rather than in operator memory.
+
+## 2026-08-07 (follow-up) — the recorder is live-proven, first capture recorded
+
+**Did**: PR #74 merged (`07a5138`), and the operator supplied a key the same
+afternoon. Freshness gate green (live battlegrid 11.0.0 = the recorded map),
+then both proofs: the key-gated probe (16 deployments captured, 0 failed,
+SP500 keep-rate **84 raw rows → 84 mapped readings**), and the CLI end to end
+into a real PostgreSQL — run `921f8db4`: 1 run, 16 captures, **1,344
+readings**, raw answers whole, platform 11.0.0 stamped, exit 0. 255 of 1,344
+readings were triggered at that moment. `the-recorder-is-unproven-against-live`
+closed with the evidence; the change's one open task (8.2) is thereby
+fulfilled.
+
+**State**: 13 capabilities, 123 archived changes, 24 open backlog items,
+0 active changes. Every write and now every read path of the recorder is
+live-proven.
+
+**Next**: operational, not evidential — the operator starts the cron on the
+machine that keeps the database (`docs/FIRST_SESSION.md` §3). The capture
+proven here lives in an ephemeral container; the record that matters begins
+with the first scheduled run at home.
+
+**Watch out**: the key was used for reads only and lives nowhere in the repo.
+`prove-token-lifetimes` and the proposals-FK suspicion
+(`a-proposal-cannot-be-recorded-on-a-personal-deployment`) both become
+one-call answers now that a key exists — worth the next keyed session.
+
+## 2026-08-07 — the signal recorder: proposed, planned, built, gated, archived
+
+**Did**: the full-track change `nothing-records-what-the-signals-said` end to
+end in one session — proposal (PR #74), master plan, execution, verifier
+round, production gate PASS, archive. `signal-recording` is the **thirteenth
+capability**: what the signals said, captured forward, because the platform
+serves current readings only and every day without a recorder is history
+nobody can re-fetch.
+
+- **Capture**: `bin/grid-commander-record.ts` (cron-owned schedule, exit
+  nonzero when the record didn't grow) → `get_coin_signal_preview` per coin
+  (unweighted; the deployments choose when nothing is named) → three tables:
+  runs (provenance + platform generation), captures (metrics + the raw
+  answer whole), readings. Raw-beside-normalized is the load-bearing
+  decision — all nine historical data bugs were mapper drops, and a
+  recorder's drop is permanent.
+- **Honesty set**: failed reads are recorded gaps with reasons (raw kept
+  even when unmappable); coverage derives gaps (spacing > 2× series median,
+  one definition in `domain/recording/coverage.ts`); never-recorded /
+  unreadable / attempted-and-never-captured are three rendered states.
+  Surfaces: `/recorder`, `/recorder/[ticker]?signal=`; MCP:
+  `read_signal_history`, `read_record_coverage`.
+- **The guards worked, five times**: the vocabulary guard rejected a signal
+  id in a tool description; reachability demanded the nav rows; the
+  failure-is-explained guard took two own-store exemptions on the
+  proposal-queue precedent; the verifier caught the untested no-credential
+  scenario (now spawn-tested on the real process); and the audit's ripgrep
+  refused to read the store file — a literal NUL byte in a template string
+  had made it binary to every text scan (PG-001, fixed).
+- **One guard evolved** (DL-008): `live-writes` now derives what a
+  `*Command` reaches (shared derivation with `mcp-read-only` in
+  `tests/support/write-reachability.ts`) instead of matching the spelling —
+  `CaptureSignalsCommand` was the honest read-only case the spelling rule
+  couldn't hold.
+
+**Filed**: `a-proposal-cannot-be-recorded-on-a-personal-deployment` (p2 bug
+— `proposals.user_id` FKs `users`, and personal mode has no users row; the
+recorder's tables were designed around that trap),
+`the-recorder-is-unproven-against-live` (p2, waiting on operator),
+`recorded-signals-are-not-yet-evidence` (p2, the analysis layer),
+`agent-evaluations-are-not-recorded` (p3), `the-record-cannot-be-forgotten`
+(p3).
+
+**State at wrap**: 13 capabilities, 123 archived changes, 25 open backlog
+items, 0 active changes. 1878 vitest + 80 db green, full local CI green.
+Branch `claude/signal-recorder-strategy-y1davv`, PR #74 (draft).
+
+**Next**: the operator — run the live probe
+(`BATTLEGRID_API_KEY=… npx vitest run tests/live/recorder-probe.test.ts`),
+then start the cron (`docs/FIRST_SESSION.md` §3). Every day before the first
+scheduled capture is the loss the capability exists to stop.
+
+**Watch out**: the recorder CLI acts only on personal-key deployments (the
+delegated path has no session to resolve headlessly — same as the MCP
+server). Coverage gaps need ≥2 captures to define a cadence; a single
+capture claims no gap on purpose. And the proposals-FK suspicion above means
+`propose_agent_change` may error on exactly the deployment mode the operator
+runs — one live call settles it.
+
 ## 2026-08-07 — the research map, and the measurements that kept falsifying it
 
 **Did**: `_PM/TRADE_CATEGORIES_AND_MATHEMATICAL_FAMILIES.md` — 13 trade
@@ -56,6 +1445,7 @@ of signal history permanently lost.
 - **The two research scripts live in the session scratchpad, not the repo.**
   They are gone when this container is reclaimed. `tools/probe_mcp_surface.py`
   provides the transport; the analysis was ad hoc and would need rewriting.
+
 
 ## 2026-08-07 (wrap-up) — the documentation matches the product, for the first session
 

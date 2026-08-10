@@ -17,6 +17,8 @@ import type {
   EvaluationResult,
   FunnelResult,
   QualificationResult,
+  TradeChartResult,
+  PositionAuditResult,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
@@ -36,6 +38,7 @@ import {
 } from './agent-mapper.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
 import { mapEvaluationScorecard } from './scorecard-mapper.js';
+import { mapAuditEvent, mapTradeChart } from './trade-story-mapper.js';
 import { declaredValues } from './declared-values.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
@@ -75,6 +78,8 @@ const TOOLS = {
   signalLogDetail: 'get_signal_log',
   signalPerformance: 'get_signal_performance',
   coinQualification: 'get_agent_coin_qualification',
+  tradeChart: 'get_trade_chart',
+  positionAudit: 'get_position_audit_history',
 } as const;
 
 /**
@@ -545,6 +550,48 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       return malformed(messageOf(err));
     }
+  }
+
+  async readTradeChart(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    logId: string;
+  }): Promise<TradeChartResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.tradeChart, {
+        agentId: params.agentId,
+        logId: params.logId,
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+    // The status discrimination lives in the mapper: no-trade and not-found
+    // are the platform's answers, not failures, and only the mapper has the
+    // payload in hand to keep them apart from a malformed one.
+    return mapTradeChart(payload);
+  }
+
+  async readPositionAudit(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+    positionId: string;
+  }): Promise<PositionAuditResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.positionAudit, {
+        agentId: params.agentId,
+        positionId: params.positionId,
+      });
+    } catch (err) {
+      return unreadable(err);
+    }
+    const raw = payload['events'];
+    if (!Array.isArray(raw)) return malformed('no events returned');
+    if (raw.length === 0) return { kind: 'none' };
+    return { kind: 'events', events: raw.map(mapAuditEvent) };
   }
 
   private async stage<T>(

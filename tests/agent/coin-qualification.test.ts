@@ -283,6 +283,13 @@ class StubMarket implements MarketPort {
   async rankingVocabulary(): Promise<RankingVocabulary> {
     return this.vocabulary;
   }
+  // The recorder's reads — the qualification never makes them.
+  async coinSignalPreview(): Promise<never> {
+    throw new Error('the qualification screen never reads the signal preview');
+  }
+  async platformVersion(): Promise<string | null> {
+    return null;
+  }
 }
 
 function deployedOn(tickers: readonly string[]): RadarReadResult {

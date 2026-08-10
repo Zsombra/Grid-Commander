@@ -260,7 +260,7 @@ describe('a condition survives the round trip byte for byte', () => {
       { kind: 'group', op: 'ALL', members: [{ kind: 'conditionRef', conditionKey: 'FLOW_UP' }] },
     ];
     for (const form of forms) {
-      const payload = { conditionKey: 'K', name: 'n', verdict: null, definition: form };
+      const payload = { conditionKey: 'K', name: 'n', verdict: null, required: false, definition: form };
       expect(wireOf(domainOf(payload)), JSON.stringify(form)).toEqual(payload);
     }
   });
@@ -270,6 +270,7 @@ describe('a condition survives the round trip byte for byte', () => {
       conditionKey: 'K',
       name: 'n',
       verdict: 'UP',
+      required: false,
       definition: {
         kind: 'clause',
         column: { sectionKey: null, header: 'rsi14' },
@@ -462,6 +463,7 @@ describe('a form this product cannot express is never written back', () => {
       name: 'n',
       definition: unrecognised,
       verdict: null,
+      required: false,
     });
     expect(result.kind).toBe('inexpressible');
     if (result.kind !== 'inexpressible') throw new Error('unreachable');
@@ -473,6 +475,7 @@ describe('a form this product cannot express is never written back', () => {
       conditionKey: 'K',
       name: 'n',
       verdict: 'UP',
+      required: false,
       definition: {
         kind: 'group',
         op: 'ALL',

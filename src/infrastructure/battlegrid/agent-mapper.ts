@@ -304,6 +304,12 @@ const BOUND_KEYS: ReadonlyArray<
 > = [
   ['balanceThresholdUsd', 'minimumTradingEquityUsd', undefined],
   ['maxLeverage', 'minimumLeverage', undefined],
+  // The registry still publishes `minimumStopLossPct` / `maximumStopLossPct`
+  // / `minimumRiskRewardRatio` at v15, but the fields they bound left the
+  // agent for the strategy, so `validateTradingConfig` never meets them in a
+  // 15-key config. Kept as a record of what the bound governs, inert until a
+  // strategy-side validator wants them — see
+  // `v15-trade-level-policy-is-declared-but-inert`.
   ['minStopLossPct', 'minimumStopLossPct', 'maximumStopLossPct'],
   ['maxStopLossPct', 'minimumStopLossPct', 'maximumStopLossPct'],
   ['maxEntryDeviationAtrMultiple', 'minimumMaxEntryDeviationAtrMultiple', 'maximumMaxEntryDeviationAtrMultiple'],

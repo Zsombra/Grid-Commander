@@ -82,6 +82,15 @@ export interface StrategyCondition {
   readonly name: string;
   readonly definition: ConditionDefinition;
   readonly verdict: ConditionVerdict;
+  /**
+   * Whether the condition must hold for the strategy to act.
+   *
+   * The read has returned this since before it was modelled; BattleGrid
+   * v16.0.0 made it **required on every write** carrying conditions
+   * (`compile_strategy_plan`, `apply_strategy_plan`,
+   * `preview_strategy_report`), so a payload without it is refused whole.
+   */
+  readonly required: boolean;
 }
 
 /** A condition that decides direction, as opposed to one that assembles into those. */

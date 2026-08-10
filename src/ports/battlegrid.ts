@@ -35,6 +35,16 @@ export interface BattleGridPort {
    * before attempting, audit the outcome.
    */
   callTool(request: ToolCallRequest): Promise<ToolCallResult>;
+
+  /**
+   * The server version the platform's handshake names, or null when it does
+   * not say. Optional, and null-on-unknown by contract: the one consumer is
+   * the signal recorder, which stamps each capture with the generation that
+   * answered — a version it cannot learn is recorded as unknown, never
+   * guessed, and never a reason to fail the capture. A fake that omits this
+   * is a platform that did not say, which is a state the record supports.
+   */
+  serverVersion?(accessToken: string): Promise<string | null>;
 }
 
 export interface TokenGrant {

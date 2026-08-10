@@ -114,6 +114,9 @@ that will fail on every call.
 
 The MCP surface SHALL let a model record, on the operator's behalf, an intent
 to make a change: which change, against which target, with which values.
+Recording SHALL work on every deployment mode the server starts under —
+in particular a personal-key deployment, where no delegated identity row
+exists, because that is the mode the stdio server is most run in.
 
 Recording a proposal SHALL NOT read a consequence, mint a confirmation, reserve
 anything, or contact BattleGrid. The response SHALL identify the proposal and
@@ -124,6 +127,14 @@ say where a human can act on it.
 - **WHEN** a model records a proposal
 - **THEN** it receives a reference to the proposal and where to review it
 - **AND** the operator's BattleGrid account is unchanged
+
+#### Scenario: On a personal deployment
+- **GIVEN** a personal-key deployment, whose acting identity has no stored
+  user row
+- **WHEN** a model records a proposal
+- **THEN** it is recorded and listed for the operator
+- **AND** it is not refused on the strength of an identity table only the
+  delegated path writes
 
 #### Scenario: A proposal the product cannot express
 - **GIVEN** a proposal naming a change this product does not offer
@@ -292,3 +303,68 @@ of a subject that was never chosen.
 - **THEN** the result says it could not be read, as data naming itself rather
   than as a tool failure
 - **AND** where the coins came from is still stated
+
+### Requirement: The Recorded Signal History Is Readable By A Model
+
+The MCP surface SHALL let a model read the recorded signal history — per
+coin and per signal — and the record's coverage. Every answer serving
+recorded readings SHALL carry the capture times and the coverage facts a
+human surface shows, so a model reasons over the record as it is, not as a
+continuous feed.
+
+An answer covering a window with a recording gap SHALL state the gap, so the
+model cannot mistake a hole in recording for a quiet market. An account that
+has never captured SHALL be told recording has not started and where it
+starts, distinctly from a record that could not be read.
+
+These tools read this product's own store and SHALL follow the surface's
+standing rule: nothing here mutates, on BattleGrid or in the record.
+
+#### Scenario: A model reads a coin's recorded history
+- **GIVEN** an account with recorded captures
+- **WHEN** a model asks for a coin's signal history
+- **THEN** it receives the recorded captures with their capture times and
+  the platform version each observed
+
+#### Scenario: A gap crosses the boundary as a gap
+- **GIVEN** a window containing a recording gap
+- **WHEN** a model reads history over that window
+- **THEN** the answer states the gap
+- **AND** absence of readings is not presented as absence of signal activity
+
+#### Scenario: Recording has not started
+- **GIVEN** an account that has never captured
+- **WHEN** a model asks for recorded history
+- **THEN** it is told recording has not started and how it is started
+- **AND** this is distinguishable from a record that could not be read
+
+### Requirement: A Trade's Story Is Readable By A Model
+
+The MCP surface SHALL let a model read the story of one completed trade on
+an owned agent: the frozen chart facts and the position's order-lifecycle
+trail, in the same states the human surface holds. An evaluation that never
+became a trade, an evaluation that does not exist, an unreadable story and
+an unreadable trail SHALL each be answered as themselves — a model must
+not be told a trade does not exist because a read failed, nor that a trail
+is empty because the chart named no position to ask about.
+
+The tool reads the platform through the same guarded path as every other
+read on this surface and mutates nothing.
+
+#### Scenario: A model reads a settled trade's story
+
+- **GIVEN** an agent with a charted settled trade
+- **WHEN** a model calls the trade-story tool with the agent and
+  evaluation ids
+- **THEN** it receives the chart facts, the levels and markers as the
+  platform labelled them, and the audit trail's events in the platform's
+  order
+
+#### Scenario: The states stay apart over MCP
+
+- **GIVEN** an evaluation that never filled, and separately a failing
+  platform read
+- **WHEN** a model asks for each story
+- **THEN** the first answer says the evaluation never became a trade
+- **AND** the second says the story could not be read
+- **AND** the two answers are distinguishable

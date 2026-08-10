@@ -140,6 +140,10 @@ export class TryConditionQuery {
         conditionKey: wanted.conditionKey ?? source.conditionKey,
         name: wanted.name ?? source.name,
         verdict: wanted.verdict,
+        // Carried from the source for the same reason the definition is: the
+        // operator asked to retarget a condition, not to change whether it
+        // must hold.
+        required: source.required,
       };
     }
 

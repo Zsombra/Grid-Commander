@@ -128,6 +128,13 @@ export function serialiseDefinition(definition: ConditionDefinition): ConditionW
  * requires the key on every condition and `null` is its declared value for a
  * named building block. Omitting it would be an unknown-key error's opposite and
  * just as fatal: a required field missing.
+ *
+ * `required` is emitted for the same reason, and was added the day BattleGrid
+ * v16.0.0 made it required on all three condition-carrying writes. It is the
+ * twelfth dead write path in this codebase's history and the second caught by
+ * the conformance guards before a live refusal — the record was re-probed, and
+ * `payload-conformance` named `conditions[].required is required and missing`
+ * on the same run.
  */
 export function serialiseCondition(condition: StrategyCondition): DraftSerialisation {
   const reasons = inexpressibleParts(condition.definition);
@@ -139,6 +146,7 @@ export function serialiseCondition(condition: StrategyCondition): DraftSerialisa
       name: condition.name,
       definition: serialiseDefinition(condition.definition),
       verdict: condition.verdict,
+      required: condition.required,
     },
   };
 }

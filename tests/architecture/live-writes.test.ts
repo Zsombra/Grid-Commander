@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { classWriteReach, mutatingToolNames } from '../support/write-reachability.js';
 
 /**
  * A credential in the environment must not turn `npm test` into a write.
@@ -26,16 +27,30 @@ import { describe, expect, it } from 'vitest';
  * this repository has already paid for one of those.
  */
 
-interface Surface {
-  tools: Array<{ name: string; classification: string }>;
-}
-
-const surface = JSON.parse(readFileSync('docs/battlegrid-mcp-surface.json', 'utf8')) as Surface;
-
 /** The server's own annotation. `read` is safe; everything else is not. */
-const MUTATING = surface.tools
-  .filter((t) => t.classification !== 'read')
-  .map((t) => t.name);
+const MUTATING = [...mutatingToolNames()];
+
+/**
+ * Whether a `*Command` class can reach a BattleGrid write — the derivation
+ * shared with `mcp-read-only.test.ts` (surface record → adapter methods →
+ * composition wiring → what the use-case file calls). `null` means the class
+ * is not one composition wires, and callers treat that as writing: unfindable
+ * is unchecked, not safe.
+ *
+ * This replaced matching the *spelling* `*Command`, which was documented as
+ * costless conservatism — "a Command that only touches this product's store
+ * would also be gated, which costs nothing". The recorder priced it:
+ * `recorder-probe.test.ts` constructs `CaptureSignalsCommand`, whose every
+ * platform call is a read, and gating it under the write opt-in would keep a
+ * read probe out of every keyed CI run. The rule met an honest case and, per
+ * the standing corollary, the rule was the thing to fix — by deriving, not
+ * by exempting the file.
+ */
+const commandReach = classWriteReach(readFileSync('src/composition.ts', 'utf8'));
+const commandCanWrite = (className: string): boolean => {
+  const reach = commandReach(className);
+  return reach === null || reach.length > 0;
+};
 
 /** Comments describe writes constantly; only code can perform one. */
 const stripComments = (code: string): string =>
@@ -69,8 +84,9 @@ const HELPER_DIR = 'tests/support';
 const WRITING_HELPERS = new Map<string, string>();
 for (const file of readdirSync(HELPER_DIR).filter((f) => f.endsWith('.ts'))) {
   const code = stripComments(readFileSync(`${HELPER_DIR}/${file}`, 'utf8'));
+  const commands = new Set(code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []);
   const reaches =
-    MUTATING.some((tool) => code.includes(tool)) || /\b[A-Z][A-Za-z]*Command\b/.test(code);
+    MUTATING.some((tool) => code.includes(tool)) || [...commands].some(commandCanWrite);
   if (!reaches) continue;
   for (const m of code.matchAll(/export\s+(?:async\s+)?(?:function|const|class)\s+(\w+)/g)) {
     WRITING_HELPERS.set(m[1] as string, file);
@@ -81,7 +97,9 @@ for (const file of readdirSync(HELPER_DIR).filter((f) => f.endsWith('.ts'))) {
 function reachIn(code: string): string[] {
   return [
     ...MUTATING.filter((tool) => code.includes(tool)),
-    ...new Set(code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []),
+    // Commands by what their use-case file reaches, not by their spelling —
+    // an unresolvable name still counts, because unfindable is not safe.
+    ...new Set((code.match(/\b[A-Z][A-Za-z]*Command\b/g) ?? []).filter(commandCanWrite)),
     ...[...WRITING_HELPERS]
       .filter(([name]) => new RegExp(`\\b${name}\\b`).test(code))
       .map(([name, file]) => `${name} (via ${HELPER_DIR}/${file})`),
@@ -102,6 +120,19 @@ describe('a live probe that can mutate requires more than a credential', () => {
       WRITING_HELPERS.get('acquireProbeAgent'),
       'the throwaway-agent helper reaches a create and must be seen to',
     ).toBe('probe-agent.ts');
+
+    /**
+     * And the refinement's own guard, both directions. A Command that reaches
+     * a BattleGrid write is still caught by what it reaches; the recorder's
+     * command — every platform call a read, the write to our own store — is
+     * not; and a class composition does not wire fails closed.
+     */
+    expect(commandCanWrite('ForkStrategyCommand'), 'a real write is still a write').toBe(true);
+    expect(
+      commandCanWrite('CaptureSignalsCommand'),
+      'a command that cannot reach BattleGrid’s write side needs no write opt-in',
+    ).toBe(false);
+    expect(commandCanWrite('MadeUpCommand'), 'unresolvable fails closed').toBe(true);
   });
 
   it('gates every probe that can mutate on the explicit opt-in', () => {
@@ -116,17 +147,22 @@ describe('a live probe that can mutate requires more than a credential', () => {
      * written to close, missed by the file itself.
      *
      * A `*Command` is this codebase's own name for the write side of a
-     * use-case (`Query` reads, `Command` writes). Gating on it is deliberately
-     * conservative: a Command that only touches this product's store would
-     * also be gated, which costs nothing, because a live probe needs a
-     * credential regardless.
+     * use-case (`Query` reads, `Command` writes) — but the write side of
+     * *something*, not necessarily of BattleGrid. This arm gated on the
+     * spelling until the recorder's probe constructed a Command whose every
+     * platform call is a read, so it now asks what the class reaches
+     * (`commandCanWrite`, the derivation shared with `mcp-read-only`), and
+     * fails closed on any class it cannot resolve.
      */
     const offenders: Array<[string, string]> = [];
     for (const file of liveFiles) {
-      const raw = readFileSync(`tests/live/${file}`, 'utf8');
-      const reach = reachIn(stripComments(raw));
+      // Stripped on both sides: only code can perform a write, and only code
+      // can consult an opt-in — a comment *about* the gate satisfied the raw
+      // check the day the recorder's probe documented why it needs none.
+      const code = stripComments(readFileSync(`tests/live/${file}`, 'utf8'));
+      const reach = reachIn(code);
       if (reach.length === 0) continue;
-      if (!raw.includes('BATTLEGRID_LIVE_WRITES')) offenders.push([file, reach.join(', ')]);
+      if (!code.includes('BATTLEGRID_LIVE_WRITES')) offenders.push([file, reach.join(', ')]);
     }
     expect(
       offenders,
@@ -155,9 +191,9 @@ describe('a live probe that can mutate requires more than a credential', () => {
     const offenders: string[] = [];
 
     for (const file of liveFiles) {
-      const raw = readFileSync(`tests/live/${file}`, 'utf8');
-      if (!raw.includes('BATTLEGRID_LIVE_WRITES')) continue;
-      const code = stripComments(raw);
+      const code = stripComments(readFileSync(`tests/live/${file}`, 'utf8'));
+      // Consulted in code, not merely mentioned in prose — same reason as above.
+      if (!code.includes('BATTLEGRID_LIVE_WRITES')) continue;
 
       // `const live = KEY && WRITES ? describe : describe.skip` — the name, and
       // whether the opt-in is consulted in choosing between them.

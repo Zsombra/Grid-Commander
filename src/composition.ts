@@ -6,6 +6,7 @@ import { loadConfig } from './config.js';
 import type { PersonalConfig } from './config.js';
 import { DeclaredScopes } from './domain/connection/held-scopes.js';
 import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
+import { CaptureSignalsCommand } from './application/use-cases/capture-signals.command.js';
 import { CreateAgentCommand } from './application/use-cases/create-agent.command.js';
 import { CurrentUserQuery } from './application/use-cases/current-user.query.js';
 import type { ActingUser } from './application/use-cases/current-user.query.js';
@@ -57,8 +58,11 @@ import { DescribeEditQuery } from './application/use-cases/describe-edit.query.j
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
+import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
+import { ReadRecordCoverageQuery } from './application/use-cases/read-record-coverage.query.js';
+import { ReadSignalHistoryQuery } from './application/use-cases/read-signal-history.query.js';
 import { ReadStoppagesQuery } from './application/use-cases/read-stoppages.query.js';
 import { ReadExposureQuery } from './application/use-cases/read-exposure.query.js';
 import { ReadOwnEvaluationQuery } from './application/use-cases/read-own-evaluation.query.js';
@@ -89,6 +93,7 @@ import {
   DrizzleConfirmationStore,
 } from './infrastructure/db/repositories/drizzle-audit-repository.js';
 import { DrizzleProposalStore } from './infrastructure/db/repositories/drizzle-proposal-store.js';
+import { DrizzleSignalRecordStore } from './infrastructure/db/repositories/drizzle-signal-record-store.js';
 import { RecordProposalCommand } from './application/use-cases/record-proposal.command.js';
 import { ReadProposalsQuery } from './application/use-cases/read-proposals.query.js';
 import { OpenProposalQuery } from './application/use-cases/open-proposal.query.js';
@@ -130,6 +135,7 @@ interface Infrastructure {
   readonly audit: DrizzleAuditRepository;
   readonly confirmations: DrizzleConfirmationStore;
   readonly proposals: DrizzleProposalStore;
+  readonly signalRecord: DrizzleSignalRecordStore;
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
@@ -157,6 +163,7 @@ function infrastructure(): Infrastructure {
   const audit = new DrizzleAuditRepository(db, systemClock, randomUUID);
   const confirmations = new DrizzleConfirmationStore(db, systemClock);
   const proposals = new DrizzleProposalStore(db);
+  const signalRecord = new DrizzleSignalRecordStore(db, randomUUID);
 
   const battlegrid = new McpBattleGridAdapter({
     config: config.battlegrid,
@@ -182,6 +189,7 @@ function infrastructure(): Infrastructure {
     audit,
     confirmations,
     proposals,
+    signalRecord,
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
@@ -269,6 +277,7 @@ export function app(cookies: CookieStore) {
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
+    readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar),
@@ -302,6 +311,13 @@ export function app(cookies: CookieStore) {
       systemClock,
     ),
     resolveProposal: new ResolveProposalCommand(i.proposals),
+
+    // The recorder. A command that writes only to this product's own store —
+    // every platform call on its path is a read (DL-004), and the clock is
+    // injected because coverage derives gaps from the times it stamps.
+    captureSignals: new CaptureSignalsCommand(i.market, i.radar, i.signalRecord, systemClock),
+    readSignalHistory: new ReadSignalHistoryQuery(i.signalRecord),
+    readRecordCoverage: new ReadRecordCoverageQuery(i.signalRecord, systemClock),
 
     describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
     performDeploy: new PerformDeployCommand(i.radar),

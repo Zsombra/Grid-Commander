@@ -85,6 +85,7 @@ const draftOver = (header: string, sectionKey: string | null) => ({
   conditionKey: 'GC_PROBE_DRAFT',
   name: 'Grid-Commander probe draft',
   verdict: 'UP' as const,
+  required: false,
   definition: {
     kind: 'compare' as const,
     column: { sectionKey, header },

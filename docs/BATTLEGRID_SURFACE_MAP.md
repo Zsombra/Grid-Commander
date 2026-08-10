@@ -1,14 +1,19 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v9.0.0`**
-on 2026-08-06. Regenerate after any BattleGrid deployment: the server says its
-own list goes stale, and this file inherits that.
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v16.0.0`**
+on 2026-08-10. v13 lasted about five hours, v14 about twenty, v15 about a day.
+Regenerate after any BattleGrid deployment: the server says its own list goes
+stale, and this file inherits that.
 
-**110 tools** · 83 read ·
+**114 tools** · 87 read ·
 17 write · 10 destructive
 
-**Grid-Commander calls 52 of them** — 40 read, 5 write, 7 destructive. The
+**Grid-Commander calls 56 of them** — 44 read, 5 write, 7 destructive. The
 other 58 are unconsumed capability.
+
+(Corrected 2026-08-08: `get_agent_coin_qualification` has been consumed since
+the qualification feature landed, but sat in the unused list — it shipped
+after this file's last regeneration and the hand-maintained count missed it.)
 
 Classification is the server's own annotation, never inferred from a name — the
 product reads it at runtime and treats anything unannotated as destructive.
@@ -26,6 +31,11 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v5.0.0 | 110 | `conditionVerdicts` dropped from a closed plan schema; `entryStrategy` replaced two booleans on policy slots; `priceAction` became omissible |
 | → v5.1.0 | 110 | four crowd metrics added — `CROWD_PICK_LIVE`, `CROWD_UPBIAS_LIVE`, `CROWD_ACC_LIVE`, `CROWD_CAPT_LIVE`. Purely additive |
 | → v9.0.0 | 110 | a whole **perp/spot flow** module; **`VOLUME_RATIO` removed** from every metric enum; `preview_strategy_report` stopped returning `estimatedTokenCount` **and nested its rendered section bodies one level down** |
+| → v11.0.0 | 110 | **`arenaChallengeEnabled` dropped** from create and update — and from the agent payloads themselves; `feasibilityAdvisory` added to create's declared output; a strategy-vocabulary metric enum shifted. Hidden for two days because only the record was re-probed, not the reference — see `two-agent-owned-fields-no-tool-can-write` |
+| → v13.0.0 | 110 | the quietest yet: declared schemas, constants and annotations byte-identical across all 110 tools; `get_market_context` grew 23 → 25 selectable modules (`marketBreadth`, `referencePairs`) |
+| → v14.0.0 | **114** | the count finally moved: four reads added (`get_agents_hub`, `get_agent_conviction_calibration`, `get_radar_activity`, `list_deployment_policies`) — and the agent writes changed underneath the product: `tradingConfig` dropped `atrTimeframe` + `atrMatchesStrategyTimeframe` (20 → 18 fields) and a CUSTOM brain now **requires** `behavior: {risk, outlook, conviction}`. The app's create path is refused wholesale — `agent-create-composes-fields-v14-refuses` (p1) |
+| → v15.0.0 | 114 | no tool added or removed; **16 tools changed, one coherent move**: the trade-level policy left the agent for the strategy — `maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` out of `tradingConfig` (18 → 15), onto the strategy with the percentage stop floor replaced by **`minStopLossAtrMultiple`**. `compile_strategy_plan` gained `diff.tradeLevelPolicy`; `feasibilityAdvisory` gained per-coin ATR feasibility. All three are **required** on apply — `toApplyPlan` had to learn them or every apply would refuse. The compiler accepts them and does not apply them: `v15-trade-level-policy-is-declared-but-inert` (p1) |
+| → v16.0.0 | 114 | no tool added or removed; **three tools changed, one field**: `conditions[].required` became **required** on every condition-carrying write (`compile_strategy_plan`, `apply_strategy_plan`, `preview_strategy_report`). The read had returned it all along and this product had never modelled it, so `serialiseCondition` emitted four of the five accepted keys — dead write path #12, caught by `payload-conformance` on the same run that refreshed the record, before any live refusal. The v15 trade-level policy is **still inert** across the whole version bump |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools
@@ -176,14 +186,17 @@ a request the tool rejects.
 | `fork_strategy` | write | `sourceRevision`, `strategyId` | `strategy` |
 | `get_account_state` | read | — | `agentSlots`, `balance`, `mcpWagerEnabled`, `stats`, `tradingWalletProvisioned`, `username` |
 | `get_agent_budget` | read | `agentId` | `budget` |
+| `get_agent_coin_qualification` | read | `agentId`, `coinTickers` | `verdicts` |
 | `get_agent_explorer` | read | — | `aggregations`, `currentUser`, `entries`, `filter`, `generatedAt`, `stats` |
 | `get_agent_journal` | read | `agentId` | `recentActivity`, `recentGames`, `recentThoughts`, `username` |
 | `get_agent_thought_log` | read | `agentId` | `entries`, `limit`, `page`, `total` |
+| `get_coin_signal_preview` | read | `interval`, `ticker` | `coinTicker`, `coinName`, `coinImageUrl`, `currentPrice`, `priceChangePercent`, `dominantBias`, `aggregateScorePercent`, `hasConflictingSignals`, `allEvaluatedSignals`, `isAgentWeighted`, `comparison` |
 | `get_intelligence_agent` | read | `agentId` | `agent` |
 | `get_leaderboard` | read | `metric`, `timeframe` | `currentUser`, `filter`, `generatedAt`, `leaderboard` |
 | `get_market_grid_results` | read | `sessionId` | `avgNetChangeCapture`, `captureEfficiency`, `coinBoard`, `coinCaptainBadges`, `dominantBiasDirection`, `dominantBiasPercent`, `gameDuration`, `gameName`, `gameType`, `itmCount`, `itmPercent`, `leaderboard`, `playerGrids`, `players`, `resolutions`, `session`, `sessionAccuracy`, `settledMarketData`, `totalCorrectCount`, `totalDownCount`, `totalPlayers`, `totalPredictionCount`, `totalUpCount` |
 | `get_market_grid_session` | read | `sessionId` | `chartIntervalMs`, `coinCaptainBadges`, `coinCount`, `coinPool`, `createdAt`, `displayName`, `entryFee`, `feeConfig`, `finalScoringSource`, `gamePresetId`, `gameType`, `gridCols`, `gridRows`, `gridSize`, `hostUserId`, `id`, `jackpotPayoutHighlights`, `lockAt`, `payoutBandSummary`, `payoutMultiplier`, `payoutStructure`, `perfectGameJackpot`, `playerCount`, `presetBadgeImageUrl`, `prizePool`, `settleAt`, `status`, `timeRangeKey`, `timeframe`, `totalPurse`, `warBondContribution`, `warBondCycleId`, `warBondDeployed`, `warBondPoolId` |
 | `get_metric_construction_hints` | read | `metric` | `metric` |
+| `get_position_audit_history` | read | `agentId`, `positionId` | `positionId`, `events` |
 | `get_public_agent_realized_trades` | read | `agentId` | `limit`, `page`, `total`, `trades` |
 | `get_public_agent_signal_log_detail` | read | `agentId`, `logId` | `log` |
 | `get_public_agent_signal_logs` | read | `agentId` | `entries`, `total` |
@@ -194,6 +207,7 @@ a request the tool rejects.
 | `get_strategy` | read | `strategyId` | `strategy` |
 | `get_strategy_column_contract` | read | `column` | `contract` |
 | `get_strategy_signal_definition` | read | `signalId` | `signal` |
+| `get_trade_chart` | read | `agentId`, `logId` | `result` |
 | `get_trading_config_catalog` | read | — | `positionManagementPresets`, `tradingDefaults` |
 | `get_user_thought_log` | read | — | `entries`, `limit`, `page`, `total` |
 | `list_approved_models` | read | — | `models` |
@@ -222,9 +236,9 @@ a request the tool rejects.
 Grouped by classification. These are the surfaces available if the product grows
 into them — positions, orders, market context, deployment policies, wagering.
 
-### read (43 unused)
+### read (39 unused)
 
-`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_coin_qualification`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_coin_signal_preview`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_position_audit_history`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_chart`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
+`get_agent_activity_feed`, `get_agent_automation_status`, `get_agent_decision_context`, `get_agent_fund_allocation`, `get_agent_game_history`, `get_agent_open_positions`, `get_agent_performance`, `get_agent_prompt_context_preview`, `get_coin_candles`, `get_coin_market_context`, `get_coin_metadata`, `get_coin_performance_history`, `get_context_source_full_preview`, `get_context_sources_preview`, `get_decision_order_attribution`, `get_deployment_policy`, `get_entry_decision`, `get_macd_heatmap`, `get_market_context`, `get_market_grid_player_grid`, `get_mcp_reasoning_journal`, `get_open_orders`, `get_order_status`, `get_public_agent_game_history`, `get_public_agent_trade_chart`, `get_radar_deployment`, `get_regime_history`, `get_regime_snapshot`, `get_strategy_section_template`, `get_top_ranked_coins`, `get_trade_outcome_by_decision`, `get_user_activity_feed`, `get_user_agent_game_history`, `list_game_presets`, `list_pending_approvals`, `list_session_agent_positions`, `preview_deployment_resolution`, `preview_radar_resolution`, `test_generate_deployment_grid`
 
 ### write (12 unused)
 

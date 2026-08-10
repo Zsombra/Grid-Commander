@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-07  
-**State**: green (1772 vitest + 62 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 20 open backlog items. PRs #8–#72 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v11.0.0**.
+**State**: green (1902 vitest + 81 db + 235 harness tests, all ten `./scripts/ci.sh` gates; further vitest are key-gated live probes). No active changes. 24 open backlog items. PRs #8–#79 merged. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. The surface record is **v15.0.0** (re-probed 2026-08-09; v14 had moved the tool count for the first time ever, 110 → 114, and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and does not yet apply: `v15-trade-level-policy-is-declared-but-inert`, p1). **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -19,12 +19,12 @@ All development branches have been merged. `main` is the single source of truth.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | **12** |
-| Changes (archived) | 122 |
-| Vitest tests | 1811 (+ key-gated live) + 62 db |
+| Capabilities (archived) | **13** |
+| Changes (archived) | 123 |
+| Vitest tests | 1902 (+ key-gated live) + 81 db |
 | Harness tests (Python) | 235 |
 | Active changes | none |
-| Open backlog items | 20 |
+| Open backlog items | 25 |
 | Design tickets open | 0 |
 | Open draft PRs | none; #8–#72 merged |
 
@@ -73,7 +73,7 @@ its neighbours.
 
 ---
 
-## Twelve Capabilities
+## Thirteen Capabilities
 
 | Capability | What it covers |
 |---|---|
@@ -83,12 +83,13 @@ its neighbours.
 | `harness-integrity` | The `openspec.py` tooling itself (235 tests) |
 | `battlegrid-connection` | OAuth + DCR + PKCE account connect/disconnect; audit; credential encryption |
 | `agent-authoring` | Roster, create, rename, rebind, archive, reactivate, budget gauges |
-| `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
+| `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **each trade's story — frozen chart + the audit trail of every stop move**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
 | `strategy-authoring` | Fork (nameable), compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — composed, tried live, and saved through the full ceremony**; the section library and column editor |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
 | `mcp-control` | Grid-Commander exposed as an MCP server — 18 read tools, no writes, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
 | `platform-mapping` | The recorded model of BattleGrid's MCP surface, and the guarantee that it announces its own age |
+| `signal-recording` | The forward record of what the signals said — capture (CLI, cron-owned schedule), the raw answer kept whole, coverage with gaps stated as gaps, history per coin and per signal, readable by the web and by a model |
 
 ---
 
@@ -179,6 +180,10 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 | Item | What | Fix path |
 |---|---|---|
 | `image-never-built` | Docker image build never proven | Needs a Docker daemon; not resolvable in this environment. |
+
+(`agent-create-composes-fields-v14-refuses` — v14 dropped two `tradingConfig`
+fields the write paths still composed, breaking agent create wholesale — was
+filed and closed the same session by `the-agent-write-follows-v14`.)
 
 (`ci-startup-failure` — the old framing of the CI issue — was closed 2026-07-31 as superseded by `ci-creates-no-runs`.)
 
@@ -452,7 +457,7 @@ controller against one account and asserts the row count, so a silently
 skipped controller fails:
 
 ```bash
-BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/
+BATTLEGRID_API_KEY=bg_live_… npm run test:live   # serial on purpose — the platform rate-limits
 ```
 
 | Probe | Proves |

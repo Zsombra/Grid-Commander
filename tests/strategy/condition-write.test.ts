@@ -46,6 +46,7 @@ function draft(over: Partial<StrategyCondition> = {}): StrategyCondition {
     conditionKey: 'FLOW_UP',
     name: 'Flow rising',
     verdict: 'UP',
+    required: false,
     definition: {
       kind: 'compare',
       column: { sectionKey: 'includeRegimeContext', header: 'CVD_trend' },
