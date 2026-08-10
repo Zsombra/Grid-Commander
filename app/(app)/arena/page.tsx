@@ -2,6 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { GameRules } from '@/presentation/components/game-rules.js';
+import { WagerAuthority } from '@/presentation/components/wager-authority.js';
 
 /**
  * The Market Grid arena, watched — the rules of the game, then the sessions
@@ -28,12 +29,14 @@ export default async function ArenaPage() {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
-  // Two reads, asked together and answered apart: the rulebook is one unscoped
-  // call, the arena is a list plus one submission check per session, and a
-  // failure of either says nothing about the other.
-  const [arena, rules] = await Promise.all([
+  // Three reads, asked together and answered apart: the rulebook is one
+  // unscoped call, the arena is a list plus one submission check per session,
+  // and the account's wager setting is an account-level fact no arena read
+  // carries. A failure of any says nothing about the others.
+  const [arena, rules, wager] = await Promise.all([
     app.watchArena.execute(user.authority),
     app.readGameRules.execute(user.authority),
+    app.readWagerAuthority.execute(user.authority),
   ]);
 
   if (arena.kind === 'unreadable') {
@@ -58,6 +61,7 @@ export default async function ArenaPage() {
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Arena</h1>
         <p className="text-sm">BattleGrid lists no Market Grid sessions right now.</p>
+        <WagerAuthority wager={wager} />
         <GameRules rules={rules} />
       </main>
     );
@@ -70,6 +74,7 @@ export default async function ArenaPage() {
         Watching only — entering a session stakes real money and is not
         offered here yet.
       </p>
+      <WagerAuthority wager={wager} />
 
       <GameRules rules={rules} />
 

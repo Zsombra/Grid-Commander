@@ -58,6 +58,7 @@ import { DescribeEditQuery } from './application/use-cases/describe-edit.query.j
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
 import { ReadRiskReadingQuery } from './application/use-cases/read-risk-reading.query.js';
+import { ReadWagerAuthorityQuery } from './application/use-cases/read-wager-authority.query.js';
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
 import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
@@ -384,6 +385,10 @@ export function app(cookies: CookieStore) {
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
 
     watchArena: new WatchArenaQuery(i.grid),
+    // The arena's watch-only stance names both gates between this product and
+    // a stake; the account-side gate is a live read, so it needs the same
+    // account-state adapter the risk reading uses.
+    readWagerAuthority: new ReadWagerAuthorityQuery(new McpAccountStateAdapter(i.battlegrid)),
     // The rulebook and one session, read apart from the arena list: the first
     // is one unscoped call, the second is three calls about a session the user
     // asked for, and neither belongs in a fan-out over fifty rows.

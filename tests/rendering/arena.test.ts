@@ -491,3 +491,75 @@ describe('one session, opened', () => {
     expect(r.text).toContain('connect');
   });
 });
+
+/**
+ * The watch-only stance, completed — both gates between this product and a
+ * stake, as a reader meets them.
+ *
+ * The fixture defaults mirror the live account of 2026-08-10:
+ * `mcpWagerEnabled: true` on a funded account. The sentence that matters most
+ * is the first: "not offered here" alone invites the reading that the product
+ * is the only thing in the way.
+ */
+describe('whether the credential could stake, said beside the watch-only stance', () => {
+  it('names both gates when the platform would allow a wager', async () => {
+    const r = await arenaRendered();
+    const text = asRead(r.text);
+    expect(text).toContain('BattleGrid would allow MCP-signed wagers on this account');
+    expect(text).toContain('never requests the wager scope');
+  });
+
+  it('names the platform’s own refusal when wagering is off', async () => {
+    const { FakeAccountStatePort } = await import('../support/agent-fakes.js');
+    const accountState = new FakeAccountStatePort();
+    accountState.state = { ...accountState.state, mcpWagerEnabled: false };
+    current = actingWith({ accountState });
+    const r = await arenaRendered();
+    const text = asRead(r.text);
+    expect(text).toContain('does not allow MCP-signed wagers');
+    // The platform's gate stands on its own; the product's scope is not the
+    // only thing between this account and a stake.
+    expect(text).toContain('the platform’s own setting');
+  });
+
+  it('says a missing account is not wagering switched off', async () => {
+    const { FakeAccountStatePort } = await import('../support/agent-fakes.js');
+    const accountState = new FakeAccountStatePort();
+    accountState.state = { ...accountState.state, hasAccount: false };
+    current = actingWith({ accountState });
+    const r = await arenaRendered();
+    const text = asRead(r.text);
+    expect(text).toContain('no funded account');
+    expect(text).toContain('not wagering switched off');
+    expect(text).not.toContain('would allow MCP-signed wagers');
+  });
+
+  it('keeps the sessions and rules when the wager setting cannot be read', async () => {
+    const { FakeAccountStatePort } = await import('../support/agent-fakes.js');
+    const accountState = new FakeAccountStatePort();
+    accountState.readable = false;
+    const grid = new FakeMarketGridPort();
+    grid.stage(aGridSession({ id: 'ms-1', name: 'CRYPTO WARS · 1H' }));
+    current = actingWith({ accountState, grid });
+    const r = await arenaRendered();
+    const text = asRead(r.text);
+    // The failure explains itself, with the shared explanation…
+    expect(text).toContain('could not be read');
+    expect(text).toContain('This does not mean');
+    // …and costs nothing else on the page: the staged session still renders,
+    // by name, with its watch-only stance above it.
+    expect(r.headings[0]).toBe('Arena');
+    expect(text).toContain('Watching only');
+    expect(text).toContain('CRYPTO WARS · 1H');
+  });
+
+  it('renders the sentence on an empty arena too', async () => {
+    // The fake's default list carries no sessions, which the query derives as
+    // the empty arena — 'empty' is the query's word, not a port shape.
+    current = actingWith({ grid: new FakeMarketGridPort() });
+    const r = await arenaRendered();
+    const text = asRead(r.text);
+    expect(text).toContain('no Market Grid sessions');
+    expect(text).toContain('BattleGrid would allow MCP-signed wagers on this account');
+  });
+});

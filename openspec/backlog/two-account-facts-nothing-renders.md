@@ -2,11 +2,11 @@
 id: two-account-facts-nothing-renders
 title: Two account facts nothing renders — agent slots and whether MCP may stake money
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-10
 updated: 2026-08-10
-change: ""
+change: "whether-the-credential-could-stake"
 capability: app-access
 github: "121"
 blocked_by: []
@@ -55,3 +55,20 @@ to happen, and this codebase has found three of those.
 `tradingWalletProvisioned` is also carried and unrendered; no obvious home and
 no observed case where it disagrees with `hasAccount`, noted only so the fourth
 field is not silently forgotten.
+
+## Resolved 2026-08-10 — half built, half already built
+
+- **`mcpWagerEnabled`** now renders beside the arena's watch-only stance, both
+  gates named: the account's setting as a live read failing independently, the
+  product's absent wager scope as copy backed by the D-3 guard.
+  Change: `whether-the-credential-could-stake`.
+- **`agentSlots`**: the premise was wrong — `/agents` has warned at capacity
+  since `CreationAvailability` landed: "You are using all 3 of your agent
+  slots. Recruit III allows 3; ranking up raises the limit." Pinned by
+  `tests/agent/capacity.test.ts`. Nothing to build.
+- **The two-source agreement check** (list `slotUsage` vs account
+  `agentSlots`) was attempted live 2026-08-10 and BattleGrid answered 502 on
+  both reads (the #100 flapping pattern). It stays in #121's thread as a
+  platform observation for the next live window.
+- **`tradingWalletProvisioned`** remains carried and unrendered — no surface
+  asks its question. Still noted here so the fourth field is not forgotten.
