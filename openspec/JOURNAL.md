@@ -1,5 +1,72 @@
 # Journal
 
+## 2026-08-10 (check-in 19:25Z) — my monitoring lied twice, and a partial outage was underneath it
+
+**Almost reported eighty minutes of stale data as a market observation.**
+Every open position read back identical *to the cent* across two cycles —
+TRUMP +$0.0515, ENA +$0.4097, total +$0.7472, unchanged. Four coins frozen
+to the cent for eighty minutes is not a market, so I checked the file
+timestamps: `list_user_active_positions.json` was stamped **18:00:22** and
+had never refreshed, while `get_account_state.json` was current.
+
+**The cause is a defect in my own harness.** `live_snapshot.py` writes each
+file only on success and prints a one-line error otherwise — so a failed
+call silently leaves the *previous* file in place, and the next read looks
+like a market that did not move. That is this codebase's signature defect
+wearing new clothes: **a check that reports the last thing it reached rather
+than the thing it was asked for.** The tell was identical-to-the-cent
+values, not the error line, which had scrolled past in a grep.
+
+**Underneath it, a real partial outage.** Direct calls, envelope read rather
+than status:
+
+| tool | |
+|---|---|
+| `list_user_active_positions` | **INTERNAL_ERROR** |
+| `list_intelligence_agents` | **INTERNAL_ERROR** |
+| `get_agent_budget` | **INTERNAL_ERROR** |
+| `get_account_state`, `get_agent_open_positions`, `get_open_orders`, `list_trade_outcomes`, `list_strategies`, `get_regime_snapshot` | ok |
+
+Six of nine fine, three down — the v9-style flap the surface map warns
+about: *"individual tools answering HTTP 200 with `isError: true` and
+`INTERNAL_ERROR` inside while their neighbours are fine."* Routed around it
+with `get_agent_open_positions` (carries the position set but **no**
+unrealised P&L) and `list_trade_outcomes`.
+
+**Then a second self-inflicted error, caught before it was reported.**
+`list_trade_outcomes` **paginates at 10 by default.** Without a limit the
+all-time record came back as **20 closed, −$0.0181** against the true **35
+closed, −$1.3012** — an error of $1.28 that would have read as a fleet
+near breakeven. Adding `limit` fixed it; note `limit: 100` is rejected
+(`too_big`), 50 is accepted. Both of today's harness bugs are the same
+shape: a default that silently returns less than you asked for.
+
+**The one real datum: LDO closed +$0.1022 on a +0.98% move after 1030
+minutes** — 17.2 hours, a new longest hold — capturing **36%** of its
++$0.2823 peak. No target reached.
+
+**Four longest holds, all in:**
+
+| | held | outcome |
+|---|---|---|
+| LDO | **1030m** | +$0.1022 (36%) |
+| MELANIA | 999m | −$0.1023 |
+| FARTCOIN | 769m | +$0.0932 (27%) |
+| TRUMP | 754m | −$0.1058 |
+
+Two losses, two partial captures, **zero take-profits** — while the only TP
+this fleet ever recorded took 329 minutes.
+
+**Realized: 35 closed, 11W/24L, −$1.3012.** WR 31%, realised RR **1.04**,
+break-even 49%. The RR series is now **1.25 → 1.20 → 1.11 → 1.09 → 1.07 →
+1.06 → 1.05 → 1.04** across eight cycles, still monotone.
+
+Book is three (TRUMP long, WIF long, ENA short); its unrealised value is
+**unreadable** while the account-wide tool is down — recorded as unknown
+rather than carried forward from the stale file.
+
+Server v16.0.0. **Meter** dead. Replay build still unauthorised.
+
 ## 2026-08-10 (check-in 18:00Z) — "no short has ever taken profit" is not a finding, and I have been repeating it
 
 **I have called "twenty-one shorts, zero take-profits" the clearest
