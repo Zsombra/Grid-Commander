@@ -42,7 +42,7 @@ describe('the mapper carries the values instead of dropping them', () => {
         description: 'Patient / wide',
         tagline: 'Let winners breathe',
         cardSummary: 'Wide trailing',
-        config: { enabled: true, trailingType: 'ATR', trailingAtrMultiple: 4 },
+        config: { enabled: true, trailingGivebackPct: 60, breakEvenTriggerR: 1.5 },
       },
       // A config that is not an object must map to null, not to an invention.
       { preset: 'WEBLEY', label: 'Webley', description: 'Defensive', config: 'oops' },
@@ -53,7 +53,7 @@ describe('the mapper carries the values instead of dropping them', () => {
 
   it('carries config, tagline and cardSummary through', () => {
     const colt = presets.find((p) => p.preset === 'COLT');
-    expect(colt?.config).toEqual({ enabled: true, trailingType: 'ATR', trailingAtrMultiple: 4 });
+    expect(colt?.config).toEqual({ enabled: true, trailingGivebackPct: 60, breakEvenTriggerR: 1.5 });
     expect(colt?.tagline).toBe('Let winners breathe');
     expect(colt?.cardSummary).toBe('Wide trailing');
   });
@@ -76,7 +76,8 @@ describe("a named preset is the platform's values or nothing", () => {
     expect(pm?.['trailingEnabled']).toBe(true);
     expect(pm?.['timeDecayEnabled']).toBe(true);
     // Label + fourteen values = the closed fifteen-key object the schema takes.
-    expect(Object.keys(pm ?? {})).toHaveLength(15);
+    // 15 until BattleGrid v17 folded four trail/break-even fields into two.
+    expect(Object.keys(pm ?? {})).toHaveLength(13);
   });
 
   it('returns null for a preset the catalog listed without describing', () => {
@@ -102,7 +103,7 @@ describe('the create command sends them, or refuses', () => {
     >;
     expect(sent['positionManagementPreset']).toBe('COLT');
     expect(sent['breakEvenEnabled']).toBe(true);
-    expect(sent['trailingAtrMultiple']).toBe(4);
+    expect(sent['trailingGivebackPct']).toBe(60);
     expect(sent['timeDecayGracePeriodMinutes']).toBe(120);
   });
 

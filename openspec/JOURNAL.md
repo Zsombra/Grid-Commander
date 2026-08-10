@@ -1,5 +1,73 @@
 # Journal
 
+## 2026-08-10 (v17 landed) — dead write path #13, and the platform shipped the dial I spent the day measuring
+
+**BattleGrid deployed v17.0.0, and it retroactively explains last cycle's
+outage** — the three tools answering `INTERNAL_ERROR` were a deploy in
+flight, not a fault. All nine reads are healthy again. Fourth deploy in
+three days: v14 → v15 → v16 → v17.
+
+**v17 rewrote the exit model — the exact mechanism this fleet's whole
+diagnosis is about.** 114 tools, none added or removed; three schemas
+changed, and `tradingConfig.positionManagement` is `closed`:
+
+| retired | replaced by |
+|---|---|
+| `breakEvenTriggerTpProgressPct` (% of TP progress) | **`breakEvenTriggerR`** (R multiples) |
+| `trailingType`, `trailingAtrMultiple`, `trailingFixedPct` | **`trailingGivebackPct`** (how much of the move a position may hand back) |
+
+Four keys this product sends became `unrecognized_keys`; two new ones became
+required. **Every agent create and every full-config edit would have been
+refused whole.** Dead write path #13, and the **third consecutive deploy**
+caught by `payload-conformance` before a live refusal — six violations the
+moment the v17 record landed.
+
+### `trailingGivebackPct` is the capture-rate dial, expressed in my units
+
+The whole day has been spent measuring capture: MOODENG 100%, BRENTOIL 56%,
+FARTCOIN 43% then 27%, LDO 36%, HYPE 3% twice, SKHX 0%. **Giveback is that
+number's complement**, and v17 makes it a settable field.
+
+The platform migrated the live agents itself, so the mapping is observed
+rather than guessed — and it is exactly linear:
+
+| agent | trigger | → R | ATR mult | → giveback |
+|---|---|---|---|---|
+| Undertow | 40% | **0.86** | 2.0 | **55** |
+| Breakwater | 50% | **1.08** | 1.5 | **45** |
+| Vanguard | 45% | **0.97** | 2.0 | **55** |
+
+`R = pct × 2.155` and `giveback = 15 + 20 × ATRmultiple`.
+
+**A 55% giveback allowance predicts ~45% capture, and the trail-managed
+exits measured 56 / 43 / 36 / 27%.** The setting and the observation agree.
+What was a qualitative complaint — "the trail is too loose" — is now a
+number the platform accepts, and lowering it is the direct expression of the
+fix. It does not need the blocked p1.
+
+**Changes**: `breakEvenTriggerR` and `trailingGivebackPct` join
+`positionManagementFrom`, both **read from the catalog** rather than chosen
+(`defaultPositionMgmtBreakevenTriggerR: 1`,
+`defaultPositionMgmtTrailingGivebackPct: 40`); the four retired names leave
+the block and `POSITION_MANAGEMENT_FIELDS` (15 → 13); `trailingType` leaves
+`OURS`, so this product now guesses one fewer value than it did yesterday.
+
+Seven tests broke, all of them pinning a subject the platform deleted — the
+same shape as the v15 round. The `trailingType` test is **replaced rather
+than deleted**: it now asserts the giveback is read from the catalog and
+that `trailingType` is absent, which records the direction of travel (a
+field moving from "we choose it" to "the platform states it").
+
+**Gates**: typecheck, lint, spec validation clean; **1,902 vitest**, **81 db
+on real PostgreSQL**, **235 python harness**, **217 architecture including
+`surface-freshness` against live v17**.
+
+**The v15 policy p1 survived a second version bump** — retested against v17,
+still `"no effective changes"` on all three strategies. Two majors now.
+
+**Fleet**: 35 closed, 11W/24L, −$1.3012, WR 31%, realised RR 1.04. Book four
+at **+$0.4510**, ENA **+$0.4286** and extending after 9 hours.
+
 ## 2026-08-10 (check-in 19:25Z) — my monitoring lied twice, and a partial outage was underneath it
 
 **Almost reported eighty minutes of stale data as a market observation.**

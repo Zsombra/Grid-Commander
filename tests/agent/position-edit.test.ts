@@ -32,10 +32,10 @@ describe('drift between the label and the values', () => {
   });
 
   it('names exactly the fields that differ', () => {
-    const drifted = { ...colt, trailingFixedPct: 9.75, breakEvenEnabled: !colt['breakEvenEnabled'] };
+    const drifted = { ...colt, trailingBufferPct: 9.75, breakEvenEnabled: !colt['breakEvenEnabled'] };
     const drift = positionDrift(drifted, catalog);
     expect(drift?.differing).toEqual(
-      expect.arrayContaining(['trailingFixedPct', 'breakEvenEnabled']),
+      expect.arrayContaining(['trailingBufferPct', 'breakEvenEnabled']),
     );
     expect(drift?.differing).toHaveLength(2);
   });
@@ -74,7 +74,6 @@ describe('one coercion, both requests', () => {
     const query: Record<string, string> = {
       'pm.positionManagementPreset': 'CUSTOM',
       'pm.enabled': 'on',
-      'pm.trailingType': 'ATR',
     };
     for (const f of POSITION_MANAGEMENT_FIELDS) {
       if (!(`pm.${f}` in query) && f !== 'breakEvenEnabled' && f !== 'trailingEnabled' && f !== 'timeDecayEnabled') {
@@ -84,7 +83,7 @@ describe('one coercion, both requests', () => {
     const parsed = positionFromTransport({ get: (n) => query[n] ?? null });
     expect(parsed?.['enabled']).toBe(true);
     expect(parsed?.['breakEvenEnabled']).toBe(false); // unchecked submits nothing
-    expect(parsed?.['breakEvenTriggerTpProgressPct']).toBe(5);
+    expect(parsed?.['breakEvenTriggerR']).toBe(5);
     expect(parsed?.['positionManagementPreset']).toBe('CUSTOM');
   });
 
@@ -94,7 +93,7 @@ describe('one coercion, both requests', () => {
 
   it('present but missing a field refuses — a partial object is a silent reset', () => {
     expect(() =>
-      positionFromTransport({ get: (n) => (n === 'pm.trailingType' ? 'ATR' : null) }),
+      positionFromTransport({ get: (n) => (n === 'pm.positionManagementPreset' ? 'COLT' : null) }),
     ).toThrow(FormError);
   });
 
@@ -102,7 +101,7 @@ describe('one coercion, both requests', () => {
     const full = asTransport(colt);
     expect(() =>
       positionFromTransport({
-        get: (n) => (n === 'pm.trailingFixedPct' ? 'lots' : full.get(n)),
+        get: (n) => (n === 'pm.trailingBufferPct' ? 'lots' : full.get(n)),
       }),
     ).toThrow(FormError);
   });
@@ -130,7 +129,7 @@ describe('what the person reads, and what the token binds', () => {
       tradingConfig: { positionManagement: colt },
     });
     const b = confirmationTarget.agentEdit('a1', {
-      tradingConfig: { positionManagement: { ...colt, trailingFixedPct: 99 } },
+      tradingConfig: { positionManagement: { ...colt, trailingBufferPct: 99 } },
     });
     expect(a).not.toBe(b);
   });

@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v16.0.0`, protocol `2025-06-18`) on 2026-08-10.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v17.0.0`, protocol `2025-06-18`) on 2026-08-10.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -539,11 +539,9 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.positionManagement.positionManagementPreset` | enum(COLT|WEBLEY|BERETTA|LUGER|WALTHER|CUSTOM) | YES | Position management preset: COLT (patient/wide), BERETTA (balanced), LUGER (aggressive/tight), WALTHER (hair-trigger/max-tight), CUSTOM (manual) — re… |
 | `tradingConfig.positionManagement.enabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.breakEvenEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.breakEvenTriggerTpProgressPct` | number | YES |  |
+| `tradingConfig.positionManagement.breakEvenTriggerR` | number | YES |  |
 | `tradingConfig.positionManagement.trailingEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.trailingType` | enum(ATR|FIXED) | YES |  |
-| `tradingConfig.positionManagement.trailingAtrMultiple` | number | YES |  |
-| `tradingConfig.positionManagement.trailingFixedPct` | number | YES |  |
+| `tradingConfig.positionManagement.trailingGivebackPct` | number | YES |  |
 | `tradingConfig.positionManagement.trailingBufferPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayEnabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.timeDecayGracePeriodMinutes` | integer | YES |  |
@@ -599,11 +597,9 @@ Returns: `agent`, `feasibilityAdvisory`
 | `tradingConfig.positionManagement.positionManagementPreset` | enum(COLT|WEBLEY|BERETTA|LUGER|WALTHER|CUSTOM) | YES | Position management preset: COLT (patient/wide), BERETTA (balanced), LUGER (aggressive/tight), WALTHER (hair-trigger/max-tight), CUSTOM (manual) — re… |
 | `tradingConfig.positionManagement.enabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.breakEvenEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.breakEvenTriggerTpProgressPct` | number | YES |  |
+| `tradingConfig.positionManagement.breakEvenTriggerR` | number | YES |  |
 | `tradingConfig.positionManagement.trailingEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.trailingType` | enum(ATR|FIXED) | YES |  |
-| `tradingConfig.positionManagement.trailingAtrMultiple` | number | YES |  |
-| `tradingConfig.positionManagement.trailingFixedPct` | number | YES |  |
+| `tradingConfig.positionManagement.trailingGivebackPct` | number | YES |  |
 | `tradingConfig.positionManagement.trailingBufferPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayEnabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.timeDecayGracePeriodMinutes` | integer | YES |  |
@@ -2107,7 +2103,7 @@ scanning, idle) with the idle split by reason (warming, sittingOut, needsAttenti
 onDutyNow, agentsActive, and coinCap (your live per-user coin limit). Use this to see your
 whole Radar fleet in one call.
 
-Returns: `policies`, `summary`
+Returns: `policies`, `summary`, `blockedAgents`
 
 _No parameters._
 

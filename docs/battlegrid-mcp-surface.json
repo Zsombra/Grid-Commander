@@ -2,10 +2,10 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "16.0.0",
+    "version": "17.0.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-10T05:23:35Z",
+  "probed_at": "2026-08-10T20:53:02Z",
   "tool_count": 114,
   "by_classification": {
     "read": 87,
@@ -2411,10 +2411,6 @@
           "WALTHER",
           "CUSTOM"
         ],
-        "tradingConfig.positionManagement.trailingType": [
-          "ATR",
-          "FIXED"
-        ],
         "tradingConfig.positionSizePresets.sizingStrategy": [
           "MANUAL",
           "VOLATILITY_AUTO"
@@ -2448,7 +2444,7 @@
         "tradingConfig.minTradeConviction",
         "tradingConfig.positionManagement",
         "tradingConfig.positionManagement.breakEvenEnabled",
-        "tradingConfig.positionManagement.breakEvenTriggerTpProgressPct",
+        "tradingConfig.positionManagement.breakEvenTriggerR",
         "tradingConfig.positionManagement.enabled",
         "tradingConfig.positionManagement.positionManagementPreset",
         "tradingConfig.positionManagement.timeDecayEnabled",
@@ -2457,11 +2453,9 @@
         "tradingConfig.positionManagement.timeDecayMaxTightenPct",
         "tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct",
         "tradingConfig.positionManagement.timeDecayTightenPct",
-        "tradingConfig.positionManagement.trailingAtrMultiple",
         "tradingConfig.positionManagement.trailingBufferPct",
         "tradingConfig.positionManagement.trailingEnabled",
-        "tradingConfig.positionManagement.trailingFixedPct",
-        "tradingConfig.positionManagement.trailingType",
+        "tradingConfig.positionManagement.trailingGivebackPct",
         "tradingConfig.positionSizePresets",
         "tradingConfig.positionSizePresets.largePct",
         "tradingConfig.positionSizePresets.mediumPct",
@@ -2550,7 +2544,7 @@
           "closed": true,
           "accepts": [
             "breakEvenEnabled",
-            "breakEvenTriggerTpProgressPct",
+            "breakEvenTriggerR",
             "enabled",
             "positionManagementPreset",
             "timeDecayEnabled",
@@ -2559,11 +2553,9 @@
             "timeDecayMaxTightenPct",
             "timeDecayStaleThresholdTpProgressPct",
             "timeDecayTightenPct",
-            "trailingAtrMultiple",
             "trailingBufferPct",
             "trailingEnabled",
-            "trailingFixedPct",
-            "trailingType"
+            "trailingGivebackPct"
           ]
         },
         "tradingConfig.positionSizePresets": {
@@ -3582,7 +3574,7 @@
             "coinName": "str",
             "coinTicker": "str",
             "evaluatedAt": "str",
-            "firstFailReason": "str",
+            "firstFailReason": "null",
             "gates": {
               "aggregateScore": {
                 "minScorePercent": "int",
@@ -3606,7 +3598,7 @@
                 "rejectionStage": "null",
                 "slPolicyRejection": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "qualifies": "bool",
@@ -3616,7 +3608,7 @@
                 "rejectionStage": "null",
                 "slPolicyRejection": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "strategyTimeframe": "str"
@@ -3941,7 +3933,7 @@
               "minAllocationUsd": "int",
               "positionManagement": {
                 "breakEvenEnabled": "bool",
-                "breakEvenTriggerTpProgressPct": "int",
+                "breakEvenTriggerR": "float",
                 "enabled": "bool",
                 "positionManagementPreset": "str",
                 "timeDecayEnabled": "bool",
@@ -3950,11 +3942,9 @@
                 "timeDecayMaxTightenPct": "int",
                 "timeDecayStaleThresholdTpProgressPct": "int",
                 "timeDecayTightenPct": "int",
-                "trailingAtrMultiple": "int",
                 "trailingBufferPct": "float",
                 "trailingEnabled": "bool",
-                "trailingFixedPct": "int",
-                "trailingType": "str"
+                "trailingGivebackPct": "int"
               },
               "regimeAutoDerive": "bool",
               "regimeTimeframe": "str",
@@ -4326,7 +4316,7 @@
           "maxCumulativeDrawdownUsd": "int",
           "pnlCurveUsd": [
             "float",
-            "\u2026\u00d79"
+            "\u2026\u00d714"
           ],
           "realizedPnlUsd": "float"
         }
@@ -4698,7 +4688,7 @@
             "symbol": "str",
             "timeframe": "str",
             "timestamp": "str",
-            "volume": "int"
+            "volume": "float"
           },
           "\u2026\u00d720"
         ]
@@ -4935,7 +4925,7 @@
             "absChangeRank": "int",
             "rsiActivityRank": "int",
             "rsiActivityValue": "float",
-            "signedChangeValue": "float",
+            "signedChangeValue": "int",
             "timestamp": "int",
             "volumeRank": "int",
             "volumeValue": "float"
@@ -5067,7 +5057,7 @@
         "dominantBias": "str",
         "hasConflictingSignals": "bool",
         "isAgentWeighted": "bool",
-        "priceChangePercent": "float"
+        "priceChangePercent": "int"
       },
       "arguments_from": "discovered:interval,ticker",
       "envelope": {
@@ -5306,7 +5296,7 @@
             "executedOrderId": "str",
             "signalLogId": "str"
           },
-          "\u2026\u00d763"
+          "\u2026\u00d770"
         ]
       },
       "arguments_from": "none-required",
@@ -5394,19 +5384,19 @@
           "createdAt": "str",
           "decision": "str",
           "direction": "str",
-          "entryFee": "null",
-          "entryFillPrice": "null",
-          "entryFillQuantity": "null",
-          "entryPrice": "null",
-          "executedAt": "null",
-          "executedOrderId": "null",
+          "entryFee": "float",
+          "entryFillPrice": "float",
+          "entryFillQuantity": "float",
+          "entryPrice": "float",
+          "executedAt": "str",
+          "executedOrderId": "str",
           "expiresAt": "str",
           "id": "str",
           "llmDurationMs": "int",
-          "positionSizePct": "null",
-          "positionSizePreset": "null",
+          "positionSizePct": "int",
+          "positionSizePreset": "str",
           "reasoning": "str",
-          "riskRewardRatio": "null",
+          "riskRewardRatio": "float",
           "signalChecklist": [
             {
               "interpretation": "str",
@@ -5414,18 +5404,18 @@
               "signalId": "str",
               "verdict": "str"
             },
-            "\u2026\u00d74"
+            "\u2026\u00d77"
           ],
           "signalLogId": "str",
           "signalModulesUsed": [
             "str",
-            "\u2026\u00d74"
+            "\u2026\u00d76"
           ],
           "status": "str",
-          "stopLoss": "null",
-          "stopLossOrderId": "null",
-          "takeProfit": "null",
-          "takeProfitOrderId": "null",
+          "stopLoss": "float",
+          "stopLossOrderId": "str",
+          "takeProfit": "float",
+          "takeProfitOrderId": "str",
           "timeHorizon": "str",
           "tradeStatus": "str",
           "usageEventId": "str",
@@ -5544,7 +5534,7 @@
                   "timestamp": "str",
                   "value": "float"
                 },
-                "\u2026\u00d79"
+                "\u2026\u00d714"
               ],
               "trades": "int",
               "winLoss": {
@@ -5575,7 +5565,7 @@
             "minTradeConviction": "float",
             "positionManagement": {
               "breakEvenEnabled": "bool",
-              "breakEvenTriggerTpProgressPct": "int",
+              "breakEvenTriggerR": "float",
               "enabled": "bool",
               "positionManagementPreset": "str",
               "timeDecayEnabled": "bool",
@@ -5584,11 +5574,9 @@
               "timeDecayMaxTightenPct": "int",
               "timeDecayStaleThresholdTpProgressPct": "int",
               "timeDecayTightenPct": "int",
-              "trailingAtrMultiple": "float",
               "trailingBufferPct": "float",
               "trailingEnabled": "bool",
-              "trailingFixedPct": "int",
-              "trailingType": "str"
+              "trailingGivebackPct": "int"
             },
             "positionSizePresets": {
               "largePct": "int",
@@ -5760,7 +5748,7 @@
               "fundingRate": "float",
               "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "float",
+              "oraclePrice": "int",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -6312,7 +6300,7 @@
             "timestamp": "int",
             "triggerPrice": "str"
           },
-          "\u2026\u00d712"
+          "\u2026\u00d78"
         ]
       },
       "arguments_from": "none-required",
@@ -6620,7 +6608,7 @@
             "roePercent": "float",
             "signalLogId": "str"
           },
-          "\u2026\u00d79"
+          "\u2026\u00d714"
         ]
       },
       "arguments_from": "discovered:agentId",
@@ -6688,7 +6676,7 @@
               "scorePercent": "int",
               "signalId": "str"
             },
-            "\u2026\u00d715"
+            "\u2026\u00d719"
           ],
           "challenge": "null",
           "coinTicker": "str",
@@ -6713,19 +6701,19 @@
             "createdAt": "str",
             "decision": "str",
             "direction": "str",
-            "entryFee": "null",
-            "entryFillPrice": "null",
-            "entryFillQuantity": "null",
-            "entryPrice": "null",
-            "executedAt": "null",
-            "executedOrderId": "null",
+            "entryFee": "float",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "float",
+            "entryPrice": "float",
+            "executedAt": "str",
+            "executedOrderId": "str",
             "expiresAt": "str",
             "id": "str",
             "llmDurationMs": "int",
-            "positionSizePct": "null",
-            "positionSizePreset": "null",
+            "positionSizePct": "int",
+            "positionSizePreset": "str",
             "reasoning": "str",
-            "riskRewardRatio": "null",
+            "riskRewardRatio": "float",
             "signalChecklist": [
               {
                 "interpretation": "str",
@@ -6733,18 +6721,18 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d74"
+              "\u2026\u00d77"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d74"
+              "\u2026\u00d76"
             ],
             "status": "str",
-            "stopLoss": "null",
-            "stopLossOrderId": "null",
-            "takeProfit": "null",
-            "takeProfitOrderId": "null",
+            "stopLoss": "float",
+            "stopLossOrderId": "str",
+            "takeProfit": "float",
+            "takeProfitOrderId": "str",
             "timeHorizon": "str",
             "tradeStatus": "str",
             "usageEventId": "str",
@@ -6787,10 +6775,10 @@
               "decision": "str",
               "decisionId": "str",
               "direction": "str",
-              "entryPrice": "null",
+              "entryPrice": "float",
               "reasoning": "str",
-              "riskRewardRatio": "null",
-              "selectedSetupIndex": "null",
+              "riskRewardRatio": "float",
+              "selectedSetupIndex": "int",
               "signalChecklist": [
                 {
                   "interpretation": "str",
@@ -6802,18 +6790,55 @@
                   "signalId": "str",
                   "verdict": "str"
                 },
-                "\u2026\u00d74"
+                "\u2026\u00d77"
               ],
-              "stopLoss": "null",
-              "stopLossDistancePct": "null",
-              "takeProfit": "null",
-              "takeProfitDistancePct": "null",
+              "stopLoss": "float",
+              "stopLossDistancePct": "float",
+              "takeProfit": "float",
+              "takeProfitDistancePct": "float",
               "timeHorizon": "str"
             },
             "evaluationGateReason": "null",
             "evaluationGateStatus": "str",
-            "execution": "null",
-            "liveOverlay": "null",
+            "execution": {
+              "atrPct": "float",
+              "closedAt": "null",
+              "entryFee": "float",
+              "entryFillPrice": "float",
+              "entryFillQuantity": "float",
+              "executedAt": "str",
+              "executionMessage": "null",
+              "expiryReason": "null",
+              "failureReason": "null",
+              "leverage": "int",
+              "marginUsd": "float",
+              "notionalUsd": "float",
+              "positionId": "str",
+              "status": "str"
+            },
+            "liveOverlay": {
+              "coinTicker": "str",
+              "hyperliquidSymbol": "str",
+              "levels": [
+                {
+                  "label": "str",
+                  "price": "float",
+                  "role": "str"
+                },
+                "\u2026\u00d72"
+              ],
+              "markers": [
+                {
+                  "price": "float",
+                  "role": "str",
+                  "timeSeconds": "int"
+                },
+                "\u2026\u00d71"
+              ],
+              "positionId": "str",
+              "signalLogId": "str",
+              "timeframe": "str"
+            },
             "outcome": "null",
             "signalLogId": "str"
           },
@@ -6864,7 +6889,8 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "cci20_value": "float"
+                  "bb_percent_b": "float",
+                  "price": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -6873,7 +6899,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d71"
+              "\u2026\u00d73"
             ],
             "supportingSignals": [
               {
@@ -6883,10 +6909,7 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "bb_lower": "float",
-                  "bb_middle": "float",
-                  "bb_upper": "float",
-                  "bb_width": "float"
+                  "ltf_rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -6895,7 +6918,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d714"
+              "\u2026\u00d716"
             ],
             "timeframesUsed": [
               "str",
@@ -6912,7 +6935,7 @@
                     "method": "\u2026",
                     "price": "\u2026"
                   },
-                  "\u2026\u00d74"
+                  "\u2026\u00d73"
                 ],
                 "candidateTakeProfits": [
                   {
@@ -6938,10 +6961,7 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "bb_lower": "float",
-                  "bb_middle": "float",
-                  "bb_upper": "float",
-                  "bb_width": "float"
+                  "ltf_rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -6950,7 +6970,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d715"
+              "\u2026\u00d719"
             ]
           },
           "signalSource": "str",
@@ -7241,7 +7261,7 @@
             "coinTicker": "str",
             "count": "int"
           },
-          "\u2026\u00d75"
+          "\u2026\u00d76"
         ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
@@ -7517,7 +7537,7 @@
             "regime": "str",
             "timestamp": "int"
           },
-          "\u2026\u00d7178"
+          "\u2026\u00d7182"
         ],
         "symbol": "str",
         "timeframe": "str"
@@ -7687,7 +7707,7 @@
               "scorePercent": "int",
               "signalId": "str"
             },
-            "\u2026\u00d715"
+            "\u2026\u00d719"
           ],
           "challenge": "null",
           "coinTicker": "str",
@@ -7712,19 +7732,19 @@
             "createdAt": "str",
             "decision": "str",
             "direction": "str",
-            "entryFee": "null",
-            "entryFillPrice": "null",
-            "entryFillQuantity": "null",
-            "entryPrice": "null",
-            "executedAt": "null",
-            "executedOrderId": "null",
+            "entryFee": "float",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "float",
+            "entryPrice": "float",
+            "executedAt": "str",
+            "executedOrderId": "str",
             "expiresAt": "str",
             "id": "str",
             "llmDurationMs": "int",
-            "positionSizePct": "null",
-            "positionSizePreset": "null",
+            "positionSizePct": "int",
+            "positionSizePreset": "str",
             "reasoning": "str",
-            "riskRewardRatio": "null",
+            "riskRewardRatio": "float",
             "signalChecklist": [
               {
                 "interpretation": "str",
@@ -7732,18 +7752,18 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d74"
+              "\u2026\u00d77"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d74"
+              "\u2026\u00d76"
             ],
             "status": "str",
-            "stopLoss": "null",
-            "stopLossOrderId": "null",
-            "takeProfit": "null",
-            "takeProfitOrderId": "null",
+            "stopLoss": "float",
+            "stopLossOrderId": "str",
+            "takeProfit": "float",
+            "takeProfitOrderId": "str",
             "timeHorizon": "str",
             "tradeStatus": "str",
             "usageEventId": "str",
@@ -7756,16 +7776,7 @@
               "completedAt": "str",
               "createdAt": "str",
               "llmPartialReasoning": "null",
-              "ownerView": {
-                "billingType": "str",
-                "costUsd": "float",
-                "durationMs": "int",
-                "errorMessage": "null",
-                "modelDisplayName": "str",
-                "modelId": "str",
-                "provider": "str",
-                "usageEventId": "str"
-              },
+              "ownerView": "null",
               "reasonCodeDetails": {},
               "reasonCodes": [],
               "result": "str",
@@ -7795,10 +7806,10 @@
               "decision": "str",
               "decisionId": "str",
               "direction": "str",
-              "entryPrice": "null",
+              "entryPrice": "float",
               "reasoning": "str",
-              "riskRewardRatio": "null",
-              "selectedSetupIndex": "null",
+              "riskRewardRatio": "float",
+              "selectedSetupIndex": "int",
               "signalChecklist": [
                 {
                   "interpretation": "str",
@@ -7810,18 +7821,55 @@
                   "signalId": "str",
                   "verdict": "str"
                 },
-                "\u2026\u00d74"
+                "\u2026\u00d77"
               ],
-              "stopLoss": "null",
-              "stopLossDistancePct": "null",
-              "takeProfit": "null",
-              "takeProfitDistancePct": "null",
+              "stopLoss": "float",
+              "stopLossDistancePct": "float",
+              "takeProfit": "float",
+              "takeProfitDistancePct": "float",
               "timeHorizon": "str"
             },
             "evaluationGateReason": "null",
             "evaluationGateStatus": "str",
-            "execution": "null",
-            "liveOverlay": "null",
+            "execution": {
+              "atrPct": "float",
+              "closedAt": "null",
+              "entryFee": "float",
+              "entryFillPrice": "float",
+              "entryFillQuantity": "float",
+              "executedAt": "str",
+              "executionMessage": "null",
+              "expiryReason": "null",
+              "failureReason": "null",
+              "leverage": "int",
+              "marginUsd": "float",
+              "notionalUsd": "float",
+              "positionId": "str",
+              "status": "str"
+            },
+            "liveOverlay": {
+              "coinTicker": "str",
+              "hyperliquidSymbol": "str",
+              "levels": [
+                {
+                  "label": "str",
+                  "price": "float",
+                  "role": "str"
+                },
+                "\u2026\u00d72"
+              ],
+              "markers": [
+                {
+                  "price": "float",
+                  "role": "str",
+                  "timeSeconds": "int"
+                },
+                "\u2026\u00d71"
+              ],
+              "positionId": "str",
+              "signalLogId": "str",
+              "timeframe": "str"
+            },
             "outcome": "null",
             "signalLogId": "str"
           },
@@ -7872,7 +7920,8 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "cci20_value": "float"
+                  "bb_percent_b": "float",
+                  "price": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -7881,7 +7930,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d71"
+              "\u2026\u00d73"
             ],
             "supportingSignals": [
               {
@@ -7891,10 +7940,7 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "bb_lower": "float",
-                  "bb_middle": "float",
-                  "bb_upper": "float",
-                  "bb_width": "float"
+                  "ltf_rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -7903,7 +7949,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d714"
+              "\u2026\u00d716"
             ],
             "timeframesUsed": [
               "str",
@@ -7920,7 +7966,7 @@
                     "method": "\u2026",
                     "price": "\u2026"
                   },
-                  "\u2026\u00d74"
+                  "\u2026\u00d73"
                 ],
                 "candidateTakeProfits": [
                   {
@@ -7946,10 +7992,7 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "bb_lower": "float",
-                  "bb_middle": "float",
-                  "bb_upper": "float",
-                  "bb_width": "float"
+                  "ltf_rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
@@ -7958,7 +8001,7 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d715"
+              "\u2026\u00d719"
             ]
           },
           "signalSource": "str",
@@ -8082,7 +8125,7 @@
             "coinTicker": "str",
             "count": "int"
           },
-          "\u2026\u00d75"
+          "\u2026\u00d76"
         ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
@@ -9032,7 +9075,7 @@
             "cardSummary": "str",
             "config": {
               "breakEvenEnabled": "bool",
-              "breakEvenTriggerTpProgressPct": "int",
+              "breakEvenTriggerR": "float",
               "enabled": "bool",
               "timeDecayEnabled": "bool",
               "timeDecayGracePeriodMinutes": "int",
@@ -9040,11 +9083,9 @@
               "timeDecayMaxTightenPct": "int",
               "timeDecayStaleThresholdTpProgressPct": "int",
               "timeDecayTightenPct": "int",
-              "trailingAtrMultiple": "int",
               "trailingBufferPct": "float",
               "trailingEnabled": "bool",
-              "trailingFixedPct": "int",
-              "trailingType": "str"
+              "trailingGivebackPct": "int"
             },
             "description": "str",
             "label": "str",
@@ -9087,16 +9128,15 @@
             "defaultMinRiskRewardRatio": "float",
             "defaultMinStopLossPct": "int",
             "defaultMinTradeConviction": "float",
-            "defaultPositionMgmtBreakevenTriggerTpProgressPct": "int",
+            "defaultPositionMgmtBreakevenTriggerR": "int",
             "defaultPositionMgmtEnabled": "bool",
             "defaultPositionMgmtTimeDecayGracePeriodMinutes": "int",
             "defaultPositionMgmtTimeDecayIntervalMinutes": "int",
             "defaultPositionMgmtTimeDecayMaxTightenPct": "int",
             "defaultPositionMgmtTimeDecayStaleThresholdTpProgressPct": "int",
             "defaultPositionMgmtTimeDecayTightenPct": "int",
-            "defaultPositionMgmtTrailingAtrMultiple": "int",
             "defaultPositionMgmtTrailingBufferPct": "float",
-            "defaultPositionMgmtTrailingFixedPct": "int",
+            "defaultPositionMgmtTrailingGivebackPct": "int",
             "defaultRegimeAutoDerive": "bool",
             "defaultRegimeTimeframe": "str",
             "defaultSignalTimeoutMinutes": "int",
@@ -9302,7 +9342,7 @@
                   "outcome": "str",
                   "payload": [
                     "\u2026",
-                    "\u2026\u00d71"
+                    "\u2026\u00d72"
                   ]
                 },
                 "\u2026\u00d71"
@@ -9547,19 +9587,19 @@
             "createdAt": "str",
             "decision": "str",
             "direction": "str",
-            "entryFee": "null",
-            "entryFillPrice": "null",
-            "entryFillQuantity": "null",
-            "entryPrice": "null",
-            "executedAt": "null",
-            "executedOrderId": "null",
+            "entryFee": "float",
+            "entryFillPrice": "float",
+            "entryFillQuantity": "float",
+            "entryPrice": "float",
+            "executedAt": "str",
+            "executedOrderId": "str",
             "expiresAt": "str",
             "id": "str",
             "llmDurationMs": "int",
-            "positionSizePct": "null",
-            "positionSizePreset": "null",
+            "positionSizePct": "int",
+            "positionSizePreset": "str",
             "reasoning": "str",
-            "riskRewardRatio": "null",
+            "riskRewardRatio": "float",
             "signalChecklist": [
               {
                 "interpretation": "str",
@@ -9567,18 +9607,18 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d74"
+              "\u2026\u00d77"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d74"
+              "\u2026\u00d76"
             ],
             "status": "str",
-            "stopLoss": "null",
-            "stopLossOrderId": "null",
-            "takeProfit": "null",
-            "takeProfitOrderId": "null",
+            "stopLoss": "float",
+            "stopLossOrderId": "str",
+            "takeProfit": "float",
+            "takeProfitOrderId": "str",
             "timeHorizon": "str",
             "tradeStatus": "str",
             "usageEventId": "str",
@@ -9723,12 +9763,7 @@
             "gateStage": "str",
             "id": "str",
             "reasonCode": "str",
-            "reasonDetail": {
-              "equityUsd": "float",
-              "maxLeverage": "int",
-              "minEquityUsd": "float",
-              "smallPct": "int"
-            },
+            "reasonDetail": "null",
             "sourceThoughtLogId": "null",
             "userId": "str"
           },
@@ -9854,7 +9889,7 @@
                     "timestamp": "\u2026",
                     "value": "\u2026"
                   },
-                  "\u2026\u00d79"
+                  "\u2026\u00d714"
                 ],
                 "trades": "int",
                 "winLoss": {
@@ -9885,7 +9920,7 @@
               "minTradeConviction": "float",
               "positionManagement": {
                 "breakEvenEnabled": "bool",
-                "breakEvenTriggerTpProgressPct": "int",
+                "breakEvenTriggerR": "float",
                 "enabled": "bool",
                 "positionManagementPreset": "str",
                 "timeDecayEnabled": "bool",
@@ -9894,11 +9929,9 @@
                 "timeDecayMaxTightenPct": "int",
                 "timeDecayStaleThresholdTpProgressPct": "int",
                 "timeDecayTightenPct": "int",
-                "trailingAtrMultiple": "float",
                 "trailingBufferPct": "float",
                 "trailingEnabled": "bool",
-                "trailingFixedPct": "int",
-                "trailingType": "str"
+                "trailingGivebackPct": "int"
               },
               "positionSizePresets": {
                 "largePct": "int",
@@ -10140,14 +10173,17 @@
         }
       },
       "declared_output": [
+        "blockedAgents",
         "policies",
         "summary"
       ],
       "observed": [
+        "blockedAgents",
         "policies",
         "summary"
       ],
       "observed_shape": {
+        "blockedAgents": [],
         "policies": [
           {
             "coinId": "str",
@@ -10156,6 +10192,8 @@
             "enabled": "bool",
             "policyId": "str",
             "resolvesNow": {
+              "blockedReason": "null",
+              "blockedSince": "null",
               "cooldownUntil": "null",
               "isIdle": "bool",
               "lastFireAt": "str",
@@ -10201,6 +10239,7 @@
         ],
         "summary": {
           "agentsActive": "int",
+          "blocked": "int",
           "coinCap": "int",
           "coinsDeployed": "int",
           "idle": "int",
@@ -10803,12 +10842,12 @@
             "openedAt": "str",
             "realizedPnl": "float",
             "signalLogId": "str",
-            "slippageEntry": "int",
+            "slippageEntry": "float",
             "slippageExit": "float",
             "totalFees": "float",
             "userId": "str"
           },
-          "\u2026\u00d79"
+          "\u2026\u00d710"
         ],
         "total": "int"
       },
@@ -10857,7 +10896,7 @@
       "observed_shape": {
         "activeCoinTickers": [
           "str",
-          "\u2026\u00d76"
+          "\u2026\u00d74"
         ],
         "agents": [
           {
@@ -10885,7 +10924,7 @@
                 "effectiveStopLoss": "float",
                 "effectiveTakeProfit": "float",
                 "entryFillPrice": "float",
-                "entryFillQuantity": "int",
+                "entryFillQuantity": "float",
                 "entryNotionalUsd": "float",
                 "liquidationPrice": "null",
                 "marginedUsd": "float",
@@ -10908,7 +10947,7 @@
                 "timeHorizon": "str",
                 "unrealizedPnlUsd": "float"
               },
-              "\u2026\u00d74"
+              "\u2026\u00d72"
             ],
             "pricedPositionCount": "int",
             "pricingStatus": "str",
@@ -10938,7 +10977,7 @@
             "effectiveStopLoss": "float",
             "effectiveTakeProfit": "float",
             "entryFillPrice": "float",
-            "entryFillQuantity": "int",
+            "entryFillQuantity": "float",
             "entryNotionalUsd": "float",
             "liquidationPrice": "null",
             "marginedUsd": "float",
@@ -10961,7 +11000,7 @@
             "timeHorizon": "str",
             "unrealizedPnlUsd": "float"
           },
-          "\u2026\u00d76"
+          "\u2026\u00d74"
         ],
         "totals": {
           "activeAgentCount": "int",
@@ -12867,10 +12906,6 @@
           "WALTHER",
           "CUSTOM"
         ],
-        "tradingConfig.positionManagement.trailingType": [
-          "ATR",
-          "FIXED"
-        ],
         "tradingConfig.positionSizePresets.sizingStrategy": [
           "MANUAL",
           "VOLATILITY_AUTO"
@@ -12902,7 +12937,7 @@
         "tradingConfig.minTradeConviction",
         "tradingConfig.positionManagement",
         "tradingConfig.positionManagement.breakEvenEnabled",
-        "tradingConfig.positionManagement.breakEvenTriggerTpProgressPct",
+        "tradingConfig.positionManagement.breakEvenTriggerR",
         "tradingConfig.positionManagement.enabled",
         "tradingConfig.positionManagement.positionManagementPreset",
         "tradingConfig.positionManagement.timeDecayEnabled",
@@ -12911,11 +12946,9 @@
         "tradingConfig.positionManagement.timeDecayMaxTightenPct",
         "tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct",
         "tradingConfig.positionManagement.timeDecayTightenPct",
-        "tradingConfig.positionManagement.trailingAtrMultiple",
         "tradingConfig.positionManagement.trailingBufferPct",
         "tradingConfig.positionManagement.trailingEnabled",
-        "tradingConfig.positionManagement.trailingFixedPct",
-        "tradingConfig.positionManagement.trailingType",
+        "tradingConfig.positionManagement.trailingGivebackPct",
         "tradingConfig.positionSizePresets",
         "tradingConfig.positionSizePresets.largePct",
         "tradingConfig.positionSizePresets.mediumPct",
@@ -12969,7 +13002,7 @@
           "closed": true,
           "accepts": [
             "breakEvenEnabled",
-            "breakEvenTriggerTpProgressPct",
+            "breakEvenTriggerR",
             "enabled",
             "positionManagementPreset",
             "timeDecayEnabled",
@@ -12978,11 +13011,9 @@
             "timeDecayMaxTightenPct",
             "timeDecayStaleThresholdTpProgressPct",
             "timeDecayTightenPct",
-            "trailingAtrMultiple",
             "trailingBufferPct",
             "trailingEnabled",
-            "trailingFixedPct",
-            "trailingType"
+            "trailingGivebackPct"
           ]
         },
         "tradingConfig.positionSizePresets": {

@@ -51,8 +51,22 @@ describe('the values this product chooses because the platform will not', () => 
     }
   });
 
-  it('sends a trailing type the enum permits', () => {
-    expect(positionManagementFrom(catalog, 'CUSTOM')['trailingType']).toBe('ATR');
+  /**
+   * `trailingType` used to be here, asserting we sent `ATR` — one of the two
+   * values its enum permitted. **BattleGrid v17.0.0 deleted the enum**: the
+   * ATR-or-FIXED trail became a single `trailingGivebackPct`, so there is no
+   * type left to choose and the field left `OURS`.
+   *
+   * The replacement is not a guess at all, which is the point worth keeping:
+   * the catalog publishes `defaultPositionMgmtTrailingGivebackPct`, so the
+   * value is *read*. A field moving from "we choose it because the platform
+   * won't" to "the platform states it" is the direction this file wants, and
+   * the assertion follows it rather than inventing a new fallback to guard.
+   */
+  it('reads the trail giveback from the catalog rather than choosing one', () => {
+    const pm = positionManagementFrom(catalog, 'CUSTOM');
+    expect(pm['trailingGivebackPct']).toBe(catalog.defaults['positionMgmtTrailingGivebackPct']);
+    expect(pm['trailingType'], 'v17 removed the field entirely').toBeUndefined();
   });
 
   it('leaves the position-management switches off, as the platform leaves the master', () => {

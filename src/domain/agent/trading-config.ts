@@ -267,8 +267,10 @@ export function buildTradingConfig(
  *   `smallPct`/`mediumPct`/`largePct` from the platform's own catalog;
  *   VOLATILITY_AUTO would derive sizes from ATR and make those three inert.
  *   MANUAL is the value that matches what is actually sent.
- * - `trailingType: ATR` — the enum is `ATR | FIXED`, and all five position
- *   management presets the platform ships use ATR. None uses FIXED.
+ * - `trailingType` left this list at BattleGrid v17.0.0, which replaced the
+ *   ATR-or-FIXED trail with a single `trailingGivebackPct` — how much of the
+ *   move the position may hand back before it exits. There is no longer a
+ *   type to choose, so there is no longer a guess to justify here.
  * - The three feature switches — `false`. The platform *does* default the
  *   master switch, `positionMgmtEnabled`, to false. With the block off, its
  *   sub-switches are moot, and off is the only completion coherent with the one
@@ -276,7 +278,6 @@ export function buildTradingConfig(
  */
 const OURS: Readonly<Record<string, unknown>> = {
   sizingStrategy: 'MANUAL',
-  trailingType: 'ATR',
   breakEvenEnabled: false,
   trailingEnabled: false,
   timeDecayEnabled: false,
@@ -303,11 +304,12 @@ export function positionManagementFrom(
     positionManagementPreset: preset,
     enabled: d['positionMgmtEnabled'] ?? false,
     breakEvenEnabled: OURS['breakEvenEnabled'],
-    breakEvenTriggerTpProgressPct: d['positionMgmtBreakevenTriggerTpProgressPct'] ?? 50,
+    // v17 restated the break-even trigger in R multiples and the trail as a
+    // giveback percentage. Both defaults are published by the catalog, so
+    // both are read rather than chosen.
+    breakEvenTriggerR: d['positionMgmtBreakevenTriggerR'] ?? 1,
     trailingEnabled: OURS['trailingEnabled'],
-    trailingType: OURS['trailingType'],
-    trailingAtrMultiple: d['positionMgmtTrailingAtrMultiple'] ?? 3,
-    trailingFixedPct: d['positionMgmtTrailingFixedPct'] ?? 1,
+    trailingGivebackPct: d['positionMgmtTrailingGivebackPct'] ?? 40,
     trailingBufferPct: d['positionMgmtTrailingBufferPct'] ?? 0.25,
     timeDecayEnabled: OURS['timeDecayEnabled'],
     timeDecayGracePeriodMinutes: d['positionMgmtTimeDecayGracePeriodMinutes'] ?? 60,
@@ -346,11 +348,9 @@ export function positionManagementForPreset(
 export const POSITION_MANAGEMENT_FIELDS = [
   'enabled',
   'breakEvenEnabled',
-  'breakEvenTriggerTpProgressPct',
+  'breakEvenTriggerR',
   'trailingEnabled',
-  'trailingType',
-  'trailingAtrMultiple',
-  'trailingFixedPct',
+  'trailingGivebackPct',
   'trailingBufferPct',
   'timeDecayEnabled',
   'timeDecayGracePeriodMinutes',
@@ -374,7 +374,7 @@ export function positionFieldKind(field: string): 'boolean' | 'text' | 'number' 
   ) {
     return 'boolean';
   }
-  if (field === 'trailingType' || field === 'positionManagementPreset') return 'text';
+  if (field === 'positionManagementPreset') return 'text';
   return 'number';
 }
 

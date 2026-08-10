@@ -140,6 +140,9 @@ describe('every value the product sends is one the platform accepts', () => {
     // `tradingConfig.atrTimeframe` sat in this list until v14 removed the
     // field (and its enum) from create entirely — a constrained path can
     // leave the schema, and the sentinel list has to follow the record.
+    // `positionManagement.trailingType` left the same way at v17, which
+    // replaced the ATR-or-FIXED trail with a single `trailingGivebackPct`
+    // and so retired the only enum the trail ever had.
     expect(checked.map(([p]) => p)).toEqual(
       expect.arrayContaining([
         'brain.kind',
@@ -147,7 +150,6 @@ describe('every value the product sends is one the platform accepts', () => {
         'tradingConfig.tradingMode',
         'tradingConfig.signalTimeoutMinutes',
         'tradingConfig.positionSizePresets.sizingStrategy',
-        'tradingConfig.positionManagement.trailingType',
         'tradingConfig.positionManagement.positionManagementPreset',
       ]),
     );

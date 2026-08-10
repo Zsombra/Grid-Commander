@@ -438,11 +438,9 @@ export function defaultCatalog(): Catalog {
         config: {
           enabled: true,
           breakEvenEnabled: true,
-          breakEvenTriggerTpProgressPct: 70,
+          breakEvenTriggerR: 1.5,
           trailingEnabled: true,
-          trailingType: 'ATR',
-          trailingAtrMultiple: 4,
-          trailingFixedPct: 2,
+          trailingGivebackPct: 60,
           trailingBufferPct: 0.5,
           timeDecayEnabled: true,
           timeDecayGracePeriodMinutes: 120,
@@ -488,6 +486,13 @@ export function defaultCatalog(): Catalog {
       smallPct: 1,
       mediumPct: 2.5,
       largePct: 5,
+      // The position-management defaults the catalog publishes. At v17 the
+      // trail became a single giveback percentage and the break-even trigger
+      // moved to R multiples; both are stated by the platform, so both are
+      // read rather than guessed, and this fixture has to carry them or the
+      // read looks like a fallback.
+      positionMgmtBreakevenTriggerR: 1,
+      positionMgmtTrailingGivebackPct: 40,
     },
   };
 }

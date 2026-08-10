@@ -1,7 +1,8 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v16.0.0`**
-on 2026-08-10. v13 lasted about five hours, v14 about twenty, v15 about a day.
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v17.0.0`**
+on 2026-08-10. v13 lasted about five hours, v14 about twenty, v15 about a day,
+v16 about fifteen hours.
 Regenerate after any BattleGrid deployment: the server says its own list goes
 stale, and this file inherits that.
 
@@ -36,6 +37,7 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v14.0.0 | **114** | the count finally moved: four reads added (`get_agents_hub`, `get_agent_conviction_calibration`, `get_radar_activity`, `list_deployment_policies`) — and the agent writes changed underneath the product: `tradingConfig` dropped `atrTimeframe` + `atrMatchesStrategyTimeframe` (20 → 18 fields) and a CUSTOM brain now **requires** `behavior: {risk, outlook, conviction}`. The app's create path is refused wholesale — `agent-create-composes-fields-v14-refuses` (p1) |
 | → v15.0.0 | 114 | no tool added or removed; **16 tools changed, one coherent move**: the trade-level policy left the agent for the strategy — `maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` out of `tradingConfig` (18 → 15), onto the strategy with the percentage stop floor replaced by **`minStopLossAtrMultiple`**. `compile_strategy_plan` gained `diff.tradeLevelPolicy`; `feasibilityAdvisory` gained per-coin ATR feasibility. All three are **required** on apply — `toApplyPlan` had to learn them or every apply would refuse. The compiler accepts them and does not apply them: `v15-trade-level-policy-is-declared-but-inert` (p1) |
 | → v16.0.0 | 114 | no tool added or removed; **three tools changed, one field**: `conditions[].required` became **required** on every condition-carrying write (`compile_strategy_plan`, `apply_strategy_plan`, `preview_strategy_report`). The read had returned it all along and this product had never modelled it, so `serialiseCondition` emitted four of the five accepted keys — dead write path #12, caught by `payload-conformance` on the same run that refreshed the record, before any live refusal. The v15 trade-level policy is **still inert** across the whole version bump |
+| → v17.0.0 | 114 | no tool added or removed; **three tools changed** and the exit model was rewritten: `positionManagement` swapped `breakEvenTriggerTpProgressPct` for **`breakEvenTriggerR`** (R multiples) and `trailingType`/`trailingAtrMultiple`/`trailingFixedPct` for a single **`trailingGivebackPct`** (how much of the move a position may hand back). The object is `closed`, so the four retired keys are `unrecognized_keys` and the two new ones are required — dead write path #13, refusing every agent create and every full-config edit, caught by `payload-conformance` before a live refusal. `list_radar_deployments` gained `blockedAgents`. The platform migrated live agents itself: pct × 2.155 → R, and giveback = 15 + 20 × ATR multiple |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools
