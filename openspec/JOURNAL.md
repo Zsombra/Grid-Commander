@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-08-10 (check-in 11:05Z) — the split resolved as predicted, and win rate is now provably the wrong metric
+
+**Both closes came from the marginal group**, which is what the split
+predicted last cycle. The two extenders (LDO, FARTCOIN) are still open.
+
+| | | net | move | held | capture |
+|---|---|---|---|---|---|
+| SKHX | LONG | **−$0.0266** | **−0.20%** | 234m | peak +$0.059 → **gave back all** |
+| HYPE | LONG | **+$0.0034** | +0.14% | 538m | peak +$0.134 → **3%** |
+
+SKHX died on a **0.20% adverse move** — the smallest killing move in the
+entire record, and a clean illustration of a stop sitting inside the noise.
+
+**HYPE captured 3% for the second time.** The earlier HYPE trade closed
++$0.0040 from a +$0.1400 peak; this one closed +$0.0034 from +$0.1344. Same
+coin, independent trade, same capture to the percentage point. That is not
+coincidence — it is the trail's ratchet arriving at the same place relative
+to entry, twice.
+
+**Capture table:** MOODENG **100%** (the only TAKE_PROFIT) · BRENTOIL 56% ·
+FARTCOIN 43% · HYPE **3%, twice** · SKHX **0%**.
+
+### Win rate is going up while the fleet gets further from viability
+
+Three consecutive cycles, and the two metrics move in opposite directions
+monotonically:
+
+| closed | win rate | realised RR | break-even needed |
+|---|---|---|---|
+| 26 | 27% | 1.25 | 44% |
+| 27 | 30% | 1.20 | 45% |
+| **29** | **31%** | **1.11** | **47%** |
+
+Every added "win" is a trail-out near zero — HYPE's +$0.0034 counts as a win
+and is worth 0.3% of a typical loss. It lifts the numerator of win rate and
+craters the average win, so **break-even runs away faster than the win rate
+climbs.** Anyone reading win rate alone would see a fleet improving from 27%
+to 31%. It is doing the opposite: 47% needed against 31% achieved is a wider
+gap than 44% against 27%.
+
+At the **placed** RR of 3.34 the requirement is still 23%, and 31% clears it
+comfortably. The entire deficit remains the placed-vs-realised gap.
+
+**Realized: 29 closed, 9W/20L, −$0.9903.** Book down to six, **+$0.3846**
+(from +$0.6476) — FARTCOIN faded +$0.344 → +$0.276, LDO held exactly at
++$0.2289, ENA deteriorated to −$0.0949.
+
+**Long/short**: LONG 9 closed, 2W, **1 TP**, −$0.2369 · SHORT 20 closed, 7W,
+**0 TP**, −$0.7533. Both longs that closed this cycle were scratches, so the
+long side gained a win without gaining anything. Sample still thin.
+
+Server v16.0.0, no retest per cadence. **Meter** dead.
+
 ## 2026-08-10 (check-in 09:45Z) — nothing closed, and the book split in two
 
 **No closes in ninety minutes.** Realized unchanged at 27 closed, 8W/19L,
