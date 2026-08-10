@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-10 (check-in 09:45Z) — nothing closed, and the book split in two
+
+**No closes in ninety minutes.** Realized unchanged at 27 closed, 8W/19L,
+−$0.9671, WR 30%, realised RR 1.20 against 3.34 placed.
+
+**The book fell +$0.7608 → +$0.6476, but not evenly — it split.** The two
+largest positions extended while everything marginal decayed:
+
+| | 08:15Z | 09:45Z | |
+|---|---|---|---|
+| LDO (short) | +$0.179 | **+$0.229** | extending |
+| FARTCOIN (long) | +$0.313 | **+$0.344** | extending |
+| HYPE (long) | +$0.134 | +$0.072 | halved |
+| SKHX (long) | +$0.059 | **−$0.018** | through zero |
+| TRUMP (long) | +$0.032 | **−$0.002** | through zero |
+| WIF (long) | +$0.035 | +$0.013 | fading |
+| MELANIA (long) | +$0.018 | +$0.011 | fading |
+
+That shape is what the trail predicts rather than a surprise: a position
+that has travelled far enough has room between price and a ratcheted stop,
+while one still near entry sits inside the noise band and gets chopped.
+Two winners running and five marginals bleeding is the same mechanism the
+capture table describes, seen mid-flight instead of at exit.
+
+**The fleet is also holding far longer than it ever has.** Against a closed
+median of **206 minutes**: MELANIA ~10h, FARTCOIN ~7.7h, LDO ~7.7h, HYPE
+~7.6h, WIF ~6.7h. Five of eight have outlived the median and none has been
+stopped. That is the time-decay fix still doing what it was meant to — the
+question it leaves open is unchanged, and it is whether long holds convert
+or merely postpone.
+
+**Long/short unchanged** (no closes): SHORT 20 closed, 7W, **0 TP**,
+−$0.7533 · LONG 7 closed, 1W, **1 TP**, −$0.2138. Six of the eight open are
+longs. Sample still thin.
+
+Server v16.0.0, no retest per cadence. **Meter** dead.
+
 ## 2026-08-10 (check-in 08:15Z) — the all-green book did not round-trip, and I said it would
 
 **BRENTOIL closed green: +$0.0862 on a +0.71% move after 351 minutes**,
