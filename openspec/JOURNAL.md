@@ -1,5 +1,53 @@
 # Journal
 
+## 2026-08-10 (check-in 16:40Z) — a new longest hold, and it lost
+
+**MELANIA closed −$0.1023 after 999 minutes** — 16.6 hours, past FARTCOIN's
+769 — and gave back the whole of its +$0.0310 peak. **TRUMP closed −$0.1254
+after 501 minutes**, also giving back everything.
+
+**The duration finding hardens.** The three longest holds this fleet has run
+are now all in:
+
+| | held | outcome |
+|---|---|---|
+| MELANIA | **999m** | **−$0.1023** |
+| FARTCOIN | 769m | +$0.0932 (27% capture) |
+| TRUMP | 754m | −$0.1058 |
+
+Two outright losses and one partial capture. Meanwhile the only trade that
+ever reached target did it in **329 minutes**, below the median. Holding
+longer has not once produced a take-profit; it has produced the two largest
+time investments for the two ordinary-sized losses. Last cycle I said
+duration postpones rather than converts — a third long hold, and the
+longest yet, says the same.
+
+**Both of this cycle's closes gave back 100% of peak**, which puts the
+round-trip count back up: AIXBT, TRUMP (twice now), SKHX, MELANIA.
+
+**The long book gave back its improvement.** LONG is now **12 closed, 3W,
+1 TP, −$0.3715** — worse than the −$0.1438 it showed an hour ago, because
+both losses this cycle were longs. SHORT unchanged at 21 closed, 7W,
+**0 TP**, −$0.8990. Per trade that is **−$0.031 long against −$0.043
+short**, so shorts remain worse per trade even as the long book worsens in
+total.
+
+**Realized: 33 closed, 10W/23L, −$1.2705.** WR 30%, realised RR **1.06**,
+break-even **49%** — the RR series is now 1.25 → 1.20 → 1.11 → 1.09 → 1.07 →
+1.06 across six cycles, monotonically down.
+
+**Book +$0.5982 across five, and the shorts are carrying all of it.** ENA
+**+$0.4015** — the second-largest unrealised this fleet has ever held — and
+LDO +$0.2379. A fresh TRUMP long opened at +$0.0515 minutes after the old
+one stopped out. BRENTOIL's new short is −$0.0786.
+
+ENA and LDO remain the two positions worth watching: both shorts, both
+extending, and **twenty-one shorts have produced no take-profit**. Either
+one reaching target would break the clearest regularity in the record.
+
+Server v16.0.0, no retest per cadence. **Meter** dead. Replay build still
+unauthorised; nothing built or changed.
+
 ## 2026-08-10 (check-in 15:20Z) — the longest hold in the fleet's history captured 27%
 
 **FARTCOIN closed +$0.0932 on a +0.77% move after 769 minutes** — **the
