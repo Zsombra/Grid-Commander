@@ -320,6 +320,7 @@ const aDraftedCondition = (): ConditionWire => {
     conditionKey: 'DRAFT_ONE',
     name: 'A drafted condition',
     verdict: 'UP',
+    required: false,
     definition: {
       kind: 'group',
       op: 'N_OF',

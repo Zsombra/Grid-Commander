@@ -1,5 +1,61 @@
 # Journal
 
+## 2026-08-10 (v16 landed) — dead write path #12, caught before a live refusal
+
+**BattleGrid deployed v16.0.0** — found by the 05:06Z check-in, because the
+snapshot prints the server line and the cadence rule said to retest the
+policy only when it moves. It moved.
+
+**PR #80 merged to `main` first** (squash, `5b4fcfe`, 32 commits) with all
+six gates verified on the branch head rather than quoted from an earlier
+run. Two of them needed work to run at all rather than silently skip:
+PostgreSQL was down again after a container restart, and pytest was not
+installed, so the "235 harness" figure in the PR body was unverifiable until
+it was. Both then matched exactly. The designated branch was reset to
+`origin/main` afterwards so this work starts clean rather than stacking on
+merged history.
+
+**The v16 diff is one field, and it is fatal.** 114 tools, none added or
+removed, three schemas changed — all three condition-carrying writes
+(`compile_strategy_plan`, `apply_strategy_plan`,
+`preview_strategy_report`) made **`conditions[].required`** a required path.
+
+`serialiseCondition` emitted `conditionKey`, `name`, `definition`,
+`verdict` — four of the five keys v16 accepts. **Every strategy write
+carrying a condition would have been refused whole.** That is the twelfth
+dead write path in this codebase's history and **the second caught by the
+guards before a live refusal**, on the same run that refreshed the record:
+`payload-conformance` reported `conditions[].required is required and
+missing` three times the moment the v16 record landed.
+
+**The read had been returning it all along.** Our own `FUNDING_STRETCHED`
+carries `"required": false` on the live account. The field was never
+modelled, so the domain type had four fields where the platform had five —
+the write only broke when v16 made the omission fatal. A read this product
+had been discarding turned into a write it could not make.
+
+Changes: `required: boolean` joins `StrategyCondition`; the mapper reads it
+(absent → `false`, the platform's default and the only safe guess — `true`
+would silently harden a strategy); `serialiseCondition` emits it. The two
+retarget paths carry it from the source alongside the definition. The form
+has no control for it yet and composes `false`, filed as
+`the-condition-form-cannot-set-required` (p3).
+
+Two fixture families had to follow, and both were genuinely stale rather
+than merely inconvenient: the Berlin recordings in `strategy-fakes.ts` claim
+to be *the platform's own bytes* and no longer were, and two round-trip
+tests asserted byte-identity against payloads missing a key the platform
+sends.
+
+**The v15 policy p1 survived the whole version bump** — retested against
+v16, still `"Strategy update contains no effective changes"` on all three
+strategies. A major version came and went without fixing it, which is worth
+knowing: this is not a half-shipped feature.
+
+**Gates**: typecheck, lint, spec validation clean; **1,902 vitest**, **81 db
+against real PostgreSQL**, **235 python harness** — all green, all run after
+the change.
+
 ## 2026-08-10 (check-in 03:40Z) — a quiet cycle, and the long book builds
 
 **One close**: TRUMP long, `STOP_LOSS`, **−$0.1612 on a −0.85% move in 33

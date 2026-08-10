@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v15.0.0`, protocol `2025-06-18`) on 2026-08-09.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v16.0.0`, protocol `2025-06-18`) on 2026-08-10.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -1174,6 +1174,7 @@ Returns: `renderedSections`, `tokenCountModel`, `budgetUsage`, `conditionOutcome
 | `conditions[].definition<2>.n` | integer |  |  |
 | `conditions[].definition<2>.members` | array<?> | YES |  |
 | `conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `conditions[].required` | boolean | YES |  |
 | `coinSelection` | anyOf[object | object] | YES |  |
 | `coinSelection` *(anyOf variant 1)* | object | |  |
 | `coinSelection<1>.mode` | string | YES |  |
@@ -1283,6 +1284,7 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<1>.conditions[].definition<2>.n` | integer |  |  |
 | `request<1>.conditions[].definition<2>.members` | array<?> | YES |  |
 | `request<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `request<1>.conditions[].required` | boolean | YES |  |
 | `request<1>.rules` | array<object> |  |  |
 | `request<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request<1>.rules[].allocation` | integer | YES |  |
@@ -1369,6 +1371,7 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<1>.conditions[].name` | string | YES |  |
 | `request.plan<1>.conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
 | `request.plan<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `request.plan<1>.conditions[].required` | boolean | YES |  |
 | `request.plan<1>.minAggregateScore` | number | YES |  |
 | `request.plan<1>.minRequiredCount` | integer | YES |  |
 | `request.plan<1>.minAtrPct` | number | YES |  |

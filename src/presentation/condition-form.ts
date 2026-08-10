@@ -293,6 +293,12 @@ export function draftFromQuery(q: QueryFields): DraftFromForm {
       name: one(q, 'name') || key,
       definition,
       verdict: verdictOf(one(q, 'verdict')),
+      // The form has no control for this yet, so a fresh draft takes the
+      // platform's own default. `false` is also the only safe default: the
+      // other value silently hardens a strategy the operator was composing.
+      // A control belongs here, and is filed as
+      // `the-condition-form-cannot-set-required`.
+      required: false,
     },
   };
 }
