@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-10  
-**State**: green (1968 vitest + 81 db + 235 harness tests, eight of ten `./scripts/ci.sh` gates — `freshness` and `serving` skip without a key; further vitest are key-gated live probes). No active changes. 31 open backlog items. PRs #8–#82 merged; **#83 open as a draft**. **The surface record is v16.0.0**, re-probed 2026-08-10 — v16 made `conditions[].required` a required path on all three condition-carrying writes, the twelfth dead write path and the second caught by the guards before a live refusal. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply, retested against v16: `v15-trade-level-policy-is-declared-but-inert`, p1. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
+**State**: green (2066 vitest + 81 db + 243 harness tests; `freshness`/`live`/`serving` gates skip without a key or opt-in; further vitest are key-gated live probes). No active changes. 29 open backlog items. PRs #8–#125 merged except **#82**, another session's branch-reconciliation record, still open as its draft. **The surface record is v16.0.0**, re-probed 2026-08-10 — v16 made `conditions[].required` a required path on all three condition-carrying writes, the twelfth dead write path and the second caught by the guards before a live refusal. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply, retested against v16: `v15-trade-level-policy-is-declared-but-inert`, p1. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -20,14 +20,14 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **132** |
-| Vitest tests | **1968** (+ key-gated live) + 81 db |
-| Harness tests (Python) | 235 |
+| Changes (archived) | **138** |
+| Vitest tests | **2066** (+ key-gated live) + 81 db |
+| Harness tests (Python) | 243 |
 | Active changes | none |
-| Open backlog items | **31** |
+| Open backlog items | **29** |
 | Design tickets open | 0 |
-| Open draft PRs | **#83**; #8–#82 merged |
-| Open GitHub issues | **#84–#87** — filed 2026-08-10, see below |
+| Open draft PRs | **#82** (another session’s reconciliation record); the rest through #125 merged |
+| Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); the one P1 is `v15-trade-level-policy-is-declared-but-inert` |
 
 ### Read this before anything else
 
@@ -165,7 +165,7 @@ before assuming the list row is enough.
 
 | Item | Type | Notes |
 |---|---|---|
-| `image-never-built` | P1 debt | No Docker daemon in sessions; image build never proven |
+| — | | The last entry here, `image-never-built`, resolved 2026-08-10: built, gated and served from the Dockerfile unchanged (355MB; #89 has the sandbox recipe) |
 
 Resolved since this table was first written: `rebind-is-not-bound-to-the-revision-it-read` (closed 2026-07-31 — the confirmation binds agent+destination+revision, and the perform re-reads the destination), `confirmation-is-not-bound-to-values` (closed 2026-07-31 — every value-carrying flow binds a digest into the token's target; re-triage table in the item), `strategy-section-editor` (built and archived 2026-07-30, PR #7 — section checklist on the edit page), `assistant-unverified-against-live-api` (closed by the assistant's removal in `3d54fab`).
 
@@ -184,7 +184,6 @@ Resolved since this table was first written: `rebind-is-not-bound-to-the-revisio
 
 | Item | What | Fix path |
 |---|---|---|
-| `image-never-built` | Docker image build never proven | Needs registry egress or a pre-seeded cache. Not resolvable in this environment — the daemon starts, the network policy denies Docker Hub's blob host. |
 | `v15-trade-level-policy-is-declared-but-inert` | The stop bounds and R:R floor v15 moved onto the strategy are ignored by the compiler, with no working write path | **Upstream.** Retested against v16 on 2026-08-10 — still `"Strategy update contains no effective changes"` on all three strategies. A whole major version came and went, so this is not a half-shipped feature. |
 | `the-surface-map-is-two-majors-stale` | Mis-titled and corrected in the item: the record is current. The real gap is that the probe records payload *shapes*, not values, so the authoring vocabulary's contents are in no committed artifact | Extend `tools/probe_mcp_surface.py` to record enum members and declared defaults, not just types. |
 
@@ -254,7 +253,8 @@ The 31 open backlog items split cleanly:
   `the-button-primitive-has-no-tokens` (a `/surface` + `/design` pass),
   `the-payload-carries-more-than-is-read`'s four remaining fields,
   `market-grid-standings-need-a-gametype-not-a-second-mapper` (deferred until
-  the arena wants the panel), and `image-never-built` (needs registry egress).
+  the arena wants the panel). `image-never-built` left this list on 2026-08-10 —
+  built and proven, #89.
 
 ### Two things that will cost a session if rediscovered
 
@@ -265,12 +265,16 @@ proven nothing — drive the store's own `consume` against the target the write
 composed, the way `edit-binding.test.ts` does. Two drafts of
 `two-edits-in-a-row.test.ts` passed vacuously this way.
 
-**`docker` exists in these environments and cannot pull.** The daemon starts
-clean; the network policy denies `production.cloudfront.docker.com`, where
-Docker Hub serves layer blobs, so every build fails at the first `FROM`.
-Manifests resolve (401), blobs 403. `image-never-built` needs registry egress or
-a pre-seeded cache — not just a daemon. Do not spend the setup time again
-without one.
+**`docker` in these environments pulls from the mirror, not from Docker Hub.**
+The Hub's blob CDN (`production.cloudfront.docker.com`) is policy-403'd and
+stays that way; `mirror.gcr.io` is allowed. The working recipe, proven
+2026-08-10 (#89): pull `mirror.gcr.io/library/node:22-alpine`, tag it as
+`node:22-alpine`, then build with `--network=host` and the proxy passed as
+explicit `--build-arg`s — this docker CLI does not auto-forward proxy env into
+BuildKit, and *direct* npmjs traffic from inside a container is transparently
+TLS-intercepted (npm dies on `SELF_SIGNED_CERT_IN_CHAIN` behind an opaque
+"Exit handler never called!"). Through the CONNECT proxy, certificates are real
+and verification stays on.
 
 ### The lesson that keeps recurring, now six times
 
@@ -394,7 +398,6 @@ an MCP server first (no second outbound host, no chat UI).
 
 **Operator-side, not mine to close:**
 
-- `image-never-built` (the only P1) — no Docker daemon in these sessions.
 - `prove-token-lifetimes` — needs a human browser session.
 - **The API key**: the operator confirmed on 2026-08-03 that key handling is
   theirs and the current key stays in use. Not a standing recommendation
