@@ -2,11 +2,11 @@
 id: the-venue-says-how-the-stop-is-being-managed
 title: v17 positions reads carry breakEvenStatus and trailingStatus — live position-management state, unread
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: "management-status-in-the-platforms-words"
 capability: agent-understanding
 github: "134"
 blocked_by: []
@@ -73,3 +73,15 @@ value this product has never seen renders as itself — no enum is
 modelled from a single observed member. The richer treatment (explaining
 what a state *means*) waits for vocabulary the platform has not yet
 shown.
+
+## Built 2026-08-11 — `management-status-in-the-platforms-words`
+
+Each open position on `/agents/[id]` now says "Management engine:
+break-even ACTIVE · trailing ACTIVE — BattleGrid's own words", directly
+under the note that position management moves the stop after the
+decision. Verbatim strings end to end: an unseen word renders as itself
+(tested with an invented `GIVEBACK_ARMED`), and a row without the fields
+renders no line — the platform saying nothing is not an idle engine.
+Spec: `agent-understanding` gained "A Position Says What Its Management
+Engine Reports". The what-a-state-means treatment stays deliberately
+unbuilt until the platform shows more than one word of the vocabulary.

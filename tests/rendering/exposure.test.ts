@@ -441,3 +441,33 @@ describe('the protection that actually rests, as a person reads it', () => {
     expect(r.text).toContain('Stop now 55.954');
   });
 });
+
+describe('what the management engine reports', () => {
+  it('says both statuses in the platform’s words', async () => {
+    // The fake's default mirrors the live read of 2026-08-11.
+    world({ kind: 'exposure', exposure: anExposure() });
+    const r = await page();
+    expect(r.text).toContain('Management engine: break-even ACTIVE · trailing ACTIVE — BattleGrid’s own words.');
+  });
+
+  it('renders a word it has never seen as itself', async () => {
+    world({
+      kind: 'exposure',
+      exposure: anExposure({ positions: [aPosition({ trailingStatus: 'GIVEBACK_ARMED' })] }),
+    });
+    const r = await page();
+    expect(r.text).toContain('trailing GIVEBACK_ARMED');
+  });
+
+  it('claims no state when the platform said nothing', async () => {
+    world({
+      kind: 'exposure',
+      exposure: anExposure({
+        positions: [aPosition({ breakEvenStatus: null, trailingStatus: null })],
+      }),
+    });
+    const r = await page();
+    // Absent is not idle: no line at all, and nothing reads as a default.
+    expect(r.text).not.toContain('Management engine');
+  });
+});

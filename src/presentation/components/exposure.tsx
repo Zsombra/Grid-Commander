@@ -111,6 +111,14 @@ function Position({ held }: { held: HeldPosition }) {
         Stop and target are the current ones — position management moves them
         after the decision.
       </p>
+      {/* The engine's own report, verbatim (#134). One value observed so
+          far; an unseen word renders as itself. Absent renders nothing —
+          the platform saying nothing is not an idle engine. */}
+      {p.breakEvenStatus !== null || p.trailingStatus !== null ? (
+        <p>
+          {`Management engine:${p.breakEvenStatus !== null ? ` break-even ${p.breakEvenStatus}` : ''}${p.breakEvenStatus !== null && p.trailingStatus !== null ? ' ·' : ''}${p.trailingStatus !== null ? ` trailing ${p.trailingStatus}` : ''} — BattleGrid’s own words.`}
+        </p>
+      ) : null}
 
       <SinceTheDecision held={held} />
       <AtTheVenue resting={held.resting} coin={p.coinTicker} />

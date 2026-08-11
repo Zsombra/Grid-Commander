@@ -26,6 +26,10 @@ export function aPosition(over: Partial<OpenPosition> = {}): OpenPosition {
     status: 'OPEN',
     decisionId: '4f1096e9-cb21-4695-ad4f-0befd0b5f704',
     signalLogId: 'da98f325-0271-4e5f-80fd-bc25cb5d153f',
+    // v17.2.0 fields, mirroring the live read of 2026-08-11: both ACTIVE on
+    // every open position observed.
+    breakEvenStatus: 'ACTIVE',
+    trailingStatus: 'ACTIVE',
     ...over,
   };
 }
