@@ -74,7 +74,7 @@ export class McpRadarAdapter implements RadarPort {
     timeframe: string;
     enabled: boolean;
     agentId: string;
-    expectedRevision: number;
+    expectedRevision: number | null;
     confirmation: Confirmation;
   }): Promise<{ readonly revision: number }> {
     const result = await this.battlegrid.callTool({

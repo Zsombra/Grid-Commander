@@ -46,7 +46,7 @@ class FakeRadarPort implements RadarPort {
     timeframe: string;
     enabled: boolean;
     agentId: string;
-    expectedRevision: number;
+    expectedRevision: number | null;
     confirmation: Confirmation;
   }> = [];
   readonly deletes: Array<{
@@ -70,12 +70,12 @@ class FakeRadarPort implements RadarPort {
     timeframe: string;
     enabled: boolean;
     agentId: string;
-    expectedRevision: number;
+    expectedRevision: number | null;
     confirmation: Confirmation;
   }): Promise<{ revision: number }> {
     if (this.failWith) throw this.failWith;
     this.upserts.push(params);
-    return { revision: params.expectedRevision + 1 };
+    return { revision: (params.expectedRevision ?? 0) + 1 };
   }
   async deleteDeployment(params: {
     userId: string;
@@ -180,15 +180,37 @@ describe('describing a deploy', () => {
     expect(res.proposal.expectedRevision).toBe(7);
   });
 
-  it('refuses an unoccupied coin — the platform cannot create a first deployment', async () => {
-    // Established live 2026-07-31: `expectedRevision` must be > 0 by schema,
-    // and a coin with no policy answers every value with CONFLICT
-    // (actualRevision: null). Minting an agreement the perform is guaranteed
-    // to lose would be worse than saying why.
+  it('an unoccupied coin proposes a first deployment with null revision', async () => {
     const h = harness();
     const res = await h.describeDeploy.execute(deployReq);
-    expect(res.kind === 'refused' && res.reason).toContain('carries no deployment');
-    expect(h.confirmations.tokens.size).toBe(0);
+    if (res.kind !== 'proposal') throw new Error('expected a proposal');
+    expect(res.proposal.expectedRevision).toBeNull();
+    expect(res.proposal.consequence).toContain('Fade Master I');
+    expect(res.proposal.consequence).toContain('HYPE');
+    expect(res.proposal.consequence).not.toContain('replaces');
+  });
+
+  it('a first-deploy ceremony: describe with null, perform sends it through', async () => {
+    const h = harness();
+    const described = await h.describeDeploy.execute(deployReq);
+    if (described.kind !== 'proposal') throw new Error('expected a proposal');
+    expect(described.proposal.expectedRevision).toBeNull();
+
+    await h.performDeploy.execute({
+      ...who,
+      agentId: 'a1',
+      coinId: 'HYPE',
+      timeframe: '15m',
+      expectedRevision: described.proposal.expectedRevision,
+      confirmationToken: described.proposal.confirmationToken,
+    });
+    expect(h.radar.upserts[0]).toMatchObject({
+      coinId: 'HYPE',
+      timeframe: '15m',
+      enabled: true,
+      agentId: 'a1',
+      expectedRevision: null,
+    });
   });
 });
 
