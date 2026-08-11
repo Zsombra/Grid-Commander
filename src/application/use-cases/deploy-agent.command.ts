@@ -161,7 +161,22 @@ export class PerformDeployCommand {
   }
 }
 
-export type DescribeUndeployResult = DescribeDeployResult;
+export type DescribeUndeployResult =
+  | {
+      readonly kind: 'proposal';
+      readonly proposal: {
+        readonly agentId: string;
+        readonly coinId: string;
+        readonly timeframe: string;
+        // Never null, unlike a deploy's: undeploying targets a deployment
+        // that already exists, so there is always a real revision to bind.
+        readonly expectedRevision: number;
+        readonly consequence: string;
+        readonly confirmationToken: string;
+        readonly timeframes: readonly string[];
+      };
+    }
+  | { readonly kind: 'refused'; readonly reason: string };
 
 export class DescribeUndeployQuery {
   constructor(
