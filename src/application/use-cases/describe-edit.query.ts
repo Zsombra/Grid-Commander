@@ -150,7 +150,7 @@ export function describeEdit(
 
     /**
      * Position management, named the way it was chosen. A preset means the
-     * platform's own values ride wholesale; CUSTOM means the fourteen the
+     * platform's own values ride wholesale; CUSTOM means the twelve the
      * operator edited. Either way the digest binds the values themselves —
      * this sentence is what the person reads, not what protects them.
      */
@@ -159,7 +159,7 @@ export function describeEdit(
       const label = (pm as Record<string, unknown>)['positionManagementPreset'];
       parts.push(
         label === 'CUSTOM' || typeof label !== 'string'
-          ? 'Position management becomes fourteen custom values.'
+          ? 'Position management becomes twelve custom values.'
           : `Position management becomes BattleGrid's own ${label} configuration.`,
       );
     }

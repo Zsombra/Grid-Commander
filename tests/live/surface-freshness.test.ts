@@ -26,11 +26,24 @@ const live = KEY ? describe : describe.skip;
 
 const MCP_URL = 'https://mcp.battlegrid.trade/mcp';
 const REPROBE = 'BATTLEGRID_API_KEY=… python3 tools/probe_mcp_surface.py';
+const REPROBE_VOCAB = 'BATTLEGRID_API_KEY=… python3 tools/probe_vocabulary.py';
 
 interface Surface {
   server?: { name?: string; version?: string };
   probed_at?: string;
   tool_count?: number;
+}
+
+interface VocabularyArtifact {
+  server?: { name?: string; version?: string };
+  probed_at?: string;
+  vocabulary?: Record<string, VocabularyPayload>;
+}
+
+interface VocabularyPayload {
+  budgets?: Record<string, unknown>;
+  timeframes?: unknown[];
+  transforms?: Array<{ id?: string }>;
 }
 
 /** `initialize`, answered either plainly or as an SSE frame. */
@@ -60,6 +73,35 @@ async function serverInfo(): Promise<{ name: string; version: string }> {
   const info = (JSON.parse(frame) as { result?: { serverInfo?: Record<string, string> } }).result
     ?.serverInfo;
   return { name: info?.name ?? '', version: info?.version ?? '' };
+}
+
+/** One `tools/call`, unwrapped to its payload — plain or SSE-framed. */
+async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  const response = await fetch(MCP_URL, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${KEY as string}`,
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    }),
+  });
+  const raw = await response.text();
+  const frame = raw.startsWith('event:')
+    ? (raw.split('\n').find((l) => l.startsWith('data: ')) ?? '').slice('data: '.length)
+    : raw;
+  const result = (JSON.parse(frame) as { result?: Record<string, unknown> }).result ?? {};
+  if ('structuredContent' in result) return result['structuredContent'];
+  const blocks = (result['content'] ?? []) as Array<{ type?: string; text?: string }>;
+  const text = blocks.find((b) => b.type === 'text')?.text;
+  if (result['isError'] === true) throw new Error(`${name} answered an error: ${text ?? ''}`);
+  if (text === undefined) throw new Error(`${name} answered no payload`);
+  return JSON.parse(text);
 }
 
 live('the recorded surface still describes the platform', () => {
@@ -113,4 +155,50 @@ live('the recorded surface still describes the platform', () => {
     // The version is what decides it, whatever the count says.
     expect(recorded.server?.version).toBe(now.version);
   });
+});
+
+live('the recorded vocabulary still describes the platform', () => {
+  /**
+   * The version gate above cannot see this class of change: a deployment that
+   * moves budget numbers, retires a timeframe or adds a transform while
+   * leaving the version string alone passes every version comparison green
+   * (#92). So the three value classes the authoring contract turns on are
+   * compared directly, per category, against `docs/battlegrid-vocabulary.json`.
+   *
+   * v17.2.0 demonstrated the sibling pattern live the day this gate was
+   * written: a tool count that held at 114 while seventeen tools changed
+   * underneath it.
+   */
+  const artifact = JSON.parse(
+    readFileSync('docs/battlegrid-vocabulary.json', 'utf8'),
+  ) as VocabularyArtifact;
+  const categories = Object.keys(artifact.vocabulary ?? {});
+
+  it('has categories to compare at all', () => {
+    expect(categories.length, `the artifact records no categories — ${REPROBE_VOCAB}`)
+      .toBeGreaterThan(0);
+  });
+
+  for (const category of categories) {
+    it(`${category}: budgets, timeframes and transform ids match the live platform`, { timeout: 120_000 }, async () => {
+      const recorded = (artifact.vocabulary ?? {})[category] as VocabularyPayload;
+      const now = (await callTool('list_strategy_vocabulary', { category })) as VocabularyPayload;
+
+      const ids = (v: VocabularyPayload): string[] =>
+        (v.transforms ?? []).map((t) => t.id ?? '').sort();
+
+      expect(
+        now.budgets,
+        `the ${category} budgets moved under the record — ${REPROBE_VOCAB}`,
+      ).toEqual(recorded.budgets);
+      expect(
+        now.timeframes,
+        `the enabled timeframes moved under the record — ${REPROBE_VOCAB}`,
+      ).toEqual(recorded.timeframes);
+      expect(
+        ids(now),
+        `the ${category} transform ids moved under the record — ${REPROBE_VOCAB}`,
+      ).toEqual(ids(recorded));
+    });
+  }
 });

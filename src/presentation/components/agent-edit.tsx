@@ -175,7 +175,7 @@ export function AgentEditForm({
  * How an agent exits its positions, with the truth about the label.
  *
  * The drift line comes first because it is the fact the label hides: a
- * preset is a name beside fourteen independent values and nothing on the
+ * preset is a name beside twelve independent values and nothing on the
  * platform makes them agree, so an agent may name one preset and carry
  * values that are not that preset's. The choice semantics are stated on the control:
  * a preset sends BattleGrid's own values wholesale, CUSTOM sends the
@@ -211,7 +211,7 @@ export function PositionManagement({
       ) : drift ? (
         <p className="text-sm">Matches the catalog&apos;s {drift.preset} exactly.</p>
       ) : label === 'CUSTOM' ? (
-        <p className="text-sm">CUSTOM — these fourteen values are this agent&apos;s own.</p>
+        <p className="text-sm">CUSTOM — these twelve values are this agent&apos;s own.</p>
       ) : null}
 
       <label className={LABEL}>
@@ -227,7 +227,7 @@ export function PositionManagement({
         </select>
       </label>
       <p className="text-sm text-text-secondary">
-        Picking a preset sends BattleGrid&apos;s fourteen values for it and the
+        Picking a preset sends BattleGrid&apos;s twelve values for it and the
         fields below are ignored. Picking CUSTOM sends the fields below exactly
         as edited. Leaving the choice alone changes nothing here.
       </p>

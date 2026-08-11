@@ -26,7 +26,7 @@ export interface CreateAgentRequest {
   /**
    * A position-management preset from the catalog, or `CUSTOM`, or absent —
    * the last two both mean the product-assembled values. A named preset means
-   * the platform's own fourteen values for it, never a substitute.
+   * the platform's own twelve values for it, never a substitute.
    */
   readonly positionPreset?: string | undefined;
   readonly arenaChallengeEnabled?: boolean | undefined;

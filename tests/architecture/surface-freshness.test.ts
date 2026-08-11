@@ -82,3 +82,69 @@ describe('the surface record names the server it was taken from', () => {
     }
   });
 });
+
+describe('the vocabulary record carries values it can be compared by', () => {
+  /**
+   * The carve-out from shape-only, held to its own terms (#92). The
+   * vocabulary artifact exists because `strategyConditions: 16` recorded as
+   * `"int"` is a budget nothing can compare — so a vocabulary record whose
+   * budgets are not numbers has collapsed back into a shape record, and that
+   * is asserted here rather than discovered at authoring time. The live
+   * comparison itself is in `tests/live/surface-freshness.test.ts`, same
+   * split as the surface record above.
+   */
+  const REPROBE_VOCAB = 'BATTLEGRID_API_KEY=… python3 tools/probe_vocabulary.py';
+
+  interface Vocabulary {
+    server?: { name?: string; version?: string };
+    probed_at?: string;
+    vocabulary?: Record<
+      string,
+      { budgets?: Record<string, unknown>; timeframes?: unknown[]; transforms?: unknown[] }
+    >;
+  }
+
+  const artifact = JSON.parse(
+    readFileSync('docs/battlegrid-vocabulary.json', 'utf8'),
+  ) as Vocabulary;
+
+  it('names the server it was taken from, and when', () => {
+    expect(artifact.server?.name, `re-probe: ${REPROBE_VOCAB}`).toBeTruthy();
+    expect(artifact.server?.version, `re-probe: ${REPROBE_VOCAB}`).toBeTruthy();
+    expect(artifact.probed_at, `re-probe: ${REPROBE_VOCAB}`).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/,
+    );
+  });
+
+  it('was taken from the same server version as the surface record', () => {
+    /**
+     * The two artifacts gate the same wire and regenerate by different
+     * commands. Taken at different versions, whichever is older is describing
+     * a platform that is gone — and nothing else compares them to each other.
+     */
+    expect(artifact.server?.version, `re-probe both: ${REPROBE} · ${REPROBE_VOCAB}`).toBe(
+      surface.server?.version,
+    );
+  });
+
+  it('records values, not shapes', () => {
+    const categories = Object.entries(artifact.vocabulary ?? {});
+    expect(categories.length, `no categories recorded — ${REPROBE_VOCAB}`).toBeGreaterThan(0);
+    for (const [category, payload] of categories) {
+      const budgets = Object.entries(payload.budgets ?? {});
+      expect(budgets.length, `${category} records no budgets`).toBeGreaterThan(0);
+      for (const [name, value] of budgets) {
+        // `"int"` is the shape of a budget; 16 is a budget.
+        expect(typeof value, `${category} budget ${name} is a shape, not a value`).toBe('number');
+      }
+      expect(payload.timeframes?.length, `${category} records no timeframes`).toBeGreaterThan(0);
+      expect(payload.transforms?.length, `${category} records no transforms`).toBeGreaterThan(0);
+    }
+  });
+
+  it('is the artifact the live vocabulary gate actually reads', () => {
+    expect(readFileSync('tests/live/surface-freshness.test.ts', 'utf8')).toContain(
+      'docs/battlegrid-vocabulary.json',
+    );
+  });
+});

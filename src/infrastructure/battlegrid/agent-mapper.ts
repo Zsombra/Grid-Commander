@@ -269,7 +269,7 @@ function mapPositionPresets(raw: unknown): readonly PositionManagementPreset[] {
     const preset = str(p['preset']);
     if (!preset) return [];
     // The config block is the point of the preset: the platform declines to
-    // expand a label server-side, so these fourteen values are what choosing
+    // expand a label server-side, so these twelve values are what choosing
     // "COLT" actually sends. Carried through verbatim when it is an object,
     // null otherwise — a preset the platform did not fully describe stays
     // visibly incomplete rather than being completed here.

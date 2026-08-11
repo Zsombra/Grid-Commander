@@ -24,7 +24,7 @@
 
 Grid-Commander is a **third-party multi-tenant client** for BattleGrid
 (battlegrid.trade), reached over MCP at `https://mcp.battlegrid.trade/mcp`.
-The surface is fully mapped — **114 tools at v16.0.0** — in
+The surface is fully mapped — **114 tools at v17.2.0** — in
 `docs/BATTLEGRID_MCP_REFERENCE.md`,
 with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation and
 `tools/generate_mcp_reference.py` to regenerate both.

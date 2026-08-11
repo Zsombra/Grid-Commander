@@ -110,7 +110,7 @@ export function AgentForm({
         `tradingConfig: null` and the choice was discarded — and was removed,
         because offering a setting and dropping it is worse than not asking.
         It returns now that the values exist to send: the catalog states each
-        preset's complete fourteen-field configuration, `mapPositionPresets`
+        preset's complete twelve-field configuration, `mapPositionPresets`
         carries it to the domain, and choosing COLT sends BattleGrid's COLT
         values with the label beside them. Only presets whose configuration
         actually arrived are offered — a label with no values behind it is the
@@ -120,7 +120,7 @@ export function AgentForm({
       <fieldset className="space-y-3">
         <legend className="font-medium">Position management</legend>
         <p className="text-sm">
-          A preset is BattleGrid&apos;s own fourteen values for how positions are
+          A preset is BattleGrid&apos;s own twelve values for how positions are
           tightened, trailed and timed out. CUSTOM uses the assembled defaults.
         </p>
         <Field label="Preset" name="positionPreset" error={issueFor('positionPreset')}>
