@@ -1,5 +1,70 @@
 # Journal
 
+## 2026-08-11 (the merge round) — four PRs reviewed, gated and landed; zero P1s remain
+
+**Did**: The operator authorized review→CI→merge on the open PRs, in
+order. **#151** (session records: HANDOFF reconciliation, #145 closed,
+tsx pinned) merged first — its gates had run green on its head all
+session. **#149** (first deployments through the deploy surface) needed
+one real fix found by the typecheck gate: `DescribeUndeployResult`
+aliased the deploy result, so the `expectedRevision: number | null`
+widening leaked into undeploy — whose describe always binds an existing
+revision and whose perform requires a number — and the undeploy page's
+hidden field failed tsc. Undeploy now declares its own non-null type;
+vitest alone had not caught it (it does not typecheck). **#148** (dead
+agent fields retired) carried its completed change unarchived — archived
+on the branch before merging, so main never held an active change; its
+HANDOFF edits were superseded by main's fresher reconciliation and
+resolved in main's favor. **#150** (trade-level policy readable) arrived
+pre-archived and clean, and closed the last open P1. Every merge ran the
+full local gate set on the merged state first (typecheck, lint, 2123
+vitest, build, schema-drift, 85 db — this repo's CI is local by design).
+JOURNAL conflicts were resolved by keeping both sessions' entries, all
+three rounds.
+
+**State**: `main` holds 149 archived changes, 13 capabilities, 21 open
+backlog items, **no open P1s**, and one open PR — #82, the
+reconciliation record, deliberately left for the operator to read.
+Suites green at every merge point.
+
+**Next**: #94 when the record (accumulating hourly since this evening)
+holds days of depth. The recording host should `git pull` + `npm install`
+at its convenience — tsx now resolves locally and the deploy surface
+gained first deployments.
+
+**Watch out**: A type alias between two describe results is how #149's
+defect happened — when two ceremonies share a shape, the moment one
+diverges the alias must split, and only tsc notices. And three parallel
+sessions all prepending JOURNAL entries guarantees merge conflicts; the
+union resolution (keep both, markers stripped) was right every time.
+## 2026-08-11 — v15-trade-level-policy: read, display, refuse to edit
+
+**Did**: Proposed, implemented, verified, and archived
+`v15-trade-level-policy` (standard track, PR #150). Added
+`TradeLevelPolicy` to the domain, mapped the three fields
+(`maxStopLossPct`, `minStopLossAtrMultiple`, `minRiskRewardRatio`) from
+`get_strategy`, rendered them on the strategy detail page between "When it
+acts" and conditions, and stated the inert compiler condition — no editing
+control offered. Two mapper tests (happy path + null-when-omitted), local
+CI green (typecheck, lint, 2123 vitest, drizzle-check, build). Code review
+caught three test files with inline `StrategyDetail` literals missing the
+new required field; fixed and pushed. Backlog item #95 closed, delta specs
+merged into the main `strategy-authoring` spec.
+
+**State**: Change archived at `2026-08-11-v15-trade-level-policy`. PR #150
+open as draft. 24 open backlog items (was 25).
+
+**Next**: Merge PR #150. The p1 queue is now empty. Next product session:
+`/board`, then the p2/p3 tail — #145 (is the recorder cron running) still
+gates `/propose` on #94.
+
+**Watch out**: The verifier noted T7 (presentation rendering test for the
+policy section) was satisfied by the mapper tests rather than a dedicated
+component rendering test. The section is straightforward JSX reusing the
+`Threshold` helper, so this is not a gap, but a future change to the
+policy section should add one. The compiler inertness is upstream — when
+BattleGrid ships a working compiler for these fields, the inert-state
+notice and the `TradeLevelPolicy | null` nullability can be revisited.
 ## 2026-08-11 — retire dead agent fields (arenaChallengeEnabled, overlayText)
 
 **Did**: Picked up backlog item `two-agent-owned-fields-no-tool-can-write`

@@ -2,11 +2,11 @@
 id: v15-trade-level-policy-is-declared-but-inert
 title: v15 moved stop bounds and the RR floor onto the strategy, and the compiler ignores them — no write path exists
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-08-09
 updated: 2026-08-09
-change: ""
+change: "v15-trade-level-policy"
 capability: strategy-authoring
 github: "95"
 blocked_by: []

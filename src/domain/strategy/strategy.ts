@@ -224,6 +224,8 @@ export interface StrategyDetail {
   readonly marketReadText: string | null;
   /** When it acts. */
   readonly thresholds: StrategyThresholds;
+  /** What governs its trades — stop bounds and risk:reward floor. */
+  readonly tradeLevelPolicy: TradeLevelPolicy | null;
   /** What it weighs. */
   readonly signalRules: readonly SignalRule[];
   /**
@@ -245,6 +247,20 @@ export interface StrategyThresholds {
   readonly minAggregateScore: number | null;
   readonly minRequiredCount: number | null;
   readonly minAtrPct: number | null;
+}
+
+/**
+ * The stop-loss bounds and risk:reward floor that govern a strategy's trades.
+ *
+ * Moved from the agent's `tradingConfig` onto the strategy at BattleGrid v15.
+ * The compiler declares these fields but does not yet process changes to them,
+ * so the entire fleet is pinned to whatever the platform set — which is why
+ * this type is read-only and the detail page offers no editing control.
+ */
+export interface TradeLevelPolicy {
+  readonly maxStopLossPct: number;
+  readonly minStopLossAtrMultiple: number;
+  readonly minRiskRewardRatio: number;
 }
 
 /**

@@ -96,6 +96,31 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
         </dl>
       </section>
 
+      {detail.tradeLevelPolicy && (
+        <section className="space-y-2">
+          <h2 className="text-base font-medium text-text-primary">Trade-level policy</h2>
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Threshold
+              label="Stop-loss floor (ATR×)"
+              value={detail.tradeLevelPolicy.minStopLossAtrMultiple}
+            />
+            <Threshold
+              label="Stop-loss ceiling (%)"
+              value={detail.tradeLevelPolicy.maxStopLossPct}
+            />
+            <Threshold
+              label="Risk:reward minimum"
+              value={detail.tradeLevelPolicy.minRiskRewardRatio}
+            />
+          </dl>
+          <p role="note" className="text-sm text-text-secondary">
+            These values are set by the platform. The compiler does not yet
+            process changes to them, so they cannot be edited through this
+            product.
+          </p>
+        </section>
+      )}
+
       <StrategyConditions conditions={detail.conditions} />
       {/* The other half of the same question. This section says what the
           strategy's conditions are; the link asks what a different one would
