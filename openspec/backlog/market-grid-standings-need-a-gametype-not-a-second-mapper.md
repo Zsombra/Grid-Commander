@@ -2,10 +2,10 @@
 id: market-grid-standings-need-a-gametype-not-a-second-mapper
 title: A Market Grid leaderboard is one argument on a read the product already makes
 type: feature
-status: open
+status: wontfix
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-11
 change: ""
 capability: agent-comparison
 github: "105"
@@ -109,3 +109,28 @@ and take `gameType` when the arena wants its own copy of that panel.
 platform declaring a game type that has no players yet, not a failure, and a
 surface that asked for it must say "nobody is ranked" rather than "could not be
 read".
+
+---
+
+# Closed 2026-08-11 — declined by this item's own analysis, re-verified at v17.2.0
+
+The sibling shipped (`the-leaderboard-has-rows-and-no-surface-shows-them`
+is done — `/explorer` renders the rows), which leaves only the `gameType`
+widening this item itself argued against building speculatively. Re-read
+live today: `COIN_GRID` still answers zero rows and no `currentUser`;
+`ALL` and `MARKET_GRID` still return the same list (same top, same
+`currentUser` — now rank 205 all-time by profit, from 7 on 2026-08-03;
+the platform has gained players, the game types have not diverged).
+
+So the widening stays unbuilt, deliberately: one declared enum value
+whose two live values return the same bytes, with no surface asking the
+question, is a widening nobody can test the point of. Two conditions
+reopen this, either one:
+
+1. The arena grows a standings panel that wants game-scoped ranks.
+2. `COIN_GRID` gains players, so `ALL` and `MARKET_GRID` stop being the
+   same list.
+
+The `COIN_GRID` line for whatever ships then, unchanged: empty is the
+platform declaring a game type with no players yet — "nobody is ranked",
+never "could not be read".

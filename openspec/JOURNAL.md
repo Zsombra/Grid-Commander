@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-08-11 (the gameType widening) — declined on its own advice, re-verified
+
+**`market-grid-standings-need-a-gametype-not-a-second-mapper` closed as
+wontfix (#105)**, by the item's own 2026-08-06 analysis, re-verified live
+at v17.2.0 today: `COIN_GRID` still answers zero rows, `ALL` and
+`MARKET_GRID` are still byte-the-same list, and the sibling that had to
+ship first (`/explorer` rendering the rows) is done. A declared enum
+value whose two live values return the same bytes, with no surface asking
+the question, stays unbuilt on purpose. Reopens if the arena grows a
+standings panel or `COIN_GRID` gains players. Colour from the re-read:
+the operator's all-time profit rank drifted 7 → 205 since 2026-08-03 —
+the platform is filling with players.
+
 ## 2026-08-11 (a draft can insist) — the flag that unlocks the deciding branch
 
 **`a-draft-can-insist` archived**, closing #88. The condition composer
