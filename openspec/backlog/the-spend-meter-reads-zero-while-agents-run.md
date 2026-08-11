@@ -2,10 +2,10 @@
 id: the-spend-meter-reads-zero-while-agents-run
 title: last24hCostUsd reads 0 for every agent while they are demonstrably evaluating — the only spend number we have is unusable
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-11
 change: ""
 capability: agent-introspection
 github: "96"
@@ -79,3 +79,22 @@ carries the field.
   That is the cheapest available spend lever and it changes no strategy
   behaviour, but it cannot be justified or measured while the meter is
   dead.
+
+## Resolved 2026-08-11 — recovered, cross-checked, and the caution kept
+
+Re-measured through the live MCP connection: the roster meter is alive
+(Undertow 0.84517886, Breakwater 0.45158407, Vanguard 0.03756878) and agrees
+to the cent with `get_agents_hub`'s independently-computed `cost24hUsd`. The
+pinned-zero window of 2026-08-09 was a temporary platform-side metering
+outage — the #100 flapping family — not a rename or a billing change. The
+detail read stays orphaned at 0, which is the sibling item's finding,
+unchanged.
+
+Fleet spend is $1.34/24h, down from $3.39 after the fleet re-organisation —
+roughly 1:1 with realized trading loss instead of 4:1. That is the input the
+operator's accept-vs-cut ruling was waiting on.
+
+The caution outlives the close: this meter has one recorded lying window, so
+a sudden exact zero on a working fleet reads as "unmeasurable right now",
+never "spend stopped" — and the roster-vs-hub cross-check is the cheap test.
+The hub surface is filed as `the-hub-answers-the-fleet-in-one-call` (#129).

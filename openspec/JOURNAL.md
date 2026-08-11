@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-11 (the spend meter) — recovered, cross-checked, and #96 closes without a line of code
+
+**`the-spend-meter-reads-zero-while-agents-run` resolved by measurement.** The
+first act of the newly-connected BattleGrid MCP session was re-reading the
+meter #96 declared dead, and the finding inverted twice in ten minutes:
+
+1. `get_agents_hub` — a tool the 2026-08-09 sweep never saw — carries
+   `cost24hUsd` per agent and `summary.totalCost24hUsd`, all live and
+   plausible.
+2. The roster's `last24hCostUsd`, the copy the product renders, **recovered
+   too** — and agrees with the hub to the cent (0.84517886 vs 0.85 on
+   Undertow, same instant). The pinned-zero window was a temporary platform
+   metering outage in the #100 flapping family. The detail read stays
+   orphaned at 0 — the 2026-08-06 divergence, unchanged through two majors.
+
+So the product's spend section works again as built, with no change: it
+sources the roster row, which was the right call when it was made and is
+again. The surface behaved correctly throughout; its input lied for a window.
+
+**The number the operator was waiting on**: fleet spend is **$1.34/24h**,
+down from $3.39 after the fleet re-organisation (THE .0 and Volatilis
+archived; Breakwater/Undertow/Vanguard on GLM-5.2, $45 budgets, strategies
+Salamis/Cannae/Trafalgar). Against ~$1.41 realized trading loss, model spend
+runs ~1:1 with trading P&L now, not 4:1 — the accept-as-tuition versus
+cut-volume ruling finally has its input.
+
+**Filed rather than built**: `the-hub-answers-the-fleet-in-one-call` (#129) —
+the hub's fleet spend total, the conversational-message meter (0/100, an
+account ceiling nothing reads), and the server-decided `hubStatus`
+precedence. The two-sources discipline is written into the item: the hub's
+total is a fact only it publishes; the per-agent figure stays where it lives.
+
+The caution outlives the close and is written into both items: this meter has
+one recorded lying window, so a sudden exact zero on a working fleet is
+"unmeasurable right now", never "spend stopped" — and roster-vs-hub is the
+cheap cross-check.
+
 ## 2026-08-11 (the protection that actually rests) — software's stop vs the exchange's
 
 **`the-protection-that-actually-rests` archived.** Each open position on
