@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-08-11 (the management status) — observed one value deep, and the p2's precondition is the operator's to answer
+
+**#134's first step done.** `list_user_active_positions` live: 8 open
+positions across two agents, and every row carries v17's two new fields as
+plain strings — `breakEvenStatus: "ACTIVE"`, `trailingStatus: "ACTIVE"`,
+all eight identical. Real and populated, but one value deep: the rest of
+the vocabulary and the disabled-management case are unobserved, and both
+are recorded as the limits on the item. The honest build (verbatim words
+beside the resting legs, unknown values rendering as themselves, no enum
+from a single member) is now de-risked and queued.
+
+Also noted while picking work: the p2 `recorded-signals-are-not-yet-evidence`
+(#94) gates itself on "do not start until the record holds enough
+captures" — and the record lives on the operator's deployment, not in this
+session's ephemeral database. Whether the recorder cron has been running
+since 2026-08-07 and how many captures it holds is the operator's fact;
+the item stays queued behind that answer. Scratch probe run once and
+deleted. No code changed.
+
 ## 2026-08-11 (the conditions speak) — the evidence layer rendered, nothing recomputed
 
 **`an-evaluation-explains-its-conditions` archived**, closing #133 the same
