@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-07
-updated: 2026-08-07
+updated: 2026-08-11
 change: ""
 capability: signal-recording
 github: "94"
@@ -54,3 +54,10 @@ Do not start until the record holds enough captures to say anything —
 analysis over three data points upgrades no tier. Statistical honesty is the
 hard part: every figure needs its sample size beside it, the same rule the
 explorer already follows for win rates (small samples promoted by sorting).
+
+**Gate answered 2026-08-11: the count is zero.** No persistent deployment
+exists, so the recorder has never run and the durable record is empty
+(#145 has the full answer and the host setup). This item stays ruled out
+until a host runs the cron and the record accumulates — the earliest
+possible record start is whenever that happens; everything before it is
+permanently unrecorded.

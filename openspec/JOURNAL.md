@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-11 (the recorder question answered) — it has never run, and the gap is already four days
+
+**Did**: #145 answered with the operator, live. The operator confirmed no
+persistent deployment exists — Grid-Commander has only ever run in
+ephemeral sessions — so the recorder cron was never installed anywhere,
+the durable record holds zero captures, and **the gap starts at the
+2026-08-07 ship date and widens daily** until a host exists. The pipeline
+itself was proven with the operator's key in this session: freshness gate
+green (platform still 17.2.0), then one real capture run — exit 0, all 20
+radar deployments at 1h, 84 signals each — into this container's
+throwaway database, discarded with it. Filed the answer in
+`confirm-the-recorder-is-running` (with the one-time host setup: four env
+vars, the base64-32 encryption key requirement the recorder enforces,
+migrate, hand-run to exit 0, then the cron line) and noted #94's gate as
+answered-at-zero in `recorded-signals-are-not-yet-evidence`. HANDOFF
+updated to match.
+
+**State**: #145's item stays open — the check is answered but the fix
+(a host running the cron) is the operator's choice, not made yet. #94
+stays ruled out at zero captures.
+
+**Next**: The operator picks a host; the item has the whole recipe. Every
+day before that is permanently unrecorded — this is now the only thing on
+the board where waiting has a daily cost.
+
+**Watch out**: The recorder wants `TOKEN_ENCRYPTION_KEY` as 32 bytes
+**base64** — `openssl rand -hex 32` is refused with "must be 32 bytes,
+base64-encoded". And PostgreSQL in these containers still dies quietly;
+`pg_ctlcluster 16 main start` before blaming the code.
+
 ## 2026-08-11 (the handoff catches up) — every number in HANDOFF.md re-verified against reality
 
 **Did**: Audited HANDOFF.md for internal inconsistencies and re-verified
