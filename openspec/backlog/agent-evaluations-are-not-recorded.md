@@ -2,10 +2,10 @@
 id: agent-evaluations-are-not-recorded
 title: Persist agent evaluations before the platform's retention discards them
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-07
-updated: 2026-08-07
+updated: 2026-08-11
 change: ""
 capability: signal-recording
 github: "99"
@@ -48,3 +48,41 @@ reachable evaluations on both accounts and establish whether a horizon is
 visible at all. If retention proves deep, this item may stay closed-as-
 unneeded. If built, it belongs in `signal-recording` beside the capture
 store, keyed by the platform's own log ids (idempotent re-capture).
+
+## Resolved 2026-08-11 — measured from both ends; no horizon visible; sentinels recorded
+
+The measurement this item called for, run before anything was built:
+`list_signal_logs` per agent with `limit: 1` — `page: 1` for the newest
+entry, `page: total` for the oldest. Read-only, both accounts, 2026-08-11
+~09:00Z.
+
+| agent | state | total | newest `evaluatedAt` | oldest `evaluatedAt` |
+|---|---|---|---|---|
+| Undertow (`d0f6829f-96f8-468d-8797-4a04e8dc8e37`) | live | 113 | 2026-08-11T09:03:28.108Z | 2026-08-08T13:00:25.056Z |
+| THE .0 (`26a60e91-6b5c-4a64-8138-04705ec2cf80`) | archived | 79 | 2026-08-08T06:01:57.853Z | 2026-07-26T06:18:10.030Z |
+
+- A live agent's record reaches its creation: Undertow was created
+  2026-08-08T12:53Z and its oldest evaluation is stamped seven minutes
+  later. Nothing in its lifetime has been trimmed.
+- Archival does not purge the record: THE .0, archived in the 2026-08-08
+  fleet re-organisation, still serves all 79 evaluations three days on,
+  reaching sixteen days back.
+- List rows carry 23 keys; the ~72-signal detail stays behind
+  `get_signal_log`.
+
+Closed as unneeded per this item's own rule. What the read does **not**
+prove, kept as two sentinels — each check is two `limit: 1` reads, and
+either moving reopens this item:
+
+1. **Age.** The reachable record is only sixteen days old, so a 30- or
+   90-day trim would be invisible today. THE .0 is archived and writes
+   nothing new, so its oldest `evaluatedAt` (`2026-07-26T06:18:10.030Z`)
+   and `total` (79) can only change if the platform trims. Gone or moved
+   forward ⇒ age retention exists.
+2. **Count.** One read cannot rule out a count cap. Undertow evaluates
+   ~38/day; its `total` plateauing while its oldest advances ⇒ a count cap
+   exists.
+
+Whether 2026-07-26 is THE .0's first evaluation or an already-trimmed floor
+was not answerable from this read — its creation date was not probed. The
+age sentinel catches any future movement either way.
