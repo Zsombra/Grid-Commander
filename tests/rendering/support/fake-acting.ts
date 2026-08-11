@@ -4,6 +4,7 @@ import {
   DescribeDeployQuery,
   DescribeUndeployQuery,
 } from '@/application/use-cases/deploy-agent.command.js';
+import { ReadFleetSpendQuery } from '@/application/use-cases/read-fleet-spend.query.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
 import { ReadRecordCoverageQuery } from '@/application/use-cases/read-record-coverage.query.js';
@@ -120,6 +121,7 @@ export function actingWith({
 
   const app = {
     listAgents: new ListAgentsQuery(agents),
+    readFleetSpend: new ReadFleetSpendQuery(agents),
     readProposals: new ReadProposalsQuery(proposals, clock),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),

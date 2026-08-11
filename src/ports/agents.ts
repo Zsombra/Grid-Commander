@@ -34,6 +34,18 @@ export interface AgentsPort {
   /** Roster and capacity. Both come back from the same call. */
   listAgents(params: { userId: string; accessToken: string }): Promise<RosterResult>;
 
+  /**
+   * What the whole fleet spent on model calls in the last 24 hours, as the
+   * platform totals it.
+   *
+   * `get_agents_hub`'s summary is the only place this total exists on the
+   * 114-tool surface (observed 2026-08-11, #129). The per-agent figure lives
+   * on the roster row and is deliberately not read from here — two sources of
+   * one rendered fact are two things that can disagree, and this account has
+   * already watched that happen on exactly this field.
+   */
+  readFleetSpend(params: { userId: string; accessToken: string }): Promise<FleetSpendResult>;
+
   getAgent(params: { userId: string; accessToken: string; agentId: string }): Promise<Agent>;
 
   readCatalog(params: { userId: string; accessToken: string }): Promise<CatalogResult>;
@@ -676,4 +688,16 @@ export type ThoughtLogResult =
 export type JournalResult =
   | { readonly kind: 'record'; readonly record: AgentRecord }
   | { readonly kind: 'empty' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * The platform's own fleet totals. `null` where the summary carried no
+ * readable figure — never zero, which is a spend, not the absence of one.
+ */
+export type FleetSpendResult =
+  | {
+      readonly kind: 'spend';
+      readonly totalCost24hUsd: number | null;
+      readonly activeAgents: number | null;
+    }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

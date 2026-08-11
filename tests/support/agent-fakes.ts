@@ -27,6 +27,7 @@ import type {
   PositionAuditResult,
   TradeChart,
   AuditEvent,
+  FleetSpendResult,
 } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
@@ -63,6 +64,13 @@ export class FakeAgentsPort implements AgentsPort {
     if (this.slots) {
       this.slots = { ...this.slots, used: seed.length, remaining: this.slots.limit - seed.length };
     }
+  }
+
+  /** The hub's fleet totals — mirrors the live read of 2026-08-11 (#129). */
+  fleetSpend: FleetSpendResult = { kind: 'spend', totalCost24hUsd: 1.34, activeAgents: 3 };
+
+  async readFleetSpend(): Promise<FleetSpendResult> {
+    return this.fleetSpend;
   }
 
   async listAgents(): Promise<RosterResult> {

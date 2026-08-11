@@ -19,6 +19,7 @@ import type {
   QualificationResult,
   TradeChartResult,
   PositionAuditResult,
+  FleetSpendResult,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { isSilent } from '@/domain/agent/journal.js';
@@ -59,6 +60,7 @@ import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
 
 const TOOLS = {
   list: 'list_intelligence_agents',
+  hub: 'get_agents_hub',
   get: 'get_intelligence_agent',
   create: 'create_intelligence_agent',
   update: 'update_intelligence_agent',
@@ -95,6 +97,32 @@ const MAX_TICKERS_PER_CALL = 12;
 
 export class McpAgentAdapter implements AgentsPort {
   constructor(private readonly battlegrid: BattleGridPort) {}
+
+  async readFleetSpend(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<FleetSpendResult> {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await this.call(params, TOOLS.hub, {});
+    } catch (err) {
+      return unreadable(err);
+    }
+    const summary = payload['summary'];
+    // A hub answer without its summary is a read that did not answer the
+    // question — not a fleet that spent nothing.
+    if (typeof summary !== 'object' || summary === null) {
+      return malformed('the hub answer carried no summary');
+    }
+    const s = summary as Record<string, unknown>;
+    const asNum = (v: unknown): number | null =>
+      typeof v === 'number' && Number.isFinite(v) ? v : null;
+    return {
+      kind: 'spend',
+      totalCost24hUsd: asNum(s['totalCost24hUsd']),
+      activeAgents: asNum(s['activeAgents']),
+    };
+  }
 
   async listAgents(params: { userId: string; accessToken: string }): Promise<RosterResult> {
     let payload: Record<string, unknown>;
