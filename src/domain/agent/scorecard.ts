@@ -98,6 +98,62 @@ export interface ThinkingCost {
   readonly errorMessage: string | null;
 }
 
+/**
+ * One clause of a condition, as the platform evaluated it.
+ *
+ * Everything is a verbatim string. `operand` is the value the platform
+ * observed at evaluation time and `literal` the bound the condition holds
+ * it to; both arrive as decimal strings whose unit belongs to the column
+ * they reference (a funding rate, a price, a count), so parsing them here
+ * would strip the one thing that makes them safe to show — that they are
+ * the platform's own words.
+ */
+export interface ConditionClause {
+  /** `clause` on everything observed; carried for whatever else arrives. */
+  readonly kind: string | null;
+  readonly sectionKey: string | null;
+  readonly header: string | null;
+  /** `gte`, `lte`, … — the platform's op vocabulary, verbatim. */
+  readonly op: string | null;
+  /** The observed value at evaluation time. */
+  readonly operand: string | null;
+  /** The bound the condition holds it to. */
+  readonly literal: string | null;
+  readonly outcome: string | null;
+}
+
+/** One condition's verdict, with the clauses that produced it. */
+export interface ConditionOutcome {
+  readonly conditionKey: string;
+  readonly name: string | null;
+  /** `TRUE` / `FALSE` / whatever the platform says — verbatim. */
+  readonly outcome: string | null;
+  readonly required: boolean;
+  readonly evidence: readonly ConditionClause[];
+  readonly provisional: boolean;
+}
+
+/**
+ * The strategy's conditions, evaluated — v17.2.0's addition to the owner's
+ * evaluation detail.
+ *
+ * `verdict` and `decidedBy` have only ever been observed null (#133): the
+ * account's one condition is `required: false`, so the condition system has
+ * never been seen deciding. They are carried verbatim and rendered only
+ * when the platform says something — modelled as meaningful nowhere.
+ */
+export interface ConditionReport {
+  readonly outcomes: readonly ConditionOutcome[];
+  readonly trueCount: number | null;
+  readonly total: number | null;
+  readonly unresolvedCount: number | null;
+  /** The strategy revision that defined these conditions. */
+  readonly strategyRevision: number | null;
+  readonly provisional: boolean;
+  readonly verdict: string | null;
+  readonly decidedBy: string | null;
+}
+
 /** One evaluation, in full — the shape both surfaces render. */
 export interface EvaluationScorecard {
   readonly coinTicker: string | null;
@@ -113,4 +169,9 @@ export interface EvaluationScorecard {
   readonly chain: EvaluationChain;
   /** Present only for an agent the user owns. */
   readonly cost: ThinkingCost | null;
+  /**
+   * The strategy's conditions as evaluated, or null when the platform
+   * published none — a real state, not a failure and not "all passed".
+   */
+  readonly conditions: ConditionReport | null;
 }

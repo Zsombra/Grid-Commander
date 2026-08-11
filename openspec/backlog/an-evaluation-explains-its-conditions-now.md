@@ -2,11 +2,11 @@
 id: an-evaluation-explains-its-conditions-now
 title: v17 gave get_signal_log a conditionEvaluation block — the evidence behind every skip, unread
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: "an-evaluation-explains-its-conditions"
 capability: agent-understanding
 github: "133"
 blocked_by: []
@@ -90,3 +90,20 @@ What that establishes:
   N_OF group, where the outcome-level `counts` presumably populates) has
   not been seen. Observe on a strategy with a required condition before
   modelling those two fields as meaningful.
+
+## Built 2026-08-11 — `an-evaluation-explains-its-conditions`
+
+The evaluation detail page (`/agents/[id]/pipeline/[logId]`) now says what
+the strategy's conditions said: per condition the platform's verdict with
+its clause evidence — the observed value beside the threshold, verbatim,
+known ops as symbols and unknown ops as themselves — plus the tally, the
+strategy revision, and the platform's own `provisional` word. No block
+published renders no section (a real state, not "all passed"). Mapped once
+in the shared scorecard mapper; the public path lands on null by
+construction because the public tool never declares the block.
+
+The gap closes honestly rather than staying open as work: `verdict` and
+`decidedBy` are carried verbatim and render the platform's words the day
+they are populated — nothing further to build for them, only a fact to
+notice when a required condition first decides something. Nameless
+outcome rows are dropped, not shown nameless.

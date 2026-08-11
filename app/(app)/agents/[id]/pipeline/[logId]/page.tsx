@@ -1,6 +1,6 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import type { ConsultedSignal } from '@/ports/agents.js';
+import type { ConditionClause, ConsultedSignal } from '@/ports/agents.js';
 import { SIMULATION_SIGNAL_CAP } from '@/ports/strategies.js';
 import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
@@ -22,6 +22,27 @@ import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 const pct = (v: number | null): string => (v === null ? 'not measured' : `${Math.round(v)}%`);
 const usd = (v: number | null): string =>
   v === null ? '—' : `${v < 0 ? '−' : ''}$${Math.abs(v).toFixed(2)}`;
+
+/**
+ * One clause as a sentence: what was demanded, what was observed, how it
+ * went. The comparison is the platform's — nothing here recomputes it. A
+ * known op renders as its symbol; anything else renders verbatim, because
+ * an op this page has never seen still deserves to be shown, not guessed.
+ */
+const OP_SYMBOL: Readonly<Record<string, string>> = {
+  lt: '<',
+  lte: '≤',
+  gte: '≥',
+  gt: '>',
+  is: '=',
+};
+function clauseSentence(c: ConditionClause): string {
+  const op = c.op === null ? null : (OP_SYMBOL[c.op] ?? c.op);
+  const demanded = [c.header, op, c.literal].filter((p) => p !== null).join(' ');
+  const observed = c.operand !== null ? ` — observed ${c.operand}` : '';
+  const went = c.outcome !== null ? ` — ${c.outcome}` : '';
+  return `${demanded || 'an unnamed clause'}${observed}${went}`;
+}
 
 /** Signals in the order the platform's modules appear, module by module. */
 function byModule(signals: readonly ConsultedSignal[]): [string, ConsultedSignal[]][] {
@@ -231,6 +252,55 @@ export default async function OwnEvaluationPage({
           ) : null}
         </div>
       </section>
+
+      {/*
+        The strategy's conditions, as the platform evaluated them — v17.2.0's
+        evidence layer (#133). Everything shown is the platform's own
+        comparison: what it observed beside what the condition demanded,
+        clause by clause. Nothing here re-evaluates anything. No block, no
+        section — the platform publishing no condition evaluation is a real
+        state, not "all conditions passed".
+      */}
+      {e.conditions ? (
+        <section className="space-y-2">
+          <h2 className="text-base font-medium">What the strategy&apos;s conditions said</h2>
+          <p className="text-sm">
+            {e.conditions.total !== null
+              ? `${e.conditions.trueCount ?? '—'} of ${e.conditions.total} true` +
+                (e.conditions.unresolvedCount ? ` · ${e.conditions.unresolvedCount} unresolved` : '')
+              : 'BattleGrid published no tally.'}
+            {e.conditions.strategyRevision !== null
+              ? ` — as defined by strategy revision ${e.conditions.strategyRevision}`
+              : ''}
+            {/* The platform's own word for "not deciding anything here". */}
+            {e.conditions.provisional ? ' · provisional' : ''}
+          </p>
+          {/* Only ever observed null; rendered verbatim the day it speaks. */}
+          {e.conditions.verdict !== null || e.conditions.decidedBy !== null ? (
+            <p className="text-sm">
+              {e.conditions.verdict !== null ? `Verdict: ${e.conditions.verdict}` : ''}
+              {e.conditions.decidedBy !== null ? ` — decided by ${e.conditions.decidedBy}` : ''}
+            </p>
+          ) : null}
+          <ul className="space-y-2">
+            {e.conditions.outcomes.map((c) => (
+              <li key={c.conditionKey} className="rounded border p-3 text-sm space-y-1">
+                <p className="font-medium">
+                  {`${c.name ?? c.conditionKey}${c.outcome ? ` — ${c.outcome}` : ''}${c.required ? ' · required' : ''}${c.provisional ? ' · provisional' : ''}`}
+                </p>
+                {c.evidence.map((clause, i) => (
+                  <p key={i}>
+                    {clauseSentence(clause)}
+                    {clause.sectionKey ? (
+                      <span className="text-text-secondary">{` · from ${clause.sectionKey}`}</span>
+                    ) : null}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {e.attributions.length > 0 ? (
         <section className="space-y-2">

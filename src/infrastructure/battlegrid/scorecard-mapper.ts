@@ -1,4 +1,7 @@
 import type {
+  ConditionClause,
+  ConditionOutcome,
+  ConditionReport,
   ConsultedSignal,
   EvaluationChain,
   EvaluationScorecard,
@@ -124,6 +127,61 @@ function mapChain(pipeline: Record<string, unknown>): EvaluationChain {
   };
 }
 
+function mapClause(raw: unknown): ConditionClause {
+  const c = obj(raw);
+  return {
+    kind: str(c['kind']),
+    sectionKey: str(c['sectionKey']),
+    header: str(c['header']),
+    op: str(c['op']),
+    operand: str(c['operand']),
+    literal: str(c['literal']),
+    outcome: str(c['outcome']),
+  };
+}
+
+function mapConditionOutcome(raw: unknown): ConditionOutcome | null {
+  const o = obj(raw);
+  const conditionKey = str(o['conditionKey']);
+  // A verdict nobody can attribute to a condition cannot be looked up or
+  // acted on — dropped rather than shown nameless, like an id-less signal.
+  if (conditionKey === null) return null;
+  return {
+    conditionKey,
+    name: str(o['name']),
+    outcome: str(o['outcome']),
+    required: o['required'] === true,
+    evidence: list(o['evidence']).map(mapClause),
+    provisional: o['provisional'] === true,
+  };
+}
+
+/**
+ * The condition evaluation, or null when the platform published none.
+ *
+ * v17.2.0's block, observed populated on OPEN, SKIPPED and PASS alike
+ * (#133). Absent and null map the same way on purpose: the public detail
+ * tool does not declare the block at all, so the public path lands here
+ * without a special case.
+ */
+function mapConditions(raw: unknown): ConditionReport | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const v = raw as Record<string, unknown>;
+  const counts = obj(v['counts']);
+  return {
+    outcomes: list(v['outcomes'])
+      .map(mapConditionOutcome)
+      .filter((o): o is ConditionOutcome => o !== null),
+    trueCount: num(counts['trueCount']),
+    total: num(counts['total']),
+    unresolvedCount: num(counts['unresolvedCount']),
+    strategyRevision: num(v['strategyRevision']),
+    provisional: v['provisional'] === true,
+    verdict: str(v['verdict']),
+    decidedBy: str(v['decidedBy']),
+  };
+}
+
 /**
  * The `log` object both tools return, or null when nothing is published.
  *
@@ -162,5 +220,6 @@ export function mapEvaluationScorecard(
     // and a mapper that reached for it there would be asking a question it
     // already knows the answer to.
     cost: opts.owned ? mapCost(obj(pipeline['attempt'])['ownerView']) : null,
+    conditions: mapConditions(log['conditionEvaluation']),
   };
 }

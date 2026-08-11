@@ -218,6 +218,9 @@ export function anEvaluationDetail(over: Partial<EvaluationDetail> = {}): Evalua
       tradeOutcome: 'LOSS',
       netPnl: -0.402459,
     },
+    // The public detail tool does not declare the v17 condition block, so a
+    // competitor's evaluation genuinely has none to show.
+    conditions: null,
     ...over,
   };
 }
