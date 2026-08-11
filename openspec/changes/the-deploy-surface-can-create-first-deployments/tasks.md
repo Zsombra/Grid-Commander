@@ -1,6 +1,6 @@
 # Tasks
 
-- [ ] **T1: Widen `expectedRevision` through the type chain**
+- [x] **T1: Widen `expectedRevision` through the type chain**
   - `RadarPort.upsertDeployment`: `expectedRevision: number` → `number | null`
   - `McpRadarAdapter.upsertDeployment`: pass `null` through to the MCP args
     (the platform accepts it as the first-deploy signal)
@@ -9,7 +9,7 @@
     path for coins with no deployment
   - Traces to: Requirement B (first-deploy path)
 
-- [ ] **T2: Remove the first-deploy refusal from `DescribeDeployQuery`**
+- [x] **T2: Remove the first-deploy refusal from `DescribeDeployQuery`**
   - Remove the `if (!existing)` branch that refuses with "BattleGrid's API
     refuses to create a first one"
   - Add the first-deploy describe path: when no existing deployment is found,
@@ -20,7 +20,7 @@
     and replacements
   - Traces to: Requirement B (first-deploy scenario)
 
-- [ ] **T3: Handle null `expectedRevision` in the deploy page**
+- [x] **T3: Handle null `expectedRevision` in the deploy page**
   - The hidden form field currently uses `requiredInteger(formData,
     'expectedRevision')` in the server action, which rejects null
   - Change to accept either an integer or a sentinel for null (e.g. empty
@@ -31,7 +31,7 @@
     must be removed or updated — it is no longer a constraint
   - Traces to: Requirement B (first-deploy scenario)
 
-- [ ] **T4: Update unit tests**
+- [x] **T4: Update unit tests**
   - `deploy.test.ts:183` — the "refuses an unoccupied coin" test: change to
     assert a proposal with `expectedRevision: null` and a consequence that
     names the agent and market without a replacement
@@ -41,7 +41,7 @@
     the first-deploy payload shape with `expectedRevision: null`
   - Traces to: Requirement B (all scenarios)
 
-- [ ] **T5: Update the live probe sentinel**
+- [x] **T5: Update the live probe sentinel**
   - `radar-probe.test.ts` test 1 ("the platform refuses every expectedRevision
     for a coin with no policy"): this sends `expectedRevision: 1` and expects
     a conflict — it still passes because the platform rejects `1` for a coin
@@ -54,7 +54,7 @@
     first-deploy it back. Use the slot-shuffle pattern
   - Traces to: Requirement B (first-deploy scenario)
 
-- [ ] **T6: Update the spec (this change's delta)**
+- [x] **T6: Update the spec (this change's delta)**
   - Already written as the delta spec in this change folder
   - The archiver will merge it on `/archive`
   - Traces to: Requirement B
