@@ -17,6 +17,7 @@ import {
   StartConnectionCommand,
 } from './application/use-cases/connect.commands.js';
 import { DescribeArchiveQuery, SetLifecycleCommand } from './application/use-cases/lifecycle.command.js';
+import { ReadFleetSpendQuery } from './application/use-cases/read-fleet-spend.query.js';
 import { ListAgentsQuery } from './application/use-cases/list-agents.query.js';
 import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
@@ -277,6 +278,8 @@ export function app(cookies: CookieStore) {
     listAudit: new ListAuditQuery(i.audit),
 
     listAgents: new ListAgentsQuery(i.agents),
+    // The platform's own fleet total — the only place it exists (#129).
+    readFleetSpend: new ReadFleetSpendQuery(i.agents),
     createAgent: new CreateAgentCommand(i.agents),
     readCatalog: new ReadCatalogQuery(i.agents),
     updateAgent: new UpdateAgentCommand(i.agents),

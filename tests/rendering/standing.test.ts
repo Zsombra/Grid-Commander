@@ -175,3 +175,51 @@ describe('an archived agent the radar says is holding a position', () => {
     expect(r.text).toContain('Holding the position on SP500');
   });
 });
+
+describe('the fleet spend line, where the fleet is', () => {
+  /** The fleet world, with the agents port in hand so spend can be scripted. */
+  function fleetWorld() {
+    const agents = new FakeAgentsPort([ACTIVE]);
+    const radar = new RenderRadarPort();
+    radar.result = { kind: 'deployments', deployments: [] };
+    current = actingWith({ agents, radar });
+    return agents;
+  }
+
+  it('renders the platform’s own total beside the active count', async () => {
+    // The fake mirrors the live read of 2026-08-11: $1.34 across 3 active.
+    fleetWorld();
+    const r = await roster();
+    expect(r.text).toContain('$1.34 on model calls in the last 24 hours');
+    expect(r.text).toContain('across 3 active agents');
+    expect(r.text).toContain('BattleGrid’s own total');
+  });
+
+  it('says a missing figure is not a spend of zero', async () => {
+    const agents = fleetWorld();
+    agents.fleetSpend = { kind: 'spend', totalCost24hUsd: null, activeAgents: 3 };
+    const r = await roster();
+    expect(r.text).toContain('reported no figure');
+    expect(r.text).toContain('not a spend of zero');
+    expect(r.text).not.toContain('$0.00');
+  });
+
+  it('loses only the line when the hub will not answer', async () => {
+    const agents = fleetWorld();
+    agents.fleetSpend = { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    const r = await roster();
+    expect(r.text).toContain('could not be read');
+    expect(r.text).toContain('This does not mean');
+    // The roster still stands.
+    expect(r.headings[0]).toBe('Agents');
+  });
+
+  it('renders the line even when the roster itself cannot be read', async () => {
+    const agents = fleetWorld();
+    agents.rosterReadable = false;
+    const r = await roster();
+    // Both directions of independence: the one number the spend ruling runs
+    // on does not vanish because the roster read failed.
+    expect(r.text).toContain('$1.34 on model calls');
+  });
+});

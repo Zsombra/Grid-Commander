@@ -1,5 +1,28 @@
 # Journal
 
+## 2026-08-11 (the fleet spend line) — the ruling's number, rendered where the fleet is
+
+**`the-fleet-spend-line` archived**, closing #129. `/agents` now says what the
+fleet spent on model calls — the hub's own `totalCost24hUsd` beside its
+active-agent count, labelled as BattleGrid's figure. The number the
+accept-as-tuition-or-cut-volume ruling runs on (#96) is on a surface instead
+of behind a hand-made platform call: **$1.34/24h across 3 active agents** at
+the fixture's mirror of the live read.
+
+The two-sources discipline held the scope: the total renders because only the
+hub publishes it; the per-agent figure keeps its home on each agent's limits
+page; no rival sum, no on-screen roster-vs-hub comparison — the cross-check
+stays diagnostic lore in the items that record it. The message meter (0/100)
+and `hubStatus` are declined with reasons rather than bolted on.
+
+Independence in both directions, tested both ways: an unreadable hub costs one
+line and the roster stands; an unreadable roster does not silence the one
+number the ruling needs. A missing figure renders as "not a spend of zero" —
+the distinction the whole spend saga turned on, now in copy.
+
+BattleGrid's MCP connection dropped again mid-change (the flapping continues);
+nothing here needed it — the shapes were recorded in #129 before it went.
+
 ## 2026-08-11 (the spend meter) — recovered, cross-checked, and #96 closes without a line of code
 
 **`the-spend-meter-reads-zero-while-agents-run` resolved by measurement.** The

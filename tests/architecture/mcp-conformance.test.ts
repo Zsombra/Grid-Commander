@@ -190,6 +190,7 @@ describe('the product reads fields the tool actually returns', () => {
     { tool: 'list_intelligence_agents', field: 'slotUsage' },
     { tool: 'list_strategies', field: 'strategies' },
     { tool: 'get_open_orders', field: 'orders' },
+    { tool: 'get_agents_hub', field: 'summary' },
   ];
 
   for (const { tool, field } of READS) {
