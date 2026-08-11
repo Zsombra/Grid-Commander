@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-11 (the merge round) — four PRs reviewed, gated and landed; zero P1s remain
+
+**Did**: The operator authorized review→CI→merge on the open PRs, in
+order. **#151** (session records: HANDOFF reconciliation, #145 closed,
+tsx pinned) merged first — its gates had run green on its head all
+session. **#149** (first deployments through the deploy surface) needed
+one real fix found by the typecheck gate: `DescribeUndeployResult`
+aliased the deploy result, so the `expectedRevision: number | null`
+widening leaked into undeploy — whose describe always binds an existing
+revision and whose perform requires a number — and the undeploy page's
+hidden field failed tsc. Undeploy now declares its own non-null type;
+vitest alone had not caught it (it does not typecheck). **#148** (dead
+agent fields retired) carried its completed change unarchived — archived
+on the branch before merging, so main never held an active change; its
+HANDOFF edits were superseded by main's fresher reconciliation and
+resolved in main's favor. **#150** (trade-level policy readable) arrived
+pre-archived and clean, and closed the last open P1. Every merge ran the
+full local gate set on the merged state first (typecheck, lint, 2123
+vitest, build, schema-drift, 85 db — this repo's CI is local by design).
+JOURNAL conflicts were resolved by keeping both sessions' entries, all
+three rounds.
+
+**State**: `main` holds 149 archived changes, 13 capabilities, 21 open
+backlog items, **no open P1s**, and one open PR — #82, the
+reconciliation record, deliberately left for the operator to read.
+Suites green at every merge point.
+
+**Next**: #94 when the record (accumulating hourly since this evening)
+holds days of depth. The recording host should `git pull` + `npm install`
+at its convenience — tsx now resolves locally and the deploy surface
+gained first deployments.
+
+**Watch out**: A type alias between two describe results is how #149's
+defect happened — when two ceremonies share a shape, the moment one
+diverges the alias must split, and only tsc notices. And three parallel
+sessions all prepending JOURNAL entries guarantees merge conflicts; the
+union resolution (keep both, markers stripped) was right every time.
 ## 2026-08-11 — v15-trade-level-policy: read, display, refuse to edit
 
 **Did**: Proposed, implemented, verified, and archived
@@ -28,6 +65,148 @@ component rendering test. The section is straightforward JSX reusing the
 policy section should add one. The compiler inertness is upstream — when
 BattleGrid ships a working compiler for these fields, the inert-state
 notice and the `TradeLevelPolicy | null` nullability can be revisited.
+## 2026-08-11 — retire dead agent fields (arenaChallengeEnabled, overlayText)
+
+**Did**: Picked up backlog item `two-agent-owned-fields-no-tool-can-write`
+(#113) — both fields were dropped from BattleGrid between v9 and v11 but
+still modelled as constants. Proposed as `dead-agent-fields-retired`
+(lite, skip_specs). Removed from: `Agent` type, `AGENT_OWNED` tuple,
+mapper (`RawAgent` + mapping lines), create port param, adapter create
+signature + payload, create command DTO, describe-edit consequence branch,
+and `propose_agent_change` tool description. Fixed five test files. All
+quality gates green (typecheck, lint, 2121 tests, build, openspec
+validate). #113 closed, backlog item marked done. PR #148.
+
+**State**: Change `dead-agent-fields-retired` complete, awaiting merge of
+PR #148. 24 open backlog items (was 25). All suites green.
+
+**Next**: Same as previous session — operator answers #145 to unlock #94.
+For a product session: `/board`, then the p3 tail.
+## 2026-08-11 — first deployments through the product's own ceremony, live-confirmed and archived
+
+**Did**: Implemented, verified, live-confirmed, and archived
+`the-deploy-surface-can-create-first-deployments` (PR #149, closing #109).
+The deploy ceremony now carries first deployments (`expectedRevision: null`)
+alongside replacements: `DescribeDeployQuery` branches on whether the coin
+is occupied, `nullableInteger` round-trips null through the HTML hidden field,
+the live probe gained a slot-shuffle test (undeploy a coin, first-deploy it
+back with null revision, verify it lands). 2123 vitest tests green; the
+concurrency architecture guard caught `??` on the hidden field and the fix
+was a ternary. Live-confirmed against ENA on the real platform.
+
+**State**: No active changes. 24 open backlog items (closed #109). PR #149
+ready for review. Board health: 0 errors, 11 warnings (the 4
+archived-change warnings are pre-existing from earlier sessions; the
+`assistant` capability warnings are expected — no spec yet).
+
+**Next**: P1 `v15-trade-level-policy-is-declared-but-inert` — `/propose` it.
+
+**Watch out**: The slot-shuffle live probe needs at least one enabled
+single-slot deployment on the account; if the radar layout changes it skips
+rather than fails. `nullableInteger` uses `=== null ? '' :` not `??` —
+the concurrency guard (`concurrency.test.ts`) forbids `??` with non-null
+fallbacks on identifiers to prevent fabricated values. The 4
+archived-change backlog warnings (`oauth-path-may-be-dead-weight`,
+`performance-and-allocation-are-unmodelled`, `the-payload-carries-more-than-is-read`,
+`two-read-tools-do-not-answer`) are intentionally open — each documents an
+ongoing question that outlived its linked change.
+## 2026-08-11 (the record begins) — a host exists, and the gap stopped growing at four days
+
+**Did**: The operator chose their Windows machine and, walked through it
+live, stood the recorder up the same day the gap was measured. **The
+record's first persisted capture is 2026-08-11** — run `6c6a6fc0`,
+platform 17.2.0, all 20 radar deployments at 1h, 84 signals each — into
+PostgreSQL 18 on that machine, with an hourly Scheduled Task
+(`GridCommanderRecorder`, :17 past, `-WakeToRun -StartWhenAvailable`)
+registered and Ready. The Windows recipe (execution policy, `record.ps1`,
+`Register-ScheduledTask`, the PostgreSQL-18-path and password-typo traps)
+is filed in `confirm-the-recorder-is-running`, **closed the same evening
+when the unattended fire was proven** — `Start-ScheduledTask` through the
+service machinery, `LastTaskResult : 0`, a result the wrapper only
+produces when the recorder recorded. The walk exposed a
+real repo gap: `npx tsx` prompts to download tsx **inside the unattended
+run** because tsx is not a dependency — filed as
+`tsx-is-not-a-dependency` (#152), worked around on the host with
+`npx --yes`.
+
+**State**: The four-day gap (2026-08-07 → 2026-08-11) is permanent and
+documented; everything after it is being captured hourly, machine-sleep
+holes excepted. #94's gate moves from "answered at zero" to "accumulating
+since 2026-08-11".
+
+**Next**: #94 waits for the record to hold enough to say anything —
+days, not hours.
+
+**Addendum, same evening**: the tsx fix did not wait —
+`tsx-is-a-dependency` (lite) proposed, executed and archived in one
+pass, closing #152. `tsx@4.23.12` pinned in `devDependencies`; all six
+quality gates green (typecheck, lint, 2121 vitest, build, schema-drift,
+85 db); the Windows recipe's `--yes` note now marked unnecessary. This
+makes the 146th archived change and leaves 24 open backlog items.
+
+**Watch out**: The recorder host is a personal Windows machine — hours
+it spends powered off are honestly-labelled permanent gaps, and
+`/recorder` will show them. Do not mistake them for a dead scheduler:
+`Get-ScheduledTaskInfo -TaskName GridCommanderRecorder` distinguishes
+the two (`LastTaskResult : 0` = alive).
+
+## 2026-08-11 (the recorder question answered) — it has never run, and the gap is already four days
+
+**Did**: #145 answered with the operator, live. The operator confirmed no
+persistent deployment exists — Grid-Commander has only ever run in
+ephemeral sessions — so the recorder cron was never installed anywhere,
+the durable record holds zero captures, and **the gap starts at the
+2026-08-07 ship date and widens daily** until a host exists. The pipeline
+itself was proven with the operator's key in this session: freshness gate
+green (platform still 17.2.0), then one real capture run — exit 0, all 20
+radar deployments at 1h, 84 signals each — into this container's
+throwaway database, discarded with it. Filed the answer in
+`confirm-the-recorder-is-running` (with the one-time host setup: four env
+vars, the base64-32 encryption key requirement the recorder enforces,
+migrate, hand-run to exit 0, then the cron line) and noted #94's gate as
+answered-at-zero in `recorded-signals-are-not-yet-evidence`. HANDOFF
+updated to match.
+
+**State**: #145's item stays open — the check is answered but the fix
+(a host running the cron) is the operator's choice, not made yet. #94
+stays ruled out at zero captures.
+
+**Next**: The operator picks a host; the item has the whole recipe. Every
+day before that is permanently unrecorded — this is now the only thing on
+the board where waiting has a daily cost.
+
+**Watch out**: The recorder wants `TOKEN_ENCRYPTION_KEY` as 32 bytes
+**base64** — `openssl rand -hex 32` is refused with "must be 32 bytes,
+base64-encoded". And PostgreSQL in these containers still dies quietly;
+`pg_ctlcluster 16 main start` before blaming the code.
+
+## 2026-08-11 (the handoff catches up) — every number in HANDOFF.md re-verified against reality
+
+**Did**: Audited HANDOFF.md for internal inconsistencies and re-verified
+every countable claim: 2121 vitest green, 85 db (table said 81), 243
+harness, 145 archived changes (table said 138, prose said 132), 25 open
+backlog items mirrored 1:1 by 25 open GitHub issues (table said 29, the
+stale "Start Here" split said 31), 30 live probe files (prose said 26),
+one P1 not two (`the-surface-map-is-two-majors-stale` closed as #92).
+Refreshed the "Start Here" section around the three parting concerns
+(#145–#147) and the current 25-item split; recorded that PR #144 merged
+and parallel sessions opened #148–#150 (unmerged) the same day; de-numbered
+ci.sh's stale "62 database tests" skip message. The middle sections had
+simply not been updated when the summary paragraph was, at the 08-11 close.
+
+**State**: No code changed — docs and one script message only. All suites
+re-run green in this container (vitest, db after migrate, harness).
+Validation still 0 errors / 11 warnings, all pre-existing.
+
+**Next**: Unchanged from the close below — the operator answers #145.
+Three of the 11 validation warnings ask open backlog items linked to
+archived changes to say what is left; a tracker pass could tidy them.
+
+**Watch out**: Three open PRs (#148, #149, #150) each build or touch an
+open backlog item (`the-payload-carries-more-than-is-read`,
+`the-deploy-surface-cannot-create-first-deployments`, the v15 P1's
+read side) — merging them will re-stale the split in HANDOFF.md; close
+the items or update the split when they land.
 
 ## 2026-08-11 — session close: v17.2.0 followed same-day, eight closes, three builds, three parting concerns filed
 

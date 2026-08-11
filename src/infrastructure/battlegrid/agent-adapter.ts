@@ -217,7 +217,6 @@ export class McpAgentAdapter implements AgentsPort {
     brain: Brain;
     strategyId: string;
     tradingConfig: TradingConfig | null;
-    arenaChallengeEnabled?: boolean | undefined;
     idempotencyKey?: string | undefined;
   }): Promise<Agent> {
     const payload = await this.call(
@@ -228,9 +227,6 @@ export class McpAgentAdapter implements AgentsPort {
         brain: brainToArgument(params.brain),
         strategyId: params.strategyId,
         ...(params.tradingConfig ? { tradingConfig: params.tradingConfig.fields } : {}),
-        ...(params.arenaChallengeEnabled === undefined
-          ? {}
-          : { arenaChallengeEnabled: params.arenaChallengeEnabled }),
       },
       { idempotencyKey: params.idempotencyKey },
     );

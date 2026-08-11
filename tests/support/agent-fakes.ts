@@ -106,7 +106,6 @@ export class FakeAgentsPort implements AgentsPort {
     brain: Brain;
     strategyId: string;
     tradingConfig: TradingConfig | null;
-    arenaChallengeEnabled?: boolean | undefined;
   }): Promise<Agent> {
     this.calls.push({ op: 'create' });
     // The whole payload, kept. `tradingConfig` was `null` on every create for
@@ -129,8 +128,6 @@ export class FakeAgentsPort implements AgentsPort {
       modelDisplayName: null,
       last24hCostUsd: null,
       tradingConfig: params.tradingConfig,
-      arenaChallengeEnabled: params.arenaChallengeEnabled ?? false,
-      overlayText: null,
       performance: null,
       permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     };
@@ -351,8 +348,6 @@ export function anAgent(overrides: Partial<Agent> = {}): Agent {
     modelDisplayName: null,
     last24hCostUsd: null,
     tradingConfig: null,
-    arenaChallengeEnabled: false,
-    overlayText: null,
     performance: null,
     permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     ...overrides,

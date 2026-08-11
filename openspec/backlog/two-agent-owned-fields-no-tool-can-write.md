@@ -2,11 +2,11 @@
 id: two-agent-owned-fields-no-tool-can-write
 title: arenaChallengeEnabled and overlayText are proposable, and no tool on the surface can write or even read them
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-08
-updated: 2026-08-08
-change: ""
+updated: 2026-08-11
+change: "dead-agent-fields-retired"
 capability: mcp-control
 github: "113"
 blocked_by: []

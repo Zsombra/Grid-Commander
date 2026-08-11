@@ -617,8 +617,8 @@ export const TOOLS: readonly ToolDefinition[] = [
     name: 'propose_agent_change',
     description:
       'Propose changing an agent’s settings. `changes` uses the agent’s own field names: ' +
-      'displayName, brain, tradingConfig (which holds tradingMode and the money limits), ' +
-      'arenaChallengeEnabled, overlayText. A field the agent does not own — anything the ' +
+      'displayName, brain, tradingConfig (which holds tradingMode and the money limits). ' +
+      'A field the agent does not own — anything the ' +
       'bound strategy owns, like signalRules or timeframe — is reported back as not ' +
       'accepted rather than silently sent. Records the intent only: BattleGrid is not ' +
       'contacted, nothing is reserved, and the agent is unchanged until a person opens ' +

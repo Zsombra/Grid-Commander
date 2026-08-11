@@ -462,18 +462,28 @@ describe('every payload the product constructs can succeed', () => {
     expect(violations(toolOrThrow('compile_strategy_plan'), { request: intent })).toEqual([]);
   });
 
-  it('upsert_radar_deployment — the one-slot deployment the radar adapter composes', () => {
-    // Mirrors McpRadarAdapter.upsertDeployment. The shape lives in two places
-    // and both say so: the slot's inert extras are observed live values, and
-    // both objects are closed — one invented key rejects the whole payload.
-    // `expectedRevision: 1` because the live schema demands > 0 (a constraint
-    // the record does not carry) — an existing policy's revision, never 0.
+  it('upsert_radar_deployment — replacement with a numeric revision', () => {
     const payload = {
       coinId: 'HYPE',
       request: {
         deploymentTimeframe: '15m',
         enabled: true,
         expectedRevision: 1,
+        slots: [
+          { agentId: 'a1', conditions: [], isDefault: true, minConviction: null, priority: null },
+        ],
+      },
+    };
+    expect(violations(toolOrThrow('upsert_radar_deployment'), payload)).toEqual([]);
+  });
+
+  it('upsert_radar_deployment — first deploy with expectedRevision: null', () => {
+    const payload = {
+      coinId: 'HYPE',
+      request: {
+        deploymentTimeframe: '15m',
+        enabled: true,
+        expectedRevision: null,
         slots: [
           { agentId: 'a1', conditions: [], isDefault: true, minConviction: null, priority: null },
         ],

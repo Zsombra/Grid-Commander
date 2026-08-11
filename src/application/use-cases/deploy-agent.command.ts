@@ -29,7 +29,7 @@ export type DescribeDeployResult =
         readonly agentId: string;
         readonly coinId: string;
         readonly timeframe: string;
-        readonly expectedRevision: number;
+        readonly expectedRevision: number | null;
         readonly consequence: string;
         readonly confirmationToken: string;
         readonly timeframes: readonly string[];
@@ -79,38 +79,23 @@ export class DescribeDeployQuery {
     }
 
     const existing = read.deployments.find((d) => d.coinTicker === req.coinId);
-    if (!existing) {
-      /**
-       * Established live 2026-07-31 (decision log, DL-3): the platform's own
-       * validation requires `expectedRevision > 0`, and a coin with no policy
-       * answers every value with `CONFLICT … actualRevision: null`. This
-       * surface can replace a deployment; it cannot create the first one.
-       * Refusing here, with the reason, beats minting an agreement the
-       * perform is guaranteed to lose.
-       */
-      return {
-        kind: 'refused',
-        reason:
-          `${req.coinId} carries no deployment, and BattleGrid's API refuses to create a ` +
-          `first one through this surface. Deploying here can only replace a market's ` +
-          `existing deployment; the first deployment on a coin is made on battlegrid.trade.`,
-      };
+
+    let consequence: string;
+    let expectedRevision: number | null;
+
+    if (existing) {
+      const replaced =
+        existing.slotAgentIds.length > 0
+          ? ` This replaces the current deployment there (agent ${existing.slotAgentIds.join(', ')}).`
+          : ' This replaces the current (empty) deployment there.';
+      consequence =
+        `Deploys "${req.agentName}" to scan ${req.coinId} on the ${req.timeframe} radar.` + replaced;
+      expectedRevision = existing.revision;
+    } else {
+      consequence =
+        `Deploys "${req.agentName}" to start scanning ${req.coinId} on the ${req.timeframe} radar.`;
+      expectedRevision = null;
     }
-
-    const replaced =
-      existing.slotAgentIds.length > 0
-        ? ` This replaces the current deployment there (agent ${existing.slotAgentIds.join(', ')}).`
-        : ' This replaces the current (empty) deployment there.';
-    const consequence =
-      `Deploys "${req.agentName}" to scan ${req.coinId} on the ${req.timeframe} radar.` + replaced;
-
-    /**
-     * The revision the platform holds now — always an existing policy's own,
-     * never invented (see the refusal above). A conflict between here and the
-     * apply is the platform's revision check working, and it surfaces as a
-     * refusal, never a blind overwrite.
-     */
-    const expectedRevision = existing.revision;
 
     const token = this.random.token(32);
     await this.confirmations.issue({
@@ -149,7 +134,7 @@ export class PerformDeployCommand {
       agentId: string;
       coinId: string;
       timeframe: string;
-      expectedRevision: number;
+      expectedRevision: number | null;
       confirmationToken: string;
     },
   ): Promise<PerformDeployResult> {
@@ -176,7 +161,22 @@ export class PerformDeployCommand {
   }
 }
 
-export type DescribeUndeployResult = DescribeDeployResult;
+export type DescribeUndeployResult =
+  | {
+      readonly kind: 'proposal';
+      readonly proposal: {
+        readonly agentId: string;
+        readonly coinId: string;
+        readonly timeframe: string;
+        // Never null, unlike a deploy's: undeploying targets a deployment
+        // that already exists, so there is always a real revision to bind.
+        readonly expectedRevision: number;
+        readonly consequence: string;
+        readonly confirmationToken: string;
+        readonly timeframes: readonly string[];
+      };
+    }
+  | { readonly kind: 'refused'; readonly reason: string };
 
 export class DescribeUndeployQuery {
   constructor(

@@ -67,6 +67,16 @@ export function requiredInteger(form: FormData, field: string): number {
   return value;
 }
 
+/** An integer or null — empty string round-trips as null. */
+export function nullableInteger(form: FormData, field: string): number | null {
+  const raw = form.get(field);
+  if (typeof raw !== 'string') throw new FormError(field, `${field} is required`);
+  if (raw === '') return null;
+  const value = Number(raw);
+  if (!Number.isInteger(value)) throw new FormError(field, `${field} must be a whole number`);
+  return value;
+}
+
 /**
  * The behavior profile, validated rather than cast.
  *

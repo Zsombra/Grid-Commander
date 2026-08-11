@@ -19,8 +19,6 @@ function agent(overrides: Partial<Agent> = {}): Agent {
     modelDisplayName: null,
     last24hCostUsd: null,
     tradingConfig: null,
-    arenaChallengeEnabled: false,
-    overlayText: null,
     performance: null,
     permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
     ...overrides,
@@ -32,9 +30,9 @@ describe('agent_owned_fields_only', () => {
   it('accepts the fields the agent owns', () => {
     const { accepted, rejected } = partitionEdit({
       displayName: 'Renamed',
-      arenaChallengeEnabled: true,
+      brain: { kind: 'preset', preset: 'ROMMEL' },
     });
-    expect(Object.keys(accepted).sort()).toEqual(['arenaChallengeEnabled', 'displayName']);
+    expect(Object.keys(accepted).sort()).toEqual(['brain', 'displayName']);
     expect(rejected).toEqual([]);
   });
 

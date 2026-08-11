@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
-import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { McpRadarAdapter } from '@/infrastructure/battlegrid/radar-adapter.js';
 import {
   DescribeDeployQuery,
@@ -8,7 +7,6 @@ import {
 } from '@/application/use-cases/deploy-agent.command.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
-import { RevisionConflictError } from '@/domain/errors.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 
@@ -18,35 +16,24 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  * Not in the default suite — gated on `BATTLEGRID_API_KEY` exactly like
  * `write-probe.test.ts`. Run deliberately:
  *
- *     BATTLEGRID_API_KEY=bg_live_… npx vitest run tests/live/radar-probe.test.ts
+ *     BATTLEGRID_API_KEY=bg_live_… BATTLEGRID_LIVE_WRITES=1 npx vitest run tests/live/radar-probe.test.ts
  *
- * **Why it exists.** `deploy-and-undeploy-are-offered` composed
- * `upsert_radar_deployment` around one recorded unknown: what
- * `expectedRevision` a *create* presents. The declaration requires the field
- * and says nothing about the value. The answer, established 2026-07-31 with
- * these probes, is that there is no such value: the schema demands
- * `expectedRevision > 0` (an exclusive minimum the recorded artifact cannot
- * carry), and a coin with no policy answers every positive value with
- * `CONFLICT … actualRevision: null`. **This surface can replace a deployment;
- * it cannot create a first one.** The product's describe refuses unoccupied
- * coins with that reason, and the first probe holds the platform to the
- * behavior the refusal is built on — if BattleGrid ever starts accepting
- * creates, this test fails and the restriction should be lifted.
+ * **Why it exists.** The first probe confirms `expectedRevision: null`
+ * succeeds as the platform's first-deploy signal — established live
+ * 2026-08-08 (v14). It uses the slot-shuffle pattern: undeploy a coin, then
+ * first-deploy it back, so the radar ends as it started.
  *
- * **What it touches.** The first test attempts a create the platform refuses,
- * so it changes nothing. The second replaces an occupied coin's deployment
- * with itself — same agent, same timeframe, same enabled — through the
- * product's describe → confirm → perform path; the only observable change is
- * the policy's revision advancing, which is what proves the write landed.
+ * The second probe replaces an occupied coin's deployment with itself — same
+ * agent, same timeframe, same enabled — through the product's describe →
+ * confirm → perform path; the only observable change is the policy's revision
+ * advancing, which is what proves the write went through the full sequence.
  */
 
 const KEY = process.env['BATTLEGRID_API_KEY'];
-// Gated with the other mutating probes even though every write here is
-// *expected to be refused*. "The platform will refuse this" is a claim about
-// the platform, and the platform moved three times in the week this was
-// written. If a deployment ever starts accepting a first-create, this probe
-// would make one on the operator's real account — and would do it during an
-// ordinary `npm test` that merely happened to have a key in the environment.
+// Gated with the other mutating probes — the slot-shuffle undeploys and
+// redeploys a real coin, and the replace test advances a revision. Neither
+// should happen during an ordinary `npm test` that merely happened to have a
+// key in the environment.
 const WRITES = process.env['BATTLEGRID_LIVE_WRITES'] === '1';
 const live = KEY && WRITES ? describe : describe.skip;
 
@@ -76,97 +63,113 @@ function wire() {
 
 const who = { userId: 'owner', accessToken: KEY as string };
 
-/**
- * A crypto coin the platform knows and no policy occupies. Restricted to
- * entries whose `id` equals their `ticker` so the probe never has to guess
- * which of the two `coinId` means — TRADFI coins carry `id: "xyz_aapl"`,
- * `ticker: "AAPL"`, and the radar's own policies show the two equal.
- */
-async function unoccupiedCoin(
-  battlegrid: McpBattleGridAdapter,
-  radar: McpRadarAdapter,
-): Promise<string | null> {
-  const read = await radar.listDeployments(who);
-  if (read.kind !== 'deployments') throw new Error(`radar unreadable: ${read.reason}`);
-  const occupied = new Set(read.deployments.map((d) => d.coinTicker));
-
-  const meta = await battlegrid.callTool({ ...who, tool: 'get_coin_metadata', args: {} });
-  const coins = (meta.content as Record<string, unknown>)['coins'];
-  if (!Array.isArray(coins)) return null;
-  for (const entry of coins) {
-    const c = (entry ?? {}) as Record<string, unknown>;
-    const id = c['id'];
-    if (typeof id !== 'string' || id.length === 0) continue;
-    if (c['ticker'] !== id) continue;
-    if (!occupied.has(id)) return id;
-  }
-  return null;
-}
-
-live('a first deployment cannot be created through this surface', () => {
+live('first deployment via expectedRevision: null (slot-shuffle)', () => {
   it(
-    'the platform refuses every expectedRevision for a coin with no policy',
-    { timeout: 120_000 },
+    'undeploy a coin, first-deploy it back with null revision, verify it lands',
+    { timeout: 180_000 },
     async (ctx) => {
-      const { battlegrid, radar, confirmations, clock } = wire();
+      const { radar, confirmations, clock } = wire();
 
-      const coin = await unoccupiedCoin(battlegrid, radar);
-      if (!coin) {
-        // Account state, not a defect: every coin carries a policy today.
+      const read = await radar.listDeployments(who);
+      if (read.kind !== 'deployments') throw new Error(`radar unreadable: ${read.reason}`);
+      const target = read.deployments.find((d) => d.enabled && d.slotAgentIds.length === 1);
+      if (!target) {
         ctx.skip();
         return;
       }
-
-      // The coin genuinely holds nothing — the read the refusal reasons from.
-      const held = await battlegrid.callTool({
-        ...who,
-        tool: 'get_radar_deployment',
-        args: { coinId: coin },
-      });
+      const agentId = target.slotAgentIds[0] as string;
+      const coin = target.coinTicker;
+      const savedRevision = target.revision;
+      const savedTimeframe = target.timeframe;
       // eslint-disable-next-line no-console
-      console.log(`  ${coin}: policy = ${JSON.stringify((held.content as Record<string, unknown>)['policy'])}`);
-      expect((held.content as Record<string, unknown>)['policy']).toBeNull();
+      console.log(`  slot-shuffle target: ${coin} r${savedRevision} agent=${agentId}`);
 
-      // A real agent id — a fabricated one is refused by input validation
-      // before the revision check, which would prove the wrong thing.
-      const roster = await new McpAgentAdapter(battlegrid).listAgents(who);
-      if (roster.kind !== 'agents') throw new Error('cannot read the roster');
-      const agent = roster.agents.find((a) => a.status === 'ACTIVE');
-      expect(agent, 'need an ACTIVE agent to name in the slot').toBeDefined();
-      if (!agent) return;
-
-      // Revision 1 — the value an existing policy would carry — conflicts,
-      // because there is nothing to conflict with except absence itself.
+      // Step 1: undeploy the coin to free a slot
       await confirmations.issue({
-        token: 'probe-create',
+        token: 'probe-undeploy',
         userId: who.userId,
-        tool: 'upsert_radar_deployment',
-        target: confirmationTarget.agentDeploy(agent.id, coin),
-        consequence: `Probe: attempt a first deployment on ${coin}.`,
+        tool: 'delete_radar_deployment',
+        target: confirmationTarget.agentUndeploy(agentId, coin),
+        consequence: `Probe: undeploy ${coin} for slot-shuffle.`,
         expiresAt: new Date(clock.now().getTime() + 300_000),
         consumedAt: null,
       });
-      await expect(
-        radar.upsertDeployment({
+      const deleted = await radar.deleteDeployment({
+        ...who,
+        coinId: coin,
+        expectedRevision: savedRevision,
+        confirmation: {
+          token: 'probe-undeploy',
+          target: confirmationTarget.agentUndeploy(agentId, coin),
+        },
+      });
+      expect(deleted.deleted).toBe(true);
+      // eslint-disable-next-line no-console
+      console.log(`  undeployed ${coin}`);
+
+      // Step 2: first-deploy it back with expectedRevision: null
+      try {
+        await confirmations.issue({
+          token: 'probe-first-deploy',
+          userId: who.userId,
+          tool: 'upsert_radar_deployment',
+          target: confirmationTarget.agentDeploy(agentId, coin),
+          consequence: `Probe: first-deploy ${coin} back.`,
+          expiresAt: new Date(clock.now().getTime() + 300_000),
+          consumedAt: null,
+        });
+        const result = await radar.upsertDeployment({
           ...who,
           coinId: coin,
-          timeframe: '15m',
-          enabled: false,
-          agentId: agent.id,
-          expectedRevision: 1,
+          timeframe: savedTimeframe,
+          enabled: true,
+          agentId,
+          expectedRevision: null,
           confirmation: {
-            token: 'probe-create',
-            target: confirmationTarget.agentDeploy(agent.id, coin),
+            token: 'probe-first-deploy',
+            target: confirmationTarget.agentDeploy(agentId, coin),
           },
-        }),
-      ).rejects.toBeInstanceOf(RevisionConflictError);
-      // eslint-disable-next-line no-console
-      console.log('  create at expectedRevision 1: refused (CONFLICT, actualRevision null)');
+        });
+        // eslint-disable-next-line no-console
+        console.log(`  first-deploy ${coin}: revision ${result.revision}`);
+        expect(result.revision).toBeGreaterThan(0);
 
-      // And it changed nothing.
-      const after = await radar.listDeployments(who);
-      if (after.kind !== 'deployments') throw new Error(`radar unreadable: ${after.reason}`);
-      expect(after.deployments.find((d) => d.coinTicker === coin)).toBeUndefined();
+        // Verify it landed
+        const after = await radar.listDeployments(who);
+        if (after.kind !== 'deployments') throw new Error(`radar unreadable: ${after.reason}`);
+        const standing = after.deployments.find((d) => d.coinTicker === coin);
+        expect(standing).toBeDefined();
+        expect(standing?.slotAgentIds).toEqual([agentId]);
+        // eslint-disable-next-line no-console
+        console.log(`  read-back: r${String(standing?.revision)} slots=[${String(standing?.slotAgentIds.join(', '))}]`);
+      } catch (err) {
+        // Restore the deployment if the first-deploy failed — don't leave the
+        // operator's radar with a hole.
+        // eslint-disable-next-line no-console
+        console.error(`  first-deploy failed, restoring: ${err}`);
+        await confirmations.issue({
+          token: 'probe-restore',
+          userId: who.userId,
+          tool: 'upsert_radar_deployment',
+          target: confirmationTarget.agentDeploy(agentId, coin),
+          consequence: `Probe: restore ${coin} after failed first-deploy.`,
+          expiresAt: new Date(clock.now().getTime() + 300_000),
+          consumedAt: null,
+        });
+        await radar.upsertDeployment({
+          ...who,
+          coinId: coin,
+          timeframe: savedTimeframe,
+          enabled: true,
+          agentId,
+          expectedRevision: null,
+          confirmation: {
+            token: 'probe-restore',
+            target: confirmationTarget.agentDeploy(agentId, coin),
+          },
+        });
+        throw err;
+      }
     },
   );
 });
@@ -178,10 +181,10 @@ live('a first deployment cannot be created through this surface', () => {
  * that moves, and its moving is the proof the write went through the full
  * describe → confirm → perform sequence.
  *
- * `delete_radar_deployment` is deliberately NOT walked: the only deployments
- * that exist are the operator's real ones, and a delete cannot be undone —
- * this surface cannot create. Its composition is held by
- * `payload-conformance` and the command tests instead.
+ * `delete_radar_deployment` is walked by the slot-shuffle above, not here.
+ * This test replaces in place — same agent, same timeframe — so it never
+ * needs to delete. The delete composition is held by `payload-conformance`
+ * and the command tests.
  */
 live('deploy walks end-to-end through the product commands', () => {
   it(
