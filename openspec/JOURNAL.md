@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-11 (07:05Z) — the write-gated probes ran: six writes proven live, one platform drift found, account clean
+
+The operator freed the permission gate and re-supplied the key; the
+`BATTLEGRID_LIVE_WRITES=1` suite ran. **Six of eight probe files fully green,
+proving live write paths through the product's own commands:**
+
+- `apply_strategy_plan` end-to-end (apply-probe) — **the last unproven write,
+  now proven live.**
+- `update_strategy_signal_rule` retune (retune-probe).
+- custom report table created *and* modified on a real strategy
+  (custom-table-probe).
+- fork → archive → restore (restore-probe).
+- condition write end-to-end, and the empty list clears conditions
+  (condition-write-probe) — proven on a clean re-run; it failed once in the
+  full-suite pass with a transient `compile_strategy_plan` error and was green
+  in isolation, so logged as a compile flake (likely the 15s compile deadline
+  under back-to-back load), not a defect.
+- radar replace-occupied, revision advanced (radar-probe's deploy test).
+
+**Two write tests SKIPPED, not failed:** `write-probe`'s agent-create and
+`proposal-probe`'s write test both need to create a throwaway agent, and the
+account is at **3/3 slots** — "You are using all 3 of your agent slots." Not a
+bug; they need a slot temporarily freed, which I did **not** do to a live
+trading agent without a specific decision.
+
+**One genuine platform finding.** The platform now refuses a *first* radar
+deployment with `VALIDATION_ERROR`, where DL-3 (2026-07-31) recorded
+`CONFLICT … actualRevision: null`. The restriction holds; only the refusal
+*shape* drifted. No user path is affected — `deploy-agent.command.ts:82`
+refuses unoccupied coins at describe-time before any upsert — so it is p3:
+update the probe's expectation and the stale DL-3 note. Filed
+`radar-first-deployment-refusal-drifted`. It is a response-behavior drift, not
+a declared-schema one, so the surface-freshness guards correctly did not fire —
+a small live illustration of the tool-*response* gap that remains after the
+four-surfaces change. Also filed
+`write-probe-thinking-pagination-assertion-too-strict` (p3): the thinking-log
+probe demands >1 page and fails an agent that has exactly one; the read itself
+was correct (17 of 17).
+
+**Account verified clean after the run:** 3 agents ACTIVE, **all carrying
+`trailingGivebackPct: 45`** (the change held through every fork/restore), **zero
+leftover probe forks**, book live (+$0.29 unrealized, `pricingStatus=LIVE`),
+account **$43.61**. The probes cleaned up after themselves as designed.
+
+Branch deletion remains the one truly blocked item — GitHub UI only (remote
+403 + no ref-deletion tool).
+
 ## 2026-08-11 (06:40Z) — the operator said go: giveback lowered live, the replay built, two items blocked by the environment
 
 The operator approved the whole pending list ("OK, go ahead and do all
