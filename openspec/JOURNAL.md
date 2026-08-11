@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-11 (the commonest block) — gone with the agents that carried it
+
+**`approval-expired-on-a-full-execution-agent` closed (#98)**, overtaken
+rather than answered. The funded fleet was probed across its lifetime:
+Undertow 3,809 blocks, Breakwater 346, Vanguard 0 — and **zero
+`AGENT_APPROVAL_EXPIRED`** in any sampled page (600 rows across Undertow's
+six pages, creation to now). Everything is `OPEN_POSITION_CONFLICT` but
+one min-notional and 22 daily-limit rows. The never-funded trio that
+generated 134 blocks a week is archived; the p2 harm left the account
+with them.
+
+The semantics stay where the item's own rule put them: the 2026-08-06
+two-account evidence contradicts every clean reading, there is no live
+subject left to probe, and the meaning belongs to BattleGrid's operators —
+a candidate line for the #107 upstream report, not a guess. The surface's
+code-count-window rendering was already correct under every reading.
+
+In passing: Undertow's `OPEN_POSITION_CONFLICT` runs ~90/hour now
+(`gateStage: TOKEN`, before the model call — not a spend line). Same
+pattern as #96's lever note, three times the volume.
+
+Also this cycle: `oauth-path-may-be-dead-weight` (#91) was picked up and
+put back — on reading, its settle condition ("does weeks of real use ever
+touch /connect") and its three untested segments all need the operator;
+nothing in this environment can advance it. It stays open, correctly.
+
 ## 2026-08-11 (the engine speaks) — one line, verbatim, and nothing claimed for silence
 
 **`management-status-in-the-platforms-words` archived**, closing #134 the
