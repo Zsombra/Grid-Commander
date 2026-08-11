@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { canonicalJson } from '../support/canonical-json.js';
 
 /**
  * The recorded surface, against the BattleGrid that is running right now.
@@ -38,6 +39,9 @@ interface Surface {
   };
   prompts?: Array<{ name?: string; body_sha256?: string }>;
   resources?: Array<{ name?: string; uri?: string; content_sha256?: string }>;
+  authoring_vocabulary?: {
+    categories?: Record<string, { sha256?: string }>;
+  };
 }
 
 const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
@@ -72,6 +76,18 @@ async function serverInfo(): Promise<{ name: string; version: string; instructio
     version: info?.['version'] ?? '',
     instructions: typeof result['instructions'] === 'string' ? result['instructions'] : '',
   };
+}
+
+/** A read tool's payload, out of the MCP envelope it travels in. */
+async function toolPayload(tool: string, args: unknown): Promise<Record<string, unknown>> {
+  const result = await rpc('tools/call', { name: tool, arguments: args });
+  const structured = result['structuredContent'];
+  if (typeof structured === 'object' && structured !== null) {
+    return structured as Record<string, unknown>;
+  }
+  const blocks = (result['content'] ?? []) as Array<{ type?: string; text?: string }>;
+  const text = blocks.find((b) => b.type === 'text')?.text ?? '';
+  return JSON.parse(text) as Record<string, unknown>;
 }
 
 /** Prompt body text, flattened the way the probe flattens it. */
@@ -201,6 +217,33 @@ live('the recorded prose surfaces still match the platform', () => {
         sha256(content),
         `resource \`${String(r.uri)}\` has changed — re-probe: ${REPROBE}`,
       ).toBe(r.content_sha256);
+    }
+  });
+
+  it('the authoring vocabulary, category by category', { timeout: 240_000 }, async () => {
+    /**
+     * A budget number, an enabled timeframe, a timeframe reference's
+     * resolution, or a transform can all change under an unchanged server
+     * version — the version comparison does not cover them, which is the
+     * whole finding of `the-surface-map-is-two-majors-stale`. Digest per
+     * category, so the failure names the category that moved.
+     */
+    const recordedCats = Object.keys(recorded.authoring_vocabulary?.categories ?? {}).sort();
+    expect(recordedCats.length, `no vocabulary recorded — re-probe: ${REPROBE}`).toBeGreaterThan(0);
+
+    const listed = await toolPayload('list_strategy_categories', {});
+    const liveCats = ((listed['categories'] ?? []) as Array<{ category?: string }>)
+      .map((c) => String(c.category))
+      .sort();
+    expect(liveCats, `the category list itself moved — re-probe: ${REPROBE}`).toEqual(recordedCats);
+
+    for (const cat of recordedCats) {
+      const payload = await toolPayload('list_strategy_vocabulary', { category: cat });
+      expect(
+        sha256(canonicalJson(payload)),
+        `vocabulary \`${cat}\` has changed under version ` +
+          `${String(recorded.server?.version)} — re-probe: ${REPROBE}`,
+      ).toBe(recorded.authoring_vocabulary?.categories?.[cat]?.sha256);
     }
   });
 });

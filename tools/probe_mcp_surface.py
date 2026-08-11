@@ -76,6 +76,18 @@ def sha256(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def canonical_json(value: Any) -> str:
+    """One serialisation both languages can reproduce byte-for-byte.
+
+    Keys sorted, compact separators, unicode left raw. Python's defaults
+    (spaces after separators, ASCII-escaped unicode) differ from
+    `JSON.stringify` on both counts, and a digest over either default would
+    make the cross-language comparison fail on formatting rather than
+    content.
+    """
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 def normalise_addressee(text: str) -> str:
     return re.sub(ADDRESSEE_PATTERN, ADDRESSEE_REPLACEMENT, text, count=1)
 
@@ -273,6 +285,57 @@ def fetch_resource_templates(key: str) -> list[dict[str, Any]]:
         return got.get("result", {}).get("resourceTemplates", []) or []
     except Exception:  # noqa: BLE001 — an optional listing; absence is the record
         return []
+
+
+def _tool_payload(key: str, tool: str, args: dict[str, Any]) -> tuple[Any, str | None]:
+    """One read tool's payload, or the refusal that came instead."""
+    response = rpc(key, "tools/call", {"name": tool, "arguments": args})
+    if "error" in response:
+        return None, str(response["error"].get("message", response["error"]))[:300]
+    return unwrap(response.get("result", {}))
+
+
+def fetch_authoring_vocabulary(key: str) -> dict[str, Any]:
+    """Every category's `list_strategy_vocabulary` payload, verbatim.
+
+    **The one exception to shapes-only, and the reason it is one:** the
+    vocabulary is the platform's authoring contract — identical for every
+    account — and its VALUES are the contract. Recording its shape stripped
+    `strategyConditions: 16` down to `"int"` while the compile schema
+    declared `maxItems: 64`, and nothing could see the fourfold
+    over-commitment. Account data still never enters the record; this is
+    platform data that happened to arrive through a tool call.
+
+    No curation. Curation is how the values were lost the first time.
+    """
+    entries: dict[str, Any] = {}
+    listed, err = _tool_payload(key, "list_strategy_categories", {})
+    if err is not None or not isinstance(listed, dict):
+        return {"fetch_failed": err or "categories payload was not an object", "categories": {}}
+    names = [
+        str(c.get("category"))
+        for c in listed.get("categories", [])
+        if isinstance(c, dict) and c.get("category")
+    ]
+    for cat in names:
+        payload, cat_err = _tool_payload(key, "list_strategy_vocabulary", {"category": cat})
+        if cat_err is not None or payload is None:
+            entries[cat] = {"fetch_failed": cat_err or "empty payload"}
+            continue
+        entries[cat] = {"sha256": sha256(canonical_json(payload)), "payload": payload}
+    return {
+        "note": (
+            "Verbatim values, deliberately — the stated exception to this "
+            "record's shapes-only rule. The vocabulary is the platform's "
+            "authoring contract, the same for every account; its values ARE "
+            "the contract, and the shape-only record once reduced "
+            "`strategyConditions: 16` to \"int\" beside a schema declaring "
+            "maxItems: 64. Digests are sha256 over the payload serialised "
+            "canonically: keys sorted, compact separators, unicode unescaped "
+            "— the same bytes the TypeScript guard reproduces."
+        ),
+        "categories": entries,
+    }
 
 
 def classify(tool: dict[str, Any]) -> str:
@@ -1053,6 +1116,9 @@ def main() -> int:
     resources = fetch_resources(key)
     print(f"resources: {len(resources)} ({sum(1 for r in resources if r.get('content') is None)} failed)")
     resource_templates = fetch_resource_templates(key)
+    vocabulary = fetch_authoring_vocabulary(key)
+    vocab_failed = sum(1 for v in vocabulary["categories"].values() if "fetch_failed" in v)
+    print(f"authoring vocabulary: {len(vocabulary['categories'])} categories ({vocab_failed} failed)")
 
     listing = rpc(key, "tools/list", {})
     tools = listing["result"]["tools"]
@@ -1234,6 +1300,7 @@ def main() -> int:
         "resource_count": len(resources),
         "resources": resources,
         "resource_templates": resource_templates,
+        "authoring_vocabulary": vocabulary,
         "tools": entries,
     }
 

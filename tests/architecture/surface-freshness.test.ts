@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { canonicalJson } from '../support/canonical-json.js';
 
 /**
  * The surface record must be able to tell you it is stale.
@@ -54,6 +55,13 @@ interface Surface {
     content_sha256?: string;
     fetch_failed?: string;
   }>;
+  authoring_vocabulary?: {
+    note?: string;
+    categories?: Record<
+      string,
+      { sha256?: string; payload?: Record<string, unknown>; fetch_failed?: string }
+    >;
+  };
 }
 
 const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
@@ -169,6 +177,46 @@ describe('the record carries every surface the server declares', () => {
       expect(r.fetch_failed, `${String(r.uri)}: read failed — re-probe: ${REPROBE}`).toBeUndefined();
       expect(r.content, `${String(r.uri)} has no content`).toBeTruthy();
       expect(r.content_sha256, String(r.uri)).toBe(sha256(r.content ?? ''));
+    }
+  });
+});
+
+describe('the authoring vocabulary is recorded as values, not shapes', () => {
+  /**
+   * The one exception to shapes-only, held to its purpose. The shape-record
+   * once reduced `strategyConditions: 16` to `"int"` beside a compile schema
+   * declaring `maxItems: 64` — a fourfold over-commitment nothing could see.
+   * These assertions fail a record that regresses to shapes, ships a hole,
+   * or hand-edits a payload without its digest.
+   */
+  const vocab = surface.authoring_vocabulary;
+  const categories = Object.entries(vocab?.categories ?? {});
+
+  it('carries every category, digest-verified, none failed', () => {
+    expect(vocab, `no authoring vocabulary recorded — re-probe: ${REPROBE}`).toBeDefined();
+    expect(categories.length, `no categories recorded — re-probe: ${REPROBE}`).toBeGreaterThan(0);
+    for (const [name, entry] of categories) {
+      expect(entry.fetch_failed, `${name}: fetch failed — re-probe: ${REPROBE}`).toBeUndefined();
+      expect(entry.payload, `${name} has no payload`).toBeDefined();
+      expect(entry.sha256, name).toBe(sha256(canonicalJson(entry.payload)));
+    }
+  });
+
+  it('records values where the shape-record recorded type names', () => {
+    for (const [name, entry] of categories) {
+      const budgets = (entry.payload?.['budgets'] ?? {}) as Record<string, unknown>;
+      expect(Object.keys(budgets).length, `${name}: no budgets`).toBeGreaterThan(0);
+      for (const [gauge, value] of Object.entries(budgets)) {
+        expect(typeof value, `${name}.budgets.${gauge} is a ${typeof value}, not a number`).toBe(
+          'number',
+        );
+      }
+      const timeframes = entry.payload?.['timeframes'];
+      expect(Array.isArray(timeframes), `${name}: timeframes missing`).toBe(true);
+      expect((timeframes as unknown[]).length, `${name}: no enabled timeframes`).toBeGreaterThan(0);
+      for (const tf of timeframes as unknown[]) {
+        expect(typeof tf, name).toBe('string');
+      }
     }
   });
 });

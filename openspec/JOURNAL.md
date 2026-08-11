@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-11 (10:15Z) — the vocabulary values enter the record: the last surface-record p1 closes
+
+Standard change **`the-vocabulary-values-enter-the-record`**, proposed →
+executed → archived; two ADDED requirements merged into `platform-mapping`
+(now 12). Closes p1 `the-surface-map-is-two-majors-stale`.
+
+**What the record gained:** `authoring_vocabulary` — all 10 categories'
+`list_strategy_vocabulary` payloads verbatim (~178KB) with per-category
+sha256. The one stated exception to shapes-only, with the reason in the
+block's own note: the vocabulary is the platform's authoring contract,
+identical for every account, and its VALUES are the contract — the
+shape-record reduced `strategyConditions: 16` to `"int"` beside a schema
+declaring `maxItems: 64`. Now committed: the seven budgets (numbers), the
+6-of-13 enabled timeframes, the `rel: regime` null resolutions, all 16
+transforms including `efficiency` and `maxShare`.
+
+**Guards:** offline asserts presence + digest verification + values-not-
+shapes (a budget must be a number); live digest-compares every category and
+the category set itself, failing by name. Cross-language digests via one
+canonical serialisation (`canonical_json` in the probe /
+`tests/support/canonical-json.ts`), proven byte-identical over all ten real
+payloads by the offline run.
+
+**The session's own guard bit its own change, correctly:** `live-writes`
+(from `a-guard-nobody-has-seen-fail`) flagged the live freshness file the
+moment it imported from `recorded-surface.ts`, whose code names
+`update_intelligence_agent` to count schema fields — per-module attribution,
+exactly as documented. Fixed within the rule by module split
+(`canonical-json.ts` owns the serialiser alone), not by exempting the file;
+the freshness guard keeps running on a key alone, which is its design.
+
+`REPORT_TABLE_GRAMMAR.md` budget list corrected: seven declared budgets with
+v17.2 values, sourced from the record; the four-gauge `budgetUsage`
+observation kept as what previews report. Gates: validate clean, typecheck,
+lint, **1917 vitest**, build, drizzle parity, 81 db (after restarting
+PostgreSQL, which the container had killed again), keyed live freshness
+**6/6 including the vocabulary comparison**.
+
 ## 2026-08-11 (09:35Z) — the probes catch up to v17: four stale expectations repaired, verified live on both accounts, archived
 
 Lite change **`the-probes-catch-up-to-v17`**, proposed → executed → verified

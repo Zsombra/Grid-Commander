@@ -2,11 +2,11 @@
 id: the-surface-map-is-two-majors-stale
 title: The probe records payload shapes, so the authoring vocabulary's values are unrecorded
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-11
+change: the-vocabulary-values-enter-the-record
 capability: platform-mapping
 blocked_by: []
 tags: [battlegrid, surface, vocabulary, freshness]

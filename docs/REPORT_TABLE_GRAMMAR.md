@@ -134,10 +134,14 @@ draft as the literal report text an agent receives — persisted-state-free.
 - `coinSelection` is required and bounded: `{mode: 'ranked', limit ≤ 100,
   category?}` or `{mode: 'explicit', tickers: […]}`.
 - Returns `renderedSections` (sectionKey/title/text), `estimatedTokenCount`
-  + `tokenCountModel` (`o200k_base` observed), `budgetUsage` — four gauges
-  observed: `sections` (cap 32), `sectionColumns` (cap 32),
-  `columnLookback` (cap 32), `distinctTimeframes` (cap 8) — and
-  `conditionOutcomes`.
+  + `tokenCountModel` (`o200k_base` observed), `budgetUsage`, and
+  `conditionOutcomes`. Four gauges appear in `budgetUsage`; the vocabulary
+  declares **seven** budgets (v17.2.0 values, recorded verbatim in
+  `docs/battlegrid-mcp-surface.json` → `authoring_vocabulary`): `sections`
+  32, `sectionColumns` 32, `columnLookback` 32, `distinctTimeframes` 8,
+  `strategyConditions` 16, `conditionClauses` 16, `estimatedTokens` 16000.
+  The two condition budgets are 4× tighter than the compile schema's
+  `maxItems: 64` — budget from the vocabulary, never the schema.
 - `derive_strategy_rule_view({sections, rules?})` answers, for all 82
   signals, whether the draft's report can feed them (`inReport`/`status`),
   the canonical default allocation, and default params. Membership is the
