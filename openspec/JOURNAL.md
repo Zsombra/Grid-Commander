@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-08-11 (05:25Z) — the record learns the other three surfaces
+
+The operator connected BattleGrid as a first-class MCP connector and asked
+what it could teach us. The answer: the server declares **four** capability
+surfaces at `initialize` and our guarded record carried **one**. Tool parity
+was genuine (114 = 114) — and it was the only thing checked. The generator
+had been loading all 25,056 chars of server instructions into memory and
+dropping them on every regeneration since the file existed
+(`generate_mcp_reference.py:14`). Prompt and resource bodies were fetched
+nowhere; the committed capabilities dump came from an unversioned scratchpad
+script.
+
+Built, gated and pushed as `90c9ef8`, change
+**`the-record-learns-the-other-three-surfaces`** (standard, 21/21):
+
+- **Probe** records instructions + all five prompt bodies + all three
+  resource contents, each with sha256, and now writes the capabilities dump
+  itself. The instructions greet the connected account by name, so the
+  comparable digest is taken after an addressee normalisation **whose
+  pattern is stored in the record** — the TS guard replays the recorded
+  rule, so the two languages cannot drift.
+- **Reference** renders the instructions verbatim plus every body, fenced
+  four-tick (bodies carry their own three-tick blocks). Regenerates from the
+  committed dump with no credential.
+- **Guards**: offline asserts the record and reference carry the surfaces
+  and digests verify; live digest-compares all three prose surfaces against
+  the running server. **Prose drift now fails a test the way schema drift
+  already did.** Keyed run green 5/5 at v17.2.0.
+- **Adapter** reads the request budget the platform publishes on every
+  answer (`lastRequestBudget()`, absence stays `unstated` — never carried
+  forward), and a 429 names the platform's `Retry-After` in the operator's
+  sentence. Pacing consumers stay in the rescoped p3.
+
+One guard repair with a story: the P4 no-retry scan bans the token `retry`
+in src code, and the literal header name `'Retry-After'` tripped it. The
+excuse is scoped to the quoted header name only — reading the platform's
+named wait is surfacing, not retrying; an actual retry loop still fails.
+
+Gates: typecheck, lint, **1915 vitest**, build, drizzle parity, 81 db, spec
+validation clean. Backlog: the p2 record item is implemented by this change;
+the p3 budget item is rescoped to consumption; **a new lead was added to the
+v15 policy p1** — the platform's own `author-strategy` prompt says UPDATE
+needs "at least one changed axis" and enumerates our three dials in the
+byte-identical apply copy, so "no effective changes" now has a second,
+testable reading (client-side payload defect vs platform bug). Next: run the
+sharper retest, compile-only.
+
+Pipeline state: executor done; verifier and archive are the remaining steps.
+
 ## 2026-08-11 (check-in 03:55Z) — nothing closed; TRUMP is now the position to watch
 
 **No closes.** Realized unchanged: 41 closed, 13W/28L, **−$1.2011**, WR 32%,
