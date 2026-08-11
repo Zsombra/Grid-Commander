@@ -61,8 +61,6 @@ export interface Agent {
    */
   readonly last24hCostUsd: number | null;
   readonly tradingConfig: TradingConfig | null;
-  readonly arenaChallengeEnabled: boolean;
-  readonly overlayText: string | null;
   /**
    * How it has done, or `null` when the payload carried no record.
    *

@@ -60,7 +60,6 @@ export interface AgentsPort {
     brain: Brain;
     strategyId: string;
     tradingConfig: TradingConfig | null;
-    arenaChallengeEnabled?: boolean | undefined;
     idempotencyKey?: string | undefined;
   }): Promise<Agent>;
 

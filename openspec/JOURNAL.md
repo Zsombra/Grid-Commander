@@ -1,5 +1,22 @@
 # Journal
 
+## 2026-08-11 — retire dead agent fields (arenaChallengeEnabled, overlayText)
+
+**Did**: Picked up backlog item `two-agent-owned-fields-no-tool-can-write`
+(#113) — both fields were dropped from BattleGrid between v9 and v11 but
+still modelled as constants. Proposed as `dead-agent-fields-retired`
+(lite, skip_specs). Removed from: `Agent` type, `AGENT_OWNED` tuple,
+mapper (`RawAgent` + mapping lines), create port param, adapter create
+signature + payload, create command DTO, describe-edit consequence branch,
+and `propose_agent_change` tool description. Fixed five test files. All
+quality gates green (typecheck, lint, 2121 tests, build, openspec
+validate). #113 closed, backlog item marked done. PR #148.
+
+**State**: Change `dead-agent-fields-retired` complete, awaiting merge of
+PR #148. 24 open backlog items (was 25). All suites green.
+
+**Next**: Same as previous session — operator answers #145 to unlock #94.
+For a product session: `/board`, then the p3 tail.
 ## 2026-08-11 — first deployments through the product's own ceremony, live-confirmed and archived
 
 **Did**: Implemented, verified, live-confirmed, and archived

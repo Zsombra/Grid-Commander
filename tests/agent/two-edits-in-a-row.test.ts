@@ -130,7 +130,7 @@ describe('a second edit does not disturb the first', () => {
     const retag = await describe.execute({
       ...who,
       agentId: agent.id,
-      changes: { overlayText: 'Retagged' },
+      changes: { displayName: 'Retagged' },
     });
     if (rename.kind !== 'proposal' || retag.kind !== 'proposal') throw new Error('unreachable');
     expect(rename.proposal.confirmationToken).not.toBe(retag.proposal.confirmationToken);
@@ -141,7 +141,7 @@ describe('a second edit does not disturb the first', () => {
         await h.update.execute({
           ...who,
           agentId: agent.id,
-          changes: { overlayText: 'Retagged' },
+          changes: { displayName: 'Retagged' },
           confirmationToken: retag.proposal.confirmationToken,
         })
       ).kind,

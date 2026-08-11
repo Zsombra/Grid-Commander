@@ -42,8 +42,6 @@ interface RawAgent {
   behavior?: unknown;
   tradingConfig?: unknown;
   performance?: unknown;
-  arenaChallengeEnabled?: unknown;
-  overlayText?: unknown;
   capabilities?: unknown;
 }
 
@@ -90,8 +88,6 @@ export function mapAgent(raw: unknown): Agent {
     // `the-cost-of-an-agent-reads-differently-from-two-tools`.
     last24hCostUsd: null,
     tradingConfig: mapTradingConfig(a.tradingConfig),
-    arenaChallengeEnabled: a.arenaChallengeEnabled === true,
-    overlayText: str(a.overlayText),
     performance: mapPerformance(a.performance),
     permissions: mapPermissions(a.capabilities),
   };
