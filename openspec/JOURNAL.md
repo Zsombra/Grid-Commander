@@ -1,5 +1,39 @@
 # Journal
 
+## 2026-08-11 (09:35Z) — the probes catch up to v17: four stale expectations repaired, verified live on both accounts, archived
+
+Lite change **`the-probes-catch-up-to-v17`**, proposed → executed → verified
+→ archived in one sitting (`skip_specs: true`; tests and one comment only).
+
+The three filed items, plus one found during verification:
+
+1. **radar-probe** accepts either known refusal shape for a first deployment
+   (`RevisionConflictError` or `ToolRefusedError`/`VALIDATION_ERROR`) and
+   fails only if a create is ever ACCEPTED — the moment the product's own
+   describe-refusal should be lifted. The `deploy-agent.command.ts` comment
+   now records the drift instead of the retired shape.
+2. **write-probe** thinking-log: page ≤ server total, not more-than-one-page.
+3. **Both width literals** (`>20`/`>19`) replaced by a floor derived from the
+   record (`tests/support/recorded-surface.ts` — the 15 required
+   `tradingConfig` children at v17.2), so the next platform reshaping moves
+   the assertions automatically.
+4. **Found live:** proposal-probe's audit-count `toBe(1)` had never been
+   reached before 2026-08-11 anywhere; it encodes the reuse path and fails a
+   fresh acquisition (arm + agree = 2 correct writes). Now scoped to the
+   agree step.
+
+Verified where each reproduces: account 1 — radar 2/2, write-probe 2+2skip;
+testing account — write-probe create green under the record floor,
+**proposal-probe 5/5, the full propose → open → agree → stop loop green for
+the first time ever.** Offline gates: validate clean, typecheck, lint, 1915
+vitest. Three backlog items closed against the change.
+
+Still open from the "what's next" stack: the vocabulary-values p1
+(`the-surface-map-is-two-majors-stale` — record work, its own change), the
+upstream BattleGrid report for the dials (drafted for the operator), the
+first under-45 close (loop armed 10:10Z), branch deletion + key rotation
+(operator's hands).
+
 ## 2026-08-11 (check-in 07:37Z, run 08:55Z) — create lifecycle proven on the testing account; no under-45 exits yet; book swings green
 
 **The testing account (ANBUJEFF).** The operator supplied a second account's

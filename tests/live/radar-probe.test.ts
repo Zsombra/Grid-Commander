@@ -9,6 +9,7 @@ import {
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { RevisionConflictError } from '@/domain/errors.js';
+import { ToolRefusedError } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 
@@ -135,8 +136,14 @@ live('a first deployment cannot be created through this surface', () => {
       expect(agent, 'need an ACTIVE agent to name in the slot').toBeDefined();
       if (!agent) return;
 
-      // Revision 1 — the value an existing policy would carry — conflicts,
-      // because there is nothing to conflict with except absence itself.
+      // Revision 1 — the value an existing policy would carry. The refusal
+      // SHAPE has drifted once already: DL-3 (2026-07-31) recorded
+      // `CONFLICT … actualRevision: null`; the 2026-08-11 run met
+      // `VALIDATION_ERROR`. The property this test holds is that a first
+      // deployment is REFUSED through this surface — whichever spelling the
+      // platform uses — so it accepts either refusal and fails only if the
+      // create is accepted (at which point the restriction has been lifted
+      // and `deploy-agent.command.ts` should stop refusing unoccupied coins).
       await confirmations.issue({
         token: 'probe-create',
         userId: who.userId,
@@ -146,8 +153,8 @@ live('a first deployment cannot be created through this surface', () => {
         expiresAt: new Date(clock.now().getTime() + 300_000),
         consumedAt: null,
       });
-      await expect(
-        radar.upsertDeployment({
+      const refusal = await radar
+        .upsertDeployment({
           ...who,
           coinId: coin,
           timeframe: '15m',
@@ -158,10 +165,25 @@ live('a first deployment cannot be created through this surface', () => {
             token: 'probe-create',
             target: confirmationTarget.agentDeploy(agent.id, coin),
           },
-        }),
-      ).rejects.toBeInstanceOf(RevisionConflictError);
+        })
+        .then(() => null)
+        .catch((e: unknown) => e);
+      expect(
+        refusal,
+        'the platform ACCEPTED a first deployment — the restriction this ' +
+          'product refuses on has been lifted; update deploy-agent.command.ts',
+      ).not.toBeNull();
+      const refused =
+        refusal instanceof RevisionConflictError ||
+        (refusal instanceof ToolRefusedError && refusal.code === 'VALIDATION_ERROR');
+      expect(
+        refused,
+        `refused, but as neither known shape: ${String((refusal as Error)?.message).slice(0, 200)}`,
+      ).toBe(true);
       // eslint-disable-next-line no-console
-      console.log('  create at expectedRevision 1: refused (CONFLICT, actualRevision null)');
+      console.log(
+        `  create at expectedRevision 1: refused (${(refusal as Error).constructor.name})`,
+      );
 
       // And it changed nothing.
       const after = await radar.listDeployments(who);

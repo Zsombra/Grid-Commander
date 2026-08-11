@@ -2,11 +2,11 @@
 id: write-probe-thinking-pagination-assertion-too-strict
 title: the thinking-log probe demands more than one page and fails a healthy agent that has exactly one
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: the-probes-catch-up-to-v17
 capability: agent-introspection
 blocked_by: []
 tags: [live-probe, test-robustness]

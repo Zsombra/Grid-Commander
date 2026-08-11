@@ -12,6 +12,7 @@ import { editArguments } from '@/presentation/form.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { acquireProbeAgent, releaseProbeAgent } from '../support/probe-agent.js';
+import { recordedTradingConfigChildren } from '../support/recorded-surface.js';
 import { FakeProposalStore } from '../support/proposal-fakes.js';
 
 /**
@@ -390,6 +391,16 @@ liveWrite('a person agrees, and BattleGrid changes', () => {
         >;
         const { changes, tradingConfigChanges } = editArguments(proposedChanges);
 
+        // Counted from here, not from zero: acquiring a FRESH throwaway arms
+        // it with an update of its own, so the audit already holds one write
+        // on an account with no reusable probe agent. The property is that
+        // the AGREE writes exactly once — first reached live 2026-08-11 on
+        // the testing account, where `toBe(1)` over the whole trail failed a
+        // correct run (arm + agree = 2).
+        const writesBeforeAgree = app.audit.entries.filter(
+          (e) => e.tool === 'update_intelligence_agent',
+        ).length;
+
         const performed = await app.update.execute({
           ...who,
           agentId: agent.id,
@@ -438,13 +449,17 @@ liveWrite('a person agrees, and BattleGrid changes', () => {
         // one field and the caps it did not name are still there.
         expect(fields['maxDailyLossUsd'], 'stopping it must not clear its caps').toBe(10);
         expect(fields['maxCumulativeDrawdownUsd']).toBe(10);
-        expect(Object.keys(fields).length).toBeGreaterThan(19);
+        // Was `> 19`, a pre-v17 width; the floor now follows the record.
+        // See tests/support/recorded-surface.ts.
+        expect(Object.keys(fields).length).toBeGreaterThanOrEqual(
+          recordedTradingConfigChildren(),
+        );
 
         const written = app.audit.entries.filter((e) => e.tool === 'update_intelligence_agent');
         // eslint-disable-next-line no-console
         console.log(`  audit:   ${written.map((e) => `${e.tool}=${e.outcome}`).join(' ')}`);
-        expect(written.length, 'the write is recorded').toBe(1);
-        expect(written[0]?.outcome).toBe('succeeded');
+        expect(written.length - writesBeforeAgree, 'the agree writes exactly once').toBe(1);
+        expect(written.at(-1)?.outcome).toBe('succeeded');
 
         // Replaying the agreement must fail. A token that survived its use
         // would make the agreement a standing authorization rather than a

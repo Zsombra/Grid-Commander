@@ -81,12 +81,15 @@ export class DescribeDeployQuery {
     const existing = read.deployments.find((d) => d.coinTicker === req.coinId);
     if (!existing) {
       /**
-       * Established live 2026-07-31 (decision log, DL-3): the platform's own
-       * validation requires `expectedRevision > 0`, and a coin with no policy
-       * answers every value with `CONFLICT … actualRevision: null`. This
-       * surface can replace a deployment; it cannot create the first one.
-       * Refusing here, with the reason, beats minting an agreement the
-       * perform is guaranteed to lose.
+       * Established live 2026-07-31 (decision log, DL-3) and reconfirmed
+       * 2026-08-11: this surface can replace a deployment; it cannot create
+       * the first one. The refusal's *shape* has drifted once — DL-3 met
+       * `CONFLICT … actualRevision: null`, the 2026-08-11 probe met
+       * `VALIDATION_ERROR` — but the restriction held both times, and
+       * `radar-probe.test.ts` now accepts either spelling while failing
+       * loudly if a create is ever ACCEPTED, which is the moment this
+       * refusal should be removed. Refusing here, with the reason, beats
+       * minting an agreement the perform is guaranteed to lose.
        */
       return {
         kind: 'refused',

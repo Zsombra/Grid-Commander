@@ -2,11 +2,11 @@
 id: radar-first-deployment-refusal-drifted
 title: the platform now refuses a first radar deployment with VALIDATION_ERROR, not the CONFLICT the record was built on
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: the-probes-catch-up-to-v17
 capability: battlegrid-connection
 blocked_by: []
 tags: [battlegrid, radar, live-probe, drift]

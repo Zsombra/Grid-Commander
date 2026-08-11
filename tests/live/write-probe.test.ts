@@ -11,6 +11,7 @@ import { editArguments } from '@/presentation/form.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
 import { acquireProbeAgent, probeAgentName, releaseProbeAgent } from '../support/probe-agent.js';
+import { recordedTradingConfigChildren } from '../support/recorded-surface.js';
 
 /**
  * One write, against the real platform, through the product's own path.
@@ -355,10 +356,19 @@ live('an agent can be created with limits the product can state', () => {
          * like the one rebind already has. See
          * `update-cannot-carry-a-confirmation`.
          */
+        /**
+         * The floor comes from the record, not a literal. This was `> 20`,
+         * set when the config was 23 fields wide — then BattleGrid v17
+         * collapsed the exit model and a healthy read became 18, and the
+         * assertion started failing agents that were perfectly whole
+         * (first create on the testing account, 2026-08-11). The property
+         * is that the read carries at least every child the write schema
+         * requires; the record already knows how many that is today.
+         */
         expect(
           Object.keys(config ?? {}).length,
-          'the read is wider than the write — the defect this session fixed',
-        ).toBeGreaterThan(20);
+          'the read is narrower than the recorded write schema requires',
+        ).toBeGreaterThanOrEqual(recordedTradingConfigChildren());
 
         /**
          * Rename it — the path that could never succeed, for three reasons.
@@ -572,7 +582,12 @@ live('an agent can be read thinking', () => {
     for (const d of silent) {
       expect(d.entry.outcome, 'only a failed cycle writes nothing').toBe('ERROR');
     }
-    expect(log.total, 'the server reports more than one page holds').toBeGreaterThan(
+    // `total` counts the whole log; one page may hold all of it. This was
+    // `toBeGreaterThan` — a demand that MORE than one page exist — and it
+    // failed a healthy agent whose 17 decisions fit one page (17 of 17,
+    // 2026-08-11). The property worth holding is only that the product never
+    // reads more than the server says exists.
+    expect(log.total, 'the page cannot exceed what the server reports').toBeGreaterThanOrEqual(
       log.decisions.length,
     );
 

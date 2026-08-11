@@ -2,11 +2,11 @@
 id: create-probes-assert-a-pre-v17-config-width
 title: the create probes demand >20/>19 tradingConfig fields; v17.2 reads 18, on healthy agents everywhere
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: the-probes-catch-up-to-v17
 capability: agent-authoring
 blocked_by: []
 tags: [live-probe, test-robustness, v17]
