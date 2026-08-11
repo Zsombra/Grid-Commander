@@ -2,12 +2,12 @@
 id: the-request-budget-is-published-and-discarded
 title: BattleGrid publishes a rate-limit budget on every response and the client only reacts to 429 after it lands
 type: feature
-status: in-progress
+status: open
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: the-record-learns-the-other-three-surfaces
-capability: platform-conformance
+change: ""
+capability: battlegrid-connection
 blocked_by: []
 tags: [battlegrid, mcp, rate-limit, adapter]
 ---

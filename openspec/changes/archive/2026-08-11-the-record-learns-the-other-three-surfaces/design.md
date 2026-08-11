@@ -78,8 +78,8 @@ imports nothing from the MCP layer.
   expose `lastRequestBudget()`, pass Retry-After
 - `src/domain/errors.ts` (modified) — 429 sentence names the wait when given
   one
-- `tests/battlegrid/mcp-adapter.test.ts` (modified or sibling new file) —
-  budget + Retry-After unit coverage with a fake fetch
+- `tests/connection/request-budget.test.ts` (new) — budget + Retry-After
+  unit coverage with a fake fetch, beside the other adapter-behavior tests
 - `docs/battlegrid-mcp-surface.json`, `docs/battlegrid-mcp-capabilities.json`,
   `docs/BATTLEGRID_MCP_REFERENCE.md` (regenerated)
 - `tests/concurrency/conflict.test.ts` (modified) — the P4 no-retry scan now

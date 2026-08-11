@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-08-11 (05:50Z) — the change archived, and the p1 settled with a control axis
+
+**`the-record-learns-the-other-three-surfaces` is archived.** Verifier passed
+(no criticals; one scope warning fixed in place — the P4 guard file is now
+declared in design.md; one suggestion filed as
+`the-probe-failure-path-is-untested`, p3). Merge landed five ADDED
+requirements: three on `platform-mapping`, two on `battlegrid-connection`.
+`validate --all`: 0 errors. The p2 record item is closed `done`; the p3
+budget item is back to `open`, unlinked, holding only the pacing remainder.
+
+**The v15 policy p1 is settled: it is the platform, and the proof carries a
+control.** `v15_policy_retest_v2.py` (compile-only) changed the three dials
+*and* a tagline in one UPDATE. The tagline registered —
+`changedAxes: ["IDENTITY"]`, before/after in the diff — while the compiler's
+own `tradeLevelPolicy` axis stayed `null` and **postState carried the
+original dial values, not ours**. The fields pass schema validation and are
+dropped between validation and planning. The client-side reading raised
+earlier today is eliminated; the old "no effective changes" refusals are
+explained (a dial-only update registers zero changed axes, the defined
+rejection). Also closed a false lead: `update_strategy_signal_rule` accepts
+only signalId/allocation/required — it never could carry the dials. The p1
+stays open as an upstream bug with a precise repro; nothing in this product
+can set stop bounds or the RR floor until BattleGrid fixes the compiler.
+
 ## 2026-08-11 (check-in 05:10Z, run 05:27Z) — TRUMP converted: the first long hold ever to reach a take-profit
 
 Two closes, and one of them is the event the last four cycles were built to
