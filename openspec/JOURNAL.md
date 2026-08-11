@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-08-11 (check-in 03:55Z) — nothing closed; TRUMP is now the position to watch
+
+**No closes.** Realized unchanged: 41 closed, 13W/28L, **−$1.2011**, WR 32%,
+realised RR 1.24, break-even 45%.
+
+**Book +$0.5190 across four, and the composition flipped.** TRUMP went
++$0.1404 → **+$0.3414** and is now the largest position; FARTCOIN faded
++$0.3091 → +$0.1965. The two shorts are flat.
+
+**TRUMP is the one to watch, and it is a specific test.** It has been open
+since 15:27 — **12.4 hours** — which puts it in the same territory as the
+five holds that make up the longest-hold roster, every one of which failed
+to reach a take-profit (three losses, two partial captures). It is also
+Undertow's, so it runs `trailingGivebackPct: 55` — the loosest in the fleet,
+against Breakwater's 45 which produced ENA's 63% capture last cycle. If
+TRUMP gives back the way the roster did, that is a sixth instance; if it
+converts, it is the first long hold ever to do so.
+
+**Account $43.40**, recovered from the $42.97 low, against $43.56 at session
+start.
+
+Server steady at v17.2.0 — no re-probe, no p1 retest. Harness guards
+applied: files fresh at 03:51, `limit: 50` on the outcomes read.
+
 ## 2026-08-11 (check-in 02:35Z) — the best capture yet, and a trade killed by a 0.03% move
 
 Four closes, the busiest cycle in a while:
