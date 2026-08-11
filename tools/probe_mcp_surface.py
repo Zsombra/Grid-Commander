@@ -49,8 +49,10 @@ The key is read from the environment and never written to any output.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -59,6 +61,23 @@ from typing import Any
 MCP_URL = "https://mcp.battlegrid.trade/mcp"
 OUT = "docs/battlegrid-mcp-surface.json"
 CAPABILITIES = "docs/battlegrid-mcp-capabilities.json"
+
+# The server greets the connected account by name in its instructions. The
+# record is shared; the greeting is not. Digesting the raw text would fail the
+# live comparison for every operator except the one who probed, so the
+# addressee is normalised out before the comparable digest is taken. The
+# pattern is stored in the record itself so the TypeScript guard applies the
+# identical rule instead of a hand-copied approximation of it.
+ADDRESSEE_PATTERN = r"^You are connected to BattleGrid as .+? — "
+ADDRESSEE_REPLACEMENT = "You are connected to BattleGrid as ⟨account⟩ — "
+
+
+def sha256(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def normalise_addressee(text: str) -> str:
+    return re.sub(ADDRESSEE_PATTERN, ADDRESSEE_REPLACEMENT, text, count=1)
 
 # One run makes 30+ sequential requests to a live server, and a single timeout
 # used to abandon the whole probe — including `tools/list`, which every other
@@ -108,15 +127,15 @@ def parse(raw: bytes) -> dict[str, Any]:
     return json.loads(text)
 
 
-def server_identity(key: str) -> dict[str, str]:
-    """Who answered, from `initialize`.
+def initialize(key: str) -> dict[str, Any]:
+    """The whole `initialize` result, not just the fields one caller wanted.
 
-    Recorded rather than inferred. A missing name or version is written as the
-    empty string and never as a plausible-looking default: the staleness guard
-    compares this against a live server, and a fabricated version would make it
-    pass while the record was unusable.
+    This call answered with the server instructions from the beginning, and
+    for the life of the record they were read into memory and dropped —
+    25,056 characters of platform-authored contract, unversioned anywhere in
+    this repository while three deploys rewrote write paths around it.
     """
-    result = rpc(
+    return rpc(
         key,
         "initialize",
         {
@@ -125,12 +144,135 @@ def server_identity(key: str) -> dict[str, str]:
             "clientInfo": {"name": "grid-commander-probe", "version": "1.0.0"},
         },
     ).get("result", {})
-    info = result.get("serverInfo") or {}
+
+
+def server_identity(init: dict[str, Any]) -> dict[str, str]:
+    """Who answered, from `initialize`.
+
+    Recorded rather than inferred. A missing name or version is written as the
+    empty string and never as a plausible-looking default: the staleness guard
+    compares this against a live server, and a fabricated version would make it
+    pass while the record was unusable.
+    """
+    info = init.get("serverInfo") or {}
     return {
         "name": str(info.get("name") or ""),
         "version": str(info.get("version") or ""),
-        "protocol": str(result.get("protocolVersion") or ""),
+        "protocol": str(init.get("protocolVersion") or ""),
     }
+
+
+def instructions_block(init: dict[str, Any]) -> dict[str, Any]:
+    """The server instructions, with the digests the guards compare.
+
+    `sha256` is of the text as served — the honest record. `sha256_normalised`
+    is what the live guard compares, because the text is addressed to the
+    account that fetched it (see ADDRESSEE_PATTERN). Both are kept: a record
+    that stored only the normalised form could never show what was actually
+    served, and one that stored only the raw digest would report drift every
+    time a different operator ran the guard.
+    """
+    text = str(init.get("instructions") or "")
+    return {
+        "chars": len(text),
+        "sha256": sha256(text),
+        "sha256_normalised": sha256(normalise_addressee(text)),
+        "addressee_normalisation": {
+            "pattern": ADDRESSEE_PATTERN,
+            "replacement": ADDRESSEE_REPLACEMENT,
+        },
+        "text": text,
+    }
+
+
+def _content_text(content: Any) -> str:
+    """Every text part of an MCP content value, joined.
+
+    Prompt messages carry one content object each; resource reads carry a list
+    of contents. Both shapes pass through here rather than each caller
+    guessing one.
+    """
+    if isinstance(content, list):
+        return "\n".join(_content_text(part) for part in content)
+    if isinstance(content, dict):
+        if isinstance(content.get("text"), str):
+            return content["text"]
+        if isinstance(content.get("content"), (dict, list)):
+            return _content_text(content["content"])
+    return ""
+
+
+def fetch_prompts(key: str) -> list[dict[str, Any]]:
+    """Every prompt the server lists, each with its fetched body.
+
+    A body the server would not return is a named failure on that entry, not
+    an absence — an absent body and a never-fetched body are different facts,
+    and only one of them is a finding. Every prompt argument is optional on
+    the current server; `prompts/get` is called with none, which asks for the
+    prompt as a fresh client would receive it.
+    """
+    listed = rpc(key, "prompts/list", {}).get("result", {}).get("prompts", [])
+    entries: list[dict[str, Any]] = []
+    for p in sorted(listed, key=lambda x: str(x.get("name"))):
+        entry: dict[str, Any] = {
+            "name": p.get("name"),
+            "description": p.get("description"),
+            "arguments": p.get("arguments") or [],
+        }
+        try:
+            got = rpc(key, "prompts/get", {"name": p.get("name"), "arguments": {}})
+            if "error" in got:
+                entry["body"] = None
+                entry["fetch_failed"] = str(got["error"].get("message", got["error"]))[:300]
+            else:
+                body = "\n".join(
+                    _content_text(m.get("content"))
+                    for m in got.get("result", {}).get("messages", [])
+                )
+                entry["body"] = body
+                entry["body_sha256"] = sha256(body)
+        except Exception as exc:  # noqa: BLE001 — the reason is the record
+            entry["body"] = None
+            entry["fetch_failed"] = str(exc)[:300]
+        entries.append(entry)
+    return entries
+
+
+def fetch_resources(key: str) -> list[dict[str, Any]]:
+    """Every resource the server lists, each with its fetched content."""
+    listed = rpc(key, "resources/list", {}).get("result", {}).get("resources", [])
+    entries: list[dict[str, Any]] = []
+    for r in sorted(listed, key=lambda x: str(x.get("uri"))):
+        entry: dict[str, Any] = {
+            "name": r.get("name"),
+            "uri": r.get("uri"),
+            "mimeType": r.get("mimeType"),
+        }
+        try:
+            got = rpc(key, "resources/read", {"uri": r.get("uri")})
+            if "error" in got:
+                entry["content"] = None
+                entry["fetch_failed"] = str(got["error"].get("message", got["error"]))[:300]
+            else:
+                content = "\n".join(
+                    _content_text(c) for c in got.get("result", {}).get("contents", [])
+                )
+                entry["content"] = content
+                entry["content_sha256"] = sha256(content)
+        except Exception as exc:  # noqa: BLE001
+            entry["content"] = None
+            entry["fetch_failed"] = str(exc)[:300]
+        entries.append(entry)
+    return entries
+
+
+def fetch_resource_templates(key: str) -> list[dict[str, Any]]:
+    """Declared resource templates — none today, recorded so 'none' is a fact."""
+    try:
+        got = rpc(key, "resources/templates/list", {})
+        return got.get("result", {}).get("resourceTemplates", []) or []
+    except Exception:  # noqa: BLE001 — an optional listing; absence is the record
+        return []
 
 
 def classify(tool: dict[str, Any]) -> str:
@@ -891,14 +1033,26 @@ def main() -> int:
         print("BATTLEGRID_API_KEY is not set.", file=sys.stderr)
         return 2
 
-    # `initialize` is called for one reason: to learn which server answered.
-    # The probe worked for its whole life without it, because `tools/list` needs
-    # no handshake here — and that is exactly how a record with no version in it
-    # came to gate every write this product makes. BattleGrid went v3.0.0 → v5.0.0
-    # with the tool count unchanged at 110, and nothing could have noticed,
-    # because nothing recorded which version it had looked at.
-    server = server_identity(key)
+    # `initialize` was originally called for one reason: to learn which server
+    # answered. The probe worked for its whole life without it, because
+    # `tools/list` needs no handshake here — and that is exactly how a record
+    # with no version in it came to gate every write this product makes.
+    # BattleGrid went v3.0.0 → v5.0.0 with the tool count unchanged at 110, and
+    # nothing could have noticed, because nothing recorded which version it had
+    # looked at. It now also supplies the server instructions — the same class
+    # of oversight, one layer up: the handshake carried them all along and the
+    # record never kept them.
+    init = initialize(key)
+    server = server_identity(init)
     print(f"server {server['name']} {server['version']}")
+
+    instructions = instructions_block(init)
+    print(f"instructions: {instructions['chars']} chars")
+    prompts = fetch_prompts(key)
+    print(f"prompts: {len(prompts)} ({sum(1 for p in prompts if p.get('body') is None)} failed)")
+    resources = fetch_resources(key)
+    print(f"resources: {len(resources)} ({sum(1 for r in resources if r.get('content') is None)} failed)")
+    resource_templates = fetch_resource_templates(key)
 
     listing = rpc(key, "tools/list", {})
     tools = listing["result"]["tools"]
@@ -1068,8 +1222,18 @@ def main() -> int:
             "which BattleGrid answered: it is the only field that can tell you "
             "this record is stale. `tool_count` cannot — it stayed at 110 across "
             "v3.0.0 → v5.0.0 while enums, required arguments and semantics moved "
-            "underneath it."
+            "underneath it. `instructions`, `prompts` and `resources` are the "
+            "server's prose surfaces, recorded with digests so drift in them fails "
+            "a guard the way schema drift already does; the instructions greet the "
+            "connected account by name, so the comparable digest is "
+            "`sha256_normalised`, taken after the recorded addressee normalisation."
         ),
+        "instructions": instructions,
+        "prompt_count": len(prompts),
+        "prompts": prompts,
+        "resource_count": len(resources),
+        "resources": resources,
+        "resource_templates": resource_templates,
         "tools": entries,
     }
 
@@ -1077,8 +1241,43 @@ def main() -> int:
         json.dump(surface, f, indent=2, sort_keys=False)
         f.write("\n")
 
+    # The verbatim merged dump beside the derived record, from the same
+    # connection. Until this line existed it was assembled by an unversioned
+    # scratchpad script, which meant the committed dump could only be
+    # regenerated by whoever still had that scratchpad.
+    dump = {
+        "capabilities": init.get("capabilities", {}),
+        "instructions": instructions["text"],
+        "prompts": [
+            {
+                "arguments": p["arguments"],
+                "description": p["description"],
+                "name": p["name"],
+                **({"body": p["body"]} if p.get("body") is not None else {}),
+            }
+            for p in prompts
+        ],
+        "protocolVersion": server["protocol"],
+        "resourceTemplates": resource_templates,
+        "resources": [
+            {
+                "mimeType": r["mimeType"],
+                "name": r["name"],
+                "uri": r["uri"],
+                **({"content": r["content"]} if r.get("content") is not None else {}),
+            }
+            for r in resources
+        ],
+        "serverInfo": init.get("serverInfo", {}),
+        "tools": tools,
+    }
+    with open(CAPABILITIES, "w") as f:
+        json.dump(dump, f, indent=2, sort_keys=True)
+        f.write("\n")
+
     print(f"\ncalled {called} · skipped {skipped} · failed {failed}")
     print(f"wrote {OUT}")
+    print(f"wrote {CAPABILITIES}")
     return 0
 
 

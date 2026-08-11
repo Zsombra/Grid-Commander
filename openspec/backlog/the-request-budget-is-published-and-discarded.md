@@ -2,11 +2,11 @@
 id: the-request-budget-is-published-and-discarded
 title: BattleGrid publishes a rate-limit budget on every response and the client only reacts to 429 after it lands
 type: feature
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: the-record-learns-the-other-three-surfaces
 capability: platform-conformance
 blocked_by: []
 tags: [battlegrid, mcp, rate-limit, adapter]
@@ -66,3 +66,18 @@ one call in a batch 429s and degrades the whole view.
 Over-budget calls return HTTP 429 **with a JSON-RPC `-32000` error, and run
 no tool**. The "runs no tool" half is worth a test: a 429 is safe to retry
 even on a mutating call, which is not true of most transport failures.
+
+## 2026-08-11 — partially landed; what remains is consumption
+
+`the-record-learns-the-other-three-surfaces` implemented the reading half:
+`rpc` parses the three `RateLimit-*` headers into a `RequestBudget` snapshot
+(`lastRequestBudget()` on the adapter — deliberately not on the port yet),
+and a 429 carries `Retry-After` into the operator's sentence
+(`tests/connection/request-budget.test.ts` holds all of it).
+
+**Remaining scope, which is this item now:** consumers. Batch-shaped callers
+— the arena watch fan-out, any future sweep — sizing their next dispatch
+against `remaining` before it goes out, and the getter promoted to the port
+together with that first consumer. The proposal's rule: a port method with no
+caller is an unread control, so promotion and consumption arrive in the same
+change.

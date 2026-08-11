@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -33,7 +34,29 @@ interface Surface {
   probed_at?: string;
   tool_count?: number;
   tools: unknown[];
+  instructions?: {
+    chars?: number;
+    sha256?: string;
+    sha256_normalised?: string;
+    addressee_normalisation?: { pattern?: string; replacement?: string };
+    text?: string;
+  };
+  prompts?: Array<{
+    name?: string;
+    body?: string | null;
+    body_sha256?: string;
+    fetch_failed?: string;
+  }>;
+  resources?: Array<{
+    name?: string;
+    uri?: string;
+    content?: string | null;
+    content_sha256?: string;
+    fetch_failed?: string;
+  }>;
 }
+
+const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
 
 const REPROBE = 'BATTLEGRID_API_KEY=… python3 tools/probe_mcp_surface.py';
 
@@ -80,5 +103,101 @@ describe('the surface record names the server it was taken from', () => {
     for (const file of readers) {
       expect(readFileSync(file, 'utf8'), file).toContain('docs/battlegrid-mcp-surface.json');
     }
+  });
+});
+
+describe('the record carries every surface the server declares', () => {
+  /**
+   * The server declares four capability surfaces at `initialize`. For the
+   * life of this record it carried one. Tool parity was genuine — and it was
+   * the only thing checked, so a deploy that rewrote the strategy-authoring
+   * contract or the grid-format rules *in prose* would have moved no test in
+   * this repository. These assertions make a tools-only record fail the way
+   * a versionless record already does.
+   */
+  it('carries the server instructions, digested', () => {
+    expect(surface.instructions, `no instructions recorded — re-probe: ${REPROBE}`).toBeDefined();
+    const ins = surface.instructions ?? {};
+    expect(ins.text, `re-probe: ${REPROBE}`).toBeTruthy();
+    expect(ins.sha256).toBe(sha256(ins.text ?? ''));
+    expect(ins.chars).toBe((ins.text ?? '').length);
+  });
+
+  it('normalises the addressee by a rule the record itself states', () => {
+    /**
+     * The instructions greet the connected account by name. The record is
+     * shared; the greeting is not. The comparable digest is taken after the
+     * recorded normalisation — recomputed here from the record's own pattern,
+     * so the Python that wrote it and the TypeScript that checks it cannot
+     * drift apart without this failing.
+     */
+    const ins = surface.instructions ?? {};
+    const rule = ins.addressee_normalisation ?? {};
+    expect(rule.pattern, 'the record must state its own normalisation').toBeTruthy();
+    const normalised = (ins.text ?? '').replace(
+      new RegExp(rule.pattern ?? ''),
+      rule.replacement ?? '',
+    );
+    expect(ins.sha256_normalised).toBe(sha256(normalised));
+    // When the greeting is present the rule must actually bite — identical
+    // digests would mean the guard is comparing account-addressed text again.
+    // Guarded on the pattern matching so that a server which someday drops
+    // the greeting fails the comparison honestly, not this assertion.
+    if (new RegExp(rule.pattern ?? '').test(ins.text ?? '')) {
+      expect(ins.sha256_normalised, 'the normalisation changed nothing').not.toBe(ins.sha256);
+    }
+  });
+
+  it('carries every prompt with a fetched, digest-verified body', () => {
+    const prompts = surface.prompts ?? [];
+    expect(prompts.length, `no prompts recorded — re-probe: ${REPROBE}`).toBeGreaterThan(0);
+    for (const p of prompts) {
+      // A named failure is an honest *probe* outcome, but a committed record
+      // is the one the guards read — shipping it with holes is how a surface
+      // goes back to being unrecorded one entry at a time.
+      expect(p.fetch_failed, `${String(p.name)}: body fetch failed — re-probe: ${REPROBE}`)
+        .toBeUndefined();
+      expect(p.body, `${String(p.name)} has no body`).toBeTruthy();
+      expect(p.body_sha256, String(p.name)).toBe(sha256(p.body ?? ''));
+    }
+  });
+
+  it('carries every resource with fetched, digest-verified content', () => {
+    const resources = surface.resources ?? [];
+    expect(resources.length, `no resources recorded — re-probe: ${REPROBE}`).toBeGreaterThan(0);
+    for (const r of resources) {
+      expect(r.fetch_failed, `${String(r.uri)}: read failed — re-probe: ${REPROBE}`).toBeUndefined();
+      expect(r.content, `${String(r.uri)} has no content`).toBeTruthy();
+      expect(r.content_sha256, String(r.uri)).toBe(sha256(r.content ?? ''));
+    }
+  });
+});
+
+describe('the reference renders what the record carries', () => {
+  /**
+   * The generator loaded the instructions and discarded them on every run —
+   * `init.get("instructions", "")`, written into memory, never into the
+   * document. These assertions hold the human-readable reference to the
+   * machine record so that cannot happen again.
+   */
+  const reference = readFileSync('docs/BATTLEGRID_MCP_REFERENCE.md', 'utf8');
+
+  it('contains the server instructions verbatim', () => {
+    expect(reference).toContain('## Server instructions');
+    expect(reference, 'the instructions text itself, not just a heading').toContain(
+      (surface.instructions?.text ?? '').slice(0, 200),
+    );
+  });
+
+  it('contains a body for every recorded prompt and resource', () => {
+    for (const p of surface.prompts ?? []) {
+      expect(reference, `prompt ${String(p.name)}`).toContain('### `' + String(p.name) + '`');
+    }
+    for (const r of surface.resources ?? []) {
+      expect(reference, `resource ${String(r.uri)}`).toContain(String(r.uri));
+    }
+    expect(reference, 'a captured record leaves no placeholder in the reference').not.toContain(
+      'not captured in this dump',
+    );
   });
 });

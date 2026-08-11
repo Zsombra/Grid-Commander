@@ -183,13 +183,38 @@ function textOf(envelope: ToolEnvelope): string | null {
   return blocks.length > 0 ? blocks.join('') : null;
 }
 
+/**
+ * The request budget BattleGrid declared on one answer.
+ *
+ * `kind: 'stated'` carries the platform's own numbers — bank ceiling, what is
+ * spendable now, seconds until the bank refills. `kind: 'unstated'` is every
+ * other case: nothing has answered yet, or the last answer carried no budget
+ * headers. Absence is exposed as absence; the platform's own warning is that
+ * a 429 arrives too late to steer a batch already dispatched, and a stale
+ * number repeated as current would steer it just as badly.
+ *
+ * Lives beside the adapter rather than on the port: nothing consumes it yet —
+ * pacing is the follow-up (`the-request-budget-is-published-and-discarded`) —
+ * and a port method with no caller is an unread control, the defect class
+ * this repo catalogues. It is promoted together with its first consumer.
+ */
+export type RequestBudget =
+  | { readonly kind: 'stated'; readonly limit: number; readonly remaining: number; readonly resetSeconds: number }
+  | { readonly kind: 'unstated' };
+
 export class McpBattleGridAdapter implements BattleGridPort {
   private readonly capabilities: CapabilityCache;
+  private budget: RequestBudget = { kind: 'unstated' };
 
   constructor(private readonly deps: AdapterDeps) {
     this.capabilities = new CapabilityCache({
       discoverTools: (token) => this.rawDiscoverTools(token),
     });
+  }
+
+  /** The budget the platform declared on its most recent answer. */
+  lastRequestBudget(): RequestBudget {
+    return this.budget;
   }
 
   buildAuthorizationUrl(params: {
@@ -389,6 +414,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
+    this.budget = readBudget(res.headers);
     // Authority withdrawn at BattleGrid rather than through us — or, on a
     // personal deployment, a key that was wrong from the start. The next
     // operation must fail as "no longer valid, here is what to do" rather than
@@ -400,7 +426,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
     }
     // The sentence an operator reads, not the status line that produced it.
     // `unreadable(err)` carries `err.message` through to every surface.
-    if (!res.ok) throw new PlatformUnavailableError(res.status);
+    if (!res.ok) throw new PlatformUnavailableError(res.status, retryAfterSeconds(res.headers));
     const body = (await res.json()) as JsonRpcResponse;
     if (body.error) throw new Error(body.error.message);
     return body.result;
@@ -441,4 +467,39 @@ export class McpBattleGridAdapter implements BattleGridPort {
       subject: json.sub,
     };
   }
+}
+
+/**
+ * The platform's declared budget, from one answer's headers.
+ *
+ * All three or nothing: a partial set is recorded as unstated rather than
+ * padded, because a budget with an invented member is indistinguishable from
+ * a declared one at the call site — the same reason a missing server version
+ * is never defaulted to a plausible-looking string.
+ */
+function readBudget(headers: Headers): RequestBudget {
+  const limit = Number(headers.get('RateLimit-Limit'));
+  const remaining = Number(headers.get('RateLimit-Remaining'));
+  const resetSeconds = Number(headers.get('RateLimit-Reset'));
+  if (
+    headers.get('RateLimit-Limit') === null ||
+    headers.get('RateLimit-Remaining') === null ||
+    headers.get('RateLimit-Reset') === null ||
+    !Number.isFinite(limit) ||
+    !Number.isFinite(remaining) ||
+    !Number.isFinite(resetSeconds)
+  ) {
+    return { kind: 'unstated' };
+  }
+  return { kind: 'stated', limit, remaining, resetSeconds };
+}
+
+/** `Retry-After` in seconds, or undefined when the platform named no wait. */
+function retryAfterSeconds(headers: Headers): number | undefined {
+  const raw = headers.get('Retry-After');
+  if (raw === null) return undefined;
+  const seconds = Number(raw);
+  // The header may also be an HTTP-date; this platform sends seconds. A date
+  // would parse NaN here and is dropped rather than misread as a huge number.
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
 }

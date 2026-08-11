@@ -66,10 +66,16 @@ describe('surfaces_and_does_not_retry', () => {
     for (const file of filesUnder('src')) {
       const text = readFileSync(file, 'utf8');
       // Comments explaining why we do NOT retry are fine; code is not.
+      // The literal HTTP header name `Retry-After` is also fine: the adapter
+      // *reads* the platform's named wait to surface it in the 429 sentence,
+      // which is the opposite of retrying on the user's behalf. Only the
+      // quoted header name is excused — `retry(`, `retries`, `backoff` and
+      // any loop built on them still land here.
       const code = text
         .split('\n')
         .filter((l) => !l.trim().startsWith('*') && !l.trim().startsWith('//'))
-        .join('\n');
+        .join('\n')
+        .replace(/['"`]Retry-After['"`]/g, "''");
       if (suspicious.test(code)) offenders.push(file);
     }
     expect(offenders, 'P4: conflicts are surfaced to the user, never retried automatically').toEqual([]);

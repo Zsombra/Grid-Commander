@@ -2,11 +2,11 @@
 id: three-quarters-of-the-mcp-surface-is-unrecorded
 title: the surface record is tools-only, so every conformance guard is blind to instructions, prompts and resources
 type: bug
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: the-record-learns-the-other-three-surfaces
 capability: platform-conformance
 blocked_by: []
 tags: [battlegrid, mcp, conformance, probe, record]

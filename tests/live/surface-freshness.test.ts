@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -31,10 +32,18 @@ interface Surface {
   server?: { name?: string; version?: string };
   probed_at?: string;
   tool_count?: number;
+  instructions?: {
+    sha256_normalised?: string;
+    addressee_normalisation?: { pattern?: string; replacement?: string };
+  };
+  prompts?: Array<{ name?: string; body_sha256?: string }>;
+  resources?: Array<{ name?: string; uri?: string; content_sha256?: string }>;
 }
 
-/** `initialize`, answered either plainly or as an SSE frame. */
-async function serverInfo(): Promise<{ name: string; version: string }> {
+const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
+
+/** One JSON-RPC call, answered either plainly or as an SSE frame. */
+async function rpc(method: string, params: unknown): Promise<Record<string, unknown>> {
   const response = await fetch(MCP_URL, {
     method: 'POST',
     headers: {
@@ -42,24 +51,38 @@ async function serverInfo(): Promise<{ name: string; version: string }> {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
     },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: { name: 'grid-commander-freshness', version: '1.0.0' },
-      },
-    }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   });
   const raw = await response.text();
   const frame = raw.startsWith('event:')
     ? (raw.split('\n').find((l) => l.startsWith('data: ')) ?? '').slice('data: '.length)
     : raw;
-  const info = (JSON.parse(frame) as { result?: { serverInfo?: Record<string, string> } }).result
-    ?.serverInfo;
-  return { name: info?.name ?? '', version: info?.version ?? '' };
+  return (JSON.parse(frame) as { result?: Record<string, unknown> }).result ?? {};
+}
+
+async function serverInfo(): Promise<{ name: string; version: string; instructions: string }> {
+  const result = await rpc('initialize', {
+    protocolVersion: '2025-06-18',
+    capabilities: {},
+    clientInfo: { name: 'grid-commander-freshness', version: '1.0.0' },
+  });
+  const info = result['serverInfo'] as Record<string, string> | undefined;
+  return {
+    name: info?.['name'] ?? '',
+    version: info?.['version'] ?? '',
+    instructions: typeof result['instructions'] === 'string' ? result['instructions'] : '',
+  };
+}
+
+/** Prompt body text, flattened the way the probe flattens it. */
+function contentText(content: unknown): string {
+  if (Array.isArray(content)) return content.map(contentText).join('\n');
+  if (typeof content === 'object' && content !== null) {
+    const c = content as Record<string, unknown>;
+    if (typeof c['text'] === 'string') return c['text'];
+    if (c['content'] !== undefined) return contentText(c['content']);
+  }
+  return '';
 }
 
 live('the recorded surface still describes the platform', () => {
@@ -112,5 +135,72 @@ live('the recorded surface still describes the platform', () => {
     expect(agreesOnCount, 'the record has a tool count at all').toBe(true);
     // The version is what decides it, whatever the count says.
     expect(recorded.server?.version).toBe(now.version);
+  });
+});
+
+live('the recorded prose surfaces still match the platform', () => {
+  /**
+   * A version match does not prove the prose matches — and the prose is where
+   * the platform states what no schema can: scope semantics, per-tool
+   * pagination, authoring deadlines, the request budget. Each surface is
+   * compared by digest, so this fails naming the surface that moved rather
+   * than drowning the diff in 25KB of text.
+   */
+  const recorded = JSON.parse(readFileSync('docs/battlegrid-mcp-surface.json', 'utf8')) as Surface;
+
+  it('the server instructions, addressee-normalised', { timeout: 120_000 }, async () => {
+    const rule = recorded.instructions?.addressee_normalisation ?? {};
+    expect(rule.pattern, `record carries no normalisation rule — re-probe: ${REPROBE}`).toBeTruthy();
+
+    const now = await serverInfo();
+    expect(now.instructions, 'the live server returned no instructions').toBeTruthy();
+
+    // The record's own rule, applied to the live text. The greeting names
+    // whichever account runs this guard; the digest must not care.
+    const normalised = now.instructions.replace(
+      new RegExp(rule.pattern ?? ''),
+      rule.replacement ?? '',
+    );
+    expect(
+      sha256(normalised),
+      `the server instructions have changed under version ${String(recorded.server?.version)} — ` +
+        `re-probe: ${REPROBE}`,
+    ).toBe(recorded.instructions?.sha256_normalised);
+  });
+
+  it('every prompt body', { timeout: 120_000 }, async () => {
+    const listed = ((await rpc('prompts/list', {}))['prompts'] ?? []) as Array<{ name: string }>;
+    expect(
+      listed.map((p) => p.name).sort(),
+      `the prompt list itself moved — re-probe: ${REPROBE}`,
+    ).toEqual((recorded.prompts ?? []).map((p) => String(p.name)).sort());
+
+    for (const p of recorded.prompts ?? []) {
+      const got = await rpc('prompts/get', { name: p.name, arguments: {} });
+      const body = ((got['messages'] ?? []) as Array<{ content?: unknown }>)
+        .map((m) => contentText(m.content))
+        .join('\n');
+      expect(
+        sha256(body),
+        `prompt \`${String(p.name)}\` has changed — re-probe: ${REPROBE}`,
+      ).toBe(p.body_sha256);
+    }
+  });
+
+  it('every resource', { timeout: 120_000 }, async () => {
+    const listed = ((await rpc('resources/list', {}))['resources'] ?? []) as Array<{ uri: string }>;
+    expect(
+      listed.map((r) => r.uri).sort(),
+      `the resource list itself moved — re-probe: ${REPROBE}`,
+    ).toEqual((recorded.resources ?? []).map((r) => String(r.uri)).sort());
+
+    for (const r of recorded.resources ?? []) {
+      const got = await rpc('resources/read', { uri: r.uri });
+      const content = ((got['contents'] ?? []) as unknown[]).map(contentText).join('\n');
+      expect(
+        sha256(content),
+        `resource \`${String(r.uri)}\` has changed — re-probe: ${REPROBE}`,
+      ).toBe(r.content_sha256);
+    }
   });
 });

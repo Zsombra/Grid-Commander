@@ -135,12 +135,21 @@ export class ConnectionRevokedError extends DomainError {
  * which is the fourth remedy and the only one the operator can act on today.
  */
 export class PlatformUnavailableError extends DomainError {
-  constructor(readonly status: number) {
-    super(describeStatus(status));
+  /**
+   * Seconds the platform asked this deployment to wait, on a rate-limited
+   * request where it named one. Data carried up from the transport, not a
+   * dependency on it — undefined whenever the platform named no wait, and
+   * never invented here.
+   */
+  constructor(
+    readonly status: number,
+    readonly retryAfterSeconds?: number,
+  ) {
+    super(describeStatus(status, retryAfterSeconds));
   }
 }
 
-function describeStatus(status: number): string {
+function describeStatus(status: number, retryAfterSeconds?: number): string {
   // A gateway that could not reach what it fronts. Nothing about the request
   // was examined, so nothing about the request is the problem.
   if (status === 502 || status === 503 || status === 504) {
@@ -151,10 +160,16 @@ function describeStatus(status: number): string {
     );
   }
   if (status === 429) {
-    // Not a fault at all, and the only case where the remedy is a specific wait.
+    // Not a fault at all, and the only case where the remedy is a specific
+    // wait. An over-budget request runs no tool, so "nothing has changed" is
+    // the platform's contract, not reassurance.
+    const wait =
+      retryAfterSeconds === undefined
+        ? 'the next attempt should succeed'
+        : `it asks for ${retryAfterSeconds} second${retryAfterSeconds === 1 ? '' : 's'} before the next attempt`;
     return (
       `BattleGrid is limiting how often this deployment may ask (HTTP ${status}). ` +
-      'Nothing is wrong; the next attempt should succeed.'
+      `Nothing is wrong and nothing on your account changed; ${wait}.`
     );
   }
   if (status >= 500) {

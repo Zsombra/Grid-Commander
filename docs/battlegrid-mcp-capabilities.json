@@ -15,34 +15,14 @@
     {
       "arguments": [
         {
-          "description": "Trading strategy to use for predictions",
-          "name": "strategy",
-          "required": false
-        }
-      ],
-      "description": "End-to-end workflow for playing a Market Grid prediction game",
-      "name": "play-market-grid"
-    },
-    {
-      "arguments": [
-        {
           "description": "Session UUID to analyze. Omit for general strategy discussion.",
           "name": "sessionId",
           "required": false
         }
       ],
+      "body": "Perform a broad market analysis for BattleGrid predictions:\n\n1. Call list_market_grid_sessions with status \"PENDING\" to find upcoming games\n2. For each available session, call get_market_context with all modules to analyze the coin pools\n3. Call get_account_state to check your readiness\n\nProvide a market overview with:\n- Overall market sentiment (bullish/bearish/neutral)\n- Top coins to watch and why\n- Recommended predictions (UP/DOWN) for the most active coins\n- Best candidates for captain pick (highest conviction)",
       "description": "Deep market analysis for informed predictions",
       "name": "analyze-market"
-    },
-    {
-      "arguments": [],
-      "description": "Review your game results, stats, and leaderboard standing",
-      "name": "check-performance"
-    },
-    {
-      "arguments": [],
-      "description": "Learn BattleGrid game mechanics, rules, and strategies",
-      "name": "strategy-guide"
     },
     {
       "arguments": [
@@ -57,27 +37,55 @@
           "required": false
         }
       ],
+      "body": "Help me author a BattleGrid strategy through the live server contracts.\n\nDo not rely on a cached tool list or copy a catalog, formula, default, signal description, or example from this prompt. Discover the current tool schemas and server-owned vocabulary live, then follow this sequence:\n\n1. **Establish operation and revision.** For UPDATE, call list_strategies and get_strategy({ strategyId }); the default detail read is active-visible only. For RESTORE, call list_strategies({ includeInactive:true }) and get_strategy({ strategyId, includeInactive:true }); the explicit inactive detail path can reveal only an owned PRIVATE strategy. Use the returned current revision as expectedRevision. CREATE has no prior revision.\n2. **Discover report construction progressively.** Call list_strategy_categories, then list_strategy_vocabulary for one returned category, get_metric_construction_hints for selected metrics, and get_strategy_column_contract for every proposed column. Use get_strategy_section_template({ request: canonicalTemplateSelector }) only for templates listed by the server. Use only enabled timeframes returned by live discovery. Call preview_strategy_report(canonicalPreviewPayload) for the bounded point-in-time render.\n3. **Discover scorecard signals at the proposed strategy timeframe.** Call list_strategy_signals, then get_strategy_signal_definition for each candidate signal with that timeframe. Treat availability as structural only; it does not promise live data or a trigger.\n4. **Optionally derive draft guidance.** Call derive_strategy_rule_view({ sections, rules? }) with self-contained draft sections and optional sparse rules. Suggestions and report-default resets are draft information only. Copy only selected sparse changes into the plan input; no suggestion or reset call persists anything.\n5. **Compile exactly one strict plan.** Call compile_strategy_plan({ request: canonicalCompilePayload }); the nested request contains operation CREATE, UPDATE, or RESTORE; a required bounded coinSelection; a bounded intentSummary and assumptions; and only the authoring axes to propose. UPDATE must include at least one changed axis. RESTORE targets an owned inactive revision and may include the repair axes needed to produce one viable active target. For sparse rule overrides, an omitted signal remains unchanged, omitted params preserve canonical params byte-for-byte, and present params are the complete strict replacement. Never submit a raw dense signalRules seed.\n6. **Review before mutation.** Show me the complete approvedPlan post-state, proposed revision, dense scorecard, viability, report-versus-scorecard mismatches, canonical diff, expiry, and bound-agent impact. Separately show the reviewContext's exact column outputs, point-in-time report preview and coin scope, open-position observation, provisional CREATE/RESTORE quota/name admission, assumptions, and confirmation summary. Admission is advisory until apply's writer transaction; open positions are awareness only. Compilation writes nothing.\n7. **Ask for explicit approval.** Do not call apply_strategy_plan until I approve the exact reviewed plan. The token expires after five minutes; preview/compile have a 15-second deadline, a 16,000-estimated-token preview cap, and a 256,000-byte result cap, and a 256,000-byte plan cap. Recompile after expiry, catalog drift, revision drift, or a changed bound-agent materialization fence.\n8. **Apply without reconstruction.** After approval, call apply_strategy_plan({ request: { plan, planToken, confirm:true } }). Build plan by copying, byte-identical from the compiled approvedPlan: operation, postState.id as strategyId, expiresAt, expectedRevision for UPDATE/RESTORE, explicitRuleOverrides as rules, and postState's name, description, tagline, timeframe, regimeAutoDerive, regimeTimeframe, marketReadText, sections (including every generated custom: key), conditions (each carrying its own verdict), minAggregateScore, minRequiredCount, minAtrPct, minStopLossAtrMultiple, maxStopLossPct, minRiskRewardRatio. Send nothing else: the server re-derives the scorecard, diff, viability, mismatches, seed, revision, and bound-agent impact, and rejects diff/viability/mismatches/signalRules/creationSeed/proposedRevision/bindingImpact/authoringCatalogDigest/reviewContext as unknown keys. Do not recalculate fields. Report the full returned strategy, committed revision, changed axes, and applied impact; use that returned revision for any next mutation.\n\nThe four calls get_strategy_section_template, update_strategy_signal_rule, compile_strategy_plan, and apply_strategy_plan use the strict direct-server envelope { request: canonicalPayload }. If live tool discovery through a multi-account proxy exposes account selection for one of them, use the strict sibling envelope { account, request }; the proxy strips only account and forwards the unchanged { request }. Never place account inside request or flatten the canonical request fields. Other tools keep the input shape reported by live discovery.\n\nLifecycle shortcuts remain revisioned: fork_strategy requires sourceRevision; archive_strategy requires expectedRevision and confirm:true; restore_strategy is only for unchanged already-viable inactive content. If restore_strategy returns REPAIR_REQUIRED, do not activate or edit first\u2014use one RESTORE compile/review/apply plan. For a single focused edit, call update_strategy_signal_rule({ request: canonicalRuleUpdate }); it is a thin unified-update wrapper where required is mandatory, omitted params preserve the existing object, and present params replace it after strict validation.\n\nAll discovery and non-financial strategy configuration uses mcp:read, not mcp:wager. Treat that scope as account-and-configuration authority. Changed strategy axes propagate to bound agents immediately, and every successful mutation returns the full next revision.",
       "description": "Discover, compile, review, and atomically apply a BattleGrid strategy",
       "name": "author-strategy"
+    },
+    {
+      "arguments": [],
+      "body": "Review my BattleGrid performance:\n\n1. Call get_account_state to see my balance, level, rank, win rate, and agent slot usage\n2. Call get_leaderboard with metric \"PROFIT\" and timeframe \"WEEKLY\" to see where I stand\n3. Call list_market_grid_sessions with status \"SETTLED\" and limit 5 to find my recent games\n4. For each recent settled session, call get_market_grid_results to see how I did\n\nSummarize:\n- My overall win rate and accuracy\n- Profit/loss trend\n- Leaderboard position\n- Strengths and areas to improve\n- Suggestions for better prediction strategy",
+      "description": "Review your game results, stats, and leaderboard standing",
+      "name": "check-performance"
+    },
+    {
+      "arguments": [
+        {
+          "description": "Trading strategy to use for predictions",
+          "name": "strategy",
+          "required": false
+        }
+      ],
+      "body": "Help me play a Market Grid game on BattleGrid. Follow these steps:\n\n1. **Find a game**: Call list_market_grid_sessions with status \"PENDING\" to find upcoming sessions\n2. **Pick a session**: Choose one based on the entry fee and coin pool. Call get_market_grid_session to see full details\n3. **Check balance**: If it's a paid game, call get_account_state to verify I have enough USDC and check my rank\n4. **Research coins**: Call get_market_context with the sessionId to get comprehensive market data (indicators, rankings, trends)\n5. **Check existing submission**: Call check_market_grid_submission to see if I've already submitted\n6. **Build predictions**: Based on your analysis, decide UP or DOWN for each coin. Pick the strongest conviction as captain (2x multiplier)\n7. **Submit**: Call submit_market_grid with the grid. Include your reasoning text, confidenceScore (0.0-1.0), and modelName so your analysis is saved to the reasoning journal for review.\n\nChoose the best strategy based on current market conditions.\n\nShow your analysis for each coin and explain your reasoning before submitting.",
+      "description": "End-to-end workflow for playing a Market Grid prediction game",
+      "name": "play-market-grid"
+    },
+    {
+      "arguments": [],
+      "body": "Explain how BattleGrid works and give me strategy tips. Use the tools to show real examples:\n\n1. Call list_game_presets to show available game types and configurations\n2. Call list_market_grid_sessions with status \"PENDING\" and limit 3 to show example upcoming games\n3. Call get_account_state to check my current balance and rank\n\nThen explain:\n\n**Market Grid Rules:**\n- You get a pool of coins (3-10) and predict UP or DOWN for each\n- One coin must be your \"Captain\" which gets a 2x score multiplier\n- Score is based on how accurately your predictions match actual price movements\n- Sessions have a fixed timeframe (e.g., 1 hour) after which results are calculated\n\n**Strategy Tips:**\n- Use get_market_context with a sessionId to study trends and indicators before predicting\n- Strong trends are more reliable than choppy markets\n- Pick your highest-conviction prediction as captain\n- Diversify: don't predict all UP or all DOWN\n\n**Paid Games:**\n- Entry fees are in USDC\n- Check balance with get_account_state before joining\n- Payouts are distributed to top performers based on the payout structure\n- Enable server-signed wagers in Profile > Wallet tab (Agent Wagers) for paid games",
+      "description": "Learn BattleGrid game mechanics, rules, and strategies",
+      "name": "strategy-guide"
     }
   ],
   "protocolVersion": "2025-06-18",
   "resourceTemplates": [],
   "resources": [
     {
+      "content": "# BattleGrid Quick Start Guide\n\n## Play Your First Game in 6 Steps\n\n### 1. Find a Game\n```\nlist_market_grid_sessions({ status: \"PENDING\" })\n```\nLook for sessions with a $0 entry fee to start risk-free.\n\n### 2. Get Session Details\n```\nget_market_grid_session({ sessionId: \"...\" })\n```\nNote the coin pool \u2014 these are the coins you'll predict.\n\n### 3. Research the Coins\n```\nget_market_context({ sessionId: \"...\" })\n```\nGet comprehensive market data including indicators, rankings, and trends for all coins in the session.\n\n### 4. Submit Your Predictions\n```\nsubmit_market_grid({\n  sessionId: \"...\",\n  grid: [\n    { coinId: \"SOL\", position: 0, prediction: \"UP\", isCaptain: true },\n    { coinId: \"BTC\", position: 1, prediction: \"DOWN\", isCaptain: false },\n    { coinId: \"ETH\", position: 2, prediction: \"UP\", isCaptain: false }\n  ],\n  reasoning: \"BTC showing bearish divergence on RSI, SOL breaking above resistance with volume...\",\n  confidenceScore: 0.75,\n  modelName: \"your-model-name\"\n})\n```\nPick your strongest conviction as captain for the 2x multiplier! Include reasoning fields so your analysis is saved to the journal.\n\n### 5. Check Results\n```\nget_market_grid_results({ sessionId: \"...\" })\n```\nAfter the session settles, see your ranking and score.\n\n### 6. Review Your Reasoning\n```\nget_mcp_reasoning_journal({ sessionId: \"...\" })\n```\nReview the reasoning you submitted for this session \u2014 useful for improving future predictions.\n\n## Tips for Better Predictions\n- **Study trends**: Use get_market_context with modules like rsi, macd, volume, bollingerBands, movingAverages, fundingRates, trendStrength \u2014 pass all 18 for comprehensive analysis\n- **Captain wisely**: Put the 2x multiplier on your most confident pick\n- **Track performance**: Use get_account_state to monitor your stats and rank\n\n## Paid Games\n1. Check balance: `get_account_state()`\n2. Ensure you have USDC for the entry fee\n3. Enable server-signed wagers: Profile > Wallet tab > Agent Wagers\n4. Submit normally \u2014 the platform handles the payment automatically",
       "mimeType": "text/markdown",
-      "name": "game-rules",
-      "uri": "battlegrid://rules/overview"
+      "name": "quick-start",
+      "uri": "battlegrid://guide/quick-start"
     },
     {
+      "content": "# Grid Format Reference\n\n## Market Grid Cell\n```json\n{\n  \"coinId\": \"SOL\",\n  \"position\": 0,\n  \"prediction\": \"UP\",\n  \"isCaptain\": true\n}\n```\n\n**Fields:**\n- `coinId` (string) \u2014 The coin's **internal ticker**, exactly as `get_market_grid_session` returns it in the pool's `id` field (e.g. `SOL`, `BTC`, `kPEPE`). It is NOT a UUID \u2014 copy the value, never construct one.\n- `position` (integer, 0-based) \u2014 Grid slot index\n- `prediction` (\"UP\" | \"DOWN\") \u2014 Your price direction prediction\n- `isCaptain` (boolean) \u2014 Exactly ONE cell must be true. Captain gets 2x score multiplier.\n\n**Validation Rules:**\n- Grid size must match the session's coin pool size\n- Each coinId must appear exactly once\n- Positions must be sequential (0, 1, 2, ...)\n- Exactly one isCaptain must be true",
       "mimeType": "text/markdown",
       "name": "grid-format",
       "uri": "battlegrid://reference/grid-format"
     },
     {
+      "content": "# BattleGrid Game Rules\n\n## Market Grid\n- **Objective**: Predict whether each coin in the pool will go UP or DOWN over a fixed timeframe\n- **Grid**: Array of cells, one per coin in the pool\n- **Captain**: Exactly one cell must be marked as captain (2x score multiplier)\n- **Scoring**: Based on accuracy of predictions vs actual price movements\n- **Payout**: Top performers share the prize pool based on the session's payout structure\n- **Entry fee**: Ranges from free ($0) to paid (USDC). Fee is transferred automatically on submission.\n\n## Game Session Lifecycle\n1. **PENDING** \u2014 Session created, accepting submissions. Submit your grid during this phase.\n2. **LIVE** \u2014 Game is in progress. Price data is being tracked. No new submissions (some sessions allow updates).\n3. **RESOLVING** \u2014 Timeframe ended, market closed, calculating final scores and rankings.\n4. **SETTLED** \u2014 Results are final. Rankings, scores, and payouts are available.\n5. **CANCELLED** \u2014 Session was cancelled (rare). Entry fees are refunded.\n\n## Key Concepts\n- **Entry Fee**: USDC amount required to join a session.\n- **Wager**: The entry fee transfer from your wallet to the game pool.\n- **Payout**: USDC distributed to top-ranking players after settlement.\n- **XP/Points**: Earned by playing games, contributing to your player level and rank.\n- **Leaderboard**: Rankings by profit, volume, score, or game-specific KPIs.",
       "mimeType": "text/markdown",
-      "name": "quick-start",
-      "uri": "battlegrid://guide/quick-start"
+      "name": "game-rules",
+      "uri": "battlegrid://rules/overview"
     }
   ],
   "serverInfo": {

@@ -1,19 +1,42 @@
-"""Generate the complete BattleGrid MCP library reference from a live capability dump."""
-import json, re, textwrap, sys, time
+"""Generate the complete BattleGrid MCP library reference.
 
-SP = sys.argv[1]
-init = json.load(open(f"{SP}/init.txt"))["result"]
-cap = {
-    "tools": json.load(open(f"{SP}/tools.json"))["result"]["tools"],
-    "prompts": json.load(open(f"{SP}/prompts.json"))["result"]["prompts"],
-    "resources": json.load(open(f"{SP}/resources.json"))["result"]["resources"],
-    "resourceTemplates": json.load(open(f"{SP}/restemplates.json"))["result"].get("resourceTemplates", []),
-    "serverInfo": init["serverInfo"],
-    "protocolVersion": init["protocolVersion"],
-    "capabilities": init.get("capabilities", {}),
-    "instructions": init.get("instructions", ""),
-}
+Input is either the committed merged dump (the default —
+`docs/battlegrid-mcp-capabilities.json`, written by `probe_mcp_surface.py`)
+or a raw dump directory of `init.txt` / `tools.json` / `prompts.json` /
+`resources.json` / `restemplates.json` files. With the merged dump the
+reference is regenerable from the repository alone, no credential needed.
+"""
+import json, os, re, textwrap, sys, time
+
+SP = sys.argv[1] if len(sys.argv) > 1 else "docs/battlegrid-mcp-capabilities.json"
+DIR_MODE = os.path.isdir(SP)
+if DIR_MODE:
+    init = json.load(open(f"{SP}/init.txt"))["result"]
+    cap = {
+        "tools": json.load(open(f"{SP}/tools.json"))["result"]["tools"],
+        "prompts": json.load(open(f"{SP}/prompts.json"))["result"]["prompts"],
+        "resources": json.load(open(f"{SP}/resources.json"))["result"]["resources"],
+        "resourceTemplates": json.load(open(f"{SP}/restemplates.json"))["result"].get("resourceTemplates", []),
+        "serverInfo": init["serverInfo"],
+        "protocolVersion": init["protocolVersion"],
+        "capabilities": init.get("capabilities", {}),
+        "instructions": init.get("instructions", ""),
+    }
+else:
+    cap = json.load(open(SP))
+    cap.setdefault("resourceTemplates", [])
+    cap.setdefault("instructions", "")
 tools = {t["name"]: t for t in cap["tools"]}
+
+
+def fenced(text):
+    """A fence the content cannot break out of.
+
+    The instructions and the resource bodies are markdown carrying their own
+    triple-backtick blocks; a three-tick fence would end at the first one and
+    spill the rest into the reference's own structure. Four ticks hold three.
+    """
+    return "````markdown\n" + (text or "").rstrip("\n") + "\n````"
 
 CATS = [
  ("Market Grid — playing the game", ["list_market_grid_sessions","get_market_grid_session","check_market_grid_submission","submit_market_grid","update_market_grid","random_submit_market_grid","get_market_grid_results","get_market_grid_player_grid","get_mcp_reasoning_journal","list_game_presets"]),
@@ -130,7 +153,8 @@ out = []
 w = out.append
 si = cap["serverInfo"]
 w("# BattleGrid MCP — complete library reference\n")
-w("Generated from a live `tools/list`, `prompts/list` and `resources/list` against")
+w("Generated from a live `initialize` (instructions), `tools/list`, `prompts/list` +")
+w("`prompts/get`, and `resources/list` + `resources/read` against")
 w("`https://mcp.battlegrid.trade/mcp` (server `" + si.get("name", "?") + " v" + si.get("version", "?")
   + "`, protocol `" + cap["protocolVersion"] + "`) on "
   + time.strftime("%Y-%m-%d", time.gmtime()) + ".")
@@ -199,6 +223,7 @@ for title, _ in CATS:
     w("- [" + title + "](#" + anchor + ")")
 w("- [Prompts](#prompts)")
 w("- [Resources](#resources)")
+w("- [Server instructions](#server-instructions)")
 w("")
 
 for title, names in CATS:
@@ -230,12 +255,19 @@ for title, names in CATS:
             w("_No parameters._\n")
 
 w("\n## Prompts\n")
+w("Bodies are the server's own text, verbatim; the server tells clients not to")
+w("copy catalogs, formulas, or defaults out of them — they describe *sequence*,")
+w("and the values are rediscovered live.\n")
 for p in cap["prompts"]:
     args = p.get("arguments") or []
     a = ", ".join("`" + str(x.get("name")) + "`" + ("" if x.get("required") else "?") for x in args) or "—"
     w("### `" + str(p.get("name")) + "`\n")
     w((p.get("description") or "").strip() + "\n")
     w("Arguments: " + a + "  \n_(`?` marks optional)_\n")
+    if p.get("body"):
+        w(fenced(p["body"]) + "\n")
+    else:
+        w("_Body not captured in this dump — re-probe to fetch it._\n")
 
 w("\n## Resources\n")
 w("| Name | URI | Description |")
@@ -243,9 +275,24 @@ w("|---|---|---|")
 for r in cap["resources"]:
     w("| `" + str(r.get("name")) + "` | `" + str(r.get("uri")) + "` | " + clean(r.get("description")) + " |")
 w("")
+for r in cap["resources"]:
+    w("### `" + str(r.get("name")) + "` — `" + str(r.get("uri")) + "`\n")
+    if r.get("content"):
+        w(fenced(r["content"]) + "\n")
+    else:
+        w("_Content not captured in this dump — re-probe to fetch it._\n")
 
-open(f"{SP}/mcp-reference.md", "w").write("\n".join(out))
-json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w"), indent=2, sort_keys=True)
+w("\n## Server instructions\n")
+w("What every client is told at `initialize`, verbatim. This is the platform's")
+w("prose contract — scope semantics, workflow sequences, per-tool pagination and")
+w("rate limits live here and nowhere in the schemas. The freshness guard compares")
+w("this text (addressee-normalised) against the live server.\n")
+w(fenced(cap.get("instructions", "")) + "\n")
+
+REFERENCE = f"{SP}/mcp-reference.md" if DIR_MODE else "docs/BATTLEGRID_MCP_REFERENCE.md"
+open(REFERENCE, "w").write("\n".join(out))
+if DIR_MODE:
+    json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w"), indent=2, sort_keys=True)
 
 covered = sum(len([n for n in ns if n in tools]) for _, ns in CATS)
 print("tools in list      :", len(tools))
