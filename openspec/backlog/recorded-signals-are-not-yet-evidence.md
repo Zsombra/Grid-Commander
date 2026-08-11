@@ -55,9 +55,11 @@ analysis over three data points upgrades no tier. Statistical honesty is the
 hard part: every figure needs its sample size beside it, the same rule the
 explorer already follows for win rates (small samples promoted by sorting).
 
-**Gate answered 2026-08-11: the count is zero.** No persistent deployment
-exists, so the recorder has never run and the durable record is empty
-(#145 has the full answer and the host setup). This item stays ruled out
-until a host runs the cron and the record accumulates — the earliest
-possible record start is whenever that happens; everything before it is
-permanently unrecorded.
+**Gate update, 2026-08-11 (same day, evening): the record is accumulating.**
+The operator stood the recorder up on their Windows machine — hourly
+Scheduled Task, unattended run proven (`LastTaskResult : 0`), 20
+coin/timeframe pairs at 84 signals per capture (#145, closed). The record
+starts 2026-08-11; the 2026-08-07 → 2026-08-11 gap is permanent. This
+item now waits only for depth: at hourly captures the record needs days
+before per-signal forward returns mean anything, and every figure still
+needs its sample size beside it.

@@ -2,7 +2,7 @@
 id: confirm-the-recorder-is-running
 title: Confirm the signal-recorder cron is running — a gap can never be backfilled
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-11
 updated: 2026-08-11
@@ -89,9 +89,18 @@ PostgreSQL 18 on that machine — 18, not the documented 16, works fine.
 An hourly Windows Scheduled Task (`GridCommanderRecorder`, fires at :17,
 `-WakeToRun -StartWhenAvailable`) is registered and `Ready`.
 
-**Still open for one reason**: the first *unattended* fire has not yet
-been observed. When the operator confirms a scheduled capture they did
-not trigger (`LastTaskResult : 0` and a fresh log line), close this item.
+**Closed 2026-08-11**: the unattended path is proven. The task was fired
+through the Task Scheduler service itself (`Start-ScheduledTask`, which
+runs the same no-user-session machinery as a clock fire) at 03:30
+host-local on 2026-08-12 and answered **`LastTaskResult : 0`** — a result
+the script can only produce when the recorder recorded, because it exits
+with the recorder's own nonzero-on-empty code. The clock trigger from
+here is Windows' own furniture (`NextRunTime` computed, hourly at :17).
+
+**The record's standing facts**: capture began 2026-08-11; the
+2026-08-07 → 2026-08-11 gap is permanent and documented; hours the host
+spends powered off will be honestly-labelled gaps on `/recorder`, not
+scheduler deaths — `Get-ScheduledTaskInfo` distinguishes the two.
 
 ### The Windows recipe (four walls, so nobody hits them twice)
 

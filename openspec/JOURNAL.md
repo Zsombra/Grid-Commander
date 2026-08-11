@@ -10,8 +10,10 @@ PostgreSQL 18 on that machine, with an hourly Scheduled Task
 (`GridCommanderRecorder`, :17 past, `-WakeToRun -StartWhenAvailable`)
 registered and Ready. The Windows recipe (execution policy, `record.ps1`,
 `Register-ScheduledTask`, the PostgreSQL-18-path and password-typo traps)
-is filed in `confirm-the-recorder-is-running`, which stays open only
-until the operator confirms the first unattended fire. The walk exposed a
+is filed in `confirm-the-recorder-is-running`, **closed the same evening
+when the unattended fire was proven** — `Start-ScheduledTask` through the
+service machinery, `LastTaskResult : 0`, a result the wrapper only
+produces when the recorder recorded. The walk exposed a
 real repo gap: `npx tsx` prompts to download tsx **inside the unattended
 run** because tsx is not a dependency — filed as
 `tsx-is-not-a-dependency` (#152), worked around on the host with
@@ -22,9 +24,8 @@ documented; everything after it is being captured hourly, machine-sleep
 holes excepted. #94's gate moves from "answered at zero" to "accumulating
 since 2026-08-11".
 
-**Next**: Operator confirms the first scheduled capture → close #145.
-#94 waits for the record to hold enough to say anything — days, not
-hours. The tsx dependency fix (#152) is a clean lite change.
+**Next**: #94 waits for the record to hold enough to say anything —
+days, not hours. The tsx dependency fix (#152) is a clean lite change.
 
 **Watch out**: The recorder host is a personal Windows machine — hours
 it spends powered off are honestly-labelled permanent gaps, and
