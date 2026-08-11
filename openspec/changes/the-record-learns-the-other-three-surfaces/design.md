@@ -82,3 +82,6 @@ imports nothing from the MCP layer.
   budget + Retry-After unit coverage with a fake fetch
 - `docs/battlegrid-mcp-surface.json`, `docs/battlegrid-mcp-capabilities.json`,
   `docs/BATTLEGRID_MCP_REFERENCE.md` (regenerated)
+- `tests/concurrency/conflict.test.ts` (modified) — the P4 no-retry scan now
+  excuses the quoted literal `'Retry-After'` only; found during gates, not
+  planned. Reading the platform's named wait is surfacing, not retrying.
