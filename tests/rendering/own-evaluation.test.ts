@@ -94,6 +94,9 @@ function scorecard(over: Partial<EvaluationScorecard> = {}): EvaluationScorecard
       durationMs: 20711,
       errorMessage: null,
     },
+    // This live shape predates v17.2.0's condition block; the populated
+    // case is exercised where a test is about it.
+    conditions: null,
     ...over,
   };
 }
@@ -233,5 +236,98 @@ describe('the user’s own evaluation page', () => {
     current = { app: actingWith().app, user: notConnected };
     const r = await ownEvaluationRendered();
     expect(r.text).toContain('connect');
+  });
+});
+
+describe('what the strategy’s conditions said', () => {
+  /** The live observation of 2026-08-11 (#133), as the domain carries it. */
+  const observed = () => ({
+    outcomes: [
+      {
+        conditionKey: 'FUNDING_STRETCHED',
+        name: 'Funding stretched in either direction',
+        outcome: 'TRUE',
+        required: false,
+        provisional: true,
+        evidence: [
+          {
+            kind: 'clause',
+            sectionKey: 'includeFundingRates',
+            header: 'rate',
+            op: 'gte',
+            operand: '0.0013',
+            literal: '0.0004',
+            outcome: 'TRUE',
+          },
+          {
+            kind: 'clause',
+            sectionKey: 'includeFundingRates',
+            header: 'rate',
+            op: 'lte',
+            operand: '0.0013',
+            literal: '-0.0004',
+            outcome: 'FALSE',
+          },
+        ],
+      },
+    ],
+    trueCount: 1,
+    total: 1,
+    unresolvedCount: 0,
+    strategyRevision: 3,
+    provisional: true,
+    verdict: null,
+    decidedBy: null,
+  });
+
+  it('shows each condition with the observed value beside the threshold', async () => {
+    const agents = world();
+    agents.ownEvaluation = {
+      kind: 'evaluation',
+      evaluation: scorecard({ conditions: observed() }),
+    };
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('Funding stretched in either direction — TRUE');
+    // The platform's comparison, not a recomputation: demanded, observed, went.
+    expect(r.text).toContain('rate ≥ 0.0004 — observed 0.0013 — TRUE');
+    expect(r.text).toContain('rate ≤ -0.0004 — observed 0.0013 — FALSE');
+    expect(r.text).toContain('from includeFundingRates');
+    expect(r.text).toContain('1 of 1 true');
+    expect(r.text).toContain('strategy revision 3');
+    expect(r.text).toContain('provisional');
+    // The never-observed deciding branch renders nothing while null.
+    expect(r.text).not.toContain('Verdict');
+    expect(r.text).not.toContain('decided by');
+  });
+
+  it('renders an op it has never seen verbatim rather than guessing a symbol', async () => {
+    const agents = world();
+    const c = observed();
+    c.outcomes[0]!.evidence = [{ ...c.outcomes[0]!.evidence[0]!, op: 'N_OF' }];
+    agents.ownEvaluation = { kind: 'evaluation', evaluation: scorecard({ conditions: c }) };
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('rate N_OF 0.0004');
+  });
+
+  it('renders the deciding branch verbatim the day the platform populates it', async () => {
+    const agents = world();
+    agents.ownEvaluation = {
+      kind: 'evaluation',
+      evaluation: scorecard({
+        conditions: { ...observed(), verdict: 'BLOCKED', decidedBy: 'FUNDING_STRETCHED' },
+      }),
+    };
+    const r = await ownEvaluationRendered();
+    expect(r.text).toContain('Verdict: BLOCKED');
+    expect(r.text).toContain('decided by FUNDING_STRETCHED');
+  });
+
+  it('shows no condition section when the platform published none', async () => {
+    world();
+    const r = await ownEvaluationRendered();
+    // `scorecard()` carries `conditions: null` — a real state, and neither
+    // an empty list nor a claim that anything passed appears for it.
+    expect(r.text).not.toContain('conditions said');
+    expect(r.text).not.toContain('of 0 true');
   });
 });

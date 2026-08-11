@@ -14,6 +14,9 @@ import type { EvaluationScorecard } from '@/domain/agent/scorecard.js';
  * and `ExplorerPort` does the same for its half of the surface.
  */
 export type {
+  ConditionClause,
+  ConditionOutcome,
+  ConditionReport,
   ConsultedSignal,
   EvaluationChain,
   EvaluationScorecard,

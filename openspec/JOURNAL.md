@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-08-11 (the conditions speak) — the evidence layer rendered, nothing recomputed
+
+**`an-evaluation-explains-its-conditions` archived**, closing #133 the same
+day it was filed and observed. The evaluation detail page now carries "What
+the strategy's conditions said": per condition the platform's verdict with
+its clause evidence — the observed value beside the threshold, verbatim
+("rate ≥ 0.0004 — observed 0.0013 — TRUE"), known ops as symbols, unknown
+ops as themselves — plus the tally, the strategy revision the conditions
+came from, and the platform's `provisional` word where it says it.
+
+The honesty rules did the design work. Nothing is recomputed: every
+comparison shown is the platform's own, and the clause values stay verbatim
+decimal strings whose units belong to their columns. No block renders no
+section — publishing nothing is a real state, never "all passed". The
+public path lands on null by construction (the public tool never declares
+the block), so the shared mapper needed no owner flag. And the
+never-observed deciding branch (`verdict`/`decidedBy`) closes honestly
+rather than staying open as work: carried verbatim, rendered the day a
+required condition first decides — nothing left to build, only a fact to
+notice.
+
+Spec: `agent-understanding` +1 requirement. 2115 offline tests and full
+local CI green (PostgreSQL died once mid-run, its habit; restarted, green).
+
 ## 2026-08-11 (the condition evidence) — observed, populated, and one gap named
 
 **#133's first step done** — the observation the item demanded before any
