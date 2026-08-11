@@ -4,6 +4,7 @@ import type {
   HeldPosition,
   LevelAsDecided,
   PricedAt,
+  RestingProtection,
 } from '@/application/use-cases/read-exposure.query.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
 
@@ -112,6 +113,7 @@ function Position({ held }: { held: HeldPosition }) {
       </p>
 
       <SinceTheDecision held={held} />
+      <AtTheVenue resting={held.resting} coin={p.coinTicker} />
 
       {p.openedAt ? (
         <p className="text-text-secondary">
@@ -120,6 +122,53 @@ function Position({ held }: { held: HeldPosition }) {
         </p>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * What actually rests at the exchange for this coin, against the levels above.
+ *
+ * `Stop now 1.4731` is software's word; a resting reduce-only order is the
+ * exchange's. The gap between them is the sharpest risk fact this page can
+ * state: a position with nothing resting is protected only while BattleGrid is
+ * up, and BattleGrid spends evenings flapping. Both render, labelled as whose
+ * they are — never reconciled into one figure, because no common scale was
+ * published.
+ *
+ * The rows churn in minutes (the leg observed OPEN at 19:20Z was CANCELLED by
+ * 19:45Z, replaced by trailing), so the wording claims a snapshot, not a state.
+ */
+function AtTheVenue({ resting, coin }: { resting: RestingProtection; coin: string }) {
+  if (resting.kind === 'unreadable') {
+    return (
+      <div className="space-y-1">
+        <p>Whether protection rests at the venue could not be read: {resting.reason}</p>
+        <WhyNotLoaded cause={resting.cause} subject="the venue’s resting orders are" />
+      </div>
+    );
+  }
+
+  if (resting.legs.length === 0) {
+    return (
+      <p className="font-medium" role="alert">
+        {`No protective order rests at the venue for ${coin} — as of this read, the stop above exists only in BattleGrid’s software.`}
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <p>{`Resting at the venue for ${coin}, as of this read:`}</p>
+      <ul className="list-disc pl-5">
+        {resting.legs.map((leg) => (
+          <li key={leg.orderId}>
+            {`${leg.orderType ?? 'Order of unstated type'} · triggers at ${price(leg.triggerPrice)}`}
+            {leg.quantity === null ? '' : ` · ${leg.quantity} ${leg.symbol}`}
+            {` · venue order ${leg.orderId}`}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

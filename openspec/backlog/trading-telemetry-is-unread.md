@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-08
+updated: 2026-08-10
 change: ""
 capability: agent-understanding
 github: "116"
@@ -129,3 +129,21 @@ What remains of this item: open orders (`get_open_orders` — venue-direct
 and slow), `get_order_status`, `get_trade_chart` (frozen candles with the
 entry/exit overlay), `get_position_audit_history`, and the market-context
 reads. None is needed to answer "what did it do"; each is its own surface.
+
+## Narrowed again, 2026-08-10 — the open-orders slice shipped
+
+Both blocked tools were observed tonight (#116 has the shapes): `get_open_orders`
+answered six uniform 13-key rows, and `get_order_status` answered for a
+CANCELLED order 25 minutes after that same order was observed OPEN — the rows
+churn as position management replaces legs.
+
+`the-protection-that-actually-rests` consumed `get_open_orders`: each open
+position on `/agents/[id]` now shows the reduce-only legs actually resting at
+the venue — type, trigger, size, order id — or says plainly that nothing
+rests. The join is by coin in the query; the read fails independently.
+
+**What remains on this item**: the market-context reads (`get_coin_candles`,
+`get_coin_metadata`, `get_macd_heatmap`, `get_coin_performance_history`,
+`get_regime_snapshot`, `get_regime_history`) — none blocked, each its own
+surface when something asks the question it answers — and `get_order_status`,
+observed but unmodelled until a surface needs per-order polling.

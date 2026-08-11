@@ -1,7 +1,7 @@
 import type { AgentsPort, EntryDecision, StageResult } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
 import type { FailureCause } from '@/ports/failure.js';
-import type { ExposureTotals, OpenPosition, PositionsPort } from '@/ports/positions.js';
+import type { ExposureTotals, OpenPosition, PositionsPort, RestingOrder, RestingOrdersResult } from '@/ports/positions.js';
 
 /**
  * What one agent has at stake, and what it tried to stake and could not.
@@ -115,7 +115,26 @@ export interface DecidedLevels {
 export interface HeldPosition {
   readonly position: OpenPosition;
   readonly asDecided: DecidedLevels | null;
+  /** What actually rests at the venue for this position's coin. */
+  readonly resting: RestingProtection;
 }
+
+/**
+ * The venue's own answer for one position, joined here rather than in the
+ * component for the standing reason: a surface that works the join out for
+ * itself will one day work it out backwards, and on protection, backwards
+ * reads as *covered* when the truth is *naked*.
+ *
+ * The join is by coin over reduce-only rows — the order row carries no
+ * positionId and no agentId (observed 2026-08-10, #116), so the coin is the
+ * only honest key. Where the same coin ever held two positions the legs would
+ * co-render, which overstates nothing: the venue's book for that coin is
+ * exactly what is shown.
+ */
+export type RestingProtection =
+  /** The venue's reduce-only legs on this coin — possibly none, said plainly. */
+  | { readonly kind: 'legs'; readonly legs: readonly RestingOrder[] }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * When the platform priced this, and how long ago that was by the time it is
@@ -184,14 +203,17 @@ export class ReadExposureQuery {
     // a position that answered, and an unreadable decision list must not blank
     // either. The pipeline page's rule, one surface out and now over three
     // reads rather than two.
-    const [active, funnel, decisions] = await Promise.all([
+    const [active, funnel, decisions, resting] = await Promise.all([
       this.positions.readActivePositions(req),
       this.agents.readOwnFunnel(req),
       this.agents.readEntryDecisions({ ...req, limit: DECISION_WINDOW }),
+      // The venue read, kept as independent as the other three: a venue that
+      // will not answer costs the resting column, never the holding.
+      this.positions.readRestingOrders(req),
     ]);
 
     return {
-      exposure: view(active, req.agentId, byId(decisions), this.clock.now()),
+      exposure: view(active, req.agentId, byId(decisions), this.clock.now(), resting),
       fills: fills(funnel),
     };
   }
@@ -215,6 +237,7 @@ function view(
   agentId: string,
   decisions: ReadonlyMap<string, EntryDecision>,
   now: Date,
+  resting: RestingOrdersResult,
 ): ExposureView {
   if (active.kind === 'unreadable') {
     return { kind: 'unreadable', reason: active.reason, cause: active.cause };
@@ -225,7 +248,9 @@ function view(
 
   const mine = active.exposure.positions
     .filter((p) => p.agentId === agentId)
-    .map((p) => held(p, p.decisionId === null ? undefined : decisions.get(p.decisionId)));
+    .map((p) =>
+      held(p, p.decisionId === null ? undefined : decisions.get(p.decisionId), restingFor(p, resting)),
+    );
   if (mine.length === 0) return { kind: 'flat' };
   return {
     kind: 'holding',
@@ -257,8 +282,12 @@ function priced(generatedAtMs: number | null, now: Date): PricedAt {
  * `stopLoss: 55.67456526` and its position reported `effectiveStopLoss:
  * 55.954`, trailing having walked the stop 28 cents up a $56 instrument.
  */
-function held(position: OpenPosition, decision: EntryDecision | undefined): HeldPosition {
-  if (decision === undefined) return { position, asDecided: null };
+function held(
+  position: OpenPosition,
+  decision: EntryDecision | undefined,
+  resting: RestingProtection,
+): HeldPosition {
+  if (decision === undefined) return { position, asDecided: null, resting };
   return {
     position,
     asDecided: {
@@ -266,6 +295,16 @@ function held(position: OpenPosition, decision: EntryDecision | undefined): Held
       // No side is passed for the target on purpose — see `protects` below.
       target: level(decision.takeProfit, position.effectiveTakeProfit, null),
     },
+    resting,
+  };
+}
+
+/** The venue's reduce-only book for this position's coin — the only honest key. */
+function restingFor(position: OpenPosition, resting: RestingOrdersResult): RestingProtection {
+  if (resting.kind === 'unreadable') return resting;
+  return {
+    kind: 'legs',
+    legs: resting.orders.filter((o) => o.symbol === position.coinTicker && o.reduceOnly),
   };
 }
 

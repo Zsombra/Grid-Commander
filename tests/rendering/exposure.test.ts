@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { anAgent, anEntryDecision, FakeAgentsPort } from '../support/agent-fakes.js';
 import { FakeClock } from '../support/fakes.js';
-import { anExposure, aPosition, FakePositionsPort } from '../support/position-fakes.js';
+import { aRestingOrder, anExposure, aPosition, FakePositionsPort } from '../support/position-fakes.js';
 import { actingWith } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
 
@@ -280,7 +280,11 @@ describe('the stop that moved', () => {
     expect(r.text).toContain('The decision set the target at 57.1');
     expect(r.text).toContain('it is now 57.34986948');
     // A target in a new place is a different exit, not more or less cover.
-    expect(r.text).not.toContain('protect');
+    // Asserted on the drift wording itself, not the whole page — the venue
+    // section below legitimately speaks of protective orders, which is a
+    // different claim about a different system.
+    expect(r.text).not.toContain('moved to protect');
+    expect(r.text).not.toMatch(/target[^.]*protect/i);
   });
 });
 
@@ -395,5 +399,45 @@ describe('entries that never became an order', () => {
     world({ kind: 'none' }, FUNNEL({ failed: 0, executed: 60 }));
     const r = await page();
     expect(r.text).not.toContain('never became an order');
+  });
+});
+
+describe('the protection that actually rests, as a person reads it', () => {
+  it('renders each resting leg with its type, trigger, size and venue order id', async () => {
+    const { positions } = world({ kind: 'exposure', exposure: anExposure() });
+    positions.resting = {
+      kind: 'orders',
+      orders: [
+        aRestingOrder({ orderId: '513946107402', symbol: 'HYPE', orderType: 'Stop Market', triggerPrice: 55.9, quantity: 0.22 }),
+        aRestingOrder({ orderId: '513871161240', symbol: 'HYPE', orderType: 'Take Profit Market', triggerPrice: 57.3, quantity: 0.22 }),
+      ],
+    };
+    const r = await page();
+    expect(r.text).toContain('Resting at the venue for HYPE, as of this read');
+    expect(r.text).toContain('Stop Market');
+    expect(r.text).toContain('triggers at 55.9');
+    expect(r.text).toContain('venue order 513946107402');
+    expect(r.text).toContain('Take Profit Market');
+  });
+
+  it('says plainly when nothing rests — the naked position is the headline', async () => {
+    // The fake's default venue book is empty, which for a held position is
+    // exactly the sharpest case: software claims a stop, the exchange holds none.
+    world({ kind: 'exposure', exposure: anExposure() });
+    const r = await page();
+    expect(r.text).toContain('No protective order rests at the venue for HYPE');
+    expect(r.text).toContain('exists only in BattleGrid’s software');
+  });
+
+  it('loses only the venue column when the exchange will not answer', async () => {
+    const { positions } = world({ kind: 'exposure', exposure: anExposure() });
+    positions.resting = { kind: 'unreadable', reason: 'the exchange is unreachable', cause: 'unreachable' };
+    const r = await page();
+    // The failure explains itself with the shared sentence…
+    expect(r.text).toContain('Whether protection rests at the venue could not be read');
+    expect(r.text).toContain('This does not mean');
+    // …and the position, its levels and its drift all still render.
+    expect(r.text).toContain('HYPE LONG');
+    expect(r.text).toContain('Stop now 55.954');
   });
 });
