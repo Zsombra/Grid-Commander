@@ -1,5 +1,34 @@
 # Journal
 
+## 2026-08-11 — v15-trade-level-policy: read, display, refuse to edit
+
+**Did**: Proposed, implemented, verified, and archived
+`v15-trade-level-policy` (standard track, PR #150). Added
+`TradeLevelPolicy` to the domain, mapped the three fields
+(`maxStopLossPct`, `minStopLossAtrMultiple`, `minRiskRewardRatio`) from
+`get_strategy`, rendered them on the strategy detail page between "When it
+acts" and conditions, and stated the inert compiler condition — no editing
+control offered. Two mapper tests (happy path + null-when-omitted), local
+CI green (typecheck, lint, 2123 vitest, drizzle-check, build). Code review
+caught three test files with inline `StrategyDetail` literals missing the
+new required field; fixed and pushed. Backlog item #95 closed, delta specs
+merged into the main `strategy-authoring` spec.
+
+**State**: Change archived at `2026-08-11-v15-trade-level-policy`. PR #150
+open as draft. 24 open backlog items (was 25).
+
+**Next**: Merge PR #150. The p1 queue is now empty. Next product session:
+`/board`, then the p2/p3 tail — #145 (is the recorder cron running) still
+gates `/propose` on #94.
+
+**Watch out**: The verifier noted T7 (presentation rendering test for the
+policy section) was satisfied by the mapper tests rather than a dedicated
+component rendering test. The section is straightforward JSX reusing the
+`Threshold` helper, so this is not a gap, but a future change to the
+policy section should add one. The compiler inertness is upstream — when
+BattleGrid ships a working compiler for these fields, the inert-state
+notice and the `TradeLevelPolicy | null` nullability can be revisited.
+
 ## 2026-08-11 — session close: v17.2.0 followed same-day, eight closes, three builds, three parting concerns filed
 
 **Did**: Thirteen PRs merged (#132–#144, the last pending the operator's
