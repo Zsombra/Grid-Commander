@@ -30,12 +30,10 @@ import { SequentialRandom } from '../support/agent-fakes.js';
  */
 
 const KEY = process.env['BATTLEGRID_API_KEY'];
-// Gated with the other mutating probes even though every write here is
-// *expected to be refused*. "The platform will refuse this" is a claim about
-// the platform, and the platform moved three times in the week this was
-// written. If a deployment ever starts accepting a first-create, this probe
-// would make one on the operator's real account — and would do it during an
-// ordinary `npm test` that merely happened to have a key in the environment.
+// Gated with the other mutating probes — the slot-shuffle undeploys and
+// redeploys a real coin, and the replace test advances a revision. Neither
+// should happen during an ordinary `npm test` that merely happened to have a
+// key in the environment.
 const WRITES = process.env['BATTLEGRID_LIVE_WRITES'] === '1';
 const live = KEY && WRITES ? describe : describe.skip;
 
@@ -183,10 +181,10 @@ live('first deployment via expectedRevision: null (slot-shuffle)', () => {
  * that moves, and its moving is the proof the write went through the full
  * describe → confirm → perform sequence.
  *
- * `delete_radar_deployment` is deliberately NOT walked: the only deployments
- * that exist are the operator's real ones, and a delete cannot be undone —
- * this surface cannot create. Its composition is held by
- * `payload-conformance` and the command tests instead.
+ * `delete_radar_deployment` is walked by the slot-shuffle above, not here.
+ * This test replaces in place — same agent, same timeframe — so it never
+ * needs to delete. The delete composition is held by `payload-conformance`
+ * and the command tests.
  */
 live('deploy walks end-to-end through the product commands', () => {
   it(
