@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-08-11 (check-in 02:35Z) — the best capture yet, and a trade killed by a 0.03% move
+
+Four closes, the busiest cycle in a while:
+
+| | | net | move | held | |
+|---|---|---|---|---|---|
+| ENA | SHORT | **+$0.2574** | +2.23% | 811m | peak +$0.4097 → **63% captured** |
+| SKHX | LONG | **+$0.1906** | +1.69% | **30m** | |
+| SKHX | LONG | −$0.1101 | −0.87% | 35m | |
+| HYPE | SHORT | −$0.0271 | **−0.03%** | 201m | |
+
+**ENA is the best trail-managed exit on record** — 63%, past BRENTOIL's 56%
+— and it was the position flagged for three cycles as the last big extender.
+It converted about as well as a trail can without reaching target.
+
+**HYPE closed on a −0.03% adverse move.** The price effectively did not
+move; the −$0.0271 is fees. That is by a wide margin the smallest killing
+move in the record — the previous smallest was SKHX at −0.20% — and it is
+the cleanest single illustration of a stop sitting inside the noise that
+this fleet has produced.
+
+**The two SKHX trades are worth putting side by side**: −$0.1101 in 35
+minutes and +$0.1906 in 30 minutes, same coin, same agent, an hour and a
+half apart. Whatever separates them, it is not the exit configuration.
+
+**Realized: 41 closed, 13W/28L, −$1.2011** — up $0.31 on the cycle. WR 32%,
+realised RR **1.24**, break-even down to **45%**.
+
+**On the RR jump, 1.04 → 1.24**: the same caution applies as when the series
+was falling. Two large wins in a 41-trade sample moved it; nothing about the
+system changed, and I retired the "monotone decline" framing last cycle
+precisely so I would not now narrate a recovery. The series reads
+1.25 · 1.20 · 1.11 · 1.09 · 1.07 · 1.06 · 1.05 · 1.04 · 1.03 · 1.04 · **1.24**
+and the honest summary is that it is noisy around ~1.1 and far below the
+3.34 placed.
+
+**Book +$0.3917 across four** — FARTCOIN +$0.3091 carrying it, TRUMP
++$0.1404, two fresh shorts slightly red. Account **$43.28**.
+
+Server steady at v17.2.0 — no re-probe, no p1 retest. Harness guards
+applied: files fresh at 02:32, `limit: 50` on the outcomes read.
+
 ## 2026-08-11 (v17.2 landed) — the first quiet deploy since v13, and a distinction the record forces
 
 **BattleGrid deployed v17.2.0** — fifth deploy in three days, and the first
