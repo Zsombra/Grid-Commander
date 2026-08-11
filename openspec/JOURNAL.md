@@ -1,5 +1,26 @@
 # Journal
 
+## 2026-08-11 (check-in 10:10Z, run 10:15Z) — still nothing closed under 45; the book builds to +$0.55 and the fleet adds two
+
+**No closes — the under-45 capture question remains unanswered.** Realized
+identical: 43 closed, 15W/28L, −$0.7347, WR 35%, RR 1.38, BE 42%. All six
+positions from 05:25 still open, and the fleet added two fresh longs
+(HYPE 09:03, TRUMP 09:08) — **eight open**, the widest book of the session.
+
+**Book +$0.3400 → +$0.5461.** LDO short surged +$0.0890 → **+$0.2533**
+(8.3h) and FARTCOIN reached **+$0.2676** — those two sampled peaks are the
+capture baselines when they close. Account **$43.88, new session high**
+(started $43.56). Guards green (file 10:13:22, priced 98s ago, limit:50).
+
+**One honest flag: GOLD reads +$0.1038 at mark 4377.1 — identical to the
+cent across two cycles (08:55 and 10:13)** while every crypto position
+moved and both freshness guards pass. A pinned tradfi feed during these
+hours is plausible; a coincidence is possible; per the standing rule,
+identical-to-the-cent is an alarm to note, not a market observation to
+narrate. Watch next cycle.
+
+Meter still dead. Server steady v17.2.0 — no re-probe, no retest.
+
 ## 2026-08-11 (10:15Z) — the vocabulary values enter the record: the last surface-record p1 closes
 
 Standard change **`the-vocabulary-values-enter-the-record`**, proposed →
