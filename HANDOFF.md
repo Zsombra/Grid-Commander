@@ -1,7 +1,7 @@
 # Grid-Commander — Session Handoff
 
 **Date**: 2026-08-10  
-**State**: green (2066 vitest + 81 db + 243 harness tests; `freshness`/`live`/`serving` gates skip without a key or opt-in; further vitest are key-gated live probes). No active changes. 29 open backlog items. PRs #8–#125 merged except **#82**, another session's branch-reconciliation record, still open as its draft. **The surface record is v16.0.0**, re-probed 2026-08-10 — v16 made `conditions[].required` a required path on all three condition-carrying writes, the twelfth dead write path and the second caught by the guards before a live refusal. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply, retested against v16: `v15-trade-level-policy-is-declared-but-inert`, p1. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
+**State**: green (2066 vitest + 81 db + 243 harness tests; `freshness`/`live`/`serving` gates skip without a key or opt-in; further vitest are key-gated live probes). No active changes. 29 open backlog items. PRs #8–#125 merged except **#82**, another session's branch-reconciliation record, still open as its draft. **The surface record is v17.2.0**, re-probed 2026-08-11 — v17 redesigned `positionManagement` (R-multiple break-even, giveback trailing; four fields out, two in) under an unmoved tool count, and the strategy vocabulary's values are now a recorded, gate-compared artifact. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply, retested against v16: `v15-trade-level-policy-is-declared-but-inert`, p1. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -37,9 +37,13 @@ v5.1.0 — and all three reported exactly **110 tools** while enums, required
 arguments and semantics changed underneath. **v14 then moved it to 114**, the
 first change in six major versions. So a count that has not moved proves
 nothing, and one that has says only that *something* changed — neither is a
-freshness check. **v16 is the current record** (2026-08-10): 114 tools, none
-added or removed, three schemas changed, and one of those changes would have
-refused every strategy write carrying a condition.
+freshness check. **v17.2.0 is the current record** (2026-08-11): 114 tools,
+none added or removed, seventeen schemas changed — `positionManagement`
+redesigned (break-even on an R-multiple, trailing as a single giveback
+percentage, 15 → 13 keys), which had broken the create path until the domain
+followed. The vocabulary's *values* are now recorded too
+(`docs/battlegrid-vocabulary.json`) and compared by the live gate, because a
+values-only deployment never touches a schema.
 
 `./scripts/ci.sh` now runs a **`freshness`** gate. With `BATTLEGRID_API_KEY`
 set it compares `docs/battlegrid-mcp-surface.json`'s recorded server version

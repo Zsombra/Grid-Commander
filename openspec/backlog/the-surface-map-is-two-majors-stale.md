@@ -2,11 +2,11 @@
 id: the-surface-map-is-two-majors-stale
 title: The probe records payload shapes, so the authoring vocabulary's values are unrecorded
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-11
+change: "the-count-held-and-the-fields-moved"
 capability: platform-mapping
 github: "92"
 blocked_by: []
@@ -130,3 +130,34 @@ Regenerate with `BATTLEGRID_API_KEY=… python3 tools/probe_mcp_surface.py`, the
 `tools/generate_mcp_reference.py`. Note that regenerating does **not** currently
 fix the prose header in `BATTLEGRID_SURFACE_MAP.md` or the `serverInfo` in
 `capabilities.json` — both need attention separately.
+
+## Resolved 2026-08-11 — the carve-out landed, by `the-count-held-and-the-fields-moved`
+
+The ask this item narrowed to is built, on the same day v17.2.0 demonstrated
+its premise live (a tool count that held at 114 while seventeen tools changed
+underneath — the version string moved this time, but the pattern is the one
+this item names):
+
+- **`docs/battlegrid-vocabulary.json`** — `tools/probe_vocabulary.py` records
+  `list_strategy_vocabulary` verbatim for every category the platform
+  answers, with server version and probe time. The facts this item said
+  lived nowhere are now committed: `budgets` as numbers
+  (`strategyConditions: 16`, 4× tighter than the compile schema's
+  `maxItems: 64`), the 6-of-13 enabled timeframes, all 16 transform ids —
+  `efficiency` and `maxShare` included.
+- **The live gate compares values now**:
+  `tests/live/surface-freshness.test.ts` checks budgets, enabled timeframes
+  and transform ids per category against the artifact, so a values-only
+  deployment fails a named gate instead of passing green.
+- **The offline structural check holds the carve-out to its own terms**:
+  `tests/architecture/surface-freshness.test.ts` fails if the artifact's
+  budgets collapse back into shape strings, if it stops naming its server,
+  or if its server version diverges from the surface record's.
+- The **"two records disagree" section was already resolved** by the v16
+  regeneration of 2026-08-10 (capabilities `serverInfo` and the map's prose
+  header both moved), and stayed consistent through today's v17.2.0
+  regeneration.
+- `timeframeRefs`' inert `rel: regime` is *recorded* now (the artifact
+  carries `resolvedByAnchor` verbatim); whether to warn on it at authoring
+  time remains future work under `four-signals-depend-on-a-timeframe-columns-cannot-reach`.
+

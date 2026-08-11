@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  POSITION_MANAGEMENT_FIELDS,
   positionManagementFrom,
   positionSizePresetsFrom,
   unpromptedValues,
@@ -51,8 +52,16 @@ describe('the values this product chooses because the platform will not', () => 
     }
   });
 
-  it('sends a trailing type the enum permits', () => {
-    expect(positionManagementFrom(catalog, 'CUSTOM')['trailingType']).toBe('ATR');
+  it('assembles exactly the thirteen keys the v17 block takes — no removed field lingers', () => {
+    // `trailingType: 'ATR'` was asserted here until v17.2.0 removed the field
+    // (and its enum) outright. What remains checkable is the shape: the label
+    // plus the twelve behavioural fields and nothing else — one lingering
+    // removed field rejects the whole payload under
+    // `additionalProperties: false`.
+    const pm = positionManagementFrom(catalog, 'CUSTOM');
+    expect(Object.keys(pm).sort()).toEqual(
+      ['positionManagementPreset', ...POSITION_MANAGEMENT_FIELDS].sort(),
+    );
   });
 
   it('leaves the position-management switches off, as the platform leaves the master', () => {

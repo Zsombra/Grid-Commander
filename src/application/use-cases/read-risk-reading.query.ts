@@ -231,7 +231,7 @@ function againstDefaults(
  * still are what its label claims.
  *
  * `enabled` is read as the master switch it is: with position management off,
- * the fourteen values beneath it are moot, and presenting them as governing
+ * the twelve values beneath it are moot, and presenting them as governing
  * anything would explain behaviour that is not happening.
  */
 function management(
@@ -266,7 +266,7 @@ function management(
   };
 }
 
-/** The fourteen behavioural fields, re-exported so a surface names them once. */
+/** The twelve behavioural fields, re-exported so a surface names them once. */
 export { POSITION_MANAGEMENT_FIELDS };
 
 

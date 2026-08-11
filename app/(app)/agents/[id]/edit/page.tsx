@@ -120,7 +120,7 @@ export default async function EditAgentPage({
 
   /**
    * The position choice, resolved to values *here*, before anything is
-   * described. A preset resolves to the catalog's own fourteen values (a
+   * described. A preset resolves to the catalog's own twelve values (a
    * preset the catalog cannot answer for is refused); CUSTOM reads the
    * fields as typed, through the same coercion the apply will use; no
    * choice contributes nothing. The confirmation is bound to the resolved

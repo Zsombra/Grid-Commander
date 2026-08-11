@@ -82,7 +82,7 @@
   ],
   "serverInfo": {
     "name": "battlegrid",
-    "version": "16.0.0"
+    "version": "17.2.0"
   },
   "tools": [
     {
@@ -5039,7 +5039,7 @@
                         "breakEvenEnabled": {
                           "type": "boolean"
                         },
-                        "breakEvenTriggerTpProgressPct": {
+                        "breakEvenTriggerR": {
                           "type": "number"
                         },
                         "enabled": {
@@ -5074,35 +5074,23 @@
                         "timeDecayTightenPct": {
                           "type": "number"
                         },
-                        "trailingAtrMultiple": {
-                          "type": "number"
-                        },
                         "trailingBufferPct": {
                           "type": "number"
                         },
                         "trailingEnabled": {
                           "type": "boolean"
                         },
-                        "trailingFixedPct": {
+                        "trailingGivebackPct": {
                           "type": "number"
-                        },
-                        "trailingType": {
-                          "enum": [
-                            "ATR",
-                            "FIXED"
-                          ],
-                          "type": "string"
                         }
                       },
                       "required": [
                         "positionManagementPreset",
                         "enabled",
                         "breakEvenEnabled",
-                        "breakEvenTriggerTpProgressPct",
+                        "breakEvenTriggerR",
                         "trailingEnabled",
-                        "trailingType",
-                        "trailingAtrMultiple",
-                        "trailingFixedPct",
+                        "trailingGivebackPct",
                         "trailingBufferPct",
                         "timeDecayEnabled",
                         "timeDecayGracePeriodMinutes",
@@ -5797,7 +5785,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -5832,35 +5820,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -7335,9 +7311,9 @@
                   "breakEvenEnabled": {
                     "type": "boolean"
                   },
-                  "breakEvenTriggerTpProgressPct": {
-                    "maximum": 100,
-                    "minimum": 0.1,
+                  "breakEvenTriggerR": {
+                    "maximum": 2,
+                    "minimum": 0.5,
                     "type": "number"
                   },
                   "enabled": {
@@ -7383,11 +7359,6 @@
                     "minimum": 0.1,
                     "type": "number"
                   },
-                  "trailingAtrMultiple": {
-                    "maximum": 10,
-                    "minimum": 0.5,
-                    "type": "number"
-                  },
                   "trailingBufferPct": {
                     "maximum": 1,
                     "minimum": 0.01,
@@ -7396,28 +7367,19 @@
                   "trailingEnabled": {
                     "type": "boolean"
                   },
-                  "trailingFixedPct": {
-                    "maximum": 10,
-                    "minimum": 0.1,
+                  "trailingGivebackPct": {
+                    "maximum": 55,
+                    "minimum": 25,
                     "type": "number"
-                  },
-                  "trailingType": {
-                    "enum": [
-                      "ATR",
-                      "FIXED"
-                    ],
-                    "type": "string"
                   }
                 },
                 "required": [
                   "positionManagementPreset",
                   "enabled",
                   "breakEvenEnabled",
-                  "breakEvenTriggerTpProgressPct",
+                  "breakEvenTriggerR",
                   "trailingEnabled",
-                  "trailingType",
-                  "trailingAtrMultiple",
-                  "trailingFixedPct",
+                  "trailingGivebackPct",
                   "trailingBufferPct",
                   "timeDecayEnabled",
                   "timeDecayGracePeriodMinutes",
@@ -7962,7 +7924,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -7997,35 +7959,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -8401,9 +8351,9 @@
                   "breakEvenEnabled": {
                     "type": "boolean"
                   },
-                  "breakEvenTriggerTpProgressPct": {
-                    "maximum": 100,
-                    "minimum": 0.1,
+                  "breakEvenTriggerR": {
+                    "maximum": 2,
+                    "minimum": 0.5,
                     "type": "number"
                   },
                   "enabled": {
@@ -8449,11 +8399,6 @@
                     "minimum": 0.1,
                     "type": "number"
                   },
-                  "trailingAtrMultiple": {
-                    "maximum": 10,
-                    "minimum": 0.5,
-                    "type": "number"
-                  },
                   "trailingBufferPct": {
                     "maximum": 1,
                     "minimum": 0.01,
@@ -8462,28 +8407,19 @@
                   "trailingEnabled": {
                     "type": "boolean"
                   },
-                  "trailingFixedPct": {
-                    "maximum": 10,
-                    "minimum": 0.1,
+                  "trailingGivebackPct": {
+                    "maximum": 55,
+                    "minimum": 25,
                     "type": "number"
-                  },
-                  "trailingType": {
-                    "enum": [
-                      "ATR",
-                      "FIXED"
-                    ],
-                    "type": "string"
                   }
                 },
                 "required": [
                   "positionManagementPreset",
                   "enabled",
                   "breakEvenEnabled",
-                  "breakEvenTriggerTpProgressPct",
+                  "breakEvenTriggerR",
                   "trailingEnabled",
-                  "trailingType",
-                  "trailingAtrMultiple",
-                  "trailingFixedPct",
+                  "trailingGivebackPct",
                   "trailingBufferPct",
                   "timeDecayEnabled",
                   "timeDecayGracePeriodMinutes",
@@ -9027,7 +8963,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -9062,35 +8998,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -9328,6 +9252,30 @@
                 },
                 "type": "array"
               },
+              "counts": {
+                "additionalProperties": false,
+                "properties": {
+                  "buildable": {
+                    "type": "number"
+                  },
+                  "evaluated": {
+                    "type": "number"
+                  },
+                  "total": {
+                    "type": "number"
+                  },
+                  "volatilityUnavailable": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "total",
+                  "evaluated",
+                  "buildable",
+                  "volatilityUnavailable"
+                ],
+                "type": "object"
+              },
               "maxStopLossPct": {
                 "type": "number"
               },
@@ -9342,7 +9290,8 @@
               "minStopLossAtrMultiple",
               "maxStopLossPct",
               "minRiskRewardRatio",
-              "coins"
+              "coins",
+              "counts"
             ],
             "type": "object"
           }
@@ -9853,7 +9802,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -9888,35 +9837,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -10550,7 +10487,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -10585,35 +10522,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -11247,7 +11172,7 @@
                       "breakEvenEnabled": {
                         "type": "boolean"
                       },
-                      "breakEvenTriggerTpProgressPct": {
+                      "breakEvenTriggerR": {
                         "type": "number"
                       },
                       "enabled": {
@@ -11282,35 +11207,23 @@
                       "timeDecayTightenPct": {
                         "type": "number"
                       },
-                      "trailingAtrMultiple": {
-                        "type": "number"
-                      },
                       "trailingBufferPct": {
                         "type": "number"
                       },
                       "trailingEnabled": {
                         "type": "boolean"
                       },
-                      "trailingFixedPct": {
+                      "trailingGivebackPct": {
                         "type": "number"
-                      },
-                      "trailingType": {
-                        "enum": [
-                          "ATR",
-                          "FIXED"
-                        ],
-                        "type": "string"
                       }
                     },
                     "required": [
                       "positionManagementPreset",
                       "enabled",
                       "breakEvenEnabled",
-                      "breakEvenTriggerTpProgressPct",
+                      "breakEvenTriggerR",
                       "trailingEnabled",
-                      "trailingType",
-                      "trailingAtrMultiple",
-                      "trailingFixedPct",
+                      "trailingGivebackPct",
                       "trailingBufferPct",
                       "timeDecayEnabled",
                       "timeDecayGracePeriodMinutes",
@@ -13501,6 +13414,237 @@
                   "coinTicker": {
                     "type": "string"
                   },
+                  "conditionEvaluation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "counts": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "total": {
+                            "type": "number"
+                          },
+                          "trueCount": {
+                            "type": "number"
+                          },
+                          "unresolvedCount": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "trueCount",
+                          "total",
+                          "unresolvedCount"
+                        ],
+                        "type": "object"
+                      },
+                      "decidedBy": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "outcomes": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "conditionKey": {
+                              "type": "string"
+                            },
+                            "counts": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "total": {
+                                      "type": "number"
+                                    },
+                                    "trueCount": {
+                                      "type": "number"
+                                    },
+                                    "unresolvedCount": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "trueCount",
+                                    "total",
+                                    "unresolvedCount"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "evidence": {
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "header": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "clause",
+                                        "type": "string"
+                                      },
+                                      "literal": {
+                                        "type": "string"
+                                      },
+                                      "op": {
+                                        "enum": [
+                                          "lt",
+                                          "lte",
+                                          "gte",
+                                          "gt",
+                                          "between",
+                                          "is",
+                                          "in"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "operand": {
+                                        "type": "string"
+                                      },
+                                      "outcome": {
+                                        "enum": [
+                                          "TRUE",
+                                          "FALSE",
+                                          "UNRESOLVED"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "sectionKey": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sectionKey",
+                                      "header",
+                                      "op",
+                                      "operand",
+                                      "literal",
+                                      "outcome"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "conditionKey": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "conditionRef",
+                                        "type": "string"
+                                      },
+                                      "outcome": {
+                                        "enum": [
+                                          "TRUE",
+                                          "FALSE",
+                                          "UNRESOLVED"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "conditionKey",
+                                      "outcome"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "legacy",
+                                        "type": "string"
+                                      },
+                                      "text": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "type": "object"
+                                  }
+                                ]
+                              },
+                              "type": "array"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "outcome": {
+                              "enum": [
+                                "TRUE",
+                                "FALSE",
+                                "UNRESOLVED"
+                              ],
+                              "type": "string"
+                            },
+                            "provisional": {
+                              "type": "boolean"
+                            },
+                            "required": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "conditionKey",
+                            "name",
+                            "outcome",
+                            "required",
+                            "evidence",
+                            "counts",
+                            "provisional"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "provisional": {
+                        "type": "boolean"
+                      },
+                      "strategyRevision": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "verdict": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "UP",
+                              "DOWN",
+                              "NEITHER",
+                              "UNRESOLVED"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "outcomes",
+                      "verdict",
+                      "decidedBy",
+                      "strategyRevision",
+                      "provisional",
+                      "counts"
+                    ],
+                    "type": "object"
+                  },
                   "createdAt": {
                     "type": "string"
                   },
@@ -15441,7 +15585,8 @@
                   "agentModelName",
                   "pipeline",
                   "linkedEntryDecision",
-                  "challenge"
+                  "challenge",
+                  "conditionEvaluation"
                 ],
                 "type": "object"
               },
@@ -19450,6 +19595,44 @@
                   "resolvesNow": {
                     "additionalProperties": false,
                     "properties": {
+                      "blockedReason": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "TRADING_MODE_OFF",
+                              "TRADING_MODE_INELIGIBLE",
+                              "INSUFFICIENT_EQUITY",
+                              "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+                              "EQUITY_CHECK_UNAVAILABLE",
+                              "DAILY_TRADE_LIMIT_REACHED",
+                              "OPEN_POSITION_CONFLICT",
+                              "AGENT_HALTED",
+                              "NO_AGENT_ALLOCATION",
+                              "AGENT_APPROVAL_EXPIRED",
+                              "ATR_VOLATILITY_BELOW_MIN",
+                              "NO_VALID_TRADE_SETUPS",
+                              "STOP_LOSS_DISTANCE_BELOW_MIN",
+                              "RISK_REWARD_BELOW_MIN",
+                              "LLM_OUTPUT_NO_TOOL_CALL",
+                              "LLM_OUTPUT_SCHEMA_INVALID",
+                              "LLM_SETUP_INDEX_OUT_OF_BOUNDS",
+                              "LLM_UNAVAILABLE",
+                              "LLM_CREDITS_EXHAUSTED",
+                              "REQUIRED_CONDITION_FALSE"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "blockedSince": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "cooldownUntil": {
                         "type": [
                           "string",
@@ -19552,7 +19735,8 @@
                               "NO_RULE_MATCH",
                               "ALL_SLOTS_FILTERED",
                               "ON_DUTY_BUT_POSITION_BLOCKED",
-                              "POLICY_DISABLED"
+                              "POLICY_DISABLED",
+                              "ACCOUNT_BLOCKED"
                             ],
                             "type": "string"
                           },
@@ -19603,6 +19787,7 @@
                       "section": {
                         "enum": [
                           "IN_POSITION",
+                          "BLOCKED",
                           "SCANNING",
                           "IDLE"
                         ],
@@ -19629,7 +19814,9 @@
                       "openPositionAgentDisplayName",
                       "openPositionAgentAvatarUrl",
                       "lastFlipAt",
-                      "lastFireAt"
+                      "lastFireAt",
+                      "blockedReason",
+                      "blockedSince"
                     ],
                     "type": "object"
                   },
@@ -19829,6 +20016,66 @@
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false,
         "properties": {
+          "blockedAgents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "affectedCoinTickers": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "agentAvatarUrl": {
+                  "type": "string"
+                },
+                "agentDisplayName": {
+                  "type": "string"
+                },
+                "agentId": {
+                  "type": "string"
+                },
+                "blockedSince": {
+                  "type": "string"
+                },
+                "reasonCode": {
+                  "enum": [
+                    "TRADING_MODE_OFF",
+                    "TRADING_MODE_INELIGIBLE",
+                    "INSUFFICIENT_EQUITY",
+                    "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+                    "EQUITY_CHECK_UNAVAILABLE",
+                    "DAILY_TRADE_LIMIT_REACHED",
+                    "OPEN_POSITION_CONFLICT",
+                    "AGENT_HALTED",
+                    "NO_AGENT_ALLOCATION",
+                    "AGENT_APPROVAL_EXPIRED",
+                    "ATR_VOLATILITY_BELOW_MIN",
+                    "NO_VALID_TRADE_SETUPS",
+                    "STOP_LOSS_DISTANCE_BELOW_MIN",
+                    "RISK_REWARD_BELOW_MIN",
+                    "LLM_OUTPUT_NO_TOOL_CALL",
+                    "LLM_OUTPUT_SCHEMA_INVALID",
+                    "LLM_SETUP_INDEX_OUT_OF_BOUNDS",
+                    "LLM_UNAVAILABLE",
+                    "LLM_CREDITS_EXHAUSTED",
+                    "REQUIRED_CONDITION_FALSE"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agentId",
+                "agentDisplayName",
+                "agentAvatarUrl",
+                "reasonCode",
+                "blockedSince",
+                "affectedCoinTickers"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
           "policies": {
             "items": {
               "additionalProperties": false,
@@ -19866,6 +20113,44 @@
                 "resolvesNow": {
                   "additionalProperties": false,
                   "properties": {
+                    "blockedReason": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "TRADING_MODE_OFF",
+                            "TRADING_MODE_INELIGIBLE",
+                            "INSUFFICIENT_EQUITY",
+                            "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+                            "EQUITY_CHECK_UNAVAILABLE",
+                            "DAILY_TRADE_LIMIT_REACHED",
+                            "OPEN_POSITION_CONFLICT",
+                            "AGENT_HALTED",
+                            "NO_AGENT_ALLOCATION",
+                            "AGENT_APPROVAL_EXPIRED",
+                            "ATR_VOLATILITY_BELOW_MIN",
+                            "NO_VALID_TRADE_SETUPS",
+                            "STOP_LOSS_DISTANCE_BELOW_MIN",
+                            "RISK_REWARD_BELOW_MIN",
+                            "LLM_OUTPUT_NO_TOOL_CALL",
+                            "LLM_OUTPUT_SCHEMA_INVALID",
+                            "LLM_SETUP_INDEX_OUT_OF_BOUNDS",
+                            "LLM_UNAVAILABLE",
+                            "LLM_CREDITS_EXHAUSTED",
+                            "REQUIRED_CONDITION_FALSE"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "blockedSince": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "cooldownUntil": {
                       "type": [
                         "string",
@@ -19968,7 +20253,8 @@
                             "NO_RULE_MATCH",
                             "ALL_SLOTS_FILTERED",
                             "ON_DUTY_BUT_POSITION_BLOCKED",
-                            "POLICY_DISABLED"
+                            "POLICY_DISABLED",
+                            "ACCOUNT_BLOCKED"
                           ],
                           "type": "string"
                         },
@@ -20019,6 +20305,7 @@
                     "section": {
                       "enum": [
                         "IN_POSITION",
+                        "BLOCKED",
                         "SCANNING",
                         "IDLE"
                       ],
@@ -20045,7 +20332,9 @@
                     "openPositionAgentDisplayName",
                     "openPositionAgentAvatarUrl",
                     "lastFlipAt",
-                    "lastFireAt"
+                    "lastFireAt",
+                    "blockedReason",
+                    "blockedSince"
                   ],
                   "type": "object"
                 },
@@ -20218,6 +20507,9 @@
               "agentsActive": {
                 "type": "number"
               },
+              "blocked": {
+                "type": "number"
+              },
               "coinCap": {
                 "type": "number"
               },
@@ -20258,6 +20550,7 @@
               "sittingOut",
               "needsAttention",
               "paused",
+              "blocked",
               "onDutyNow",
               "agentsActive",
               "coinCap"
@@ -20267,7 +20560,8 @@
         },
         "required": [
           "policies",
-          "summary"
+          "summary",
+          "blockedAgents"
         ],
         "type": "object"
       },
@@ -20741,6 +21035,44 @@
           "resolvesNow": {
             "additionalProperties": false,
             "properties": {
+              "blockedReason": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "TRADING_MODE_OFF",
+                      "TRADING_MODE_INELIGIBLE",
+                      "INSUFFICIENT_EQUITY",
+                      "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+                      "EQUITY_CHECK_UNAVAILABLE",
+                      "DAILY_TRADE_LIMIT_REACHED",
+                      "OPEN_POSITION_CONFLICT",
+                      "AGENT_HALTED",
+                      "NO_AGENT_ALLOCATION",
+                      "AGENT_APPROVAL_EXPIRED",
+                      "ATR_VOLATILITY_BELOW_MIN",
+                      "NO_VALID_TRADE_SETUPS",
+                      "STOP_LOSS_DISTANCE_BELOW_MIN",
+                      "RISK_REWARD_BELOW_MIN",
+                      "LLM_OUTPUT_NO_TOOL_CALL",
+                      "LLM_OUTPUT_SCHEMA_INVALID",
+                      "LLM_SETUP_INDEX_OUT_OF_BOUNDS",
+                      "LLM_UNAVAILABLE",
+                      "LLM_CREDITS_EXHAUSTED",
+                      "REQUIRED_CONDITION_FALSE"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "blockedSince": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "cooldownUntil": {
                 "type": [
                   "string",
@@ -20843,7 +21175,8 @@
                       "NO_RULE_MATCH",
                       "ALL_SLOTS_FILTERED",
                       "ON_DUTY_BUT_POSITION_BLOCKED",
-                      "POLICY_DISABLED"
+                      "POLICY_DISABLED",
+                      "ACCOUNT_BLOCKED"
                     ],
                     "type": "string"
                   },
@@ -20894,6 +21227,7 @@
               "section": {
                 "enum": [
                   "IN_POSITION",
+                  "BLOCKED",
                   "SCANNING",
                   "IDLE"
                 ],
@@ -20920,7 +21254,9 @@
               "openPositionAgentDisplayName",
               "openPositionAgentAvatarUrl",
               "lastFlipAt",
-              "lastFireAt"
+              "lastFireAt",
+              "blockedReason",
+              "blockedSince"
             ],
             "type": "object"
           }
@@ -21125,7 +21461,8 @@
                             "NO_RULE_MATCH",
                             "ALL_SLOTS_FILTERED",
                             "ON_DUTY_BUT_POSITION_BLOCKED",
-                            "POLICY_DISABLED"
+                            "POLICY_DISABLED",
+                            "ACCOUNT_BLOCKED"
                           ],
                           "type": "string"
                         },
@@ -21259,7 +21596,8 @@
                             "NO_RULE_MATCH",
                             "ALL_SLOTS_FILTERED",
                             "ON_DUTY_BUT_POSITION_BLOCKED",
-                            "POLICY_DISABLED"
+                            "POLICY_DISABLED",
+                            "ACCOUNT_BLOCKED"
                           ],
                           "type": "string"
                         },
@@ -21309,6 +21647,7 @@
                         {
                           "enum": [
                             "IN_POSITION",
+                            "BLOCKED",
                             "SCANNING",
                             "IDLE"
                           ],
@@ -21436,6 +21775,7 @@
                         {
                           "enum": [
                             "IN_POSITION",
+                            "BLOCKED",
                             "SCANNING",
                             "IDLE"
                           ],
@@ -23454,6 +23794,15 @@
                       "agentName": {
                         "type": "string"
                       },
+                      "breakEvenStatus": {
+                        "enum": [
+                          "DISABLED",
+                          "ACTIVE",
+                          "INACTIVE_SETUP",
+                          "UNDETERMINED"
+                        ],
+                        "type": "string"
+                      },
                       "coinTicker": {
                         "type": "string"
                       },
@@ -23596,6 +23945,9 @@
                       "timeHorizon": {
                         "type": "string"
                       },
+                      "trailingStatus": {
+                        "$ref": "#/properties/agents/items/properties/positions/items/properties/breakEvenStatus"
+                      },
                       "unrealizedPnlUsd": {
                         "type": [
                           "number",
@@ -23639,7 +23991,9 @@
                       "openedAt",
                       "openedAtMs",
                       "ageMs",
-                      "status"
+                      "status",
+                      "breakEvenStatus",
+                      "trailingStatus"
                     ],
                     "type": "object"
                   },
@@ -23918,6 +24272,15 @@
                       "agentName": {
                         "type": "string"
                       },
+                      "breakEvenStatus": {
+                        "enum": [
+                          "DISABLED",
+                          "ACTIVE",
+                          "INACTIVE_SETUP",
+                          "UNDETERMINED"
+                        ],
+                        "type": "string"
+                      },
                       "coinTicker": {
                         "type": "string"
                       },
@@ -24060,6 +24423,9 @@
                       "timeHorizon": {
                         "type": "string"
                       },
+                      "trailingStatus": {
+                        "$ref": "#/properties/agents/items/properties/positions/items/properties/breakEvenStatus"
+                      },
                       "unrealizedPnlUsd": {
                         "type": [
                           "number",
@@ -24103,7 +24469,9 @@
                       "openedAt",
                       "openedAtMs",
                       "ageMs",
-                      "status"
+                      "status",
+                      "breakEvenStatus",
+                      "trailingStatus"
                     ],
                     "type": "object"
                   },
@@ -25824,10 +26192,14 @@
                   "kind": {
                     "const": "no-improvement",
                     "type": "string"
+                  },
+                  "observedLiveStopLoss": {
+                    "type": "number"
                   }
                 },
                 "required": [
-                  "kind"
+                  "kind",
+                  "observedLiveStopLoss"
                 ],
                 "type": "object"
               },
@@ -25995,7 +26367,7 @@
                     "breakEvenEnabled": {
                       "type": "boolean"
                     },
-                    "breakEvenTriggerTpProgressPct": {
+                    "breakEvenTriggerR": {
                       "type": "number"
                     },
                     "enabled": {
@@ -26019,24 +26391,14 @@
                     "timeDecayTightenPct": {
                       "type": "number"
                     },
-                    "trailingAtrMultiple": {
-                      "type": "number"
-                    },
                     "trailingBufferPct": {
                       "type": "number"
                     },
                     "trailingEnabled": {
                       "type": "boolean"
                     },
-                    "trailingFixedPct": {
+                    "trailingGivebackPct": {
                       "type": "number"
-                    },
-                    "trailingType": {
-                      "enum": [
-                        "ATR",
-                        "FIXED"
-                      ],
-                      "type": "string"
                     }
                   },
                   "required": [
@@ -26044,11 +26406,9 @@
                     "breakEvenEnabled",
                     "trailingEnabled",
                     "timeDecayEnabled",
-                    "trailingType",
-                    "trailingAtrMultiple",
-                    "trailingFixedPct",
+                    "trailingGivebackPct",
                     "trailingBufferPct",
-                    "breakEvenTriggerTpProgressPct",
+                    "breakEvenTriggerR",
                     "timeDecayGracePeriodMinutes",
                     "timeDecayIntervalMinutes",
                     "timeDecayTightenPct",
@@ -26212,7 +26572,7 @@
                   "defaultMinTradeConviction": {
                     "type": "number"
                   },
-                  "defaultPositionMgmtBreakevenTriggerTpProgressPct": {
+                  "defaultPositionMgmtBreakevenTriggerR": {
                     "type": "number"
                   },
                   "defaultPositionMgmtEnabled": {
@@ -26233,13 +26593,10 @@
                   "defaultPositionMgmtTimeDecayTightenPct": {
                     "type": "number"
                   },
-                  "defaultPositionMgmtTrailingAtrMultiple": {
-                    "type": "number"
-                  },
                   "defaultPositionMgmtTrailingBufferPct": {
                     "type": "number"
                   },
-                  "defaultPositionMgmtTrailingFixedPct": {
+                  "defaultPositionMgmtTrailingGivebackPct": {
                     "type": "number"
                   },
                   "defaultRegimeAutoDerive": {
@@ -26301,14 +26658,13 @@
                   "defaultRegimeTimeframe",
                   "defaultRegimeAutoDerive",
                   "defaultPositionMgmtEnabled",
-                  "defaultPositionMgmtTrailingAtrMultiple",
-                  "defaultPositionMgmtTrailingFixedPct",
+                  "defaultPositionMgmtTrailingGivebackPct",
                   "defaultPositionMgmtTrailingBufferPct",
                   "defaultPositionMgmtTimeDecayGracePeriodMinutes",
                   "defaultPositionMgmtTimeDecayIntervalMinutes",
                   "defaultPositionMgmtTimeDecayTightenPct",
                   "defaultPositionMgmtTimeDecayMaxTightenPct",
-                  "defaultPositionMgmtBreakevenTriggerTpProgressPct",
+                  "defaultPositionMgmtBreakevenTriggerR",
                   "defaultPositionMgmtTimeDecayStaleThresholdTpProgressPct"
                 ],
                 "type": "object"
@@ -47055,7 +47411,7 @@
                         "breakEvenEnabled": {
                           "type": "boolean"
                         },
-                        "breakEvenTriggerTpProgressPct": {
+                        "breakEvenTriggerR": {
                           "type": "number"
                         },
                         "enabled": {
@@ -47090,35 +47446,23 @@
                         "timeDecayTightenPct": {
                           "type": "number"
                         },
-                        "trailingAtrMultiple": {
-                          "type": "number"
-                        },
                         "trailingBufferPct": {
                           "type": "number"
                         },
                         "trailingEnabled": {
                           "type": "boolean"
                         },
-                        "trailingFixedPct": {
+                        "trailingGivebackPct": {
                           "type": "number"
-                        },
-                        "trailingType": {
-                          "enum": [
-                            "ATR",
-                            "FIXED"
-                          ],
-                          "type": "string"
                         }
                       },
                       "required": [
                         "positionManagementPreset",
                         "enabled",
                         "breakEvenEnabled",
-                        "breakEvenTriggerTpProgressPct",
+                        "breakEvenTriggerR",
                         "trailingEnabled",
-                        "trailingType",
-                        "trailingAtrMultiple",
-                        "trailingFixedPct",
+                        "trailingGivebackPct",
                         "trailingBufferPct",
                         "timeDecayEnabled",
                         "timeDecayGracePeriodMinutes",

@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-11 (the count held and the fields moved) — v17.2.0, and the vocabulary becomes values
+
+**`the-count-held-and-the-fields-moved` archived**, closing #92. The live
+freshness gate caught a deployment this morning: recorded v16.0.0, live
+**v17.2.0** — and v17 arrived already at patch .2, so two deployments came
+and went unseen. The tool count held at 114 with zero names added or
+removed while **seventeen tools changed schemas underneath** — the exact
+pattern the domain notes warn about, now demonstrated on the version the
+notes were written against.
+
+The centre of it: **`positionManagement` redesigned**. Out:
+`breakEvenTriggerTpProgressPct`, `trailingType` (`ATR|FIXED`),
+`trailingAtrMultiple`, `trailingFixedPct`. In: `breakEvenTriggerR`
+(0.5–2) and `trailingGivebackPct` (25–55). The block is 15 → 13 keys,
+identically on both agent writes, all three agent reads, and the catalog
+(three defaults renamed; the time-decay stale threshold default quietly
+moved 50 → 25). Until the domain followed, every create this product
+composed was un-sendable — a lingering removed field rejects the whole
+payload. `trading-config.ts` re-learned the block (OURS lost its
+`trailingType`, the assembled set and `POSITION_MANAGEMENT_FIELDS` moved
+to twelve, fallback literals mirror the live defaults); the mapper needed
+nothing — its prefix-strip and verbatim preset configs were built for
+exactly this. 2102 offline tests and the full ci.sh run green, freshness
+gate included, db tests included.
+
+**#92 landed the same day its premise was demonstrated**:
+`tools/probe_vocabulary.py` records `list_strategy_vocabulary` verbatim
+into `docs/battlegrid-vocabulary.json` — the carve-out from shape-only,
+platform-owned and account-independent, carrying server version and probe
+time. The facts that lived nowhere are committed: `strategyConditions: 16`
+as a number (4× tighter than the schema's `maxItems: 64`), 6-of-13
+enabled timeframes, all 16 transform ids with `efficiency` and `maxShare`.
+The live suite now compares budgets, timeframes and transform ids per
+category (a values-only deployment fails a named gate); the offline check
+fails if the artifact collapses back into shapes, loses its server, or
+diverges in version from the surface record.
+
+**Filed rather than built** (#133–#135): `get_signal_log`'s new
+`conditionEvaluation` evidence block, the positions reads' per-position
+`breakEvenStatus`/`trailingStatus`, radar's `blockedReason`/`BLOCKED`
+state (+ `override_agent_protection`'s `observedLiveStopLoss`). Strategy
+declarations did not move, so #95's inert trade-level policy stands as
+filed.
+
 ## 2026-08-11 (the evaluations record) — measured from both ends, and the platform keeps it
 
 **`agent-evaluations-are-not-recorded` closed by measurement**, closing #99

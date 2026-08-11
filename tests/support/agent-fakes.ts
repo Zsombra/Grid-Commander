@@ -447,22 +447,21 @@ export function defaultCatalog(): Catalog {
         label: 'Colt',
         description: 'Patient / wide',
         // The complete configuration the live catalog states for COLT — the
-        // fourteen values choosing it actually sends.
+        // twelve values choosing it actually sends, mirroring the live read
+        // of 2026-08-11 at v17.2.0.
         config: {
           enabled: true,
           breakEvenEnabled: true,
-          breakEvenTriggerTpProgressPct: 70,
+          breakEvenTriggerR: 1.51,
           trailingEnabled: true,
-          trailingType: 'ATR',
-          trailingAtrMultiple: 4,
-          trailingFixedPct: 2,
+          trailingGivebackPct: 55,
           trailingBufferPct: 0.5,
           timeDecayEnabled: true,
           timeDecayGracePeriodMinutes: 120,
           timeDecayIntervalMinutes: 30,
-          timeDecayTightenPct: 5,
-          timeDecayMaxTightenPct: 40,
-          timeDecayStaleThresholdTpProgressPct: 30,
+          timeDecayTightenPct: 3,
+          timeDecayMaxTightenPct: 30,
+          timeDecayStaleThresholdTpProgressPct: 15,
         },
         tagline: 'Let winners breathe',
         cardSummary: 'Wide trailing, patient decay',
