@@ -1,5 +1,29 @@
 # Journal
 
+## 2026-08-11 (the evaluations record) — measured from both ends, and the platform keeps it
+
+**`agent-evaluations-are-not-recorded` closed by measurement**, closing #99
+as unneeded per its own rule. The item's first step was a question, not a
+build: does `list_signal_logs` show a retention horizon? Two scratch probes
+(created in `tests/live/`, run once through the live config, deleted) read
+each agent's newest and oldest evaluation by `limit: 1` paging from both
+ends:
+
+- **Undertow (live): 113 evaluations, the oldest stamped seven minutes
+  after the agent was created** on 2026-08-08. Its whole lifetime is
+  reachable.
+- **THE .0 (archived): 79 evaluations reaching sixteen days back** to
+  2026-07-26 — still served three days after archival. Archival does not
+  purge the record.
+
+No horizon visible, so nothing gets built. The close records what the read
+does *not* prove — the reachable record is only sixteen days old, and one
+read cannot rule out a count cap — as two sentinels in the item, two
+`limit: 1` reads each: THE .0's oldest evaluation is pinned by archival and
+can only move if the platform trims (age), and Undertow's total plateauing
+while its oldest advances would show a cap (count). Either reopens #99.
+No code changed.
+
 ## 2026-08-11 (the fleet spend line) — the ruling's number, rendered where the fleet is
 
 **`the-fleet-spend-line` archived**, closing #129. `/agents` now says what the
