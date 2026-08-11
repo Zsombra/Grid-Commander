@@ -298,6 +298,25 @@ estimatedTokens 16,000. Preview execution: 256 KB, 15 s.
 
 ### 3.5 What is unrecorded (and why the freshness gate cannot see it)
 
+> **Corrected 2026-08-11 (v17.2.0).** Two findings resolved, one overturned.
+> The vocabulary's values are recorded now — `docs/battlegrid-vocabulary.json`
+> via `tools/probe_vocabulary.py`, compared per category by the live gate — so
+> the "the freshness gate cannot see it" premise no longer holds. And claim 1
+> below was **wrong**: `rel: regime` is not inert. Probed live through the
+> product path, a `CLOSE @ rel:regime` column compiles (output header
+> `close_reg`) and renders a real value, and it counts against the
+> `distinctTimeframes` budget when the regime timeframe differs from the
+> anchor. `resolvedByAnchor: null` encodes *not a function of the anchor* —
+> the resolution comes from the strategy's own `regimeTimeframe` /
+> `regimeAutoDerive` — not "resolves to nothing". The inert-looking party is
+> the regime *metrics* (`REGIME_TREND` et al.): "timeframe-inert (a bundle
+> read)" in the platform's own refusal words — they accept only the anchor
+> reference and are refused in sections carrying a timeframe override
+> (`REPORT_COLUMN_SECTION_TIMEFRAME_UNSUPPORTED`). The narrative
+> inconsistencies in this section's closing paragraph were fixed by the v16
+> regeneration of 2026-08-10. See
+> `four-signals-depend-on-a-timeframe-columns-cannot-reach` (#90).
+
 `docs/battlegrid-mcp-surface.json` records `v11.0.0` and matches the live
 server. The problem is not staleness — it is that `tools/probe_mcp_surface.py`
 records response **shapes** rather than values, deliberately, so that account
@@ -314,9 +333,9 @@ loses the contract, because the vocabulary payload *is* values:
 
 Three of these can produce silently wrong output rather than a refusal:
 
-1. **`rel: regime` is inert.** Any column written against the regime timeframe
-   reference resolves to nothing on every anchor — it renders empty rather than
-   failing. Use an absolute timeframe.
+1. **`rel: regime` is inert.** *(Overturned — see the correction above: the
+   column compiles and renders real values, resolved from the strategy's
+   regime settings rather than from the anchor.)*
 2. **The condition budget is 4× tighter than the schema declares** — 16 against
    `maxItems: 64`. `docs/REPORT_TABLE_GRAMMAR.md` lists four budget gauges;
    there are six.
@@ -404,10 +423,17 @@ Two of these correct build specs elsewhere in this document:
 - **`mtf_pullback_long/short` depend on HIGHER and LOWER but not PRIMARY** — the
   anchor timeframe is not part of their evaluation at all.
 
-And the four `regime_*` signals declare a `REGIME` dependency while `rel: regime`
-resolves to `null` for every anchor (§3.5). Whether the signal path resolves the
-regime timeframe by a route the column path does not is **unverified** — worth
-establishing before weighting them.
+And the four `regime_*` signals declare a `REGIME` dependency while the
+vocabulary shows `resolvedByAnchor: null` on the regime reference (§3.5).
+
+> **Established 2026-08-11.** Both paths work, by different mechanisms, and
+> nothing is dead weight. Regime metrics are timeframe-inert bundle reads —
+> the `REGIME` dependency names the regime *bundle*, not the timeframe
+> reference — and `rel: regime` *columns* resolve from the strategy's own
+> regime settings and render real values (probed live: `close_reg` carried a
+> price, and the `distinctTimeframes` budget counted the regime timeframe as
+> its own). Weighting the four signals is safe on this axis; §D.7's firing
+> rates were already weak evidence of that, and this settles the mechanism.
 
 #### The platform documents its own regime caveats
 

@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-11 (the regime ref) — null meant "not yours to derive", and nothing is dead weight
+
+**`four-signals-depend-on-a-timeframe-columns-cannot-reach` answered and
+closed (#90)**, by the item's own settle plan, reads only. The question was
+which of three readings explained `rel: regime` resolving to `null` on
+every anchor while four signals declare a `REGIME` dependency. The answer
+is **(3) with (1)'s mechanism beside it**:
+
+- `CLOSE @ rel:regime` **compiles** (output header `close_reg`) and a
+  preview with `regimeTimeframe: 4h` against a 1h anchor **rendered a real
+  price** — with the `distinctTimeframes` budget counting 2, and 1 under
+  auto-derive. `resolvedByAnchor: null` encodes *not a function of the
+  anchor*: the regime relation resolves from the strategy's own regime
+  settings, which a bare vocabulary read cannot know.
+- Regime *metrics* are "timeframe-inert (a bundle read)" — the platform's
+  own refusal words, matching the v17 artifact's `timeframeMode:
+  "timeless"`. Their `REGIME` dependency names the bundle, not the ref.
+  Two teaching refusals recorded (`REPORT_COLUMN_CONSTRUCTION_FAILED`,
+  `REPORT_COLUMN_SECTION_TIMEFRAME_UNSUPPORTED`).
+- The dead-weight reading (2) is dead itself, on both ends.
+
+The research doc's §3.5 claim — "rel: regime is inert. Use an absolute
+timeframe." — is **overturned in place**, and §3.6's unverified paragraph
+settled, both together as the item instructed. The probe was a scratch
+file in `tests/live/`, run once, deleted. No product code changed.
+
 ## 2026-08-11 (the count held and the fields moved) — v17.2.0, and the vocabulary becomes values
 
 **`the-count-held-and-the-fields-moved` archived**, closing #92. The live
