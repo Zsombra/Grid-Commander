@@ -206,3 +206,47 @@ is now specific enough to test, and it was not available before.
 Still compile-only. Nothing here authorises `apply_strategy_plan` — the
 prompt is explicit that apply requires operator approval of the exact
 reviewed plan, which is also this project's standing rule.
+
+## 2026-08-11 05:40Z — the two readings separated: it is the platform, proven with a control
+
+The sharpened retest ran (`scratchpad/v15_policy_retest_v2.py`, compile-only,
+nothing applied). Design: change the three dials **and a control axis known
+to register** (tagline) in one UPDATE compile, then inspect the compiler's
+own `postState` — the object the platform's `author-strategy` prompt says an
+apply would copy byte-identical.
+
+Result on Salamis rev 3 and Trafalgar rev 3 (Cannae refused for an unrelated,
+honest reason: tagline + " (control)" exceeded the 80-char cap):
+
+- **The control registered.** `changedAxes: ["IDENTITY"]`, tagline
+  before/after in the diff, control suffix present in `postState.tagline`.
+  The request was well-formed and fully processed.
+- **The compiler has a named axis for exactly these dials —
+  `diff.tradeLevelPolicy` — and reported it `null`** while the request
+  carried RR 1.5→2.5, ATR floor 1→1.5, ceiling 5→4.
+- **`postState` carries the ORIGINAL dial values.** Not ours. The fields
+  pass input validation and never enter the plan.
+
+That last line is the discriminator. "Parsed but compared-equal" would have
+put our values in postState; "malformed placement" would have refused at the
+schema. Neither happened: the values are **dropped between validation and
+planning**. And the old "no effective changes" refusals are now fully
+explained — a dial-only update registers zero changed axes, which is the
+defined rejection the author-strategy prompt names ("UPDATE must include at
+least one changed axis").
+
+The client-side reading raised on 2026-08-11 is **eliminated**. Also
+eliminated: the `update_strategy_signal_rule` third leg — its schema accepts
+only `signalId`/`allocation`/`required`, so it cannot carry the dials at all.
+
+**Upstream report, now precise:** `compile_strategy_plan` declares
+`minRiskRewardRatio` / `minStopLossAtrMultiple` / `maxStopLossPct` in its
+input schema, declares a `tradeLevelPolicy` axis in its diff structure, and
+populates neither from the request. Repro: any UPDATE compile carrying a
+tagline change plus dial changes — tagline lands in postState, dials do not.
+Axis vocabulary observed: IDENTITY, timeframeProfile, report, marketRead,
+conditions, setupGates, tradeLevelPolicy, signalRules, lifecycle.
+
+Verdict history: v15 ✗, v16 ✗, v17 ✗, v17.2 ✗ (dial-only compiles), and now
+v17.2 ✗ with the control proving the payload sound. Nothing in this product
+can set stop bounds or the RR floor until BattleGrid fixes the compiler.
