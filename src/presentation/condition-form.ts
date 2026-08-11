@@ -293,12 +293,12 @@ export function draftFromQuery(q: QueryFields): DraftFromForm {
       name: one(q, 'name') || key,
       definition,
       verdict: verdictOf(one(q, 'verdict')),
-      // The form has no control for this yet, so a fresh draft takes the
-      // platform's own default. `false` is also the only safe default: the
-      // other value silently hardens a strategy the operator was composing.
-      // A control belongs here, and is filed as
-      // `the-condition-form-cannot-set-required`.
-      required: false,
+      // Required only by the explicit must-hold value; anything else —
+      // absent, empty, or a word the select does not offer — composes as
+      // optional, the platform's own default. The asymmetry is `verdictOf`'s:
+      // a wrong "optional" understates a draft, a wrong "required" silently
+      // hardens a strategy the operator was composing.
+      required: one(q, 'holding') === 'must-hold',
     },
   };
 }

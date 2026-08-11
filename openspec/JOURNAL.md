@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-08-11 (a draft can insist) — the flag that unlocks the deciding branch
+
+**`a-draft-can-insist` archived**, closing #88. The condition composer
+gained its missing control: "Holding is" — optional (BattleGrid's default,
+empty-valued, first) or required (`must-hold`). The parse takes required
+only from the explicit value; absent, empty or unoffered words compose as
+optional, the `verdictOf` asymmetry applied — a wrong "optional"
+understates, a wrong "required" silently hardens. The retarget path stays
+carrying the source's flag whole, and the seeded note now names the
+holding control among what a seed overrides, so no offered control is
+silently ignored.
+
+What raised a p3 to worth-doing-today: #133's morning observation showed a
+`required: false` condition never produces a deciding verdict — this
+control is what makes the condition system's deciding branch, which the
+evaluation page now renders, reachable at all from this product. Spec:
+"A Drafted Condition Can Be Tried Without Being Saved" modified. 2121
+offline tests and full CI green.
+
 ## 2026-08-11 (the commonest block) — gone with the agents that carried it
 
 **`approval-expired-on-a-full-execution-agent` closed (#98)**, overtaken

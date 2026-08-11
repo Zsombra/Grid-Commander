@@ -2,11 +2,11 @@
 id: the-condition-form-cannot-set-required
 title: The condition form has no control for `required`, so every drafted condition is composed as optional
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-10
-updated: 2026-08-10
-change: ""
+updated: 2026-08-11
+change: "a-draft-can-insist"
 capability: strategy-authoring
 github: "88"
 blocked_by: []
@@ -47,3 +47,20 @@ misrepresented by the default.
 A control on the condition form, and a delta spec for it — this changes what
 the surface can express, so it is a `/propose` change rather than a design
 ticket. The write path itself already carries the field.
+
+## Built 2026-08-11 — `a-draft-can-insist`
+
+The composer gained a "Holding is" select beside the verdict: "optional —
+BattleGrid's default" (empty value, first) and "required — the strategy
+insists on it" (`must-hold`). The fresh-compose parse takes required only
+from the explicit must-hold value; absent, empty, or a word the select
+does not offer composes as optional — the same asymmetry `verdictOf`
+documents, because a wrong "optional" understates a draft and a wrong
+"required" silently hardens a strategy. The seeded path is untouched (the
+source's flag rides whole, as this item said it should) and the seeded
+note now names the holding control among what the seed overrides.
+
+Raised beyond its p3 by the same day's #133 observation: a `required:
+false` condition never produces a deciding verdict, so this control is
+what makes the condition system's deciding branch reachable at all from
+this product.

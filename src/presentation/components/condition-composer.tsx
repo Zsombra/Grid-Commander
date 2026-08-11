@@ -185,7 +185,7 @@ export function ConditionComposer({
         you compose.
       </p>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
         <label className={LABEL}>
           Condition key
           <input
@@ -211,6 +211,17 @@ export function ConditionComposer({
             <option value="UP">UP</option>
             <option value="DOWN">DOWN</option>
             <option value="NEITHER">NEITHER</option>
+          </select>
+        </label>
+        <label className={LABEL}>
+          Holding is
+          <select name="holding" defaultValue={was(q, 'holding')} className={CONTROL}>
+            {/* Optional first and empty-valued: it is BattleGrid's own default,
+                and the only safe one — a wrong "optional" understates a draft,
+                a wrong "required" silently hardens a strategy the operator was
+                composing. */}
+            <option value="">optional — BattleGrid’s default</option>
+            <option value="must-hold">required — the strategy insists on it</option>
           </select>
         </label>
       </div>
@@ -240,8 +251,9 @@ export function ConditionComposer({
 
       {seededFrom.length > 0 ? (
         <p className="text-sm text-text-secondary">
-          The definition is taken whole from <strong>{seededFrom}</strong>, so the rows below
-          are ignored. Clear this to compose one from scratch.{' '}
+          The definition — and whether the strategy insists on it — is taken whole from{' '}
+          <strong>{seededFrom}</strong>, so the rows below and the holding choice are ignored.
+          Clear this to compose one from scratch.{' '}
           <a href="?" className="underline">
             Start from scratch
           </a>
