@@ -43,7 +43,7 @@ import type {
   SimulationResult,
   SimulationSignal,
 } from '@/ports/strategies.js';
-import type { SectionTemplate } from '@/domain/strategy/strategy.js';
+import type { SectionTemplate, TradeLevelPolicy } from '@/domain/strategy/strategy.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
 import { declaredValues } from './declared-values.js';
@@ -852,6 +852,7 @@ function mapStrategyDetail(raw: unknown): StrategyDetail {
       minRequiredCount: num(s['minRequiredCount']),
       minAtrPct: num(s['minAtrPct']),
     },
+    tradeLevelPolicy: mapTradeLevelPolicy(s),
     signalRules: mapSignalRules(s['signalRules']),
     conditions: mapConditions(s['conditions']),
     // Not defaulted to zero. Zero means "nothing is open under this"; absent
@@ -862,6 +863,16 @@ function mapStrategyDetail(raw: unknown): StrategyDetail {
     regimeAutoDerive: s['regimeAutoDerive'] === true,
     regimeTimeframe: typeof s['regimeTimeframe'] === 'string' ? s['regimeTimeframe'] : null,
   };
+}
+
+function mapTradeLevelPolicy(s: Record<string, unknown>): TradeLevelPolicy | null {
+  const maxStop = s['maxStopLossPct'];
+  const minAtr = s['minStopLossAtrMultiple'];
+  const minRR = s['minRiskRewardRatio'];
+  if (typeof maxStop !== 'number' || typeof minAtr !== 'number' || typeof minRR !== 'number') {
+    return null;
+  }
+  return { maxStopLossPct: maxStop, minStopLossAtrMultiple: minAtr, minRiskRewardRatio: minRR };
 }
 
 function mapSections(raw: unknown): readonly StrategySection[] {

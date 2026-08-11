@@ -385,6 +385,7 @@ export function aDetail(summary: Strategy = aStrategy()): StrategyDetail {
     sections: [],
     marketReadText: null,
     thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
+    tradeLevelPolicy: null,
     signalRules: [],
     conditions: [],
     openPositionCount: 0,
