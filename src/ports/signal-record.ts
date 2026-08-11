@@ -94,6 +94,47 @@ export interface SignalRecordStore {
   rawAnswer(params: { userId: string; captureId: string }): Promise<Readonly<
     Record<string, unknown>
   > | null>;
+
+  /**
+   * What an age-based trim would take, so a describe can state what becomes
+   * unknowable before anything is offered for agreement.
+   *
+   * The boundary is the **run**: everything belonging to runs started before
+   * `before` counts, and nothing else does. Coverage derives gaps from runs,
+   * so rows deleted out from under a surviving run would leave the record
+   * claiming attempts whose findings are invisible — the one kind of lie a
+   * recorder must not tell about itself.
+   */
+  trimPreview(params: { userId: string; before: Date }): Promise<TrimPreview>;
+
+  /**
+   * Remove whole runs started before `before` — captures, failures and
+   * readings with them, in one transaction. Scoped to the account in the
+   * WHERE like every other method. Returns what actually went, which the
+   * caller reports rather than re-stating the preview: the record may have
+   * been trimmed again between describe and perform.
+   */
+  trim(params: { userId: string; before: Date }): Promise<TrimOutcome>;
+}
+
+/** The extent of a proposed trim — the describe renders this, and binds it. */
+export interface TrimPreview {
+  readonly runs: number;
+  readonly captures: number;
+  readonly failures: number;
+  readonly readings: number;
+  /** Every coin with at least one row in the span, for the consequence text. */
+  readonly coinTickers: readonly string[];
+  /** Span of the doomed rows; null when nothing falls before the boundary. */
+  readonly oldest: Date | null;
+  readonly newest: Date | null;
+}
+
+export interface TrimOutcome {
+  readonly runs: number;
+  readonly captures: number;
+  readonly failures: number;
+  readonly readings: number;
 }
 
 /** One coin's recorded rows, with the runs they belong to. */

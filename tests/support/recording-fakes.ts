@@ -6,7 +6,7 @@ import type {
   SignalReading,
 } from '@/domain/recording/capture.js';
 import type { CoinSignalPreviewResult, MarketPort } from '@/ports/market.js';
-import type { CoinRecord, RecordedSeries, SignalRecordStore } from '@/ports/signal-record.js';
+import type { CoinRecord, RecordedSeries, SignalRecordStore, TrimOutcome, TrimPreview } from '@/ports/signal-record.js';
 
 /**
  * The recorder's two ports, faked for the command and query tests.
@@ -268,5 +268,55 @@ export class InMemorySignalRecordStore implements SignalRecordStore {
       (c) => c.id === params.captureId && c.userId === params.userId,
     );
     return capture?.raw ?? null;
+  }
+
+  /** The runs an age trim takes — the same boundary the Drizzle store uses. */
+  private doomed(params: { userId: string; before: Date }) {
+    const runIds = new Set(
+      this.runs
+        .filter((r) => r.userId === params.userId && r.startedAt.getTime() < params.before.getTime())
+        .map((r) => r.id),
+    );
+    const captures = this.captures.filter((c) => c.userId === params.userId && runIds.has(c.runId));
+    const failures = this.failures.filter((f) => f.userId === params.userId && runIds.has(f.runId));
+    return { runIds, captures, failures };
+  }
+
+  async trimPreview(params: { userId: string; before: Date }): Promise<TrimPreview> {
+    this.check();
+    const { runIds, captures, failures } = this.doomed(params);
+    const at = [...captures.map((c) => c.capturedAt), ...failures.map((f) => f.attemptedAt)].map((d) =>
+      d.getTime(),
+    );
+    return {
+      runs: runIds.size,
+      captures: captures.length,
+      failures: failures.length,
+      readings: captures.reduce((n, c) => n + c.readings.length, 0),
+      coinTickers: [...new Set([...captures, ...failures].map((r) => r.coinTicker))].sort(),
+      oldest: at.length > 0 ? new Date(Math.min(...at)) : null,
+      newest: at.length > 0 ? new Date(Math.max(...at)) : null,
+    };
+  }
+
+  async trim(params: { userId: string; before: Date }): Promise<TrimOutcome> {
+    this.check();
+    const { runIds, captures, failures } = this.doomed(params);
+    const outcome = {
+      runs: runIds.size,
+      captures: captures.length,
+      failures: failures.length,
+      readings: captures.reduce((n, c) => n + c.readings.length, 0),
+    };
+    const keepC = this.captures.filter((c) => !(c.userId === params.userId && runIds.has(c.runId)));
+    const keepF = this.failures.filter((f) => !(f.userId === params.userId && runIds.has(f.runId)));
+    const keepR = this.runs.filter((r) => !(r.userId === params.userId && runIds.has(r.id)));
+    this.captures.length = 0;
+    this.captures.push(...keepC);
+    this.failures.length = 0;
+    this.failures.push(...keepF);
+    this.runs.length = 0;
+    this.runs.push(...keepR);
+    return outcome;
   }
 }

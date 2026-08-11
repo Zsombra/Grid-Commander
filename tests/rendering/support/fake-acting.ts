@@ -14,6 +14,7 @@ import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.que
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
 import { ReadRiskReadingQuery } from '@/application/use-cases/read-risk-reading.query.js';
 import { ReadWagerAuthorityQuery } from '@/application/use-cases/read-wager-authority.query.js';
+import { DescribeTrimRecordQuery, TrimRecordCommand } from '@/application/use-cases/trim-record.command.js';
 import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js';
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
 import { ReadTradeStoryQuery } from '@/application/use-cases/read-trade-story.query.js';
@@ -168,6 +169,8 @@ export function actingWith({
     ),
     simulateAggregate: new SimulateAggregateQuery(strategies),
     readSignalHistory: new ReadSignalHistoryQuery(signalRecord),
+    describeTrimRecord: new DescribeTrimRecordQuery(signalRecord, confirmations, random, clock),
+    trimRecord: new TrimRecordCommand(signalRecord, confirmations),
     readRecordCoverage: new ReadRecordCoverageQuery(signalRecord, clock),
   };
 
