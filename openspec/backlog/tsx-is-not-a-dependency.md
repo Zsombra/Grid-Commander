@@ -2,11 +2,11 @@
 id: tsx-is-not-a-dependency
 title: The recorder's entrypoint depends on tsx, and tsx is not a dependency
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-11
-change: ""
+change: "tsx-is-a-dependency"
 capability: signal-recording
 github: "152"
 blocked_by: []
@@ -39,3 +39,11 @@ recording host's deployed workaround is `npx --yes tsx` (prompt
 suppressed, download still unpinned) — the Windows recipe in
 `confirm-the-recorder-is-running` records it; simplify it to `npx tsx`
 when this lands.
+
+## Done 2026-08-11 — `tsx-is-a-dependency`
+
+`tsx@4.23.12` added to `devDependencies`, pinned by the lockfile.
+`node_modules/.bin/tsx` now exists and `npx tsx --version` answers with
+no prompt and no network. All six quality gates green (typecheck, lint,
+2121 vitest, build, schema-drift, 85 db). The Windows recipe's `--yes`
+note updated to say the flag is now unnecessary.

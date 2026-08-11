@@ -25,7 +25,14 @@ holes excepted. #94's gate moves from "answered at zero" to "accumulating
 since 2026-08-11".
 
 **Next**: #94 waits for the record to hold enough to say anything —
-days, not hours. The tsx dependency fix (#152) is a clean lite change.
+days, not hours.
+
+**Addendum, same evening**: the tsx fix did not wait —
+`tsx-is-a-dependency` (lite) proposed, executed and archived in one
+pass, closing #152. `tsx@4.23.12` pinned in `devDependencies`; all six
+quality gates green (typecheck, lint, 2121 vitest, build, schema-drift,
+85 db); the Windows recipe's `--yes` note now marked unnecessary. This
+makes the 146th archived change and leaves 24 open backlog items.
 
 **Watch out**: The recorder host is a personal Windows machine — hours
 it spends powered off are honestly-labelled permanent gaps, and

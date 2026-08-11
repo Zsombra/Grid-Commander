@@ -111,8 +111,10 @@ There is no cron on Windows and no bash. What works, proven end to end:
 2. A `record.ps1` in the repo root that sets the four env vars
    (`$env:` style), runs `npx --yes tsx bin/grid-commander-record.ts`
    appending `*>>` to a log, and exits `$LASTEXITCODE`. The `--yes`
-   matters: tsx is not a dependency (#152), and plain `npx tsx` prompts
-   for a download **inside the unattended run**.
+   mattered when this was written: tsx was not a dependency (#152), and
+   plain `npx tsx` prompted for a download **inside the unattended run**.
+   Since `tsx-is-a-dependency` landed, a pulled-and-installed checkout
+   resolves tsx locally and the flag is harmless but unnecessary.
 3. Schedule with `Register-ScheduledTask`: a `-Once` trigger at the next
    :17 with `-RepetitionInterval` 1h and a long `-RepetitionDuration`
    (PowerShell 5.1 requires it), settings `-WakeToRun
