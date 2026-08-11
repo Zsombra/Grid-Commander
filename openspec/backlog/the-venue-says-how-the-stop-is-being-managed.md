@@ -50,3 +50,26 @@ First step is observation on live open positions (values, and whether the
 fields appear on positions whose agent has management disabled). Then it
 belongs on the exposure read alongside `RestingProtection`, rendered where
 the position is.
+
+## Observed 2026-08-11 — present on every position, one value seen
+
+`list_user_active_positions` live: 8 open positions across two agents,
+rows of 38 keys, and **every row carries both fields as plain strings** —
+`breakEvenStatus: "ACTIVE"`, `trailingStatus: "ACTIVE"`, all eight
+identical. So the fields are real and populated, but the observation is
+one value deep:
+
+- The rest of the vocabulary is unobserved — whatever the platform says
+  for armed-but-not-yet-tracking, triggered/completed, or
+  management-disabled states has not been seen.
+- Both agents on the board have position management enabled; the
+  disabled-management case (fields absent? a DISABLED value?) could not
+  be observed.
+
+That is enough to build the honest version: render the platform's words
+verbatim beside the resting-order legs on the exposure surface
+("break-even ACTIVE · trailing ACTIVE"), absent renders nothing, and any
+value this product has never seen renders as itself — no enum is
+modelled from a single observed member. The richer treatment (explaining
+what a state *means*) waits for vocabulary the platform has not yet
+shown.
