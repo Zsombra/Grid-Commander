@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-11 — session close: v17.2.0 followed same-day, eight closes, three builds, three parting concerns filed
+
+**Did**: Thirteen PRs merged (#132–#144, the last pending the operator's
+final merge). The freshness gate caught BattleGrid v17.2.0 and everything
+followed same-day: surface artifacts regenerated, `positionManagement`
+re-learned (`the-count-held-and-the-fields-moved`, closing #92 with the
+vocabulary artifact + value gate), the regime-ref question answered and
+the research doc corrected (#90), retention measured and #99 closed,
+v17's two read surfaces taken filed→observed→built (#133
+`an-evaluation-explains-its-conditions`, #134
+`management-status-in-the-platforms-words`), the condition composer's
+`required` control shipped (#88 `a-draft-can-insist`), #98 closed as
+overtaken with lifetime evidence, #105 declined on its own analysis.
+Filed at close: **#145** (is the recorder cron running — gates #94),
+**#146** (OPEN_POSITION_CONFLICT churn tripled), **#147** (the deciding
+branch awaits a required condition). #107 gained the approval-expired
+candidate line. HANDOFF.md state updated.
+
+**State**: No active changes. 25 open items. All suites green (2121
+vitest, db, harness, full ci.sh); live freshness green at 17.2.0
+including the new vocabulary gate. PR #144 open as the session-close PR.
+
+**Next**: The operator answers **#145** (five-minute deployment check);
+its answer unlocks `/propose` on #94, the largest open build. For a
+product session without that answer: `/board`, then the p3 tail.
+
+**Watch out**: BattleGrid deploys fast and quiet — v17 arrived at patch
+.2, so two deployments passed unseen between probes; run the live
+freshness suite early in any session. `mcp:read` remains write-capable;
+scratch live probes belong in `tests/live/` via `vitest.live.config.ts`,
+run once, deleted. The platform's PostgreSQL container here dies
+periodically — `pg_ctlcluster 16 main start` and re-run. `verdict`/
+`decidedBy` in `conditionEvaluation` are rendered verbatim but have never
+been seen non-null (#147) — do not model meaning onto them. The
+`AGENT_APPROVAL_EXPIRED` semantics are deliberately unexplained in the
+product; the question lives in #107's draft report now.
+
 ## 2026-08-11 (the gameType widening) — declined on its own advice, re-verified
 
 **`market-grid-standings-need-a-gametype-not-a-second-mapper` closed as
