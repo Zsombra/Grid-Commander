@@ -146,6 +146,8 @@ export function mapPosition(raw: unknown): OpenPosition {
     status: text(p['status']),
     decisionId: text(p['decisionId']),
     signalLogId: text(p['signalLogId']),
+    breakEvenStatus: text(p['breakEvenStatus']),
+    trailingStatus: text(p['trailingStatus']),
   };
 }
 

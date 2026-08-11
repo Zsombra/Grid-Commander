@@ -129,6 +129,27 @@ describe('mapping what is open', () => {
     expect(result.exposure.totals.generatedAtMs).toBe(1786038921702);
   });
 
+  it('carries the management statuses verbatim, and their absence as null', async () => {
+    // The LIVE payload predates v17.2.0, so it is the absent case: the
+    // platform saying nothing maps to null, never to a default state.
+    const before = await adapterOver(() => LIVE).readActivePositions(who);
+    if (before.kind !== 'exposure') throw new Error(before.kind);
+    expect(before.exposure.positions[0]?.breakEvenStatus).toBeNull();
+    expect(before.exposure.positions[0]?.trailingStatus).toBeNull();
+
+    // The v17 shape, mirroring the live read of 2026-08-11 — and a word this
+    // product has never seen travels as itself, no enum in the way.
+    const after = await adapterOver(() => ({
+      ...LIVE,
+      positions: [
+        { ...LIVE.positions[0], breakEvenStatus: 'ACTIVE', trailingStatus: 'SOME_NEW_WORD' },
+      ],
+    })).readActivePositions(who);
+    if (after.kind !== 'exposure') throw new Error(after.kind);
+    expect(after.exposure.positions[0]?.breakEvenStatus).toBe('ACTIVE');
+    expect(after.exposure.positions[0]?.trailingStatus).toBe('SOME_NEW_WORD');
+  });
+
   it('keeps the effective stop, which is not the one the decision recorded', async () => {
     // The decision behind this position recorded `stopLoss: 55.67456526`.
     const result = await adapterOver(() => LIVE).readActivePositions(who);

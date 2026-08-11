@@ -109,6 +109,14 @@ export interface OpenPosition {
   /** The thread back to why: the decision and the evaluation behind it. */
   readonly decisionId: string | null;
   readonly signalLogId: string | null;
+  /**
+   * What the management engine reports for this position — v17.2.0 fields,
+   * carried verbatim. Observed one value deep (`ACTIVE` on all 8 positions,
+   * 2026-08-11), so no enum: an unseen value is still the platform's word.
+   * Null when the platform said nothing, which is not an idle engine.
+   */
+  readonly breakEvenStatus: string | null;
+  readonly trailingStatus: string | null;
 }
 
 /** What the whole account has at stake, as the platform totals it. */

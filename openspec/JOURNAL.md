@@ -1,5 +1,18 @@
 # Journal
 
+## 2026-08-11 (the engine speaks) — one line, verbatim, and nothing claimed for silence
+
+**`management-status-in-the-platforms-words` archived**, closing #134 the
+same day it was filed, observed and built. Each open position now carries
+"Management engine: break-even ACTIVE · trailing ACTIVE — BattleGrid's
+own words", under the note that management moves the stop after the
+decision. The observation's one-value-deep limit did the design: verbatim
+strings end to end, an unseen word renders as itself (tested with an
+invented `GIVEBACK_ARMED`), absence renders no line — the platform saying
+nothing is not an idle engine. What a state *means*, and the
+disabled-management case, stay deliberately unbuilt until the platform
+shows them. Spec +1 requirement; 2119 offline tests and full CI green.
+
 ## 2026-08-11 (the management status) — observed one value deep, and the p2's precondition is the operator's to answer
 
 **#134's first step done.** `list_user_active_positions` live: 8 open
