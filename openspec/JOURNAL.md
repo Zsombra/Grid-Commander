@@ -1,5 +1,33 @@
 # Journal
 
+## 2026-08-11 (the handoff catches up) — every number in HANDOFF.md re-verified against reality
+
+**Did**: Audited HANDOFF.md for internal inconsistencies and re-verified
+every countable claim: 2121 vitest green, 85 db (table said 81), 243
+harness, 145 archived changes (table said 138, prose said 132), 25 open
+backlog items mirrored 1:1 by 25 open GitHub issues (table said 29, the
+stale "Start Here" split said 31), 30 live probe files (prose said 26),
+one P1 not two (`the-surface-map-is-two-majors-stale` closed as #92).
+Refreshed the "Start Here" section around the three parting concerns
+(#145–#147) and the current 25-item split; recorded that PR #144 merged
+and parallel sessions opened #148–#150 (unmerged) the same day; de-numbered
+ci.sh's stale "62 database tests" skip message. The middle sections had
+simply not been updated when the summary paragraph was, at the 08-11 close.
+
+**State**: No code changed — docs and one script message only. All suites
+re-run green in this container (vitest, db after migrate, harness).
+Validation still 0 errors / 11 warnings, all pre-existing.
+
+**Next**: Unchanged from the close below — the operator answers #145.
+Three of the 11 validation warnings ask open backlog items linked to
+archived changes to say what is left; a tracker pass could tidy them.
+
+**Watch out**: Three open PRs (#148, #149, #150) each build or touch an
+open backlog item (`the-payload-carries-more-than-is-read`,
+`the-deploy-surface-cannot-create-first-deployments`, the v15 P1's
+read side) — merging them will re-stale the split in HANDOFF.md; close
+the items or update the split when they land.
+
 ## 2026-08-11 — session close: v17.2.0 followed same-day, eight closes, three builds, three parting concerns filed
 
 **Did**: Thirteen PRs merged (#132–#144, the last pending the operator's
