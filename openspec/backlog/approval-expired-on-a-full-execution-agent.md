@@ -2,10 +2,10 @@
 id: approval-expired-on-a-full-execution-agent
 title: AGENT_APPROVAL_EXPIRED is the account's commonest block and fires on agents that need no approval
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-11
 change: ""
 capability: agent-understanding
 github: "98"
@@ -178,3 +178,37 @@ Ask the platform rather than the schema. `get_agent_activity_feed` and
 most likely to name an authorization state. `get_agent_decision_context` may
 say what the agent believed it was waiting for. If none of them answers, the
 question belongs to BattleGrid's operators, not to a guess.
+
+## Closed 2026-08-11 — overtaken by the fleet re-organisation; semantics stay upstream
+
+The operational fact this item was p2 for is gone. The funded fleet
+(Undertow, Breakwater, Vanguard — the 2026-08-08 re-organisation) was
+probed across its whole lifetime:
+
+| agent | total blocks | `AGENT_APPROVAL_EXPIRED` seen |
+|---|---:|---|
+| Undertow | 3,809 | **0** in 600 rows sampled across 6 pages, creation → now |
+| Breakwater | 346 | **0** in the latest 100 |
+| Vanguard | 0 | — |
+
+Every sampled row is `OPEN_POSITION_CONFLICT` but one
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` and 22 `DAILY_TRADE_LIMIT_REACHED`
+(2026-08-08 evening). Three days of funded, evaluating, actually-trading
+agents have never produced the block; the never-funded trio that produced
+134/week is archived. "The largest single fact about why their agents are
+not trading" is no longer a fact about this account.
+
+What stays deliberately unanswered: what `AGENT_APPROVAL_EXPIRED` *means*.
+Both accounts' 2026-08-06 evidence still contradicts every clean reading
+(never-funded agents produced it on account 1; a funded, trading agent
+carried 90 on account 2), and there is no live subject left on this
+account to probe. Per this item's own rule, that residue belongs to
+BattleGrid's operators — it is a candidate line for the upstream report
+(#107), not a guess for this product to render. The product's surface
+already does the right thing under every reading: code, count and window,
+no invented meaning.
+
+Recorded in passing: Undertow's `OPEN_POSITION_CONFLICT` rate has grown to
+~90/hour (3,809 in three days, `gateStage: TOKEN` — before the model call,
+so not a spend line). The known re-evaluates-what-it-holds pattern,
+unchanged in kind since #96, larger in volume.
