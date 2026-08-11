@@ -1,5 +1,37 @@
 # Journal
 
+## 2026-08-11 (the record begins) — a host exists, and the gap stopped growing at four days
+
+**Did**: The operator chose their Windows machine and, walked through it
+live, stood the recorder up the same day the gap was measured. **The
+record's first persisted capture is 2026-08-11** — run `6c6a6fc0`,
+platform 17.2.0, all 20 radar deployments at 1h, 84 signals each — into
+PostgreSQL 18 on that machine, with an hourly Scheduled Task
+(`GridCommanderRecorder`, :17 past, `-WakeToRun -StartWhenAvailable`)
+registered and Ready. The Windows recipe (execution policy, `record.ps1`,
+`Register-ScheduledTask`, the PostgreSQL-18-path and password-typo traps)
+is filed in `confirm-the-recorder-is-running`, which stays open only
+until the operator confirms the first unattended fire. The walk exposed a
+real repo gap: `npx tsx` prompts to download tsx **inside the unattended
+run** because tsx is not a dependency — filed as
+`tsx-is-not-a-dependency` (#152), worked around on the host with
+`npx --yes`.
+
+**State**: The four-day gap (2026-08-07 → 2026-08-11) is permanent and
+documented; everything after it is being captured hourly, machine-sleep
+holes excepted. #94's gate moves from "answered at zero" to "accumulating
+since 2026-08-11".
+
+**Next**: Operator confirms the first scheduled capture → close #145.
+#94 waits for the record to hold enough to say anything — days, not
+hours. The tsx dependency fix (#152) is a clean lite change.
+
+**Watch out**: The recorder host is a personal Windows machine — hours
+it spends powered off are honestly-labelled permanent gaps, and
+`/recorder` will show them. Do not mistake them for a dead scheduler:
+`Get-ScheduledTaskInfo -TaskName GridCommanderRecorder` distinguishes
+the two (`LastTaskResult : 0` = alive).
+
 ## 2026-08-11 (the recorder question answered) — it has never run, and the gap is already four days
 
 **Did**: #145 answered with the operator, live. The operator confirmed no

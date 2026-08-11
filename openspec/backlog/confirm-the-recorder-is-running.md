@@ -79,3 +79,39 @@ anything with cron. One-time setup on it:
 
 When the first cron run lands, note the record's actual start date here
 and close this item.
+
+## 2026-08-11, later — the host exists and the record has started
+
+The operator chose their Windows machine and stood it up the same day.
+**The record's first persisted capture is 2026-08-11** (run `6c6a6fc0`,
+platform 17.2.0, all 20 radar deployments at 1h, 84 signals each), into
+PostgreSQL 18 on that machine — 18, not the documented 16, works fine.
+An hourly Windows Scheduled Task (`GridCommanderRecorder`, fires at :17,
+`-WakeToRun -StartWhenAvailable`) is registered and `Ready`.
+
+**Still open for one reason**: the first *unattended* fire has not yet
+been observed. When the operator confirms a scheduled capture they did
+not trigger (`LastTaskResult : 0` and a fresh log line), close this item.
+
+### The Windows recipe (four walls, so nobody hits them twice)
+
+There is no cron on Windows and no bash. What works, proven end to end:
+
+1. `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` once — npm's
+   `.ps1` shims are blocked by the default policy.
+2. A `record.ps1` in the repo root that sets the four env vars
+   (`$env:` style), runs `npx --yes tsx bin/grid-commander-record.ts`
+   appending `*>>` to a log, and exits `$LASTEXITCODE`. The `--yes`
+   matters: tsx is not a dependency (#152), and plain `npx tsx` prompts
+   for a download **inside the unattended run**.
+3. Schedule with `Register-ScheduledTask`: a `-Once` trigger at the next
+   :17 with `-RepetitionInterval` 1h and a long `-RepetitionDuration`
+   (PowerShell 5.1 requires it), settings `-WakeToRun
+   -StartWhenAvailable` — wakes the machine from sleep and runs missed
+   captures on wake, which cron never did. Powered-off hours remain
+   permanent gaps.
+4. The auth failures that ate an hour: the EDB installer's newest version
+   (18) puts binaries under `...\PostgreSQL\18\bin`, and a password typo
+   in a connection string fails exactly like a wrong `pg_hba` — when an
+   interactive `createdb` succeeds and the URL fails, diff the two
+   passwords character by character.
