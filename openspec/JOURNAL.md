@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-08-11 (check-in 07:37Z, run 08:55Z) — create lifecycle proven on the testing account; no under-45 exits yet; book swings green
+
+**The testing account (ANBUJEFF).** The operator supplied a second account's
+key with explicit manipulation approval and named the goal: run the two
+create-gated tests that account 1's 3/3 slots kept skipping. Surveyed first
+(read-only): Commander III, $4.20, **5 agents / 24 slots**, 37 strategies,
+flat book, wager enabled. The five existing agents were never touched.
+
+Both probes ran. **The full agent lifecycle is proven live for the first
+time: create → read-back → propose/agree edit → archive, every audit row
+`succeeded`, throwaways cleaned in `finally`.** The only assertion failures
+were two field-width literals (`>20` / `>19` vs 18 read) — and Undertow on
+account 1 reads the same 18, so 18 IS the v17.2 shape; the thresholds encode
+the pre-v17 width. Filed `create-probes-assert-a-pre-v17-config-width` (p3).
+That makes three stale-probe-expectation items from today's runs (radar
+refusal shape, thinking pagination, config width) — one lite change should
+sweep all three, deriving floors from the record instead of literals.
+
+**Account-1 cycle (guards green: file 08:51:45, priced 104s ago LIVE,
+limit:50).** **No closes since the giveback change** — 43 closed, 15W/28L,
+−$0.7347, WR 35%, RR 1.38, BE 42% all unchanged; the first capture-under-45
+datapoint is still pending. The same six positions swung the book
+−$0.0334 → **+$0.3400**: GOLD short +$0.1038 (7.6h, the extender), FARTCOIN
++$0.1992 (the 3-minute re-entry, now largest), LDO +$0.0890, SKHX +$0.0781
+green; AIXBT −$0.1074, MOODENG −$0.0227 red. Account **$43.66** — the
+session high; it started at $43.56. Meter still dead.
+
+Housekeeping: the operator's two keys now live in chat history — rotation
+recommended when convenient (noted to them directly). Branch deletion remains
+GitHub-UI-only.
+
 ## 2026-08-11 (07:05Z) — the write-gated probes ran: six writes proven live, one platform drift found, account clean
 
 The operator freed the permission gate and re-supplied the key; the
