@@ -302,7 +302,34 @@ describe('starting from a condition the strategy already has', () => {
     draftWorld();
     const r = await draftRendered('s1', { try: '1', from: 'REGIME_DOWN', verdict: '' });
     expect(said(r.text)).toContain('taken whole from REGIME_DOWN');
+    // The holding control is among what the seed overrides, and the note
+    // says so — an ignored control the page is silent about is the defect
+    // class `A Field Offered Reaches The Operation It Configures` names.
+    expect(said(r.text)).toContain('the holding choice are ignored');
     expect(r.text).toContain('Start from scratch');
+  });
+
+  it('offers the holding choice, optional first as the platform’s default', async () => {
+    draftWorld();
+    const r = await draftRendered('s1');
+    expect(r.text).toContain('optional — BattleGrid’s default');
+    expect(r.text).toContain('required — the strategy insists on it');
+  });
+
+  it('composes required only on the explicit choice, and optional on everything else', async () => {
+    for (const [holding, expected] of [
+      ['must-hold', true],
+      ['', false],
+      ['REQUIRED', false], // a value the select does not offer understates
+    ] as const) {
+      const strategies = draftWorld();
+      await draftRendered('s1', { ...A_CLAUSE, holding });
+      const sent = strategies.calls.find((c) => c.op === 'preview')?.payload?.[
+        'conditions'
+      ] as Array<Record<string, unknown>>;
+      const draft = sent.find((c) => c['conditionKey'] === 'MY_DRAFT');
+      expect(draft?.['required'], `holding=${holding}`).toBe(expected);
+    }
   });
 
   it('a seeded condition carrying a form we cannot express is refused, and nothing is sent', async () => {
