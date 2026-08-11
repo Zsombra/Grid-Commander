@@ -29,7 +29,6 @@ export interface CreateAgentRequest {
    * the platform's own twelve values for it, never a substitute.
    */
   readonly positionPreset?: string | undefined;
-  readonly arenaChallengeEnabled?: boolean | undefined;
   readonly idempotencyKey?: string | undefined;
 }
 
@@ -178,7 +177,6 @@ export class CreateAgentCommand {
       brain: req.brain,
       strategyId: req.strategyId,
       tradingConfig: built.config,
-      arenaChallengeEnabled: req.arenaChallengeEnabled,
       idempotencyKey: req.idempotencyKey,
     });
     return { kind: 'created', agent };

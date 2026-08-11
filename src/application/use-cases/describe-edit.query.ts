@@ -120,11 +120,6 @@ export function describeEdit(
     parts.push(`Renames "${currentName}" to "${displayName}".`);
   }
 
-  const overlay = changes['overlayText'];
-  if (typeof overlay === 'string') {
-    parts.push('Replaces the overlay text.');
-  }
-
   const config = changes['tradingConfig'];
   if (config !== undefined) {
     // Deliberately the heaviest sentence here. Everything else on this screen

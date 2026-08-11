@@ -15,8 +15,6 @@ export const AGENT_OWNED = [
   'displayName',
   'brain',
   'tradingConfig',
-  'arenaChallengeEnabled',
-  'overlayText',
 ] as const;
 
 /**
