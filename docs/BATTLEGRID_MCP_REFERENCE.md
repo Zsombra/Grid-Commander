@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v17.0.0`, protocol `2025-06-18`) on 2026-08-10.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v17.2.0`, protocol `2025-06-18`) on 2026-08-11.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,

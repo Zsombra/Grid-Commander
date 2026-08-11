@@ -82,7 +82,7 @@
   ],
   "serverInfo": {
     "name": "battlegrid",
-    "version": "17.0.0"
+    "version": "17.2.0"
   },
   "tools": [
     {
@@ -13414,6 +13414,237 @@
                   "coinTicker": {
                     "type": "string"
                   },
+                  "conditionEvaluation": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "counts": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "total": {
+                            "type": "number"
+                          },
+                          "trueCount": {
+                            "type": "number"
+                          },
+                          "unresolvedCount": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "trueCount",
+                          "total",
+                          "unresolvedCount"
+                        ],
+                        "type": "object"
+                      },
+                      "decidedBy": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "outcomes": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "conditionKey": {
+                              "type": "string"
+                            },
+                            "counts": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "total": {
+                                      "type": "number"
+                                    },
+                                    "trueCount": {
+                                      "type": "number"
+                                    },
+                                    "unresolvedCount": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "trueCount",
+                                    "total",
+                                    "unresolvedCount"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "evidence": {
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "header": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "clause",
+                                        "type": "string"
+                                      },
+                                      "literal": {
+                                        "type": "string"
+                                      },
+                                      "op": {
+                                        "enum": [
+                                          "lt",
+                                          "lte",
+                                          "gte",
+                                          "gt",
+                                          "between",
+                                          "is",
+                                          "in"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "operand": {
+                                        "type": "string"
+                                      },
+                                      "outcome": {
+                                        "enum": [
+                                          "TRUE",
+                                          "FALSE",
+                                          "UNRESOLVED"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "sectionKey": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sectionKey",
+                                      "header",
+                                      "op",
+                                      "operand",
+                                      "literal",
+                                      "outcome"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "conditionKey": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "const": "conditionRef",
+                                        "type": "string"
+                                      },
+                                      "outcome": {
+                                        "enum": [
+                                          "TRUE",
+                                          "FALSE",
+                                          "UNRESOLVED"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "conditionKey",
+                                      "outcome"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "legacy",
+                                        "type": "string"
+                                      },
+                                      "text": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "text"
+                                    ],
+                                    "type": "object"
+                                  }
+                                ]
+                              },
+                              "type": "array"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "outcome": {
+                              "enum": [
+                                "TRUE",
+                                "FALSE",
+                                "UNRESOLVED"
+                              ],
+                              "type": "string"
+                            },
+                            "provisional": {
+                              "type": "boolean"
+                            },
+                            "required": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "conditionKey",
+                            "name",
+                            "outcome",
+                            "required",
+                            "evidence",
+                            "counts",
+                            "provisional"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "provisional": {
+                        "type": "boolean"
+                      },
+                      "strategyRevision": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "verdict": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "UP",
+                              "DOWN",
+                              "NEITHER",
+                              "UNRESOLVED"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "outcomes",
+                      "verdict",
+                      "decidedBy",
+                      "strategyRevision",
+                      "provisional",
+                      "counts"
+                    ],
+                    "type": "object"
+                  },
                   "createdAt": {
                     "type": "string"
                   },
@@ -15354,7 +15585,8 @@
                   "agentModelName",
                   "pipeline",
                   "linkedEntryDecision",
-                  "challenge"
+                  "challenge",
+                  "conditionEvaluation"
                 ],
                 "type": "object"
               },
@@ -23562,6 +23794,15 @@
                       "agentName": {
                         "type": "string"
                       },
+                      "breakEvenStatus": {
+                        "enum": [
+                          "DISABLED",
+                          "ACTIVE",
+                          "INACTIVE_SETUP",
+                          "UNDETERMINED"
+                        ],
+                        "type": "string"
+                      },
                       "coinTicker": {
                         "type": "string"
                       },
@@ -23704,6 +23945,9 @@
                       "timeHorizon": {
                         "type": "string"
                       },
+                      "trailingStatus": {
+                        "$ref": "#/properties/agents/items/properties/positions/items/properties/breakEvenStatus"
+                      },
                       "unrealizedPnlUsd": {
                         "type": [
                           "number",
@@ -23747,7 +23991,9 @@
                       "openedAt",
                       "openedAtMs",
                       "ageMs",
-                      "status"
+                      "status",
+                      "breakEvenStatus",
+                      "trailingStatus"
                     ],
                     "type": "object"
                   },
@@ -24026,6 +24272,15 @@
                       "agentName": {
                         "type": "string"
                       },
+                      "breakEvenStatus": {
+                        "enum": [
+                          "DISABLED",
+                          "ACTIVE",
+                          "INACTIVE_SETUP",
+                          "UNDETERMINED"
+                        ],
+                        "type": "string"
+                      },
                       "coinTicker": {
                         "type": "string"
                       },
@@ -24168,6 +24423,9 @@
                       "timeHorizon": {
                         "type": "string"
                       },
+                      "trailingStatus": {
+                        "$ref": "#/properties/agents/items/properties/positions/items/properties/breakEvenStatus"
+                      },
                       "unrealizedPnlUsd": {
                         "type": [
                           "number",
@@ -24211,7 +24469,9 @@
                       "openedAt",
                       "openedAtMs",
                       "ageMs",
-                      "status"
+                      "status",
+                      "breakEvenStatus",
+                      "trailingStatus"
                     ],
                     "type": "object"
                   },

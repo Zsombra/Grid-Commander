@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-11 (v17.2 landed) — the first quiet deploy since v13, and a distinction the record forces
+
+**BattleGrid deployed v17.2.0** — fifth deploy in three days, and the first
+**minor** rather than a major. Re-probed immediately, per the version-gated
+rule; three of the last four deploys broke a write path, so the trigger is
+not ceremony.
+
+**This one broke nothing.** 114 tools, none added, removed or reclassified,
+and **zero declared schemas changed**. Guards green on the refreshed record:
+217 architecture tests, including `surface-freshness` against live v17.2.
+
+**But the record file still churned 95 lines, and the distinction matters.**
+`docs/battlegrid-mcp-surface.json` captures *observed* response shapes
+alongside declared schemas, so a probe that happens to see `fill` come back
+as a float where it was previously an int, or `firstFailReason` populated
+where it was previously null, rewrites those lines. **That churn is
+sampling, not a platform change.**
+
+It is worth naming because the obvious shortcut — "diff the record file to
+see what the deploy did" — would have reported a 95-line change on a deploy
+that changed nothing. The guards do not diff the file; they read the
+*declarations* and hold this product's payloads against them. That is why
+they said 0 on v17.2 and 6 on v17.0 within seconds of the same operation.
+
+**The v15 policy p1 survived a third version bump** — v15 → v16 → v17 →
+v17.2, still `"no effective changes"` on all three strategies. Four
+consecutive deploys have not touched it.
+
+**Fleet: nothing closed.** 37 closed, 11W/26L, −$1.5119, WR 30%, realised RR
+1.04. **Book +$0.7664 across five and every position green** — ENA +$0.3330
+(13.4h), FARTCOIN +$0.1546, HYPE +$0.1366, TRUMP **+$0.1242** having
+recovered from −$0.0283 last cycle, SKHX +$0.0180. Account $43.23.
+
+**Gates**: typecheck, lint, spec validation clean; 1,902 vitest, 217
+architecture.
+
 ## 2026-08-10 (check-in 23:45Z) — the monotone RR decline ended, and I should stop calling it monotone
 
 **GOLD closed −$0.0670 on a −0.33% adverse move** after 173 minutes —
