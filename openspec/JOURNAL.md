@@ -1,5 +1,46 @@
 # Journal
 
+## 2026-08-11 (check-in 05:10Z, run 05:27Z) — TRUMP converted: the first long hold ever to reach a take-profit
+
+Two closes, and one of them is the event the last four cycles were built to
+watch for:
+
+| | | net | move | held | |
+|---|---|---|---|---|---|
+| TRUMP | LONG | **+$0.4331** | +3.03% | 811m | **TAKE_PROFIT** — closed above every sampled peak |
+| FARTCOIN | LONG | +$0.0333 | +0.33% | 396m | stop; sampled peak +$0.3091 → ~11% captured |
+
+**TRUMP is the second take-profit in 43 trades, the largest single win on
+record (past ENA's +$0.2574), and the first hold past 12 hours to convert** —
+the five-deep longest-hold roster it joined had produced three losses and two
+partial captures. It was the named test: Undertow's `trailingGivebackPct: 55`,
+the loosest allowance in the fleet, and this time nothing was given back —
+it closed at +$0.4331 against a last sampled peak of +$0.3414 (03:55Z).
+The "capture %" metric doesn't apply to a TP exit; peak tracking here is
+75-minute sampling, a lower bound, and the close exceeded it.
+
+**The same cycle also produced the sixth giveback.** FARTCOIN held 396
+minutes, sampled at +$0.3091 at its best, and closed on its stop at +$0.0333
+— ~89% given back. Both regimes in one cycle, on the same agent, under the
+same giveback setting. One conversion does not settle the
+`trailingGivebackPct` question; it does end "no long hold has ever
+converted" as a regularity — **retired, with the other two**.
+
+**Realized: 43 closed, 15W/28L, −$0.7347** (improved $0.4664 on the cycle),
+WR 35%, realised RR 1.38, break-even 42% (placed 3.34 needs 23%). Reasons:
+41 stop-loss, 2 take-profit. RR series appends 1.38 after 1.24 — two large
+wins in a 43-trade sample, reported plainly.
+
+**The fleet rotated hard into the freed slots: six open positions**, four
+opened between 04:53 and 05:25 (MOODENG, AIXBT, FARTCOIN re-entered three
+minutes after its close, SKHX short), plus LDO short and GOLD short
+(+$0.0508, the only green). Book **−$0.0334**. Account **$43.32**.
+
+Guards: file mtime 05:24, platform-priced 101s ago — the new
+platform-native `freshness.py` (pricingStatus + generatedAtMs) ran its first
+cycle alongside the mtime check. Server steady v17.2.0; no re-probe, no p1
+retest. Meter still dead.
+
 ## 2026-08-11 (05:25Z) — the record learns the other three surfaces
 
 The operator connected BattleGrid as a first-class MCP connector and asked
