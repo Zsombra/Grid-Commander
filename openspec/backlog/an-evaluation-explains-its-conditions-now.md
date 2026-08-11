@@ -53,3 +53,40 @@ First step is a live read of a real evaluation's `conditionEvaluation`
 populates — v15's trade-level policy taught that a declared axis can be
 inert. Model only after observing. Belongs beside the signal-log read in
 the pipeline surface.
+
+## Observed 2026-08-11 — populated on every evaluation, not inert
+
+Read live on Undertow (strategy Cannae r3) across all three terminal
+statuses seen that day — OPEN, SKIPPED, PASS. Three of three carried the
+block, identically shaped. The detail payload nests under a single `log`
+key (32 keys at v17.2.0). Observed verbatim:
+
+```json
+{"outcomes":[{"conditionKey":"FUNDING_STRETCHED",
+  "name":"Funding stretched in either direction","outcome":"TRUE",
+  "required":false,
+  "evidence":[
+    {"kind":"clause","sectionKey":"includeFundingRates","header":"rate",
+     "op":"gte","operand":"0.0013","literal":"0.0004","outcome":"TRUE"},
+    {"kind":"clause","sectionKey":"includeFundingRates","header":"rate",
+     "op":"lte","operand":"0.0013","literal":"-0.0004","outcome":"FALSE"}],
+  "counts":null,"provisional":true}],
+ "verdict":null,"decidedBy":null,"strategyRevision":3,
+ "provisional":true,"counts":{"trueCount":1,"total":1,"unresolvedCount":0}}
+```
+
+What that establishes:
+
+- **The evidence is the observed value beside the threshold.** `operand`
+  is the live reading at evaluation time (funding rate `"0.0013"`),
+  `literal` the condition's bound (`"0.0004"`); both are decimal strings
+  on the wire, the house pattern. Clause-level TRUE/FALSE makes the OR
+  visible: gte TRUE, lte FALSE ⇒ condition TRUE.
+- **`strategyRevision` ties the verdicts to the strategy revision that
+  defined them** — the join the scorecard surface would need.
+- **Unobserved and recorded as the gap**: `verdict` and `decidedBy` were
+  null on every read — Cannae's one condition is `required: false`, so
+  the condition system never decides. A `required: true` condition (or an
+  N_OF group, where the outcome-level `counts` presumably populates) has
+  not been seen. Observe on a strategy with a required condition before
+  modelling those two fields as meaningful.

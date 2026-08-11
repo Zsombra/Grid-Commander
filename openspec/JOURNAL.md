@@ -1,5 +1,24 @@
 # Journal
 
+## 2026-08-11 (the condition evidence) — observed, populated, and one gap named
+
+**#133's first step done** — the observation the item demanded before any
+modelling. `conditionEvaluation` read live on Undertow across all three
+terminal statuses on the board (OPEN, SKIPPED, PASS): three of three
+populated, identically shaped, so the axis is real — not a v15-style
+declared-but-inert one. The payload nests under a single `log` key
+(32 keys at v17.2.0).
+
+The shape is the good kind of evidence: each clause carries the *observed
+value beside the threshold* (`operand: "0.0013"` — the live funding rate —
+against `literal: "0.0004"`), clause-level TRUE/FALSE making the OR
+visible, and `strategyRevision` tying the verdicts to the revision that
+defined them. The recorded gap: `verdict`/`decidedBy` were null on every
+read, because Cannae's one condition is `required: false` — the deciding
+branch has never been observed and must be seen on a required condition
+before those fields are modelled as meaningful. Item stays open for the
+build; scratch probe run once and deleted. No code changed.
+
 ## 2026-08-11 (the regime ref) — null meant "not yours to derive", and nothing is dead weight
 
 **`four-signals-depend-on-a-timeframe-columns-cannot-reach` answered and
