@@ -15,7 +15,54 @@ export interface PositionsPort {
     userId: string;
     accessToken: string;
   }): Promise<ExposureResult>;
+
+  /**
+   * The orders actually resting at the venue, account-wide.
+   *
+   * Different claim from a position's `effectiveStopLoss`: that is where
+   * software says the stop is, this is an order the exchange will honour on
+   * its own. The row carries no positionId and no agentId (observed
+   * 2026-08-10, #116) — attribution goes through the position's coin. Queries
+   * the venue directly, so it is slower than a cached read and fails when the
+   * exchange is unreachable; rows churn within minutes as position management
+   * replaces legs, so any rendering of this is a snapshot.
+   */
+  readRestingOrders(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<RestingOrdersResult>;
 }
+
+/**
+ * One resting order, as observed live (13 keys, uniform across every row).
+ * Prices and sizes arrive as decimal strings and are parsed here for the
+ * reason the account balance is: every call site parsing for itself is how
+ * two screens disagree about a number.
+ */
+export interface RestingOrder {
+  readonly orderId: string;
+  readonly symbol: string;
+  /** BUY | SELL as sent — a leg's side is its position's exit direction. */
+  readonly side: string | null;
+  readonly status: string | null;
+  /** "Stop Market", "Take Profit Market" — carried as sent, never mapped. */
+  readonly orderType: string | null;
+  readonly price: number | null;
+  readonly triggerPrice: number | null;
+  readonly quantity: number | null;
+  readonly originalSize: number | null;
+  readonly filledSize: number | null;
+  /** True on every row observed — the resting book is protective legs. */
+  readonly reduceOnly: boolean;
+  readonly clientOrderId: string | null;
+  /** Epoch milliseconds, the one shape this payload states time in. */
+  readonly placedAtMs: number | null;
+}
+
+export type RestingOrdersResult =
+  /** An empty list is a real answer: nothing rests. */
+  | { readonly kind: 'orders'; readonly orders: readonly RestingOrder[] }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**
  * One open position, as the platform prices it.

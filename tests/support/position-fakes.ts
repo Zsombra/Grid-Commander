@@ -1,4 +1,4 @@
-import type { Exposure, ExposureResult, OpenPosition, PositionsPort } from '@/ports/positions.js';
+import type { Exposure, ExposureResult, OpenPosition, PositionsPort, RestingOrder, RestingOrdersResult } from '@/ports/positions.js';
 
 /** The live HYPE position of 2026-08-06, verbatim in shape. */
 export function aPosition(over: Partial<OpenPosition> = {}): OpenPosition {
@@ -50,7 +50,32 @@ export function anExposure(over: Partial<Exposure> = {}): Exposure {
 
 export class FakePositionsPort implements PositionsPort {
   result: ExposureResult = { kind: 'none' };
+  /** Empty is a real answer: nothing rests. Reassign to script legs or a failure. */
+  resting: RestingOrdersResult = { kind: 'orders', orders: [] };
   async readActivePositions(): Promise<ExposureResult> {
     return this.result;
   }
+  async readRestingOrders(): Promise<RestingOrdersResult> {
+    return this.resting;
+  }
+}
+
+/** A resting leg in the exact shape observed live 2026-08-10 (#116). */
+export function aRestingOrder(over: Partial<RestingOrder> = {}): RestingOrder {
+  return {
+    orderId: '513946107402',
+    symbol: 'TRUMP',
+    side: 'SELL',
+    status: 'OPEN',
+    orderType: 'Stop Market',
+    price: 1.3257,
+    triggerPrice: 1.4731,
+    quantity: 10.1,
+    originalSize: 10.1,
+    filledSize: 0,
+    reduceOnly: true,
+    clientOrderId: '0x8fa5d8024172404eb2d6b6ddfafc3521',
+    placedAtMs: 1786382848069,
+    ...over,
+  };
 }

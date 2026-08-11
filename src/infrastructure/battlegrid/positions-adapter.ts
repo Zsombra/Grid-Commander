@@ -1,4 +1,4 @@
-import type { ExposureResult, OpenPosition } from '@/ports/positions.js';
+import type { ExposureResult, OpenPosition, RestingOrder, RestingOrdersResult } from '@/ports/positions.js';
 import type { PositionsPort } from '@/ports/positions.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import { malformed, messageOf, unreadable } from './unreadable.js';
@@ -13,6 +13,7 @@ import { malformed, messageOf, unreadable } from './unreadable.js';
  */
 const TOOLS = {
   active: 'list_user_active_positions',
+  resting: 'get_open_orders',
 } as const;
 
 export class McpPositionsAdapter implements PositionsPort {
@@ -72,6 +73,30 @@ export class McpPositionsAdapter implements PositionsPort {
       return malformed(messageOf(err));
     }
   }
+
+  async readRestingOrders(params: {
+    userId: string;
+    accessToken: string;
+  }): Promise<RestingOrdersResult> {
+    let payload: Record<string, unknown>;
+    try {
+      const result = await this.battlegrid.callTool({
+        userId: params.userId,
+        accessToken: params.accessToken,
+        tool: TOOLS.resting,
+        args: {},
+      });
+      payload = result.content as Record<string, unknown>;
+    } catch (err) {
+      return unreadable(err);
+    }
+
+    const raw = payload['orders'];
+    // No key is a read that did not answer, not a venue holding nothing —
+    // and this is the surface that says whether a stop actually rests.
+    if (!Array.isArray(raw)) return malformed('the venue answer carried no orders');
+    return { kind: 'orders', orders: raw.map(mapOrder).filter((o): o is RestingOrder => o !== null) };
+  }
 }
 
 export class PositionPayloadError extends Error {
@@ -130,4 +155,48 @@ function num(v: unknown): number | null {
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.length > 0 ? v : null;
+}
+
+/**
+ * A figure this payload states as a decimal string — `"1.3257"`, `"10.1"` —
+ * the same wire convention `get_account_state.balance` uses. A number is
+ * accepted too, so a platform change of type does not blank every price.
+ */
+function decimalNum(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v !== 'string' || v.length === 0) return null;
+  const parsed = Number(v);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * One resting order, or null for a row without an identity.
+ *
+ * Null-and-filter rather than throw, the sanctioned shape for a row that is
+ * one of many: dropping one unattributable leg loses less than refusing the
+ * book, and a reader could not have looked that row up anyway. What is banned
+ * is inventing an id — a leg rendered under a fabricated order id would send
+ * an operator to the venue looking for an order that does not exist.
+ */
+function mapOrder(row: unknown): RestingOrder | null {
+  if (typeof row !== 'object' || row === null) return null;
+  const o = row as Record<string, unknown>;
+  const orderId = text(o['orderId']);
+  const symbol = text(o['symbol']);
+  if (orderId === null || symbol === null) return null;
+  return {
+    orderId,
+    symbol,
+    side: text(o['side']),
+    status: text(o['status']),
+    orderType: text(o['orderType']),
+    price: decimalNum(o['price']),
+    triggerPrice: decimalNum(o['triggerPrice']),
+    quantity: decimalNum(o['quantity']),
+    originalSize: decimalNum(o['originalSize']),
+    filledSize: decimalNum(o['filledSize']),
+    reduceOnly: o['reduceOnly'] === true,
+    clientOrderId: text(o['clientOrderId']),
+    placedAtMs: num(o['timestamp']),
+  };
 }

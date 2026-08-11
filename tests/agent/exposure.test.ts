@@ -3,7 +3,7 @@ import { McpPositionsAdapter } from '@/infrastructure/battlegrid/positions-adapt
 import { ReadExposureQuery } from '@/application/use-cases/read-exposure.query.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 import { anEntryDecision, FakeAgentsPort } from '../support/agent-fakes.js';
-import { aPosition, FakePositionsPort, anExposure } from '../support/position-fakes.js';
+import { aPosition, aRestingOrder, FakePositionsPort, anExposure } from '../support/position-fakes.js';
 import { FakeClock } from '../support/fakes.js';
 
 /**
@@ -463,5 +463,90 @@ describe('entries that never became an order', () => {
     });
     // "0 of 0 failed" is a finding about nothing.
     expect(out.fills).toBeNull();
+  });
+});
+
+describe('the protection that actually rests', () => {
+  function withResting(resting: FakePositionsPort['resting']) {
+    const positions = new FakePositionsPort();
+    positions.result = { kind: 'exposure', exposure: anExposure() };
+    positions.resting = resting;
+    const agents = new FakeAgentsPort([]);
+    agents.ownFunnel = { kind: 'none' };
+    return new ReadExposureQuery(positions, agents, readAt(4 * MINUTE));
+  }
+
+  it('joins the venue’s reduce-only legs to the position by coin', async () => {
+    // The fixture position is HYPE. Two legs on HYPE, one entry order on
+    // HYPE (not reduceOnly), one leg on another coin — only the two survive.
+    const out = await withResting({
+      kind: 'orders',
+      orders: [
+        aRestingOrder({ orderId: '1', symbol: 'HYPE', orderType: 'Stop Market' }),
+        aRestingOrder({ orderId: '2', symbol: 'HYPE', orderType: 'Take Profit Market' }),
+        aRestingOrder({ orderId: '3', symbol: 'HYPE', reduceOnly: false }),
+        aRestingOrder({ orderId: '4', symbol: 'TRUMP' }),
+      ],
+    }).execute({ ...who, agentId: 'a1' });
+
+    if (out.exposure.kind !== 'holding') throw new Error(out.exposure.kind);
+    const resting = out.exposure.positions[0]?.resting;
+    if (resting?.kind !== 'legs') throw new Error('expected legs');
+    expect(resting.legs.map((l) => l.orderId)).toEqual(['1', '2']);
+  });
+
+  it('reports a coin with nothing resting as empty legs, not as unreadable', async () => {
+    const out = await withResting({
+      kind: 'orders',
+      orders: [aRestingOrder({ symbol: 'TRUMP' })],
+    }).execute({ ...who, agentId: 'a1' });
+    if (out.exposure.kind !== 'holding') throw new Error(out.exposure.kind);
+    expect(out.exposure.positions[0]?.resting).toEqual({ kind: 'legs', legs: [] });
+  });
+
+  it('keeps the holding when the venue will not answer', async () => {
+    // The independence the whole page is built on, extended to the fourth read.
+    const out = await withResting({
+      kind: 'unreadable',
+      reason: 'the exchange is unreachable',
+      cause: 'unreachable',
+    }).execute({ ...who, agentId: 'a1' });
+    if (out.exposure.kind !== 'holding') throw new Error(out.exposure.kind);
+    expect(out.exposure.positions).toHaveLength(1);
+    expect(out.exposure.positions[0]?.resting.kind).toBe('unreadable');
+  });
+});
+
+describe('a venue row without an identity is dropped, not invented', () => {
+  const answers = (content: unknown): BattleGridPort =>
+    ({
+      callTool: async (_req: ToolCallRequest) => ({ content }),
+    }) as unknown as BattleGridPort;
+
+  it('drops the unidentifiable row and keeps the rest', async () => {
+    const adapter = new McpPositionsAdapter(
+      answers({
+        orders: [
+          { orderId: '513946107402', symbol: 'TRUMP', side: 'SELL', reduceOnly: true, price: '1.3257', triggerPrice: '1.4731', quantity: '10.1', timestamp: 1786382848069, orderType: 'Stop Market' },
+          { symbol: 'ETH', side: 'SELL', reduceOnly: true },
+          { orderId: '99', side: 'BUY', reduceOnly: true },
+        ],
+      }),
+    );
+    const result = await adapter.readRestingOrders(who);
+    if (result.kind !== 'orders') throw new Error(result.kind);
+    expect(result.orders.map((o) => o.orderId)).toEqual(['513946107402']);
+    // The decimal strings arrive as numbers, parsed once at the boundary.
+    expect(result.orders[0]).toMatchObject({ triggerPrice: 1.4731, quantity: 10.1, placedAtMs: 1786382848069 });
+  });
+
+  it('reads an answer with no orders key as unreadable, never as an empty venue', async () => {
+    const result = await new McpPositionsAdapter(answers({})).readRestingOrders(who);
+    expect(result.kind).toBe('unreadable');
+  });
+
+  it('reads an empty list as a venue holding nothing — a real answer', async () => {
+    const result = await new McpPositionsAdapter(answers({ orders: [] })).readRestingOrders(who);
+    expect(result).toEqual({ kind: 'orders', orders: [] });
   });
 });

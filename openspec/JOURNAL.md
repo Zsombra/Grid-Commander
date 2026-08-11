@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-11 (the protection that actually rests) — software's stop vs the exchange's
+
+**`the-protection-that-actually-rests` archived.** Each open position on
+`/agents/[id]` now shows the reduce-only orders actually resting at the venue —
+type, trigger, size, venue order id — or the sentence the section exists for:
+**"No protective order rests at the venue for HYPE — as of this read, the stop
+above exists only in BattleGrid's software."** `effectiveStopLoss` is
+software's intention; a resting order is one the exchange honours on its own,
+including while BattleGrid spends an evening flapping the way it spent this
+one.
+
+Built the same night its observation landed. `get_open_orders` had been blocked
+on observation since 2026-08-01; tonight it answered six uniform rows, and a
+follow-up `get_order_status` call taught the sharpest fact in the design: the
+leg observed OPEN at 19:20Z was CANCELLED by 19:45Z — position management had
+replaced it. Rows churn in minutes, so the surface words itself as a snapshot
+("as of this read"), the same honesty the priced-at stamp already carries.
+
+The join is by coin over reduce-only rows, in the query — the row carries no
+positionId and no agentId, so the coin is the only honest key. The venue read
+is the exposure query's fourth independent read: losing it costs the resting
+column, never the holding. Rows without a readable orderId or symbol are
+dropped, never fabricated — a leg rendered under an invented id would send an
+operator to the venue for an order that does not exist.
+
+Deliberately not built: reconciling the venue trigger with the platform's
+effective stop into one figure (two systems' words, no published common
+scale), and `get_order_status` (observed, recorded on #116, no consumer yet).
+The market-context reads stay on the narrowed item.
+
+One pre-existing test was corrected rather than obeyed: the target-drift test
+asserted the whole page contains no word "protect" — a page-wide proxy for a
+sentence-level claim. The naked-position warning legitimately says
+"protective order"; the assertion now pins the drift wording itself.
+
+PostgreSQL died a fourth time mid-CI. `pg_ctlcluster 16 main start`, re-run,
+green: 2,092 vitest, 85 db.
+
 ## 2026-08-10 (the record can be forgotten) — and the nine-day observation landed
 
 **`the-record-can-be-forgotten-with-ceremony` archived**, closing #112. The
