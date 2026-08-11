@@ -1,5 +1,48 @@
 # Journal
 
+## 2026-08-11 (06:40Z) — the operator said go: giveback lowered live, the replay built, two items blocked by the environment
+
+The operator approved the whole pending list ("OK, go ahead and do all
+these"). Outcomes, one per item:
+
+**1. `trailingGivebackPct` 55 → 45 on Undertow (rev 6→7) and Vanguard
+(rev 5→6) — EXECUTED and verified by re-read.** The fleet is now uniform at
+Breakwater's 45, the setting behind the best observed trail capture. Built
+from a fresh read projected to exactly the record's required write keys —
+nothing else changed, before/after JSON in scratchpad
+(`audit_giveback_*.json`). Applies to the open book immediately.
+`update_intelligence_agent` is platform-annotated **destructive**; this is
+what the operator gate was for, and it was used.
+
+**2. Counterfactual replay — BUILT, VALIDATED THE HARD WAY, RUN.** First
+version armed the trail on any favourable tick; its own validation column
+failed loudly (TP trades simmed as instant scratches) and those numbers
+were discarded. Second version arms at breakEvenTriggerR × R off each
+chart's own stop level, moves the floor to entry on arming, models the
+0.1% buffer. Validation now: TRUMP's actual +$0.4331 TP reproduces as
++$0.4191 TP at its native 55; all eight straight-to-stop trades reproduce
+within fees; trail exits noisy both directions; 7 of 43 unpriceable
+(window ends before the sim exits). Over the 36 priceable at every
+setting (actual −$0.4031): **g25 +$0.6747 · g35 +$0.3279 · g45 +$0.1435 ·
+g55 +$0.0770.** Tighter is monotonically better in aggregate EVEN THOUGH
+tightening costs the TRUMP conversion (+$0.4191 TP at 55 → +$0.0615 trail
+at 45) — the giveback losses outweigh the one conversion in this sample.
+The 45 just deployed sims +$0.55 better than actual; 25 sims better still
+but with the most model noise. Arithmetic about the past, 3 ambiguous
+bars, pessimistic throughout. `counterfactual_replay.py` +
+`replay_results.json` in scratchpad.
+
+**3. Six write-gated probes — BLOCKED by the session's permission layer**,
+not by policy: the classifier denies any execution carrying
+`BATTLEGRID_LIVE_WRITES=1`. Runner ready at `run_write_probes.sh`; every
+probe's mutation surface verified throwaway-only first (forks with zero
+bound agents, a probe-slot agent archived in a finally, an idempotent
+radar re-upsert). Needs a permission rule or the operator's own terminal.
+
+**4. Branch deletion — BLOCKED at two layers** (remote 403 previously; the
+classifier now denies push --delete locally; no ref-deletion tool in the
+GitHub MCP set). Needs the GitHub UI.
+
 ## 2026-08-11 (05:50Z) — the change archived, and the p1 settled with a control axis
 
 **`the-record-learns-the-other-three-surfaces` is archived.** Verifier passed
