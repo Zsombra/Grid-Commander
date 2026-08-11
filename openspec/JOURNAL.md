@@ -1,5 +1,103 @@
 # Journal
 
+## 2026-08-11 (the record begins) — a host exists, and the gap stopped growing at four days
+
+**Did**: The operator chose their Windows machine and, walked through it
+live, stood the recorder up the same day the gap was measured. **The
+record's first persisted capture is 2026-08-11** — run `6c6a6fc0`,
+platform 17.2.0, all 20 radar deployments at 1h, 84 signals each — into
+PostgreSQL 18 on that machine, with an hourly Scheduled Task
+(`GridCommanderRecorder`, :17 past, `-WakeToRun -StartWhenAvailable`)
+registered and Ready. The Windows recipe (execution policy, `record.ps1`,
+`Register-ScheduledTask`, the PostgreSQL-18-path and password-typo traps)
+is filed in `confirm-the-recorder-is-running`, **closed the same evening
+when the unattended fire was proven** — `Start-ScheduledTask` through the
+service machinery, `LastTaskResult : 0`, a result the wrapper only
+produces when the recorder recorded. The walk exposed a
+real repo gap: `npx tsx` prompts to download tsx **inside the unattended
+run** because tsx is not a dependency — filed as
+`tsx-is-not-a-dependency` (#152), worked around on the host with
+`npx --yes`.
+
+**State**: The four-day gap (2026-08-07 → 2026-08-11) is permanent and
+documented; everything after it is being captured hourly, machine-sleep
+holes excepted. #94's gate moves from "answered at zero" to "accumulating
+since 2026-08-11".
+
+**Next**: #94 waits for the record to hold enough to say anything —
+days, not hours.
+
+**Addendum, same evening**: the tsx fix did not wait —
+`tsx-is-a-dependency` (lite) proposed, executed and archived in one
+pass, closing #152. `tsx@4.23.12` pinned in `devDependencies`; all six
+quality gates green (typecheck, lint, 2121 vitest, build, schema-drift,
+85 db); the Windows recipe's `--yes` note now marked unnecessary. This
+makes the 146th archived change and leaves 24 open backlog items.
+
+**Watch out**: The recorder host is a personal Windows machine — hours
+it spends powered off are honestly-labelled permanent gaps, and
+`/recorder` will show them. Do not mistake them for a dead scheduler:
+`Get-ScheduledTaskInfo -TaskName GridCommanderRecorder` distinguishes
+the two (`LastTaskResult : 0` = alive).
+
+## 2026-08-11 (the recorder question answered) — it has never run, and the gap is already four days
+
+**Did**: #145 answered with the operator, live. The operator confirmed no
+persistent deployment exists — Grid-Commander has only ever run in
+ephemeral sessions — so the recorder cron was never installed anywhere,
+the durable record holds zero captures, and **the gap starts at the
+2026-08-07 ship date and widens daily** until a host exists. The pipeline
+itself was proven with the operator's key in this session: freshness gate
+green (platform still 17.2.0), then one real capture run — exit 0, all 20
+radar deployments at 1h, 84 signals each — into this container's
+throwaway database, discarded with it. Filed the answer in
+`confirm-the-recorder-is-running` (with the one-time host setup: four env
+vars, the base64-32 encryption key requirement the recorder enforces,
+migrate, hand-run to exit 0, then the cron line) and noted #94's gate as
+answered-at-zero in `recorded-signals-are-not-yet-evidence`. HANDOFF
+updated to match.
+
+**State**: #145's item stays open — the check is answered but the fix
+(a host running the cron) is the operator's choice, not made yet. #94
+stays ruled out at zero captures.
+
+**Next**: The operator picks a host; the item has the whole recipe. Every
+day before that is permanently unrecorded — this is now the only thing on
+the board where waiting has a daily cost.
+
+**Watch out**: The recorder wants `TOKEN_ENCRYPTION_KEY` as 32 bytes
+**base64** — `openssl rand -hex 32` is refused with "must be 32 bytes,
+base64-encoded". And PostgreSQL in these containers still dies quietly;
+`pg_ctlcluster 16 main start` before blaming the code.
+
+## 2026-08-11 (the handoff catches up) — every number in HANDOFF.md re-verified against reality
+
+**Did**: Audited HANDOFF.md for internal inconsistencies and re-verified
+every countable claim: 2121 vitest green, 85 db (table said 81), 243
+harness, 145 archived changes (table said 138, prose said 132), 25 open
+backlog items mirrored 1:1 by 25 open GitHub issues (table said 29, the
+stale "Start Here" split said 31), 30 live probe files (prose said 26),
+one P1 not two (`the-surface-map-is-two-majors-stale` closed as #92).
+Refreshed the "Start Here" section around the three parting concerns
+(#145–#147) and the current 25-item split; recorded that PR #144 merged
+and parallel sessions opened #148–#150 (unmerged) the same day; de-numbered
+ci.sh's stale "62 database tests" skip message. The middle sections had
+simply not been updated when the summary paragraph was, at the 08-11 close.
+
+**State**: No code changed — docs and one script message only. All suites
+re-run green in this container (vitest, db after migrate, harness).
+Validation still 0 errors / 11 warnings, all pre-existing.
+
+**Next**: Unchanged from the close below — the operator answers #145.
+Three of the 11 validation warnings ask open backlog items linked to
+archived changes to say what is left; a tracker pass could tidy them.
+
+**Watch out**: Three open PRs (#148, #149, #150) each build or touch an
+open backlog item (`the-payload-carries-more-than-is-read`,
+`the-deploy-surface-cannot-create-first-deployments`, the v15 P1's
+read side) — merging them will re-stale the split in HANDOFF.md; close
+the items or update the split when they land.
+
 ## 2026-08-11 — session close: v17.2.0 followed same-day, eight closes, three builds, three parting concerns filed
 
 **Did**: Thirteen PRs merged (#132–#144, the last pending the operator's

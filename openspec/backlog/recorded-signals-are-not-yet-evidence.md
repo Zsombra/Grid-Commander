@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-07
-updated: 2026-08-07
+updated: 2026-08-11
 change: ""
 capability: signal-recording
 github: "94"
@@ -54,3 +54,12 @@ Do not start until the record holds enough captures to say anything —
 analysis over three data points upgrades no tier. Statistical honesty is the
 hard part: every figure needs its sample size beside it, the same rule the
 explorer already follows for win rates (small samples promoted by sorting).
+
+**Gate update, 2026-08-11 (same day, evening): the record is accumulating.**
+The operator stood the recorder up on their Windows machine — hourly
+Scheduled Task, unattended run proven (`LastTaskResult : 0`), 20
+coin/timeframe pairs at 84 signals per capture (#145, closed). The record
+starts 2026-08-11; the 2026-08-07 → 2026-08-11 gap is permanent. This
+item now waits only for depth: at hourly captures the record needs days
+before per-signal forward returns mean anything, and every figure still
+needs its sample size beside it.

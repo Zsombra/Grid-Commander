@@ -61,7 +61,7 @@ if [[ -n "${DATABASE_URL:-}" ]]; then
   gate "migrate" npx drizzle-kit migrate
   gate "test:db" npm run --silent test:db
 else
-  skip "test:db" "no DATABASE_URL; start PostgreSQL and pass one to run the 62 database tests"
+  skip "test:db" "no DATABASE_URL; start PostgreSQL and pass one to run the database suite"
 fi
 
 # The surface record's age, which nothing else here can see.
