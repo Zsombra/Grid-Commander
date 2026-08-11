@@ -1,5 +1,33 @@
 # Journal
 
+## 2026-08-11 — first deployments through the product's own ceremony, live-confirmed and archived
+
+**Did**: Implemented, verified, live-confirmed, and archived
+`the-deploy-surface-can-create-first-deployments` (PR #149, closing #109).
+The deploy ceremony now carries first deployments (`expectedRevision: null`)
+alongside replacements: `DescribeDeployQuery` branches on whether the coin
+is occupied, `nullableInteger` round-trips null through the HTML hidden field,
+the live probe gained a slot-shuffle test (undeploy a coin, first-deploy it
+back with null revision, verify it lands). 2123 vitest tests green; the
+concurrency architecture guard caught `??` on the hidden field and the fix
+was a ternary. Live-confirmed against ENA on the real platform.
+
+**State**: No active changes. 24 open backlog items (closed #109). PR #149
+ready for review. Board health: 0 errors, 11 warnings (the 4
+archived-change warnings are pre-existing from earlier sessions; the
+`assistant` capability warnings are expected — no spec yet).
+
+**Next**: P1 `v15-trade-level-policy-is-declared-but-inert` — `/propose` it.
+
+**Watch out**: The slot-shuffle live probe needs at least one enabled
+single-slot deployment on the account; if the radar layout changes it skips
+rather than fails. `nullableInteger` uses `=== null ? '' :` not `??` —
+the concurrency guard (`concurrency.test.ts`) forbids `??` with non-null
+fallbacks on identifiers to prevent fabricated values. The 4
+archived-change backlog warnings (`oauth-path-may-be-dead-weight`,
+`performance-and-allocation-are-unmodelled`, `the-payload-carries-more-than-is-read`,
+`two-read-tools-do-not-answer`) are intentionally open — each documents an
+ongoing question that outlived its linked change.
 ## 2026-08-11 (the record begins) — a host exists, and the gap stopped growing at four days
 
 **Did**: The operator chose their Windows machine and, walked through it

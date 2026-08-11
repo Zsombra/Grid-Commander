@@ -8,7 +8,7 @@ import {
 } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { nullableInteger, requiredText } from '@/presentation/form.js';
 
 /**
  * Deploying: the act that starts an agent scanning a market.
@@ -68,10 +68,8 @@ export default async function DeployPage({
         ) : (
           <form method="get" className="space-y-3">
             <p className="text-sm">
-              Name a market that already carries a deployment — deploying replaces
-              it, and the replacement is named before anything is agreed to.
-              BattleGrid&apos;s API does not let this client create a market&apos;s
-              first deployment.
+              Name a market to deploy to. If it already carries a deployment, the
+              replacement is named before anything is agreed to.
             </p>
             <label className={LABEL}>
               Coin
@@ -136,7 +134,7 @@ export default async function DeployPage({
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="coinId" value={proposal.coinId} />
         <input type="hidden" name="timeframe" value={proposal.timeframe} />
-        <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
+        <input type="hidden" name="expectedRevision" value={proposal.expectedRevision === null ? '' : proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
         <button type="submit" className={BUTTON_PRIMARY}>
           Deploy {agent.displayName}
@@ -162,7 +160,7 @@ export async function performDeploy(formData: FormData) {
     agentId,
     coinId,
     timeframe,
-    expectedRevision: requiredInteger(formData, 'expectedRevision'),
+    expectedRevision: nullableInteger(formData, 'expectedRevision'),
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
   // The reason returns to the page that asked, where the person who clicked is

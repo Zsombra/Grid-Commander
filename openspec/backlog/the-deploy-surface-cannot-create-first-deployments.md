@@ -2,11 +2,11 @@
 id: the-deploy-surface-cannot-create-first-deployments
 title: The platform now creates first radar deployments (null revision) and the deploy surface still assumes replacement-only
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-08
-updated: 2026-08-08
-change: ""
+updated: 2026-08-11
+change: the-deploy-surface-can-create-first-deployments
 capability: agent-deployment
 github: "109"
 blocked_by: []
