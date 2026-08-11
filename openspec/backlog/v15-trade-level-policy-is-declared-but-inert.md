@@ -152,3 +152,57 @@ that mints a token and applies nothing).
 - Taglines were briefly edited to name the intended floors and were
   reverted the same hour: the tagline reaches the agent's prompt, so it must
   not claim policy the platform is not enforcing.
+
+## 2026-08-11 — a new lead, from the platform's own authoring prompt
+
+Connecting BattleGrid as an MCP connector exposed a `prompts/get` surface
+this repo never read (see `three-quarters-of-the-mcp-surface-is-unrecorded`).
+One of the five, `author-strategy`, is the platform's canonical sequence for
+the exact workflow this item tests — and it describes the apply payload in
+terms that bear directly on the "no effective changes" verdict.
+
+Two clauses matter:
+
+1. **"UPDATE must include at least one changed axis."** The compiler has a
+   named notion of a changed axis, and a plan carrying none is a defined
+   rejection rather than an anomaly.
+2. **The apply plan must be copied "byte-identical from the compiled
+   `approvedPlan`"**, and the enumerated fields to copy from `postState`
+   include exactly the three dials in question — `minStopLossAtrMultiple`,
+   `maxStopLossPct`, `minRiskRewardRatio`. The server "re-derives" the
+   scorecard, diff and viability and **rejects `diff`/`viability`/
+   `mismatches`/`signalRules`/`creationSeed`/`proposedRevision`/
+   `bindingImpact`/`authoringCatalogDigest`/`reviewContext` as unknown keys.**
+
+Every retest behind this item built its compile request by hand — and the
+first attempts were malformed in exactly this area (the whole-`request`
+envelope, then the missing `coinSelection.limit`). "No effective changes" is
+the string I read as *the compiler discarding the fields*. It is also the
+string a compiler would emit for *a plan whose dials never entered the
+authoring axes in the first place*. Those two readings have not been
+separated, and the difference is whether this p1 is a platform bug or a
+client-side payload defect on our side.
+
+**This does not retract the finding.** The verdict has reproduced across
+v15 → v16 → v17 → v17.2 on all three strategies, and the fields do pass
+schema validation before the semantic verdict. But the alternate explanation
+is now specific enough to test, and it was not available before.
+
+### Next test, in order
+
+1. Re-read the live `author-strategy` prompt (do not cache it — it says so
+   itself) and rebuild `scratchpad/v15_policy_retest.py` to follow the eight
+   steps literally, especially the progressive discovery in step 2.
+2. Compile with a dial change **plus** an unambiguously-recognised axis
+   change. If the recognised axis reports as changed and the dials still do
+   not, the platform-bug reading is confirmed on a payload built to the
+   platform's own spec — much stronger evidence than the current retest.
+3. Try the narrow path instead of the whole-plan path:
+   `update_strategy_signal_rule({ request })`, described as "a thin unified
+   update wrapper where `required` is mandatory, omitted params preserve the
+   existing object, and present params replace it after strict validation."
+   Different code path, same target.
+
+Still compile-only. Nothing here authorises `apply_strategy_plan` — the
+prompt is explicit that apply requires operator approval of the exact
+reviewed plan, which is also this project's standing rule.
