@@ -166,3 +166,15 @@ archived). The competitor page needed no ticket — every treatment arrived
 decided via the sweep. Remaining in gap 2: the pipeline simulator, the
 remaining confirmations, and first tickets for agent-roster / audit-log /
 strategy-catalog.
+
+## 2026-08-12, sixth pass — the pipeline simulator joins whole
+
+Manifests `pipeline-stages` and `pipeline-evaluation` (15 components,
+recording the stage-independence discipline, verdicts-never-colour, the
+at-the-decision copy law, and the simulator's refuse-rather-than-truncate
+constraint); **DT-0010** implemented — DT-0009's disagreement ruling
+landed identically on the own-evaluation page. The stages page needed no
+ticket. **Gap 2 is down to its last slice**: the remaining confirmation
+pages (edit/deploy/rebind/reactivate/undeploy and the strategy-side
+ceremonies) and first tickets for agent-roster / audit-log /
+strategy-catalog.

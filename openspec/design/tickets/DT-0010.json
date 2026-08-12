@@ -1,16 +1,18 @@
 {
   "id": "DT-0010",
   "surface": "pipeline-evaluation",
-  "targets": ["own-evaluation-page"],
+  "targets": [
+    "own-evaluation-page"
+  ],
   "type": "restyle",
   "priority": "p2",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "DT-0009's ruling lands on the agent's own evaluation page: the signals-disagreed sentence takes the notice role.",
-  "rationale": "The same sentence, the same meaning, the same page shape as the competitor's evaluation detail — 'Signals disagreed with each other on this candidate' says the aggregate below is a compromise between opposed readings, and here it matters more: this is the operator's own agent, and the disagreement is what the simulator section further down lets them interrogate. One ruling, both pages; leaving this one plain would make the two evaluation details disagree about how much disagreement matters.",
+  "rationale": "The same sentence, the same meaning, the same page shape as the competitor's evaluation detail \u2014 'Signals disagreed with each other on this candidate' says the aggregate below is a compromise between opposed readings, and here it matters more: this is the operator's own agent, and the disagreement is what the simulator section further down lets them interrogate. One ruling, both pages; leaving this one plain would make the two evaluation details disagree about how much disagreement matters.",
   "design": {
-    "layout": "Unchanged — score line, conflict notice when present, cost, chain, conditions, attributions, simulator, scorecard.",
+    "layout": "Unchanged \u2014 score line, conflict notice when present, cost, chain, conditions, attributions, simulator, scorecard.",
     "tokens": {
       "source": "openspec/design/system.json",
       "notice_bg": "color.notice.subtle",
@@ -20,20 +22,32 @@
       "block_padding": "space.4"
     },
     "states": {
-      "detail": { "content": "Unchanged." },
-      "conflict": {
-        "content": "The sentence takes the notice role: color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, color.text.primary. Copy verbatim — identical treatment to DT-0009 on explorer-evaluation."
+      "detail": {
+        "content": "Unchanged."
       },
-      "none": { "content": "Unchanged." },
-      "unreadable": { "content": "Unchanged." },
-      "not-connected": { "content": "Unchanged — DT-0006's treatment." }
+      "conflict": {
+        "content": "The sentence takes the notice role: color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, color.text.primary. Copy verbatim \u2014 identical treatment to DT-0009 on explorer-evaluation."
+      },
+      "none": {
+        "content": "Unchanged."
+      },
+      "unreadable": {
+        "content": "Unchanged."
+      },
+      "not-connected": {
+        "content": "Unchanged \u2014 DT-0006's treatment."
+      }
     },
     "responsive": {
       "mobile": "Full-width block; nothing else moves.",
       "desktop": "Unchanged."
     },
-    "motion": { "none": "Static content; no motion introduced." },
-    "content": { "note": "Zero copy changes." }
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
   },
   "acceptance": [
     "When signals disagreed, the sentence renders in a notice block identical to DT-0009's on the explorer evaluation page",
@@ -42,7 +56,10 @@
     "No raw color, spacing, or size literal is introduced"
   ],
   "references": [
-    { "kind": "note", "value": "Backlog #108 gap 2, sixth surface pass. The stages page's per-card conflict lines stay in words, per DT-0009's per-card ruling." }
+    {
+      "kind": "note",
+      "value": "Backlog #108 gap 2, sixth surface pass. The stages page's per-card conflict lines stay in words, per DT-0009's per-card ruling."
+    }
   ],
   "created": "2026-08-12",
   "updated": "2026-08-12",

@@ -93,6 +93,15 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round eleven — the pipeline simulator** (#108 gap 2, sixth surface
+pass). Manifests for both pipeline routes (15 components); DT-0010
+implemented — the disagreement sentence wears notice on the
+own-evaluation page, identical to DT-0009 on the competitor's, one ruling
+on both evaluation details. The stages page needed no ticket. Full local
+CI green at c1ad290. Design lane: 13 surfaces, 10 designed, 10/10
+tickets. Gap 2 is down to the remaining confirmations and the three
+early list surfaces.
+
 **Round ten — the explorer subpages, and the sweep's residual**
 (#108 gap 2, fifth surface pass; 158 archived changes). Manifests for
 `/explorer/[agentId]` and its evaluation detail (12 components); DT-0009
