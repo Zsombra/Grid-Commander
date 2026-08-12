@@ -12,6 +12,17 @@ export interface ForkStrategyRequest {
   readonly accessToken: string;
   readonly strategy: Strategy;
   /**
+   * The revision the page named, carried from the form rather than read again.
+   *
+   * Separate from `strategy.revision` on purpose. The action re-reads the
+   * roster before performing — that read is the still-exists check — and its
+   * revision is whatever is current at click time, which is not necessarily
+   * what the user was shown. Taking it from there let a fork of a parent
+   * edited mid-decision silently copy a version nobody looked at, while the
+   * page said "starts identical to revision N".
+   */
+  readonly sourceRevision: number;
+  /**
    * A name of the user's own for the copy. Absent means the platform names it
    * `<parent> (fork)` — which is a choice the form explains, not a default
    * this command supplies.
@@ -41,9 +52,12 @@ export class ForkStrategyCommand {
       userId: req.userId,
       accessToken: req.accessToken,
       strategyId: req.strategy.id,
-      // The revision the user was looking at, not "latest" — forking whatever
-      // is current would copy a version they never saw.
-      sourceRevision: req.strategy.revision,
+      // The revision the page named, carried here rather than taken from the
+      // strategy object — which arrives from the pre-perform re-read and holds
+      // whatever is current now. `fork_strategy` takes `sourceRevision` as a
+      // parameter, so a revision that has since moved is an ordinary request
+      // the platform serves, not a conflict to invent a refusal for.
+      sourceRevision: req.sourceRevision,
       // Threaded, not judged: whether a blank counts as a name is decided at
       // the wire, where the schema that says so (minLength 1) is read.
       ...(req.name === undefined ? {} : { name: req.name }),

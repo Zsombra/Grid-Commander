@@ -3,7 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
-import { optionalText, requiredText } from '@/presentation/form.js';
+import { optionalText, requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
@@ -17,6 +17,11 @@ import { CarriedProblem } from '@/presentation/components/carried-problem.js';
  *
  * The fork is taken at the revision the user was looking at, not at "latest":
  * copying whatever happens to be current would copy a version they never saw.
+ *
+ * That is kept by carrying the revision through the form, not by re-reading it.
+ * The re-read below is the still-exists check and reports whatever is current,
+ * so deriving the source from it is exactly the bug this guards against — the
+ * page names a revision in prose and the copy silently comes from another.
  */
 export default async function ForkStrategyPage({
   params,
@@ -105,6 +110,11 @@ export default async function ForkStrategyPage({
 
       <form action={forkStrategy} className="space-y-4">
         <input type="hidden" name="strategyId" value={strategy.id} />
+        {/* The revision the sentence above just named, carried so the copy is
+            taken from it. Without this the perform's re-read decides, and a
+            parent edited between reading and clicking would be copied at a
+            revision the page never mentioned. */}
+        <input type="hidden" name="sourceRevision" value={strategy.revision} />
         <div className="space-y-1">
           <label htmlFor="name" className={LABEL}>Name for the copy (optional)</label>
           {/* maxLength 50 is the platform's declared bound on the argument,
@@ -147,8 +157,10 @@ export async function forkStrategy(formData: FormData) {
 
   const strategyId = requiredText(formData, 'strategyId');
   const name = optionalText(formData, 'name');
-  // The use case takes the whole strategy, not an id: it forks at the revision
-  // that was on screen, which only the loaded object knows.
+  // The revision the page named, from the form. The re-read below cannot
+  // supply it: that read answers "does this still exist", and its revision is
+  // whatever is current now, which is the thing being guarded against.
+  const sourceRevision = requiredInteger(formData, 'sourceRevision');
   const { result: reread, listings } = await app.listStrategies.execute(user.authority);
   // A failed re-read is an outcome too. This action used to land the person
   // on /strategies with no word — a click that did nothing, unexplained. The
@@ -173,7 +185,10 @@ export async function forkStrategy(formData: FormData) {
 
   const result = await app.forkStrategy.execute({
     ...user.authority,
+    // The re-read's strategy for identity and existence; the form's revision
+    // for what gets copied. Two different questions, two different sources.
     strategy: listing.strategy,
+    sourceRevision,
     ...(name === null ? {} : { name }),
   });
 

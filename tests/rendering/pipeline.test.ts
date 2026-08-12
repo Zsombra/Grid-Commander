@@ -257,7 +257,7 @@ describe('the pipeline page, branch by branch', () => {
   it('an empty stage says what its emptiness means', async () => {
     world();
     const r = await pipelineRendered();
-    expect(r.text).toContain('Nothing was stopped before evaluation');
+    expect(r.text).toContain('No candidate was stopped by a gate');
     expect(r.text).toContain('No signal evaluation has run');
     expect(r.text).toContain('has not reached a decision');
   });

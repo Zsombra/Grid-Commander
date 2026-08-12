@@ -161,8 +161,10 @@ export interface AgentsPort {
   }): Promise<TradeOutcomesResult>;
 
   /**
-   * Candidates that never reached signal evaluation — the first place a
-   * silent agent's silence is explained. The platform's reason code and
+   * Candidates the pipeline stopped — the first place a
+   * silent agent's silence is explained. Not necessarily before evaluation:
+   * v18 folded EVALUATION-stage rows in here too, so `gateStage` is what says
+   * where one ended. The platform's reason code and
    * its quantified detail are both carried: "INSUFFICIENT_EQUITY" is a
    * category, `{equityUsd: 2.18, thresholdUsd: 10}` is the answer.
    */
@@ -416,7 +418,15 @@ export type StageResult<T> =
   | { readonly kind: 'none' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
-/** A candidate stopped before it was ever evaluated. */
+/**
+ * A candidate the pipeline stopped, at the stage the platform names.
+ *
+ * Not "before it was evaluated". v18 broadened this: EVALUATION-stage rows
+ * ended *after* the model was called and carry its terminal rejection text.
+ * `gateStage` is the platform's word for where it ended, and this product
+ * passes it through rather than asserting a position in the pipeline it cannot
+ * verify.
+ */
 export interface GateBlock {
   readonly id: string;
   /** Null when the block was account-wide rather than about one market. */

@@ -101,7 +101,7 @@ live('restore walks end-to-end through the product commands', () => {
       let fork: Strategy | undefined;
       let endActive = false;
       const forked = await new ForkStrategyCommand(strategies)
-        .execute({ ...who, strategy: source })
+        .execute({ ...who, strategy: source, sourceRevision: source.revision })
         .catch((err: unknown) => {
           if (err instanceof Error && /limit/i.test(err.message)) return null;
           throw err;

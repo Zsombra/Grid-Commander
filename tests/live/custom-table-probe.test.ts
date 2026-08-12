@@ -150,7 +150,7 @@ live('a custom table can be created and modified on a real strategy', () => {
 
       let fork: Strategy | undefined;
       try {
-        const forked = await new ForkStrategyCommand(strategies).execute({ ...who, strategy: source });
+        const forked = await new ForkStrategyCommand(strategies).execute({ ...who, strategy: source, sourceRevision: source.revision });
         if (forked.kind !== 'forked') throw new Error('fork refused with a slot free');
         fork = forked.strategy;
         const forkDetail = await strategies.readStrategy({ ...who, strategyId: fork.id });

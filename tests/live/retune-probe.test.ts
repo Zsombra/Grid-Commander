@@ -121,6 +121,7 @@ live('a signal rule can be retuned, through the product path', () => {
         const forked = await new ForkStrategyCommand(strategies).execute({
           ...who,
           strategy: source,
+          sourceRevision: source.revision,
         });
         if (forked.kind !== 'forked') throw new Error('fork refused with a slot free');
         fork = forked.strategy;
