@@ -130,11 +130,55 @@ describe('the description states what becomes unknowable', () => {
   });
 });
 
+/**
+ * The receipt, after `the-receipt-states-what-remains`.
+ *
+ * It used to render the `?trimmed=` parameter verbatim, and the assertion here
+ * used to be `toContain('Removed 1 run')` — pinning a figure that arrived in
+ * the address. The figures were real when the redirect wrote them, which is
+ * exactly what made the shape dangerous: real numbers in an editable address
+ * read as authoritative, and this is the receipt for an act that can never be
+ * undone. Every number below now comes from the record, and none from the URL.
+ */
 describe('the receipt', () => {
-  it('states what went and where the record now begins', async () => {
-    const r = await trimPage({ trimmed: 'Removed 1 run: 1 capture, 1 failed attempt, 0 readings.' });
+  it('states what the record now holds, read from the record', async () => {
+    const r = await trimPage({ trimmed: '1' });
     expect(r.text).toContain('Record trimmed');
-    expect(r.text).toContain('Removed 1 run');
-    expect(r.text).toContain('coverage now begins where the trim left it');
+    expect(r.text).toContain('What the record holds now');
+    // The coin is the store's. Nothing in the address named it.
+    expect(r.text).toContain('BTC');
+  });
+
+  it('renders no figure the address carried', async () => {
+    // The old sentence's exact shape, forged. None of it may reach the page.
+    const r = await trimPage({
+      trimmed: 'Removed 9999 runs: 4242 captures, 8 failed attempts, 31337 readings.',
+    });
+    expect(r.text).not.toContain('9999');
+    expect(r.text).not.toContain('4242');
+    expect(r.text).not.toContain('31337');
+    expect(r.text).not.toContain('Removed');
+    // And it still says what is true.
+    expect(r.text).toContain('BTC');
+  });
+
+  it('re-derives against whatever the record holds when it is opened', async () => {
+    // A bookmark cannot re-attest a removal, because it states the present.
+    current = actingWith({ signalRecord: new InMemorySignalRecordStore() });
+    const r = await trimPage({ trimmed: '1' });
+    expect(r.text).toContain('Recording has not started.');
+    expect(r.text).not.toContain('BTC');
+  });
+
+  it('says the record could not be read, without claiming it is empty', async () => {
+    const store = new InMemorySignalRecordStore();
+    store.broken = 'connection refused';
+    current = actingWith({ signalRecord: store });
+    const r = await trimPage({ trimmed: '1' });
+    expect(r.text).toContain('The record could not be read.');
+    expect(r.text).toContain('connection refused');
+    expect(r.text).toContain('does not mean nothing is recorded');
+    // The two failures that must not borrow each other's words.
+    expect(r.text).not.toContain('Recording has not started');
   });
 });
