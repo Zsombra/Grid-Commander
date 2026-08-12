@@ -9,6 +9,8 @@
 
 **The design lane closed its tail and learned its own loop.** 24 surfaces, DT-0001–DT-0021 implemented. A design round *always* stales the manifests it designed against — structurally, since implementation edits the source the survey recorded — so the re-pin is now the round's last task, written into design-contract §8, the ui-surveyor skill, the design-director checklist and CLAUDE.md, along with why it is a convention and not a check.
 
+**A read-only sweep against v18 closed the session** (#190): `get_agent_performance` **answers now** — a 41-point P&L curve on one agent, 25 on another — and `src/domain/agent/performance.ts` is built on the opposite, arguing at length that the tool "has never once answered". Filed as **#189** (p2): a decision to make, not a bug, since the roster aggregate and the performance curve measure different things. `get_open_orders` recovered; `get_market_context({})` still refuses the call its schema permits, five majors running.
+
 **Read the journal's Watch out entries before writing a guard.** Three checks were written this session that could not fail on the defect they were written for, each caught by mutation-testing before being trusted; all three failed versions are recorded in their files rather than quietly replaced.
 
 
@@ -33,13 +35,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **166** |
+| Changes (archived) | **160** |
 | Vitest tests | **2207** (+ key-gated live) + 85 db |
 | Harness tests (Python) | 243 |
 | Active changes | none |
-| Open backlog items | **29** |
+| Open backlog items | **30** |
 | Design | 24 surfaces (17 designed, 3 needs-redesign, 4 functional); DT-0001–DT-0021 all implemented |
-| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #187 merged |
+| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #190 merged |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** — the two found on 2026-08-12 were fixed the same day (#177 create, and the rebind form's missing `agentId`) |
 | BattleGrid | **v18.2.0**, re-probed 2026-08-12 |
 

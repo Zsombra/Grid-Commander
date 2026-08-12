@@ -31,7 +31,14 @@ list-vs-detail split reproduces (fifth measurement, first at v18) — so
 **Next**: #189 is the decision worth making. The allocation half of #107 needs
 an open position before it can be read at all.
 
-**Watch out**: the probe's *observed shapes* record types, not values — a field
+**Watch out**: HANDOFF's archived-change count was written as 166 and is 160
+— I estimated it instead of counting, in the one table whose entire purpose is
+to be verified rather than remembered. Two independent counts agree on 160
+(`find … -type d` and `find … -name proposal.md`). Check the numbers you put in
+that table against the tooling, every time; the previous session's 161 looks
+unverified too.
+
+Also: the probe's *observed shapes* record types, not values — a field
 showing `'int'` says nothing about whether it is always zero. Three of today's
 findings needed a real call to see the difference between "the shape is right"
 and "the number is real". The surface record is a contract check, not evidence.
