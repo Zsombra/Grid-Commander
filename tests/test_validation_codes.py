@@ -455,13 +455,23 @@ def _(p, t):
 
 @case("design_surface_stale", "warning")
 def _(p, t):
-    if not git_available():
-        raise unittest.SkipTest("git is not installed")
+    # No git. Freshness is decided by content now, which is the point: the
+    # commit-based check could not answer for a manifest whose commit had been
+    # squashed away, and half of them had been.
     p.write("src/Panel.tsx", "export const Panel = () => null;\n")
-    first = p.git_init_and_commit("first")
+    digest = openspec.file_digests(p.root, ["src/Panel.tsx"])
     p.write("src/Panel.tsx", "export const Panel = () => 'changed';\n")
-    p.git_init_and_commit("second")
-    p.surface(source_files=["src/Panel.tsx"], generated_at_commit=first,
+    p.surface(source_files=["src/Panel.tsx"], source_digest=digest,
+              components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
+                           "states": ["default"]}])
+
+
+@case("design_surface_never_verified", "warning")
+def _(p, t):
+    # A manifest predating digests. Neither fresh nor stale — both would be
+    # claims about a comparison that never happened.
+    p.write("src/Panel.tsx", "export const Panel = () => null;\n")
+    p.surface(source_files=["src/Panel.tsx"],
               components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
                            "states": ["default"]}])
 

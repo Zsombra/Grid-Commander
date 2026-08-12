@@ -424,5 +424,13 @@
       "button-secondary"
     ],
     "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert — so most branches announce two alerts when a reason rides in, the carried one first. `strategy-missing` and `unreadable` render before the shared head and announce no carried reason at all. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation; the draft travels as a query string an operator can keep, share, or edit by hand."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:48b8efcc6763aa86ed629114f563aab122f13b05a498a504427a535620192a86",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/strategy-conditions.tsx": "sha256:e9614fb32ac281064d2192fa6c774831fdb76189ec4cc358a333205ac533eefc",
+    "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc"
   }
 }

@@ -659,51 +659,80 @@ def surface_components(surface: dict) -> dict:
     return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
 
 
-def git_commit_exists(root: Path, commit: str) -> bool:
-    """Does `commit` resolve in this repository?
+def file_digests(root: Path, files: list) -> dict:
+    """A digest per file a manifest describes, as they stand.
 
-    The staleness check compares against a hash, and `git diff` fails the same
-    way for "that commit is not here" as it succeeds for "nothing changed" —
-    both reach the caller as an empty list. So a manifest pinned to a commit
-    that no longer exists reported *fresh*, silently, forever.
+    Freshness is a question about content — have these files changed since the
+    surveyor read them — and a commit hash only answers it while the history it
+    names survives. Under squash-merge it does not: a branch's commits are
+    discarded when the PR lands, and on 2026-08-13 twelve of twenty-four
+    manifests pinned to hashes absent from the repository. `git diff` fails the
+    same way for "that commit is not here" as it succeeds for "nothing
+    changed", so those surfaces could not go stale, silently.
 
-    That is not hypothetical: squash-merge discards the branch commits a
-    manifest pins to, and on 2026-08-13 twelve of twenty-four manifests pinned
-    to hashes absent from the repository. See backlog
-    `the-re-pin-pins-to-the-commit-before-its-own-edits` (#192).
+    So the pin is the content. Nothing about git can invalidate it — squash,
+    rebase, amend, or a fresh clone with no history at all.
+
+    Line endings are normalised: a checkout convention is not a change to what
+    a surface describes, and this repository hands Windows CRLF for LF-stored
+    files. Per-file hashes are sorted before the final hash, so reordering
+    `source_files` is not a change either. A path that cannot be read
+    contributes a marker rather than raising — that surface is stale, and
+    validation still completes.
     """
-    if not commit:
-        return False
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "cat-file", "-e", f"{commit}^{{commit}}"],
-            capture_output=True, text=True, timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return True  # git itself is unavailable — not the manifest's fault
-    return result.returncode == 0
+    import hashlib
+
+    out = {}
+    for rel_path in files:
+        try:
+            raw = (root / rel_path).read_bytes().replace(b"\r\n", b"\n")
+            out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        except OSError:
+            # A listed file that cannot be read is a change, and says which.
+            out[rel_path] = "missing"
+    return out
 
 
-def git_changed_since(root: Path, commit: str, files: list) -> list:
-    """Which of `files` changed since `commit`. Empty list when git can't answer.
+def digest_at_commit(root: Path, commit: str, files: list) -> dict | None:
+    """The same per-file digests, over the content at `commit`. None if unreadable.
 
-    An empty list is NOT proof of freshness — see `git_commit_exists`, which the
-    caller must consult first.
+    Used once, to migrate manifests that already name a commit that resolves.
+    Their surveyed content is recoverable, so their freshness is preserved
+    rather than reset — resetting it would assert that today's files are what
+    was surveyed, which is the failure this whole change is about.
     """
-    if not commit or not files:
-        return []
+    import hashlib
     import subprocess
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", f"{commit}..HEAD", "--", *files],
-            capture_output=True, text=True, timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if result.returncode != 0:
-        return []
-    return [line for line in result.stdout.splitlines() if line.strip()]
+
+    out = {}
+    for rel_path in files:
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(root), "show", f"{commit}:{rel_path}"],
+                capture_output=True, timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if result.returncode != 0:
+            return None
+        raw = result.stdout.replace(bytes([13, 10]), bytes([10]))  # CRLF -> LF, escape-free
+        out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+    return out
+
+
+def changed_against_digest(root: Path, recorded: dict, files: list) -> list:
+    """Which of `files` differ from what was surveyed, named individually.
+
+    Recorded per file rather than as one hash over the set, so this can say
+    *which* file moved. A single combined digest cannot be decomposed, and
+    "8 source files differ" when one of them does is the kind of true-but-
+    useless number that gets a warning class ignored.
+
+    A file the manifest does not list is not a change — the surface never
+    claimed to describe it. A listed file that has vanished is.
+    """
+    now = file_digests(root, files)
+    return sorted(p for p in files if now.get(p) != recorded.get(p))
 
 
 # A surface's `source_files` is hand-assembled by an agent reading code, so an
@@ -936,23 +965,27 @@ def validate_design(root: Path, strict: bool) -> list:
                     "the component was renamed or never existed — the design agent will "
                     "write tickets against nothing"))
 
-        pin = data.get("generated_at_commit", "")
-        if sources and not git_commit_exists(root, pin):
+        # Freshness is decided by content. A commit hash only answered it while
+        # the history it named survived, and under squash-merge it does not —
+        # twelve of twenty-four manifests once pinned to hashes absent from the
+        # repository, and the check reported nothing at all for them.
+        recorded = data.get("source_digest")
+        if sources and not recorded:
             found.append(diag(
-                "warning", "design_surface_pin_unresolvable",
-                f"{path.stem}: pinned to {pin[:7] or '(nothing)'}, which does not resolve in this "
-                "repository — staleness CANNOT be checked for this surface",
+                "warning", "design_surface_never_verified",
+                f"{path.stem}: no source digest — this surface has never been checked, and "
+                "cannot be until it is re-surveyed",
                 rel(path),
-                "re-survey and re-pin at a commit that exists. An unresolvable pin reads as "
-                "fresh forever: git answers the same way for 'commit not found' as for "
-                "'nothing changed'. Squash-merge is the usual cause (#192)."))
-        changed = git_changed_since(root, pin, sources)
-        if changed:
-            found.append(diag("warning", "design_surface_stale",
-                              f"{path.stem}: {len(changed)} source file(s) changed since "
-                              f"{data.get('generated_at_commit', '')[:7]} — "
-                              f"{', '.join(changed[:3])}", rel(path),
-                              "re-run the ui-surveyor skill before designing against it"))
+                "run the ui-surveyor skill. Its content at survey time is not recoverable, so "
+                "a digest must NOT be back-filled from the files as they now stand — that "
+                "would record today as though it had been surveyed."))
+        elif sources:
+            changed = changed_against_digest(root, recorded, sources)
+            if changed:
+                found.append(diag("warning", "design_surface_stale",
+                                  f"{path.stem}: {len(changed)} source file(s) differ from what "
+                                  f"was surveyed — {', '.join(changed[:3])}", rel(path),
+                                  "re-run the ui-surveyor skill before designing against it"))
 
     # -- tickets -----------------------------------------------------------
     ticketed_surfaces = set()

@@ -327,5 +327,11 @@
       "go back link"
     ],
     "notes": "Review section is labelled by `review-heading`. Blast radius (reached and unknown cases), the consequence sentence, the vocabulary-unavailable reason, the compile-rejected reason, and both apply-refusal states are role=alert; the plan summary is role=status. The compose branch's bound-agent sentence carries no role — it is read in document order above the fields. Sections are native checkboxes inside nested fieldsets with legends, tinted by accent-color only so the browser's own checked/indeterminate/disabled/forced-colors rendering survives; each label row meets the 44px tap floor below the tablet breakpoint. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/edit/page.tsx": "sha256:1889ae8c51707871d65e85a99ed9de98c9099070eea59855357fa17c0400f9fc",
+    "src/presentation/components/plan-review.tsx": "sha256:0865cb2732142b7f9b47e8ed3369eae488e9129036397876ceef433441fc0860",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f"
   }
 }

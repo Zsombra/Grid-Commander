@@ -17,8 +17,8 @@
   "data": [
     {
       "name": "detail",
-      "shape": "EvaluationDetail \u2014 score, bias, chain, attributions, signals[] | none | unreadable",
-      "source": "app.readEvaluation.execute \u2014 the public projection; ownerView/llmPartialReasoning are nulled by the platform and never rendered as placeholders"
+      "shape": "EvaluationDetail — score, bias, chain, attributions, signals[] | none | unreadable",
+      "source": "app.readEvaluation.execute — the public projection; ownerView/llmPartialReasoning are nulled by the platform and never rendered as placeholders"
     }
   ],
   "components": [
@@ -37,10 +37,10 @@
         "detail"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column: score line, the conflict sentence as plain prose when signals disagreed, the chain card, attributions, the module-grouped scorecard, back link. The none branch says the platform lists this evaluation but publishes nothing further \u2014 not a failure.",
+      "current_implementation": "max-w-3xl centered column: score line, the conflict sentence as plain prose when signals disagreed, the chain card, attributions, the module-grouped scorecard, back link. The none branch says the platform lists this evaluation but publishes nothing further — not a failure.",
       "constraints": [
         "None (the platform publishes no detail) and unreadable (the read failed) must never render alike.",
-        "No placeholder is rendered for owner-private telemetry \u2014 an empty reasoning slot would say the agent explained nothing when it was not published.",
+        "No placeholder is rendered for owner-private telemetry — an empty reasoning slot would say the agent explained nothing when it was not published.",
         "No client JS."
       ],
       "children": [
@@ -52,7 +52,7 @@
     {
       "id": "chain",
       "role": "display",
-      "purpose": "Gate \u2192 attempt \u2192 decision \u2192 execution \u2192 outcome, each stage the platform's own words, absent stages absent.",
+      "purpose": "Gate → attempt → decision → execution → outcome, each stage the platform's own words, absent stages absent.",
       "states": [
         "default"
       ],
@@ -88,7 +88,7 @@
     {
       "id": "signals",
       "role": "display",
-      "purpose": "Every signal consulted, module by module \u2014 the untriggered ones are the point.",
+      "purpose": "Every signal consulted, module by module — the untriggered ones are the point.",
       "states": [
         "grouped",
         "empty",
@@ -101,7 +101,7 @@
       "actions": [],
       "current_implementation": "Module groups with fired-counts; each row a tokened left rail (border-border-default since the-rails-join-too), Fired/Did-not-fire stated in words, the platform's sentence, indicator values in secondary text.",
       "constraints": [
-        "Untriggered signals are never filtered \u2014 what an agent looked at and dismissed is as much its strategy as what fired.",
+        "Untriggered signals are never filtered — what an agent looked at and dismissed is as much its strategy as what fired.",
         "Fired / did not fire is stated in words, never by colour alone.",
         "The per-signal sentence is the platform's, unparaphrased."
       ],
@@ -146,5 +146,6 @@
       "signals"
     ],
     "notes": "Unreadable carries role=alert. Fired state legible without colour. No client JS."
-  }
+  },
+  "source_digest": null
 }

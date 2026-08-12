@@ -18,17 +18,17 @@
   "data": [
     {
       "name": "field",
-      "shape": "FieldResult \u2014 stats, agents[], vendors[], ownAgents[], shown, generatedAt | unreadable",
-      "source": "app.readField.execute \u2014 the denominator every other performance figure lacks"
+      "shape": "FieldResult — stats, agents[], vendors[], ownAgents[], shown, generatedAt | unreadable",
+      "source": "app.readField.execute — the denominator every other performance figure lacks"
     },
     {
       "name": "leaderboard",
-      "shape": "LeaderboardResult \u2014 { own, entries[] } | unreadable",
+      "shape": "LeaderboardResult — { own, entries[] } | unreadable",
       "source": "same query; fails independently of the field"
     },
     {
       "name": "window / sort",
-      "shape": "FieldWindow / FieldSort \u2014 platform enums",
+      "shape": "FieldWindow / FieldSort — platform enums",
       "source": "searchParams, validated against FIELD_WINDOWS / FIELD_SORTS; an unrecognised value falls back and is never forwarded"
     }
   ],
@@ -36,7 +36,7 @@
     {
       "id": "explorer-page",
       "role": "container",
-      "purpose": "Who else is doing this and how it is going for them \u2014 the denominator for every unanchored figure elsewhere.",
+      "purpose": "Who else is doing this and how it is going for them — the denominator for every unanchored figure elsewhere.",
       "states": [
         "full",
         "standing-unreadable",
@@ -48,10 +48,10 @@
         "leaderboard"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column, space-y-6, p-6. Standing and field fail independently \u2014 an outage produces one sentence per failure, never two about the same one.",
+      "current_implementation": "max-w-3xl centered column, space-y-6, p-6. Standing and field fail independently — an outage produces one sentence per failure, never two about the same one.",
       "constraints": [
-        "Reads only \u2014 the page says so and it must stay true.",
-        "Unread and unplaced must not read alike \u2014 one is about the platform, the other about this account's results (WhyNotLoaded carries the distinction).",
+        "Reads only — the page says so and it must stay true.",
+        "Unread and unplaced must not read alike — one is about the platform, the other about this account's results (WhyNotLoaded carries the distinction).",
         "Only the platform's own enums reach the adapter; an unrecognised URL value falls back rather than being forwarded.",
         "No client JS."
       ],
@@ -66,7 +66,7 @@
     {
       "id": "standing",
       "role": "display",
-      "purpose": "Where this account sits: rank, percentile, profit \u2014 or the honest absence of a placement.",
+      "purpose": "Where this account sits: rank, percentile, profit — or the honest absence of a placement.",
       "states": [
         "ranked",
         "unplaced",
@@ -78,7 +78,7 @@
       "actions": [],
       "current_implementation": "One sentence per state; unreadable carries role=alert plus WhyNotLoaded. Percentile and value render only when the platform measured them.",
       "constraints": [
-        "Unplaced ('BattleGrid does not place this account yet') is a fact about results, unreadable is a fact about the platform \u2014 the two sentences must stay distinct.",
+        "Unplaced ('BattleGrid does not place this account yet') is a fact about results, unreadable is a fact about the platform — the two sentences must stay distinct.",
         "A missing rate or value renders as absent, never as zero."
       ],
       "children": []
@@ -96,10 +96,10 @@
         "leaderboard"
       ],
       "actions": [],
-      "current_implementation": "Ordered list; the own row is font-medium plus '\u2014 this account', matched on userId presence and equality only. Rendered only when the standing was readable.",
+      "current_implementation": "Ordered list; the own row is font-medium plus '— this account', matched on userId presence and equality only. Rendered only when the standing was readable.",
       "constraints": [
         "The own row is marked by words and weight, never colour alone.",
-        "Matched on the platform's id and nothing else \u2014 two unidentified rows must never both read as yours.",
+        "Matched on the platform's id and nothing else — two unidentified rows must never both read as yours.",
         "Empty renders 'ranks no players in this window', never a blank list."
       ],
       "children": []
@@ -117,13 +117,13 @@
       "actions": [
         {
           "id": "apply",
-          "effect": "GET form \u2014 the field re-renders for the chosen window and sort; the URL is shareable"
+          "effect": "GET form — the field re-renders for the chosen window and sort; the URL is shareable"
         }
       ],
       "current_implementation": "Two selects (LABEL/CONTROL) and a BUTTON_SECONDARY 'Apply' in a flex-wrap row.",
       "constraints": [
         "The selects offer FIELD_WINDOWS/FIELD_SORTS only.",
-        "A GET form \u2014 nothing is written; the composed question lives in the URL."
+        "A GET form — nothing is written; the composed question lives in the URL."
       ],
       "children": []
     },
@@ -148,8 +148,8 @@
       ],
       "current_implementation": "Heading counts rows shown, never the field. DT-0008: cards wear rounded-gc-2 border-border-default p-3 (the precedent for #155's sweep); the partial-field sentence wears the notice role; the win-rate caveat is plain text-text-secondary prose.",
       "constraints": [
-        "The heading counts rendered rows; the field total is stated separately \u2014 the list is sometimes shorter than the field and no moment may assume it whole.",
-        "Every win rate prints beside its trade count \u2014 sorting by rate promotes the smallest sample.",
+        "The heading counts rendered rows; the field total is stated separately — the list is sometimes shorter than the field and no moment may assume it whole.",
+        "Every win rate prints beside its trade count — sorting by rate promotes the smallest sample.",
         "A rate the platform did not measure renders 'not measured', never 0%.",
         "Losses read as losses at a glance (signed money).",
         "The platform's own subtitle/objective sentences render unparaphrased."
@@ -168,7 +168,7 @@
         "field"
       ],
       "actions": [],
-      "current_implementation": "Plain list: provider, agent count, trades, win rate, net \u2014 same never-zero rate discipline.",
+      "current_implementation": "Plain list: provider, agent count, trades, win rate, net — same never-zero rate discipline.",
       "constraints": [
         "Rendered only when the platform returned vendors."
       ],
@@ -223,5 +223,6 @@
       "agents"
     ],
     "notes": "Unreadable states carry role=alert. The own row is legible without colour. No client JS."
-  }
+  },
+  "source_digest": null
 }

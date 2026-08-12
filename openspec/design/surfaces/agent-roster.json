@@ -204,5 +204,6 @@
       "agent-row actions in list order"
     ],
     "notes": "Per-row nav labelled `Actions for <agent name>`. Roster failure is role=alert; capacity is role=status."
-  }
+  },
+  "source_digest": null
 }

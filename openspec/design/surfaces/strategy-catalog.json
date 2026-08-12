@@ -161,5 +161,6 @@
       "strategy-row actions in list order"
     ],
     "notes": "Per-row nav is labelled `Actions for <strategy name>`. Load failure is role=alert; fork capacity is role=status. No live region for the list itself — it is server-rendered and does not update in place."
-  }
+  },
+  "source_digest": null
 }

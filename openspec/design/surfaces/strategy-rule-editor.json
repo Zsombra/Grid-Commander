@@ -456,5 +456,12 @@
       "button-secondary"
     ],
     "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). No client JS: the compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:b58db4a86cdcdaa50c75faad5380af9a056de289c193a2b12311c797508c5b66",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/authority-lost.tsx": "sha256:cb5a331bc0a647090d659b13427ad55cb2e922e1151c15743fbc14d087563da2"
   }
 }

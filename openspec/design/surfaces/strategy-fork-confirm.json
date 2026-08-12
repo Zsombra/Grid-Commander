@@ -335,5 +335,12 @@
       "button-secondary"
     ],
     "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Since DT-0021 the two alerts are visually identical as well, so on `unreadable-with-problem` only wording and order tell them apart. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so stacked alerts are read in document order rather than as live-region updates."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/fork/page.tsx": "sha256:015ea7711cd333afee44c8ab334971479fa17bffdd06323b1ae851b2546c6d32",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

@@ -124,6 +124,7 @@ One file per surface (a route, screen, or major panel):
   "status": "functional",
   "generated_at_commit": "a1b2c3d",
   "source_files": ["src/routes/checkout/payment.tsx"],
+  "source_digest": { "src/routes/checkout/payment.tsx": "sha256:9f86d0…" },
   "viewports": ["mobile", "desktop"],
   "data": [
     { "name": "savedCards", "shape": "Card[]", "source": "GET /api/cards" }
@@ -180,14 +181,35 @@ the developer agent's veto, stated up front instead of discovered in review.
 
 ### Staleness
 
-`generated_at_commit` plus `source_files` lets the tool detect drift:
+`source_digest` — one hash per file in `source_files` — is what decides it:
 
 ```bash
 python3 .claude/tools/openspec.py validate --all
 ```
 
-If those files changed since that commit, the surface is stale and the design
-agent is reading fiction. Re-run the `ui-surveyor` skill before designing.
+If a described file differs from the content it was surveyed at, the surface is
+stale and names which file. Re-run the `ui-surveyor` skill before designing.
+
+**Freshness is a question about content, so content is what answers it.** A
+commit hash was the pin until 2026-08-13, and it only worked while the history
+it named survived. Under squash-merge it does not: a branch's commits are
+discarded when the PR lands, and twelve of twenty-four manifests were found
+pinned to hashes absent from the repository. `git diff` fails the same way for
+"that commit is not here" as it succeeds for "nothing changed", so those
+surfaces had been unable to go stale, silently. See #192.
+
+A digest survives squash, rebase, amend, and a fresh clone with no history at
+all. Line endings are normalised and file order does not matter, because
+neither is a change to what the surface describes.
+
+`generated_at_commit` stays as provenance — roughly when the survey happened —
+and decides nothing.
+
+**A manifest with no digest is `never verified`, not fresh.** It is not stale
+either: both would be claims about a comparison that did not happen. Do **not**
+back-fill a digest from the files as they now stand — that records today's
+content as though it had been surveyed, turning an unverifiable surface into a
+confidently wrong one. Re-survey it.
 
 **An incomplete `source_files` is the drift the commit check cannot see** — the
 manifest looks fresh while describing only part of the surface. Three checks

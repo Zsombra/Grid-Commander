@@ -308,5 +308,15 @@
       "button-secondary"
     ],
     "notes": "Problem banner, capacity notice and the not-archived refusal carry role=alert; the problem banner and the capacity notice can be on screen together. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/reactivate/page.tsx": "sha256:a673136b88fa0310a60150900b8473ec83671bff87f56d29c2592ae7e4d06399",
+    "src/presentation/components/agent-edit.tsx": "sha256:7ad958c8d9ec9c022d29584f5c2d56cbbc35f24a2586ff953b3f43d39afd252a",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

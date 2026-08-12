@@ -221,5 +221,10 @@
       "decisions"
     ],
     "notes": "Per-stage unreadable states carry role=alert. The Evidence disclosure is a native details element. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/pipeline/page.tsx": "sha256:9191293a8adbe708230e668ee85cddb102aa99131533d868508431167bc78829",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

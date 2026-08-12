@@ -292,5 +292,12 @@
       "button-secondary"
     ],
     "notes": "The carried problem (shared CarriedProblem, present on all four branches), the consequence, and the refused/unreadable reasons all carry role=alert — so a branch that reports its own failure with a reason riding in announces two alerts, deliberately. Since DT-0019 the two failure alerts are visually identical as well, which puts the whole burden of telling them apart on wording and order. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so the alerts are read in document order rather than as live-region updates."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/archive/page.tsx": "sha256:4d1fd800d02f7e15266e0d5c44fc699a30326bb91572108d9f4d7a71d8b34521",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

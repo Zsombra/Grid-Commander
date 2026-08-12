@@ -356,5 +356,12 @@
       "keep-whole link"
     ],
     "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
+  },
+  "source_digest": {
+    "app/(app)/recorder/trim/page.tsx": "sha256:bd8dfbb495f7b8f32dc76fcf56cebbb5657bf2409269881ae0de9088384b08f6",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/signal-record.tsx": "sha256:3b87067fb5bf9456459524d6a7e7cf9db40108f0b2c0e58b4ca76f5fad51161e",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }
