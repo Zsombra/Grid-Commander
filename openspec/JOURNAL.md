@@ -76,6 +76,23 @@ the user chose; nothing failed) and a failed callback in danger
 nothing was stored. Six rendering tests. Gates: typecheck, lint, 2136
 vitest, build.
 
+**Round six — a bounced agree says why** (`a-bounced-agree-says-why`,
+lite with a delta, archived; 154 archived changes). The same defect class
+as round four, one surface later: the proposal pages minted three
+redirects nobody rendered. A refused agree bounced to
+`/pending/<id>?problem=` and the page read no searchParams; the
+change-was-made-but-proposal-already-closed message — whose own comment
+says "the operator would not know the account moved" — went to
+`/pending?problem=` and was dropped; `?note=already-resolved` likewise.
+Both pages now read and render them (problem in danger/role=alert with
+the archive page's "Refused:" prefix, threaded through the Shell so it
+survives on every branch; note in notice/role=status). The mcp-control
+agree requirement gained the two scenarios the redirects half-implemented.
+Three new rendering tests; `openProposal` wired into the rendering
+harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
+CI_SERVING — the operator pointed out this is the CI; Actions are
+billing-blocked by decision).
+
 **Round five — `/connect` through the design lane** (#108 gap 2, second
 surface). New manifest `connect.json` (7 components; the declined/failure
 banners recorded with their roles as constraints), then DT-0005 — the

@@ -181,6 +181,19 @@ the operator agrees to MUST be bound to the values in force when they agree.
   change
 - **AND** it is recorded in the audit as a write made on the operator's behalf
 
+#### Scenario: A refused agree returns with the reason
+- **GIVEN** an operator agreeing to an opened proposal
+- **WHEN** the ordinary write refuses the change
+- **THEN** the operator is returned to the proposal with the refusal's reason
+  shown
+- **AND** the proposal is not closed
+
+#### Scenario: The change was made but the proposal was already closed
+- **GIVEN** an agree whose write succeeded
+- **WHEN** closing the proposal finds it already resolved
+- **THEN** the operator is told the change was made, and where to verify it
+- **AND** the message is never dropped in a silent redirect
+
 ### Requirement: A Proposal Confers No Authority And Expires Unagreed
 
 A recorded proposal SHALL never cause a change on its own. It SHALL NOT be
