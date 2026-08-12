@@ -4,6 +4,7 @@ import type { SignalRule } from '@/domain/strategy/strategy.js';
 import type { StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
+import { outcomeOf } from './failure-outcome.js';
 
 export interface RetuneIntent {
   readonly allocation: number;
@@ -159,7 +160,13 @@ export interface RetuneRuleRequest {
 
 export type RetuneRuleResult =
   | { readonly kind: 'retuned' }
-  | { readonly kind: 'refused'; readonly reason: string };
+  | { readonly kind: 'refused'; readonly reason: string }
+  /**
+   * The account's authority is gone, not this operation refused. Carries the
+   * sentence the failure built — which names the remedy belonging to *this*
+   * deployment, so it must be shown rather than replaced by a redirect.
+   */
+  | { readonly kind: 'authority-lost'; readonly reason: string };
 
 /**
  * Perform the retune.
@@ -198,7 +205,7 @@ export class RetuneRuleCommand {
     } catch (err) {
       // The reason returns to the surface acted from, in the platform's own
       // words — a revision CONFLICT, a parameter refusal, a guard refusal.
-      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+      return outcomeOf(err);
     }
   }
 }

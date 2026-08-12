@@ -10,6 +10,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import type { SignalParameter } from '@/ports/strategies.js';
+import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
 /**
  * Retuning one signal rule: the scorecard write, behind the ceremony.
@@ -60,6 +61,12 @@ export default async function RetuneRulePage({
   const q = await searchParams;
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
+
+  // Authority, not this retune. Rendered before the strategy is read, because
+  // there is nothing to read when no call can succeed — and no form, because a
+  // control that cannot work is not made honest by the sentence above it.
+  const authority = one(q, 'authority');
+  if (authority) return <AuthorityLost reason={authority} />;
 
   const read = await app.readStrategy.execute({ ...user.authority, strategyId: id });
   if (read.kind === 'missing') {
@@ -292,6 +299,13 @@ export async function performRetune(formData: FormData) {
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
 
+  // Lost authority is not a refusal of this operation — nothing on this account
+  // will work until it is fixed — so it travels under its own name and the page
+  // renders no form for it.
+  if (result.kind === 'authority-lost') {
+    const query = new URLSearchParams({ authority: result.reason });
+    redirect(`/strategies/${strategyId}/rules/${signalId}?${query.toString()}`);
+  }
   if (result.kind === 'refused') {
     // Back to the surface acted from, with the choice preserved so the
     // describe re-runs against the fresh strategy.

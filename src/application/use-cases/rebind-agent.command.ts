@@ -9,7 +9,7 @@ import type { StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
-import { ConfirmationRequiredError } from '@/domain/errors.js';
+import { outcomeOf } from './failure-outcome.js';
 
 export interface DescribeRebindRequest {
   readonly userId: string;
@@ -146,7 +146,13 @@ export type RebindAgentResult =
    * 2026-08-12: CONFLICT, "Agent was modified by another session"), so
    * without this arm the refusal escaped to a framework error page.
    */
-  | { readonly kind: 'refused'; readonly reason: string };
+  | { readonly kind: 'refused'; readonly reason: string }
+  /**
+   * The account's authority is gone, not this operation refused. Carries the
+   * sentence the failure built — which names the remedy belonging to *this*
+   * deployment, so it must be shown rather than replaced by a redirect.
+   */
+  | { readonly kind: 'authority-lost'; readonly reason: string };
 
 /**
  * Perform the rebind.
@@ -212,14 +218,11 @@ export class RebindAgentCommand {
       });
       return { kind: 'rebound', agent };
     } catch (err) {
-      // The confirmation guard's own refusal keeps its contract and throws.
-      // It does not mean "BattleGrid said no" — it means what was submitted is
-      // not what was agreed to, which is a broken request or a tampered one,
-      // and `tests/access/end-to-end.test.ts` pins it as a rejection through
-      // the real path. Only the platform's refusals become an outcome the
-      // page renders.
-      if (err instanceof ConfirmationRequiredError) throw err;
-      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+      // `outcomeOf` decides what this failure is to the operator: the
+      // confirmation guard's refusal still throws (a broken request, not a
+      // platform answer, pinned by `end-to-end`), a lost authority is its own
+      // outcome, and everything else is a refusal of this rebind.
+      return outcomeOf(err);
     }
   }
 }

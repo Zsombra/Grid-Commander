@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-12 (authority is not a refusal) — #175, and the obvious fix stays rejected
+
+**Did**: `a-lost-authority-is-not-a-refusal` (standard, archived; 166 archived
+changes). Four perform-catches folded every throw into `{kind:'refused'}`,
+including `ConnectionRevokedError` — so "your BattleGrid connection is no
+longer valid" appeared under a **"Refused:"** prefix above a live confirmation
+form, inviting a retry that could never work. The adapter had gone out of its
+way to preserve that error through the call (`mcp-adapter.ts:285`, *"must not
+be reshaped into something that looks retryable"*); the catches reshaped it.
+
+Now `outcomeOf` in `failure-outcome.ts` makes the judgement once for all four:
+the confirmation guard still throws (a broken request, not a platform answer),
+a revoked connection becomes **`authority-lost`**, everything else stays
+`refused`. The four ceremony pages render the loss *instead of* the ceremony —
+the sentence verbatim, and no form.
+
+**Two designs rejected on evidence, both recorded in the proposal.**
+Re-throwing is the obvious fix and would have recreated #164's crash: there is
+still no error boundary. Redirecting to `/connect` is the tidy fix and would
+have stranded personal deployments, where that page renders *"There is nothing
+to connect"* — true about the deployment, and no answer to "my write just
+failed". Keeping the error's own sentence works on both, because
+`ConnectionRevokedError` is constructed with its deployment's remedy.
+
+**State**: 0 active changes, 31 open items ↔ 31 open issues, no p1s. Gates
+green: 169 files / 2203 tests.
+
+**Next**: #179 (the design round always stales its own manifests — the fix is
+to move the re-pin to the end of a round), then #162.
+
+**Watch out**: vitest does not typecheck, so a test can pass green while
+`tsc` rejects it — two invented APIs here (`'repair-credential'` for a remedy
+that is `'repair-the-key'`, and a two-arg `RevisionConflictError` that takes
+three) passed six tests before typecheck caught them. Run typecheck before
+believing a new test file.
+
 ## 2026-08-12 (the entry point opens) — creating an agent can be done at all
 
 **Did**: `creating-an-agent-chooses-a-strategy` (standard, archived; 165

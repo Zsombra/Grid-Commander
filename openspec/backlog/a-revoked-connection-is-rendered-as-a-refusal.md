@@ -2,11 +2,11 @@
 id: a-revoked-connection-is-rendered-as-a-refusal
 title: A mid-write revocation renders as "Refused:" with a live retry, instead of routing to the remedy
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "a-lost-authority-is-not-a-refusal"
 capability: battlegrid-connection
 github: "175"
 blocked_by: []
