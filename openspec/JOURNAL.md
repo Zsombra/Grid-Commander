@@ -28,7 +28,11 @@ assertion demanded once the field was sent.
 Gates green: 167 files / 2188 tests.
 
 **Next**: #175 (a revoked connection renders as a refusal — read its trap
-first), then #162 (typed values lost on refusal paths).
+first), then #162 (typed values lost on refusal paths). **#179** is the one to
+do first if the board's noise bothers you: eight surfaces went stale again the
+moment the ceremony round committed, which is structural — a design round
+always invalidates the manifests it designed against, so the re-pin belongs at
+the *end* of a round. #173 was closed for this and reopened within the hour.
 
 **Watch out**: A page tree holds `AgentForm` as an *uninvoked* element, so its
 controls do not exist until the component is called — structural assertions
