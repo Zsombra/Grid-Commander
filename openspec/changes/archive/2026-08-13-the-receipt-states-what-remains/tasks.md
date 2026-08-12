@@ -105,3 +105,28 @@ address. It carries no figure, so the forgery this change closes — authoritati
 numbers nobody can check — is closed. Making the heading present-tense as well
 was considered and judged worse: the operator who just clicked needs their act
 confirmed, and the spec's requirement is about figures, not the fact.
+
+## 2026-08-13 (later) — the blocked gate ran, and passes
+
+`npm run test:db` was reported BLOCKED throughout this change: the local
+`DATABASE_URL` carried no credentials and all 76 db tests failed at
+`tests/db/support.ts:20` on connection.
+
+The operator supplied the credentials afterwards. **The gate passes: 7 files /
+85 tests.** Recorded here rather than left as "blocked", because an archived
+change that says a gate never ran, when it has since run and passed, is a
+record that misleads in the safe-looking direction.
+
+The scenario this change modified — **Only the described span goes** — is pinned
+by `tests/db/signal-record.test.ts`, and it was among the 76 that could not run.
+It now passes explicitly:
+
+```
+✓ previews the doomed span without touching it
+✓ previews an empty span as zeros with no dates
+✓ trims runs before the boundary — captures, failures and readings with them
+✓ leaves another account's older rows exactly where they were
+```
+
+So the one requirement whose coverage this change could not demonstrate is
+demonstrated.

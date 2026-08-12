@@ -65,3 +65,14 @@ gate."*
 ## Not done
 
 - [ ] 4.6 `npm run test:db` — blocked on credentials.
+
+## 2026-08-13 (later) — the blocked gate ran, and passes
+
+`npm run test:db` was reported BLOCKED throughout this change: the local
+`DATABASE_URL` carried no credentials and all 76 db tests failed at
+`tests/db/support.ts:20` on connection.
+
+The operator supplied the credentials afterwards. **The gate passes: 7 files /
+85 tests.** Recorded here rather than left as "blocked", because an archived
+change that says a gate never ran, when it has since run and passed, is a
+record that misleads in the safe-looking direction.
