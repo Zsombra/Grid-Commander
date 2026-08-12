@@ -2,11 +2,11 @@
 id: the-prose-references-conditions-and-nothing-knows
 title: A strategy's market-read prose can name a condition, so removing one is refused for a reason the describe does not mention
 type: risk
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
-change: ""
+updated: 2026-08-13
+change: "the-prose-that-names-a-condition-says-so"
 capability: strategy-authoring
 github: "111"
 blocked_by: []
@@ -135,3 +135,26 @@ is a nicety, and both candidate implementations still have the costs the item
 records (parsing a grammar the platform owns, or describing from a refusal the
 product already renders). Take it only if the condition surface grows a reason
 to.
+
+## 2026-08-13 — the nicety is being built
+
+Put to the operator as close / keep-open / build. **Answer: build it.**
+
+Scoped, and the scoping changed what it is. The structured answer is **already
+on the wire and already discarded**: `ToolRefusedError` carries the refusal body
+verbatim (`mcp-adapter.ts:100`), and `mapColumnRefusal`
+(`strategy-adapter.ts:1093`) already parses this exact envelope for the *column*
+checker. The compile path parses none of it — it catches, calls `messageOf`, and
+returns the whole JSON as a reason string (`strategy-adapter.ts:133`).
+
+So neither candidate in the Notes below is what gets built. Not parsing prose
+(rejected again, same reasons). Not "compile before describing" either — that is
+already the architecture. What gets built is **keeping the structure the
+platform already sent**, and naming the one code whose meaning is established.
+
+Now tracked by `the-prose-that-names-a-condition-says-so` (standard).
+
+**The `conditions: []` sub-question stays here** and is explicitly out of scope
+of that change: whether an empty list means "define none" or "unspecified", and
+what removing the *last* condition does, is still unobserved — the probe's
+empty-list case was refused for *this* reason, not for being empty.
