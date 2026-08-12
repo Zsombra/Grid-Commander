@@ -123,3 +123,33 @@ additive; it takes effect in the artifact on the next probe run. Fix #2 was
 already honored (`get_market_context`'s real precondition is recorded here
 and in the reference). What keeps this open is Fix-#1 territory only:
 upstream's declared schema still understates the precondition.
+
+## 2026-08-12 (v18.2.0) — one healed, one is now four majors old
+
+**`get_open_orders` answers.** Today's probe called it and got `{"orders": []}`
+— no `INTERNAL_ERROR`. That half of this item is closed by the platform. It was
+an outage, not a contract, and it has cleared.
+
+**`get_market_context` still refuses the call its own schema permits.** Called
+bare, by hand, at v18.2.0:
+
+    get_market_context({}) → {"code":"VALIDATION_ERROR",
+                              "message":"Provide sessionId or primaryTimeframe"}
+
+That is **v14, v15, v16, v17 and now v18** — five major versions in which the
+input schema declares nothing required, no `oneOf`, no `anyOf`, and the server
+refuses anyway. v18 kept the precondition in the *description* ("provide
+sessionId … or primaryTimeframe … — exactly one of the two") and still does not
+express it in the schema, so a client that reads the contract rather than the
+prose composes a call that cannot succeed.
+
+This has now outlived enough deployments to be treated as the platform's
+settled shape rather than a defect awaiting a fix. The product already handles
+it — the call sites pass one of the two — so nothing here is broken. What the
+item is worth keeping for is the *lesson*, which the ceremony pages proved
+again today: **a JSON Schema is not the whole contract on this platform, and
+the prose is sometimes the only place a requirement is written down.**
+
+Recommend: keep open, stop expecting it to change, and re-read only when the
+description changes again.
+

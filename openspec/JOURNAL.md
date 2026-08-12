@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-12 (the question items meet v18) — a read-only sweep, and a design premise that died
+
+**Did**: The read-only sweep across the question items, against **v18.2.0**.
+No writes; the two items that need one (`#106` PRESET/CUSTOM, the fork-name
+500) were left alone and said so.
+
+**The find**: `get_agent_performance` **answers now**, with real figures —
+Undertow −0.84 realized over a **41-point** curve, Breakwater +0.30 over 25,
+Vanguard empty because it has settled nothing (v18 says an empty curve *means*
+that). `src/domain/agent/performance.ts` is built on the opposite: "returned
+nothing on any of the nine agents … has never once answered", which is why the
+product reads everything from the roster instead. That premise is dead, the UI
+carries it too (`record.tsx:88`), and there is a per-agent P&L sparkline going
+unused. Filed **#189** (p2) — a decision to make, not a bug: use it and say
+which number means what, or keep the roster and correct the record.
+
+**Also settled**: `get_open_orders` answers again (that half of #114 closed by
+the platform), while `get_market_context({})` still refuses the call its own
+schema permits — **five majors running**, precondition still prose-only. #107
+split in two: performance answers, allocation still reads zero but is
+*untestable today* because there are no open positions, so zero against zero is
+agreement rather than contradiction. #110: all six unread fields still arrive,
+`provider` still null across three majors, and the `last24hCostUsd`
+list-vs-detail split reproduces (fifth measurement, first at v18) — so
+"read spend from the list" is still the right rule.
+
+**State**: 0 active changes, 30 open items ↔ 30 open issues. Gates green.
+
+**Next**: #189 is the decision worth making. The allocation half of #107 needs
+an open position before it can be read at all.
+
+**Watch out**: the probe's *observed shapes* record types, not values — a field
+showing `'int'` says nothing about whether it is always zero. Three of today's
+findings needed a real call to see the difference between "the shape is right"
+and "the number is real". The surface record is a contract check, not evidence.
+
 ## 2026-08-12 (the record catches up) — BattleGrid is v18.2.0, and the count did not move
 
 **Did**: The operator suggested using the live connectors. The first thing
