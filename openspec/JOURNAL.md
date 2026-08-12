@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-08-13 (tier 1 lands) — three changes archived, and the freshness check has been blind for months
+
+**Did**: Built and archived three changes off the morning's verification:
+`the-receipt-states-what-remains` (#168), `what-the-page-shows-is-what-happens`
+(#165/#167) and `a-block-does-not-mean-it-was-never-evaluated` (#185). Five
+commits, 2213 tests green, specs merged.
+
+**The find, and it is not any of the three.** Re-pinning the manifests this
+round staled, I checked whether the pins resolve. **Twelve of twenty-four point
+at commits that do not exist in this repository.** The staleness check cannot
+compare against a hash it cannot resolve, so it says nothing — those surfaces
+have been structurally unable to go stale, silently, for as long as their pin
+has been dangling. Squash-merge is the cause: the branch commits a manifest
+pins to are discarded when the PR is squashed onto main. #192 was filed this
+morning about *four manifests pinning to the parent commit*; that is the same
+root cause seen through a keyhole.
+
+**A test that could not fail, caught by trying to break it.** Covering "A
+Listing Shows Every Entry It Was Given" I wrote a test, it passed — then passed
+identically against the old broken keying. `tests/rendering/support/render.ts`
+walks the element tree and never reconciles, and a key collision only exists
+during reconciliation. **No test in this project can observe that class of
+defect.** Removed the test, kept the fix (it is correct in a browser), filed
+**#194**. The requirement stays and is knowingly uncovered.
+
+**Making the field required was the decision that paid.** `sourceRevision` on
+`ForkStrategyRequest` is required rather than optional, so the compiler named
+all six call sites. And #185 was *eight* sites, not the four the issue named or
+the five found at proposal — the third re-grep caught a user-visible
+`<h2>Stopped before evaluation</h2>`.
+
+**State**: 0 active changes, 34 open items ↔ 34 open issues. Gates green except
+`test:db`, blocked on database credentials all session and reported blocked
+every time, never passed.
+
+**Next**: #192 needs rewriting around the twelve dangling pins — the convention
+question is now "what does a pin mean under squash-merge at all", not "which
+commit should it name". Tier 1's remaining work is #167's two scoped-out
+findings.
+
+**Watch out**: three findings this session are the same shape — a check that
+reads as passing after it stopped meaning anything. DT-0014's acceptance
+(#193), the render harness (#194), and the dangling pins. The pattern is worth
+a name: **none of them fails loudly, and all three were found by hand.**
+
 ## 2026-08-13 (the issues meet the code) — nine were stale, and all nine in the same direction
 
 **Did**: Verified all 32 open issues rather than reading them — every repo claim

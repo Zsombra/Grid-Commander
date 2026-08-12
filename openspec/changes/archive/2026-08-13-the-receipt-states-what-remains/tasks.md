@@ -57,7 +57,7 @@
 
 ## 5. Surface record
 
-- [ ] 5.1 **Deferred to the commit, deliberately.** Re-survey `recorder-trim`
+- [x] 5.1 **Done at 43c08d5, as its own commit.** Re-survey `recorder-trim`
       into `openspec/design/surfaces/recorder-trim.json`. Not done now:
       re-pinning against an uncommitted working tree produces a manifest that
       looks fresh and is not — the failure #192 was filed for. This is the last

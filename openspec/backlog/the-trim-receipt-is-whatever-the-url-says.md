@@ -2,7 +2,7 @@
 id: the-trim-receipt-is-whatever-the-url-says
 title: The trim receipt renders whatever ?trimmed= carries — a bookmarkable, forgeable sentence
 type: question
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-13

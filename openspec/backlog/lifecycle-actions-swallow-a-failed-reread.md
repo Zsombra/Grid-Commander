@@ -2,11 +2,11 @@
 id: lifecycle-actions-swallow-a-failed-reread
 title: Restore's repair-required branch outranks its isActive check, and fork's revision comment disagrees with fork's code
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-13
-change: ""
+change: "what-the-page-shows-is-what-happens"
 capability: strategy-authoring
 github: "165"
 blocked_by: []

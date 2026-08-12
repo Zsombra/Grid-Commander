@@ -2,11 +2,11 @@
 id: a-gate-block-is-no-longer-only-pre-evaluation
 title: v18 broadened gate blocks past "before it was evaluated", which the product states as fact
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-12
-updated: 2026-08-12
-change: ""
+updated: 2026-08-13
+change: "a-block-does-not-mean-it-was-never-evaluated"
 capability: agent-understanding
 github: "185"
 blocked_by: []
