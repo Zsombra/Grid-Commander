@@ -222,6 +222,32 @@ describe('the destination moved between reading and confirming', () => {
     expect(h.agents.calls).toEqual([]);
   });
 
+  it('a platform refusal of the perform returns as an outcome, never a throw', async () => {
+    // Live-confirmed 2026-08-12: BattleGrid refuses a stale-revision rebind by
+    // raising CONFLICT ("Agent was modified by another session"). Before the
+    // refused arm this escaped the command and rendered a framework error page
+    // — the outcome-reaches-the-person requirement's thrown-refusal scenario.
+    const h = harness();
+    const res = await h.propose.execute({ ...who, agentId: 'a1', ...target });
+    if (res.kind !== 'proposal') throw new Error('expected a proposal');
+
+    // The agent moves under the confirmation: the platform, not the
+    // destination re-read, is what refuses.
+    const result = await h.perform.execute({
+      ...who,
+      agentId: 'a1',
+      toStrategyId: 's-new',
+      toStrategyRevision: res.proposal.rebind.toStrategyRevision,
+      expectedRevision: res.proposal.rebind.expectedRevision - 1,
+      confirmationToken: res.proposal.confirmationToken,
+    });
+
+    expect(result.kind).toBe('refused');
+    // The reason is the platform's own wording, not a generic failure.
+    expect(result.kind === 'refused' && result.reason).toContain('revision conflict');
+    expect(h.agents.agents.get('a1')?.binding.strategyId).not.toBe('s-new');
+  });
+
   it('a destination that cannot be re-read refuses the same way', async () => {
     const h = harness();
     const res = await h.propose.execute({ ...who, agentId: 'a1', ...target });

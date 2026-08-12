@@ -2,11 +2,11 @@
 id: a-refused-rebind-perform-is-a-crash
 title: A platform refusal of the rebind perform surfaces as a framework error page
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "the-outcome-reaches-the-person"
 capability: agent-authoring
 github: "164"
 blocked_by: []
@@ -41,9 +41,12 @@ revision-moved during a rebind is a reachable, ordinary case.
   catch around the port call.
 
 Found by the 2026-08-12 ceremony survey (`agent-rebind-confirm` manifest).
-Not yet reproduced against live BattleGrid — the analysis is from the types
-and the sibling implementations; a live probe forcing a stale revision would
-settle it.
+**Confirmed live the same day** (operator-authorized probe): a stale-revision
+`rebind_intelligence_agent` on an archived probe agent was refused with a
+thrown MCP error — `{"code":"CONFLICT","message":"Agent was modified by
+another session. Please refresh and retry."}` — before any archived-state
+check; nothing changed on the account. The refusal is a throw at the client
+layer, not a readable result arm, so the missing catch is the whole defect.
 
 ## Notes
 

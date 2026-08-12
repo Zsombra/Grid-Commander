@@ -9,6 +9,7 @@ import type { StrategiesPort } from '@/ports/strategies.js';
 import type { Clock } from '@/ports/clock.js';
 import type { Randomness } from './connect.commands.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
+import { ConfirmationRequiredError } from '@/domain/errors.js';
 
 export interface DescribeRebindRequest {
   readonly userId: string;
@@ -138,7 +139,14 @@ export interface RebindAgentRequest {
 export type RebindAgentResult =
   | { readonly kind: 'rebound'; readonly agent: Agent }
   /** The destination changed (or vanished) after it was described. Nothing was attempted. */
-  | { readonly kind: 'destination-moved'; readonly reason: string };
+  | { readonly kind: 'destination-moved'; readonly reason: string }
+  /**
+   * BattleGrid refused the rebind itself — revision moved underneath, not
+   * permitted. The platform delivers this as a thrown error (confirmed live
+   * 2026-08-12: CONFLICT, "Agent was modified by another session"), so
+   * without this arm the refusal escaped to a framework error page.
+   */
+  | { readonly kind: 'refused'; readonly reason: string };
 
 /**
  * Perform the rebind.
@@ -184,23 +192,34 @@ export class RebindAgentCommand {
       };
     }
 
-    const agent = await this.agents.rebindAgent({
-      userId: req.userId,
-      accessToken: req.accessToken,
-      agentId: req.agentId,
-      strategyId: req.toStrategyId,
-      expectedRevision: req.expectedRevision,
-      // The trio the proposal bound: this agent, that destination, at the
-      // revision that was described.
-      confirmation: {
-        token: req.confirmationToken,
-        target: confirmationTarget.agentRebind(
-          req.agentId,
-          req.toStrategyId,
-          req.toStrategyRevision,
-        ),
-      },
-    });
-    return { kind: 'rebound', agent };
+    try {
+      const agent = await this.agents.rebindAgent({
+        userId: req.userId,
+        accessToken: req.accessToken,
+        agentId: req.agentId,
+        strategyId: req.toStrategyId,
+        expectedRevision: req.expectedRevision,
+        // The trio the proposal bound: this agent, that destination, at the
+        // revision that was described.
+        confirmation: {
+          token: req.confirmationToken,
+          target: confirmationTarget.agentRebind(
+            req.agentId,
+            req.toStrategyId,
+            req.toStrategyRevision,
+          ),
+        },
+      });
+      return { kind: 'rebound', agent };
+    } catch (err) {
+      // The confirmation guard's own refusal keeps its contract and throws.
+      // It does not mean "BattleGrid said no" — it means what was submitted is
+      // not what was agreed to, which is a broken request or a tampered one,
+      // and `tests/access/end-to-end.test.ts` pins it as a rejection through
+      // the real path. Only the platform's refusals become an outcome the
+      // page renders.
+      if (err instanceof ConfirmationRequiredError) throw err;
+      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+    }
   }
 }

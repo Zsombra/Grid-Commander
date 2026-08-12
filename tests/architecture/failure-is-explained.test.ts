@@ -176,6 +176,24 @@ function unreadableBranches(): Branch[] {
 const explains = (branch: Branch): boolean => /<WhyNotLoaded[\s/>]/.test(branch.renders);
 
 /**
+ * A branch that renders nothing, and so has nothing to explain *in*.
+ *
+ * Server actions live in the same file as the page they serve and read the
+ * same results, but an action has no JSX to put a sentence in: it redirects,
+ * and the page it lands on is what renders. This guard asks what a branch
+ * *renders* — that is its whole design — so a branch that renders nothing is
+ * outside its subject rather than exempt from it. The explanation is still
+ * owed and still reached: the redirect carries `?problem=`, and the page's own
+ * unreadable branch carries `WhyNotLoaded` beside it.
+ *
+ * Deliberately narrow. A branch that redirects *and* renders JSX is still a
+ * render branch and stays in scope, and `the redirect rule blinds nothing
+ * that renders` below feeds it the sentence it must not swallow.
+ */
+const rendersNothing = (branch: Branch): boolean =>
+  /\bredirect\(/.test(branch.renders) && !/<[A-Za-z]/.test(branch.renders);
+
+/**
  * Where the sentence does not belong, said out loud.
  *
  * An exemption is a claim, so it is written down with its reason and checked
@@ -258,6 +276,7 @@ describe('every unreadable branch explains itself', () => {
   it('renders the shared explanation, or is exempt with a stated reason', () => {
     const silent = unreadableBranches()
       .filter((b) => !explains(b))
+      .filter((b) => !rendersNothing(b))
       .filter((b) => !exempt.has(key(b)))
       .map(key);
 
@@ -265,6 +284,33 @@ describe('every unreadable branch explains itself', () => {
       [...new Set(silent)],
       'these print a reason and stop — a bare reason says what failed, not that the work survived it',
     ).toEqual([]);
+  });
+
+  it('the redirect rule blinds nothing that renders', () => {
+    // The rule's whole risk: that "it redirects" becomes a way to opt a
+    // rendering branch out. A branch that does both is still a render branch.
+    expect(
+      rendersNothing({
+        file: 'x',
+        reads: 'r',
+        renders: "{ redirect('/somewhere'); return <p>{result.reason}</p>; }",
+      }),
+    ).toBe(false);
+    expect(
+      rendersNothing({ file: 'x', reads: 'r', renders: "{ redirect('/somewhere'); }" }),
+    ).toBe(true);
+  });
+
+  it('names the branches the redirect rule removes', () => {
+    // Not a cap — a record. These are the pre-perform re-reads in the three
+    // strategy lifecycle actions; a fourth appearing should be seen and
+    // argued about, not absorbed silently.
+    const removed = unreadableBranches().filter(rendersNothing).map(key);
+    expect([...new Set(removed)].sort()).toEqual([
+      'app/(app)/strategies/[id]/archive/page.tsx  (reread)',
+      'app/(app)/strategies/[id]/fork/page.tsx  (reread)',
+      'app/(app)/strategies/[id]/restore/page.tsx  (reread)',
+    ]);
   });
 
   it('reads every branch it found', () => {

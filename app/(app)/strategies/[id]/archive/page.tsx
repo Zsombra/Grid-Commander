@@ -4,6 +4,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Retire a strategy, accounting for what depends on it.
@@ -32,6 +33,9 @@ export default async function ArchiveStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
+        {/* A bounced submit rode in with its reason; this branch must not eat
+            it — it is the only record of what the click did (or did not) do. */}
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{result.reason}</p>
         <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy: the read that would have said the
@@ -48,6 +52,7 @@ export default async function ArchiveStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
@@ -64,6 +69,7 @@ export default async function ArchiveStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot archive {listing.strategy.name}</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{proposal.reason}</p>
         <p className="text-sm">
           <a href={`/strategies/${listing.strategy.id}`} className="underline">
@@ -77,12 +83,7 @@ export default async function ArchiveStrategyPage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {listing.strategy.name}?</h1>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+        <CarriedProblem problem={problem} />
       {/* BattleGrid's count of what depends on this, not ours. */}
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
         {proposal.proposal.consequence}
@@ -115,9 +116,19 @@ export async function archiveStrategy(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const strategyId = requiredText(formData, 'strategyId');
-  const { listings } = await app.listStrategies.execute(user.authority);
+  const { result: reread, listings } = await app.listStrategies.execute(user.authority);
+  // A failed re-read is an outcome too. This action used to land the person
+  // on /strategies with no word — a click that did nothing, unexplained.
+  if (reread.kind === 'unreadable') {
+    const problem = `Nothing was attempted: your strategies could not be re-read (${reread.reason}).`;
+    redirect(`/strategies/${strategyId}/archive?problem=${encodeURIComponent(problem)}`);
+  }
   const listing = listings.find((l) => l.strategy.id === strategyId);
-  if (!listing) redirect('/strategies');
+  if (!listing) {
+    const problem =
+      'Nothing was attempted: this strategy is no longer in your list — it may have been archived or removed in another session.';
+    redirect(`/strategies/${strategyId}/archive?problem=${encodeURIComponent(problem)}`);
+  }
 
   const result = await app.setStrategyActive.execute({
     ...user.authority,

@@ -2,11 +2,11 @@
 id: lifecycle-actions-swallow-a-failed-reread
 title: Strategy archive/restore/fork actions silently redirect when their re-read fails
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "the-outcome-reaches-the-person"
 capability: strategy-authoring
 github: "165"
 blocked_by: []

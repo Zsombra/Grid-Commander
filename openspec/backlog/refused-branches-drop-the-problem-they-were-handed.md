@@ -2,11 +2,11 @@
 id: refused-branches-drop-the-problem-they-were-handed
 title: Deploy, undeploy and rebind's refused branches drop the ?problem= that rode along
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "the-outcome-reaches-the-person"
 capability: agent-deployment
 github: "163"
 blocked_by: []

@@ -5,6 +5,7 @@ import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { REPAIR_REQUIRED_GUIDANCE } from '@/application/use-cases/strategy-lifecycle.command.js';
 import { requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Bring an archived strategy back.
@@ -33,6 +34,9 @@ export default async function RestoreStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
+        {/* A bounced submit rode in with its reason; this branch must not eat
+            it — it is the only record of what the click did (or did not) do. */}
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{result.reason}</p>
         {/* An archived strategy is the one a user most readily believes has
             been deleted, so the sentence carries the most weight here. */}
@@ -52,6 +56,7 @@ export default async function RestoreStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
@@ -65,6 +70,7 @@ export default async function RestoreStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">{strategy.name} needs rebuilding first</h1>
+        <CarriedProblem problem={problem} />
         {/* role="status", not "alert": nothing failed. The platform declined and
             said what would work instead. */}
         <p role="status" className="rounded-gc-2 border border-border-default p-4 text-sm">
@@ -87,6 +93,7 @@ export default async function RestoreStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot restore</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
         <p className="text-sm">
           <a href={`/strategies/${strategy.id}`} className="underline">
@@ -100,12 +107,7 @@ export default async function RestoreStrategyPage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Restore {strategy.name}?</h1>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       <p className="text-sm">
         It returns to your strategies, editable, at revision {strategy.revision}.
         No agent is bound to an archived strategy, so nothing is reconfigured by
@@ -136,9 +138,19 @@ export async function restoreStrategy(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const strategyId = requiredText(formData, 'strategyId');
-  const { listings } = await app.listStrategies.execute(user.authority);
+  const { result: reread, listings } = await app.listStrategies.execute(user.authority);
+  // A failed re-read is an outcome too. This action used to land the person
+  // on /strategies with no word — a click that did nothing, unexplained.
+  if (reread.kind === 'unreadable') {
+    const problem = `Nothing was attempted: your strategies could not be re-read (${reread.reason}).`;
+    redirect(`/strategies/${strategyId}/restore?problem=${encodeURIComponent(problem)}`);
+  }
   const listing = listings.find((l) => l.strategy.id === strategyId);
-  if (!listing) redirect('/strategies');
+  if (!listing) {
+    const problem =
+      'Nothing was attempted: this strategy is no longer in your list — it may have been removed in another session.';
+    redirect(`/strategies/${strategyId}/restore?problem=${encodeURIComponent(problem)}`);
+  }
 
   const result = await app.setStrategyActive.execute({
     ...user.authority,
