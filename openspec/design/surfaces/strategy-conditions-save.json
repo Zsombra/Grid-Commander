@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/conditions/save",
   "capability": "strategy-authoring",
   "status": "functional",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "e9a615e",
   "source_files": [
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
     "src/presentation/components/control.ts",

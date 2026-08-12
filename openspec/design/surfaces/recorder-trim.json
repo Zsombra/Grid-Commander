@@ -3,12 +3,13 @@
   "title": "Trim the signal record — choose, confirm, receipt",
   "route": "/recorder/trim",
   "capability": "signal-recording",
-  "status": "designed",
-  "generated_at_commit": "e7c56ce",
+  "status": "needs-redesign",
+  "generated_at_commit": "e9a615e",
   "source_files": [
     "app/(app)/recorder/trim/page.tsx",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/signal-record.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -55,7 +56,8 @@
         "described",
         "before",
         "problem",
-        "trimmed"
+        "trimmed",
+        "coverage"
       ],
       "actions": [],
       "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server component, no client JS; every state change is a full navigation. Which of the four bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date, with or without a rejected one to report), nothing-to-trim, then describe-confirm. DT-0014 has landed: every message block on this page now wears a house role rather than the anonymous border it was built with — consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim — so the page no longer states four different kinds of fact in one voice.",
@@ -260,24 +262,26 @@
     {
       "id": "receipt",
       "role": "feedback",
-      "purpose": "State what went, after it went — the only record of the removal the operator will see.",
+      "purpose": "State what the record holds now, after a trim — read from the record, never from the address.",
       "states": [
-        "default"
+        "coverage",
+        "never-recorded",
+        "unreadable"
       ],
       "data": [
-        "trimmed"
+        "coverage"
       ],
       "actions": [
         {
           "id": "back",
-          "effect": "Anchor to /recorder, whose coverage now begins where the trim left it"
+          "effect": "Anchor to /recorder, which renders the same coverage read"
         }
       ],
-      "current_implementation": "h1 'Record trimmed', the receipt sentence ('Removed N runs: N captures, N failed attempts, N readings.') as a role=status paragraph, then an underlined 'Back to the record' link with a sentence noting coverage now begins where the trim left it. Since DT-0014 the sentence wears notice — rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary — rather than the plain border it was built with: it is a note the redirect carried back, the same shape as the pending pages' ?note=, and those took notice.",
+      "current_implementation": "h1 'Record trimmed', then a role=status notice paragraph saying the reading is taken as the page renders and is not a copy of what the trim reported, then <RecordCoverage> — the same component /recorder uses, carrying its own three arms (per-series rows with counts and gaps / 'Recording has not started.' / 'The record could not be read.' with the reason and the does-not-mean-empty sentence). Then an underlined 'Back to the record' link. Since DT-0014 the notice paragraph wears rounded-gc-2 border border-notice-border bg-notice-subtle.",
       "constraints": [
-        "The outcome states what was removed — openspec/specs/signal-recording/spec.md:231-236 ('AND the outcome states what was removed'). The counts must stay legible, not decorative.",
-        "role=status must survive.",
-        "Notice, never danger — a completed trim is what the operator asked for; the weight belonged on the consequence block they read before agreeing, not on the receipt afterwards."
+        "No figure on this page may come from the query string. The ?trimmed= parameter is a marker only — it carries no counts, and rendering one from it would restore the forgeable receipt that `the-receipt-states-what-remains` removed.",
+        "The three arms of RecordCoverage may not borrow each other's wording: 'could not be read' must never render as 'nothing is recorded'.",
+        "Server-rendered with no client JS; every state change is a full navigation."
       ],
       "children": []
     },
