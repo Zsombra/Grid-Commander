@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText, updateCompileIntent } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { BUTTON_SECONDARY, CHECKBOX, CONTROL, LABEL } from '@/presentation/components/control.js';
 /**
  * Compose a change, compile it, and review what applying would do.
@@ -51,6 +52,13 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Strategy could not be read</h1>
+        {/* The reason the read gave, and the reassurance every other unreadable
+            branch states. This one could not comply until the query stopped
+            dropping them — the words existed, and stopped one layer down. */}
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          {result.reason}
+        </p>
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         <p className="text-sm">
           <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
@@ -69,6 +77,9 @@ export default async function EditStrategyPage({
           could not be read. Composing a change without it would mean guessing at
           values the platform will reject.
         </p>
+        {/* Why it could not be read — the platform's words, not a paraphrase. */}
+        <p className="text-sm text-text-secondary">{result.reason}</p>
+        <WhyNotLoaded cause={result.cause} subject="the vocabulary is" />
         <p className="text-sm">
           <a href={`/strategies/${id}`} className={BUTTON_SECONDARY}>Back to strategy</a>
         </p>

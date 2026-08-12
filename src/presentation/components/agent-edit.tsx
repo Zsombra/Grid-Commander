@@ -88,11 +88,22 @@ export function AgentEditForm({
   agent,
   catalog,
   problem,
+  composed,
 }: {
   agent: Agent;
   catalog: Catalog;
   problem?: string | undefined;
+  /**
+   * What the person had entered, when they are being sent back here.
+   *
+   * Absent on a first visit, where the agent's stored values are the right
+   * defaults. Present after a refusal — and then it wins, because re-rendering
+   * from storage silently discards the edit and makes fixing one named field
+   * cost every other one.
+   */
+  composed?: Readonly<Record<string, string | undefined>> | undefined;
 }) {
+  const entered = (name: string): string | undefined => composed?.[name];
   if (!isEditable(agent)) {
     return (
       <div className="space-y-4">
@@ -122,7 +133,7 @@ export function AgentEditForm({
             id="displayName"
             name="displayName"
             type="text"
-            defaultValue={agent.displayName}
+            defaultValue={entered('displayName') ?? agent.displayName}
             maxLength={80}
             required
             className={CONTROL}
@@ -138,7 +149,7 @@ export function AgentEditForm({
          */}
         <MoneyLimits catalog={catalog} current={agent.tradingConfig?.fields} />
 
-        <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} />
+        <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} composed={composed} />
 
         <div className="flex flex-wrap gap-3">
           {/* Secondary, like every other submit that only asks: this form
@@ -183,12 +194,16 @@ export function AgentEditForm({
  * management is replaced as one object, so there is no field-at-a-time.
  */
 export function PositionManagement({
+  composed,
   catalog,
   current,
 }: {
   catalog: Catalog;
   current: Readonly<Record<string, unknown>> | undefined;
+  /** What was entered, when returning after a refusal. Wins over `current`. */
+  composed?: Readonly<Record<string, string | undefined>> | undefined;
 }) {
+  const entered = (name: string): string | undefined => composed?.[name];
   const pm = (current?.['positionManagement'] ?? null) as Readonly<
     Record<string, unknown>
   > | null;
@@ -216,7 +231,7 @@ export function PositionManagement({
 
       <label className={LABEL}>
         Manage like
-        <select name="pmPreset" defaultValue="" className={CONTROL}>
+        <select name="pmPreset" defaultValue={entered('pmPreset') ?? ''} className={CONTROL}>
           <option value="">Leave it as it is</option>
           {offerable.map((p) => (
             <option key={p.preset} value={p.preset}>
@@ -239,7 +254,15 @@ export function PositionManagement({
           if (kind === 'boolean') {
             return (
               <label key={field} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name={`pm.${field}`} defaultChecked={value === true} />
+                <input
+                  type="checkbox"
+                  name={`pm.${field}`}
+                  defaultChecked={
+                    entered(`pm.${field}`) === undefined
+                      ? value === true
+                      : entered(`pm.${field}`) === 'on'
+                  }
+                />
                 {field}
               </label>
             );
@@ -251,7 +274,7 @@ export function PositionManagement({
                 type={kind === 'number' ? 'number' : 'text'}
                 step="any"
                 name={`pm.${field}`}
-                defaultValue={value === undefined ? '' : String(value)}
+                defaultValue={entered(`pm.${field}`) ?? (value === undefined ? '' : String(value))}
                 className={CONTROL}
               />
             </label>

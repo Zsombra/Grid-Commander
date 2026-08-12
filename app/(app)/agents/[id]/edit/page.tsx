@@ -101,7 +101,12 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
-        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={query['problem']} />
+        <AgentEditForm
+          agent={agent}
+          catalog={catalog.catalog}
+          problem={query['problem']}
+          composed={query}
+        />
       </main>
     );
   }
@@ -144,6 +149,7 @@ export default async function EditAgentPage({
             agent={agent}
             catalog={catalog.catalog}
             problem={`The catalog does not carry a configuration for "${pmChoice}", so choosing it would send values nobody stated.`}
+            composed={query}
           />
         </main>
       );
@@ -182,7 +188,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
-        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} />
+        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} composed={query} />
       </main>
     );
   }
@@ -282,6 +288,20 @@ export async function applyEdit(formData: FormData) {
         ? result.issues.map((i) => `${i.field}: ${i.reason}`)
         : [result.reason];
 
-  redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(reasons.join(' · '))}`);
+  /**
+   * The reason, and everything that was typed.
+   *
+   * Carrying only the reason sent the person back to a form re-rendered from
+   * the agent's stored values — so a refusal naming one field cost them every
+   * other one. Every submitted field except the confirmation binding rides
+   * back; the token and revision are re-minted by the describe, and replaying
+   * a stale pair is what the binding exists to prevent.
+   */
+  const back = new URLSearchParams({ problem: reasons.join(' · ') });
+  for (const [k, v] of formData.entries()) {
+    if (k === 'agentId' || k === 'confirmationToken' || k === 'expectedRevision') continue;
+    if (typeof v === 'string' && v.length > 0) back.set(k, v);
+  }
+  redirect(`/agents/${agentId}/edit?${back.toString()}`);
 }
 

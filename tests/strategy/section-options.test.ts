@@ -111,3 +111,30 @@ describe('ReadSectionOptionsQuery', () => {
     expect(result.categories[0]?.category).toBe('momentum');
   });
 });
+
+/**
+ * A failed read reaches the surface with its reason.
+ *
+ * This query collapsed both unreadable arms to their kind alone, so the edit
+ * page could render a heading and a back link and nothing else — the one
+ * unreadable branch in the product unable to comply with the rule the rest
+ * follow, not because it declined to but because nothing reached it.
+ */
+describe('a failed read carries its reason and cause', () => {
+  it('carries them when the strategy cannot be read', async () => {
+    const strategies = new FakeStrategiesPort([aStrategy()]);
+    // detailReadable, not readable: the first is the strategy read this query
+    // makes, the second is the listing it does not.
+    strategies.detailReadable = false;
+    const result = await new ReadSectionOptionsQuery(strategies).execute({
+      userId: 'u',
+      accessToken: 't',
+      strategyId: 's1',
+    });
+    expect(result.kind).toBe('strategy-unreadable');
+    if (result.kind === 'strategy-unreadable') {
+      expect(result.reason).toBe('BattleGrid did not respond');
+      expect(result.cause).toBe('unreachable');
+    }
+  });
+});

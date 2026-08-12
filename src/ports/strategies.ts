@@ -670,8 +670,20 @@ export type SectionOptionsResult =
       readonly limits: PreviewLimits | null;
     }
   | { readonly kind: 'strategy-missing' }
-  | { readonly kind: 'strategy-unreadable' }
-  | { readonly kind: 'vocabulary-unreadable' };
+  /**
+   * A read that did not answer, with what it said about why.
+   *
+   * The reason and cause travel because the surface cannot invent them. Without
+   * them the edit page rendered a heading and a back link — the one unreadable
+   * branch in the product unable to comply with the rule the rest follow, not
+   * because it declined to but because nothing reached it.
+   */
+  | { readonly kind: 'strategy-unreadable'; readonly reason: string; readonly cause: FailureCause }
+  | {
+      readonly kind: 'vocabulary-unreadable';
+      readonly reason: string;
+      readonly cause: FailureCause;
+    };
 
 export type { SectionTemplate };
 

@@ -29,9 +29,32 @@ export class ReadSectionOptionsQuery {
     ]);
 
     if (strategyResult.kind === 'missing') return { kind: 'strategy-missing' };
-    if (strategyResult.kind === 'unreadable') return { kind: 'strategy-unreadable' };
-    if (vocabResult.kind === 'unreadable' || templateResult.kind === 'unreadable') {
-      return { kind: 'vocabulary-unreadable' };
+    // The reason and cause travel with the failure. Collapsing to the kind
+    // alone left the page unable to say anything beyond "something went
+    // wrong" — the reason existed here and stopped here.
+    if (strategyResult.kind === 'unreadable') {
+      return {
+        kind: 'strategy-unreadable',
+        reason: strategyResult.reason,
+        cause: strategyResult.cause,
+      };
+    }
+    // Whichever of the two failed explains itself. Checked separately rather
+    // than folded into one condition: both are "the vocabulary" to the page,
+    // but only the one that actually failed has a reason to give.
+    if (vocabResult.kind === 'unreadable') {
+      return {
+        kind: 'vocabulary-unreadable',
+        reason: vocabResult.reason,
+        cause: vocabResult.cause,
+      };
+    }
+    if (templateResult.kind === 'unreadable') {
+      return {
+        kind: 'vocabulary-unreadable',
+        reason: templateResult.reason,
+        cause: templateResult.cause,
+      };
     }
 
     return {
