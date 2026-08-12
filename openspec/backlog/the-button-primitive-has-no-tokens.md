@@ -118,3 +118,16 @@ have no manifest and no ticket — their treatments are DT-0002/DT-0004
 precedent worn without a decision recorded per surface. `ghost` and `danger`
 stay deliberately undefined until a surface renders them (DT-0003's rationale
 records this as the design agent's decision now, not a comment's).
+
+## 2026-08-12, later — `/connect` joined the designed column
+
+Second surface pass, same session: `openspec/design/surfaces/connect.json`
+(7 components — the consent, the declined/failure banners with their roles
+and constraints, the personal-deployment branch), then **DT-0005** (the
+not-view-only warning wears consequence, the Not requested block wears
+quiet; not one word changed) and **DT-0006** (the shared not-connected
+component's connect link wears `BUTTON_SECONDARY` — the way in as a target,
+by DT-0001's strategy-not-found precedent, inherited by every authenticated
+page). Both implemented. Remaining in gap 2: `/pending`, `/explorer`, the
+pipeline simulator, the other confirmations, and tickets for the three
+surfaces still `functional` (agent-roster, audit-log, strategy-catalog).

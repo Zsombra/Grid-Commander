@@ -1,14 +1,16 @@
 {
   "id": "DT-0006",
   "surface": "agent-archive-confirm",
-  "targets": ["not-connected"],
+  "targets": [
+    "not-connected"
+  ],
   "type": "restyle",
   "priority": "p2",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "The shared not-connected page's one remedy becomes a target, not a sentence: the connect link wears button/secondary.",
-  "rationale": "DT-0004 deferred this component because it is shared by every authenticated page — restyling it once restyles being-turned-away everywhere. Its whole job is to hand the person the one action that fixes their situation, and today that action is an underlined phrase inside a paragraph. DT-0001 already ruled this exact case on strategy-not-found: 'a single link … styled as button/secondary so the way out is a target rather than a sentence.' This extends that ruling to the way *in*. The message paragraphs are untouched — the wording arrives from the use case and is behavior.",
+  "rationale": "DT-0004 deferred this component because it is shared by every authenticated page \u2014 restyling it once restyles being-turned-away everywhere. Its whole job is to hand the person the one action that fixes their situation, and today that action is an underlined phrase inside a paragraph. DT-0001 already ruled this exact case on strategy-not-found: 'a single link \u2026 styled as button/secondary so the way out is a target rather than a sentence.' This extends that ruling to the way *in*. The message paragraphs are untouched \u2014 the wording arrives from the use case and is behavior.",
   "design": {
     "layout": "Unchanged: the standard shell (centred max-w-2xl, space.5 padding, heading at type.size.xl / type.weight.medium), heading, the message, then the action.",
     "tokens": {
@@ -20,30 +22,33 @@
     },
     "states": {
       "default": {
-        "content": "H1 'Not connected', the message paragraph verbatim, then 'Connect your BattleGrid account' as an anchor wearing BUTTON_SECONDARY — a bordered peer-weight target at min-height size.control.min, inheriting secondary's hover and active from control.ts. It is the page's only action, and secondary rather than primary is deliberate: the committing acts in this product wear primary, and this is navigation to the page where the actual grant is read and agreed."
+        "content": "H1 'Not connected', the message paragraph verbatim, then 'Connect your BattleGrid account' as an anchor wearing BUTTON_SECONDARY \u2014 a bordered peer-weight target at min-height size.control.min, inheriting secondary's hover and active from control.ts. It is the page's only action, and secondary rather than primary is deliberate: the committing acts in this product wear primary, and this is navigation to the page where the actual grant is read and agreed."
       }
     },
     "responsive": {
-      "mobile": "The anchor keeps its natural width — a lone full-bleed control on an otherwise empty page reads as a form that is not there.",
+      "mobile": "The anchor keeps its natural width \u2014 a lone full-bleed control on an otherwise empty page reads as a form that is not there.",
       "desktop": "Unchanged."
     },
     "motion": {
-      "hover": "Inherited from BUTTON_SECONDARY — border to color.border.strong, background to color.bg.sunken over motion.duration.fast."
+      "hover": "Inherited from BUTTON_SECONDARY \u2014 border to color.border.strong, background to color.bg.sunken over motion.duration.fast."
     },
     "content": {
       "note": "No copy changes. The message and the link text are behavior."
     }
   },
   "acceptance": [
-    "The connect link is an <a> wearing the BUTTON_SECONDARY constant — not a per-page className and not a <button>",
+    "The connect link is an <a> wearing the BUTTON_SECONDARY constant \u2014 not a per-page className and not a <button>",
     "The link text is unchanged: 'Connect your BattleGrid account'",
     "The message paragraphs render verbatim, before the action",
     "The anchor meets the 44px floor via the constant's min-h-control",
-    "Hover responds — border color.border.strong, background color.bg.sunken — inherited, not restated",
+    "Hover responds \u2014 border color.border.strong, background color.bg.sunken \u2014 inherited, not restated",
     "No raw color, spacing, or size literal is introduced"
   ],
   "references": [
-    { "kind": "note", "value": "DT-0001's strategy-not-found treatment is the precedent ('the way out is a target rather than a sentence'); DT-0004 deferred this component by name. Shared component: this lands once in require-connection.tsx and every page inherits it." }
+    {
+      "kind": "note",
+      "value": "DT-0001's strategy-not-found treatment is the precedent ('the way out is a target rather than a sentence'); DT-0004 deferred this component by name. Shared component: this lands once in require-connection.tsx and every page inherits it."
+    }
   ],
   "created": "2026-08-12",
   "updated": "2026-08-12",

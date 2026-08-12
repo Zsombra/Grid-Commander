@@ -76,6 +76,19 @@ the user chose; nothing failed) and a failed callback in danger
 nothing was stored. Six rendering tests. Gates: typecheck, lint, 2136
 vitest, build.
 
+**Round five — `/connect` through the design lane** (#108 gap 2, second
+surface). New manifest `connect.json` (7 components; the declined/failure
+banners recorded with their roles as constraints), then DT-0005 — the
+not-view-only warning wears **consequence** (it is the sentence being
+agreed to), the Not requested block wears **quiet** (absence stated, not
+implied), zero copy changes, consent test untouched — and DT-0006 — the
+shared not-connected component's connect link wears `BUTTON_SECONDARY`
+(the way in as a target, DT-0001's strategy-not-found precedent), landed
+once in `require-connection.tsx` and inherited by every authenticated
+page. Both implemented; both manifests refreshed at the implementing
+commit. Design lane now: 6 surfaces, 3 designed, 6/6 tickets implemented.
+Gates re-run green (2136 vitest, build).
+
 **Watch out**: `min-h-11` must not come back — the controls test forbids
 it by name. The WEARS_BUTTON scan now accepts the composed template form
 (`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's

@@ -4,7 +4,7 @@
   "route": "/agents/[id]/archive",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "3e705ec",
+  "generated_at_commit": "be525fa",
   "source_files": [
     "app/(app)/agents/[id]/archive/page.tsx",
     "src/presentation/components/control.ts",
@@ -186,7 +186,7 @@
           "effect": "Navigates to /connect"
         }
       ],
-      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message + underlined text link. Used by every authenticated page, so a design here restyles all of them at once.",
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY \u2014 the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
       "constraints": [
         "Every no-authority cause renders this same page by design (see design W-C) \u2014 a design must not invent per-cause variants."
       ],
