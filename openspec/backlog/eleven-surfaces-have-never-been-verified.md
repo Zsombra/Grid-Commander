@@ -2,7 +2,7 @@
 id: eleven-surfaces-have-never-been-verified
 title: Eleven surface manifests have never been verified and cannot be until they are re-surveyed
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
@@ -69,3 +69,39 @@ $ python3 .claude/tools/openspec.py validate --all | grep never_verified | wc -l
 
 Related: [[the-re-pin-pins-to-the-commit-before-its-own-edits]] (#192, done —
 this is the debt its fix made visible).
+
+## Done 2026-08-13 — all eleven, and five had gaps a digest could not have caught
+
+Every one re-surveyed against its actual code. **24 of 24 manifests now carry a
+digest**; `never_verified` is zero.
+
+Five carried an **incomplete `source_files`**, which matters more than the
+staleness they were missing: a file the manifest does not list cannot make it
+stale, digest or no digest. This is the one drift no freshness mechanism can
+see, and it is why the surveyor skill makes completeness a hard rule.
+
+| surface | what was missing | why it renders |
+|---|---|---|
+| `agent-roster` | `fleet-spend.tsx`, **and the component itself** | the page renders `<FleetSpend>` |
+| `pending-queue` | `carried-problem.tsx` | added by #174, never recorded |
+| `agent-archive-confirm` | `carried-problem.tsx` | added by #174, never recorded |
+| `pending-proposal` | `carried-problem.tsx`, `ports/proposals.ts` | `OPERATIONS[…].label` is rendered |
+| `pipeline-evaluation` | `ports/strategies.ts` | `SIMULATION_SIGNAL_CAP` is rendered |
+| `explorer-field` | `ports/explorer.ts` | `FIELD_SORTS`/`FIELD_WINDOWS` render the option lists |
+
+`agent-roster` is the sharpest: the manifest described neither the component nor
+its file, so `FleetSpend` was invisible to the design layer entirely.
+
+Two state corrections: `connect` treated `?declined=` and `?error=` as exclusive
+when both render together, and `agent-roster` gained `fleet-spend`'s three
+states — an amount, a null total that is **not** zero, and unreadable.
+
+`audit-log`, `explorer-competitor`, `explorer-evaluation` and `strategy-catalog`
+needed no correction. Verified and digested.
+
+## What is left, and it is not this
+
+Three surfaces are **stale** — `agent-reactivate-confirm`,
+`strategy-conditions-save`, `strategy-rule-editor`. That is honest drift with a
+named file each, not the silence this item was about. They are a design-round
+concern now.

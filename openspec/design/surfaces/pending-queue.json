@@ -4,9 +4,10 @@
   "route": "/pending",
   "capability": "mcp-control",
   "status": "designed",
-  "generated_at_commit": "b1e2153",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/pending/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/proposal-queue.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -193,5 +194,10 @@
     ],
     "notes": "problem carries role=alert, note role=status. No client JS."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/pending/page.tsx": "sha256:75333085f1cf455f783f43314e85816762cf32d41c3614845aead55ab79e7171",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/proposal-queue.tsx": "sha256:8556d6006cb7f0a0398f39fb5bdcd591fd04c98c74994d2d8e8833181c99dc53",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

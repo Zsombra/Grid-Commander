@@ -4,7 +4,7 @@
   "route": "/audit",
   "capability": "app-access",
   "status": "designed",
-  "generated_at_commit": "485342f",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/audit/page.tsx",
     "src/presentation/components/audit-list.tsx",
@@ -106,5 +106,9 @@
     ],
     "notes": "Table has an sr-only caption and scoped column headers. Unresolved count is role=status. Horizontal scroll is on a wrapper so the table itself is not clipped."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/audit/page.tsx": "sha256:be066129a5e33843de497455a99eb3b462897765f3ce79e7b1c4847bd8f6d334",
+    "src/presentation/components/audit-list.tsx": "sha256:d11ba36f45738eee4d27bdcc07b756c87e897124a8f72f03f0d66f74a684ce6e",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

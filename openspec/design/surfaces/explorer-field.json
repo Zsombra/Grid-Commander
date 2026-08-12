@@ -4,11 +4,12 @@
   "route": "/explorer",
   "capability": "agent-comparison",
   "status": "designed",
-  "generated_at_commit": "fe1443e",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/explorer/page.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
+    "src/ports/explorer.ts",
     "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -224,5 +225,11 @@
     ],
     "notes": "Unreadable states carry role=alert. The own row is legible without colour. No client JS."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/explorer/page.tsx": "sha256:cb45e954297ed8694737c6138f0e9f069349b63e5d73c9d63c523fbb066605f8",
+    "src/ports/explorer.ts": "sha256:78a21c77594e2168623012f1629c6490dfbbff003c6a5bd0a25935b5ed2fb220",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

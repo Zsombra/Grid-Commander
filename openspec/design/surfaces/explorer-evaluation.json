@@ -4,7 +4,7 @@
   "route": "/explorer/[agentId]/evaluations/[logId]",
   "capability": "agent-comparison",
   "status": "designed",
-  "generated_at_commit": "579e0aa",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/explorer/[agentId]/evaluations/[logId]/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -147,5 +147,9 @@
     ],
     "notes": "Unreadable carries role=alert. Fired state legible without colour. No client JS."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/explorer/[agentId]/evaluations/[logId]/page.tsx": "sha256:197b5858c696298029291e0176914c83214f14156ae85fbe3c55154b7d9b8c81",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

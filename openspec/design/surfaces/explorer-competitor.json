@@ -4,7 +4,7 @@
   "route": "/explorer/[agentId]",
   "capability": "agent-comparison",
   "status": "designed",
-  "generated_at_commit": "579e0aa",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/explorer/[agentId]/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -198,5 +198,9 @@
     ],
     "notes": "Per-section unreadable states carry role=alert. No client JS."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/explorer/[agentId]/page.tsx": "sha256:7c0276896f8f7834330e623da8ecf55e5d7cb395fbd41523955fe9b10d4f5e0e",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

@@ -4,11 +4,12 @@
   "route": "/agents/[id]/pipeline/[logId]",
   "capability": "agent-understanding",
   "status": "designed",
-  "generated_at_commit": "c1ad290",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/agents/[id]/pipeline/[logId]/page.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
+    "src/ports/strategies.ts",
     "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -240,5 +241,11 @@
     ],
     "notes": "Refusals and model errors carry role=alert. Fired state legible without colour. No client JS."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/agents/[id]/pipeline/[logId]/page.tsx": "sha256:d843ad730656021ac38c00dcdefddeac225b45561d1cec4ddb2657c1edd2377d",
+    "src/ports/strategies.ts": "sha256:2f59c70563df124cdf3ddf1926d7e518eb3947e3fe4fa13502ace11696326894",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }
