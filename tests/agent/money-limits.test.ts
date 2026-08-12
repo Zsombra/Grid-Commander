@@ -11,6 +11,7 @@ import {
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { buildTradingConfig } from '@/domain/agent/trading-config.js';
 import { anAgent, defaultCatalog, FakeAgentsPort } from '../support/agent-fakes.js';
+import { readText } from '../support/source-tree.js';
 
 /**
  * What an agent is allowed to do with money.
@@ -199,7 +200,7 @@ describe('creating an agent', () => {
 });
 
 describe('the safe answer is the default answer', () => {
-  const form = () => readFileSync('src/presentation/components/money-limits.tsx', 'utf8');
+  const form = () => readText('src/presentation/components/money-limits.tsx');
 
   it('offers OFF, and offers it first', () => {
     // The only answer that makes the other five harmless: an agent that does
@@ -337,7 +338,7 @@ describe('zero does not mean nothing', () => {
 });
 
 describe('the form says what zero does, where it is typed', () => {
-  const form = () => readFileSync('src/presentation/components/money-limits.tsx', 'utf8');
+  const form = () => readText('src/presentation/components/money-limits.tsx');
 
   it('warns that zero removes the limit', () => {
     expect(form()).toMatch(/Entering 0 removes this limit/);

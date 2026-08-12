@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * No surface may discard the result of an operation it asked for.
@@ -31,7 +32,7 @@ function tsxFilesUnder(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return tsxFilesUnder(path);
-    return entry.name.endsWith('.tsx') ? [path] : [];
+    return entry.name.endsWith('.tsx') ? [slashed(path)] : [];
   });
 }
 

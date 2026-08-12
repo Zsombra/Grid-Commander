@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * This product reaches BattleGrid, and nothing else.
@@ -27,7 +28,7 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.tsx?$/.test(full)) out.push(full);
+    else if (/\.tsx?$/.test(full)) out.push(slashed(full));
   }
   return out;
 }

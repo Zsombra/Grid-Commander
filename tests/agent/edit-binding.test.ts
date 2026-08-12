@@ -14,6 +14,7 @@ import { beginGuardedCall } from '@/infrastructure/battlegrid/call-path.js';
 import { ConfirmationRequiredError } from '@/domain/errors.js';
 import { digestOf } from '@/domain/capability/digest.js';
 import { editArguments, editIntent, MONEY_FIELDS } from '@/presentation/form.js';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * A confirmation authorises the change it described, and no other.
@@ -466,7 +467,7 @@ describe('no caller composes a target inline', () => {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) return tsFilesUnder(path);
-      return entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') ? [path] : [];
+      return entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') ? [slashed(path)] : [];
     });
   }
 

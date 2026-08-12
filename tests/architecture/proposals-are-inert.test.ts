@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TOOLS } from '@/mcp/tools.js';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * A proposal never performs itself, and a model never receives a confirmation.
@@ -22,7 +23,7 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.tsx?$/.test(full)) out.push(full);
+    else if (/\.tsx?$/.test(full)) out.push(slashed(full));
   }
   return out;
 }
