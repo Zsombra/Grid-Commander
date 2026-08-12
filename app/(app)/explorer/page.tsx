@@ -244,7 +244,10 @@ export default async function ExplorerPage({
             */}
             {field.field.stats.totalAgents !== null &&
             field.field.shown < field.field.stats.totalAgents ? (
-              <p className="text-sm">
+              // The page's load-bearing honesty — the difference between a
+              // partial view and a wrong one. Notice, never danger: the
+              // platform under-returned; nothing failed. DT-0008.
+              <p className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
                 BattleGrid counts {field.field.stats.totalAgents} agents in this
                 window but returned {field.field.shown}. This is not the whole
                 field.
@@ -252,7 +255,7 @@ export default async function ExplorerPage({
             ) : null}
 
             {sortBy === 'WIN_RATE' ? (
-              <p className="text-sm">
+              <p className="text-sm text-text-secondary">
                 Sorted by win rate, the top of this list is usually the
                 smallest sample — check the trade count before reading a rank
                 as skill.
@@ -264,7 +267,9 @@ export default async function ExplorerPage({
             ) : (
               <ul className="space-y-3">
                 {field.field.agents.map((a) => (
-                  <li key={a.agentId} className="rounded border p-3 text-sm space-y-1">
+                  // The token border, not Tailwind's default grey — the
+                  // precedent treatment #155's sweep executes. DT-0008.
+                  <li key={a.agentId} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                     <p className="font-medium">
                       {a.rank !== null ? `#${a.rank} ` : ''}
                       {/* Every row opens. A field you can only read totals
