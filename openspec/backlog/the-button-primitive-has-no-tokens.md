@@ -143,3 +143,15 @@ its banners landed pre-roled by `a-bounced-agree-says-why` and its lists
 were already tokened; recorded as `designed` on that basis. Remaining in
 gap 2: `/explorer`, the pipeline simulator, the other confirmations, and
 first tickets for agent-roster / audit-log / strategy-catalog.
+
+## 2026-08-12, fourth pass — `/explorer` (the field page)
+
+Manifest `explorer-field` (7 components); **DT-0008** implemented — cards
+take `border.default` at `radius.2` (the precedent treatment #155's sweep
+executes), the partial-field honesty sentence takes notice. The redirect
+sweep this pass opened with came back clean: every remaining
+query-carrying redirect lands on a page that reads it, so `/connect` and
+`/pending` were the only two instances of the dropped-message bug.
+Remaining in gap 2: the explorer subpages, the pipeline simulator, the
+other confirmations, and first tickets for agent-roster / audit-log /
+strategy-catalog.

@@ -3,29 +3,32 @@
   "title": "The field",
   "route": "/explorer",
   "capability": "agent-comparison",
-  "status": "functional",
-  "generated_at_commit": "b1e2153",
+  "status": "designed",
+  "generated_at_commit": "fe1443e",
   "source_files": [
     "app/(app)/explorer/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/require-connection.tsx"
   ],
-  "viewports": ["mobile", "desktop"],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
   "data": [
     {
       "name": "field",
-      "shape": "FieldResult — stats, agents[], vendors[], ownAgents[], shown, generatedAt | unreadable",
-      "source": "app.readField.execute — the denominator every other performance figure lacks"
+      "shape": "FieldResult \u2014 stats, agents[], vendors[], ownAgents[], shown, generatedAt | unreadable",
+      "source": "app.readField.execute \u2014 the denominator every other performance figure lacks"
     },
     {
       "name": "leaderboard",
-      "shape": "LeaderboardResult — { own, entries[] } | unreadable",
+      "shape": "LeaderboardResult \u2014 { own, entries[] } | unreadable",
       "source": "same query; fails independently of the field"
     },
     {
       "name": "window / sort",
-      "shape": "FieldWindow / FieldSort — platform enums",
+      "shape": "FieldWindow / FieldSort \u2014 platform enums",
       "source": "searchParams, validated against FIELD_WINDOWS / FIELD_SORTS; an unrecognised value falls back and is never forwarded"
     }
   ],
@@ -33,29 +36,49 @@
     {
       "id": "explorer-page",
       "role": "container",
-      "purpose": "Who else is doing this and how it is going for them — the denominator for every unanchored figure elsewhere.",
-      "states": ["full", "standing-unreadable", "field-unreadable", "not-connected"],
-      "data": ["field", "leaderboard"],
+      "purpose": "Who else is doing this and how it is going for them \u2014 the denominator for every unanchored figure elsewhere.",
+      "states": [
+        "full",
+        "standing-unreadable",
+        "field-unreadable",
+        "not-connected"
+      ],
+      "data": [
+        "field",
+        "leaderboard"
+      ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column, space-y-6, p-6. Standing and field fail independently — an outage produces one sentence per failure, never two about the same one.",
+      "current_implementation": "max-w-3xl centered column, space-y-6, p-6. Standing and field fail independently \u2014 an outage produces one sentence per failure, never two about the same one.",
       "constraints": [
-        "Reads only — the page says so and it must stay true.",
-        "Unread and unplaced must not read alike — one is about the platform, the other about this account's results (WhyNotLoaded carries the distinction).",
+        "Reads only \u2014 the page says so and it must stay true.",
+        "Unread and unplaced must not read alike \u2014 one is about the platform, the other about this account's results (WhyNotLoaded carries the distinction).",
         "Only the platform's own enums reach the adapter; an unrecognised URL value falls back rather than being forwarded.",
         "No client JS."
       ],
-      "children": ["standing", "leaderboard", "apply", "agents", "vendors"]
+      "children": [
+        "standing",
+        "leaderboard",
+        "apply",
+        "agents",
+        "vendors"
+      ]
     },
     {
       "id": "standing",
       "role": "display",
-      "purpose": "Where this account sits: rank, percentile, profit — or the honest absence of a placement.",
-      "states": ["ranked", "unplaced", "unreadable"],
-      "data": ["leaderboard"],
+      "purpose": "Where this account sits: rank, percentile, profit \u2014 or the honest absence of a placement.",
+      "states": [
+        "ranked",
+        "unplaced",
+        "unreadable"
+      ],
+      "data": [
+        "leaderboard"
+      ],
       "actions": [],
       "current_implementation": "One sentence per state; unreadable carries role=alert plus WhyNotLoaded. Percentile and value render only when the platform measured them.",
       "constraints": [
-        "Unplaced ('BattleGrid does not place this account yet') is a fact about results, unreadable is a fact about the platform — the two sentences must stay distinct.",
+        "Unplaced ('BattleGrid does not place this account yet') is a fact about results, unreadable is a fact about the platform \u2014 the two sentences must stay distinct.",
         "A missing rate or value renders as absent, never as zero."
       ],
       "children": []
@@ -64,13 +87,19 @@
       "id": "leaderboard",
       "role": "display",
       "purpose": "The rows the rank is a rank among, with this account's row marked in words.",
-      "states": ["entries", "empty", "own-row"],
-      "data": ["leaderboard"],
+      "states": [
+        "entries",
+        "empty",
+        "own-row"
+      ],
+      "data": [
+        "leaderboard"
+      ],
       "actions": [],
-      "current_implementation": "Ordered list; the own row is font-medium plus '— this account', matched on userId presence and equality only. Rendered only when the standing was readable.",
+      "current_implementation": "Ordered list; the own row is font-medium plus '\u2014 this account', matched on userId presence and equality only. Rendered only when the standing was readable.",
       "constraints": [
         "The own row is marked by words and weight, never colour alone.",
-        "Matched on the platform's id and nothing else — two unidentified rows must never both read as yours.",
+        "Matched on the platform's id and nothing else \u2014 two unidentified rows must never both read as yours.",
         "Empty renders 'ranks no players in this window', never a blank list."
       ],
       "children": []
@@ -79,15 +108,22 @@
       "id": "apply",
       "role": "input",
       "purpose": "Re-ask the question: window and sort, from the platform's enums, into the query string.",
-      "states": ["default"],
-      "data": ["window / sort"],
+      "states": [
+        "default"
+      ],
+      "data": [
+        "window / sort"
+      ],
       "actions": [
-        { "id": "apply", "effect": "GET form — the field re-renders for the chosen window and sort; the URL is shareable" }
+        {
+          "id": "apply",
+          "effect": "GET form \u2014 the field re-renders for the chosen window and sort; the URL is shareable"
+        }
       ],
       "current_implementation": "Two selects (LABEL/CONTROL) and a BUTTON_SECONDARY 'Apply' in a flex-wrap row.",
       "constraints": [
         "The selects offer FIELD_WINDOWS/FIELD_SORTS only.",
-        "A GET form — nothing is written; the composed question lives in the URL."
+        "A GET form \u2014 nothing is written; the composed question lives in the URL."
       ],
       "children": []
     },
@@ -95,15 +131,25 @@
       "id": "agents",
       "role": "display",
       "purpose": "The field's rows: every rate beside its trade count, every card opening into the agent behind it.",
-      "states": ["cards", "empty", "partial-field", "win-rate-caveat"],
-      "data": ["field"],
-      "actions": [
-        { "id": "open", "effect": "Each card's name links to /explorer/[agentId]" }
+      "states": [
+        "cards",
+        "empty",
+        "partial-field",
+        "win-rate-caveat"
       ],
-      "current_implementation": "Heading counts rows shown, never the field ('N agents shown, by …'). Cards wear bare 'rounded border p-3' — Tailwind's default grey, untokened (#155). The partial-field sentence and the win-rate caveat are plain text-sm paragraphs.",
+      "data": [
+        "field"
+      ],
+      "actions": [
+        {
+          "id": "open",
+          "effect": "Each card's name links to /explorer/[agentId]"
+        }
+      ],
+      "current_implementation": "Heading counts rows shown, never the field. DT-0008: cards wear rounded-gc-2 border-border-default p-3 (the precedent for #155's sweep); the partial-field sentence wears the notice role; the win-rate caveat is plain text-text-secondary prose.",
       "constraints": [
-        "The heading counts rendered rows; the field total is stated separately — the list is sometimes shorter than the field and no moment may assume it whole.",
-        "Every win rate prints beside its trade count — sorting by rate promotes the smallest sample.",
+        "The heading counts rendered rows; the field total is stated separately \u2014 the list is sometimes shorter than the field and no moment may assume it whole.",
+        "Every win rate prints beside its trade count \u2014 sorting by rate promotes the smallest sample.",
         "A rate the platform did not measure renders 'not measured', never 0%.",
         "Losses read as losses at a glance (signed money).",
         "The platform's own subtitle/objective sentences render unparaphrased."
@@ -114,32 +160,68 @@
       "id": "vendors",
       "role": "display",
       "purpose": "Which vendors' agents are actually making money, across everyone who runs them.",
-      "states": ["present", "absent"],
-      "data": ["field"],
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "field"
+      ],
       "actions": [],
-      "current_implementation": "Plain list: provider, agent count, trades, win rate, net — same never-zero rate discipline.",
-      "constraints": ["Rendered only when the platform returned vendors."],
+      "current_implementation": "Plain list: provider, agent count, trades, win rate, net \u2014 same never-zero rate discipline.",
+      "constraints": [
+        "Rendered only when the platform returned vendors."
+      ],
       "children": []
     },
     {
       "id": "not-connected",
       "role": "feedback",
       "purpose": "The shared turned-away page.",
-      "states": ["default"],
+      "states": [
+        "default"
+      ],
       "data": [],
-      "actions": [{ "id": "connect", "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)" }],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
       "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
-      "constraints": ["No per-cause variants."],
+      "constraints": [
+        "No per-cause variants."
+      ],
       "children": []
     }
   ],
   "flows": [
-    { "name": "Anchor a judgment", "steps": ["read the field stats", "find the account's standing among the rows", "open a leader's card to see what they do"] },
-    { "name": "Re-ask", "steps": ["pick a window and sort", "Apply", "the same page for a different question, in a shareable URL"] }
+    {
+      "name": "Anchor a judgment",
+      "steps": [
+        "read the field stats",
+        "find the account's standing among the rows",
+        "open a leader's card to see what they do"
+      ]
+    },
+    {
+      "name": "Re-ask",
+      "steps": [
+        "pick a window and sort",
+        "Apply",
+        "the same page for a different question, in a shareable URL"
+      ]
+    }
   ],
   "accessibility": {
-    "landmarks": ["main", "form"],
-    "focus_order": ["apply", "agents"],
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "apply",
+      "agents"
+    ],
     "notes": "Unreadable states carry role=alert. The own row is legible without colour. No client JS."
   }
 }

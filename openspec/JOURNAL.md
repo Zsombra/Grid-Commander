@@ -93,6 +93,17 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round eight — `/explorer` through the design lane, and a product-wide
+finding** (#108 gap 2, fourth surface pass). The dropped-redirect sweep
+came back clean — connect and pending were the only two instances. The
+survey found 67 boxes across 20+ files wearing bare `rounded border`
+(Tailwind's default grey, untokened — the input defect control.ts
+documents, surviving product-wide on cards); filed as **#155** with
+DT-0008 as the precedent treatment its mechanical sweep will execute.
+DT-0008 implemented: field cards wear border.default at radius.2, the
+this-is-not-the-whole-field sentence wears notice. Full local CI green at
+fe1443e. Design lane: 9 surfaces, 6 designed, 8/8 tickets implemented.
+
 **Round seven — `/pending` through the design lane** (#108 gap 2, third
 surface pass). Manifests for both routes (`pending-queue`,
 `pending-proposal`); DT-0007 implemented — consequence/notice/quiet roles
