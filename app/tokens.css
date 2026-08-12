@@ -39,6 +39,7 @@
   --gc-quiet-text: #ffffff;
   --gc-quiet-subtle: #f6f7f9;
   --gc-quiet-border: #e3e6ea;
+  --gc-size-control-min: 44px;
 }
 
 @media (prefers-color-scheme: dark) {

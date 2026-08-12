@@ -145,7 +145,11 @@ describe('the treatment itself is made of tokens', () => {
  * The two exclusions are read off the elements themselves rather than off a
  * list of files, so neither can rot into an allowlist.
  */
-const WEARS_BUTTON = /className=\{(?:BUTTON_PRIMARY|BUTTON_SECONDARY)\}/;
+// `className={BUTTON_*}` or the composed form — DT-0004 has the archive page
+// add `w-full tablet:w-auto` for the mobile stack, and composing onto the
+// treatment is not the same as replacing it.
+const WEARS_BUTTON =
+  /className=\{(?:BUTTON_(?:PRIMARY|SECONDARY)|`[^`]*\$\{BUTTON_(?:PRIMARY|SECONDARY)\}[^`]*`)\}/;
 // `className={LABEL}` or the composed form — `pipeline/[logId]` adds a width to
 // the label it puts beside a select, and composing onto the treatment is not the
 // same as replacing it.
@@ -256,12 +260,27 @@ describe('the button and label treatments are made of tokens', () => {
   });
 
   it('meets the tap-target floor the design system states as a principle', () => {
-    // 44px, which system.json requires in prose and gives no token for — its
-    // space scale is 32px then 48px. DT-0002 spent Tailwind's `min-h-11` for the
-    // same reason. Asserted so that dropping it is a test failure rather than a
-    // quiet regression on touch. See `the-button-primitive-has-no-tokens`.
-    expect(BUTTON_PRIMARY).toMatch(/\bmin-h-11\b/);
-    expect(BUTTON_SECONDARY).toMatch(/\bmin-h-11\b/);
+    // 44px, which system.json requires in prose and — since DT-0003 — provides
+    // as `size.control.min`, worn as the generated `min-h-control`. Asserted so
+    // that dropping it is a test failure rather than a quiet regression on
+    // touch, and so nobody reintroduces the raw `min-h-11` it replaced.
+    expect(BUTTON_PRIMARY).toMatch(/\bmin-h-control\b/);
+    expect(BUTTON_SECONDARY).toMatch(/\bmin-h-control\b/);
+    expect(BUTTON_PRIMARY).not.toMatch(/\bmin-h-11\b/);
+    expect(BUTTON_SECONDARY).not.toMatch(/\bmin-h-11\b/);
+  });
+
+  it('the tap-target utility is real, not a class Tailwind silently drops', () => {
+    // Tailwind ignores a utility its theme does not define — `min-h-control`
+    // with no `minHeight.control` entry compiles to nothing and both buttons
+    // quietly lose their 44px. The chain asserted whole: system.json states
+    // the value, the generated theme maps the utility to its variable, and the
+    // generated CSS gives the variable that value.
+    const system = JSON.parse(readFileSync(join('openspec', 'design', 'system.json'), 'utf8'));
+    expect(system.tokens.size.control.min).toBe('44px');
+    const theme = JSON.parse(readFileSync('tailwind.theme.json', 'utf8'));
+    expect(theme.extend.minHeight.control).toBe('var(--gc-size-control-min)');
+    expect(readFileSync(join('app', 'tokens.css'), 'utf8')).toContain('--gc-size-control-min: 44px;');
   });
 
   it('declares no focus ring of its own', () => {
