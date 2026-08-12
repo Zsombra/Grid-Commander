@@ -267,6 +267,33 @@ export default async function SaveConditionPage({
     );
   }
 
+  if (result.kind === 'prose-names-it') {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 p-6">
+        {head}
+        <h2 className="text-base font-medium">This strategy&rsquo;s own description names it</h2>
+        {/* The fourth place a condition is referenced from, and the one the
+            dangling set below cannot see: the strategy's market-read prose
+            refers to it by marker. The platform found it and said which one —
+            this page repeats that rather than parsing prose it does not own. */}
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
+          {`The description written for this strategy refers to ${result.marker}. Removing it would leave that reference pointing at nothing, so BattleGrid did not save the change.`}
+        </p>
+        {result.nearest === null ? null : (
+          <p className="text-sm text-text-secondary">
+            {`BattleGrid suggests ${result.nearest} as the nearest key it recognises.`}
+          </p>
+        )}
+        {/* The platform's own sentence, kept whole beneath the reading of it —
+            the reading is this product's, and the operator can check it. */}
+        <p className="text-sm text-text-secondary">{result.reason}</p>
+        <p className="text-sm">{`Nothing was written. Edit the description first, or keep the condition.`}</p>
+        {list}
+        {back}
+      </main>
+    );
+  }
+
   if (result.kind === 'refused') {
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">

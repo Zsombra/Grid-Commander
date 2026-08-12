@@ -224,6 +224,7 @@ describe('every branch that mints nothing says nothing was written', () => {
     strategies.compilePlan = async () => ({
       kind: 'rejected',
       reason: 'CONDITION_COLUMN_UNKNOWN: no column "CVD_trend" in this report',
+      refusal: null,
     });
     const r = await saveRendered('s1', A_DRAFT);
     expect(r.text).toContain('CONDITION_COLUMN_UNKNOWN');
@@ -248,5 +249,96 @@ describe('every branch that mints nothing says nothing was written', () => {
     current = { app: {}, user: notConnected };
     const r = await saveRendered('s1');
     expect(r.text).toContain('Connect');
+  });
+});
+
+/**
+ * A refusal the strategy's own prose caused, said as that.
+ *
+ * The body below is the real one, recorded live 2026-08-06 on the first removal
+ * the condition-write probe attempted (#111). It is the only observation of
+ * this shape, so it is the fixture — modelling it from a guess at what the
+ * platform "probably" sends is how three of the dead paths in HANDOFF.md began.
+ */
+const MARKER_REFUSAL = JSON.stringify({
+  code: 'VALIDATION_ERROR',
+  message:
+    "[market-read] strategy f34788df: marker '{ALL_AGREE_UP}' names neither a column this " +
+    "strategy's report renders nor one of its conditions",
+  details: {
+    authoringCode: 'MARKET_READ_MARKER_UNKNOWN',
+    path: ['marketReadText', 184],
+    context: { token: 'ALL_AGREE_UP', lookupKind: 'reportHeader', nearestKey: 'ALL_AGREE_DOWN' },
+  },
+});
+
+describe('a refusal the prose caused is named as that', () => {
+  const refusing = (body: string) => {
+    const strategies = saveWorld();
+    strategies.compilePlan = async () => ({ kind: 'rejected', reason: body, refusal: null });
+    return strategies;
+  };
+
+  it('says the description names it, and which marker', async () => {
+    const strategies = saveWorld();
+    // The adapter is what parses; here the port hands the parsed shape through.
+    strategies.compilePlan = async () => ({
+      kind: 'rejected',
+      reason: MARKER_REFUSAL,
+      refusal: {
+        message: 'marker not known',
+        authoringCode: 'MARKET_READ_MARKER_UNKNOWN',
+        path: ['marketReadText', 184],
+        context: { token: 'ALL_AGREE_UP', nearestKey: 'ALL_AGREE_DOWN' },
+      },
+    });
+    const r = await saveRendered('s1', A_DRAFT);
+    expect(r.text).toContain('own description names it');
+    expect(r.text).toContain('ALL_AGREE_UP');
+    // The platform's suggestion, attributed to the platform.
+    expect(r.text).toContain('ALL_AGREE_DOWN');
+    expect(r.text).toContain('Nothing was written');
+  });
+
+  it('offers no suggestion of its own when the platform gave none', async () => {
+    const strategies = saveWorld();
+    strategies.compilePlan = async () => ({
+      kind: 'rejected',
+      reason: 'refused',
+      refusal: {
+        message: 'marker not known',
+        authoringCode: 'MARKET_READ_MARKER_UNKNOWN',
+        path: [],
+        context: { token: 'ALL_AGREE_UP' },
+      },
+    });
+    const r = await saveRendered('s1', A_DRAFT);
+    expect(r.text).toContain('ALL_AGREE_UP');
+    expect(r.text).not.toContain('nearest key it recognises');
+  });
+
+  it('leaves any other code as the platform worded it, unclassified', async () => {
+    const strategies = saveWorld();
+    strategies.compilePlan = async () => ({
+      kind: 'rejected',
+      reason: 'CONDITION_COLUMN_UNKNOWN: no column "CVD_trend" in this report',
+      refusal: {
+        message: 'no such column',
+        authoringCode: 'CONDITION_COLUMN_UNKNOWN',
+        path: [],
+        context: { token: 'CVD_trend' },
+      },
+    });
+    const r = await saveRendered('s1', A_DRAFT);
+    expect(r.text).toContain('BattleGrid refused this change');
+    expect(r.text).not.toContain('own description names it');
+  });
+
+  it('claims nothing from a refusal that carried no structure', async () => {
+    refusing('BattleGrid is not answering right now');
+    const r = await saveRendered('s1', A_DRAFT);
+    expect(r.text).toContain('BattleGrid refused this change');
+    expect(r.text).toContain('BattleGrid is not answering right now');
+    expect(r.text).not.toContain('own description names it');
   });
 });

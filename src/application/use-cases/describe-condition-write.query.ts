@@ -5,7 +5,7 @@ import { listedKeys, resolveConditionEdit } from '@/domain/strategy/condition-wr
 import type { ConditionVerdict, StrategyCondition } from '@/domain/strategy/condition.js';
 import { describeBlastRadius, type Strategy } from '@/domain/strategy/strategy.js';
 import type { BattlegridSubject } from '@/domain/connection/subject.js';
-import type { StrategiesPort } from '@/ports/strategies.js';
+import type { AuthoringRefusal, StrategiesPort } from '@/ports/strategies.js';
 import type { FailureCause } from '@/ports/failure.js';
 import type { DescribeApplyQuery } from './apply-plan.command.js';
 import type { CompilePlanCommand } from './compile-plan.command.js';
@@ -107,6 +107,21 @@ export type DescribeConditionWriteResult =
    */
   | ({ readonly kind: 'drift'; readonly reasons: readonly string[] } & Listing)
   /** The platform's own words: a compiler rejection, or a plan that cannot be applied. */
+  /**
+   * The compile was refused because the strategy's own prose names the
+   * condition — the fourth place a condition is referenced from, and the one
+   * the dangling set cannot see.
+   *
+   * Distinct from `refused` on purpose: this is a fact the product can state,
+   * and a bucket labelled "refused" is what made it arrive as a wall. `nearest`
+   * is the platform's suggestion where it offered one, never this product's.
+   */
+  | ({
+      readonly kind: 'prose-names-it';
+      readonly marker: string;
+      readonly nearest: string | null;
+      readonly reason: string;
+    } & Listing)
   | ({ readonly kind: 'refused'; readonly reason: string } & Listing)
   | { readonly kind: 'strategy-missing' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
@@ -178,6 +193,8 @@ export class DescribeConditionWriteQuery {
       request: intent,
     });
     if (compiled.kind === 'rejected') {
+      const named = proseMarker(compiled.refusal);
+      if (named) return { ...named, reason: compiled.reason, ...listing };
       return { kind: 'refused', reason: compiled.reason, ...listing };
     }
 
@@ -332,4 +349,31 @@ function addendum(input: {
     );
   }
   return parts.join('\n\n');
+}
+
+/**
+ * The one refusal code this product is willing to name.
+ *
+ * `MARKET_READ_MARKER_UNKNOWN` is established: observed live 2026-08-06 on the
+ * first removal the condition-write probe attempted, with `context.token` the
+ * marker that no longer resolves and `context.nearestKey` the platform's own
+ * suggestion. Every other code falls through to the platform's words unread —
+ * naming a code whose meaning has not been established would be a guess wearing
+ * BattleGrid's authority.
+ *
+ * A missing token means the structure was not what we know, so nothing is
+ * claimed from it.
+ */
+function proseMarker(
+  refusal: AuthoringRefusal | null,
+): { kind: 'prose-names-it'; marker: string; nearest: string | null } | null {
+  if (!refusal || refusal.authoringCode !== 'MARKET_READ_MARKER_UNKNOWN') return null;
+  const token = refusal.context['token'];
+  if (typeof token !== 'string' || token.length === 0) return null;
+  const nearest = refusal.context['nearestKey'];
+  return {
+    kind: 'prose-names-it',
+    marker: token,
+    nearest: typeof nearest === 'string' && nearest.length > 0 ? nearest : null,
+  };
 }

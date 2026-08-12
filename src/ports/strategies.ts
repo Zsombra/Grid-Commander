@@ -309,7 +309,39 @@ export type CompileResult =
       readonly planToken: string;
     }
   /** The compiler refused the request itself — bad vocabulary, nothing to change. */
-  | { readonly kind: 'rejected'; readonly reason: string };
+  | {
+      readonly kind: 'rejected';
+      readonly reason: string;
+      /**
+       * The platform's own structured account of the refusal, where it gave one.
+       *
+       * Null for a refusal that was not the documented shape — prose, a
+       * transport failure, a body that did not parse. Null is "we were not
+       * told", never "there was nothing to tell": nothing downstream may read
+       * an absent structure as a statement about the refusal.
+       */
+      readonly refusal: AuthoringRefusal | null;
+    };
+
+/**
+ * What BattleGrid says about a refusal beyond the sentence.
+ *
+ * The compiler refuses with a code and a context object — the token it could
+ * not resolve, the nearest key it knows, where in the request it was. That
+ * detail reached this product and was thrown away: the adapter caught the
+ * error and flattened the whole body to a string, so a refusal the platform
+ * had explained precisely arrived as an opaque wall.
+ *
+ * `context` is carried whole and **unread by the port**. Which keys mean what
+ * is the platform's to say, and it says different things for different codes;
+ * a reader that wants one names the code it is reading for.
+ */
+export interface AuthoringRefusal {
+  readonly message: string;
+  readonly authoringCode: string | null;
+  readonly path: readonly (string | number)[];
+  readonly context: Readonly<Record<string, unknown>>;
+}
 
 /**
  * Restoring can come back needing repair.

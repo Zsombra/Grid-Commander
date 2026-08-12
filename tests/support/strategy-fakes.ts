@@ -226,7 +226,13 @@ export class FakeStrategiesPort implements StrategiesPort {
     // Compiling is recorded so a test can prove it happened *and* that nothing
     // moved as a result.
     this.calls.push({ op: 'compile', payload: params.request });
-    return this.compileResult ?? { kind: 'rejected', reason: 'no compile result configured' };
+    return (
+      this.compileResult ?? {
+        kind: 'rejected',
+        reason: 'no compile result configured',
+        refusal: null,
+      }
+    );
   }
 
   async applyPlan(params: {

@@ -99,7 +99,11 @@ describe('compiling is free of effect', () => {
 
   it('reports a compiler rejection rather than inventing a review', async () => {
     const h = harness();
-    h.port.compileResult = { kind: 'rejected', reason: 'At least one updatable field is required' };
+    h.port.compileResult = {
+      kind: 'rejected',
+      reason: 'At least one updatable field is required',
+      refusal: null,
+    };
     const result = await h.compile.execute({ ...who, request: INTENT });
     expect(result.kind).toBe('rejected');
   });

@@ -379,6 +379,7 @@ describe('describing a condition write', () => {
     strategies.compilePlan = async () => ({
       kind: 'rejected',
       reason: 'CONDITION_COLUMN_UNKNOWN: no column "CVD_trend" in this report',
+      refusal: null,
     });
     const result = await describe.execute({
       ...who,
