@@ -4,7 +4,7 @@
   "route": "/agents/[id]/reactivate",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "e7c56ce",
+  "generated_at_commit": "eeb3427",
   "source_files": [
     "app/(app)/agents/[id]/reactivate/page.tsx",
     "src/presentation/components/agent-edit.tsx",
@@ -310,8 +310,8 @@
     "notes": "Problem banner, capacity notice and the not-archived refusal carry role=alert; the problem banner and the capacity notice can be on screen together. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/reactivate/page.tsx": "sha256:a673136b88fa0310a60150900b8473ec83671bff87f56d29c2592ae7e4d06399",
-    "src/presentation/components/agent-edit.tsx": "sha256:7ad958c8d9ec9c022d29584f5c2d56cbbc35f24a2586ff953b3f43d39afd252a",
+    "app/(app)/agents/[id]/reactivate/page.tsx": "sha256:d007ee77f0b503a348ffe3083e45abb39d21cee7b51e6d1f07408a701ee159ed",
+    "src/presentation/components/agent-edit.tsx": "sha256:deadaa2dab731212900d30a1914b3b4c3912e1aac3aaee6c0a98a223c63e5c30",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",

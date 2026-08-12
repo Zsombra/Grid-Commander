@@ -3,8 +3,8 @@
   "title": "Save a condition — whole-list ceremony",
   "route": "/strategies/[id]/conditions/save",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "e9a615e",
+  "status": "needs-redesign",
+  "generated_at_commit": "eeb3427",
   "source_files": [
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
     "src/presentation/components/control.ts",
@@ -59,14 +59,15 @@
         "proposal",
         "strategy-missing",
         "unreadable",
-        "not-connected"
+        "not-connected",
+        "prose-names-it"
       ],
       "data": [
         "result",
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl (wider than the confirm pages) centered column, space-y-6, p-6. Six of the eight post-connection branches share a `head` fragment: h1 'Save a condition to <name>' plus the problem banner when one arrived — so listing, no-such-condition, inexpressible, drift, refused and proposal each carry the banner from one rendering rather than six. `listing` (no edit, or a malformed one) explains that BattleGrid has no per-condition tool so saving anything resubmits the whole list, then shows the current list. `no-such-condition` says the named key is not defined (role=alert, rounded-gc-2 plain border, p-3) above the list. `inexpressible` renders h2 'Part of this draft cannot be sent to BattleGrid' over a role=alert list prefixed 'Not understood by Grid-Commander:', and states nothing was compiled and nothing was saved. `drift` — BattleGrid's compiled post-state does not match what was submitted — renders h2 'BattleGrid would save something other than what was submitted', lists the reasons, and states no confirmation was minted. `refused` renders h2 'BattleGrid refused this change — here is why' over the compiler's reason whole, then 'Nothing was written.' as a plain sentence. `strategy-missing` and `unreadable` are the two branches that render BEFORE `head` is built — they mirror the other strategy pages, and unreadable leads back to the strategy since without a fresh read there is nothing to compose against. Gap, recorded rather than designed around: because they precede `head`, those two branches drop a carried `?problem=` entirely. `saveConditions` catches a failed apply and redirects here with the draft plus the problem, so a bounced save whose next read then fails shows the read failure and no word of the click — the same defect `the-outcome-reaches-the-person` fixed on the six ceremony pages with the shared `CarriedProblem`, which this page does not use.",
+      "current_implementation": "max-w-3xl (wider than the confirm pages) centered column, space-y-6, p-6. Six of the eight post-connection branches share a `head` fragment: h1 'Save a condition to <name>' plus the problem banner when one arrived — so listing, no-such-condition, inexpressible, drift, refused and proposal each carry the banner from one rendering rather than six. `listing` (no edit, or a malformed one) explains that BattleGrid has no per-condition tool so saving anything resubmits the whole list, then shows the current list. `no-such-condition` says the named key is not defined (role=alert, rounded-gc-2 plain border, p-3) above the list. `inexpressible` renders h2 'Part of this draft cannot be sent to BattleGrid' over a role=alert list prefixed 'Not understood by Grid-Commander:', and states nothing was compiled and nothing was saved. `drift` — BattleGrid's compiled post-state does not match what was submitted — renders h2 'BattleGrid would save something other than what was submitted', lists the reasons, and states no confirmation was minted. `refused` renders h2 'BattleGrid refused this change — here is why' over the compiler's reason whole, then 'Nothing was written.' as a plain sentence. `strategy-missing` and `unreadable` are the two branches that render BEFORE `head` is built — they mirror the other strategy pages, and unreadable leads back to the strategy since without a fresh read there is nothing to compose against. Gap, recorded rather than designed around: because they precede `head`, those two branches drop a carried `?problem=` entirely. `saveConditions` catches a failed apply and redirects here with the draft plus the problem, so a bounced save whose next read then fails shows the read failure and no word of the click — the same defect `the-outcome-reaches-the-person` fixed on the six ceremony pages with the shared `CarriedProblem`, which this page does not use. One state added: `prose-names-it`, for a compile refused because the strategy's own market-read prose references the condition by marker. It names the marker and the platform's nearest key where one was given, with BattleGrid's own sentence beneath.",
       "constraints": [
         "The whole list is the subject, never one condition — openspec/specs/strategy-authoring/spec.md:1166-1169 ('No tool writes one condition; the only path submits the whole array … A surface that spoke of writing one condition would be describing an operation the platform does not offer'). Copy and layout must keep saying what the strategy would be left defining.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
@@ -426,7 +427,7 @@
     "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert — so most branches announce two alerts when a reason rides in, the carried one first. `strategy-missing` and `unreadable` render before the shared head and announce no carried reason at all. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation; the draft travels as a query string an operator can keep, share, or edit by hand."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:48b8efcc6763aa86ed629114f563aab122f13b05a498a504427a535620192a86",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:0396c8def927263d9547f551ccbdbf3cdf59aa56b9bed9d6e4692fb2870e0172",
     "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",

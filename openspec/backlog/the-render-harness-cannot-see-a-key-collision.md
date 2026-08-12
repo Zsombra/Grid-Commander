@@ -79,3 +79,31 @@ is not the gap, it is that the gap is invisible.
 Related: [[dt-0014-acceptance-outlived-the-receipt-it-described]] — the other
 finding from this session about a check that reads as passing when it has
 stopped meaning anything.
+
+## The minimum landed 2026-08-13 — the header says what it can see
+
+The resolver's header now carries a "what this can see, and what it cannot"
+section, read before writing an assertion:
+
+**Collected** — `text`, `headings`, `links`, `values`. With the rule that
+`links` and `values` exist *because* the alternative was a green test proving
+nothing, so reachability and field contents are asserted on those, never on
+`text`.
+
+**Not collected, and not assertable here** — anything that only exists after
+reconciliation (React keys, the case that bit), anything CSS decides, anything
+the client does.
+
+And the bar for adding a collector: *a property whose absence lets a wrong page
+pass a reasonable-looking test.* That is the standard `links` met and `values`
+met, and it is what keeps this from growing into a DOM by accretion.
+
+## Half done, and the half that is left is the same as it was
+
+`values` closed the form-state hole (#162 could not have been verified without
+it). **Key collisions still need a real DOM**, and the requirement
+*A Listing Shows Every Entry It Was Given* stays knowingly uncovered.
+
+What has changed is that the gap is now written where someone meets it, rather
+than being something they discover by trusting a false green. That was always
+the minimum; it is not the fix.

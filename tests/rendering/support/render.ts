@@ -13,6 +13,45 @@
  * it would green-light a heading hidden inside the exact component it
  * skipped. The one deliberate exception is `null`/`undefined`/booleans,
  * which React itself renders as nothing.
+ *
+ * ---
+ *
+ * ## What this can see, and what it cannot
+ *
+ * Read this before writing an assertion. Twice in one day a test here passed
+ * against the broken code it was written to catch, and both times the reason
+ * was that the property under test is not carried in `text`.
+ *
+ * **Collected**, and therefore assertable:
+ *
+ * - `text` — every text node, joined
+ * - `headings` — the text of each h1–h6
+ * - `links` — every `href` reached
+ * - `values` — every `defaultValue`, `value`, and `checked`
+ *
+ * `links` and `values` exist because the alternative was a green test that
+ * proved nothing: a page that renders a label without linking it reads
+ * identically in text, and a form re-rendered from stored values reads
+ * identically to one holding what the user typed. If you are asserting about
+ * *reachability* or *what a field holds*, assert on those, never on `text`.
+ *
+ * **Not collected, and not assertable here at all:**
+ *
+ * - **Anything that only exists after reconciliation.** React `key`s are the
+ *   case that bit: two `<li>` sharing a key are two nodes in this tree and one
+ *   in the DOM, so a collision is invisible. A test for it passes whatever the
+ *   keys are — verified by reverting the fix and re-running (#194).
+ * - **Anything CSS decides** — layout, visibility, `hidden`, overflow. A
+ *   class name is a string on a prop; what it does is not here.
+ * - **Anything the client does** — effects, handlers, focus, hydration.
+ *
+ * For the first of those you need a real DOM, which this deliberately does not
+ * have. Filed as #194: the requirement "A Listing Shows Every Entry It Was
+ * Given" is knowingly uncovered because of it, and that is recorded rather
+ * than papered over with an assertion that cannot fail.
+ *
+ * If you are adding a collector, the bar is the one `links` met: a property
+ * whose absence lets a wrong page pass a reasonable-looking test.
  */
 
 interface ReactishElement {
