@@ -155,3 +155,14 @@ query-carrying redirect lands on a page that reads it, so `/connect` and
 Remaining in gap 2: the explorer subpages, the pipeline simulator, the
 other confirmations, and first tickets for agent-roster / audit-log /
 strategy-catalog.
+
+## 2026-08-12, fifth pass — the explorer subpages join whole
+
+Manifests `explorer-competitor` and `explorer-evaluation` (12 components);
+**DT-0009** implemented — the signals-disagreed sentence wears notice on
+the evaluation page. The pass also caught the border sweep's directional
+residual: 4 bare `border-l` rails, fixed as `the-rails-join-too` (lite,
+archived). The competitor page needed no ticket — every treatment arrived
+decided via the sweep. Remaining in gap 2: the pipeline simulator, the
+remaining confirmations, and first tickets for agent-roster / audit-log /
+strategy-catalog.

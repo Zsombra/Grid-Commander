@@ -93,6 +93,18 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round ten — the explorer subpages, and the sweep's residual**
+(#108 gap 2, fifth surface pass; 158 archived changes). Manifests for
+`/explorer/[agentId]` and its evaluation detail (12 components); DT-0009
+implemented — the signals-disagreed sentence wears notice (the one fact
+that says the aggregate is a compromise, previously weighted like the
+timestamp). The pass caught 4 bare `border-l` rails the `rounded border`
+sweep could not see — fixed as `the-rails-join-too` (lite, archived); a
+grep gate now finds no bare directional border anywhere. One CI wobble:
+PostgreSQL stopped between the migrate and serving gates — restarted,
+full re-run green at working tree of 579e0aa. Design lane: 11 surfaces,
+8 designed, 9/9 tickets implemented.
+
 **Round nine — the borders join the palette**
 (`the-borders-join-the-palette`, lite, archived; 157 archived changes;
 closes #155 same-day). The mechanical sweep DT-0008's precedent unblocked:

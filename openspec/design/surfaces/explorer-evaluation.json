@@ -3,19 +3,22 @@
   "title": "What it read",
   "route": "/explorer/[agentId]/evaluations/[logId]",
   "capability": "agent-comparison",
-  "status": "functional",
-  "generated_at_commit": "fe1443e",
+  "status": "designed",
+  "generated_at_commit": "579e0aa",
   "source_files": [
     "app/(app)/explorer/[agentId]/evaluations/[logId]/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
-  "viewports": ["mobile", "desktop"],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
   "data": [
     {
       "name": "detail",
-      "shape": "EvaluationDetail — score, bias, chain, attributions, signals[] | none | unreadable",
-      "source": "app.readEvaluation.execute — the public projection; ownerView/llmPartialReasoning are nulled by the platform and never rendered as placeholders"
+      "shape": "EvaluationDetail \u2014 score, bias, chain, attributions, signals[] | none | unreadable",
+      "source": "app.readEvaluation.execute \u2014 the public projection; ownerView/llmPartialReasoning are nulled by the platform and never rendered as placeholders"
     }
   ],
   "components": [
@@ -23,23 +26,39 @@
       "id": "evaluation-page",
       "role": "container",
       "purpose": "The bottom of the explorer stack: every signal one agent consulted on one candidate, and the chain the candidate then followed.",
-      "states": ["detail", "conflict", "none", "unreadable", "not-connected"],
-      "data": ["detail"],
+      "states": [
+        "detail",
+        "conflict",
+        "none",
+        "unreadable",
+        "not-connected"
+      ],
+      "data": [
+        "detail"
+      ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column: score line, the conflict sentence as plain prose when signals disagreed, the chain card, attributions, the module-grouped scorecard, back link. The none branch says the platform lists this evaluation but publishes nothing further — not a failure.",
+      "current_implementation": "max-w-3xl centered column: score line, the conflict sentence as plain prose when signals disagreed, the chain card, attributions, the module-grouped scorecard, back link. The none branch says the platform lists this evaluation but publishes nothing further \u2014 not a failure.",
       "constraints": [
         "None (the platform publishes no detail) and unreadable (the read failed) must never render alike.",
-        "No placeholder is rendered for owner-private telemetry — an empty reasoning slot would say the agent explained nothing when it was not published.",
+        "No placeholder is rendered for owner-private telemetry \u2014 an empty reasoning slot would say the agent explained nothing when it was not published.",
         "No client JS."
       ],
-      "children": ["chain", "attributions", "signals"]
+      "children": [
+        "chain",
+        "attributions",
+        "signals"
+      ]
     },
     {
       "id": "chain",
       "role": "display",
-      "purpose": "Gate → attempt → decision → execution → outcome, each stage the platform's own words, absent stages absent.",
-      "states": ["default"],
-      "data": ["detail"],
+      "purpose": "Gate \u2192 attempt \u2192 decision \u2192 execution \u2192 outcome, each stage the platform's own words, absent stages absent.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "detail"
+      ],
       "actions": [],
       "current_implementation": "One tokened card; a stage the platform did not record is absent, not empty; the execution message renders whitespace-pre-wrap, unparsed.",
       "constraints": [
@@ -52,23 +71,37 @@
       "id": "attributions",
       "role": "display",
       "purpose": "What each contributing signal was worth to the aggregate score.",
-      "states": ["present", "absent"],
-      "data": ["detail"],
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "detail"
+      ],
       "actions": [],
       "current_implementation": "Plain list, signal name or id, attribution percent, own score.",
-      "constraints": ["Rendered only when the platform published attributions."],
+      "constraints": [
+        "Rendered only when the platform published attributions."
+      ],
       "children": []
     },
     {
       "id": "signals",
       "role": "display",
-      "purpose": "Every signal consulted, module by module — the untriggered ones are the point.",
-      "states": ["grouped", "empty", "fired", "not-fired"],
-      "data": ["detail"],
+      "purpose": "Every signal consulted, module by module \u2014 the untriggered ones are the point.",
+      "states": [
+        "grouped",
+        "empty",
+        "fired",
+        "not-fired"
+      ],
+      "data": [
+        "detail"
+      ],
       "actions": [],
       "current_implementation": "Module groups with fired-counts; each row a tokened left rail (border-border-default since the-rails-join-too), Fired/Did-not-fire stated in words, the platform's sentence, indicator values in secondary text.",
       "constraints": [
-        "Untriggered signals are never filtered — what an agent looked at and dismissed is as much its strategy as what fired.",
+        "Untriggered signals are never filtered \u2014 what an agent looked at and dismissed is as much its strategy as what fired.",
         "Fired / did not fire is stated in words, never by colour alone.",
         "The per-signal sentence is the platform's, unparaphrased."
       ],
@@ -78,20 +111,40 @@
       "id": "not-connected",
       "role": "feedback",
       "purpose": "The shared turned-away page.",
-      "states": ["default"],
+      "states": [
+        "default"
+      ],
       "data": [],
-      "actions": [{ "id": "connect", "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)" }],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
       "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
-      "constraints": ["No per-cause variants."],
+      "constraints": [
+        "No per-cause variants."
+      ],
       "children": []
     }
   ],
   "flows": [
-    { "name": "Read a leader's read", "steps": ["arrive from the competitor page", "read the chain", "read what fired and what was dismissed"] }
+    {
+      "name": "Read a leader's read",
+      "steps": [
+        "arrive from the competitor page",
+        "read the chain",
+        "read what fired and what was dismissed"
+      ]
+    }
   ],
   "accessibility": {
-    "landmarks": ["main"],
-    "focus_order": ["signals"],
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "signals"
+    ],
     "notes": "Unreadable carries role=alert. Fired state legible without colour. No client JS."
   }
 }

@@ -3,48 +3,69 @@
   "title": "A competitor's record",
   "route": "/explorer/[agentId]",
   "capability": "agent-comparison",
-  "status": "functional",
-  "generated_at_commit": "fe1443e",
+  "status": "designed",
+  "generated_at_commit": "579e0aa",
   "source_files": [
     "app/(app)/explorer/[agentId]/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
-  "viewports": ["mobile", "desktop"],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
   "data": [
     {
       "name": "funnel / open / trades / evaluations",
-      "shape": "four independent PublicResult reads — value | none | unreadable, each on its own",
-      "source": "app.readCompetitor.execute — a competitor whose trades will not load still shows their funnel"
+      "shape": "four independent PublicResult reads \u2014 value | none | unreadable, each on its own",
+      "source": "app.readCompetitor.execute \u2014 a competitor whose trades will not load still shows their funnel"
     }
   ],
   "components": [
     {
       "id": "competitor-page",
       "role": "container",
-      "purpose": "What someone doing better actually does: the funnel, the holdings, the closes, the evaluations — each read standing on its own.",
-      "states": ["full", "partially-readable", "not-connected"],
-      "data": ["funnel / open / trades / evaluations"],
+      "purpose": "What someone doing better actually does: the funnel, the holdings, the closes, the evaluations \u2014 each read standing on its own.",
+      "states": [
+        "full",
+        "partially-readable",
+        "not-connected"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [],
       "current_implementation": "max-w-3xl centered column, space-y-6, p-6, four sections plus the back link. States only the public projection and says the private reasoning is withheld by the platform, not missing.",
       "constraints": [
-        "Four reads render independently — reporting the whole page unreadable when three quarters answered is the worse lie.",
+        "Four reads render independently \u2014 reporting the whole page unreadable when three quarters answered is the worse lie.",
         "Withheld and unread stay separate: the platform publishes no private reasoning by design (none), which must never render like a failed read (unreadable).",
         "Reads only.",
         "No client JS."
       ],
-      "children": ["section-note", "funnel", "open", "trades", "evaluations"]
+      "children": [
+        "section-note",
+        "funnel",
+        "open",
+        "trades",
+        "evaluations"
+      ]
     },
     {
       "id": "section-note",
       "role": "feedback",
       "purpose": "What an empty or unreadable section says, per section, so no branch renders blank and no failure speaks for a neighbour.",
-      "states": ["none", "unreadable", "absent"],
-      "data": ["funnel / open / trades / evaluations"],
+      "states": [
+        "none",
+        "unreadable",
+        "absent"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [],
       "current_implementation": "Shared helper: the empty sentence names its section; unreadable carries role=alert plus WhyNotLoaded with a per-section subject.",
       "constraints": [
-        "Each section fails on its own and says which read failed — one shared reassurance three sections up says nothing.",
+        "Each section fails on its own and says which read failed \u2014 one shared reassurance three sections up says nothing.",
         "role=alert on the unreadable branch must survive."
       ],
       "children": []
@@ -52,11 +73,17 @@
     {
       "id": "funnel",
       "role": "display",
-      "purpose": "How much it looks at versus how much it acts on — the difference between two agents with the same win rate.",
-      "states": ["value", "none", "unreadable"],
-      "data": ["funnel / open / trades / evaluations"],
+      "purpose": "How much it looks at versus how much it acts on \u2014 the difference between two agents with the same win rate.",
+      "states": [
+        "value",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [],
-      "current_implementation": "One tokened card: evaluations → decisions → entered, the two skip counters labelled apart, execution split, rates beside their counts, the result line in font-medium, top coins.",
+      "current_implementation": "One tokened card: evaluations \u2192 decisions \u2192 entered, the two skip counters labelled apart, execution split, rates beside their counts, the result line in font-medium, top coins.",
       "constraints": [
         "The two skip counters the platform names alike are labelled apart and never summed.",
         "A rate the platform did not measure renders 'not measured', never 0%.",
@@ -67,13 +94,20 @@
     {
       "id": "open",
       "role": "display",
-      "purpose": "What it is holding now — count and unrealized only, because the row shape has never been observed.",
-      "states": ["value", "none", "unreadable", "rows-unmodelled"],
-      "data": ["funnel / open / trades / evaluations"],
+      "purpose": "What it is holding now \u2014 count and unrealized only, because the row shape has never been observed.",
+      "states": [
+        "value",
+        "none",
+        "unreadable",
+        "rows-unmodelled"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [],
       "current_implementation": "Count + unrealized P&L; when rows arrive they are declared unmodelled in a sentence rather than guessed at (see backlog: open-position-rows-are-unobserved).",
       "constraints": [
-        "Position rows are carried but never rendered until their shape is observed on a live one — an invented rendering is worse than a stated absence."
+        "Position rows are carried but never rendered until their shape is observed on a live one \u2014 an invented rendering is worse than a stated absence."
       ],
       "children": []
     },
@@ -81,12 +115,19 @@
       "id": "trades",
       "role": "display",
       "purpose": "What it closed: the platform's own verdict per trade, never one derived from the figure.",
-      "states": ["value", "none", "unreadable", "truncated"],
-      "data": ["funnel / open / trades / evaluations"],
+      "states": [
+        "value",
+        "none",
+        "unreadable",
+        "truncated"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [],
       "current_implementation": "Tokened cards: market, direction, net, the platform's win/loss verdict, close reason, entries/exits, ROE, leverage, conviction, duration. 'Showing N of M' when the platform holds more.",
       "constraints": [
-        "The win/loss verdict is the platform's — never derived from the P&L figure.",
+        "The win/loss verdict is the platform's \u2014 never derived from the P&L figure.",
         "Truncation is stated ('Showing N of M'), never silent."
       ],
       "children": []
@@ -94,15 +135,25 @@
     {
       "id": "evaluations",
       "role": "display",
-      "purpose": "What it evaluated, every row linking to its detail — including rows whose detail may not be published.",
-      "states": ["value", "none", "unreadable", "truncated"],
-      "data": ["funnel / open / trades / evaluations"],
+      "purpose": "What it evaluated, every row linking to its detail \u2014 including rows whose detail may not be published.",
+      "states": [
+        "value",
+        "none",
+        "unreadable",
+        "truncated"
+      ],
+      "data": [
+        "funnel / open / trades / evaluations"
+      ],
       "actions": [
-        { "id": "open", "effect": "Each row links to /explorer/[agentId]/evaluations/[logId]" }
+        {
+          "id": "open",
+          "effect": "Each row links to /explorer/[agentId]/evaluations/[logId]"
+        }
       ],
       "current_implementation": "Tokened cards: coin (linked), score against bar, terminal status, signal count, bias, read direction, source, the conflict sentence in words, timestamp.",
       "constraints": [
-        "Every row is offered, including ones whose detail the platform may not publish — hiding a link on a prediction guesses on the reader's behalf; the detail page says plainly when nothing is there.",
+        "Every row is offered, including ones whose detail the platform may not publish \u2014 hiding a link on a prediction guesses on the reader's behalf; the detail page says plainly when nothing is there.",
         "Truncation is stated, never silent."
       ],
       "children": []
@@ -111,20 +162,40 @@
       "id": "not-connected",
       "role": "feedback",
       "purpose": "The shared turned-away page.",
-      "states": ["default"],
+      "states": [
+        "default"
+      ],
       "data": [],
-      "actions": [{ "id": "connect", "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)" }],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
       "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
-      "constraints": ["No per-cause variants."],
+      "constraints": [
+        "No per-cause variants."
+      ],
       "children": []
     }
   ],
   "flows": [
-    { "name": "Learn from a leader", "steps": ["arrive from the field", "read the funnel", "open an evaluation to see what it actually read"] }
+    {
+      "name": "Learn from a leader",
+      "steps": [
+        "arrive from the field",
+        "read the funnel",
+        "open an evaluation to see what it actually read"
+      ]
+    }
   ],
   "accessibility": {
-    "landmarks": ["main"],
-    "focus_order": ["evaluations"],
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "evaluations"
+    ],
     "notes": "Per-section unreadable states carry role=alert. No client JS."
   }
 }
