@@ -1,0 +1,20 @@
+# Line endings are the repository's, not the checkout's.
+#
+# Git's `core.autocrlf` gave this repository CRLF working trees on Windows,
+# and three separate guards then failed on a clean checkout: two matched
+# `\n` against `\r\n` and read nothing, and esbuild refused to parse a CRLF
+# `.mjs` at all ("Invalid or unexpected token", pointing at a comment) — so
+# `tests/tools/mutate-guard.test.ts` collected zero tests. Nineteen failures
+# about the platform, none about the product, on a suite whose whole job is
+# telling those apart. See backlog `the-suite-assumes-a-posix-checkout`.
+#
+# The blob content is already LF; this only stops it being converted on the
+# way out, so no committed file changes.
+* text=auto eol=lf
+
+# Binary, and must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

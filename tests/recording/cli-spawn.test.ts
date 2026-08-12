@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
+import { NODE, TSX_CLI } from '../support/platform.js';
 
 /**
  * The recorder CLI's refusals, exercised on the real process.
@@ -26,7 +27,7 @@ const DUMMY_ENV = {
 };
 
 function run(args: readonly string[], env: NodeJS.ProcessEnv) {
-  const result = spawnSync('npx', ['tsx', CLI, ...args], {
+  const result = spawnSync(NODE, [TSX_CLI, CLI, ...args], {
     env,
     encoding: 'utf8',
     timeout: 60_000,

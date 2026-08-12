@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { readText } from '../support/source-tree.js';
+import { NODE, TSC_CLI, VITEST_CLI } from '../support/platform.js';
 
 /**
  * The live probes are reached deliberately, or not at all.
@@ -38,8 +40,8 @@ function probeFiles(): string[] {
 /** What vitest itself selects for a config. Its resolution, not our reading of it. */
 function selects(config: string): string[] {
   const out = execFileSync(
-    'npx',
-    ['vitest', 'list', '--filesOnly', '--config', config],
+    NODE,
+    [VITEST_CLI, 'list', '--filesOnly', '--config', config],
     { encoding: 'utf8', timeout: 120_000 },
   );
   return out
@@ -96,7 +98,7 @@ describe('the probes are still compiled', () => {
      * `tsc --showConfig` is TypeScript's own resolution of include/exclude —
      * the same list `npm run typecheck` compiles.
      */
-    const shown = execFileSync('npx', ['tsc', '--showConfig'], {
+    const shown = execFileSync(NODE, [TSC_CLI, '--showConfig'], {
       encoding: 'utf8',
       timeout: 120_000,
     });
@@ -110,7 +112,7 @@ describe('the probes are still compiled', () => {
 });
 
 describe('the verification run names what it did not do', () => {
-  const ci = readFileSync('scripts/ci.sh', 'utf8');
+  const ci = readText('scripts/ci.sh');
 
   /**
    * Each of these gates has a skip arm, and the skip arm is the requirement.

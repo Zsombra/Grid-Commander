@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * The architecture, asserted.
@@ -16,7 +17,7 @@ function filesUnder(dir: string, ext = '.ts'): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) out = out.concat(filesUnder(full, ext));
-    else if (full.endsWith(ext)) out.push(full);
+    else if (full.endsWith(ext)) out.push(slashed(full));
   }
   return out;
 }
