@@ -1,7 +1,9 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-11  
-**State**: green (2121 vitest + db + harness suites; `freshness`/`live`/`serving` gates skip without a key or opt-in; further vitest are key-gated live probes). No active changes. 25 open backlog items — the three newest (#145–#147) were the session's parting concerns, and **#145 closed the same day it was answered: the recorder now runs on the operator's Windows machine** — hourly Scheduled Task, unattended fire proven (`LastTaskResult : 0`), 20 deployments at 84 signals per capture. **The record starts 2026-08-11**; the 2026-08-07 → 2026-08-11 gap is permanent and documented, and **#94's gate moves from zero to accumulating** — it needs days of depth before analysis says anything. The setup surfaced #152 — `tsx` was not a dependency, so `npx tsx` prompted for a download inside unattended runs — **closed the same evening** by `tsx-is-a-dependency` (lite, archived): tsx pinned in `devDependencies`, all six gates green. PRs #8–#150 merged except **#82**, another session's branch-reconciliation record, still open as its draft — the 2026-08-11 evening merge round landed #148 (dead agent fields retired), #149 (first radar deployments through the deploy surface), #150 (trade-level policy readable, closing the last P1) and #151 (this day's session records), each reviewed and gated locally before merging. **The surface record is v17.2.0**, re-probed 2026-08-11 — v17 redesigned `positionManagement` (R-multiple break-even, giveback trailing; four fields out, two in) under an unmoved tool count, and the strategy vocabulary's values are now a recorded, gate-compared artifact. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply (retested against v16); since #150 the strategy detail page reads those values and says they cannot be edited, which closed the item as a product concern and left the inertness where it belongs, upstream. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
+**Date**: 2026-08-12  
+**State**: green (2136 vitest + 85 db + 243 harness; full `./scripts/ci.sh` with `DATABASE_URL` + `CI_SERVING=1` green on the merged head). **The 2026-08-12 session worked the ticket backlog in twelve gated rounds** (PR #154, squashed as `1052adb`; close-out as #159): a read-only probe round refreshed ten question-items against live v17.2.0 (#107's fund-allocation disagreement reproduced on both agents at once; #146's churn at ~120/h plus `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` — **the account's equity, $30.14, sits under the $33.33 floor its smallest position needs, so Undertow is benched on new coins until funded or resized**; the agent slot cap became readable, 3/3 used). **Three real bugs fixed**: `/connect` dropped the OAuth callback's `?declined=`/`?error=` messages (spec scenario *The user declines* was half-implemented); `/pending` dropped a refused agree's reason **and** the change-was-made-but-already-closed warning; a sweep confirmed those were the only two dropped-redirect instances. **The metric workbench reads the declared grammar** (standard, verified): `REL_TIMEFRAMES` deleted, timeframes travel tagged, controls offered declared-or-withheld — closed #115. **The design lane went product-wide**: 13 surfaces (10 designed), DT-0003–DT-0010 implemented — the 44px tap-target token (`size.control.min`), consequence/notice/quiet/danger roles on every load-bearing sentence, the 86-box border sweep (#155), the four rails, and twelve refusal banners unified (#156) — #108 closed with its substance done. The probe now records `call_failed_code` (#114 Fix #3). Parting filings: **#157** (the design lane's record-keeping tail), **#158** (this reconciliation), **#153** (submit pending-feedback — needs the operator's client-JS call). Issues closed: #108, #115, #155, #156.
+
+The 2026-08-11 state, for lineage: green (2121 vitest + db + harness suites; `freshness`/`live`/`serving` gates skip without a key or opt-in; further vitest are key-gated live probes). No active changes. 25 open backlog items — the three newest (#145–#147) were the session's parting concerns, and **#145 closed the same day it was answered: the recorder now runs on the operator's Windows machine** — hourly Scheduled Task, unattended fire proven (`LastTaskResult : 0`), 20 deployments at 84 signals per capture. **The record starts 2026-08-11**; the 2026-08-07 → 2026-08-11 gap is permanent and documented, and **#94's gate moves from zero to accumulating** — it needs days of depth before analysis says anything. The setup surfaced #152 — `tsx` was not a dependency, so `npx tsx` prompted for a download inside unattended runs — **closed the same evening** by `tsx-is-a-dependency` (lite, archived): tsx pinned in `devDependencies`, all six gates green. PRs #8–#150 merged except **#82**, another session's branch-reconciliation record, still open as its draft — the 2026-08-11 evening merge round landed #148 (dead agent fields retired), #149 (first radar deployments through the deploy surface), #150 (trade-level policy readable, closing the last P1) and #151 (this day's session records), each reviewed and gated locally before merging. **The surface record is v17.2.0**, re-probed 2026-08-11 — v17 redesigned `positionManagement` (R-multiple break-even, giveback trailing; four fields out, two in) under an unmoved tool count, and the strategy vocabulary's values are now a recorded, gate-compared artifact. **Grid-Commander is an MCP server** — `docs/MCP_SERVER.md`; any model the operator runs can read the product, and none can write through it. The report-table grammar is mapped end to end in `docs/REPORT_TABLE_GRAMMAR.md`. **Phase 1 (strategy-maker) is complete**; **Phase 2 reads both halves of the record** — what an agent did with the money (`/agents/[id]/trades`) and why it did or didn't trade (`/agents/[id]/pipeline`) — and now asks the question forward: **`/agents/[id]/qualification`** screens coins against an agent's gates before it acts, and **`/agents/[id]`** now leads with what has actually been stopping it. v14 had moved the tool count for the first time ever (110 → 114) and v15 moved the trade-level policy from the agent onto the strategy — which the platform declares and still does not apply (retested against v16); since #150 the strategy detail page reads those values and says they cannot be edited, which closed the item as a product concern and left the inertness where it belongs, upstream. **The signal recorder ships** (13th capability, 2026-08-07): `bin/grid-commander-record.ts` captures what every signal says, forward — start its cron on day one, because the platform serves current readings only and a gap can never be backfilled. **A closed trade tells its story** (2026-08-08): `/agents/[id]/trades/[logId]` draws the platform's frozen chart with the levels *as placed* and lists every move position management made — the trail where a trailed stop is finally visible acting on real money.
 
 ---
 
@@ -20,13 +22,13 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **149** |
-| Vitest tests | **2123** (+ key-gated live) + 85 db |
+| Changes (archived) | **161** |
+| Vitest tests | **2136** (+ key-gated live) + 85 db |
 | Harness tests (Python) | 243 |
 | Active changes | none |
-| Open backlog items | **21** |
-| Design tickets open | 0 |
-| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #150 merged |
+| Open backlog items | **22** |
+| Design tickets open | 0 (DT-0001–DT-0010 all implemented; 13 surfaces, 10 designed) |
+| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #159 merged |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** — the last one closed when v15's trade-level policy became readable (#150) |
 
 ### Read this before anything else
@@ -215,6 +217,13 @@ filed and closed the same session by `the-agent-write-follows-v14`.)
 
 ## Start Here — Where The Next Session Picks Up
 
+**After 2026-08-12 the sharpest picks are:** the operator's pending decisions
+(#153 submit feedback needs a client-JS call; #146 churn verdict — and the
+equity-under-floor fact is the operator's knob); **#94** once the recorder has
+about a week of depth (it captures hourly on the operator's machine since
+2026-08-11); **#157**, the design lane's routine record-keeping tail. The
+2026-08-12 journal entries are per-round and complete.
+
 Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
 re-probing before any other work is trustworthy. That is fast: the freshness
@@ -225,7 +234,7 @@ in parallel at the real account — see the journal entry for that day.
 
 ### Everything proposed is built. Most of the backlog waits on other people.
 
-All 149 changes are archived, including `the-model-can-propose-and-only-a-human-agrees`
+All 161 changes are archived, including `the-model-can-propose-and-only-a-human-agrees`
 (2026-08-06): a model can record an intent through the MCP server, and only a
 human — at `/pending/<id>`, through the ordinary describe→confirm→perform
 ceremony, against the account as it is *then* — can perform it.
@@ -575,4 +584,4 @@ The pipeline spec is in `.claude/` — skills, tools, references, commands.
 
 ## Design System
 
-`openspec/design/system.json` is the token source. `tailwind.theme.json` is generated from it by `tools/generate-theme.mjs`. Both design tickets (DT-0001 global tokens, DT-0002 strategy editor) are implemented and closed. The design layer is clean.
+`openspec/design/system.json` is the token source. `tailwind.theme.json` and `app/tokens.css` are generated from it by `tools/generate-theme.mjs` — since DT-0003 that includes the `size` group (`size.control.min`, the 44px tap-target floor, worn as `min-h-control` and asserted end-to-end in `tests/architecture/controls.test.ts`). **Ten tickets (DT-0001–DT-0010) are implemented** across 13 surfaces (10 `designed`): the semantic roles — `consequence` (what an action reaches), `notice` (advisory, never failure), `quiet` (absence stated), `danger` (a bounced write, behind a semibold "Refused:" prefix) — now dress every load-bearing sentence product-wide, no box or rail wears an untokened border (the 2026-08-12 sweeps), and `ghost`/`danger` button variants stay deliberately undefined by recorded decision until a surface renders them. The remaining record-keeping (eleven ceremony manifests, first tickets for `agent-roster`/`audit-log`/`strategy-catalog`) is #157. The design layer is clean.
