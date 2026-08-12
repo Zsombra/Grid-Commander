@@ -93,6 +93,14 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round seven — `/pending` through the design lane** (#108 gap 2, third
+surface pass). Manifests for both routes (`pending-queue`,
+`pending-proposal`); DT-0007 implemented — consequence/notice/quiet roles
+for the proposal page's three load-bearing sentences, zero copy changes.
+The queue needed no ticket: its banners landed pre-roled by round six.
+Full local CI green at b1e2153. Design lane: 8 surfaces, 5 designed, 7/7
+tickets implemented.
+
 **Round five — `/connect` through the design lane** (#108 gap 2, second
 surface). New manifest `connect.json` (7 components; the declined/failure
 banners recorded with their roles as constraints), then DT-0005 — the

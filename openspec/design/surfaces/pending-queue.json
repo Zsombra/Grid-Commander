@@ -3,29 +3,32 @@
   "title": "Proposal queue",
   "route": "/pending",
   "capability": "mcp-control",
-  "status": "functional",
-  "generated_at_commit": "f0098ac",
+  "status": "designed",
+  "generated_at_commit": "b1e2153",
   "source_files": [
     "app/(app)/pending/page.tsx",
     "src/presentation/components/proposal-queue.tsx",
     "src/presentation/require-connection.tsx"
   ],
-  "viewports": ["mobile", "desktop"],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
   "data": [
     {
       "name": "result",
-      "shape": "ProposalsResult — { actionable[], stale[], resolved[] } | empty | unreadable",
+      "shape": "ProposalsResult \u2014 { actionable[], stale[], resolved[] } | empty | unreadable",
       "source": "app.readProposals.execute"
     },
     {
       "name": "problem",
       "shape": "string | null",
-      "source": "searchParams — the agree action's aftermath that needs the operator's eyes (a write that succeeded against an already-closed proposal)"
+      "source": "searchParams \u2014 the agree action's aftermath that needs the operator's eyes (a write that succeeded against an already-closed proposal)"
     },
     {
       "name": "note",
       "shape": "string | null",
-      "source": "searchParams — advisory: a decline that found the proposal already resolved; nothing was written"
+      "source": "searchParams \u2014 advisory: a decline that found the proposal already resolved; nothing was written"
     }
   ],
   "components": [
@@ -33,66 +36,112 @@
       "id": "pending-page",
       "role": "container",
       "purpose": "Everything a model has suggested for this account, and the standing promise that none of it has touched BattleGrid.",
-      "states": ["queue", "queue-with-problem", "queue-with-note", "not-connected"],
-      "data": ["result", "problem", "note"],
+      "states": [
+        "queue",
+        "queue-with-problem",
+        "queue-with-note",
+        "not-connected"
+      ],
+      "data": [
+        "result",
+        "problem",
+        "note"
+      ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column, space-y-4, p-6. The problem banner (danger, role=alert) and note banner (notice, role=status) render above the explainer — landed by a-bounced-agree-says-why.",
+      "current_implementation": "max-w-3xl centered column, space-y-4, p-6. The problem banner (danger, role=alert) and note banner (notice, role=status) render above the explainer \u2014 landed by a-bounced-agree-says-why.",
       "constraints": [
-        "The explainer sentence — a model can suggest but cannot make a change, nothing here has touched the account — is spec-adjacent copy and stays.",
-        "problem wears danger with role=alert; note wears notice with role=status — the mcp-control scenario 'The change was made but the proposal was already closed' forbids dropping either in a silent redirect.",
+        "The explainer sentence \u2014 a model can suggest but cannot make a change, nothing here has touched the account \u2014 is spec-adjacent copy and stays.",
+        "problem wears danger with role=alert; note wears notice with role=status \u2014 the mcp-control scenario 'The change was made but the proposal was already closed' forbids dropping either in a silent redirect.",
         "No client JS."
       ],
-      "children": ["problem", "note", "proposal-queue"]
+      "children": [
+        "problem",
+        "note",
+        "proposal-queue"
+      ]
     },
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "The agree aftermath the operator must see — the account moved even though this page looks routine.",
-      "states": ["present", "absent"],
-      "data": ["problem"],
+      "purpose": "The agree aftermath the operator must see \u2014 the account moved even though this page looks routine.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
       "actions": [],
       "current_implementation": "Danger role (rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary), role=alert, message verbatim.",
-      "constraints": ["role=alert must survive.", "The message renders verbatim."],
+      "constraints": [
+        "role=alert must survive.",
+        "The message renders verbatim."
+      ],
       "children": []
     },
     {
       "id": "note",
       "role": "feedback",
       "purpose": "Advisory aftermath: nothing was written, and the operator should merely know.",
-      "states": ["present", "absent"],
-      "data": ["note"],
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "note"
+      ],
       "actions": [],
-      "current_implementation": "Notice role, role=status; the known value renders in words ('This proposal was already resolved — nothing was written to the account'), unknown values verbatim.",
-      "constraints": ["Wears notice, never danger — nothing failed.", "role=status must survive."],
+      "current_implementation": "Notice role, role=status; the known value renders in words ('This proposal was already resolved \u2014 nothing was written to the account'), unknown values verbatim.",
+      "constraints": [
+        "Wears notice, never danger \u2014 nothing failed.",
+        "role=status must survive."
+      ],
       "children": []
     },
     {
       "id": "proposal-queue",
       "role": "display",
       "purpose": "Three groups kept apart: waiting for a decision, went stale unread, already decided.",
-      "states": ["with-proposals", "empty", "unreadable", "nothing-actionable"],
-      "data": ["result"],
+      "states": [
+        "with-proposals",
+        "empty",
+        "unreadable",
+        "nothing-actionable"
+      ],
+      "data": [
+        "result"
+      ],
       "actions": [],
       "current_implementation": "Sectioned lists in rounded-gc-2 border-border-default boxes; group headings at text-base font-medium. Unreadable renders its own heading plus 'this is not the same as having none'; empty says a model can suggest and none has.",
       "constraints": [
-        "Unreadable and empty must never be the same page — 'a failed read reported as an empty queue is the lie this product refuses everywhere else'.",
-        "Stale is shown, never deleted — 'a model suggested stopping this agent three days ago and nobody looked' must be findable.",
+        "Unreadable and empty must never be the same page \u2014 'a failed read reported as an empty queue is the lie this product refuses everywhere else'.",
+        "Stale is shown, never deleted \u2014 'a model suggested stopping this agent three days ago and nobody looked' must be findable.",
         "Only an actionable row links; a stale or resolved row offers no way to open a describe nobody can agree to."
       ],
-      "children": ["row"]
+      "children": [
+        "row"
+      ]
     },
     {
       "id": "row",
       "role": "display",
-      "purpose": "One proposal: what it would do, to what, when — and a link only if it can still be decided.",
-      "states": ["actionable", "inert"],
-      "data": ["result"],
+      "purpose": "One proposal: what it would do, to what, when \u2014 and a link only if it can still be decided.",
+      "states": [
+        "actionable",
+        "inert"
+      ],
+      "data": [
+        "result"
+      ],
       "actions": [
-        { "id": "open", "effect": "Actionable rows only: navigates to /pending/[id], which runs a fresh describe" }
+        {
+          "id": "open",
+          "effect": "Actionable rows only: navigates to /pending/[id], which runs a fresh describe"
+        }
       ],
       "current_implementation": "flex row with border-t separators: operation label (underlined link when actionable), target, recorded-at timestamp in UTC, status suffix when not open.",
       "constraints": [
-        "The actionable/inert distinction must not rest on the link styling alone — inert rows carry their status in words."
+        "The actionable/inert distinction must not rest on the link styling alone \u2014 inert rows carry their status in words."
       ],
       "children": []
     },
@@ -100,21 +149,48 @@
       "id": "not-connected",
       "role": "feedback",
       "purpose": "The shared turned-away page.",
-      "states": ["default"],
+      "states": [
+        "default"
+      ],
       "data": [],
-      "actions": [{ "id": "connect", "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)" }],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
       "current_implementation": "Shared NotConnected component; treatment owned by DT-0006 on agent-archive-confirm.",
-      "constraints": ["No per-cause variants."],
+      "constraints": [
+        "No per-cause variants."
+      ],
       "children": []
     }
   ],
   "flows": [
-    { "name": "Review what a model suggested", "steps": ["open /pending", "read the three groups", "open an actionable proposal"] },
-    { "name": "The aftermath returns here", "steps": ["agree or decline on a proposal", "redirect lands with problem= or note=", "the banner says what happened before the queue renders"] }
+    {
+      "name": "Review what a model suggested",
+      "steps": [
+        "open /pending",
+        "read the three groups",
+        "open an actionable proposal"
+      ]
+    },
+    {
+      "name": "The aftermath returns here",
+      "steps": [
+        "agree or decline on a proposal",
+        "redirect lands with problem= or note=",
+        "the banner says what happened before the queue renders"
+      ]
+    }
   ],
   "accessibility": {
-    "landmarks": ["main"],
-    "focus_order": ["row"],
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "row"
+    ],
     "notes": "problem carries role=alert, note role=status. No client JS."
   }
 }

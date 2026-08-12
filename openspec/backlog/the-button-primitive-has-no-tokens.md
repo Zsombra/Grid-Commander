@@ -131,3 +131,15 @@ by DT-0001's strategy-not-found precedent, inherited by every authenticated
 page). Both implemented. Remaining in gap 2: `/pending`, `/explorer`, the
 pipeline simulator, the other confirmations, and tickets for the three
 surfaces still `functional` (agent-roster, audit-log, strategy-catalog).
+
+## 2026-08-12, third pass — `/pending` joined whole
+
+Both routes surveyed (`pending-queue`, `pending-proposal` — 13 components
+between them, the fresh problem/note banners recorded with their roles as
+constraints) and **DT-0007** implemented: the proposal page's consequence
+sentence wears consequence, the departs warning wears notice, the
+nothing-would-change conclusion wears quiet. The queue needed no ticket —
+its banners landed pre-roled by `a-bounced-agree-says-why` and its lists
+were already tokened; recorded as `designed` on that basis. Remaining in
+gap 2: `/explorer`, the pipeline simulator, the other confirmations, and
+first tickets for agent-roster / audit-log / strategy-catalog.
