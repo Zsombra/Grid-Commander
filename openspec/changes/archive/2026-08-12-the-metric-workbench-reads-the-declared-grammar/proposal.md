@@ -25,7 +25,9 @@ deferred only to bound that change's blast radius.
   and no build-time list classifies it.
 - The timeframe control becomes a select over the declaration's own values;
   `bars`, `ordering` and `side` gain the same declared-or-withheld controls the
-  section editor offers. The `Declared` select and `timeframeOptions` move from
+  section editor offers, and the chained-transform text input the section
+  editor already carries is offered too — the page parsed all four off the URL
+  while offering none. The `Declared` select and `timeframeOptions` move from
   the section page into one shared presentation module both pages import.
 - A form that does not describe a column renders the composer's own problems
   and states nothing was sent — same treatment as the section editor.

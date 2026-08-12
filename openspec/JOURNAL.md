@@ -40,6 +40,22 @@ simulator and remaining confirmations have no manifests/tickets.
 (pending feedback needs a client-boundary decision). #94 still waits on
 recorder depth.
 
+**Same session, round two — the metric workbench reads the declared
+grammar** (change of the same name, standard track, verified and archived
+same day; 149 → 150 archived changes). The metric page's `REL_TIMEFRAMES`
+— the last platform vocabulary spelled into source, and a fixed-list
+classifier the enumerated-control requirement forbids — is deleted. The
+page reads its form through the shared `columnFromQuery` (timeframes travel
+tagged; a bare `tf=anchor` from an old URL degrades to the stated problem,
+never a misfile), offers timeframe/bars/ordering/side declared-or-withheld
+plus the chained input, and `ReadMetricQuery` carries `columnControls` on
+the metric outcome. `Declared`/`timeframeOptions` extracted to
+`src/presentation/components/declared.tsx`, both column surfaces import it.
+The requirement's reach is now stated in the spec as every column-composing
+surface, with two new scenarios. Closed #115 (`v5-surface-additions-
+unconsumed`) — its residual was exactly this; the rest were records.
+Gates: typecheck, lint, 2130 vitest, build.
+
 **Watch out**: `min-h-11` must not come back — the controls test forbids
 it by name. The WEARS_BUTTON scan now accepts the composed template form
 (`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's
