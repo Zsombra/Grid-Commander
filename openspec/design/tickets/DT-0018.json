@@ -1,0 +1,63 @@
+{
+  "id": "DT-0018",
+  "surface": "agent-rebind-confirm",
+  "targets": [
+    "consequence",
+    "rebind-confirm"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The rebind confirmation's consequence takes the consequence role — the heaviest blast radius in the product wearing the lightest box.",
+  "rationale": "Rebinding replaces an agent's whole materialized configuration: context modules, signal rules, prose, timeframe. The platform's own tool description calls it destructive and says 'this is not a merge'. That sentence is the single most consequential string this product renders, and it sits in `rebind-confirm.tsx` in `border border-border-default` — the anonymous box DT-0004 retired precisely because a consequence rendered as one more paragraph gets skimmed. Nothing else about this component changes: the buttons already come from the shared constants, and the submit stays accent per DT-0002 (the weight belongs on the block, not on a hazard-coloured control).",
+  "design": {
+    "layout": "Unchanged in order; the action row stacks under the tablet breakpoint and sits inline above it.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "danger_bg": "color.danger.subtle",
+      "danger_border": "color.danger.default",
+      "block_radius": "radius.2",
+      "block_padding": "space.4",
+      "row_gap": "space.3",
+      "text": "color.text.primary",
+      "breakpoint": "breakpoint.tablet"
+    },
+    "states": {
+      "default": {
+        "content": "consequence: the block takes the consequence role — color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, color.text.primary. role=alert stays; the destination name, its revision, and the replacement sentence all stay verbatim. rebind-confirm: the action row becomes a column at space.3 gap turning to a wrapped row at breakpoint.tablet, both controls full width below it."
+      }
+    },
+    "responsive": {
+      "mobile": "Buttons stacked, each full width, each at the size.control.min floor.",
+      "desktop": "Inline row, unchanged from today."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The consequence block renders on color.consequence.subtle with a 1px color.consequence.border border at radius.2, and keeps role=alert",
+    "The destination's platform-supplied name and revision still render inside the block, verbatim",
+    "At a 320px viewport the submit and cancel are stacked, each full width, each at least size.control.min tall",
+    "At tablet width and above the two controls sit inline as they do today",
+    "The submit remains accent-styled, never danger — DT-0002's ruling, restated in control.ts",
+    "Zero copy changes anywhere on the component",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog 166. Applies DT-0004's consequence role to the component with the product's largest blast radius."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

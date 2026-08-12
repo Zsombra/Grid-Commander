@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "cdecf31",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/plan-review.tsx",
@@ -62,8 +62,11 @@
           "effect": "Server action: applies the reviewed plan exactly as compiled, reconfigures bound agents, redirects to /strategies"
         }
       ],
-      "current_implementation": "Server component with eight render branches, each a full-page <main>. Page headings at text-2xl (raised from xl when DT-0002 showed h1 and the panel h2 the same size). The compose branch is a method=get form carrying the tagline input AND a sections checklist grouped by platform category, with the platform's preview limits sentence when published, and hidden inputs round-tripping sections the vocabulary does not recognise. A 'Back to <strategy>' link is held once and rendered on every branch. The compile submit wears BUTTON_SECONDARY deliberately — the only primary in this flow is the review's Apply. Form treatments come from the CONTROL/LABEL/BUTTON_* constants in control.ts.",
+      "current_implementation": "Server component with eight render branches, each a full-page <main>. Page headings at text-2xl (raised from xl when DT-0002 showed h1 and the panel h2 the same size). The compose branch is a method=get form carrying the tagline input AND a sections checklist grouped by platform category, with the platform's preview limits sentence when published, and hidden inputs round-tripping sections the vocabulary does not recognise. A 'Back to <strategy>' link is held once and rendered on the five post-read branches. The compile submit wears BUTTON_SECONDARY deliberately — the only primary in this flow is the review's Apply. Form treatments come from the CONTROL/LABEL/CHECKBOX/BUTTON_* constants in control.ts. DT-0015 landed on this page and closed the needs-redesign it was carrying: the compose branch's bound-agent sentence now wears the same clothes it wears on the review — rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 when one or more agents would be reconfigured, an unchanged plain `mt-1 text-sm font-medium` sentence when the count is zero; `compile-rejected` renders BattleGrid's reason on border-danger-default/bg-danger-subtle with role=alert kept and 'Nothing was changed.' on border-quiet-border/bg-quiet-subtle beside it (absence committed, never sharing danger's palette), its two links keeping their order and text-link treatment; `vocabulary-unavailable` renders its explanation on border-notice-border/bg-notice-subtle with role=alert kept; and the single exits on strategy-not-found, strategy-unreadable and vocabulary-unavailable are anchors wearing BUTTON_SECONDARY rather than underlined text. `strategy-unreadable` still shows no reason — the read result carries none up to this page; that is behavior and is tracked as backlog `strategy-unreadable-arrives-without-a-reason`, deliberately not restyled around.",
       "constraints": [
+        "The zero-agent and one-or-more-agent forms of the compose blast radius must stay visually different — DT-0015 made the reached case a consequence block and left the zero case a plain sentence precisely because they are different acts, and flattening them back to one treatment loses that.",
+        "`compile-rejected`'s 'Nothing was changed.' must not be pulled into the reason's palette — danger and quiet sit adjacent here on purpose (system principle: absence gets the same visual commitment as a warning, without borrowing danger's colour).",
+        "`vocabulary-unavailable` takes notice, not danger — it is a refusal to proceed, not a failed attempt (DT-0004's refusal-to-mint precedent); nothing on it may be styled as retryable.",
         "The compile control must keep saying what it does and does not do — 'Compile — see what this would do, without doing it'. Compiling is effect-free by platform design (openspec/specs/strategy-authoring/spec.md:34-37, 'Compiling MUST NOT alter a strategy, and the interface MUST NOT present compiling and applying as equivalent actions')",
         "The compile submit is secondary on purpose — two accent buttons in one journey would put the same weight on looking and on doing (openspec/specs/strategy-authoring/spec.md:50-54, 'applying is presented as the act with consequences and compiling as the act without'). A design must not promote it to primary",
         "The bound-agent count must appear above the fields on the compose branch, before the user edits — not only on the review",
@@ -72,7 +75,7 @@
         "strategy-unreadable must stay distinguishable from strategy-not-found — openspec/specs/strategy-authoring/spec.md:329-332 ('the user is told it could not be loaded AND this is distinguished from a strategy that does not exist')",
         "compile-rejected must keep the sentence 'Nothing was changed.' — after a failure the user's first question is whether it was partial. BattleGrid's reason is shown verbatim and usually names what to fix, so 'Compose a different change' is offered before the way back",
         "review-apply-refused still renders the full review; the refusal reason usually names what to change, and hiding the review would strand the user",
-        "The 'Back to <strategy>' link must survive on every branch — the page once rendered no way back to the strategy being edited"
+        "The 'Back to <strategy>' link must survive on every branch that has a strategy to go back to — the page once rendered no way back to the strategy being edited. The three pre-read branches cannot name one and offer a BUTTON_SECONDARY exit to the roster or the strategy id instead (DT-0015)"
       ],
       "children": [
         "tagline",
@@ -119,8 +122,10 @@
           "effect": "Checks or unchecks a section; nothing happens until compile"
         }
       ],
-      "current_implementation": "A fieldset of native checkboxes grouped into sub-fieldsets by the platform's categories (legend at text-xs uppercase), with templates the platform returned without a category in a trailing ungrouped block. Sections the strategy currently includes are pre-checked. Above the boxes: a pointer to the section library ('What each section reads … is in the section library'). Sections the strategy contains that the vocabulary does not recognise ride as hidden inputs so a compile round-trips them unchanged.",
+      "current_implementation": "A fieldset of native checkboxes grouped into sub-fieldsets by the platform's categories (legend at text-xs uppercase), with templates the platform returned without a category in a trailing ungrouped block. Sections the strategy currently includes are pre-checked. Above the boxes: a pointer to the section library ('What each section reads … is in the section library'). Sections the strategy contains that the vocabulary does not recognise ride as hidden inputs so a compile round-trips them unchanged. Since DT-0015 each box wears the shared `CHECKBOX` constant from control.ts — `accent-accent-default`, accent-color and nothing else, so the browser keeps drawing the box and its checked/indeterminate/disabled/forced-colors states — and each label row is `flex min-h-control items-center gap-2 text-sm tablet:min-h-0`: the 44px tap-target floor on touch, the previous density back from the 768px `tablet` breakpoint up. Both the grouped and the ungrouped block carry the identical row and box treatment.",
       "constraints": [
+        "The checkbox treatment is `CHECKBOX` in control.ts and is accent-color only by decision (DT-0015) — a design that replaces the native box has to re-implement four states the browser already renders correctly, including forced-colors",
+        "The 44px row floor is mobile-only on purpose — `min-h-control` with `tablet:min-h-0` above 768px; a design must not drop the touch floor, and must not push the desktop rows to 44px either, since DT-0015 explicitly preserved desktop density",
         "Current sections are pre-selected — openspec/specs/strategy-authoring/spec.md:355-359 ('each section the strategy currently includes is shown as selected AND available sections the strategy does not currently include are shown as deselected')",
         "Grouping follows the categories BattleGrid returns — openspec/specs/strategy-authoring/spec.md:361-365; the list is discovered at edit time, never fixed at build time (spec.md:339-343), so a design cannot assume a stable set or count of groups",
         "The hidden unknownSections inputs are behavior, not presentation — dropping them silently discards sections the vocabulary does not recognise. A design must not remove or surface-as-editable what it cannot name",
@@ -321,6 +326,6 @@
       "apply button",
       "go back link"
     ],
-    "notes": "Review section is labelled by `review-heading`. Blast radius (reached and unknown cases), the consequence sentence, the vocabulary-unavailable reason, the compile-rejected reason, and both apply-refusal states are role=alert; the plan summary is role=status. Sections are native checkboxes inside nested fieldsets with legends. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
+    "notes": "Review section is labelled by `review-heading`. Blast radius (reached and unknown cases), the consequence sentence, the vocabulary-unavailable reason, the compile-rejected reason, and both apply-refusal states are role=alert; the plan summary is role=status. The compose branch's bound-agent sentence carries no role — it is read in document order above the fields. Sections are native checkboxes inside nested fieldsets with legends, tinted by accent-color only so the browser's own checked/indeterminate/disabled/forced-colors rendering survives; each label row meets the 44px tap floor below the tablet breakpoint. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
   }
 }

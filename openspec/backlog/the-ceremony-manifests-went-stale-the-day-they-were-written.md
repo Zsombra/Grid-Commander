@@ -2,11 +2,11 @@
 id: the-ceremony-manifests-went-stale-the-day-they-were-written
 title: Twelve surface manifests are stale — refresh them with the #166 design round
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "the-ceremony-pages-join-the-sweep"
 capability: app-access
 github: "173"
 blocked_by: []

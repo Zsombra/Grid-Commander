@@ -24,7 +24,6 @@ vi.mock('@/presentation/session.js', () => ({
 
 const AGENT = anAgent(); // id 'a1'
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
-const noSearch = Promise.resolve({});
 
 /** `generatedAtMs` on the live exposure fixture: 2026-08-06T17:55:21.702Z. */
 const PRICED_MS = 1786038921702;
@@ -44,7 +43,7 @@ const renderedAt = (offsetMs: number) => new FakeClock(new Date(PRICED_MS + offs
 
 async function page() {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-  return rendered(await Page({ params: params({ id: AGENT.id }), searchParams: noSearch }));
+  return rendered(await Page({ params: params({ id: AGENT.id }) }));
 }
 
 function world(

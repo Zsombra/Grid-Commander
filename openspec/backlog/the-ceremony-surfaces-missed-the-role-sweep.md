@@ -2,11 +2,11 @@
 id: the-ceremony-surfaces-missed-the-role-sweep
 title: Eight ceremony pages wear pre-sweep block treatments — tickets like DT-0014 are owed
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "the-ceremony-pages-join-the-sweep"
 capability: app-access
 github: "166"
 blocked_by: []

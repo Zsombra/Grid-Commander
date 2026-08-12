@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /** Archiving is reversible, and the copy the token was issued against says so. */
 export default async function ArchivePage({
@@ -36,15 +37,7 @@ export default async function ArchivePage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {proposal.agentName}?</h1>
-      {problem ? (
-        // A bounced write is a failure and wears danger — unlike the
-        // consequence block beside it, which is the legitimate action's weight.
-        // The prefix names the state so hue is never the only signal. DT-0004.
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary">
         {proposal.consequence}
       </p>

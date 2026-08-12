@@ -70,14 +70,14 @@ describe('agent pages name their agent, branch by branch', () => {
   it('the detail page heads with the name', async () => {
     agentWorld();
     const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-    const r = await rendered(await Page({ params: params({ id: AGENT.id }), searchParams: noSearch }));
+    const r = await rendered(await Page({ params: params({ id: AGENT.id }) }));
     expect(r.headings[0]).toContain(AGENT.displayName);
   });
 
   it('an unknown id says "No such agent" and offers the roster', async () => {
     agentWorld();
     const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-    const r = await rendered(await Page({ params: params({ id: 'ghost' }), searchParams: noSearch }));
+    const r = await rendered(await Page({ params: params({ id: 'ghost' }) }));
     expect(r.headings[0]).toBe('No such agent');
     expect(r.text).toContain('Back to your agents');
   });
@@ -222,7 +222,7 @@ describe('the gate every page shares', () => {
   it('an unauthenticated request is offered the path to connect, never a 500', async () => {
     current = { app: actingWith().app, user: notConnected };
     const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-    const r = await rendered(await Page({ params: params({ id: 'a1' }), searchParams: noSearch }));
+    const r = await rendered(await Page({ params: params({ id: 'a1' }) }));
     expect(r.text).toContain('connect');
   });
 });

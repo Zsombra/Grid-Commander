@@ -26,7 +26,6 @@ vi.mock('@/presentation/session.js', () => ({
 
 const AGENT = anAgent();
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
-const noSearch = Promise.resolve({});
 
 function block(over: Partial<GateBlock> = {}): GateBlock {
   return {
@@ -42,7 +41,7 @@ function block(over: Partial<GateBlock> = {}): GateBlock {
 
 async function page() {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-  return rendered(await Page({ params: params({ id: AGENT.id }), searchParams: noSearch }));
+  return rendered(await Page({ params: params({ id: AGENT.id }) }));
 }
 
 function world(blocks: FakeAgentsPort['gateBlocks']) {

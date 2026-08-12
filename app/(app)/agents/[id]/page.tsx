@@ -15,14 +15,19 @@ import { NotConnected } from '@/presentation/require-connection.js';
  * the platform does not permit it, and presenting a field the platform will
  * refuse is worse than not offering it.
  */
-export default async function AgentPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ problem?: string }>;
-}) {
-  const { problem } = await searchParams;
+/**
+ * The agent itself.
+ *
+ * It read a `?problem=` once, when the rename form lived here and its refusals
+ * redirected back with one. The form moved to `/agents/[id]/edit` and took the
+ * redirect with it (`6959707`), and nothing has minted `/agents/[id]?problem=`
+ * since — so the branch rendered a parameter no route produces. It was also the
+ * one place in the product that dressed a refusal in the *consequence* role
+ * rather than danger, which is how a treatment drifts unnoticed: nobody had
+ * seen it since the move. Removed rather than restyled, because deciding how an
+ * unreachable branch should look is deciding how nothing should look.
+ */
+export default async function AgentPage({ params }: { params: Promise<{ id: string }> }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
@@ -234,12 +239,6 @@ export default async function AgentPage({
           </p>
         )}
       </section>
-
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-3 text-sm text-text-primary">
-          {problem}
-        </p>
-      ) : null}
 
       {/**
        * The rename form was here, and it self-issued its own confirmation —

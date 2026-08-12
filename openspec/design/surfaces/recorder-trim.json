@@ -4,7 +4,7 @@
   "route": "/recorder/trim",
   "capability": "signal-recording",
   "status": "designed",
-  "generated_at_commit": "cdecf31",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/recorder/trim/page.tsx",
     "src/presentation/components/control.ts",
@@ -57,7 +57,7 @@
         "trimmed"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server component, no client JS; every state change is a full navigation. Which of the five bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date), nothing-to-trim, then describe-confirm.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server component, no client JS; every state change is a full navigation. Which of the four bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date, with or without a rejected one to report), nothing-to-trim, then describe-confirm. DT-0014 has landed: every message block on this page now wears a house role rather than the anonymous border it was built with — consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim — so the page no longer states four different kinds of fact in one voice.",
       "constraints": [
         "The trim is a describe→confirm→perform ceremony — openspec/specs/signal-recording/spec.md:203-209 ('through the same describe→confirm→perform ceremony as its other destructive acts'). A design must not collapse choosing, confirming, and performing into fewer steps.",
         "The description renders before anything is offered — openspec/specs/signal-recording/spec.md:219-224 ('WHEN an operator chooses a boundary date THEN the page states the runs, captures, failed attempts, coins and date span that would go'). The consequence must stay readable before the button that performs.",
@@ -95,7 +95,7 @@
           "effect": "Anchor to /recorder without submitting anything"
         }
       ],
-      "current_implementation": "method=get form, flex flex-wrap items-end gap-3. A LABEL-wrapped native date input wearing CONTROL (required), a BUTTON_PRIMARY submit 'Describe what would go', and a BUTTON_SECONDARY anchor 'Leave the record alone'. In the unreadable-date state a role=alert paragraph above the form (plain border-border-default, not danger-toned) quotes the unparsable value and points back at the picker.",
+      "current_implementation": "method=get form, flex flex-wrap items-end gap-3. A LABEL-wrapped native date input wearing CONTROL (required), a BUTTON_PRIMARY submit 'Describe what would go', and a BUTTON_SECONDARY anchor 'Leave the record alone'. In the unreadable-date state a role=alert paragraph above the form quotes the unparsable value and points back at the picker; since DT-0014 it wears danger — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary — because a rejected input is a bounced attempt, not an advisory. The form and both controls were untouched by that ticket.",
       "constraints": [
         "The form must stay method=get — choosing a boundary is a question, and the describe it navigates to is effect-free by spec (openspec/specs/signal-recording/spec.md:243-245). A POST here would present choosing as committing.",
         "Control and label treatments come from the CONTROL and LABEL constants in control.ts, shared product-wide — not a per-page className.",
@@ -116,11 +116,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "Same treatment DT-0004 gave the archive page's problem block: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted.",
+      "current_implementation": "An inline `{problem ? … : null}` block on the describe-confirm branch only, carrying DT-0004's danger treatment byte-for-byte: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted. It is the same paragraph the shared `CarriedProblem` component (carried-problem.tsx) now holds for the six ceremony pages, spelled out here rather than imported — this page was not in that change's scope. Untouched by DT-0014, which left it alone by name. It renders on one of the four branches, which is where `performTrim` always bounces to (the redirect carries `before=` back, so the describe re-runs), but it is not mounted on the other three.",
       "constraints": [
         "role=alert must survive.",
         "The refusal reason is the platform/domain's wording for why nothing was deleted (openspec/specs/signal-recording/spec.md:226-229, 'nothing is deleted and the refusal says why') and must be shown, not summarized.",
-        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block below it."
+        "This is a failed attempt, not advisory — it takes a stronger role than the nothing-to-trim answer and shares its palette with nothing else on the page.",
+        "Whatever treatment this takes must stay identical to the shared `CarriedProblem`'s — two spellings of one paragraph is how the ceremony pages drifted before it was extracted, and restyling only one of the two would reopen exactly that."
       ],
       "children": []
     },
@@ -135,7 +136,7 @@
         "described"
       ],
       "actions": [],
-      "current_implementation": "role=alert paragraph, rounded-gc-2 border border-border-default p-4 text-sm — the domain's consequence sentence verbatim. Unstyled relative to the house consequence role: unlike plan-review and the archive page it does not yet wear border-consequence-border/bg-consequence-subtle.",
+      "current_implementation": "role=alert paragraph, rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary — the domain's consequence sentence verbatim. DT-0014 moved it off the anonymous border it was built with onto the house consequence role, the one plan-review and the agent archive page already wore; it is the heaviest fact on the page and now reads as such.",
       "constraints": [
         "The text is the describe's verbatim consequence sentence — the spec makes its content binding (openspec/specs/signal-recording/spec.md:207-209: 'The description SHALL state what becomes unknowable: how many runs, captures and failed attempts go, across which coins, spanning which dates, and that nothing trimmed can ever be re-recorded'). A design must not paraphrase, truncate, or collapse it behind a disclosure.",
         "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
@@ -243,10 +244,11 @@
           "effect": "Anchor to /recorder"
         }
       ],
-      "current_implementation": "h1 'Nothing to trim', the describe's reason as a role=status paragraph, then two underlined text links separated by a middot: 'Choose a different date' and 'Back to the record'.",
+      "current_implementation": "h1 'Nothing to trim', the describe's reason as a role=status paragraph, then two underlined text links separated by a middot: 'Choose a different date' and 'Back to the record'. Since DT-0014 the reason wears quiet — rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-sm text-text-primary — rather than being a bare text-sm line: this is the page's absence-of-effect sentence, and the system principle gives absence the same visual commitment as a warning without letting it near danger's palette. The two links deliberately stayed text links rather than becoming targets, which is the precedent DT-0015 then cited for the strategy editor's two-choice rows.",
       "constraints": [
         "role=status must survive — this is an answer, not an error.",
-        "Both links must stay, and in this order: another attempt first, the way out second."
+        "Both links must stay, and in this order: another attempt first, the way out second.",
+        "Quiet, never danger — the boundary took nothing, which is a fact about the record and not a failure of the request."
       ],
       "children": []
     },
@@ -266,10 +268,11 @@
           "effect": "Anchor to /recorder, whose coverage now begins where the trim left it"
         }
       ],
-      "current_implementation": "h1 'Record trimmed', the receipt sentence ('Removed N runs: N captures, N failed attempts, N readings.') as a role=status paragraph in a plain border-border-default block, then an underlined 'Back to the record' link with a sentence noting coverage now begins where the trim left it.",
+      "current_implementation": "h1 'Record trimmed', the receipt sentence ('Removed N runs: N captures, N failed attempts, N readings.') as a role=status paragraph, then an underlined 'Back to the record' link with a sentence noting coverage now begins where the trim left it. Since DT-0014 the sentence wears notice — rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary — rather than the plain border it was built with: it is a note the redirect carried back, the same shape as the pending pages' ?note=, and those took notice.",
       "constraints": [
         "The outcome states what was removed — openspec/specs/signal-recording/spec.md:231-236 ('AND the outcome states what was removed'). The counts must stay legible, not decorative.",
-        "role=status must survive."
+        "role=status must survive.",
+        "Notice, never danger — a completed trim is what the operator asked for; the weight belonged on the consequence block they read before agreeing, not on the receipt afterwards."
       ],
       "children": []
     },
@@ -343,6 +346,6 @@
       "(after describe) trim button",
       "keep-whole link"
     ],
-    "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
+    "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
   }
 }
