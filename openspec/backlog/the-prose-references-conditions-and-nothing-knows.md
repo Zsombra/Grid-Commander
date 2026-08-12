@@ -2,7 +2,7 @@
 id: the-prose-references-conditions-and-nothing-knows
 title: A strategy's market-read prose can name a condition, so removing one is refused for a reason the describe does not mention
 type: risk
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-13
@@ -158,3 +158,16 @@ Now tracked by `the-prose-that-names-a-condition-says-so` (standard).
 of that change: whether an empty list means "define none" or "unspecified", and
 what removing the *last* condition does, is still unobserved — the probe's
 empty-list case was refused for *this* reason, not for being empty.
+
+## Landed 2026-08-13
+
+`the-prose-that-names-a-condition-says-so`, archived. The describe names the
+marker the prose uses and passes on BattleGrid's nearest key where it gave one.
+
+**The `conditions: []` question does not close with it**, and is the reason this
+item is worth re-reading rather than forgetting: whether an empty list means
+"define none" or "unspecified", and what removing the *last* condition does,
+are still unobserved. The probe's empty-list case was refused for the marker
+reason, not for being empty — so nothing has ever tested it. Recorded as DL-8 on
+`a-drafted-condition-can-be-saved`, and it needs a subject strategy whose prose
+names no condition.

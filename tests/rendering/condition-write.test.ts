@@ -298,6 +298,10 @@ describe('a refusal the prose caused is named as that', () => {
     // The platform's suggestion, attributed to the platform.
     expect(r.text).toContain('ALL_AGREE_DOWN');
     expect(r.text).toContain('Nothing was written');
+    // The scenario's last clause: what they composed is still there. A refusal
+    // that also discards the edit makes the operator start over on top of being
+    // refused — the rule every other refusing branch here already follows.
+    expect(r.text).toContain('FLOW_UP');
   });
 
   it('offers no suggestion of its own when the platform gave none', async () => {
