@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-13 (late) — the pin stops being a proxy, and #192 closes by disappearing
+
+**Did**: `a-manifest-pins-to-what-it-described` (#192), built and archived.
+Freshness is a per-file content digest now; the commit-based path is gone.
+
+**The question the item posed is answered by deleting it.** "What should a
+re-pin name, given squash-merge destroys the hash" stops mattering when nothing
+names a hash. A digest survives squash, rebase, amend, and a clone with no
+history at all — and it answers the actual question, which was always about
+content rather than time. `harness-integrity` already held the principle one
+layer over: *an exit code alone MUST NOT be accepted as evidence*. A commit hash
+was the same kind of proxy.
+
+**The migration was the interesting part.** Thirteen manifests took their digest
+from `git show <commit>:<path>` — what they actually described, not today's
+files. **Three came out stale**, including `strategy-conditions-save`, which I
+re-pinned this morning and #111 changed again this afternoon. Task 3.3 existed
+so that would not be absorbed silently, and it earned its place.
+
+**Eleven could not be migrated at all** and now say `never verified` — not
+fresh, not stale. Before today they said *fresh*, confidently, on no evidence.
+Filed as **#197**: eleven real `ui-surveyor` passes, and the count must not
+quietly become a fresh one.
+
+**Corrected mid-build**: the first version stored one hash over the file set,
+and its warning then said "8 source file(s) differ" when one did. A combined
+digest cannot be decomposed. Per-file now, so it names the file that moved.
+
+**Also filed**: **#196** — six harness tests fail on Windows over
+backslash-vs-forward-slash in diagnostic messages. Established pre-existing by
+stashing this change and reproducing them identically, which is the only honest
+way to claim it.
+
+**State**: 0 active changes, **31 open items ↔ 31 open issues**, cross-checked
+in both directions and clean.
+
+**Next**: #197's eleven re-surveys — independent, parallelisable, `connect` and
+`agent-roster` first. Then #170, #169, #162, #186, #194.
+
+**Watch out**: I spent six attempts fighting shell→Python→file escaping before
+switching to the editor and to `bytes([13, 10])`. Byte-level patching of source
+through nested quoting is a losing game; after the second failure the answer was
+already "use the editor".
+
 ## 2026-08-13 (evening) — the app runs locally, #111 lands, and I destroyed the record
 
 **Did**: Stood the app up locally against real data, built and archived

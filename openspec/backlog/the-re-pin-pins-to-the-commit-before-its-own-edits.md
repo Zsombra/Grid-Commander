@@ -2,11 +2,11 @@
 id: the-re-pin-pins-to-the-commit-before-its-own-edits
 title: Four manifests pin to the parent of the commit that staled them — the re-pin was squashed together with its own code edits
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "a-manifest-pins-to-what-it-described"
 capability: app-access
 github: "192"
 blocked_by: []
@@ -109,3 +109,32 @@ Do not settle this by bumping `generated_at_commit` by hand — the same reason
 Related: [[the-ceremony-manifests-went-stale-the-day-they-were-written]] (#173,
 done — the twelve this is *not*), [[a-design-round-stales-the-manifests-it-designed-against]]
 (#179, the round-level version of the same structure).
+
+## Landed 2026-08-13 — and it was bigger than filed
+
+This item described four manifests pinning to the parent of the commit that
+staled them. Checking whether the pins **resolved at all** found the real shape:
+**twelve of twenty-four pointed at commits absent from the repository.** The
+staleness check could not compare against a hash it could not resolve, so it
+reported nothing — those surfaces had been unable to go stale, silently.
+
+Two changes:
+
+1. `5d414b4` made it visible (`design_surface_pin_unresolvable`), and made the
+   `board` stop dying on Windows while there.
+2. `a-manifest-pins-to-what-it-described` replaced the mechanism. Freshness is
+   now a per-file content digest — squash, rebase and amend cannot touch it —
+   and `generated_at_commit` is provenance that decides nothing.
+
+**The convention question this item posed is answered by removing it.** "What
+should a re-pin name, given squash-merge destroys the hash" stops mattering when
+nothing names a hash. Design-contract §8's re-pin-at-the-end-of-a-round stays
+correct for its own reason: a manifest should describe committed code.
+
+## What remains, and it is not this item
+
+**Eleven surfaces are `never verified`** — their surveyed content is not
+recoverable, so no digest could be written without inventing one. Each needs a
+real re-survey. That is now *visible* rather than silent, which is what this
+item was for, but the eleven re-surveys are eleven pieces of work nobody has
+done. Do not let the count quietly become a fresh count.
