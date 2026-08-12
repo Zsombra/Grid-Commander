@@ -1,16 +1,30 @@
 /**
  * How an agent has actually done.
  *
- * Read from a live account before it was typed, and the reading moved the whole
- * design. The tool named `get_agent_performance` returned nothing on any of the
- * nine agents on that account — `pnlCurveUsd` empty, every figure zero — while
- * the *roster* payload carried the full record for four of them. A product that
- * had gone to the schema for this would have built a surface on a tool that has
- * never once answered.
+ * Everything here comes from `list_intelligence_agents`, which this product
+ * already calls on every agents page and which had been discarding this block
+ * since the first release. That is still the right source — but not for the
+ * reason this comment used to give.
  *
- * So everything here comes from `list_intelligence_agents`, which this product
- * already calls on every agents page and which has been discarding this block
- * since the first release.
+ * It used to say `get_agent_performance` "has never once answered", read off
+ * nine agents that all came back zero. A true observation and a wrong
+ * conclusion, and the correction was already in this repository before anyone
+ * noticed: `ports/agents.ts` worked out on 2026-08-06 that the tool measures
+ * P&L **since the agent's risk-budget baseline**, so an agent with no budget
+ * configured reports zeros while carrying real closed losses. Give one a budget
+ * and it agrees with the trade outcomes to the cent.
+ *
+ * Two comments in one codebase disagreed, and the emphatic one was wrong.
+ *
+ * Confirmed live 2026-08-13 at v18.2.0 — Undertow 41 curve points, Breakwater
+ * 25, Vanguard empty on nought trades — and v18 now says it outright: "an empty
+ * curve means no settlements yet, not missing data" (#189).
+ *
+ * The roster stays the source *here* because it answers the same question the
+ * same way whether or not a budget was ever set, which is what a record has to
+ * do. `get_agent_performance` answers a different question — realized dollars
+ * against the drawdown stop the platform actually halts on, trades and wagers
+ * totalled together. Nothing draws that yet; it is filed, not forgotten.
  */
 
 /**
