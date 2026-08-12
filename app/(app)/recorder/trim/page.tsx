@@ -26,7 +26,7 @@ export default async function TrimRecordPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Record trimmed</h1>
-        <p role="status" className="rounded border p-4 text-sm">{trimmed}</p>
+        <p role="status" className="rounded-gc-2 border border-border-default p-4 text-sm">{trimmed}</p>
         <p className="text-sm">
           <a href="/recorder" className="underline">
             Back to the record
@@ -44,7 +44,7 @@ export default async function TrimRecordPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Trim the record</h1>
         {before !== undefined ? (
-          <p role="alert" className="rounded border p-3 text-sm">
+          <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
             “{before}” is not a date this page can read — use the picker below.
           </p>
         ) : null}
@@ -96,9 +96,12 @@ export default async function TrimRecordPage({
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Trim the record before {before}?</h1>
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
       ) : null}
-      <p role="alert" className="rounded border p-4 text-sm">{proposal.consequence}</p>
+      <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       <form action={performTrim} className="flex flex-wrap gap-3">
         <input type="hidden" name="before" value={proposal.before.toISOString()} />
         <input type="hidden" name="describedRuns" value={proposal.preview.runs} />

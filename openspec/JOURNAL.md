@@ -1,5 +1,176 @@
 # Journal
 
+## 2026-08-12 (the backlog worked) — live probes refresh eight items, and #108's prescription is executed whole
+
+**Did**: The operator asked for the issue tickets to be worked. A read-only
+probe round against live BattleGrid (v17.2.0) refreshed the question items:
+**#107** — `get_agent_fund_allocation` answered all-zero for Undertow AND
+Breakwater in the same minute `list_user_active_positions` reported ~$11
+margined on each, the fourth measurement and the first on two agents at
+once; **#114** — `get_market_context({})` refused identically on a third
+major, and v17's *description prose* now states the precondition its JSON
+Schema still doesn't express; **#135** — no BLOCKED radar deployment yet
+(all 20 `blockedReason: null`), but the fleet summary grew a `blocked`
+count and a top-level `blockedAgents: []` nobody had recorded; **#146** —
+Undertow's gate-block total hit 5,014 (~120/h, was ~90/h), plus one
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` showing equity ($30.14) under the
+sizing floor ($33.33): the agent is benched by arithmetic on new coins;
+**#104** — still zero players on all 50 sessions; **#103/#106** — agent
+slots now read 3/3 used (and the slot cap became *readable*, correcting
+#106's premise). Four `backlog_change_archived` warnings cleared (#91,
+#107, #110, #114 — archived `change:` links cleared with explanations);
+#85's stale `blocked_by` cleared with the upstream inertness now watched
+in the item itself. Then **#108 was executed exactly as prescribed**:
+`/surface` on `/agents/[id]/archive` → `agent-archive-confirm` manifest
+(7 components; survey found the missing pending-feedback state, filed as
+**#153**); `/design` wrote **DT-0003** (tokens: `size.control.min` 44px,
+generator emits it, `min-h-control` replaces raw `min-h-11`) and
+**DT-0004** (restyle: consequence/danger/notice roles for the three
+message blocks, "Refused:" prefix, secondary hover, active states, mobile
+stacking); both implemented, controls test asserts the token chain
+end-to-end. Gates: typecheck, lint, 2126 vitest, build, drizzle clean.
+
+**State**: 22 open items, all touched ones current as of today. Design
+lane: 5 surfaces (2 designed), 4 tickets (4 implemented). #108 narrowed
+to its last gap — `/connect`, `/explorer`, `/pending`, the pipeline
+simulator and remaining confirmations have no manifests/tickets.
+
+**Next**: `/surface` another confirmation page or `/connect`, then
+`/design` — the remaining #108 gap is now routine. Or `/propose` on #153
+(pending feedback needs a client-boundary decision). #94 still waits on
+recorder depth.
+
+**Same session, round two — the metric workbench reads the declared
+grammar** (change of the same name, standard track, verified and archived
+same day; 149 → 150 archived changes). The metric page's `REL_TIMEFRAMES`
+— the last platform vocabulary spelled into source, and a fixed-list
+classifier the enumerated-control requirement forbids — is deleted. The
+page reads its form through the shared `columnFromQuery` (timeframes travel
+tagged; a bare `tf=anchor` from an old URL degrades to the stated problem,
+never a misfile), offers timeframe/bars/ordering/side declared-or-withheld
+plus the chained input, and `ReadMetricQuery` carries `columnControls` on
+the metric outcome. `Declared`/`timeframeOptions` extracted to
+`src/presentation/components/declared.tsx`, both column surfaces import it.
+The requirement's reach is now stated in the spec as every column-composing
+surface, with two new scenarios. Closed #115 (`v5-surface-additions-
+unconsumed`) — its residual was exactly this; the rest were records.
+Gates: typecheck, lint, 2130 vitest, build.
+
+**Round three — the probe tells its failures apart**
+(`a-refusal-and-an-outage-stop-reading-alike`, lite, archived; 151
+archived changes). #114's Fix #3: `probe_mcp_surface.py` records
+`call_failed_code` beside `call_failed` — the structured code on a
+refusal, null on prose/transport — mirroring the adapter's `codeOf`.
+Additive key, nothing consumes `call_failed` outside the probe; takes
+effect on the next probe run. #114 stays open for upstream's schema only.
+
+**Round four — returned with an explanation** (`returned-with-an-
+explanation`, lite, archived; 152 archived changes). Found while opening
+the #108 thread toward `/connect`: the OAuth callback has always sent its
+bad news to `/connect` (`?declined=<error>`, `?error=incomplete|untrusted`)
+and the page read none of it — the spec scenario "The user declines"
+promises an explanation with the retry, and only the retry existed. The
+delegated branch now renders a decline in the notice role (role="status" —
+the user chose; nothing failed) and a failed callback in danger
+(role="alert"), unknown error values verbatim, every message stating
+nothing was stored. Six rendering tests. Gates: typecheck, lint, 2136
+vitest, build.
+
+**Round six — a bounced agree says why** (`a-bounced-agree-says-why`,
+lite with a delta, archived; 154 archived changes). The same defect class
+as round four, one surface later: the proposal pages minted three
+redirects nobody rendered. A refused agree bounced to
+`/pending/<id>?problem=` and the page read no searchParams; the
+change-was-made-but-proposal-already-closed message — whose own comment
+says "the operator would not know the account moved" — went to
+`/pending?problem=` and was dropped; `?note=already-resolved` likewise.
+Both pages now read and render them (problem in danger/role=alert with
+the archive page's "Refused:" prefix, threaded through the Shell so it
+survives on every branch; note in notice/role=status). The mcp-control
+agree requirement gained the two scenarios the redirects half-implemented.
+Three new rendering tests; `openProposal` wired into the rendering
+harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
+CI_SERVING — the operator pointed out this is the CI; Actions are
+billing-blocked by decision).
+
+**Round twelve — the refusals dress alike** (`the-refusals-dress-alike`,
+lite, archived; 159 archived changes; #156 filed and closed same-day).
+Twelve `?problem=` banners still wore the neutral border DT-0004 retired
+— agent deploy/rebind/reactivate/undeploy, strategy
+archive/restore/fork/conditions-save/rules ×2, recorder trim, and
+agent-edit.tsx. All wear danger now; the eleven page banners carry the
+"Refused:" prefix, agent-edit does not (its prop mixes in the product's
+own catalog advisory). Grep gate: no neutral problem banner anywhere.
+Full local CI green.
+
+**Round eleven — the pipeline simulator** (#108 gap 2, sixth surface
+pass). Manifests for both pipeline routes (15 components); DT-0010
+implemented — the disagreement sentence wears notice on the
+own-evaluation page, identical to DT-0009 on the competitor's, one ruling
+on both evaluation details. The stages page needed no ticket. Full local
+CI green at c1ad290. Design lane: 13 surfaces, 10 designed, 10/10
+tickets. Gap 2 is down to the remaining confirmations and the three
+early list surfaces.
+
+**Round ten — the explorer subpages, and the sweep's residual**
+(#108 gap 2, fifth surface pass; 158 archived changes). Manifests for
+`/explorer/[agentId]` and its evaluation detail (12 components); DT-0009
+implemented — the signals-disagreed sentence wears notice (the one fact
+that says the aggregate is a compromise, previously weighted like the
+timestamp). The pass caught 4 bare `border-l` rails the `rounded border`
+sweep could not see — fixed as `the-rails-join-too` (lite, archived); a
+grep gate now finds no bare directional border anywhere. One CI wobble:
+PostgreSQL stopped between the migrate and serving gates — restarted,
+full re-run green at working tree of 579e0aa. Design lane: 11 surfaces,
+8 designed, 9/9 tickets implemented.
+
+**Round nine — the borders join the palette**
+(`the-borders-join-the-palette`, lite, archived; 157 archived changes;
+closes #155 same-day). The mechanical sweep DT-0008's precedent unblocked:
+every bare `rounded border` — Tailwind's untokened default grey — became
+`rounded-gc-2 border border-border-default`. Real count **86 across 37
+files**; the item's 67 undercounted by matching one quoting style.
+Pre-verified: no color companions, no comment hits, no variants clipped.
+Full local CI green.
+
+**Round eight — `/explorer` through the design lane, and a product-wide
+finding** (#108 gap 2, fourth surface pass). The dropped-redirect sweep
+came back clean — connect and pending were the only two instances. The
+survey found 67 boxes across 20+ files wearing bare `rounded border`
+(Tailwind's default grey, untokened — the input defect control.ts
+documents, surviving product-wide on cards); filed as **#155** with
+DT-0008 as the precedent treatment its mechanical sweep will execute.
+DT-0008 implemented: field cards wear border.default at radius.2, the
+this-is-not-the-whole-field sentence wears notice. Full local CI green at
+fe1443e. Design lane: 9 surfaces, 6 designed, 8/8 tickets implemented.
+
+**Round seven — `/pending` through the design lane** (#108 gap 2, third
+surface pass). Manifests for both routes (`pending-queue`,
+`pending-proposal`); DT-0007 implemented — consequence/notice/quiet roles
+for the proposal page's three load-bearing sentences, zero copy changes.
+The queue needed no ticket: its banners landed pre-roled by round six.
+Full local CI green at b1e2153. Design lane: 8 surfaces, 5 designed, 7/7
+tickets implemented.
+
+**Round five — `/connect` through the design lane** (#108 gap 2, second
+surface). New manifest `connect.json` (7 components; the declined/failure
+banners recorded with their roles as constraints), then DT-0005 — the
+not-view-only warning wears **consequence** (it is the sentence being
+agreed to), the Not requested block wears **quiet** (absence stated, not
+implied), zero copy changes, consent test untouched — and DT-0006 — the
+shared not-connected component's connect link wears `BUTTON_SECONDARY`
+(the way in as a target, DT-0001's strategy-not-found precedent), landed
+once in `require-connection.tsx` and inherited by every authenticated
+page. Both implemented; both manifests refreshed at the implementing
+commit. Design lane now: 6 surfaces, 3 designed, 6/6 tickets implemented.
+Gates re-run green (2136 vitest, build).
+
+**Watch out**: `min-h-11` must not come back — the controls test forbids
+it by name. The WEARS_BUTTON scan now accepts the composed template form
+(`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's
+equity is under the smallest position's floor; that is the operator's
+knob (#146 note), not the product's.
+
 ## 2026-08-11 (the merge round) — four PRs reviewed, gated and landed; zero P1s remain
 
 **Did**: The operator authorized review→CI→merge on the open PRs, in

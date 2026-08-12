@@ -5,8 +5,8 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-07
-change: performance-was-already-in-the-payload
+updated: 2026-08-12
+change: ""
 capability: agent-understanding
 github: "110"
 blocked_by: []
@@ -147,3 +147,10 @@ no use for), **`activeGameCount`** and **`hasActiveAssignments`** (both
 unexplained; one falsy observation each). The exclusion comment in
 `src/domain/agent/agent.ts` and the noise assertion in
 `tests/agent/mapper.test.ts` both name these four.
+
+The `change:` link to `performance-was-already-in-the-payload` was cleared
+2026-08-12: that change archived long ago, and the two fields that later
+landed did so under a different change (`the-brains-name-and-the-spend-are-read`,
+also archived). What stays open here is only the watch on the four
+deliberately unmapped fields — `provider` was observed null again on all
+three agents on 2026-08-12 (v17.2.0), so nothing has moved.

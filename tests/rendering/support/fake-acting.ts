@@ -7,6 +7,8 @@ import {
 import { ReadFleetSpendQuery } from '@/application/use-cases/read-fleet-spend.query.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
+import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
+import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { ReadRecordCoverageQuery } from '@/application/use-cases/read-record-coverage.query.js';
 import { ReadSignalHistoryQuery } from '@/application/use-cases/read-signal-history.query.js';
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
@@ -123,6 +125,12 @@ export function actingWith({
     listAgents: new ListAgentsQuery(agents),
     readFleetSpend: new ReadFleetSpendQuery(agents),
     readProposals: new ReadProposalsQuery(proposals, clock),
+    openProposal: new OpenProposalQuery(
+      proposals,
+      agents,
+      new DescribeEditQuery(agents, confirmations, random, clock),
+      clock,
+    ),
     readDeployments: new ReadDeploymentsQuery(radar),
     readBudget: new ReadBudgetQuery(agents),
     readRiskReading: new ReadRiskReadingQuery(agents, accountState),

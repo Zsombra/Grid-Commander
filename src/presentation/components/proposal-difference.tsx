@@ -59,7 +59,8 @@ export function ProposalDifference({
           {departs && (
             // Stated before the table, because a reader who stops at the first
             // sentence must still learn that this is not what was suggested.
-            <p className="text-sm text-text-primary">
+            // Notice, never danger: nothing failed — the world moved. DT-0007.
+            <p className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
               This is not exactly what was proposed. The account has been read again just now,
               and some of it no longer applies.
             </p>
@@ -84,7 +85,9 @@ export function ProposalDifference({
           {!willDo && (
             // No confirmation is offered above this in the page. An operator
             // agreeing to a no-op learns nothing and is charged a decision.
-            <p className="text-base text-text-primary">
+            // Quiet: absence of effect is stated with the commitment a warning
+            // would get — silence reads as a broken page. DT-0007.
+            <p className="rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-base text-text-primary">
               Nothing here would change the account. Every part of this proposal is either
               already the case or not accepted, so there is nothing to agree to.
             </p>

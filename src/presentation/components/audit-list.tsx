@@ -27,7 +27,7 @@ export function AuditList({
   return (
     <div className="space-y-3">
       {unresolvedCount > 0 && (
-        <p role="status" className="rounded border p-3 text-sm">
+        <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
           {unresolvedCount} operation{unresolvedCount === 1 ? '' : 's'} started but never
           reported an outcome. They may or may not have taken effect on BattleGrid.
         </p>
@@ -55,7 +55,7 @@ export function AuditList({
                 <td>
                   <code>{e.tool}</code>
                   {/* Colour is never the only signal — the word is there too. */}
-                  {e.destructive && <span className="ml-2 rounded border px-1">destructive</span>}
+                  {e.destructive && <span className="ml-2 rounded-gc-2 border border-border-default px-1">destructive</span>}
                 </td>
                 <td>
                   {/*

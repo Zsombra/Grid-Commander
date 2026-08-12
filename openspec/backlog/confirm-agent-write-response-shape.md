@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-08-12
 change: ""
 capability: agent-authoring
 github: "103"
@@ -36,3 +36,13 @@ should be — the kind the architecture checklist asks us not to accumulate.
 Confirm the shape against a live create, then drop the fallback. Doing so needs
 a real mutation on a real account, which was deliberately not attempted while
 the test account had one agent slot remaining.
+
+## 2026-08-12 — the probe got harder, not easier
+
+`get_account_state` now reports `agentSlots: {limit: 3, used: 3,
+remaining: 0}`. There is no free slot to spend on a live create at all;
+the probe waits on the operator archiving an agent or the account
+levelling up. (A create attempted at zero slots would only observe the
+*refusal* shape, which is not what this item needs.) Note the slot cap
+itself became readable — see the correction on
+`preset-custom-in-the-preset-branch-is-unestablished`.

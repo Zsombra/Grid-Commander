@@ -174,7 +174,13 @@ export default async function OwnEvaluationPage({
         {e.evaluatedAt ? ` · ${e.evaluatedAt}` : ''}
       </p>
       {e.hasConflictingSignals ? (
-        <p className="text-sm">Signals disagreed with each other on this candidate.</p>
+        // DT-0009's ruling, landed here too: the aggregate below is a
+        // compromise between opposed readings, not a consensus — and the
+        // simulator further down is how the operator interrogates it.
+        // Notice, never danger. DT-0010.
+        <p className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
+          Signals disagreed with each other on this candidate.
+        </p>
       ) : null}
 
       {/*
@@ -206,7 +212,7 @@ export default async function OwnEvaluationPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">The chain it followed</h2>
-        <div className="rounded border p-3 text-sm space-y-1">
+        <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
           {e.chain.gateStatus ? (
             <p>
               Gate: {e.chain.gateStatus}
@@ -284,7 +290,7 @@ export default async function OwnEvaluationPage({
           ) : null}
           <ul className="space-y-2">
             {e.conditions.outcomes.map((c) => (
-              <li key={c.conditionKey} className="rounded border p-3 text-sm space-y-1">
+              <li key={c.conditionKey} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 <p className="font-medium">
                   {`${c.name ?? c.conditionKey}${c.outcome ? ` — ${c.outcome}` : ''}${c.required ? ' · required' : ''}${c.provisional ? ' · provisional' : ''}`}
                 </p>
@@ -394,7 +400,7 @@ export default async function OwnEvaluationPage({
                 BattleGrid would not score that: {simulation.reason}
               </p>
             ) : (
-              <div className="rounded border p-3 text-sm space-y-1">
+              <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 {/*
                   The label is structural, not tonal. A simulated figure
                   beside a real one, unmarked, is the mistake this whole
@@ -444,7 +450,7 @@ export default async function OwnEvaluationPage({
               </h3>
               <ul className="space-y-1 text-sm">
                 {signals.map((s) => (
-                  <li key={s.signalId} className="border-l pl-3">
+                  <li key={s.signalId} className="border-l border-border-default pl-3">
                     <p>
                       <span className="font-medium">
                         {s.triggered ? 'Fired' : 'Did not fire'}

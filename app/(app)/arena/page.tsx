@@ -84,7 +84,7 @@ export default async function ArenaPage() {
         </h2>
         <ul className="space-y-4">
           {arena.sessions.map((s) => (
-            <li key={s.id} className="rounded border p-4 text-sm space-y-1">
+            <li key={s.id} className="rounded-gc-2 border border-border-default p-4 text-sm space-y-1">
               {/* Everything about the session — name, status, schedule, player
                   count, coin pool, price — comes off the list, so it is known
                   for every session that appears at all. The only per-session

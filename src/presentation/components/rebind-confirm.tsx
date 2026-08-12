@@ -28,7 +28,7 @@ export function RebindConfirm({
         Rebind {rebind.agentName} to {rebind.toStrategyName}?
       </h2>
 
-      <div role="alert" className="rounded border p-4 text-sm">
+      <div role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
         <p className="font-medium">This replaces configuration. It is not a merge.</p>
         <p className="mt-2">{consequence}</p>
       </div>

@@ -5,8 +5,8 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-07-31
-change: performance-was-already-in-the-payload
+updated: 2026-08-12
+change: ""
 capability: agent-understanding
 github: "107"
 blocked_by: []
@@ -192,3 +192,20 @@ reports the margin.
 Same shape as `get_agent_performance` answering zeros on agents with real closed
 losses — two nominally authoritative money tools, both answering zero where the
 platform's own alternative answers correctly. Nothing should be built on either.
+
+## Re-confirmed 2026-08-12 — both agents at once, v17.2.0
+
+Fourth measurement, and the first that catches the disagreement on **two
+agents in the same minute**. `list_user_active_positions` reported
+`marginedUsd: 11.07` for Undertow (3 open positions) and `marginedUsd:
+11.05` for Breakwater (3 open positions). `get_agent_fund_allocation`
+called seconds later answered all-zero for both — `availableUsd: 0,
+committedUsd: 0, lifetimeAllocatedUsd: 0, lifetimeRecalledUsd: 0`. The
+wrongness survived the v11 → v17 platform upgrades untouched.
+
+The linked change `performance-was-already-in-the-payload` shipped and
+archived long ago; the `change:` link is cleared because what this item
+still tracks — the allocation tool answering zero against live margin,
+and `accountEquityUsd: 0` — was never that change's scope. What would
+settle it: a BattleGrid-side fix or documentation of what
+`get_agent_fund_allocation` actually measures.

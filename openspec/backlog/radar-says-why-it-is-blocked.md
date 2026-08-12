@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-11
-updated: 2026-08-11
+updated: 2026-08-12
 change: ""
 capability: agent-deployment
 github: "135"
@@ -44,6 +44,14 @@ pass through instead of leaving a deployment looking idle for no reason.
   `…/BLOCKED/…`.
 - No blocked radar deployment has been observed live; `blockedReason`'s
   vocabulary is unestablished.
+- Live re-read 2026-08-12 (`list_radar_deployments`, v17.2.0): all 20
+  policies answer `blockedReason: null, blockedSince: null` — the fields
+  are on every row, just never populated here. Two additions the schema
+  diff had not surfaced: the fleet `summary` now carries a `blocked`
+  count (0) alongside the other section counts, and the response has a
+  top-level `blockedAgents: []` array — a second, agent-level blocked
+  surface whose row shape is likewise unobserved. Whatever models the
+  coin-level BLOCKED state should expect an agent-level sibling.
 
 ## Notes
 

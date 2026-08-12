@@ -52,7 +52,7 @@ export default async function SectionLibraryPage() {
               const key = template.kind === 'platform' ? template.sectionKey : template.templateKey;
               const columns = template.columns;
               return (
-                <li key={key} className="rounded border p-3 text-sm">
+                <li key={key} className="rounded-gc-2 border border-border-default p-3 text-sm">
                   <p>
                     <a
                       href={`/strategies/sections/${encodeURIComponent(key)}`}

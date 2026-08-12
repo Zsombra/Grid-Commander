@@ -21,7 +21,7 @@ export function StrategyList({
 }) {
   if (result.kind === 'unreadable') {
     return (
-      <div role="alert" className="rounded border p-4 text-sm">
+      <div role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
         <p className="font-medium">Your strategies could not be loaded.</p>
         <p className="mt-1">{result.reason}</p>
         <WhyNotLoaded cause={result.cause} subject="they are" />
@@ -68,14 +68,14 @@ export function StrategyList({
   return (
     <div className="space-y-4">
       {forking.kind === 'at-capacity' && (
-        <p role="status" className="rounded border p-3 text-sm">
+        <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
           {forking.explanation}
         </p>
       )}
 
       <ul className="space-y-3">
         {listings.map(({ strategy, governs, editable, fork }) => (
-          <li key={strategy.id} className="rounded border p-4">
+          <li key={strategy.id} className="rounded-gc-2 border border-border-default p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               {/* The name is the way in. Every row offered only actions before
                   this — four things to do to a strategy and no way to look at

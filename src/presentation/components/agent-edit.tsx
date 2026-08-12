@@ -110,7 +110,7 @@ export function AgentEditForm({
 
   return (
     <div className="space-y-6">
-      {problem && <p role="alert" className="rounded border p-3 text-sm">{problem}</p>}
+      {problem && <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{problem}</p>}
 
       <form method="get" className="space-y-6">
         {/* Puts the page into its confirm branch on the next request. */}
@@ -203,7 +203,7 @@ export function PositionManagement({
       <h2 className="font-medium">Position management</h2>
 
       {drift && drift.differing.length > 0 ? (
-        <p role="status" className="rounded border p-3 text-sm">
+        <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
           This agent names {drift.preset}, but its values differ from the
           catalog&apos;s {drift.preset} on: {drift.differing.join(', ')}. The
           label is not the truth here — the fields below are.
@@ -380,7 +380,7 @@ export function ReactivatePrompt({
         <BindingSummary binding={agent.binding} />
       </p>
       {/* Capacity before the act, not after the refusal. */}
-      {atCapacity && <p role="alert" className="rounded border p-3 text-sm">{atCapacity}</p>}
+      {atCapacity && <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{atCapacity}</p>}
       <form action={action} className="flex flex-wrap gap-3">
         <input type="hidden" name="agentId" value={agent.id} />
         <input type="hidden" name="expectedRevision" value={agent.revision} />

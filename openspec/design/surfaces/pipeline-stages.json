@@ -1,0 +1,225 @@
+{
+  "id": "pipeline-stages",
+  "title": "Why it did or didn't trade",
+  "route": "/agents/[id]/pipeline",
+  "capability": "agent-understanding",
+  "status": "designed",
+  "generated_at_commit": "c1ad290",
+  "source_files": [
+    "app/(app)/agents/[id]/pipeline/page.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "funnel / blocks / evaluations / decisions",
+      "shape": "four independent StageResult reads \u2014 entries | none | unreadable, each on its own",
+      "source": "app.readPipeline.execute \u2014 a candidate ends at one of three places: blocked before evaluation, evaluated and skipped, or decided against"
+    }
+  ],
+  "components": [
+    {
+      "id": "pipeline-page",
+      "role": "container",
+      "purpose": "The three stages a candidate meets, in order, each standing alone \u2014 plus the funnel that frames them.",
+      "states": [
+        "full",
+        "partially-readable",
+        "not-connected"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centered column, space-y-6, p-6, four sections, back link.",
+      "constraints": [
+        "Each stage renders on its own \u2014 one that cannot be read says so without hiding the two that answered.",
+        "'Nothing was blocked' and 'we could not ask what was blocked' send an operator to different places and must never render alike.",
+        "No client JS."
+      ],
+      "children": [
+        "stage-note",
+        "funnel",
+        "blocks",
+        "evaluations",
+        "decisions"
+      ]
+    },
+    {
+      "id": "stage-note",
+      "role": "feedback",
+      "purpose": "What an empty or unreadable stage says, per stage \u2014 the subject names the record, not the thing recorded.",
+      "states": [
+        "none",
+        "unreadable",
+        "absent"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [],
+      "current_implementation": "Shared helper: the empty sentence states what the emptiness means; unreadable carries role=alert plus WhyNotLoaded with a per-stage subject.",
+      "constraints": [
+        "Each subject names the record ('this agent's record of what stopped it is'), never the blocker \u2014 saying the blocker is gone is the opposite of what failed to load.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "funnel",
+      "role": "display",
+      "purpose": "The frame: ten rows cannot say what '245 evaluations behind 73 entries' says.",
+      "states": [
+        "value",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [],
+      "current_implementation": "One tokened card \u2014 the same shape the competitor page renders, and this figure existed for competitors before it existed for the user's own agents.",
+      "constraints": [
+        "The two skip counters the platform names alike are labelled apart and never summed.",
+        "Fractions and platform-percentages go through separate formatters \u2014 one through the other renders 7600%."
+      ],
+      "children": []
+    },
+    {
+      "id": "blocks",
+      "role": "display",
+      "purpose": "Stopped before evaluation: the gate, the reason code, and the numbers that are the actual answer.",
+      "states": [
+        "entries",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [],
+      "current_implementation": "Tokened cards: reasonCode, coin or account-wide, gate stage, quantified reasonDetail pairs, timestamp.",
+      "constraints": [
+        "The reasonDetail numbers are the answer; the code is only the label \u2014 both render.",
+        "A block with no coin says 'account-wide' rather than dropping the fact."
+      ],
+      "children": []
+    },
+    {
+      "id": "evaluations",
+      "role": "display",
+      "purpose": "Evaluated: score against threshold, each row opening the full scorecard.",
+      "states": [
+        "entries",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [
+        {
+          "id": "open",
+          "effect": "Each row links to /agents/[id]/pipeline/[logId]"
+        }
+      ],
+      "current_implementation": "Tokened cards: coin (linked), score vs threshold, terminal status, triggered-of-required, bias, read direction, the per-card conflict line in words, gate status, timestamp.",
+      "constraints": [
+        "The per-card conflict line stays in words \u2014 a notice block per card would out-shout the cards (DT-0009's ruling).",
+        "Score and threshold are fractions and render through the fraction formatter."
+      ],
+      "children": []
+    },
+    {
+      "id": "decisions",
+      "role": "display",
+      "purpose": "Decided: the agent's own reasoning whole, the geometry as it was at the decision, and the evidence it read.",
+      "states": [
+        "entries",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [],
+      "current_implementation": "Tokened cards: decision/coin/direction/conviction/status, 'At the decision' geometry, sizing, the reasoning whitespace-pre-wrap and unparaphrased, the Evidence disclosure, order ids, timestamp.",
+      "constraints": [
+        "'At the decision' is load-bearing copy: position management moves the stop after a trade opens, so this page and the agent page would otherwise show one word meaning two numbers.",
+        "The reasoning renders whole and unparaphrased.",
+        "The order-id thread from 'it decided' to 'an order exists' stays."
+      ],
+      "children": [
+        "evidence"
+      ]
+    },
+    {
+      "id": "evidence",
+      "role": "display",
+      "purpose": "The signal checklist a decision was drawn from \u2014 the verdict counts legible before any interpretation is read.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "funnel / blocks / evaluations / decisions"
+      ],
+      "actions": [
+        {
+          "id": "expand",
+          "effect": "Native details/summary disclosure \u2014 no client JS"
+        }
+      ],
+      "current_implementation": "details/summary: the counts line ('5 CONFIRM \u00b7 2 WARN \u00b7 1 REJECT across 8 signals') as the summary; rows on tokened left rails, verdict printed as the platform sent it.",
+      "constraints": [
+        "Verdicts are printed as sent, never mapped to colour or icon \u2014 WARN is a third thing, and green/red teaches certainty the agent did not have.",
+        "The counts stay in the summary so the disagreement is legible before the interpretations."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "The shared turned-away page.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
+      "constraints": [
+        "No per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Why didn't it trade",
+      "steps": [
+        "arrive from the agent page",
+        "read the funnel",
+        "walk blocked \u2192 evaluated \u2192 decided until the answer appears"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "evaluations",
+      "decisions"
+    ],
+    "notes": "Per-stage unreadable states carry role=alert. The Evidence disclosure is a native details element. No client JS."
+  }
+}

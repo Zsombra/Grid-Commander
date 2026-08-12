@@ -37,7 +37,7 @@ export function AgentForm({
   return (
     <form action={action} className="space-y-6">
       {issues.length > 0 && (
-        <div role="alert" className="rounded border p-3 text-sm">
+        <div role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
           <p className="font-medium">
             {issues.length} value{issues.length === 1 ? '' : 's'} need attention.
           </p>

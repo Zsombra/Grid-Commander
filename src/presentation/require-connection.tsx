@@ -1,4 +1,5 @@
 import type { CurrentUserResult } from '@/application/use-cases/current-user.query.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 
 /**
  * The one place a request without authority is turned away.
@@ -14,8 +15,11 @@ export function NotConnected({ result }: { result: Extract<CurrentUserResult, { 
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Not connected</h1>
       <p className="text-sm">{result.message}</p>
+      {/* The page's one remedy is a target, not a sentence — DT-0006, by
+          DT-0001's strategy-not-found precedent. Secondary, not primary:
+          this is navigation to where the grant is read, not the commit. */}
       <p className="text-sm">
-        <a href="/connect" className="underline">
+        <a href="/connect" className={BUTTON_SECONDARY}>
           Connect your BattleGrid account
         </a>
       </p>

@@ -27,13 +27,17 @@ vi.mock('@/presentation/session.js', () => ({
 const NOW = new Date('2026-07-27T12:00:00Z');
 const hoursBefore = (n: number) => new Date(NOW.getTime() - n * 3600_000);
 
-async function pageWith(rows: Proposal[], listFails: string | null = null) {
+async function pageWith(
+  rows: Proposal[],
+  listFails: string | null = null,
+  search: Record<string, string> = {},
+) {
   const proposals = new FakeProposalStore();
   proposals.rows = rows;
   proposals.listFails = listFails;
   current = actingWith({ proposals }) as unknown as { app: unknown; user: unknown };
   const Page = (await import('../../app/(app)/pending/page.js')).default;
-  return (await rendered(await Page())).text;
+  return (await rendered(await Page({ searchParams: Promise.resolve(search) }))).text;
 }
 
 describe('the proposal queue', () => {
@@ -116,5 +120,40 @@ describe('the proposal queue', () => {
     const t = await pageWith([aProposal({ recordedAt: hoursBefore(1) })]);
     expect(t).toMatch(/cannot make one/i);
     expect(t).toMatch(/has touched your BattleGrid account/i);
+  });
+});
+
+describe('the redirects that used to say nothing', () => {
+  beforeEach(() => vi.resetModules());
+
+  it('a problem the agree action sent back is shown, not dropped', async () => {
+    // The one sender of /pending?problem= is the agree whose write SUCCEEDED
+    // against a proposal already closed — the account moved, and the in-code
+    // comment promises the operator learns it did.
+    const message = 'The change was made, but this proposal had already been closed.';
+    const t = await pageWith([], null, { problem: message });
+    expect(t).toContain(message);
+  });
+
+  it('an already-resolved decline is noted in words, not a query string', async () => {
+    const t = await pageWith([], null, { note: 'already-resolved' });
+    expect(t).toContain('This proposal was already resolved');
+    expect(t).toContain('nothing was written to the account');
+  });
+
+  it('a refused agree returns to the proposal with the reason shown', async () => {
+    // The Shell renders the problem on every branch — asserted on the branch
+    // that needs no describe, because the redirect can land on any of them.
+    const proposals = new FakeProposalStore();
+    current = actingWith({ proposals }) as unknown as { app: unknown; user: unknown };
+    const Page = (await import('../../app/(app)/pending/[id]/page.js')).default;
+    const r = await rendered(
+      await Page({
+        params: Promise.resolve({ id: 'ghost' }),
+        searchParams: Promise.resolve({ problem: 'maxLeverage: above the platform cap' }),
+      }),
+    );
+    expect(r.text).toContain('Refused:');
+    expect(r.text).toContain('maxLeverage: above the platform cap');
   });
 });

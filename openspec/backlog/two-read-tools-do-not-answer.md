@@ -5,8 +5,8 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-07-31
-change: every-value-sent-is-one-the-platform-accepts
+updated: 2026-08-12
+change: ""
 capability: battlegrid-connection
 github: "114"
 blocked_by: []
@@ -98,3 +98,28 @@ The product still calls neither tool, so nothing is broken. Item stays open as
 the standing record of one platform-side declared-vs-actual mismatch, and as
 the reason nothing may build a call to `get_market_context` from `required`
 alone.
+
+## Re-observed 2026-08-12 — fourth measurement, third major (v17.2.0)
+
+`get_market_context({})` refused identically again: `VALIDATION_ERROR:
+Provide sessionId or primaryTimeframe`. Now observed across v5, v11 and
+v17. One movement worth recording: the v17 tool **description** now says
+the precondition in prose — "Provide sessionId for session-scoped
+context, or primaryTimeframe … — exactly one of the two" — so the
+platform documents the constraint for humans while the JSON Schema still
+declares nothing required. The machine-readable contract remains wrong;
+the prose caught up. `anyOf` remains unexpressed.
+
+The linked change `every-value-sent-is-one-the-platform-accepts` shipped
+and archived; the `change:` link is cleared — this item was filed *by*
+that change as a deferred finding, not tracked by it. What remains open
+is upstream's schema, plus the optional probe refinement in Fix #3.
+
+**Fix #3 landed the same day** (`a-refusal-and-an-outage-stop-reading-alike`,
+lite, archived 2026-08-12): the probe now records `call_failed_code` beside
+`call_failed` — the platform's structured code on a refusal, null on prose
+and transport failures — mirroring the adapter's `codeOf`. The key is
+additive; it takes effect in the artifact on the next probe run. Fix #2 was
+already honored (`get_market_context`'s real precondition is recorded here
+and in the reference). What keeps this open is Fix-#1 territory only:
+upstream's declared schema still understates the precondition.

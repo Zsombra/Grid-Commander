@@ -185,7 +185,7 @@ export default async function DraftConditionPage({
       )}
 
       {result.kind === 'no-such-condition' && (
-        <p role="alert" className="rounded border p-3 text-sm">
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
           {/* Not a blank composer. A stale link and a fresh start look identical
               as an empty form, and the operator who followed the link is
               entitled to know which they got. */}
@@ -200,7 +200,7 @@ export default async function DraftConditionPage({
           {/* Ours to say, and said as ours. These are rows that do not describe
               a definition at all — nothing was sent, so BattleGrid has no
               opinion to report and none is implied. */}
-          <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+          <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
             {parsed.problems.map((problem) => (
               <li key={problem}>{problem}</li>
             ))}
@@ -213,7 +213,7 @@ export default async function DraftConditionPage({
           <h2 className="text-base font-medium">
             Part of this draft cannot be sent to BattleGrid
           </h2>
-          <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+          <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
             {result.reasons.map((reason) => (
               <li key={reason}>Not understood by Grid-Commander: {reason}</li>
             ))}
@@ -257,7 +257,7 @@ export default async function DraftConditionPage({
             {/* The platform's words, whole. Its validator names the offending
                 path and what is legal in its place, and that teaching is the
                 most useful thing this surface can show. */}
-            <p role="alert" className="rounded border p-3 text-sm">{result.outcome.reason}</p>
+            <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{result.outcome.reason}</p>
           </section>
         ) : (
           <ConditionOutcomes

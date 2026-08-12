@@ -115,7 +115,7 @@ export function TradeChartSvg({ chart }: { chart: TradeChart }) {
       viewBox={`0 0 ${String(W)} ${String(H)}`}
       role="img"
       aria-label={described}
-      className="w-full rounded border"
+      className="w-full rounded-gc-2 border border-border-default"
       style={{ background: 'var(--gc-bg-sunken)' }}
     >
       <title>{described}</title>
@@ -260,7 +260,7 @@ export function AuditTrail({ audit }: { audit: PositionAuditResult | null }) {
     );
   }
   return (
-    <ol className="space-y-3 border-l pl-4">
+    <ol className="space-y-3 border-l border-border-default pl-4">
       {audit.events.map((e, i) => (
         <AuditEventRow key={`${e.orderId ?? ''}-${e.kind}-${String(i)}`} event={e} />
       ))}

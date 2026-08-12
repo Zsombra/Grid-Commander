@@ -40,7 +40,7 @@ export function GameRules({ rules }: { rules: GameRulesResult }) {
       ) : (
         <ul className="space-y-3">
           {rules.presets.map((p) => (
-            <li key={p.id} className="rounded border p-3 text-sm space-y-1">
+            <li key={p.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
               <p className="font-medium">
                 {p.name} · {p.gameType}
                 {p.timeRangeKey ? ` · ${p.timeRangeKey}` : ''}

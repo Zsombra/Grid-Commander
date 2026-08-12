@@ -107,7 +107,7 @@ function Reason({ reason }: { reason: BlockReason }) {
   const when = span(reason);
 
   return (
-    <li className="space-y-1 rounded border p-3 text-sm">
+    <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
       <p className="font-medium">
         {/* The platform's code, verbatim. Never our paraphrase of it. */}
         {`${reason.reasonCode} · ${reason.count}${standing ? ' times' : ' time'}` +

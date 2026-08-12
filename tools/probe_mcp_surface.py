@@ -588,6 +588,25 @@ def unwrap(result: dict[str, Any]) -> tuple[Any, str | None]:
     return None, "no readable payload in the envelope"
 
 
+def code_of(detail: str) -> str | None:
+    """The structured code inside a refusal, or None when it is prose.
+
+    Mirrors `codeOf` beside `ToolRefusedError` in mcp-adapter.ts. A refusal
+    carrying `{"code": "VALIDATION_ERROR", ...}` is a schema gap worth
+    reporting; an `INTERNAL_ERROR` is a server bug; prose is neither. The
+    probe flattening all three into one `call_failed` string is how a schema
+    gap and an outage came to read as the same event — see
+    `two-read-tools-do-not-answer`, Fix #3.
+    """
+    try:
+        parsed = json.loads(detail)
+        if isinstance(parsed, dict) and isinstance(parsed.get("code"), str):
+            return parsed["code"]
+    except json.JSONDecodeError:
+        pass
+    return None
+
+
 def shape(value: Any, depth: int = 0) -> Any:
     """A response's shape, without its contents.
 
@@ -936,9 +955,11 @@ def main() -> int:
                     return
                 entry["observed"] = None
                 entry["call_failed"] = error[:300]
+                entry["call_failed_code"] = code_of(error)
                 entry["arguments_from"] = how
                 failed += 1
-                print(f"  fail {name}: {error[:70]}")
+                code = entry["call_failed_code"]
+                print(f"  fail {name}{f' [{code}]' if code else ''}: {error[:70]}")
                 return
             payloads[name] = payload
             entry["observed"] = sorted(payload.keys())
@@ -960,6 +981,9 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001 — the reason is the finding
             entry["observed"] = None
             entry["call_failed"] = str(exc)[:300]
+            # A transport failure never carries a platform code — recording
+            # None here is what keeps it distinguishable from a refusal.
+            entry["call_failed_code"] = None
             entry["arguments_from"] = how
             failed += 1
             print(f"  err  {name}: {exc}")

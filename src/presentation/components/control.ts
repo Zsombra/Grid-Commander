@@ -48,11 +48,12 @@ export const CONTROL =
  * to flinch at the correct one, and the weight belongs on the consequence block
  * these pages already render in BattleGrid's own words.
  *
- * `min-h-11` is 44px, the tap-target floor `system.json` states as a principle
- * and gives no token for — its space scale is 32px then 48px. DT-0002 reached
- * the same wall and spent the same utility. The alternative was a raw `44px` in
- * a className, which the design contract forbids for good reason. Filed as
- * `the-button-primitive-has-no-tokens`.
+ * `min-h-control` is 44px, the tap-target floor `system.json` states as a
+ * principle — and, since DT-0003, finally provides as a token
+ * (`size.control.min`, emitted by `generate-theme.mjs`). DT-0002 and the first
+ * cut of these constants spent Tailwind's `min-h-11` because the space scale
+ * ran 32px then 48px and nothing was 44; that gap was filed as
+ * `the-button-primitive-has-no-tokens` and this is its closure.
  *
  * `BUTTON_SECONDARY` carries `inline-flex` and its centring because it is worn
  * by anchors as often as by buttons — the cancel beside a commit is an `<a>`,
@@ -60,15 +61,24 @@ export const CONTROL =
  *
  * No focus treatment on either: `globals.css` declares one ring for every
  * interactive element, so repeating it here would be a second place to forget.
+ *
+ * Hover and active are DT-0004's. Secondary responds to the pointer — border
+ * to `border.strong`, background to `bg.sunken` — because an anchor that
+ * changes nothing on pointer-over reads as inert text in a box. Active on both
+ * holds the hover colour at `duration-instant`: a press reads as immediate,
+ * never animated.
  */
 export const BUTTON_PRIMARY =
-  'min-h-11 rounded-gc-2 bg-accent-default px-4 py-2 ' +
+  'min-h-control rounded-gc-2 bg-accent-default px-4 py-2 ' +
   'text-base font-medium text-accent-text ' +
-  'transition-colors duration-fast hover:bg-accent-hover';
+  'transition-colors duration-fast hover:bg-accent-hover ' +
+  'active:bg-accent-hover active:duration-instant';
 
 export const BUTTON_SECONDARY =
-  'inline-flex min-h-11 items-center justify-center rounded-gc-2 ' +
-  'border border-border-default px-4 py-2 text-base text-text-primary';
+  'inline-flex min-h-control items-center justify-center rounded-gc-2 ' +
+  'border border-border-default px-4 py-2 text-base text-text-primary ' +
+  'transition-colors duration-fast hover:border-border-strong hover:bg-bg-sunken ' +
+  'active:border-border-strong active:bg-bg-sunken active:duration-instant';
 
 /**
  * How the name of a field looks.

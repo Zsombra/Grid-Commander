@@ -169,7 +169,7 @@ export default async function SaveConditionPage({
   const head = (
     <>
       <h1 className="text-xl font-medium">Save a condition to {strategy.name}</h1>
-      {problem ? <p role="alert" className="rounded border p-3 text-sm">{problem}</p> : null}
+      {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
     </>
   );
 
@@ -187,7 +187,7 @@ export default async function SaveConditionPage({
                 describe a definition at all, so there is nothing to compile and
                 BattleGrid has no opinion to report — showing the list below
                 without this would read as the draft having been forgotten. */}
-            <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+            <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
               {parsed.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
@@ -210,7 +210,7 @@ export default async function SaveConditionPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         {head}
-        <p role="alert" className="rounded border p-3 text-sm">
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
           {`This strategy defines no condition called ${result.conditionKey}, so there was nothing to change or remove. It may have been renamed or removed since this link was made.`}
         </p>
         {list}
@@ -224,7 +224,7 @@ export default async function SaveConditionPage({
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         {head}
         <h2 className="text-base font-medium">Part of this draft cannot be sent to BattleGrid</h2>
-        <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+        <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
           {result.reasons.map((reason) => (
             <li key={reason}>Not understood by Grid-Commander: {reason}</li>
           ))}
@@ -244,7 +244,7 @@ export default async function SaveConditionPage({
         <h2 className="text-base font-medium">
           BattleGrid would save something other than what was submitted
         </h2>
-        <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+        <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
           {result.reasons.map((reason) => (
             <li key={reason}>{reason}</li>
           ))}
@@ -266,7 +266,7 @@ export default async function SaveConditionPage({
         {/* The platform's words, whole. Its validator names the offending path
             and what is legal in its place, and that teaching is the most useful
             thing this surface can show. */}
-        <p role="alert" className="rounded border p-3 text-sm">{result.reason}</p>
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{result.reason}</p>
         <p className="text-sm">{`Nothing was written.`}</p>
         {list}
         {back}
@@ -281,7 +281,7 @@ export default async function SaveConditionPage({
       {head}
       {/* The stored consequence, rendered as the text the token was issued
           against — never a second wording of it. */}
-      <p role="alert" className="whitespace-pre-line rounded border p-4 text-sm">
+      <p role="alert" className="whitespace-pre-line rounded-gc-2 border border-border-default p-4 text-sm">
         {proposal.consequence}
       </p>
 
@@ -307,7 +307,7 @@ export default async function SaveConditionPage({
       {proposal.dangling.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-base font-medium">These references would have nothing to resolve</h2>
-          <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+          <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
             {proposal.dangling.map((key) => (
               <li key={key}>
                 {`${key} is referred to by a condition in the list above and defined by none of them.`}

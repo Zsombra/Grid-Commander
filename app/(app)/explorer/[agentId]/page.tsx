@@ -87,7 +87,7 @@ export default async function CompetitorPage({
           subject="this agent’s record is"
         />
         {funnel.kind === 'value' ? (
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <p>
               {funnel.value.totalEvaluations ?? '—'} evaluations →{' '}
               {funnel.value.totalDecisions ?? '—'} decisions →{' '}
@@ -182,7 +182,7 @@ export default async function CompetitorPage({
             ) : null}
             <ul className="space-y-2">
               {trades.value.map((t) => (
-                <li key={t.id} className="rounded border p-3 text-sm space-y-1">
+                <li key={t.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                   <p className="font-medium">
                     {t.coinTicker ?? 'unnamed market'} {t.direction ?? ''} · {usd(t.netPnl)}
                     {/* The platform's verdict, not one derived from the figure. */}
@@ -222,7 +222,7 @@ export default async function CompetitorPage({
             ) : null}
             <ul className="space-y-2">
               {evaluations.value.map((e) => (
-                <li key={e.id} className="rounded border p-3 text-sm space-y-1">
+                <li key={e.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                   <p className="font-medium">
                     {/*
                       Every row is offered, including the ones whose detail

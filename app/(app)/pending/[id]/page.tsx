@@ -18,16 +18,31 @@ import { OPERATIONS } from '@/ports/proposals.js';
  * disabled button still implies the change is available; silence implies the
  * product is broken.
  */
-export default async function ProposalPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProposalPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
+
+  const q = await searchParams;
+  const raw = q['problem'];
+  const problemValue = Array.isArray(raw) ? raw[0] : raw;
+  // Rendered by the Shell on every branch: a refused agree redirects back
+  // here, and the page it lands on may by then describe a different state —
+  // resolved after a double submit, stale, gone. The refusal must not depend
+  // on which branch answers.
+  const problem = problemValue && problemValue.length > 0 ? problemValue : null;
 
   const result = await app.openProposal.execute({ ...user.authority, id });
 
   if (result.kind === 'not-found') {
     return (
-      <Shell title="No such proposal">
+      <Shell title="No such proposal" problem={problem}>
         <p className="text-base text-text-secondary">
           Nothing with this reference was recorded for your account.
         </p>
@@ -37,7 +52,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   if (result.kind === 'unreadable') {
     return (
-      <Shell title="This proposal could not be read">
+      <Shell title="This proposal could not be read" problem={problem}>
         <p className="text-base text-text-secondary">{result.reason}</p>
         <p className="text-sm text-text-secondary">
           This is not the same as it having been withdrawn.
@@ -50,7 +65,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   if (result.kind === 'resolved') {
     return (
-      <Shell title={`Already ${result.proposal.status}`}>
+      <Shell title={`Already ${result.proposal.status}`} problem={problem}>
         <p className="text-base text-text-primary">
           This proposal to {label} was {result.proposal.status}. It cannot be reopened.
         </p>
@@ -60,7 +75,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   if (result.kind === 'stale') {
     return (
-      <Shell title="This proposal went stale">
+      <Shell title="This proposal went stale" problem={problem}>
         <p className="text-base text-text-primary">
           It was suggested too long ago to act on now, and nothing happened to your account.
           If it still makes sense, ask for it again.
@@ -71,7 +86,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   if (result.kind === 'not-possible') {
     return (
-      <Shell title="This can no longer be done">
+      <Shell title="This can no longer be done" problem={problem}>
         {/* No confirmation control at all — not a disabled one. */}
         <p className="text-base text-text-primary">{result.reason}</p>
       </Shell>
@@ -80,7 +95,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   if (result.kind === 'no-op') {
     return (
-      <Shell title={`Proposed: ${label}`}>
+      <Shell title={`Proposed: ${label}`} problem={problem}>
         <p className="text-base text-text-primary">{result.reason}</p>
         <ProposalDifference dispositions={result.dispositions} />
       </Shell>
@@ -88,12 +103,15 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <Shell title={`Proposed: ${label}`}>
+    <Shell title={`Proposed: ${label}`} problem={problem}>
       <section className="space-y-2">
         <h2 className="text-base font-medium text-text-primary">What agreeing would do</h2>
-        {/* The product's own consequence sentence, unchanged. This page must
-            not grow a second vocabulary for the same write. */}
-        <p className="text-base text-text-primary">{result.consequence}</p>
+        {/* The product's own consequence sentence, unchanged, in the same
+            consequence role the archive confirmation gives the same
+            vocabulary. This page must not grow a second one. DT-0007. */}
+        <p className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary">
+          {result.consequence}
+        </p>
       </section>
 
       <ProposalDifference dispositions={result.dispositions} />
@@ -125,13 +143,27 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   );
 }
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+function Shell({
+  title,
+  problem = null,
+  children,
+}: {
+  title: string;
+  problem?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-6">
       <h1 className="text-xl font-medium">{title}</h1>
       <a href="/pending" className="text-sm underline">
         Back to proposals
       </a>
+      {problem ? (
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
+      ) : null}
       {children}
     </main>
   );

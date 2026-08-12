@@ -59,7 +59,10 @@ export default async function ReactivatePage({
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Reactivate {agent.displayName}?</h1>
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
       ) : null}
       <ReactivatePrompt
         agent={agent}

@@ -141,7 +141,7 @@ export function CoinVerdict({ v }: { v: CoinQualification }) {
   const atr: AtrVolatilityGate = v.gates.atrVolatility;
 
   return (
-    <li className="space-y-2 rounded border p-3 text-sm">
+    <li className="space-y-2 rounded-gc-2 border border-border-default p-3 text-sm">
       <p className="font-medium">
         {v.coinTicker}
         {v.coinName ? ` — ${v.coinName}` : ''} ·{' '}

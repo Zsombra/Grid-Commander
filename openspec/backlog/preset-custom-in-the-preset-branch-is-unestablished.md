@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-12
 change: ""
 capability: agent-authoring
 github: "106"
@@ -114,3 +114,13 @@ FULL_EXECUTION agents on it and no readable slot cap — `get_account_capacity`
 does not exist on this server — so the cost of taking a slot cannot be measured
 before taking it. That is a poor trade for a p3, and it is the operator's call
 rather than a probe's.
+
+## Corrected 2026-08-12 — the slot cap is readable now, and it is full
+
+The "no readable slot cap" premise no longer holds: `get_account_state`
+carries `agentSlots: {limit: 3, used: 3, remaining: 0}` and
+`list_intelligence_agents` echoes the same as `slotUsage` (observed live
+on v17.2.0). So the cost of the probe *is* now measurable before paying
+it — and today the measurement says the probe is impossible: zero slots
+remain. When a slot frees, this stops being a blind trade; until then
+the item is blocked on capacity, not on courage.

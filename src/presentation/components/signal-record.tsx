@@ -90,7 +90,7 @@ function Gaps({ gaps }: { gaps: readonly CoverageGap[] }) {
 
 function SeriesRow({ series }: { series: SeriesCoverage }) {
   return (
-    <li className="space-y-1 rounded border p-3 text-sm">
+    <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
       <p className="text-base font-medium">
         <a href={`/recorder/${series.coinTicker}`}>{series.coinTicker}</a>{' '}
         <span className="text-text-secondary">at {series.interval}</span>
@@ -110,7 +110,7 @@ function SeriesRow({ series }: { series: SeriesCoverage }) {
 
 function NeverCapturedRow({ series }: { series: NeverCapturedSeries }) {
   return (
-    <li className="space-y-1 rounded border p-3 text-sm">
+    <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
       <p className="text-base font-medium">
         {series.coinTicker} <span className="text-text-secondary">at {series.interval}</span>
       </p>
@@ -186,7 +186,7 @@ export function RecordCoverage({ result }: { result: ReadRecordCoverageResult })
 function TimelineRow({ entry }: { entry: TimelineEntry }) {
   if (entry.kind === 'failed') {
     return (
-      <li className="space-y-1 rounded border p-3 text-sm">
+      <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
         <p className="font-medium">Could not be read</p>
         <p>
           <time dateTime={stamp(entry.attemptedAt)} className="text-text-secondary">
@@ -202,7 +202,7 @@ function TimelineRow({ entry }: { entry: TimelineEntry }) {
     );
   }
   return (
-    <li className="space-y-1 rounded border p-3 text-sm">
+    <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
       <p>
         <CapturedAt at={entry.capturedAt} /> {`at ${entry.interval}`}
         <span className="text-text-secondary">
@@ -259,7 +259,7 @@ export function SignalHistoryView({
       <h3 className="text-sm font-medium">{signalId} across captures</h3>
       <ul className="space-y-2">
         {points.map((p) => (
-          <li key={stamp(p.capturedAt)} className="space-y-1 rounded border p-3 text-sm">
+          <li key={stamp(p.capturedAt)} className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
             <p>
               <CapturedAt at={p.capturedAt} /> at {p.interval} · price {price(p.currentPrice)}
             </p>

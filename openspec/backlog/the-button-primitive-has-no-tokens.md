@@ -5,7 +5,7 @@ type: debt
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-12
 change: ""
 capability: app-access
 github: "108"
@@ -87,3 +87,94 @@ ticket that adds the missing values and a `restyle` ticket that spends them.
 whole change is an extraction of decisions already made, and inventing a danger
 treatment would have been the developer agent designing, which the lane rule in
 `.claude/references/design-contract.md` §2 forbids.
+
+## 2026-08-12 — gaps 1 and 3 are closed; the item narrows to gap 2
+
+The prescription above was executed exactly.
+
+- **Gap 1 (the token) is closed.** `system.json` now carries
+  `size.control.min: 44px`; `generate-theme.mjs` emits
+  `--gc-size-control-min` and a `minHeight.control` Tailwind extension, so
+  the buttons wear `min-h-control` and `min-h-11` appears nowhere under
+  `src/` or `app/`. `tests/architecture/controls.test.ts` asserts the whole
+  chain — system value, theme mapping, CSS variable — so the utility cannot
+  silently become a class Tailwind drops. Ticket: **DT-0003**, implemented.
+- **The first confirmation page is surveyed and designed.**
+  `/agents/[id]/archive` → `openspec/design/surfaces/agent-archive-confirm.json`,
+  restyled under **DT-0004**: consequence block in the `consequence` role, a
+  bounced attempt in `danger` with a semibold "Refused:" prefix, the
+  cannot-archive refusal in `notice`, secondary button's first hover
+  treatment (landed in `control.ts`, so every page inherits it), mobile
+  full-width stacking. The survey also found the missing pending-feedback
+  state — filed separately as
+  `a-submitted-confirmation-gives-no-sign-it-is-working` (#153), since it is
+  behavior, not styling.
+- **Gap 3 (stale strategy-editor manifest) had already been resolved** by an
+  earlier re-survey; `validate --all` reports no `design_surface_stale`.
+
+**What keeps this open, narrowed to gap 2:** `/connect`, `/explorer`,
+`/pending`, the pipeline simulator and the remaining confirmation pages still
+have no manifest and no ticket — their treatments are DT-0002/DT-0004
+precedent worn without a decision recorded per surface. `ghost` and `danger`
+stay deliberately undefined until a surface renders them (DT-0003's rationale
+records this as the design agent's decision now, not a comment's).
+
+## 2026-08-12, later — `/connect` joined the designed column
+
+Second surface pass, same session: `openspec/design/surfaces/connect.json`
+(7 components — the consent, the declined/failure banners with their roles
+and constraints, the personal-deployment branch), then **DT-0005** (the
+not-view-only warning wears consequence, the Not requested block wears
+quiet; not one word changed) and **DT-0006** (the shared not-connected
+component's connect link wears `BUTTON_SECONDARY` — the way in as a target,
+by DT-0001's strategy-not-found precedent, inherited by every authenticated
+page). Both implemented. Remaining in gap 2: `/pending`, `/explorer`, the
+pipeline simulator, the other confirmations, and tickets for the three
+surfaces still `functional` (agent-roster, audit-log, strategy-catalog).
+
+## 2026-08-12, third pass — `/pending` joined whole
+
+Both routes surveyed (`pending-queue`, `pending-proposal` — 13 components
+between them, the fresh problem/note banners recorded with their roles as
+constraints) and **DT-0007** implemented: the proposal page's consequence
+sentence wears consequence, the departs warning wears notice, the
+nothing-would-change conclusion wears quiet. The queue needed no ticket —
+its banners landed pre-roled by `a-bounced-agree-says-why` and its lists
+were already tokened; recorded as `designed` on that basis. Remaining in
+gap 2: `/explorer`, the pipeline simulator, the other confirmations, and
+first tickets for agent-roster / audit-log / strategy-catalog.
+
+## 2026-08-12, fourth pass — `/explorer` (the field page)
+
+Manifest `explorer-field` (7 components); **DT-0008** implemented — cards
+take `border.default` at `radius.2` (the precedent treatment #155's sweep
+executes), the partial-field honesty sentence takes notice. The redirect
+sweep this pass opened with came back clean: every remaining
+query-carrying redirect lands on a page that reads it, so `/connect` and
+`/pending` were the only two instances of the dropped-message bug.
+Remaining in gap 2: the explorer subpages, the pipeline simulator, the
+other confirmations, and first tickets for agent-roster / audit-log /
+strategy-catalog.
+
+## 2026-08-12, fifth pass — the explorer subpages join whole
+
+Manifests `explorer-competitor` and `explorer-evaluation` (12 components);
+**DT-0009** implemented — the signals-disagreed sentence wears notice on
+the evaluation page. The pass also caught the border sweep's directional
+residual: 4 bare `border-l` rails, fixed as `the-rails-join-too` (lite,
+archived). The competitor page needed no ticket — every treatment arrived
+decided via the sweep. Remaining in gap 2: the pipeline simulator, the
+remaining confirmations, and first tickets for agent-roster / audit-log /
+strategy-catalog.
+
+## 2026-08-12, sixth pass — the pipeline simulator joins whole
+
+Manifests `pipeline-stages` and `pipeline-evaluation` (15 components,
+recording the stage-independence discipline, verdicts-never-colour, the
+at-the-decision copy law, and the simulator's refuse-rather-than-truncate
+constraint); **DT-0010** implemented — DT-0009's disagreement ruling
+landed identically on the own-evaluation page. The stages page needed no
+ticket. **Gap 2 is down to its last slice**: the remaining confirmation
+pages (edit/deploy/rebind/reactivate/undeploy and the strategy-side
+ceremonies) and first tickets for agent-roster / audit-log /
+strategy-catalog.

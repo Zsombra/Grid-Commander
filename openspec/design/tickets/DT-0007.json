@@ -1,0 +1,75 @@
+{
+  "id": "DT-0007",
+  "surface": "pending-proposal",
+  "targets": [
+    "consequence",
+    "proposal-difference"
+  ],
+  "type": "restyle",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The proposal page's three load-bearing sentences take the roles that mean them: the consequence wears consequence, the this-is-not-what-was-suggested warning wears notice, the nothing-would-change conclusion wears quiet.",
+  "rationale": "This page is where an operator agrees to a change a model suggested, and its hierarchy is currently flat prose: the consequence sentence \u2014 the same one the archive confirmation renders in the consequence role since DT-0004 \u2014 is an unstyled paragraph; the departs warning, whose own comment says a reader who stops at the first sentence must still learn this is not what was suggested, has no more weight than the table caption; and the nothing-would-change conclusion is the exact meaning the quiet role was built for ('absence of effect is stated, not implied'). Three sentences, three existing roles, zero new copy. The Refused banner and the two buttons already wear theirs.",
+  "design": {
+    "layout": "Unchanged \u2014 Shell order stays: heading, back-link, problem banner when present, consequence, difference, the two decisions.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "notice_bg": "color.notice.subtle",
+      "notice_border": "color.notice.border",
+      "quiet_bg": "color.quiet.subtle",
+      "quiet_border": "color.quiet.border",
+      "text": "color.text.primary",
+      "radius": "radius.2",
+      "block_padding": "space.4"
+    },
+    "states": {
+      "default": {
+        "content": "The consequence sentence in the consequence role: color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, color.text.primary \u2014 the heaviest block between the heading and the buttons, exactly as the archive confirmation renders the same vocabulary. The h2 'What agreeing would do' stays above it, verbatim."
+      },
+      "with-values": {
+        "content": "The Setting/Proposed/What-happens table unchanged \u2014 bordered scroll container, dispositions in words. Only the paragraphs around it take roles."
+      },
+      "without-values": {
+        "content": "Unchanged \u2014 'this proposal carries no values of its own' stays plain color.text.secondary prose; it is context, not a warning."
+      },
+      "departs-from-proposal": {
+        "content": "The warning before the table takes the notice role: color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, color.text.primary. Advisory, never danger \u2014 nothing failed; the world moved."
+      },
+      "would-change-nothing": {
+        "content": "The conclusion after the table takes the quiet role: color.quiet.subtle background, 1px color.quiet.border border, radius.2, space.4 padding, color.text.primary. 'Nothing has changed yet' gets the same visual commitment a warning would \u2014 silence reads as a broken page."
+      }
+    },
+    "responsive": {
+      "mobile": "Blocks full width in the shell; the table keeps its own overflow-x-auto scrolling.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes. The consequence sentence, the departs warning, and the nothing-would-change conclusion render verbatim."
+    }
+  },
+  "acceptance": [
+    "The consequence sentence renders in a consequence block (color.consequence.subtle / color.consequence.border, radius.2, space.4 padding) under its unchanged h2",
+    "The departs warning renders in a notice block before the table, and never in danger",
+    "The nothing-would-change conclusion renders in a quiet block after the table",
+    "The carries-no-values sentence stays plain secondary prose",
+    "All three sentences render verbatim \u2014 zero copy changes",
+    "Dispositions in the table remain named in words, never by colour alone",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog: the-button-primitive-has-no-tokens (#108) gap 2, third surface pass. Same three roles DT-0004/DT-0005 spent, same reasoning; pending-queue's banners landed pre-roled by a-bounced-agree-says-why and need no ticket."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

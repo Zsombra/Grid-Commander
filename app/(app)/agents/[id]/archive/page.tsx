@@ -20,10 +20,14 @@ export default async function ArchivePage({
   const result = await app.describeArchive.execute({ ...user.authority, agentId: id });
 
   if (result.kind !== 'proposal') {
+    // A refusal to mint is advisory, not failure: notice, never danger, and
+    // nothing beneath it styled as though retrying could help. DT-0004.
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot archive</h1>
-        <p role="alert" className="text-sm">{result.reason}</p>
+        <p role="alert" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
+          {result.reason}
+        </p>
       </main>
     );
   }
@@ -33,17 +37,25 @@ export default async function ArchivePage({
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {proposal.agentName}?</h1>
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        // A bounced write is a failure and wears danger — unlike the
+        // consequence block beside it, which is the legitimate action's weight.
+        // The prefix names the state so hue is never the only signal. DT-0004.
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
       ) : null}
-      <p role="alert" className="rounded border p-4 text-sm">{proposal.consequence}</p>
-      <form action={performArchive} className="flex flex-wrap gap-3">
+      <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary">
+        {proposal.consequence}
+      </p>
+      <form action={performArchive} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
           Archive {proposal.agentName} and free its slot
         </button>
-        <a href={`/agents/${proposal.agentId}`} className={BUTTON_SECONDARY}>
+        <a href={`/agents/${proposal.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave it active
         </a>
       </form>

@@ -2,10 +2,10 @@
 id: v5-surface-additions-unconsumed
 title: The smaller BattleGrid v5 additions — a price metric family, two column controls, and a module that became omissible
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-08-12
 capability: strategy-authoring
 github: "115"
 blocked_by: []
@@ -116,3 +116,17 @@ Kept open as the standing record of the v5 additions, but **nothing here is
 actionable** — the item should not be picked up as work again unless a surface
 starts composing `modules` or calling the policy tools, and both of those would
 be their own changes.
+
+---
+
+# Closed 2026-08-12 — the residual landed
+
+`the-metric-workbench-reads-the-declared-grammar` (archived today) took the
+one edit this item still carried: the metric workbench's `REL_TIMEFRAMES`
+and private reader are gone, the timeframe travels tagged, and `bars`,
+`ordering`, `side` and the chained transform are offered
+declared-or-withheld. Everything else in this item was already reconciled
+as records, not work: the `price` family needs nothing, the `priceAction`
+omissibility trap and the `entryStrategy` policy-slot change stay recorded
+here as warnings to whoever first composes `modules` or calls the policy
+tools — both of those would be their own changes.
