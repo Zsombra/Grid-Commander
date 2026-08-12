@@ -5,6 +5,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
 /**
  * Propose a rebind, and render what the confirmation was issued against.
@@ -18,13 +19,20 @@ export default async function RebindPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ to?: string; problem?: string }>;
+  searchParams: Promise<{ to?: string; problem?: string; authority?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { to, problem } = await searchParams;
+  const { to, problem, authority } = await searchParams;
+
+  // Authority, not this operation. Rendered before anything is described,
+  // because there is nothing to describe when no call can succeed — and no
+  // form, because a control that cannot work is not made honest by the
+  // sentence above it.
+  if (authority) return <AuthorityLost reason={authority} />;
+
   if (!to) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
@@ -96,6 +104,13 @@ export async function performRebind(formData: FormData) {
   // to escape as a thrown error, which rendered a framework error page in
   // place of the reason (the outcome-reaches-the-person requirement; the
   // CONFLICT case is live-confirmed).
+  // Lost authority is not a refusal of this operation — nothing on this account
+  // will work until it is fixed — so it travels under its own name and the page
+  // renders no form for it.
+  if (result.kind === 'authority-lost') {
+    const query = new URLSearchParams({ to: toStrategyId, authority: result.reason });
+    redirect(`/agents/${agentId}/rebind?${query.toString()}`);
+  }
   if (result.kind === 'destination-moved' || result.kind === 'refused') {
     const query = new URLSearchParams({ to: toStrategyId, problem: result.reason });
     redirect(`/agents/${agentId}/rebind?${query.toString()}`);

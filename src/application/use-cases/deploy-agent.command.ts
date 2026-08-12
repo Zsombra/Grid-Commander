@@ -4,6 +4,7 @@ import { confirmationTarget, CONFIRMATION_TTL_SECONDS } from '@/domain/capabilit
 import type { Clock } from '@/ports/clock.js';
 import type { RadarPort } from '@/ports/radar.js';
 import type { Randomness } from './connect.commands.js';
+import { outcomeOf } from './failure-outcome.js';
 
 /**
  * Deploying and undeploying: the acts that start and stop an agent scanning
@@ -124,7 +125,13 @@ export class DescribeDeployQuery {
 
 export type PerformDeployResult =
   | { readonly kind: 'deployed'; readonly revision: number }
-  | { readonly kind: 'refused'; readonly reason: string };
+  | { readonly kind: 'refused'; readonly reason: string }
+  /**
+   * The account's authority is gone, not this operation refused. Carries the
+   * sentence the failure built — which names the remedy belonging to *this*
+   * deployment, so it must be shown rather than replaced by a redirect.
+   */
+  | { readonly kind: 'authority-lost'; readonly reason: string };
 
 export class PerformDeployCommand {
   constructor(private readonly radar: RadarPort) {}
@@ -156,7 +163,7 @@ export class PerformDeployCommand {
       });
       return { kind: 'deployed', revision: result.revision };
     } catch (err) {
-      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+      return outcomeOf(err);
     }
   }
 }
@@ -239,7 +246,13 @@ export class DescribeUndeployQuery {
 
 export type PerformUndeployResult =
   | { readonly kind: 'undeployed' }
-  | { readonly kind: 'refused'; readonly reason: string };
+  | { readonly kind: 'refused'; readonly reason: string }
+  /**
+   * The account's authority is gone, not this operation refused. Carries the
+   * sentence the failure built — which names the remedy belonging to *this*
+   * deployment, so it must be shown rather than replaced by a redirect.
+   */
+  | { readonly kind: 'authority-lost'; readonly reason: string };
 
 export class PerformUndeployCommand {
   constructor(private readonly radar: RadarPort) {}
@@ -267,7 +280,7 @@ export class PerformUndeployCommand {
         ? { kind: 'undeployed' }
         : { kind: 'refused', reason: 'BattleGrid reported the deployment was not deleted.' };
     } catch (err) {
-      return { kind: 'refused', reason: err instanceof Error ? err.message : String(err) };
+      return outcomeOf(err);
     }
   }
 }

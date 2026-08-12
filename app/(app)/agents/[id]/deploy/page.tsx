@@ -10,6 +10,7 @@ import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { nullableInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
 /**
  * Deploying: the act that starts an agent scanning a market.
@@ -26,13 +27,20 @@ export default async function DeployPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ coin?: string; timeframe?: string; problem?: string }>;
+  searchParams: Promise<{ coin?: string; timeframe?: string; problem?: string; authority?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { coin, timeframe, problem } = await searchParams;
+  const { coin, timeframe, problem, authority } = await searchParams;
+
+  // Authority, not this operation. Rendered before anything is described,
+  // because there is nothing to describe when no call can succeed — and no
+  // form, because a control that cannot work is not made honest by the
+  // sentence above it.
+  if (authority) return <AuthorityLost reason={authority} />;
+
 
   const { roster } = await app.listAgents.execute(user.authority);
   if (roster.kind === 'unreadable') {
@@ -170,6 +178,13 @@ export async function performDeploy(formData: FormData) {
   });
   // The reason returns to the page that asked, where the person who clicked is
   // still standing — with their choice preserved so the describe re-runs.
+  // Lost authority is not a refusal of this deployment — nothing on this
+  // account will work until it is fixed — so it travels under its own name and
+  // the page renders no form for it.
+  if (result.kind === 'authority-lost') {
+    const query = new URLSearchParams({ authority: result.reason });
+    redirect(`/agents/${agentId}/deploy?${query.toString()}`);
+  }
   if (result.kind === 'refused') {
     const query = new URLSearchParams({ coin: coinId, timeframe, problem: result.reason });
     redirect(`/agents/${agentId}/deploy?${query.toString()}`);

@@ -5,6 +5,7 @@ import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/cont
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
 /**
  * Undeploying: the act that stops an agent scanning one market.
@@ -21,13 +22,20 @@ export default async function UndeployPage({
   searchParams,
 }: {
   params: Promise<{ id: string; coin: string }>;
-  searchParams: Promise<{ problem?: string }>;
+  searchParams: Promise<{ problem?: string; authority?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id, coin } = await params;
-  const { problem } = await searchParams;
+  const { problem, authority } = await searchParams;
+
+  // Authority, not this operation. Rendered before anything is described,
+  // because there is nothing to describe when no call can succeed — and no
+  // form, because a control that cannot work is not made honest by the
+  // sentence above it.
+  if (authority) return <AuthorityLost reason={authority} />;
+
 
   const { roster } = await app.listAgents.execute(user.authority);
   if (roster.kind === 'unreadable') {
@@ -113,6 +121,13 @@ export async function performUndeploy(formData: FormData) {
     expectedRevision: requiredInteger(formData, 'expectedRevision'),
     confirmationToken: requiredText(formData, 'confirmationToken'),
   });
+  // Lost authority is not a refusal of this operation — nothing on this account
+  // will work until it is fixed — so it travels under its own name and the page
+  // renders no form for it.
+  if (result.kind === 'authority-lost') {
+    const target = `/agents/${agentId}/undeploy/${encodeURIComponent(coinId)}`;
+    redirect(`${target}?authority=${encodeURIComponent(result.reason)}`);
+  }
   if (result.kind === 'refused') {
     const target = `/agents/${agentId}/undeploy/${encodeURIComponent(coinId)}`;
     redirect(`${target}?problem=${encodeURIComponent(result.reason)}`);
