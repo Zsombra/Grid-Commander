@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-12 (the entry point opens) — creating an agent can be done at all
+
+**Did**: `creating-an-agent-chooses-a-strategy` (standard, archived; 165
+archived changes) — #177, the p1 the previous round's new guard found.
+`create` reads `strategyId`; `AgentForm` never asked for it, so **every
+submission of the new-agent form has always thrown `FormError` before the use
+case**. The value was never obtainable from what the form was given: `Catalog`
+carries models, presets, bounds and defaults, and has never carried
+strategies. So the page now reads the strategy list beside the catalog and the
+form asks the question — **with nothing preselected**, because a strategy is
+not a setting on an agent but its whole reasoning, and a default would bind
+funds to a policy nobody read. No strategies, or an unreadable list, renders
+no form at all: the treatment the page already gave an unreadable catalog, for
+the reason its own comment states.
+
+The spec gained the converse of a requirement it already had: "A Field Offered
+Reaches The Operation It Configures" forbade a control the operation never
+reads; it now also forbids a value the operation requires that no control
+supplies. Both halves had failed unseen, and for the same reason — the tests
+exercise use cases directly, so no test walked a form.
+
+The `KNOWN_UNSENDABLE` ledger row is deleted, which the guard's own stale-row
+assertion demanded once the field was sent.
+
+**State**: 0 active changes, 30 open items ↔ 30 open issues, **no p1s**.
+Gates green: 167 files / 2188 tests.
+
+**Next**: #175 (a revoked connection renders as a refusal — read its trap
+first), then #162 (typed values lost on refusal paths).
+
+**Watch out**: A page tree holds `AgentForm` as an *uninvoked* element, so its
+controls do not exist until the component is called — structural assertions
+have to call the component, and only text assertions work against the page.
+Cost a confused test run before it was obvious. The no-default rule is
+mutation-verified: preselecting the first strategy fails "chooses nothing on
+the operator's behalf".
+
 ## 2026-08-12 (the ceremony round) — the sweep lands, and finds two write paths that never worked
 
 **Did**: `the-ceremony-pages-join-the-sweep` (standard, archived; 164 archived

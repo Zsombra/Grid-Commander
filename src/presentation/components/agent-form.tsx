@@ -1,4 +1,5 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
+import type { StrategyListing } from '@/application/use-cases/list-strategies.query.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
 import { BUTTON_PRIMARY, CONTROL, LABEL } from './control.js';
@@ -20,10 +21,22 @@ import { MoneyLimits } from './money-limits.js';
  */
 export function AgentForm({
   catalog,
+  strategies,
   action,
   issues = [],
 }: {
   catalog: Catalog;
+  /**
+   * What the new agent may read, as the platform lists it.
+   *
+   * Required, and not part of `catalog`: the catalog is the create tool's own
+   * vocabulary — models, presets, bounds, defaults — and it has never carried
+   * strategies. That is why this form asked for everything `create` reads
+   * except the one field it could not obtain, and why every submission threw
+   * `FormError: strategyId is required` before reaching the use case for the
+   * whole life of the page (#177).
+   */
+  strategies: readonly StrategyListing[];
   /**
    * The operation this form performs. Required, so that a form which submits
    * nowhere is a type error rather than a page that renders perfectly and does
@@ -53,6 +66,36 @@ export function AgentForm({
           required
           className={CONTROL}
         />
+      </Field>
+
+      {/*
+        The agent's reasoning, and the one field `create` requires that this
+        form never asked for.
+
+        Nothing is preselected. Every other choice here either carries a
+        platform-declared default or is deliberately refused one (the six money
+        fields the platform will not answer for anybody). A strategy is not a
+        setting on the agent — the platform materializes its context modules,
+        signal rules, prose and timeframe onto it, so it *is* how the agent will
+        reason about the operator's money. Choosing one on their behalf would
+        bind funds to a policy nobody read.
+
+        Scope is on the option, not implied by order: "BattleGrid" and "Yours"
+        decide whether the strategy can later be edited or only forked, and a
+        roster row states it for the same reason.
+      */}
+      <Field label="Strategy" name="strategyId" error={issueFor('strategyId')}>
+        <select id="strategyId" name="strategyId" required defaultValue="" className={CONTROL}>
+          <option value="" disabled>
+            Choose what this agent reads
+          </option>
+          {strategies.map(({ strategy }) => (
+            <option key={strategy.id} value={strategy.id}>
+              {strategy.name} — {strategy.scope === 'SYSTEM' ? 'BattleGrid' : 'Yours'}, revision{' '}
+              {strategy.revision}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <fieldset className="space-y-3">

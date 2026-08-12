@@ -2,11 +2,11 @@
 id: creating-an-agent-cannot-choose-a-strategy
 title: The new-agent form has no strategy control, so every create throws before it reaches the platform
 type: bug
-status: open
+status: done
 priority: p1
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "creating-an-agent-chooses-a-strategy"
 capability: agent-authoring
 github: "177"
 blocked_by: []

@@ -141,17 +141,11 @@ const pairs: Pair[] = uiFiles
  * fails as loudly as a new defect. A row is a promise that somebody looked.
  */
 const KNOWN_UNSENDABLE: ReadonlyArray<{ action: string; field: string; verdict: string }> = [
-  {
-    action: 'create',
-    field: 'strategyId',
-    verdict:
-      'Creating an agent has never been possible: `AgentForm` renders no strategy control at all — ' +
-      'not a hidden input, not a select, no mention of the word — while `create` requires one, so ' +
-      'every submit throws FormError before the use case is reached. Unlike the rebind defect this ' +
-      'guard was written for, the fix is not a missing hidden input: an agent binds to a strategy the ' +
-      'operator chooses, so this needs a chooser, which is behaviour and needs a proposal. Filed as ' +
-      '`creating-an-agent-cannot-choose-a-strategy`. Found by this guard on the day it was written.',
-  },
+  // `create::strategyId` left the day after it arrived: `creating-an-agent-
+  // chooses-a-strategy` gave the form the chooser it never had. The row is
+  // deleted rather than kept as history, which is what the stale-row assertion
+  // below requires — a ledger of things that used to be broken is a ledger
+  // nobody trusts.
 ];
 
 const ledgerKey = (r: { action: string; field: string }): string => `${r.action}::${r.field}`;

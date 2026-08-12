@@ -3,6 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { AgentForm } from '@/presentation/components/agent-form.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { behavior, optionalText, requiredText } from '@/presentation/form.js';
 import { moneyAnswers } from '@/presentation/form.js';
 
@@ -48,10 +49,51 @@ export default async function NewAgentPage() {
     );
   }
 
+  // What the agent will read. Not in the catalog — that is the create tool's
+  // own vocabulary — so it is a second read, and the form cannot be composed
+  // without it any more than without the catalog.
+  const { result: strategies, listings } = await app.listStrategies.execute(user.authority);
+
+  if (strategies.kind === 'unreadable') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Cannot create an agent right now</h1>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          An agent reads a strategy, and the list of them could not be read:{' '}
+          {strategies.reason}
+        </p>
+        <WhyNotLoaded cause={strategies.cause} subject="your strategies are" />
+        <p className="text-sm">
+          <a href="/agents" className={BUTTON_SECONDARY}>Back to your agents</a>
+        </p>
+      </main>
+    );
+  }
+
+  // Readable and empty is its own answer, not a failure. `list_strategies`
+  // returns BattleGrid's visible catalog alongside the operator's own, so
+  // nothing at all means there is nothing to bind to — and nothing to fork
+  // from either, which is why no next action is offered here.
+  if (listings.length === 0) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Nothing to bind an agent to</h1>
+        <p className="text-sm text-text-primary">
+          An agent reads a strategy, and no strategies are listed — not even
+          BattleGrid&rsquo;s own. Your account is connected and nothing here has
+          failed; there is simply nothing to bind to yet.
+        </p>
+        <p className="text-sm">
+          <a href="/strategies" className={BUTTON_SECONDARY}>Look at your strategies</a>
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">New agent</h1>
-      <AgentForm catalog={catalog.catalog} action={create} />
+      <AgentForm catalog={catalog.catalog} strategies={listings} action={create} />
     </main>
   );
 }

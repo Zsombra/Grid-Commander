@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AgentForm } from '@/presentation/components/agent-form.js';
 import { defaultCatalog } from '../support/agent-fakes.js';
+import { aStrategy } from '../support/strategy-fakes.js';
 import { rendered } from './support/render.js';
 
 /**
@@ -14,11 +15,14 @@ import { rendered } from './support/render.js';
  */
 
 const action = async () => {};
+// The strategy the agent will read. Required since #177: the form asks for it,
+// so every render of it has to supply one.
+const strategies = [{ strategy: aStrategy(), governs: 'Governs no agents', editable: true, fork: { kind: 'offered' } }] as never;
 
 describe('the presets the form offers', () => {
   it('offers each one the catalog carries', async () => {
     const catalog = { ...defaultCatalog(), brainPresets: ['ALPHA', 'BRAVO'] };
-    const { text } = await rendered(AgentForm({ catalog, action }));
+    const { text } = await rendered(AgentForm({ catalog, strategies, action }));
     expect(text).toContain('ALPHA');
     expect(text).toContain('BRAVO');
     // The other route is still named, so neither branch of the union is hidden.
@@ -27,13 +31,13 @@ describe('the presets the form offers', () => {
 
   it('offers nothing the catalog does not carry', async () => {
     const catalog = { ...defaultCatalog(), brainPresets: ['ALPHA'] };
-    const { text } = await rendered(AgentForm({ catalog, action }));
+    const { text } = await rendered(AgentForm({ catalog, strategies, action }));
     expect(text).not.toContain('BRAVO');
   });
 
   it('says the platform did not declare them rather than showing an empty choice', async () => {
     const catalog = { ...defaultCatalog(), brainPresets: [] };
-    const { text } = await rendered(AgentForm({ catalog, action }));
+    const { text } = await rendered(AgentForm({ catalog, strategies, action }));
     expect(text).toMatch(/did not declare/i);
     // And does not present the empty set as a choice control at all.
     expect(text).not.toContain('Choose a model instead');
@@ -41,7 +45,7 @@ describe('the presets the form offers', () => {
 
   it('keeps the model route open when the presets could not be read', async () => {
     const catalog = { ...defaultCatalog(), brainPresets: [] };
-    const { text } = await rendered(AgentForm({ catalog, action }));
+    const { text } = await rendered(AgentForm({ catalog, strategies, action }));
     const model = defaultCatalog().models[0];
     expect(model).toBeDefined();
     expect(text).toContain(model?.displayName);
