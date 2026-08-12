@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-12 (the suite reads itself) — Windows goes green, and a recommendation was checked before it was followed
+
+**Did**: Merged PR #174 (`3fde77e`). Then **abandoned my own top
+recommendation before writing a line of it.** The plan was to align four
+command catches so `ConnectionRevokedError` stops being flattened into a
+refusal — the adapter preserves it deliberately (`mcp-adapter.ts:285`,
+"must not be reshaped into something that looks retryable"). The check
+that stopped it: **there is no error boundary in the product** — no
+`app/error.tsx`, no `global-error.tsx`, nothing in `app/` or
+`src/presentation/` catches it — so re-throwing would have escaped the
+server action into Next's default error page, the exact crash class #164
+had just closed. Filed as **#175** with the trap written down, priority
+corrected to p3 (the message already carries diagnosis *and* remedy; what
+is wrong is the "Refused:" framing and the live retry). Then #171:
+**165 files / 2177 tests green on Windows**, first ever on this machine.
+`slashed()` and `readText()` shared out of `failure-is-explained.test.ts`
+into `tests/support/source-tree.ts`; the three `npx` spawns now run the
+local entry point with `process.execPath` (no shell, no `.cmd`,
+CVE-2024-27980). The `mutate-guard` failure was not what it looked like:
+**esbuild cannot parse a CRLF `.mjs`**, proven with a byte-identical LF
+copy. `.gitattributes` pins checkouts to LF — blobs were already LF, so
+nothing committed changed.
+
+**State**: 0 active changes, 28 open items ↔ 28 open issues. All four gates
+green, and **vitest is now a trustworthy signal on this host** — no more
+stash-and-diff.
+
+**Next**: `/design` the #166 ceremony round, which also clears #173's twelve
+stale manifests in the same pass.
+
+**Watch out**: The green suite was mutation-checked, not assumed — planting
+an MCP SDK import in `src/domain/errors.ts` still fails both `boundaries`
+assertions, so the guards bite. Do not "fix" #175 by re-throwing; the item
+says why at length. And `git commit -m` with backticks in the message runs
+command substitution under bash and silently eats the backticked words —
+one commit here needed amending from a file.
+
 ## 2026-08-12 (the refusal family) — a refused rebind stops crashing, and a carried reason survives every branch
 
 **Did**: `the-outcome-reaches-the-person` (standard, verified, archived; 162
