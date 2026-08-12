@@ -154,6 +154,30 @@ against it:
   Flag them; `design_state_not_covered` will confirm.
 - Behavior changed under a `designed` surface → set `needs-redesign`.
 
+### Two reasons a surface goes stale, and only one is a surprise
+
+**Something else changed the code.** The manifest is fiction and a design agent
+reading it would aim at the wrong target. Refresh before designing.
+
+**A design round landed.** Not a surprise — an obligation. The round edited the
+very files the manifest describes, so it stales them on commit, every time.
+The refresh is that round's *last* task, not evidence anybody was careless.
+
+This means `/surface` runs twice in a round: once as input to the design, once
+as bookkeeping after implementation. Do not close a staleness item on the first
+one — it reopens the moment the round commits. See design-contract §8.
+
+### Refresh what is committed, never the working tree
+
+`generated_at_commit` is a claim that the manifest describes the source *at that
+hash*. Re-pinning against uncommitted edits makes the claim false while making
+the warning disappear, which is strictly worse than the warning: the check
+exists to catch exactly that drift, and a manifest that looks fresh and is not
+will be designed against.
+
+If the work is not committed yet, describe HEAD and say in your report that a
+further pass is owed. That is the correct answer, not a failure to be thorough.
+
 ---
 
 ## Hard Rules
