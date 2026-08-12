@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-12 (the record catches up) — BattleGrid is v18.2.0, and the count did not move
+
+**Did**: The operator suggested using the live connectors. The first thing
+asked was the cheapest and it paid immediately: the freshness gate says
+**BattleGrid is v18.2.0** and our record said 17.2.0 — *a whole major version
+between two probes a day apart*, and v18 was already at patch .2, so 18.0 and
+18.1 were never seen at all. Re-probed the surface and the vocabulary.
+
+**What moved is the point.** 114 tools → 114. None added, none removed. **No
+input schema changed on any tool.** Read/write/destructive split identical.
+Vocabulary values byte-identical across the major version. Exactly one thing
+changed: `list_gate_blocks`'s *description*, and semantically —
+v17 "pre-signal … candidates that never reached signal evaluation" became v18
+"each evaluation that ended without a trade decision. **EVALUATION-stage rows
+ended after the model was called**". The sharpest evidence yet for the
+doctrine in CLAUDE.md, now written there.
+
+**Two findings filed.** **#185** (p2): a gate block may now describe something
+that happened *after* the agent reasoned, and the product asserts the opposite
+as fact in two places — `ports/agents.ts:419` ("A candidate stopped before it
+was ever evaluated") and the pipeline page's three-stage framing, which stops
+partitioning if EVALUATION rows land in the first bucket. **#186** (p3): the
+MCP reference is stuck at v17.2.0 because `generate_mcp_reference.py` needs a
+raw JSON-RPC dump that nothing in the repo produces — deliberately *not* fixed
+by editing its header, which would make it claim a version its body does not
+describe.
+
+**#100 refreshed**: `list_gate_blocks` returns `INTERNAL_ERROR` for every
+agent — the probe's single failure of 69 calls, plus three by hand across two
+agents and three page sizes. Deterministic, not flapping, and on the one tool
+v18 rewrote. `/agents/[id]` and the pipeline page render their unreadable
+branch against live right now — honestly, thanks to this morning's work.
+
+**State**: 0 active changes, 36 open items ↔ 36 open issues. Gates green
+including the live freshness gate: 169 files / 2207 tests.
+
+**Next**: the read-only sweep across the remaining question items, which is
+what the freshness probe was the first step of.
+
+**Watch out**: the vocabulary record has its own probe
+(`tools/probe_vocabulary.py`) and its own version stamp, and an *offline*
+guard compares the two records' versions — so re-probing the surface alone
+turns the suite red until the vocabulary is re-probed too. Both, or neither.
+
 ## 2026-08-12 (the re-pin lands) — #179 closed, and the re-survey finds three things it was not looking for
 
 **Did**: `#179` both halves. Nine manifests re-pinned at `e7c56ce` by two

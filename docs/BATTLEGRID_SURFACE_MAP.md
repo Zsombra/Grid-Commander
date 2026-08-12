@@ -1,9 +1,11 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v17.2.0`**
-on 2026-08-11. v13 lasted about five hours, v14 about twenty, v15 and v16
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v18.2.0`**
+on 2026-08-12. v13 lasted about five hours, v14 about twenty, v15 and v16
 about a day each — and v17 arrived already at patch **.2**, so 17.0 and 17.1
-came and went entirely unseen between probes.
+came and went entirely unseen between probes. **v18 did the same**: it was
+found at **.2** one day later, so 18.0 and 18.1 were never seen either. A whole
+major version passed between two probes a day apart.
 Regenerate after any BattleGrid deployment: the server says its own list goes
 stale, and this file inherits that.
 
@@ -39,6 +41,7 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v15.0.0 | 114 | no tool added or removed; **16 tools changed, one coherent move**: the trade-level policy left the agent for the strategy — `maxStopLossPct`, `minStopLossPct` and `minRiskRewardRatio` out of `tradingConfig` (18 → 15), onto the strategy with the percentage stop floor replaced by **`minStopLossAtrMultiple`**. `compile_strategy_plan` gained `diff.tradeLevelPolicy`; `feasibilityAdvisory` gained per-coin ATR feasibility. All three are **required** on apply — `toApplyPlan` had to learn them or every apply would refuse. The compiler accepts them and does not apply them: `v15-trade-level-policy-is-declared-but-inert` (p1) |
 | → v16.0.0 | 114 | no tool added or removed; **three tools changed, one field**: `conditions[].required` became **required** on every condition-carrying write (`compile_strategy_plan`, `apply_strategy_plan`, `preview_strategy_report`). The read had returned it all along and this product had never modelled it, so `serialiseCondition` emitted four of the five accepted keys — dead write path #12, caught by `payload-conformance` on the same run that refreshed the record, before any live refusal. The v15 trade-level policy is **still inert** across the whole version bump |
 | → v17.2.0 | 114 | no tool added or removed; **17 tools changed, one redesign at the centre**: `positionManagement` lost `breakEvenTriggerTpProgressPct`, `trailingType` (`ATR\|FIXED`), `trailingAtrMultiple` and `trailingFixedPct`, gained **`breakEvenTriggerR`** (0.5–2) and **`trailingGivebackPct`** (25–55) — break-even triggers on an R-multiple now, trailing is a single giveback model, the block is 15 → 13 keys. Same reshape on both agent writes, all three agent reads, and the catalog (three defaults renamed; the stale-threshold default quietly moved 50 → 25). Around it: `get_signal_log` grew a whole `conditionEvaluation` evidence block, the positions reads grew per-position `breakEvenStatus`/`trailingStatus`, radar gained `blockedReason`/`blockedSince` + a `BLOCKED` state, `override_agent_protection` reports `observedLiveStopLoss`. Strategy-side declarations untouched — the v15 trade-level policy inertness stands as filed |
+| → v18.2.0 | 114 | no tool added or removed, **no input schema changed on any tool**, and the classification split held exactly (87 read · 17 write · 10 destructive). One description moved, and it is a semantic change rather than an edit: `list_gate_blocks` went from *"pre-signal pipeline rejections … each candidate that never reached signal evaluation"* to *"each evaluation that ended without a trade decision. Most are pre-model admission gates; **EVALUATION-stage rows ended after the model was called**"*. A gate block may now describe something that happened *after* the agent reasoned, which the product asserts the opposite of in two places — filed as `a-gate-block-is-no-longer-only-pre-evaluation`. The same tool now returns `INTERNAL_ERROR` for every agent (#100), so the claim could not be checked against data. Nothing else in the surface moved |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools

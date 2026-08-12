@@ -24,7 +24,7 @@
 
 Grid-Commander is a **third-party multi-tenant client** for BattleGrid
 (battlegrid.trade), reached over MCP at `https://mcp.battlegrid.trade/mcp`.
-The surface is fully mapped — **114 tools at v17.2.0** — in
+The surface is fully mapped — **114 tools at v18.2.0** — in
 `docs/BATTLEGRID_MCP_REFERENCE.md`,
 with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation and
 `tools/generate_mcp_reference.py` to regenerate both.
@@ -39,6 +39,11 @@ Three facts that shape almost every decision:
    held at 110 across six major versions while enums and semantics changed
    underneath — then **v14 moved it to 114**, so a count that has not moved
    proves nothing and a count that has says only that something changed.
+   **v18.2.0 is the sharpest case**: a whole major version arrived between two
+   probes a day apart, and *nothing* a count could see moved — 114 tools, none
+   added or removed, no input schema changed, the read/write/destructive split
+   identical. What moved was one tool's meaning. Probe the version, never the
+   shape.
 3. **This product holds credentials that configure other people's agents**, and
    with wager scope, move their money. Read-only by default, explicit step-up,
    audit every write.
