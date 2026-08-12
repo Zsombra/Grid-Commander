@@ -251,14 +251,28 @@ describe('the queries', () => {
     );
   });
 
-  it('an unlisted metric is no-such-metric, and hints are never asked for it', async () => {
+  it('an unlisted metric is no-such-metric, and neither hints nor controls are asked for it', async () => {
     const strategies = new FakeStrategiesPort();
     strategies.stageMetric(aMetricHints());
+    // Membership first: an unlisted key spends nothing, the controls read
+    // included — asserted by making that read a failure.
+    strategies.columnControls = async () => {
+      throw new Error('a controls read was spent on an unlisted metric');
+    };
     expect(await new ReadMetricQuery(strategies).execute({ ...who, metric: 'GHOST' })).toEqual({
       kind: 'no-such-metric',
     });
+  });
+
+  it('a listed metric answers with its hints and the declared controls together', async () => {
+    const strategies = new FakeStrategiesPort();
+    strategies.stageMetric(aMetricHints());
     const listed = await new ReadMetricQuery(strategies).execute({ ...who, metric: 'RSI14' });
     expect(listed.kind).toBe('metric');
+    if (listed.kind !== 'metric') return;
+    // The controls ride the same outcome, so the workbench's selects cannot
+    // come from a different platform moment than its card.
+    expect(listed.controls).toEqual(strategies.controls);
   });
 
   it('the check gates on metric membership only — the platform judges the rest', async () => {

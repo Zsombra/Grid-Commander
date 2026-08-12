@@ -1,8 +1,9 @@
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
+import { Declared, timeframeOptions } from '@/presentation/components/declared.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import type { ColumnProposal } from '@/ports/strategies.js';
+import { columnFromQuery, timeframeParam } from '@/presentation/column-form.js';
 
 /**
  * One metric's card, and the column workbench beneath it.
@@ -12,55 +13,18 @@ import type { ColumnProposal } from '@/ports/strategies.js';
  * writes nothing at all, so the composed column lives in the URL where it
  * can be shared, retried, and rendered without ceremony.
  *
+ * The form is read through the shared `columnFromQuery`, so the timeframe
+ * travels tagged (`rel:anchor` / `abs:1h`) and nothing here sorts a bare
+ * value into relative-or-absolute by consulting a built-in list — the
+ * `REL_TIMEFRAMES` constant that used to do that was the last piece of
+ * platform vocabulary this product spelled out, and it misfiled every
+ * relative timeframe the platform might add.
+ *
  * A refused check is not an error state: the platform's validator answers
  * with the offending path, the value received, and what is legal in its
  * place. That structure is the most instructive dataset this surface has,
  * and it renders as guidance, never flattened into "invalid".
  */
-
-const REL_TIMEFRAMES = ['anchor', 'lower', 'higher', 'regime'] as const;
-
-function proposalFrom(
-  metric: string,
-  q: Record<string, string | string[] | undefined>,
-): ColumnProposal | null {
-  const one = (key: string): string | undefined => {
-    const v = q[key];
-    const s = Array.isArray(v) ? v[0] : v;
-    return s && s.length > 0 ? s : undefined;
-  };
-  const transformId = one('transformId');
-  if (!transformId) return null;
-
-  const tf = one('tf') ?? 'anchor';
-  const timeframe = (REL_TIMEFRAMES as readonly string[]).includes(tf) ? { rel: tf } : { abs: tf };
-
-  const int = (key: string): number | undefined => {
-    const s = one(key);
-    if (s === undefined) return undefined;
-    const n = Number.parseInt(s, 10);
-    return Number.isFinite(n) ? n : undefined;
-  };
-  const inputsRaw = one('inputs');
-
-  return {
-    metric,
-    transformId,
-    timeframe,
-    chainedTransformId: one('chained'),
-    window: int('window'),
-    offset: int('offset'),
-    side: one('side'),
-    inputs: inputsRaw
-      ? inputsRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0)
-      : undefined,
-    bars: one('bars'),
-    ordering: one('ordering'),
-  };
-}
 
 export default async function MetricPage({
   params,
@@ -102,8 +66,12 @@ export default async function MetricPage({
   }
 
   const { summary, transforms } = result.hints;
-  const proposal = proposalFrom(metric, q);
-  const check = proposal ? await app.checkColumn.execute({ ...user.authority, column: proposal }) : null;
+  const controls = result.controls;
+  // The route names the metric; the reader takes it from there, so a `metric`
+  // query param can never point the check at a different card than the page.
+  const draft = columnFromQuery({ ...q, metric });
+  const chosen = draft.column;
+  const check = chosen ? await app.checkColumn.execute({ ...user.authority, column: chosen }) : null;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
@@ -157,7 +125,7 @@ export default async function MetricPage({
         <form method="get" className="space-y-3 text-sm">
           <label className={LABEL}>
             Transform
-            <select name="transformId" className={CONTROL} defaultValue={proposal?.transformId ?? ''}>
+            <select name="transformId" className={CONTROL} defaultValue={chosen?.transformId ?? ''}>
               <option value="">— choose —</option>
               {transforms.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -166,33 +134,55 @@ export default async function MetricPage({
               ))}
             </select>
           </label>
-          <label className={LABEL}>
-            Timeframe
-            <input
-              type="text"
-              name="tf"
-              className={CONTROL}
-              defaultValue={
-                proposal ? ('rel' in proposal.timeframe ? proposal.timeframe.rel : proposal.timeframe.abs) : 'anchor'
-              }
-            />
-          </label>
+          <Declared
+            name="tf"
+            label="Timeframe"
+            values={timeframeOptions(controls)}
+            chosen={chosen ? timeframeParam(chosen.timeframe) : undefined}
+            optional={false}
+          />
           <label className={LABEL}>
             Operand metrics (comma-separated, for transforms that need one)
-            <input type="text" name="inputs" className={CONTROL} defaultValue={proposal?.inputs?.join(', ') ?? ''} />
+            <input type="text" name="inputs" className={CONTROL} defaultValue={chosen?.inputs?.join(', ') ?? ''} />
           </label>
           <label className={LABEL}>
             Window
-            <input type="text" name="window" className={CONTROL} defaultValue={proposal?.window?.toString() ?? ''} />
+            <input type="text" name="window" className={CONTROL} defaultValue={chosen?.window?.toString() ?? ''} />
           </label>
           <label className={LABEL}>
             Offset
-            <input type="text" name="offset" className={CONTROL} defaultValue={proposal?.offset?.toString() ?? ''} />
+            <input type="text" name="offset" className={CONTROL} defaultValue={chosen?.offset?.toString() ?? ''} />
+          </label>
+          <Declared name="bars" label="Bars" values={controls.bars} chosen={chosen?.bars} />
+          <Declared
+            name="ordering"
+            label="Ordering"
+            values={controls.ordering}
+            chosen={chosen?.ordering}
+          />
+          <Declared name="side" label="Side" values={controls.sides} chosen={chosen?.side} />
+          <label className={LABEL}>
+            Chained transform
+            <input type="text" name="chained" className={CONTROL} defaultValue={chosen?.chainedTransformId ?? ''} />
           </label>
           <button type="submit" className={BUTTON_SECONDARY}>
             Check against the contract
           </button>
         </form>
+
+        {draft.problems.length > 0 ? (
+          <div className="space-y-1">
+            {/* Ours to say, and said as ours. Nothing was sent, so BattleGrid
+                has no opinion to report and none is implied. */}
+            <h3 className="font-medium">This column is not finished</h3>
+            <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+              {draft.problems.map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
+            </ul>
+            <p className="text-text-secondary">{`Nothing was sent to BattleGrid.`}</p>
+          </div>
+        ) : null}
 
         {check?.kind === 'contract' ? (
           <div className="rounded border p-3 text-sm space-y-1">

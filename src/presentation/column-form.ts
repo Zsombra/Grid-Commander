@@ -14,10 +14,11 @@ import type { ColumnProposal } from '@/ports/strategies.js';
  * **The timeframe travels tagged**: `rel:anchor`, `abs:1h`. The platform's
  * schema is an `anyOf` of two single-key objects, and a bare `anchor` can only
  * be sorted into the right one by consulting a list of the relative names —
- * which is how `REL_TIMEFRAMES` came to be written down in
- * `app/(app)/strategies/metrics/[metric]/page.tsx`, the one piece of platform
- * vocabulary this product still spells out. Tagging the value makes the list
- * unnecessary rather than making it correct.
+ * which is how a `REL_TIMEFRAMES` constant came to be written into the metric
+ * page, the last piece of platform vocabulary this product spelled out.
+ * Tagging the value made the list unnecessary rather than making it correct,
+ * and `the-metric-workbench-reads-the-declared-grammar` deleted it: both
+ * column surfaces now read their form through this one reader.
  *
  * **What is refused here and what is not.** This reader refuses only what it
  * cannot turn into a column at all: a window that is not a whole number, a

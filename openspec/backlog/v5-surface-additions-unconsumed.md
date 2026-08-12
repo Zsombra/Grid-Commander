@@ -2,10 +2,10 @@
 id: v5-surface-additions-unconsumed
 title: The smaller BattleGrid v5 additions — a price metric family, two column controls, and a module that became omissible
 type: feature
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-08-12
 capability: strategy-authoring
 github: "115"
 blocked_by: []
