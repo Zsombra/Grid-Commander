@@ -88,11 +88,21 @@ is unique only by accident of its wording is a trap for the next edit — but
 
 ## Not done
 
-- [ ] 4.3 **Conditions-save key tests are not written.** Driving the two cases
-      that matter needs fixtures the existing harness does not build: a proposal
-      whose `listKeys` carries two nulls, and a refusal arm with two identical
-      reasons. Neither `inexpressible` nor `drift` is exercised by any current
-      test, so there is no pattern to follow. The code change is correct and
-      low-risk; the **scenarios in the delta spec are uncovered**, and the
-      verifier should flag them rather than have me claim otherwise.
+- [ ] 4.3 **Conditions-save key scenarios cannot be covered — see #194.**
+      The fixture turned out to be reachable (`listedKeys` maps a missing key to
+      `null`, and the fake port's `conditionsAsGiven` feeds it), so a test was
+      written and it passed. It then **passed identically against the old,
+      broken keying**, verified by reverting the fix and re-running: 17 passed
+      both ways.
+
+      The harness never reconciles. `tests/rendering/support/render.ts` walks
+      the element tree, and a key collision only exists during reconciliation —
+      two `<li>` with one key are two nodes in the tree and one in the DOM. So
+      **no test in this project can observe this class of defect**, and the one
+      written was vacuous. It was removed rather than kept.
+
+      The code fix stays: it is correct in a browser, which is where it matters.
+      The requirement stays: it is observable, just not here. Filed as **#194**,
+      including the reproduction. The two scenarios are **knowingly uncovered**,
+      and that is a fact about the suite, not a shortcut taken here.
 - [ ] 5.6 `npm run test:db` — blocked on credentials.
