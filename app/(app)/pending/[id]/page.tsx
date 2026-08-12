@@ -106,9 +106,12 @@ export default async function ProposalPage({
     <Shell title={`Proposed: ${label}`} problem={problem}>
       <section className="space-y-2">
         <h2 className="text-base font-medium text-text-primary">What agreeing would do</h2>
-        {/* The product's own consequence sentence, unchanged. This page must
-            not grow a second vocabulary for the same write. */}
-        <p className="text-base text-text-primary">{result.consequence}</p>
+        {/* The product's own consequence sentence, unchanged, in the same
+            consequence role the archive confirmation gives the same
+            vocabulary. This page must not grow a second one. DT-0007. */}
+        <p className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary">
+          {result.consequence}
+        </p>
       </section>
 
       <ProposalDifference dispositions={result.dispositions} />
