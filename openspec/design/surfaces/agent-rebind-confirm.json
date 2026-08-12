@@ -1,0 +1,251 @@
+{
+  "id": "agent-rebind-confirm",
+  "title": "Rebind agent confirmation",
+  "route": "/agents/[id]/rebind",
+  "capability": "agent-authoring",
+  "status": "functional",
+  "generated_at_commit": "cdecf31",
+  "source_files": [
+    "app/(app)/agents/[id]/rebind/page.tsx",
+    "src/presentation/components/rebind-confirm.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "proposal",
+      "shape": "{ rebind: { agentId, agentName, fromStrategyName, toStrategyId, toStrategyName, toStrategyRevision, expectedRevision }, consequence, confirmationToken }",
+      "source": "app.describeRebind.execute — the destination's name and revision come back from the platform, never from the URL"
+    },
+    {
+      "name": "to",
+      "shape": "string | undefined",
+      "source": "searchParams — the destination strategy id; all the query supplies"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the reason a destination-moved performRebind redirected back with"
+    }
+  ],
+  "components": [
+    {
+      "id": "rebind-page",
+      "role": "container",
+      "purpose": "Ask one question — replace this agent's configuration with another strategy's? — with the consequence stated as replacement, never merge.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "no-destination",
+        "not-connected"
+      ],
+      "data": [
+        "proposal",
+        "to",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Without ?to= it renders 'Choose a strategy to rebind to' and a sentence saying strategy browsing is not built yet — a dead end with no link out. refused renders h1 'Cannot rebind' + the reason (role=alert, untinted text) with no navigation out and drops any ?problem= that rode along (behavior gaps, not styling). No roster read: the agent's name comes from the proposal, so there is no separate no-such-agent branch — an unknown agent surfaces as the describe's refusal.",
+      "constraints": [
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The destination named in the consequence is read from the platform — openspec/specs/agent-authoring/spec.md:165-168 ('its name and its revision — never taken from the caller'). A design must not surface the URL's id as if it were the destination's identity."
+      ],
+      "children": [
+        "problem",
+        "rebind-confirm",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show why the previous attempt was not performed — the destination moved while the operator was reading — above the fresh proposal it forced.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted.",
+      "constraints": [
+        "role=alert must survive.",
+        "The pairing is spec: the fresh proposal and the reason it was needed arrive together — openspec/specs/agent-authoring/spec.md:189-194 ('the user is told the destination changed while they were reading, and is offered a fresh proposal'). The banner must stay adjacent to the re-described proposal, not become a toast or a separate page."
+      ],
+      "children": []
+    },
+    {
+      "id": "rebind-confirm",
+      "role": "container",
+      "purpose": "The confirmation for the most destructive thing this product can do: one committing button, one visible way out, and the consequence read first.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performRebind",
+          "effect": "POSTs the server action with confirmationToken, toStrategyId, toStrategyRevision, expectedRevision; success lands on /agents/[id], a moved destination redirects back here with ?to= and ?problem="
+        }
+      ],
+      "current_implementation": "Shared RebindConfirm (rebind-confirm.tsx): space-y-4 form, h2 'Rebind <agent> to <strategy>?', the consequence block, four hidden inputs carrying the confirmation binding, then the buttons in flex flex-wrap gap-3 — no mobile full-width stack (the archive page's flex-col tablet:flex-row treatment has not been applied here).",
+      "constraints": [
+        "The hidden binding (agent, destination, destination revision) is the confirmation ceremony — openspec/specs/agent-authoring/spec.md:166-168 ('the confirmation SHALL be bound to the agent, the destination, and the destination's revision as described'). The form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "consequence",
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State that rebinding replaces the agent's inherited configuration in full — replacement, never merge — before the button that does it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "role=alert div, rounded-gc-2 border border-border-default p-4 text-sm — a neutral border, not the consequence tokens the archive page's callout wears. Two paragraphs: a font-medium lead 'This replaces configuration. It is not a merge.' then the platform-derived consequence sentence.",
+      "constraints": [
+        "The replacement framing is spec — openspec/specs/agent-authoring/spec.md:162-165 ('MUST state that the agent's inherited configuration will be replaced in full, and MUST NOT describe it as a change of strategy alone') and :171-174. The lead sentence must not be softened or dropped.",
+        "The consequence text is the same string the token was issued against and stored with — a design must not paraphrase, truncate, or summarize it.",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the rebind, named so it agrees to something in particular: 'Replace <agent>'s configuration with <strategy>'s'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performRebind"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated both in control.ts and in rebind-confirm.tsx's own comment: the weight is on the consequence above, and a hazard-coloured control trains a flinch at the action the page exists to offer.",
+        "The label names the operation and both parties — 'OK' or 'Confirm' would be a button that agrees to nothing in particular. Copy changes here are behavior.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Keep the agent bound to what it has: 'Keep it bound to <current strategy>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004's hover (border-strong + bg-sunken over duration-fast).",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Rebind an agent",
+      "steps": [
+        "arrive carrying ?to=<strategyId>",
+        "read that this replaces, not merges, in the platform-derived sentence",
+        "submit 'Replace <agent>'s configuration with <strategy>'s'",
+        "land on /agents/[id] rebound"
+      ]
+    },
+    {
+      "name": "The destination moved while reading",
+      "steps": [
+        "submit",
+        "the fresh read finds a different revision (or cannot read the destination)",
+        "nothing is attempted; redirected back here with ?problem=",
+        "problem banner states the reason above a freshly described proposal"
+      ]
+    },
+    {
+      "name": "No proposal can be made",
+      "steps": [
+        "the describe refuses (not rebindable, a no-op, destination unavailable)",
+        "'Cannot rebind' states the reason; no token is minted"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Keep it bound to <current strategy>'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "Problem, consequence and refusal messages carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

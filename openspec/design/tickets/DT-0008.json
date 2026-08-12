@@ -24,7 +24,7 @@
     },
     "states": {
       "cards": {
-        "content": "Each card: 1px color.border.default border, radius.2, existing space.3 padding and vertical rhythm unchanged. No background change \u2014 the lift is the themed border, not a panel. This is the precedent treatment for #155's sweep."
+        "content": "Each card: 1px color.border.default border, radius.2, existing space.3 padding and vertical rhythm unchanged. No background change \u2014 the lift is the themed border, not a panel. This is the precedent treatment for the border sweep (backlog 155 \u2014 unhashed here because the raw-colour check reads a hashed issue number as a hex literal)."
       },
       "empty": {
         "content": "Unchanged \u2014 'BattleGrid returned no agents for this window', plain prose."

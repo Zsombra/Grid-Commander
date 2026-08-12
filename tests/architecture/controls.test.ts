@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
+  CHECKBOX,
   CONTROL,
   LABEL,
 } from '@/presentation/components/control.js';
@@ -63,7 +64,9 @@ const controlTags = (src: string): string[] =>
 const hasClassName = (tag: string): boolean => /className=/.test(tag);
 /** A hidden input carries a value and is never seen. */
 const isHidden = (tag: string): boolean => /type=["']hidden["']/.test(tag);
-const WEARS_CONTROL = /className=\{CONTROL\}/;
+// A checkbox never wears CONTROL — that string is a text box's clothes — so
+// the shared treatment it does wear (CHECKBOX, DT-0015) passes the guard too.
+const WEARS_CONTROL = /className=\{(?:CONTROL|CHECKBOX)\}/;
 
 describe('every form control uses the shared treatment', () => {
   it('renders no control styled by browser defaults', () => {
@@ -111,6 +114,14 @@ describe('the treatment itself is made of tokens', () => {
 
   it('uses the focus token that nothing used', () => {
     expect(CONTROL).toMatch(/ring-focus/);
+  });
+
+  it('tints the checkbox with the accent token, and nothing else', () => {
+    // `accent-color` is the whole treatment (DT-0015): the native box already
+    // renders its own states, so anything beyond the tint would be
+    // re-implementing a control the browser draws correctly.
+    expect(CHECKBOX).toMatch(/\baccent-accent-\w+/);
+    expect(CHECKBOX).not.toMatch(/\bbg-|\bborder-|\bappearance-none\b/);
   });
 
   it('rings only on keyboard focus', () => {

@@ -31,6 +31,13 @@ it on the `button-primary` component). The same is true of every
 confirmation page — archive, rebind, deploy, strategy apply — because they
 share the same server-action shape.
 
+Confirmed by the 2026-08-12 ceremony surveys (backlog #157): every one of the
+twelve manifests written that day records the same gap on its perform form —
+agent edit/deploy/rebind/reactivate/undeploy, strategy
+archive/restore/fork/conditions-save/rules, recorder trim, and the strategy
+editor's apply. The enumeration is complete; the fix remains the one shared
+client-boundary decision below.
+
 ## Why it matters
 
 A click that visibly does nothing invites a second click. The confirmation

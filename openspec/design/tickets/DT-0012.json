@@ -1,0 +1,97 @@
+{
+  "id": "DT-0012",
+  "surface": "audit-log",
+  "targets": [
+    "audit-list"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The audit table gets read-down-a-column structure — ruled header, separated rows — the unresolved banner takes notice, the destructive word takes consequence, and a failed outcome is tinted beside its word.",
+  "rationale": "This is the one screen users read down a column (manifest constraint), and it is currently a bare table: no rule under the header, no separation between rows, cells flush against each other. The unresolved-count banner is advisory — operations that may or may not have taken effect; waiting and checking BattleGrid is the remedy — and takes notice per DT-0011's hierarchy. 'destructive' is blast-radius vocabulary, and the system already has a role for blast radius: the word keeps its chip and the chip takes consequence.subtle, so the flag reads in the same palette as every consequence block in the product. A failed outcome takes color.danger.default on its text — the word 'Failed' is already there, so the tint is a second signal, not the only one. 'Attempted, outcome unknown' stays untinted deliberately: the manifest forbids styling it as failure, and unknown-is-not-zero (system.json) forbids styling it as success; plain is the honest weight. Succeeded stays plain — the normal outcome of a working product does not celebrate itself.",
+  "design": {
+    "layout": "Unchanged — banner, then the table in its scroll wrapper.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "notice_bg": "color.notice.subtle",
+      "notice_border": "color.notice.border",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "failed_text": "color.danger.default",
+      "header_text": "color.text.secondary",
+      "header_rule": "color.border.default",
+      "row_rule": "color.border.subtle",
+      "cell_padding_y": "space.2",
+      "cell_padding_x": "space.4",
+      "banner_padding": "space.3",
+      "block_radius": "radius.2",
+      "text": "color.text.primary"
+    },
+    "states": {
+      "default": {
+        "content": "Header row: th in color.text.secondary at type.weight.semibold, existing type.size.sm, a 1px color.border.default rule under the whole header. Body rows separated by 1px color.border.subtle rules. Cells take space.2 vertical and space.4 right padding so columns are readable without a ruler. The scroll wrapper is unchanged."
+      },
+      "empty": {
+        "content": "Unchanged — plain prose promising future entries; an empty log is an answer, not an event."
+      },
+      "with-unresolved": {
+        "content": "The banner takes notice: color.notice.subtle background, 1px color.notice.border border, radius.2, space.3 padding, color.text.primary. role=status stays, above the table, never obscuring it. Advisory, never danger — unknown is not failure."
+      },
+      "without-unresolved": {
+        "content": "No banner renders, unchanged."
+      },
+      "entry-succeeded": {
+        "content": "Unchanged — 'Succeeded' in color.text.primary, untinted."
+      },
+      "entry-failed": {
+        "content": "The outcome cell's text takes color.danger.default. The word 'Failed' (and the platform's reason after the dash) is already the first signal; the tint is the second. No background, no border — a tinted word in a table, not a banner per row."
+      },
+      "entry-attempted": {
+        "content": "Unchanged — 'Attempted, outcome unknown' in color.text.primary. Deliberately neither danger nor success: the manifest forbids collapsing it into failure, and unknown is not zero."
+      },
+      "entry-destructive": {
+        "content": "The existing 'destructive' chip keeps its word and takes consequence: color.consequence.subtle background, 1px color.consequence.border border, existing radius and padding, color.text.primary. Blast radius wears the blast-radius palette."
+      },
+      "actor-user": {
+        "content": "Unchanged — 'you', plain text."
+      },
+      "actor-assistant": {
+        "content": "Unchanged — 'the assistant, answering you', plain text; the historical branch keeps rendering (manifest constraint) and is not visually demoted — who acted is this page's whole subject."
+      },
+      "overflow-many-entries": {
+        "content": "Unchanged — the overflow-x-auto wrapper carries horizontal excess; row count renders in full, no truncation or pagination introduced (that would be behavior)."
+      }
+    },
+    "responsive": {
+      "mobile": "The table scrolls horizontally inside its wrapper; the notice banner is full width above it.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The header row is separated from the body by a 1px color.border.default rule and its th text renders in color.text.secondary at type.weight.semibold",
+    "Adjacent body rows are separated by 1px color.border.subtle rules and cells have space.2 vertical padding",
+    "The unresolved banner renders on color.notice.subtle with a 1px color.notice.border border and keeps role=status",
+    "The 'destructive' chip renders on color.consequence.subtle with a 1px color.consequence.border border and keeps its word",
+    "A failed entry's outcome text renders in color.danger.default; succeeded and attempted outcomes remain in color.text.primary",
+    "The table keeps its sr-only caption, scoped column headers, and <time datetime> timestamps",
+    "Zero copy changes anywhere on the page",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog 157 (the design lane's tail) — first ticket for this surface. Notice-for-advisory follows DT-0011; the consequence chip follows the consequence-callout vocabulary from DT-0001/DT-0004."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

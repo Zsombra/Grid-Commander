@@ -1,0 +1,275 @@
+{
+  "id": "strategy-archive-confirm",
+  "title": "Archive strategy confirmation",
+  "route": "/strategies/[id]/archive",
+  "capability": "strategy-authoring",
+  "status": "functional",
+  "generated_at_commit": "cdecf31",
+  "source_files": [
+    "app/(app)/strategies/[id]/archive/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/require-connection.tsx",
+    "src/presentation/components/why-not-loaded.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "proposal",
+      "shape": "{ strategyId, consequence, confirmationToken }",
+      "source": "app.describeArchiveStrategy.execute — a confirmation minted against BattleGrid's own count of bound agents; the consequence wording is the wording stored with the token"
+    },
+    {
+      "name": "listing",
+      "shape": "{ strategy: { id, name, ... } }",
+      "source": "app.listStrategies.execute — the roster read that locates the strategy; its failure is a distinct page state"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal reason a rejected archiveStrategy redirected back with"
+    }
+  ],
+  "components": [
+    {
+      "id": "archive-strategy-page",
+      "role": "container",
+      "purpose": "Ask one question — archive this strategy? — with what depends on it stated, in BattleGrid's words, before the button.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "no-such-strategy",
+        "unreadable",
+        "not-connected"
+      ],
+      "data": [
+        "proposal",
+        "listing",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton, deliberately following the agent archive page rather than inventing a second shape. `refused` renders h1 'Cannot archive <name>' plus the platform's reason as a bare text-sm paragraph with role=alert (no notice/danger block treatment, unlike agent-archive-confirm's refused state) and a plain underlined link back — no form, nothing styled as though retrying could help. `unreadable` is the roster read failing: reason with role=alert, WhyNotLoaded beneath it, and the way out is the roster ('Back to your strategies'), not the strategy — the read that would have said the strategy is there is the one that failed. `no-such-strategy` is a bare h1 and the same roster link.",
+      "constraints": [
+        "Before archiving, the page states what is bound to the strategy — openspec/specs/strategy-authoring/spec.md:237 ('Grid-Commander SHALL state, before a strategy is archived, what is bound to it') and spec.md:245-248 ('they are first told how many agents are bound to it … archiving is described as reversible'). The consequence block is where both live; a design must keep it before the buttons.",
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The refused and unreadable reason paragraphs keep role=alert.",
+        "'Nothing is styled to look disabled when retrying cannot help' (system.json principle) — the refused state offers no form and must stay that way."
+      ],
+      "children": [
+        "problem",
+        "consequence",
+        "why-not-loaded",
+        "archive-strategy"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted archive back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004's danger treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted.",
+      "constraints": [
+        "role=alert must survive.",
+        "The reason is BattleGrid's, verbatim — `repair-required` refusals arrive through the same channel and the wording must survive whatever the platform sends.",
+        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) binds the blocks beside it."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what archiving does and what is bound to the strategy — BattleGrid's count, not ours — before the button that does it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a plain border, NOT the consequence-border/bg-consequence-subtle treatment DT-0004 gave the agent ceremony pages. The sentence is the platform's, verbatim, and is the same string stored with the confirmation token.",
+      "constraints": [
+        "The text is the wording the confirmation token was minted against — a design must not paraphrase, truncate, or summarize it; what the user reads, what they agree to, and what the audit can prove are one string.",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive.",
+        "Archiving is recoverable and must not be described or styled as deletion — spec.md:248 ('archiving is described as reversible')."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Reassure someone staring at a failed read that their strategy still exists, by naming the accurate external cause.",
+      "states": [
+        "refused-cause",
+        "unreachable-cause",
+        "absent"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state: one sentence, 'This does not mean this strategy is gone —', completed by the cause — authority refused vs. platform unreachable. Shared across every read-failure surface so the wording cannot drift.",
+      "constraints": [
+        "The two causes must stay distinguishable — a 401 is not an outage, and telling someone with a bad credential to wait for an outage is the dangerous half to get wrong (the component's own history).",
+        "The reassurance sentence is the point and must not be cut for space."
+      ],
+      "children": []
+    },
+    {
+      "id": "archive-strategy",
+      "role": "container",
+      "purpose": "Carry the archive decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "archiveStrategy",
+          "effect": "POSTs the server action with strategyId and confirmationToken; success lands on /strategies, refusal (refused and repair-required both) redirects back here with ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3 — buttons wrap rather than stacking; there is no w-full/tablet:w-auto mobile stack here, unlike the agent ceremony pages. Two hidden inputs carry the confirmation binding (strategyId, confirmationToken — no expectedRevision travels; staleness is the token's to enforce). If the server action's re-read of the roster fails or the strategy is gone, it silently redirects to /strategies with no problem message.",
+      "constraints": [
+        "The hidden binding (strategyId, confirmationToken) is the confirmation ceremony — the form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
+        "Declining returns to the strategy, not the list — spec.md:240-243 ('Declining SHALL return the user to what they were looking at')."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the archive. Named with the strategy: 'Archive <name>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs archiveStrategy"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect — the same class of gap filed as #153 for the agent archive button; behavior, not styling.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: archive is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Leave the strategy active and go back to it — to the strategy, not the list, so declining costs nothing.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "listing"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /strategies/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004 hover (border-border-strong + bg-bg-sunken over duration-fast; active holds it at duration-instant). Label 'Leave it active'.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Must keep pointing at the strategy, not the roster — spec.md:250-252 ('they are returned to the strategy rather than to the list'); sending them to the list makes the safe choice the more costly one.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Archive a strategy",
+      "steps": [
+        "arrive from the strategy page",
+        "read what is bound to it in BattleGrid's words",
+        "submit 'Archive <name>'",
+        "land on /strategies with the strategy retired"
+      ]
+    },
+    {
+      "name": "Archive is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses (revision moved, not permitted, repair-required)",
+        "redirected back here with ?problem=",
+        "problem banner states the reason above the still-usable form"
+      ]
+    },
+    {
+      "name": "Archive cannot even be described",
+      "steps": [
+        "describe is refused before any form renders",
+        "'Cannot archive <name>' with the platform's reason",
+        "one link back to the strategy; no form offered"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave it active'",
+        "back on /strategies/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "Problem, consequence, and the refused/unreadable reasons carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

@@ -1,14 +1,15 @@
 {
   "id": "strategy-editor",
-  "title": "Edit a strategy \u2014 compose, compile, review, apply",
+  "title": "Edit a strategy — compose, compile, review, apply",
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "dc7b5d4",
+  "generated_at_commit": "cdecf31",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/plan-review.tsx",
-    "src/presentation/require-connection.tsx"
+    "src/presentation/require-connection.tsx",
+    "src/presentation/components/control.ts"
   ],
   "viewports": [
     "mobile",
@@ -16,69 +17,135 @@
   ],
   "data": [
     {
-      "name": "vocabulary",
-      "shape": "{ composable: boolean }",
-      "source": "app.readVocabulary.execute() \u2192 BattleGrid MCP"
-    },
-    {
-      "name": "strategy",
-      "shape": "Strategy \u2014 { id, name, tagline, revision, boundAgentCount }",
-      "source": "app.listStrategies.execute(), found by route id"
+      "name": "sectionOptions",
+      "shape": "{ kind: 'strategy-missing' | 'strategy-unreadable' | 'vocabulary-unreadable' | 'ready', detail?: { summary: Strategy, sections }, templates?, categories?, limits?: { maxResultBytes, deadlineMs } }",
+      "source": "app.readSectionOptions.execute — one read that answers strategy, current sections, and the platform's section vocabulary together"
     },
     {
       "name": "compiled",
       "shape": "{ kind: 'review' | 'rejected', review?: PlanReview, reason?: string }",
-      "source": "app.compilePlan.execute() \u2014 effect-free by platform design"
+      "source": "app.compilePlan.execute — effect-free by platform design; the intent is built by updateCompileIntent, the same domain builder the conformance guard calls"
     },
     {
       "name": "proposal",
       "shape": "{ kind: 'proposal' | 'refused', proposal?: { confirmationToken, consequence }, reason?: string }",
-      "source": "app.describeApply.execute()"
+      "source": "app.describeApply.execute"
     }
   ],
   "components": [
     {
       "id": "edit-strategy-page",
       "role": "container",
-      "purpose": "Compose a change to a strategy, ask BattleGrid what it would do, and decide from the answer.",
+      "purpose": "Compose a change to a strategy — tagline and report sections — ask BattleGrid what it would do, and decide from the answer.",
       "states": [
         "not-connected",
-        "vocabulary-unavailable",
         "strategy-not-found",
+        "strategy-unreadable",
+        "vocabulary-unavailable",
         "compose",
         "compile-rejected",
         "review-applicable",
         "review-apply-refused"
       ],
       "data": [
-        "vocabulary",
-        "strategy",
+        "sectionOptions",
         "compiled",
         "proposal"
       ],
       "actions": [
         {
           "id": "compile",
-          "effect": "GET ?tagline=\u2026 \u2014 compiles and replaces the compose form with the review. Writes nothing."
+          "effect": "GET ?compile=1&tagline=…&sections=…&unknownSections=… — compiles and replaces the compose form with the review. Writes nothing."
         },
         {
           "id": "apply",
-          "effect": "Server action: applies the reviewed plan, reconfigures bound agents, redirects to /strategies"
+          "effect": "Server action: applies the reviewed plan exactly as compiled, reconfigures bound agents, redirects to /strategies"
         }
       ],
-      "current_implementation": "Server component with seven render branches, each a full-page <main> on the shared shell from DT-0001. Page headings at type.size.2xl \u2014 raised from xl when rendering DT-0002 showed h1 and the panel h2 were the same size. The compose branch is a method=get form with a single tagline input; only the tagline is editable today (backlog `strategy-section-editor`). | Form controls now take their treatment from src/presentation/components/control.ts (one token-based constant, imported everywhere) rather than the stock `w-full rounded border p-2` they carried \u2014 which had no background, so the browser supplied white and every control was a white box in dark mode. Closed by `forms-that-work-in-the-dark`; the treatment has one source and must keep it.",
+      "current_implementation": "Server component with eight render branches, each a full-page <main>. Page headings at text-2xl (raised from xl when DT-0002 showed h1 and the panel h2 the same size). The compose branch is a method=get form carrying the tagline input AND a sections checklist grouped by platform category, with the platform's preview limits sentence when published, and hidden inputs round-tripping sections the vocabulary does not recognise. A 'Back to <strategy>' link is held once and rendered on every branch. The compile submit wears BUTTON_SECONDARY deliberately — the only primary in this flow is the review's Apply. Form treatments come from the CONTROL/LABEL/BUTTON_* constants in control.ts.",
       "constraints": [
-        "The compile control must keep saying what it does and does not do \u2014 'Compile \u2014 see what this would do, without doing it'. Compiling is effect-free by platform design precisely so a human can look first; a label that reads like a save button gives that back",
-        "The bound-agent count must appear above the field on the compose branch, before the user edits \u2014 not only on the review",
+        "The compile control must keep saying what it does and does not do — 'Compile — see what this would do, without doing it'. Compiling is effect-free by platform design (openspec/specs/strategy-authoring/spec.md:34-37, 'Compiling MUST NOT alter a strategy, and the interface MUST NOT present compiling and applying as equivalent actions')",
+        "The compile submit is secondary on purpose — two accent buttons in one journey would put the same weight on looking and on doing (openspec/specs/strategy-authoring/spec.md:50-54, 'applying is presented as the act with consequences and compiling as the act without'). A design must not promote it to primary",
+        "The bound-agent count must appear above the fields on the compose branch, before the user edits — not only on the review",
         "Compiling is a GET and must stay one: shareable, re-runnable by URL, and never a POST that implies commitment",
-        "vocabulary-unavailable must remain a full-page refusal, not a dismissible banner over a usable form \u2014 composing without the vocabulary means guessing at values the platform will reject",
-        "compile-rejected must keep the sentence 'Nothing was changed.' \u2014 after a failure the user's first question is whether it was partial. BattleGrid's reason is shown verbatim and usually names what to fix",
-        "review-apply-refused still renders the full review; the refusal reason usually names what to change, and hiding the review would strand the user"
+        "vocabulary-unavailable must remain a full-page refusal, not a dismissible banner over a usable form — openspec/specs/strategy-authoring/spec.md:386-389 ('WHEN the vocabulary cannot be read from BattleGrid THEN the section checklist is not shown AND the user is told why composing is not available')",
+        "strategy-unreadable must stay distinguishable from strategy-not-found — openspec/specs/strategy-authoring/spec.md:329-332 ('the user is told it could not be loaded AND this is distinguished from a strategy that does not exist')",
+        "compile-rejected must keep the sentence 'Nothing was changed.' — after a failure the user's first question is whether it was partial. BattleGrid's reason is shown verbatim and usually names what to fix, so 'Compose a different change' is offered before the way back",
+        "review-apply-refused still renders the full review; the refusal reason usually names what to change, and hiding the review would strand the user",
+        "The 'Back to <strategy>' link must survive on every branch — the page once rendered no way back to the strategy being edited"
       ],
       "children": [
+        "tagline",
+        "sections",
+        "limits",
         "plan-review-panel",
         "not-connected"
       ]
+    },
+    {
+      "id": "tagline",
+      "role": "input",
+      "purpose": "Edit the one-line description the strategy carries.",
+      "states": [
+        "default",
+        "focused"
+      ],
+      "data": [
+        "sectionOptions"
+      ],
+      "actions": [],
+      "current_implementation": "A single text input pre-filled with the current tagline, wearing the CONTROL constant, its label wearing LABEL. Compiling with it unchanged is legitimate — the intent summary then names only the sections.",
+      "constraints": [
+        "Control and label treatments come from the CONTROL and LABEL constants in control.ts, shared product-wide — not a per-page className."
+      ],
+      "children": []
+    },
+    {
+      "id": "sections",
+      "role": "input",
+      "purpose": "Choose which report sections the strategy includes, from what the platform publishes today.",
+      "states": [
+        "default",
+        "grouped-by-category",
+        "ungrouped-templates",
+        "current-sections-preselected"
+      ],
+      "data": [
+        "sectionOptions"
+      ],
+      "actions": [
+        {
+          "id": "toggleSection",
+          "effect": "Checks or unchecks a section; nothing happens until compile"
+        }
+      ],
+      "current_implementation": "A fieldset of native checkboxes grouped into sub-fieldsets by the platform's categories (legend at text-xs uppercase), with templates the platform returned without a category in a trailing ungrouped block. Sections the strategy currently includes are pre-checked. Above the boxes: a pointer to the section library ('What each section reads … is in the section library'). Sections the strategy contains that the vocabulary does not recognise ride as hidden inputs so a compile round-trips them unchanged.",
+      "constraints": [
+        "Current sections are pre-selected — openspec/specs/strategy-authoring/spec.md:355-359 ('each section the strategy currently includes is shown as selected AND available sections the strategy does not currently include are shown as deselected')",
+        "Grouping follows the categories BattleGrid returns — openspec/specs/strategy-authoring/spec.md:361-365; the list is discovered at edit time, never fixed at build time (spec.md:339-343), so a design cannot assume a stable set or count of groups",
+        "The hidden unknownSections inputs are behavior, not presentation — dropping them silently discards sections the vocabulary does not recognise. A design must not remove or surface-as-editable what it cannot name",
+        "The section-library link must stay with the checklist — it answers the question an author has while ticking boxes"
+      ],
+      "children": []
+    },
+    {
+      "id": "limits",
+      "role": "display",
+      "purpose": "State the ceilings a preview of this composition runs under, where the platform publishes them.",
+      "states": [
+        "published",
+        "absent"
+      ],
+      "data": [
+        "sectionOptions"
+      ],
+      "actions": [],
+      "current_implementation": "A text-xs text-text-secondary sentence inside the sections fieldset: max result bytes (localized) and deadline in seconds, ending 'Past either, BattleGrid refuses the preview rather than truncating it.' Rendered only when the platform publishes limits; nothing is substituted when it does not.",
+      "constraints": [
+        "Shown while composing, stated as what would be refused rather than truncated — openspec/specs/strategy-authoring/spec.md:345-349 and :367-370",
+        "When the platform publishes no ceiling, none is shown and no default is substituted — openspec/specs/strategy-authoring/spec.md:372-374 ('a limit this product invented would be read as the platform's and composed against'). An empty state for this component must stay empty"
+      ],
+      "children": []
     },
     {
       "id": "plan-review-panel",
@@ -117,31 +184,24 @@
         },
         {
           "id": "goBack",
-          "effect": "Returns to the compose form to change the intent"
-        },
-        {
-          "id": "submit",
-          "effect": "Applies the reviewed plan; reconfigures bound agents immediately; redirects to /strategies"
-        },
-        {
-          "id": "goBack",
-          "effect": "Link back to the compose form"
+          "effect": "Anchor back to the compose form (absolute href, required by the component) to change the intent"
         }
       ],
-      "current_implementation": "Styled per DT-0002. Consequence-toned blast radius with a 4px left border, notice-toned concerns block that shares no colour with danger, quiet-toned summary, accent (not danger) apply button with 'Go back and change it' as a bordered peer. Refusal states render no control at all.",
+      "current_implementation": "Styled per DT-0002, with its buttons now drawn from the shared BUTTON_PRIMARY/BUTTON_SECONDARY constants in control.ts (which lifted DT-0002's strings verbatim and added DT-0004's hover/active). Consequence-toned blast radius with a 4px left border, notice-toned concerns block that shares no colour with danger, quiet-toned summary, accent (not danger) apply button with 'Go back and change it' as a bordered peer. Refusal states render a role=alert paragraph and no control at all.",
       "constraints": [
-        "There must be no control on this surface that applies without a review having been rendered first. Applying is an act performed *from* a review, never a button beside a compile button \u2014 two similar controls side by side make the mistake one click wide with a fleet-sized consequence (design S-G)",
+        "There must be no control on this surface that applies without a review having been rendered first — openspec/specs/strategy-authoring/spec.md:50-54 ('applying is not reachable without a compiled result to apply'). Applying is an act performed *from* a review, never a button beside a compile button (design S-G)",
         "'Nothing has changed yet' must remain the first thing read. It is the sentence that makes an effect-free compile legible as effect-free",
         "The apply button's label carries the consequence ('reconfigures N agents now') and must not be shortened to a bare verb",
-        "Concerns are advisory and must never be presented as blockers \u2014 they describe the strategy's existing configuration, the user cannot fix them from here, and treating them as blockers would refuse ordinary edits with no way around it",
+        "Concerns are advisory and must never be presented as blockers — openspec/specs/strategy-authoring/spec.md:138-141 ('Grid-Commander SHALL show them and permit the user to proceed. It MUST NOT refuse an application the platform would accept')",
         "The BattleGrid-authored `consequence` string is stored with the token so the audit can prove what was shown; it must be displayed verbatim and must not be paraphrased, truncated, or collapsed behind a disclosure",
-        "The review must still render when apply is refused \u2014 the reason usually names what to change",
-        "[concerns-panel] The disclaimer sentence ('These do not prevent the change. They describe how the strategy is set up.') must not be dropped or demoted \u2014 without it the panel reads as a blocker",
+        "The review must still render when apply is refused — the reason usually names what to change",
+        "[concerns-panel] The disclaimer sentence ('These do not prevent the change. They describe how the strategy is set up.') must not be dropped or demoted — without it the panel reads as a blocker",
         "[concerns-panel] Must not adopt error styling. A one-word tagline edit can return two concerns while viable is true; styling them as failures would train users to abandon valid edits",
         "[concerns-panel] Count in the heading must stay, so the user knows the list is complete",
-        "[apply-confirmation] The hidden `plan` field carries the reviewed plan rather than recompiling \u2014 'what is applied is what was reviewed' is a requirement, not an aspiration. A design must not move, defer, or re-derive this value",
+        "[apply-confirmation] The hidden `plan` field carries the reviewed plan rather than recompiling — openspec/specs/strategy-authoring/spec.md:56-59 ('apply only a plan the platform itself compiled, exactly as compiled'). A design must not move, defer, or re-derive this value",
         "[apply-confirmation] The blocked and not-viable states are role=alert paragraphs that replace the button entirely; there must be no disabled-looking apply control that suggests retrying will help",
-        "[apply-confirmation] 'Go back and change it' must remain a visible peer of Apply, not a hidden or tertiary escape \u2014 it is the expected outcome of a review that surprised the user"
+        "[apply-confirmation] 'Go back and change it' must remain a visible peer of Apply, not a hidden or tertiary escape — it is the expected outcome of a review that surprised the user",
+        "Buttons take their treatment from the BUTTON_PRIMARY/BUTTON_SECONDARY constants in control.ts, shared product-wide — not a per-panel className"
       ],
       "children": [
         "blast-radius",
@@ -161,10 +221,10 @@
         "review.boundAgentCount"
       ],
       "actions": [],
-      "current_implementation": "Three visually distinct treatments. reaches-agents: consequence block, count at type.size.xl/semibold on its own line. reaches-none: a single quiet line, no border, no fill. unknown: notice block, deliberately block-shaped so it cannot be mistaken for zero.",
+      "current_implementation": "Three visually distinct treatments. reaches-agents: consequence block with 4px left border, count at text-xl/semibold on its own line, role=alert. reaches-none: a single quiet line, no border, no fill. unknown: notice block with 4px left border, role=alert, deliberately block-shaped so it cannot be mistaken for zero.",
       "constraints": [
-        "Must stay its own block. Five bound agents is a different act from zero and must not have to be read for \u2014 folding it into a sentence is the specific failure this component exists to prevent",
-        "`null` (BattleGrid did not report) must remain visibly distinct from `0` (nothing is bound). Rendering the unknown case as zero would understate the risk",
+        "Must stay its own block. Five bound agents is a different act from zero and must not have to be read for — folding it into a sentence is the specific failure this component exists to prevent",
+        "`null` (BattleGrid did not report) must remain visibly distinct from `0` (nothing is bound) — openspec/specs/strategy-authoring/spec.md:30-32 makes zero a stated case, and rendering the unknown case as zero would understate the risk",
         "The note that open positions are reported for awareness and do not block must stay with the count"
       ],
       "children": []
@@ -184,9 +244,9 @@
         "review.proposedRevision"
       ],
       "actions": [],
-      "current_implementation": "Heading plus a disc list; a single sentence when the list is empty.",
+      "current_implementation": "Bordered bg-bg-raised block: 'What would change' heading plus a disc list; a single sentence when the list is empty; the proposed revision as a trailing sentence when reported.",
       "constraints": [
-        "The empty case must keep its own sentence ('Nothing \u2014 this plan leaves the strategy as it is') rather than rendering an empty list; a compile that changes nothing is a real and useful outcome",
+        "The empty case must keep its own sentence ('Nothing — this plan leaves the strategy as it is') rather than rendering an empty list; a compile that changes nothing is a real and useful outcome",
         "The proposed revision number is what the user will see on the roster afterwards and must stay legible next to the changes"
       ],
       "children": []
@@ -207,23 +267,23 @@
           "effect": "Navigates to /connect"
         }
       ],
-      "current_implementation": "Shared component rendered in place of the page body.",
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
       "constraints": [
-        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+        "One page for every cause; they differ in cause and not in remedy (design W-C) — a design must not invent per-cause variants"
       ],
       "children": []
     }
   ],
   "flows": [
     {
-      "name": "Change a tagline and apply it",
+      "name": "Change tagline and sections, then apply",
       "steps": [
-        "open editor, read blast radius above the field",
-        "edit tagline",
-        "Compile \u2014 writes nothing",
+        "open editor, read blast radius above the fields",
+        "edit tagline, tick and untick sections (current ones pre-checked)",
+        "Compile — writes nothing",
         "read 'Nothing has changed yet', blast radius, changed axes, concerns",
         "read BattleGrid's consequence sentence",
-        "Apply \u2014 reconfigures bound agents immediately",
+        "Apply — reconfigures bound agents immediately",
         "redirect to /strategies"
       ]
     },
@@ -233,7 +293,7 @@
         "compile",
         "read review",
         "Go back and change it",
-        "compose form again"
+        "compose form again at the strategy's current state"
       ]
     },
     {
@@ -241,7 +301,8 @@
       "steps": [
         "compile",
         "compile-rejected page",
-        "'Nothing was changed.'"
+        "'Nothing was changed.'",
+        "Compose a different change, or back to the strategy"
       ]
     }
   ],
@@ -253,11 +314,13 @@
     "focus_order": [
       "page heading",
       "tagline input",
+      "section checkboxes, grouped by category",
       "compile button",
+      "back link",
       "(after compile) review heading",
       "apply button",
       "go back link"
     ],
-    "notes": "Review section is labelled by `review-heading`. Blast radius, the consequence sentence, and both refusal states are role=alert; the plan summary is role=status. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
+    "notes": "Review section is labelled by `review-heading`. Blast radius (reached and unknown cases), the consequence sentence, the vocabulary-unavailable reason, the compile-rejected reason, and both apply-refusal states are role=alert; the plan summary is role=status. Sections are native checkboxes inside nested fieldsets with legends. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
   }
 }

@@ -2,7 +2,7 @@
 id: the-design-lane-has-a-tail
 title: Eleven ceremony manifests and first tickets for the three early list surfaces
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
@@ -43,3 +43,15 @@ A fresh session running the now-routine loop: `/surface` per ceremony page,
 then `/design` for the three list surfaces — their first real decisions,
 probably small (empty/unreadable role hierarchy; card treatments are
 already inherited).
+
+## Closed 2026-08-12
+
+Both halves done in one session: all eleven ceremony manifests written (plus
+`recorder-trim` and a `strategy-editor` refresh that honestly went
+`needs-redesign`), and the three list surfaces got their first tickets —
+DT-0011 (agent-roster), DT-0012 (audit-log), DT-0013 (strategy-catalog) —
+plus DT-0014/DT-0015 for the drift the surveys uncovered. All five
+implemented, gates green, surfaces `designed`. The ceremony pages' own
+pre-sweep drift was split out as `the-ceremony-surfaces-missed-the-role-sweep`
+(#166); the surveys' behavior findings were filed as #162–#165 and #167–#171.
+
