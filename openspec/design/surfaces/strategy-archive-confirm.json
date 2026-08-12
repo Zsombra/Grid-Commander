@@ -3,13 +3,14 @@
   "title": "Archive strategy confirmation",
   "route": "/strategies/[id]/archive",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "cdecf31",
+  "status": "designed",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/strategies/[id]/archive/page.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/require-connection.tsx",
-    "src/presentation/components/why-not-loaded.tsx"
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/carried-problem.tsx"
   ],
   "viewports": [
     "mobile",
@@ -29,7 +30,7 @@
     {
       "name": "problem",
       "shape": "string | undefined",
-      "source": "searchParams — the refusal reason a rejected archiveStrategy redirected back with"
+      "source": "searchParams — the reason a rejected archiveStrategy redirected back with. Three producers now: a platform `refused`, a platform `repair-required`, and — since `the-outcome-reaches-the-person` — the action's own pre-perform re-read failing or the strategy having left the roster, both of which arrive prefixed 'Nothing was attempted: …'"
     }
   ],
   "components": [
@@ -41,8 +42,11 @@
         "proposal",
         "proposal-with-problem",
         "refused",
+        "refused-with-problem",
         "no-such-strategy",
+        "no-such-strategy-with-problem",
         "unreadable",
+        "unreadable-with-problem",
         "not-connected"
       ],
       "data": [
@@ -51,8 +55,10 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton, deliberately following the agent archive page rather than inventing a second shape. `refused` renders h1 'Cannot archive <name>' plus the platform's reason as a bare text-sm paragraph with role=alert (no notice/danger block treatment, unlike agent-archive-confirm's refused state) and a plain underlined link back — no form, nothing styled as though retrying could help. `unreadable` is the roster read failing: reason with role=alert, WhyNotLoaded beneath it, and the way out is the roster ('Back to your strategies'), not the strategy — the read that would have said the strategy is there is the one that failed. `no-such-strategy` is a bare h1 and the same roster link.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton, deliberately following the agent archive page rather than inventing a second shape. Four post-connection branches, and since `the-outcome-reaches-the-person` all four mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. `refused` renders h1 'Cannot archive <name>' plus the platform's reason with role=alert and a plain underlined link back — no form, nothing styled as though retrying could help. `unreadable` is the roster read failing: reason with role=alert, WhyNotLoaded beneath it, and the way out is the roster ('Back to your strategies'), not the strategy — the read that would have said the strategy is there is the one that failed. `no-such-strategy` is a bare h1 and the same roster link. Note what the `-with-problem` pairings mean visually: on `unreadable` and `refused` two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure — and they are two different facts about two different moments.",
       "constraints": [
+        "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your archive was refused' with 'the roster would not load'.",
         "Before archiving, the page states what is bound to the strategy — openspec/specs/strategy-authoring/spec.md:237 ('Grid-Commander SHALL state, before a strategy is archived, what is bound to it') and spec.md:245-248 ('they are first told how many agents are bound to it … archiving is described as reversible'). The consequence block is where both live; a design must keep it before the buttons.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "The refused and unreadable reason paragraphs keep role=alert.",
@@ -68,7 +74,7 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "Show the refusal that bounced a submitted archive back to the person who clicked it.",
+      "purpose": "Show the reason that bounced a submitted archive back to the person who clicked it — whether the platform refused it or nothing was attempted at all.",
       "states": [
         "present",
         "absent"
@@ -77,11 +83,13 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004's danger treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. Carries DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted — and returns null when `problem` is undefined, which is what lets every branch mount it unconditionally.",
       "constraints": [
         "role=alert must survive.",
-        "The reason is BattleGrid's, verbatim — `repair-required` refusals arrive through the same channel and the wording must survive whatever the platform sends.",
-        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) binds the blocks beside it."
+        "The reason is BattleGrid's, verbatim — `repair-required` refusals arrive through the same channel and the wording must survive whatever the platform sends. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
+        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) binds the blocks beside it.",
+        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page, or the six renderings of one paragraph drift the way they did before it was extracted.",
+        "The 'Refused: ' prefix is part of the treatment even when the sentence that follows says nothing was attempted — a design may restyle the prefix but must not drop the naming of the state."
       ],
       "children": []
     },
@@ -136,11 +144,12 @@
       "actions": [
         {
           "id": "archiveStrategy",
-          "effect": "POSTs the server action with strategyId and confirmationToken; success lands on /strategies, refusal (refused and repair-required both) redirects back here with ?problem="
+          "effect": "POSTs the server action with strategyId and confirmationToken; success lands on /strategies, refusal (refused and repair-required both) redirects back here with ?problem=, and a pre-perform re-read that fails or a strategy that has left the roster also redirects back here with ?problem= prefixed 'Nothing was attempted: …'"
         }
       ],
-      "current_implementation": "flex flex-wrap gap-3 — buttons wrap rather than stacking; there is no w-full/tablet:w-auto mobile stack here, unlike the agent ceremony pages. Two hidden inputs carry the confirmation binding (strategyId, confirmationToken — no expectedRevision travels; staleness is the token's to enforce). If the server action's re-read of the roster fails or the strategy is gone, it silently redirects to /strategies with no problem message.",
+      "current_implementation": "flex flex-wrap gap-3 — buttons wrap rather than stacking; there is no w-full/tablet:w-auto mobile stack here, unlike the agent ceremony pages. Two hidden inputs carry the confirmation binding (strategyId, confirmationToken — no expectedRevision travels; staleness is the token's to enforce). Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back to this route with a 'Nothing was attempted: …' problem, where they used to redirect to /strategies unexplained.",
       "constraints": [
+        "A click that reached no operation still lands somewhere that says so — the two 'Nothing was attempted: …' paths must not be redesigned back into a silent redirect to the roster.",
         "The hidden binding (strategyId, confirmationToken) is the confirmation ceremony — the form must keep exactly one submit path.",
         "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
         "Declining returns to the strategy, not the list — spec.md:240-243 ('Declining SHALL return the user to what they were looking at')."
@@ -246,11 +255,21 @@
       ]
     },
     {
+      "name": "Nothing could be attempted",
+      "steps": [
+        "submit",
+        "the action's re-read of the roster fails, or the strategy is no longer in it",
+        "redirected back here with ?problem= 'Nothing was attempted: …'",
+        "whichever branch renders next carries that sentence — including the branch reporting its own fresh read failure"
+      ]
+    },
+    {
       "name": "Archive cannot even be described",
       "steps": [
         "describe is refused before any form renders",
         "'Cannot archive <name>' with the platform's reason",
-        "one link back to the strategy; no form offered"
+        "one link back to the strategy; no form offered",
+        "a carried reason, if one rode in, sits above that reason"
       ]
     },
     {
@@ -270,6 +289,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "Problem, consequence, and the refused/unreadable reasons carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "The carried problem (shared CarriedProblem, present on all four branches), the consequence, and the refused/unreadable reasons all carry role=alert — so a branch that reports its own failure with a reason riding in announces two alerts, deliberately. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so the alerts are read in document order rather than as live-region updates."
   }
 }

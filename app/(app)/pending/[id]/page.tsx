@@ -5,6 +5,7 @@ import { ProposalDifference } from '@/presentation/components/proposal-differenc
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { editArguments } from '@/presentation/form.js';
 import { OPERATIONS } from '@/ports/proposals.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * One proposal, described against the account as it is right now.
@@ -158,12 +159,7 @@ function Shell({
       <a href="/pending" className="text-sm underline">
         Back to proposals
       </a>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       {children}
     </main>
   );

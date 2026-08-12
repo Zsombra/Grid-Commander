@@ -47,7 +47,7 @@ function world(agent: Agent) {
 
 async function agentPage(agent: Agent) {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-  return rendered(await Page({ params: params({ id: agent.id }), searchParams: noSearch }));
+  return rendered(await Page({ params: params({ id: agent.id }) }));
 }
 
 async function roster() {

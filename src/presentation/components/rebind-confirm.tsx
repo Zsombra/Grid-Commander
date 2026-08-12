@@ -28,24 +28,31 @@ export function RebindConfirm({
         Rebind {rebind.agentName} to {rebind.toStrategyName}?
       </h2>
 
-      <div role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
+      <div role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary">
         <p className="font-medium">This replaces configuration. It is not a merge.</p>
         <p className="mt-2">{consequence}</p>
       </div>
 
+      {/* The agent this confirmation is for. Its absence made every submit
+          throw `FormError: agentId is required` before the use case was
+          reached — the whole rebind write path, dead, and loudly: with no
+          error boundary in the product it surfaced as a framework error page.
+          `performRebind` has read this field since it was written; the form
+          never sent it. Same class as `four-dead-write-paths`. */}
+      <input type="hidden" name="agentId" value={rebind.agentId} />
       <input type="hidden" name="confirmationToken" value={confirmationToken} />
       <input type="hidden" name="toStrategyId" value={rebind.toStrategyId} />
       <input type="hidden" name="toStrategyRevision" value={rebind.toStrategyRevision} />
       <input type="hidden" name="expectedRevision" value={rebind.expectedRevision} />
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         {/* Not danger-styled, for DT-0002's reason: the weight is on the
             consequence above, and a hazard-coloured control here would train a
             flinch at the action the page exists to offer. */}
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
           Replace {rebind.agentName}&apos;s configuration with {rebind.toStrategyName}&apos;s
         </button>
-        <a href={`/agents/${rebind.agentId}`} className={BUTTON_SECONDARY}>
+        <a href={`/agents/${rebind.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Keep it bound to {rebind.fromStrategyName}
         </a>
       </div>

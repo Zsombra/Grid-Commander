@@ -13,8 +13,19 @@
  * one anybody is looking at. Rendering nothing when there is no problem is the
  * point — every branch can mount it unconditionally, so "did this branch
  * remember?" stops being a question a reader has to answer per branch.
+ *
+ * It drifted before this was extracted, exactly as predicted: five copies were
+ * byte-equal, `/pending` had lost the "Refused:" prefix, and the agent detail
+ * page rendered a refusal in the *consequence* role — on a branch nothing could
+ * reach any more.
+ *
+ * `null` as well as `undefined`, deliberately. Callers get their reason from
+ * `searchParams` (undefined when absent) or from a parsed query (null), and a
+ * shared component that refuses one of them is a shared component someone
+ * quietly writes their own copy of instead. That is the whole failure this
+ * exists to stop, so the prop absorbs the difference rather than exporting it.
  */
-export function CarriedProblem({ problem }: { problem: string | undefined }) {
+export function CarriedProblem({ problem }: { problem: string | null | undefined }) {
   if (!problem) return null;
 
   return (

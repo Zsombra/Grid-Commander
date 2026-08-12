@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-08-12 (the ceremony round) — the sweep lands, and finds two write paths that never worked
+
+**Did**: `the-ceremony-pages-join-the-sweep` (standard, archived; 164 archived
+changes). DT-0016–DT-0021: consequence role on deploy, undeploy and
+`rebind-confirm` (the "this is not a merge" block, the product's largest blast
+radius, was wearing the anonymous border DT-0004 retired); danger role on the
+three strategy ceremonies' failure sentences; the archive page's mobile stack
+on all three action rows. #173's twelve manifests re-surveyed at `6562791` by
+two parallel agents.
+
+**The round found more than it was sent for.** The refusal banner had already
+drifted into four spellings and two roles: `/pending` had lost the "Refused:"
+prefix, and `/agents/[id]` rendered a refusal in the **consequence** role — on
+a branch nothing has minted since the rename form moved to `/edit`
+(`6959707`). Five hand-rolled copies now render `CarriedProblem`; the dead
+branch was removed rather than restyled, and typecheck named the eight test
+call sites still passing its `searchParams`.
+
+**Then a p1.** A survey noticed `RebindConfirm` renders four hidden inputs
+while `performRebind` reads five: `requiredText(formData, 'agentId')` threw
+`FormError` on **every rebind submit**, before the use case, as a framework
+error page. Fixed here. The new guard
+`a-form-sends-what-its-action-reads.test.ts` then found a **second**: `create`
+requires `strategyId` and `AgentForm` has no strategy control at all — filed
+as **#177** (p1, needs a chooser, so a proposal) and carried in the guard's
+ledger.
+
+**State**: 0 active changes, 30 open items ↔ 30 open issues. Gates green:
+166 files / 2183 tests.
+
+**Next**: `/propose` on #177 — the product's entry point cannot be walked.
+Then #175 (revocation framing) and #162.
+
+**Watch out**: **The first version of that guard passed with the bug in it** —
+it asked whether the field name appears anywhere in the UI, and `agentId` is a
+hidden input on four other pages. Second time this session a guard has been
+written that could not fail on its own defect; both times the fix was to ask
+the narrower question (which form is bound to *this* action) and
+mutation-verify. Also: a JSX element is not a regular language — scanning
+forward with `[^>]*` for a prop missed `AgentEditForm`, whose earlier prop
+holds `Record<string, string | number>`; anchor backwards from the prop to the
+nearest element open instead. The concurrent surveys warned that four surfaces
+go stale again the moment this commits, and they are right — the delta is
+known and small.
+
 ## 2026-08-12 (the suite reads itself) — Windows goes green, and a recommendation was checked before it was followed
 
 **Did**: Merged PR #174 (`3fde77e`). Then **abandoned my own top

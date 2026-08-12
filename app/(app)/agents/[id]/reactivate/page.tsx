@@ -4,6 +4,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { ReactivatePrompt } from '@/presentation/components/agent-edit.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Bring an archived agent back.
@@ -58,12 +59,7 @@ export default async function ReactivatePage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Reactivate {agent.displayName}?</h1>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       <ReactivatePrompt
         agent={agent}
         action={reactivate}

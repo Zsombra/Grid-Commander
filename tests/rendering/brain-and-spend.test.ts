@@ -32,7 +32,6 @@ vi.mock('@/presentation/session.js', () => ({
 }));
 
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
-const noSearch = Promise.resolve({});
 
 /** The live shape of 2026-08-06: the flattened read-back, with the name. */
 const NAMED = anAgent({
@@ -47,7 +46,7 @@ function world(agents: FakeAgentsPort) {
 
 async function agentPage(agent: Agent) {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-  return rendered(await Page({ params: params({ id: agent.id }), searchParams: noSearch }));
+  return rendered(await Page({ params: params({ id: agent.id }) }));
 }
 
 async function limitsPage(id: string) {

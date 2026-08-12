@@ -3,13 +3,14 @@
   "title": "Restore strategy confirmation",
   "route": "/strategies/[id]/restore",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "cdecf31",
+  "status": "designed",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/strategies/[id]/restore/page.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/require-connection.tsx",
     "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/application/use-cases/strategy-lifecycle.command.ts"
   ],
   "viewports": [
@@ -30,7 +31,7 @@
     {
       "name": "problem",
       "shape": "string | undefined",
-      "source": "searchParams — the refusal reason a rejected restoreStrategy redirected back with"
+      "source": "searchParams — the reason a rejected restoreStrategy redirected back with. Two producers: a platform `refused`, and — since `the-outcome-reaches-the-person` — the action's own pre-perform re-read failing or the strategy having left the roster, both prefixed 'Nothing was attempted: …'. `repair-required` deliberately does NOT ride this field; it has its own ?outcome="
     },
     {
       "name": "REPAIR_REQUIRED_GUIDANCE",
@@ -47,9 +48,13 @@
         "proposal",
         "proposal-with-problem",
         "repair-required",
+        "repair-required-with-problem",
         "not-archived",
+        "not-archived-with-problem",
         "no-such-strategy",
+        "no-such-strategy-with-problem",
         "unreadable",
+        "unreadable-with-problem",
         "not-connected"
       ],
       "data": [
@@ -58,8 +63,10 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. `not-archived` renders when the strategy is already active: h1 'Cannot restore', reason with role=alert, link back. `unreadable` shows the reason with role=alert plus WhyNotLoaded, and leads to the roster — an archived strategy is the one a user most readily believes deleted, so the reassurance sentence carries the most weight here. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. `not-archived` renders when the strategy is already active: h1 'Cannot restore', reason with role=alert, link back. `unreadable` shows the reason with role=alert plus WhyNotLoaded, and leads to the roster — an archived strategy is the one a user most readily believes deleted, so the reassurance sentence carries the most weight here. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments.",
       "constraints": [
+        "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "On the repair-required branch the carried danger banner and the guidance block must stay visually separable — the guidance is not a failure and must not be pulled into the banner's palette by proximity ('notice never borrows danger's colour', system.json principle).",
         "Restoring MUST NOT be presented as guaranteed — openspec/specs/strategy-authoring/spec.md:238 ('Restoring MUST NOT be presented as guaranteed where the platform may refuse it'). The paragraph saying BattleGrid may decline is spec-required content, not filler.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "'Absence of effect is stated, not implied' (system.json principle) — the sentence that nothing is reconfigured by restoring must keep visual commitment."
@@ -74,7 +81,7 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "Show the refusal that bounced a submitted restore back to the person who clicked it.",
+      "purpose": "Show the reason that bounced a submitted restore back to the person who clicked it — whether the platform refused it or nothing was attempted at all.",
       "states": [
         "present",
         "absent"
@@ -83,10 +90,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004's danger treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix — and it returns null when `problem` is undefined, which is what lets all five branches mount it unconditionally.",
       "constraints": [
         "role=alert must survive.",
-        "The reason is BattleGrid's, verbatim — no re-diagnosis."
+        "The reason is BattleGrid's, verbatim — no re-diagnosis. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
+        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page.",
+        "It must stay distinguishable from the repair-required guidance it can render directly above — one is a failed attempt, the other is the platform declining and saying what would work."
       ],
       "children": []
     },
@@ -111,7 +120,7 @@
           "effect": "Underlined link back to /strategies/[id]"
         }
       ],
-      "current_implementation": "Its own full-page branch: h1 '<name> needs rebuilding first', then the fixed guidance sentence in a rounded-gc-2 border-border-default p-4 block with role=status — status, not alert, because nothing failed: the platform declined and said what would work instead. Two underlined text links follow ('Compile a change for it', 'Back to <name>') — plain links, not buttons.",
+      "current_implementation": "Its own full-page branch: h1 '<name> needs rebuilding first', a `<CarriedProblem>` mount (usually null here — the two arms are set by different redirects and only collide when a stale ?problem= is still on the URL), then the fixed guidance sentence in a rounded-gc-2 border border-border-default p-4 block with role=status — status, not alert, because nothing failed: the platform declined and said what would work instead. Two underlined text links follow in a flex flex-wrap gap-3 row ('Compile a change for it', 'Back to <name>') — plain links, not buttons.",
       "constraints": [
         "role=status, not role=alert, must survive — this state is deliberately not an error. 'Advisory is not failure. notice never borrows danger's colour, icon, or weight' (system.json principle).",
         "Spec-required shape — spec.md:254-257: 'the user is told it needs rebuilding rather than being told it failed' AND 'they are directed to the path that can rebuild it'. The link to the compile pipeline must survive any redesign.",
@@ -151,11 +160,12 @@
       "actions": [
         {
           "id": "restoreStrategy",
-          "effect": "POSTs the server action with strategyId; success lands on /strategies, repair-required redirects back here with ?outcome=repair-required, any other refusal with ?problem="
+          "effect": "POSTs the server action with strategyId; success lands on /strategies, repair-required redirects back here with ?outcome=repair-required, any other refusal with ?problem=, and a pre-perform re-read that fails or a strategy that has left the roster also redirects back here with ?problem= prefixed 'Nothing was attempted: …'"
         }
       ],
-      "current_implementation": "flex flex-wrap gap-3 — buttons wrap; no mobile w-full stack. One hidden input (strategyId) — deliberately no confirmation token and no consequence block: restore is the recovery arm, creates nothing and reconfigures no agent, so it does not wear the archive ceremony. If the server action's re-read of the roster fails or the strategy is gone, it silently redirects to /strategies with no problem message.",
+      "current_implementation": "flex flex-wrap gap-3 — buttons wrap; no mobile w-full stack. One hidden input (strategyId) — deliberately no confirmation token and no consequence block: restore is the recovery arm, creates nothing and reconfigures no agent, so it does not wear the archive ceremony. Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back to this route with a 'Nothing was attempted: …' problem, where they used to redirect to /strategies unexplained.",
       "constraints": [
+        "A click that reached no operation still lands somewhere that says so — the two 'Nothing was attempted: …' paths must not be redesigned back into a silent redirect to the roster.",
         "The form must keep exactly one submit path.",
         "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
         "Both non-success arms carry the platform's reason back to this page — a design must not collapse repair-required and refused into one look; they are different states with different remedies."
@@ -269,6 +279,15 @@
       ]
     },
     {
+      "name": "Nothing could be attempted",
+      "steps": [
+        "submit",
+        "the action's re-read of the roster fails, or the strategy is no longer in it",
+        "redirected back here with ?problem= 'Nothing was attempted: …'",
+        "whichever branch renders next carries that sentence — including the branch reporting its own fresh read failure"
+      ]
+    },
+    {
       "name": "Walk away",
       "steps": [
         "click 'Leave it archived'",
@@ -285,6 +304,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The problem banner and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
   }
 }

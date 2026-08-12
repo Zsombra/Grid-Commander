@@ -33,7 +33,6 @@ vi.mock('@/presentation/session.js', () => ({
 }));
 
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
-const noSearch = Promise.resolve({});
 
 const VOLATILIS = anAgent({ id: 'a1', displayName: 'Volatilis', status: 'ARCHIVED' });
 const ACTIVE = anAgent({ id: 'a1', displayName: 'Volatilis', status: 'ACTIVE' });
@@ -61,7 +60,7 @@ function world(agents: readonly Agent[], deployments: readonly RadarDeployment[]
 
 async function agentPage(agent: Agent) {
   const Page = (await import('../../app/(app)/agents/[id]/page.js')).default;
-  return rendered(await Page({ params: params({ id: agent.id }), searchParams: noSearch }));
+  return rendered(await Page({ params: params({ id: agent.id }) }));
 }
 
 async function roster() {

@@ -36,7 +36,7 @@ export default async function ArchiveStrategyPage({
         {/* A bounced submit rode in with its reason; this branch must not eat
             it — it is the only record of what the click did (or did not) do. */}
         <CarriedProblem problem={problem} />
-        <p role="alert" className="text-sm">{result.reason}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{result.reason}</p>
         <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy: the read that would have said the
             strategy is there is the one that failed. */}
@@ -70,7 +70,7 @@ export default async function ArchiveStrategyPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot archive {listing.strategy.name}</h1>
         <CarriedProblem problem={problem} />
-        <p role="alert" className="text-sm">{proposal.reason}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{proposal.reason}</p>
         <p className="text-sm">
           <a href={`/strategies/${listing.strategy.id}`} className="underline">
             Back to {listing.strategy.name}

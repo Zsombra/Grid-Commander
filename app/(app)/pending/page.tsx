@@ -1,6 +1,7 @@
 import { acting } from '@/presentation/session.js';
 import { ProposalQueue } from '@/presentation/components/proposal-queue.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * The agree and decline actions send their aftermath here — `?problem=` when
@@ -30,11 +31,7 @@ export default async function PendingPage({
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-6">
       <h1 className="text-xl font-medium">What has been proposed for you</h1>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       {note ? (
         // Nothing failed and nothing was written — advisory wears notice.
         <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">

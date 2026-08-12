@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -63,6 +63,51 @@ const CARRY_PROBLEM = [
   'app/(app)/strategies/[id]/restore/page.tsx',
   'app/(app)/strategies/[id]/fork/page.tsx',
 ] as const;
+
+describe('one spelling of a carried refusal, product-wide', () => {
+  // The narrow guard below asks the six pages of `the-outcome-reaches-the-person`
+  // to use the shared component. It could not see the five copies elsewhere that
+  // had already drifted: `/pending` had lost the semibold "Refused:" prefix, and
+  // the agent detail page rendered a refusal in the *consequence* role — the one
+  // place in the product that called a refusal something other than a refusal,
+  // on a branch nothing could reach. Both were found by reading, not by a check,
+  // which is the gap this closes.
+  const uiFiles = (function walk(dir: string, out: string[] = []): string[] {
+    for (const entry of readdirSync(dir)) {
+      const full = `${dir}/${entry}`;
+      if (statSync(full).isDirectory()) walk(full, out);
+      else if (full.endsWith('.tsx')) out.push(full);
+    }
+    return out;
+  })('app').concat(
+    (function walk(dir: string, out: string[] = []): string[] {
+      for (const entry of readdirSync(dir)) {
+        const full = `${dir}/${entry}`;
+        if (statSync(full).isDirectory()) walk(full, out);
+        else if (full.endsWith('.tsx')) out.push(full);
+      }
+      return out;
+    })('src/presentation'),
+  );
+
+  it('nothing hand-rolls the banner CarriedProblem owns', () => {
+    const handRolled = uiFiles.filter((f) => /\{problem \? \(/.test(readFileSync(f, 'utf8')));
+    expect(
+      handRolled,
+      'a copy of this paragraph is how the prefix and the role drifted the first time',
+    ).toEqual([]);
+  });
+
+  it('sees the surfaces it is checking', () => {
+    // Vacuous-pass insurance: a path drift would report zero files and zero
+    // offenders, which reads identically to compliance.
+    expect(uiFiles.length).toBeGreaterThan(40);
+    expect(
+      uiFiles.some((f) => readFileSync(f, 'utf8').includes('<CarriedProblem')),
+      'no page renders the shared component — the scan is looking in the wrong place',
+    ).toBe(true);
+  });
+});
 
 describe('a carried reason survives the branch that renders next', () => {
   for (const page of CARRY_PROBLEM) {

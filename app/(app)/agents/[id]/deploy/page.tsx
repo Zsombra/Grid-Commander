@@ -134,17 +134,17 @@ export default async function DeployPage({
         Deploy {agent.displayName} to {proposal.coinId}?
       </h1>
       <CarriedProblem problem={problem} />
-      <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
-      <form action={performDeploy} className="flex flex-wrap gap-3">
+      <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary">{proposal.consequence}</p>
+      <form action={performDeploy} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="coinId" value={proposal.coinId} />
         <input type="hidden" name="timeframe" value={proposal.timeframe} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision === null ? '' : proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
           Deploy {agent.displayName}
         </button>
-        <a href={`/agents/${proposal.agentId}`} className={BUTTON_SECONDARY}>
+        <a href={`/agents/${proposal.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave things as they are
         </a>
       </form>

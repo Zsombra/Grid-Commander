@@ -3,10 +3,11 @@
   "title": "Deploy agent — chooser and confirmation",
   "route": "/agents/[id]/deploy",
   "capability": "agent-deployment",
-  "status": "functional",
-  "generated_at_commit": "cdecf31",
+  "status": "designed",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/agents/[id]/deploy/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
@@ -44,12 +45,17 @@
       "purpose": "Two steps on one route: choose a market, then agree to what deploying there does — with the replacement named before anything is agreed to.",
       "states": [
         "chooser",
+        "chooser-with-problem",
         "chooser-no-timeframes",
+        "chooser-no-timeframes-with-problem",
         "proposal",
         "proposal-with-problem",
         "refused",
+        "refused-with-problem",
         "roster-unreadable",
+        "roster-unreadable-with-problem",
         "no-such-agent",
+        "no-such-agent-with-problem",
         "not-connected"
       ],
       "data": [
@@ -59,10 +65,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Without ?coin&timeframe it is the chooser; with them the describe runs and the page becomes the confirmation. chooser-no-timeframes replaces the form with a role=alert sentence. refused renders h1 'Cannot deploy' + the reason (role=alert, untinted text) + an underlined 'Choose differently' link — and drops any ?problem= that rode along, so a bounce whose re-describe also fails loses its reason (behavior gap, not styling). no-such-agent and roster-unreadable are the shared refusal skeletons with underlined links.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Without ?coin&timeframe it is the chooser; with them the describe runs and the page becomes the confirmation. chooser-no-timeframes replaces the form with a role=alert sentence. refused renders h1 'Cannot deploy' + the reason (role=alert, untinted text) + an underlined 'Choose differently' link. no-such-agent and roster-unreadable are the shared refusal skeletons with underlined links. Since `the-outcome-reaches-the-person` all five post-connection branches mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. The refused branch used to drop a carried ?problem=; that gap is closed. Note what the pairings mean visually: on refused and roster-unreadable two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure — and they are two different facts about two different moments.",
       "constraints": [
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
-        "The two steps must stay two requests: the chooser's GET composes a description and reaches no operation; only the confirm form performs — openspec/specs/agent-deployment/spec.md:40-41 ('SHALL perform it only after a person confirms against the specific agent and market')."
+        "The two steps must stay two requests: the chooser's GET composes a description and reaches no operation; only the confirm form performs — openspec/specs/agent-deployment/spec.md:40-41 ('SHALL perform it only after a person confirms against the specific agent and market').",
+        "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your deploy was refused' with 'the roster would not load'."
       ],
       "children": [
         "coin",
@@ -112,7 +120,7 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "Show the refusal that bounced a submitted deploy back to the person who clicked it.",
+      "purpose": "Show the refusal that bounced a submitted deploy back to the person who clicked it — on whichever branch the page then lands.",
       "states": [
         "present",
         "absent"
@@ -121,11 +129,14 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted. Rendered only in the proposal branch — the refused branch drops it.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the ternary that used to be inline on this page. Carries DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted — and returns null when `problem` is undefined, which is what lets every branch mount it unconditionally.",
       "constraints": [
         "role=alert must survive.",
-        "The reason shown is the one the platform returned, on the surface acted from — openspec/specs/agent-deployment/spec.md:76-79. Do not truncate or paraphrase.",
-        "'Notice never borrows danger's colour' (system.json principle) binds the consequence block beside it."
+        "The reason shown is the one the platform returned, on the surface acted from — openspec/specs/agent-deployment/spec.md:76-79. Do not truncate or paraphrase; the string is platform-authored and unbounded, so the block must wrap rather than clip.",
+        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page, or the six renderings of one paragraph drift the way they did before it was extracted.",
+        "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
+        "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state.",
+        "This is a failed attempt, not advisory — 'notice never borrows danger's colour' (system.json principle) binds the consequence block beside it."
       ],
       "children": []
     },
@@ -220,7 +231,7 @@
           "effect": "The chooser submit GET-navigates into the describe; the anchors return to /agents/[id] without submitting anything"
         }
       ],
-      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the cancel anchors.",
+      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the chooser's 'Back to the agent' anchor and the confirmation's cancel. The refused, roster-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment.",
       "constraints": [
         "The cancel must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
         "The chooser's submit must stay secondary — it composes a description and reaches no operation; promoting it to primary misstates what it does.",
@@ -259,7 +270,7 @@
           "effect": "Navigates to /connect"
         }
       ],
-      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere. This is the one branch that does not mount CarriedProblem — it renders before searchParams are read.",
       "constraints": [
         "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
       ],
@@ -284,7 +295,15 @@
         "submit",
         "platform refuses (revision moved, not permitted)",
         "redirected back with coin, timeframe and ?problem= preserved",
-        "the describe re-runs and the problem banner states the reason above the fresh proposal"
+        "the describe re-runs and the problem banner (shared CarriedProblem) states the reason above the fresh proposal"
+      ]
+    },
+    {
+      "name": "The bounce lands on a branch that fails too",
+      "steps": [
+        "submit; the platform refuses and redirects back with ?problem=",
+        "the re-describe also refuses, or the roster will not load",
+        "the problem banner (shared CarriedProblem) still states why the click was refused, above the fresh reason for this branch — both facts, not one"
       ]
     },
     {
@@ -313,6 +332,6 @@
       "button-secondary",
       "button-primary"
     ],
-    "notes": "Problem, consequence, no-timeframes and refusal messages carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "The carried problem, consequence, no-timeframes and refusal messages all carry role=alert; on a bounced branch two of them are adjacent. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   }
 }

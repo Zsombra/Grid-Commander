@@ -3,13 +3,14 @@
   "title": "Fork strategy — private copy form",
   "route": "/strategies/[id]/fork",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "cdecf31",
+  "status": "designed",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/strategies/[id]/fork/page.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/require-connection.tsx",
-    "src/presentation/components/why-not-loaded.tsx"
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/carried-problem.tsx"
   ],
   "viewports": [
     "mobile",
@@ -29,12 +30,12 @@
     {
       "name": "problem",
       "shape": "string | undefined",
-      "source": "searchParams — the refusal reason a rejected forkStrategy redirected back with"
+      "source": "searchParams — the reason a rejected forkStrategy redirected back with. Two producers: a platform `refused`, and — since `the-outcome-reaches-the-person` — the action's own pre-perform re-read failing or the strategy having left the roster, both prefixed 'Nothing was attempted: …'"
     },
     {
       "name": "name",
       "shape": "string | undefined",
-      "source": "searchParams — the typed name, round-tripped so a refusal does not also discard what was typed"
+      "source": "searchParams — the typed name, round-tripped so a refusal does not also discard what was typed. It now travels on the two 'Nothing was attempted' bounces as well, not only on a platform refusal"
     }
   ],
   "components": [
@@ -46,8 +47,11 @@
         "form",
         "form-with-problem",
         "at-capacity",
+        "at-capacity-with-problem",
         "no-such-strategy",
+        "no-such-strategy-with-problem",
         "unreadable",
+        "unreadable-with-problem",
         "not-connected"
       ],
       "data": [
@@ -57,8 +61,9 @@
         "name"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Deliberately NO confirmation token: forking creates something new and changes nothing that exists, so there is no blast radius to name — a confirmation here would train users to click through the ones that matter (DL-105). The form state carries two plain text-sm paragraphs: the original belongs to BattleGrid and cannot be edited, the copy is yours and starts identical to revision N; nothing about the original changes and the copy has no agents until one is bound. `unreadable` shows the reason with role=alert plus WhyNotLoaded and leads to the roster.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Four post-connection branches, and since `the-outcome-reaches-the-person` all four mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. Deliberately NO confirmation token: forking creates something new and changes nothing that exists, so there is no blast radius to name — a confirmation here would train users to click through the ones that matter (DL-105). The form state carries two plain text-sm paragraphs: the original belongs to BattleGrid and cannot be edited, the copy is yours and starts identical to revision N; nothing about the original changes and the copy has no agents until one is bound. `unreadable` shows the reason with role=alert plus WhyNotLoaded and leads to the roster. Note `at-capacity-with-problem`: a role=alert danger banner above a role=status capacity explanation — a bounced attempt above a standing fact about the account.",
       "constraints": [
+        "Every branch renders the carried reason, not just the one that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
         "No confirmation ceremony may be added — DL-105's ruling, stated in the page: a consequence-free confirmation erodes the ones that carry consequence. Adding one is behavior and requires-spec-change.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "The copy is offered instead of editing, never alongside it — openspec/specs/strategy-authoring/spec.md:206-209 ('they are offered a private copy to change instead … the original is not presented as editable')."
@@ -73,7 +78,7 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "Show BattleGrid's answer to a fork it declined, whole and unglossed, on the form acted from.",
+      "purpose": "Show BattleGrid's answer to a fork it declined — or the news that nothing was attempted — whole and unglossed, on the form acted from.",
       "states": [
         "present",
         "absent"
@@ -82,11 +87,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004's danger treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, semibold 'Refused:' prefix. The page adds no diagnosis the platform did not state.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix — and it returns null when `problem` is undefined, which is what lets all four branches mount it unconditionally. The page adds no diagnosis the platform did not state.",
       "constraints": [
         "role=alert must survive.",
-        "The reason reaches the user in the platform's own words, whatever its code — spec.md:230-234 ('the reason is shown in the platform's words, on the form acted from … no cause the platform did not state is offered'). Name collisions surface upstream as a bare INTERNAL_ERROR, so the wording here must survive an unhelpful platform answer without the page glossing it.",
-        "This banner appears above a still-usable form with the typed name preserved — a design must keep both facts visible together."
+        "The reason reaches the user in the platform's own words, whatever its code — spec.md:230-234 ('the reason is shown in the platform's words, on the form acted from … no cause the platform did not state is offered'). Name collisions surface upstream as a bare INTERNAL_ERROR, so the wording here must survive an unhelpful platform answer without the page glossing it. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
+        "This banner appears above a still-usable form with the typed name preserved — a design must keep both facts visible together.",
+        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page."
       ],
       "children": []
     },
@@ -107,7 +113,7 @@
           "effect": "Underlined link back to /strategies/[id]"
         }
       ],
-      "current_implementation": "Its own full-page branch: h1 'No room for another strategy', the platform-derived explanation as a bare text-sm paragraph with role=status (advisory, not failure), one underlined link back. Reachable by address only — the roster and the strategy page no longer offer a copy control they know cannot work — but it still refuses honestly and still leads somewhere.",
+      "current_implementation": "Its own full-page branch: h1 'No room for another strategy', a `<CarriedProblem>` mount above it (usually null; a refused fork that also finds the account full renders both), the platform-derived explanation as a bare text-sm paragraph with role=status (advisory, not failure), one underlined link back. Reachable by address only — the roster and the strategy page no longer offer a copy control they know cannot work — but it still refuses honestly and still leads somewhere.",
       "constraints": [
         "role=status must survive — being at capacity is a fact about the account, not an error.",
         "No fork form may render in this state — spec.md:215-218 ('the control that would make a copy is not offered, and its absence is explained where it would have been').",
@@ -147,11 +153,12 @@
       "actions": [
         {
           "id": "forkStrategy",
-          "effect": "POSTs the server action with strategyId and the name only when one was typed; success lands on the copy's edit page (/strategies/[newId]/edit), refusal redirects back here with ?problem= and the typed name preserved as ?name="
+          "effect": "POSTs the server action with strategyId and the name only when one was typed; success lands on the copy's edit page (/strategies/[newId]/edit), refusal redirects back here with ?problem= and the typed name preserved as ?name=, and a pre-perform re-read that fails or a strategy that has left the roster also redirects back here with ?problem= prefixed 'Nothing was attempted: …' — carrying ?name= too"
         }
       ],
-      "current_implementation": "space-y-4 form; one hidden input (strategyId), the name field, then a flex flex-wrap gap-3 button row. If the server action's re-read of the roster fails or the strategy is gone, it silently redirects to /strategies with no problem message.",
+      "current_implementation": "space-y-4 form; one hidden input (strategyId), the name field, then a flex flex-wrap gap-3 button row. Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back to this route with a 'Nothing was attempted: …' problem and the typed name, where they used to redirect to /strategies unexplained and drop what was typed.",
       "constraints": [
+        "A click that reached no operation still lands somewhere that says so, with the typed name intact — the two 'Nothing was attempted: …' paths must not be redesigned back into a silent redirect to the roster.",
         "The form must keep exactly one submit path.",
         "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
         "A refused copy returns to this form with the typed name intact — spec.md:233 ('the name the user typed is still in the form'); a design must not turn the refusal into a page that starts the user over."
@@ -291,6 +298,15 @@
       ]
     },
     {
+      "name": "Nothing could be attempted",
+      "steps": [
+        "submit",
+        "the action's re-read of the roster fails, or the strategy is no longer in it",
+        "redirected back here with ?problem= 'Nothing was attempted: …' and ?name=",
+        "whichever branch renders next carries that sentence — including the branch reporting its own fresh read failure"
+      ]
+    },
+    {
       "name": "Arrive at capacity",
       "steps": [
         "open the fork address while the account is full",
@@ -316,6 +332,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The problem banner and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so stacked alerts are read in document order rather than as live-region updates."
   }
 }

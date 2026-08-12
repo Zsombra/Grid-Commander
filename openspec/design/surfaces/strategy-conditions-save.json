@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/conditions/save",
   "capability": "strategy-authoring",
   "status": "functional",
-  "generated_at_commit": "cdecf31",
+  "generated_at_commit": "6562791",
   "source_files": [
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
     "src/presentation/components/control.ts",
@@ -66,7 +66,7 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl (wider than the confirm pages) centered column, space-y-6, p-6. Every post-read state shares a head: h1 'Save a condition to <name>' plus the problem banner when one arrived — so all of listing, no-such-condition, inexpressible, drift, refused and proposal can additionally carry the banner. `listing` (no edit, or a malformed one) explains that BattleGrid has no per-condition tool so saving anything resubmits the whole list, then shows the current list. `no-such-condition` says the named key is not defined (role=alert, plain border) above the list. `inexpressible` lists what Grid-Commander could not express, prefixed 'Not understood by Grid-Commander:', and states nothing was compiled and nothing was saved. `drift` — BattleGrid's compiled post-state does not match what was submitted — lists the reasons and states no confirmation was minted. `refused` shows the compiler's reason whole. `strategy-missing` and `unreadable` mirror the other strategy pages; unreadable leads back to the strategy since without a fresh read there is nothing to compose against.",
+      "current_implementation": "max-w-3xl (wider than the confirm pages) centered column, space-y-6, p-6. Six of the eight post-connection branches share a `head` fragment: h1 'Save a condition to <name>' plus the problem banner when one arrived — so listing, no-such-condition, inexpressible, drift, refused and proposal each carry the banner from one rendering rather than six. `listing` (no edit, or a malformed one) explains that BattleGrid has no per-condition tool so saving anything resubmits the whole list, then shows the current list. `no-such-condition` says the named key is not defined (role=alert, rounded-gc-2 plain border, p-3) above the list. `inexpressible` renders h2 'Part of this draft cannot be sent to BattleGrid' over a role=alert list prefixed 'Not understood by Grid-Commander:', and states nothing was compiled and nothing was saved. `drift` — BattleGrid's compiled post-state does not match what was submitted — renders h2 'BattleGrid would save something other than what was submitted', lists the reasons, and states no confirmation was minted. `refused` renders h2 'BattleGrid refused this change — here is why' over the compiler's reason whole, then 'Nothing was written.' as a plain sentence. `strategy-missing` and `unreadable` are the two branches that render BEFORE `head` is built — they mirror the other strategy pages, and unreadable leads back to the strategy since without a fresh read there is nothing to compose against. Gap, recorded rather than designed around: because they precede `head`, those two branches drop a carried `?problem=` entirely. `saveConditions` catches a failed apply and redirects here with the draft plus the problem, so a bounced save whose next read then fails shows the read failure and no word of the click — the same defect `the-outcome-reaches-the-person` fixed on the six ceremony pages with the shared `CarriedProblem`, which this page does not use.",
       "constraints": [
         "The whole list is the subject, never one condition — openspec/specs/strategy-authoring/spec.md:1166-1169 ('No tool writes one condition; the only path submits the whole array … A surface that spoke of writing one condition would be describing an operation the platform does not offer'). Copy and layout must keep saying what the strategy would be left defining.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
@@ -96,10 +96,11 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004's danger treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, semibold 'Refused:' prefix. Because the edit round-trips in the query, the banner sits above a fresh describe of the same edit against the strategy as it now stands.",
+      "current_implementation": "An inline `{problem ? … : null}` block inside the shared `head` fragment, carrying DT-0004's danger treatment byte-for-byte: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix. It is the same paragraph the shared `CarriedProblem` component (carried-problem.tsx) now holds for the six ceremony pages, spelled out here rather than imported — this page was not in that change's scope. Because the edit round-trips in the query, the banner sits above a fresh describe of the same edit against the strategy as it now stands. It renders on six of the eight branches; `strategy-missing` and `unreadable` are built before `head` and show nothing.",
       "constraints": [
         "role=alert must survive.",
-        "A refusal returns to the surface acted from with the edit preserved — spec.md:1177-1179; the banner and the re-described edit must stay on one page."
+        "A refusal returns to the surface acted from with the edit preserved — spec.md:1177-1179; the banner and the re-described edit must stay on one page.",
+        "Whatever treatment this takes must stay identical to the shared `CarriedProblem`'s — two spellings of one paragraph is how the six ceremony pages drifted before it was extracted, and restyling only one of the two would reopen exactly that."
       ],
       "children": []
     },
@@ -422,6 +423,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation; the draft travels as a query string an operator can keep, share, or edit by hand."
+    "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert — so most branches announce two alerts when a reason rides in, the carried one first. `strategy-missing` and `unreadable` render before the shared head and announce no carried reason at all. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation; the draft travels as a query string an operator can keep, share, or edit by hand."
   }
 }
