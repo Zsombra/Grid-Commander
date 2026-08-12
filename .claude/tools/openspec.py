@@ -27,6 +27,21 @@ import sys
 from datetime import date
 from pathlib import Path
 
+# The board, the journal and half the backlog are written with em-dashes and
+# arrows, and Windows hands Python a cp1252 stdout. Printing "→" then raises
+# UnicodeEncodeError and the command dies with a traceback instead of an answer
+# — on `board`, which CLAUDE.md names as where every session starts.
+#
+# Re-encode rather than sanitise the text: the characters are deliberate, and a
+# tool that strips them to survive its own console teaches the next writer to
+# avoid them. `errors="replace"` keeps the output readable on a console that
+# genuinely cannot render one.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass  # not a reconfigurable stream (a pipe under an older runtime)
+
 # --------------------------------------------------------------------------
 # Root resolution
 # --------------------------------------------------------------------------
@@ -644,8 +659,38 @@ def surface_components(surface: dict) -> dict:
     return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
 
 
+def git_commit_exists(root: Path, commit: str) -> bool:
+    """Does `commit` resolve in this repository?
+
+    The staleness check compares against a hash, and `git diff` fails the same
+    way for "that commit is not here" as it succeeds for "nothing changed" —
+    both reach the caller as an empty list. So a manifest pinned to a commit
+    that no longer exists reported *fresh*, silently, forever.
+
+    That is not hypothetical: squash-merge discards the branch commits a
+    manifest pins to, and on 2026-08-13 twelve of twenty-four manifests pinned
+    to hashes absent from the repository. See backlog
+    `the-re-pin-pins-to-the-commit-before-its-own-edits` (#192).
+    """
+    if not commit:
+        return False
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "cat-file", "-e", f"{commit}^{{commit}}"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True  # git itself is unavailable — not the manifest's fault
+    return result.returncode == 0
+
+
 def git_changed_since(root: Path, commit: str, files: list) -> list:
-    """Which of `files` changed since `commit`. Empty list when git can't answer."""
+    """Which of `files` changed since `commit`. Empty list when git can't answer.
+
+    An empty list is NOT proof of freshness — see `git_commit_exists`, which the
+    caller must consult first.
+    """
     if not commit or not files:
         return []
     import subprocess
@@ -891,7 +936,17 @@ def validate_design(root: Path, strict: bool) -> list:
                     "the component was renamed or never existed — the design agent will "
                     "write tickets against nothing"))
 
-        changed = git_changed_since(root, data.get("generated_at_commit", ""), sources)
+        pin = data.get("generated_at_commit", "")
+        if sources and not git_commit_exists(root, pin):
+            found.append(diag(
+                "warning", "design_surface_pin_unresolvable",
+                f"{path.stem}: pinned to {pin[:7] or '(nothing)'}, which does not resolve in this "
+                "repository — staleness CANNOT be checked for this surface",
+                rel(path),
+                "re-survey and re-pin at a commit that exists. An unresolvable pin reads as "
+                "fresh forever: git answers the same way for 'commit not found' as for "
+                "'nothing changed'. Squash-merge is the usual cause (#192)."))
+        changed = git_changed_since(root, pin, sources)
         if changed:
             found.append(diag("warning", "design_surface_stale",
                               f"{path.stem}: {len(changed)} source file(s) changed since "
