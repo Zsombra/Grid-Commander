@@ -2,11 +2,11 @@
 id: strategy-unreadable-arrives-without-a-reason
 title: The editor's strategy-unreadable branch has no reason to show — the query drops it
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
-updated: 2026-08-12
-change: ""
+updated: 2026-08-13
+change: "the-round-trip-keeps-what-the-person-needs"
 capability: strategy-authoring
 github: "170"
 blocked_by: []
@@ -48,3 +48,13 @@ Found while designing DT-0015, which deliberately does not restyle around it:
 surfacing a reason is behavior (the query's result shape grows a field), so it
 needs a change, not a ticket. The `vocabulary-unreadable` arm of the same
 query drops its reasons identically — one change covers both arms.
+
+## Landed 2026-08-13
+
+Both arms of `readSectionOptions` carry `reason` and `cause` now, and both
+branches on the edit page render them with `WhyNotLoaded`.
+
+Worth keeping from the build: the two vocabulary reads are checked **separately**
+rather than folded into one condition. Only the read that actually failed has a
+reason to give — and folding them lost TypeScript's narrowing as well as the
+reason, so the compiler said so.

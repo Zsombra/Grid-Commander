@@ -2,11 +2,11 @@
 id: a-refusal-path-discards-what-was-typed
 title: Refusal paths re-render the form empty — everything typed is retyped
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
-updated: 2026-08-12
-change: ""
+updated: 2026-08-13
+change: "the-round-trip-keeps-what-the-person-needs"
 capability: agent-authoring
 github: "162"
 blocked_by: []
@@ -52,3 +52,21 @@ Both pages are server components with no client JS; preserving typed values
 means carrying them in the bounce redirect / GET params, which the rule
 editor's own refusal path already demonstrates. Found by the ui-surveyor pass
 for backlog #157; the surface manifests record the states involved.
+
+## Landed 2026-08-13
+
+`AgentEditForm` and `PositionManagement` take `composed` and prefer it over the
+agent's stored values; all three refusing sites pass it; the perform's bounce
+carries every submitted field except `agentId`, `confirmationToken` and
+`expectedRevision` — the describe re-mints the binding, and replaying a stale
+pair is what it exists to prevent.
+
+The rule editor's half — its "Compose it again" pointing at a bare form while
+its refusal path preserved the choice — landed in the same change.
+
+**The harness could not see this defect at all.** `rendered()` collects text,
+and a `defaultValue` is a prop, so the first test written for it passed against
+a form re-rendered from *stored* values. The resolver now collects `values`, for
+the same reason it already collected `href`. See
+[[the-render-harness-cannot-see-a-key-collision]] (#194) — this is half of it,
+closed from another direction.

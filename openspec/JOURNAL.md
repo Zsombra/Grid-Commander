@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-13 (night) — the round trip, and the harness learns to see form state
+
+**Did**: `the-round-trip-keeps-what-the-person-needs` — #170, #169 and #162,
+built and archived. Three surfaces losing something between the person and the
+platform: a reason, a value's validity, typed input. Also re-surveyed the last
+eight design manifests, closing #197.
+
+**The find is about the suite, not the product.** The first test written for
+#162 **passed against a form re-rendered from stored values** — the exact
+defect it was meant to catch. `rendered()` collects text, and a `defaultValue`
+is a prop. The "first visit prefills" case was worse: it passed only because the
+name appears in the page heading.
+
+The resolver now collects `values`, for the reason it already collected `href`
+— its own comment: *"an assertion on text for a URL the harness never emits
+passes while proving nothing."* One field over, same sentence. That closes half
+of #194; key collisions still need reconciliation, which no prop fixes.
+
+**Two structural things the issues did not anticipate.** #169 needed `edit=1`
+as an explicit "show the composer" signal, because `a` being absent was the only
+one — so carrying values back skipped the form and re-ran the describe that had
+just refused. And #170's two vocabulary reads had to stay separate: folding them
+lost TypeScript's narrowing as well as the reason.
+
+**#197 done**: all eleven re-surveyed, 24 of 24 digested. Five carried an
+**incomplete `source_files`** — `agent-roster` described neither `FleetSpend`
+nor its file, so the design layer could not see that component at all. That is
+the drift no freshness mechanism catches: a file the manifest omits cannot make
+it stale, digest or not.
+
+**State**: 0 active changes, **27 open items ↔ 27 open issues**.
+
+**Next**: #186 (the MCP capture script), #194's remaining half, or the three
+stale surfaces via a design round.
+
+**Watch out**: two tests this session passed while proving nothing, both caught
+only by deliberately breaking the code under them. That check — revert the fix,
+confirm the test fails — is the cheapest guard against a green suite that means
+nothing, and neither test would have been questioned without it.
+
 ## 2026-08-13 (late) — the pin stops being a proxy, and #192 closes by disappearing
 
 **Did**: `a-manifest-pins-to-what-it-described` (#192), built and archived.
