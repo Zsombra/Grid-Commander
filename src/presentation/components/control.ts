@@ -26,6 +26,16 @@ export const CONTROL =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus';
 
 /**
+ * How a checkbox looks — which is to say, almost entirely how the browser
+ * draws it, tinted with the product's accent instead of the platform default
+ * (DT-0015). `accent-color` is the whole treatment on purpose: replacing the
+ * native box means re-implementing its checked, indeterminate, disabled and
+ * forced-colors states for a control the browser already renders correctly.
+ * A checkbox never wears `CONTROL` — that string is a text box's clothes.
+ */
+export const CHECKBOX = 'accent-accent-default';
+
+/**
  * How a button looks, in the two weights the design system actually decided.
  *
  * Both strings are lifted byte-for-byte from `plan-review.tsx`, which is where

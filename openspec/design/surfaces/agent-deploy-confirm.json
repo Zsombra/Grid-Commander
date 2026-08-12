@@ -1,0 +1,318 @@
+{
+  "id": "agent-deploy-confirm",
+  "title": "Deploy agent — chooser and confirmation",
+  "route": "/agents/[id]/deploy",
+  "capability": "agent-deployment",
+  "status": "functional",
+  "generated_at_commit": "cdecf31",
+  "source_files": [
+    "app/(app)/agents/[id]/deploy/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "agent",
+      "shape": "Agent — displayName, id",
+      "source": "app.listAgents.execute, the row matching the route id"
+    },
+    {
+      "name": "timeframes",
+      "shape": "string[]",
+      "source": "app.describeDeploy.timeframes — BattleGrid's own runtime declaration, never a compiled list"
+    },
+    {
+      "name": "proposal",
+      "shape": "{ agentId, coinId, timeframe, consequence, expectedRevision: number | null, confirmationToken }",
+      "source": "app.describeDeploy.execute — reads the radar fresh; consequence names who is replaced if the coin is occupied"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal reason a rejected performDeploy redirected back with, alongside the preserved coin and timeframe"
+    }
+  ],
+  "components": [
+    {
+      "id": "deploy-page",
+      "role": "container",
+      "purpose": "Two steps on one route: choose a market, then agree to what deploying there does — with the replacement named before anything is agreed to.",
+      "states": [
+        "chooser",
+        "chooser-no-timeframes",
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "roster-unreadable",
+        "no-such-agent",
+        "not-connected"
+      ],
+      "data": [
+        "agent",
+        "timeframes",
+        "proposal",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Without ?coin&timeframe it is the chooser; with them the describe runs and the page becomes the confirmation. chooser-no-timeframes replaces the form with a role=alert sentence. refused renders h1 'Cannot deploy' + the reason (role=alert, untinted text) + an underlined 'Choose differently' link — and drops any ?problem= that rode along, so a bounce whose re-describe also fails loses its reason (behavior gap, not styling). no-such-agent and roster-unreadable are the shared refusal skeletons with underlined links.",
+      "constraints": [
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The two steps must stay two requests: the chooser's GET composes a description and reaches no operation; only the confirm form performs — openspec/specs/agent-deployment/spec.md:40-41 ('SHALL perform it only after a person confirms against the specific agent and market')."
+      ],
+      "children": [
+        "coin",
+        "timeframe",
+        "problem",
+        "consequence",
+        "perform-deploy",
+        "why-not-loaded",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "coin",
+      "role": "input",
+      "purpose": "Name the market to deploy to.",
+      "states": [
+        "default",
+        "focused"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "A required free-text input (placeholder 'HYPE') wearing the shared CONTROL constant under a LABEL, inside the chooser's method=get form. No coin list is offered — a mistyped coin only surfaces after the round trip, as the describe's refusal.",
+      "constraints": [
+        "Field styling goes through the CONTROL/LABEL constants in control.ts, not a per-page className.",
+        "Offering a picked list instead of free text would change behavior (a new data read) — requires-spec-change."
+      ],
+      "children": []
+    },
+    {
+      "id": "timeframe",
+      "role": "input",
+      "purpose": "Pick a timeframe from the ones BattleGrid currently declares.",
+      "states": [
+        "default",
+        "focused"
+      ],
+      "data": [
+        "timeframes"
+      ],
+      "actions": [],
+      "current_implementation": "A select wearing CONTROL under a LABEL, options mapped straight from the runtime declaration.",
+      "constraints": [
+        "The options MUST come from the platform's own declaration discovered at runtime, never a list compiled into the product — openspec/specs/agent-deployment/spec.md:41-43 and :70-74. A design must not hard-code or reorder them into a curated set."
+      ],
+      "children": []
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted deploy back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted. Rendered only in the proposal branch — the refused branch drops it.",
+      "constraints": [
+        "role=alert must survive.",
+        "The reason shown is the one the platform returned, on the surface acted from — openspec/specs/agent-deployment/spec.md:76-79. Do not truncate or paraphrase.",
+        "'Notice never borrows danger's colour' (system.json principle) binds the consequence block beside it."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what deploying does — including whose deployment is replaced if the market is occupied — in the sentence the token was issued against, before the button.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a neutral border, not the consequence tokens the archive page's callout wears; DT-0004's consequence treatment has not been applied to this page.",
+      "constraints": [
+        "The text is the string stored with the confirmation token — a design must not paraphrase, truncate, or summarize it.",
+        "Where the market is occupied the sentence names who is replaced, before agreement — openspec/specs/agent-deployment/spec.md:45-47 ('the confirmation MUST say whose deployment is replaced, before agreement'). It must not be de-emphasised below the buttons.",
+        "Consequence outranks everything on a screen (system.json principle).",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "perform-deploy",
+      "role": "container",
+      "purpose": "Carry the deploy decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performDeploy",
+          "effect": "POSTs the server action with agentId, coinId, timeframe, expectedRevision, confirmationToken; success lands on /agents/[id], refusal redirects back here with coin, timeframe and ?problem= preserved so the describe re-runs"
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3 — no mobile full-width stack (the archive page's flex-col tablet:flex-row treatment has not been applied here); five hidden inputs carry the confirmation binding, with expectedRevision serialized as '' when null (a first deployment).",
+      "constraints": [
+        "The hidden binding is the confirmation ceremony — the form must keep exactly one submit path.",
+        "expectedRevision: null is the platform's documented first-deploy signal — openspec/specs/agent-deployment/spec.md:49-56 — and must keep riding the form untouched.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the deployment: 'Deploy <name>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performDeploy"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block naming the replacement.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "In the chooser: the ask ('See what deploying would do') and the way back. In the confirmation: 'Leave things as they are'.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "The chooser submit GET-navigates into the describe; the anchors return to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the cancel anchors.",
+      "constraints": [
+        "The cancel must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
+        "The chooser's submit must stay secondary — it composes a description and reaches no operation; promoting it to primary misstates what it does.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell an operator whose agent did not load whether to wait or to reconnect — and that their agent is not gone.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded (why-not-loaded.tsx), a plain mt-2 paragraph under the 'Could not load this agent' heading. Two sentences, chosen by cause carried out of the read itself.",
+      "constraints": [
+        "The refused/unreachable distinction must stay two different sentences — a platform that answered and declined is not one that could not be reached (agent-authoring's reasoning, shared by this component product-wide)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Deploy an agent to a market",
+      "steps": [
+        "arrive from the agent page",
+        "name a coin and pick a declared timeframe",
+        "submit 'See what deploying would do' — a GET that composes the describe",
+        "read the consequence, including who is replaced if the market is occupied",
+        "submit 'Deploy <name>'",
+        "land on /agents/[id] with the deployment made"
+      ]
+    },
+    {
+      "name": "The deploy is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses (revision moved, not permitted)",
+        "redirected back with coin, timeframe and ?problem= preserved",
+        "the describe re-runs and the problem banner states the reason above the fresh proposal"
+      ]
+    },
+    {
+      "name": "Nothing can be composed",
+      "steps": [
+        "BattleGrid declares no timeframes, or the describe refuses the chosen market",
+        "the page says so and offers 'Choose differently' or nothing to submit"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave things as they are'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "coin",
+      "timeframe",
+      "button-secondary",
+      "button-primary"
+    ],
+    "notes": "Problem, consequence, no-timeframes and refusal messages carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

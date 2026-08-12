@@ -1,5 +1,46 @@
 # Journal
 
+## 2026-08-12 (the tail cleared) — #157 done: twelve manifests, DT-0011–0015 designed and implemented, eleven findings filed
+
+**Did**: Worked #157 whole. Twelve surface manifests: the eleven ceremony
+pages (agent edit/deploy/rebind/reactivate/undeploy, strategy
+archive/restore/fork/conditions-save/rules, recorder trim) surveyed new, and
+`strategy-editor` refreshed — honestly to `needs-redesign`, since the compose
+form had grown a sections checklist under DT-0001/0002's design. Five
+tickets written and implemented same-day: **DT-0011/0012/0013** gave the
+three orphan list surfaces their first decisions — the new ruling is
+**unreadable wears danger, advisory wears notice, empty stays prose** —
+**DT-0014** landed the decided roles on recorder-trim, **DT-0015** caught
+the strategy editor up (checkboxes via a new shared `CHECKBOX` constant in
+control.ts, guarded by controls.test). DT-0008's raw-color warning was a
+false positive (`#155` in prose parses as hex); reworded. The surveys' gap
+harvest filed as **#162–#171**: typed values discarded on refusal paths,
+refused branches dropping carried `?problem=` (the dropped-redirect class's
+third shape), **a refused rebind perform crashes (p2, spec tension)**,
+lifecycle actions swallowing failed re-reads, the ceremony pages' pre-sweep
+drift (#166, the next `/design` round), conditions-save key collisions, the
+forgeable trim receipt, rule-editor param trust, the editor's reason-less
+strategy-unreadable, and the suite's 19 Windows-checkout failures (#171).
+#153's evidence now enumerates all twelve perform forms. #157 closed.
+
+**State**: 0 active changes, 30 open items ↔ 30 open issues. Design lane: 25
+surfaces (15 designed, 10 functional awaiting #166's tickets), DT-0001–0015
+all implemented. Gates on the head: typecheck, lint, build green; vitest
+2109 passed with 19 failures **identical to a clean HEAD baseline on this
+Windows host** (#171 — the container CI is the gate of record).
+
+**Next**: `/design` per #166 surface (mechanical against DT-0004/0014
+precedent), or `/propose` on #164 (the rebind crash — smallest spec-tension
+item). The operator's decisions (#146, #153) still wait.
+
+**Watch out**: On a Windows checkout, do not trust a red vitest run — diff
+the failing set against a stashed-HEAD run first; 19 failures are
+environmental (#171). The raw-colour validator reads any `#nnn` in a
+ticket's design block as a hex literal — write issue numbers unhashed there.
+Three survey agents died mid-flight on a session limit and were resumed via
+SendMessage with their partial files intact; if manifests ever look
+half-written, check `git status` before re-surveying.
+
 ## 2026-08-12 (session close) — PR #154 merged; the tail filed; two new items
 
 **Did**: The operator authorized the recommendation: final full local CI

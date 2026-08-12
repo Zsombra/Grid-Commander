@@ -3,7 +3,7 @@
   "title": "Agents — the roster and what each is bound to",
   "route": "/agents",
   "capability": "agent-authoring",
-  "status": "functional",
+  "status": "designed",
   "generated_at_commit": "4ea8f4b",
   "source_files": [
     "app/(app)/agents/page.tsx",

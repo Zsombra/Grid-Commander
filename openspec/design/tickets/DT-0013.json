@@ -1,0 +1,115 @@
+{
+  "id": "DT-0013",
+  "surface": "strategy-catalog",
+  "targets": [
+    "strategy-list"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "DT-0011's rulings land on the strategy catalog: unreadable wears danger, the fork-capacity banner wears notice, and the governs line gets a second signal beside its weight.",
+  "rationale": "Same page shape, same hierarchy: the unreadable branch is a failed read and takes danger (DT-0011's ruling — the reassurance stays inside the block, unabridged); the fork-capacity banner is advisory (a limit, not a failure) and takes notice; both empty paragraphs stay plain prose — the empty state's whole design is its deliberate refusal to offer an action, and boxing it would dress an answer as an event. The governs line is this product's blast-radius number on the row where the user first meets it, and it currently leans on font-weight alone — which the manifest constraint names as insufficient. Ruling: bound rows keep type.weight.medium in color.text.primary; zero-bound rows drop to type.weight.regular in color.text.secondary. Weight plus tone plus the differing sentence itself — three signals, no icon invented. The tagline is flavour and demotes to color.text.secondary so it stops competing with the governs line below it. Scope ('BattleGrid' vs 'Yours') stays as it is: the words differ in every letter, and tinting one scope would break never-colour-alone the moment the tint became the thing people read. The withheld-fork reason already renders demoted where the control would have been — decided by the dev, kept verbatim.",
+  "design": {
+    "layout": "Unchanged — capacity banner, then the bordered rows.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "danger_bg": "color.danger.subtle",
+      "danger_border": "color.danger.default",
+      "notice_bg": "color.notice.subtle",
+      "notice_border": "color.notice.border",
+      "block_radius": "radius.2",
+      "block_padding": "space.4",
+      "banner_padding": "space.3",
+      "text": "color.text.primary",
+      "demoted": "color.text.secondary",
+      "governs_weight": "type.weight.medium",
+      "heading_weight": "type.weight.semibold"
+    },
+    "states": {
+      "default": {
+        "content": "Unchanged — banner slot, then rows at their existing rhythm and swept token borders."
+      },
+      "unreadable": {
+        "content": "The block takes danger: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary. The heading 'Your strategies could not be loaded.' takes type.weight.semibold. role=alert stays. The raw reason and the why-not-loaded reassurance stay inside the block, verbatim — DT-0011's ruling restated."
+      },
+      "empty": {
+        "content": "Unchanged — both paragraphs stay unboxed prose in their existing tones. The absence of an affordance is the design (manifest constraint); no tint, no border, no call to action."
+      },
+      "at-capacity-notice": {
+        "content": "The banner takes notice: color.notice.subtle background, 1px color.notice.border border, radius.2, space.3 padding, color.text.primary. role=status stays, non-blocking above the list."
+      },
+      "fork-capacity-notice:visible": {
+        "content": "Same element as at-capacity-notice — the notice treatment above; it must not steal focus and must not block browsing (manifest constraint)."
+      },
+      "fork-capacity-notice:hidden": {
+        "content": "No banner renders, unchanged."
+      },
+      "strategy-row:default": {
+        "content": "Unchanged — bordered li, name link, caption, tagline slot, governs line, actions."
+      },
+      "strategy-row:system-scope": {
+        "content": "Unchanged — the caption reads 'BattleGrid · revision N' in its existing small uppercase; the word is the signal."
+      },
+      "strategy-row:user-scope": {
+        "content": "Unchanged — 'Yours · revision N', same treatment as system-scope; the differing word carries the distinction, and the revision stays attached to it (manifest constraint)."
+      },
+      "strategy-row:with-tagline": {
+        "content": "The tagline takes color.text.secondary — flavour text stops competing with the governs line below it. Size and position unchanged."
+      },
+      "strategy-row:without-tagline": {
+        "content": "No tagline renders, unchanged — the governs line closes up beneath the name row."
+      },
+      "strategy-row:governing-agents": {
+        "content": "The governs line renders in type.weight.medium and color.text.primary — weight, tone, and the sentence's own count are the three signals that this row reconfigures live agents when edited."
+      },
+      "strategy-row:governing-none": {
+        "content": "The governs line renders in type.weight.regular and color.text.secondary. Demoted, not hidden — that nothing is governed is still stated in words."
+      },
+      "strategy-row:inactive": {
+        "content": "Unchanged — the offered Restore verb is the signal; no badge is invented (naming a state the page does not currently print would be new content, and that is behavior)."
+      },
+      "strategy-row:overflow-long-name": {
+        "content": "The name link takes break-words so a long name wraps inside the card instead of pushing the caption off the row; the baseline flex keeps flex-wrap so the caption drops to its own line when crowded. Taglines wrap likewise. No truncation."
+      },
+      "strategy-row:fork-offered": {
+        "content": "Unchanged — 'Make my own copy to edit' as an underlined action link among its peers."
+      },
+      "strategy-row:fork-withheld": {
+        "content": "Unchanged — the reason renders in color.text.secondary where the control would have been (the dev's decided treatment, kept)."
+      }
+    },
+    "responsive": {
+      "mobile": "Blocks and cards full width; action links keep their existing wrapped gap-3 spacing.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The unreadable branch renders on color.danger.subtle with a 1px color.danger.default border at radius.2, keeps role=alert, and its heading is type.weight.semibold",
+    "The why-not-loaded reassurance renders inside the danger block, verbatim",
+    "The fork-capacity banner renders on color.notice.subtle with a 1px color.notice.border border and keeps role=status",
+    "Both empty-state paragraphs remain unboxed prose with no added affordance",
+    "A row governing one or more agents renders its governs line in type.weight.medium and color.text.primary; a zero-bound row renders it in type.weight.regular and color.text.secondary",
+    "Taglines render in color.text.secondary",
+    "A 60-character strategy name wraps within its card without pushing the scope/revision caption out of view",
+    "No block on this page other than the unreadable branch uses any color.danger token",
+    "Zero copy changes anywhere on the page",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog 157 (the design lane's tail) — first ticket for this surface. Restates DT-0011's unreadable-wears-danger and advisory-wears-notice rulings."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

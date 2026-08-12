@@ -1,0 +1,271 @@
+{
+  "id": "agent-undeploy-confirm",
+  "title": "Undeploy agent confirmation",
+  "route": "/agents/[id]/undeploy/[coin]",
+  "capability": "agent-deployment",
+  "status": "functional",
+  "generated_at_commit": "cdecf31",
+  "source_files": [
+    "app/(app)/agents/[id]/undeploy/[coin]/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "agent",
+      "shape": "Agent — displayName, id",
+      "source": "app.listAgents.execute, the row matching the route id"
+    },
+    {
+      "name": "proposal",
+      "shape": "{ agentId, coinId, consequence, expectedRevision, confirmationToken }",
+      "source": "app.describeUndeploy.execute — reads the radar fresh, so the deployment it names and the revision it carries are the platform's now, not a memory"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal reason a rejected performUndeploy redirected back with"
+    }
+  ],
+  "components": [
+    {
+      "id": "undeploy-page",
+      "role": "container",
+      "purpose": "Ask one question — stop this agent scanning this market? — with what stops stated before the button, and the coin in the path because the deployment is the thing the page is about.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "roster-unreadable",
+        "no-such-agent",
+        "not-connected"
+      ],
+      "data": [
+        "agent",
+        "proposal",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. h1 'Remove <name> from <coin>?'. refused renders h1 'Cannot undeploy' + the reason (role=alert, untinted text) + an underlined 'Back to the agent' link — and drops any ?problem= that rode along, so a bounce whose re-describe also fails loses its reason (behavior gap, not styling). Destructive on the platform (delete_radar_deployment), reversible in substance — the agent stays configured and can be redeployed, and the consequence says exactly that.",
+      "constraints": [
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The removal is performed only after a person confirms against the specific agent and market — openspec/specs/agent-deployment/spec.md:14-16; the two-request ceremony must survive any relayout.",
+        "The consequence and the revision come from a fresh radar read — openspec/specs/agent-deployment/spec.md:16-17 ('SHALL carry the deployment's current revision from a fresh read'); nothing on this page may render remembered radar state."
+      ],
+      "children": [
+        "problem",
+        "consequence",
+        "perform-undeploy",
+        "why-not-loaded",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted undeploy back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted. Rendered only in the proposal branch — the refused branch drops it.",
+      "constraints": [
+        "role=alert must survive.",
+        "The reason shown is the one the platform returned, on the surface acted from — openspec/specs/agent-deployment/spec.md:32-34. Do not truncate or paraphrase.",
+        "A stale removal refused by the revision check must keep reaching the operator rather than looking like success — openspec/specs/agent-deployment/spec.md:26-29."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "Name what stops happening — the agent ceases scanning this market — in the sentence the token was issued against, before the button.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a neutral border, not the consequence tokens the archive page's callout wears; DT-0004's consequence treatment has not been applied to this page.",
+      "constraints": [
+        "The confirmation MUST name what stops: the agent, the market, and that it ceases scanning there — openspec/specs/agent-deployment/spec.md:15-16 and :23-24. A design must not paraphrase, truncate, or summarize the platform-derived sentence.",
+        "The removal is reversible in substance and the consequence says so — it must not be restyled to read as deletion or loss.",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "perform-undeploy",
+      "role": "container",
+      "purpose": "Carry the undeploy decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performUndeploy",
+          "effect": "POSTs the server action with agentId, coinId, expectedRevision, confirmationToken; success lands on /agents/[id], refusal redirects back here with ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3 — no mobile full-width stack (the archive page's flex-col tablet:flex-row treatment has not been applied here); four hidden inputs carry the confirmation binding.",
+      "constraints": [
+        "The hidden binding (agentId, coinId, expectedRevision, confirmationToken) is the confirmation ceremony — the form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the removal, named with what stops: 'Stop scanning <coin>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performUndeploy"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the legitimate action is not a hazard; the weight belongs on the consequence block.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Keep the deployment and go back to the agent: 'Keep it deployed'.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004's hover (border-strong + bg-sunken over duration-fast; active holds it at duration-instant).",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell an operator whose agent did not load whether to wait or to reconnect — and that their agent is not gone.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded (why-not-loaded.tsx), a plain mt-2 paragraph under the 'Could not load this agent' heading. Two sentences, chosen by cause carried out of the read itself.",
+      "constraints": [
+        "The refused/unreachable distinction must stay two different sentences — a platform that answered and declined is not one that could not be reached."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Undeploy an agent from a market",
+      "steps": [
+        "arrive from the agent page with the coin in the path",
+        "read what stops, in the platform-derived sentence from a fresh radar read",
+        "submit 'Stop scanning <coin>'",
+        "land on /agents/[id] with the deployment removed"
+      ]
+    },
+    {
+      "name": "The undeploy is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses (revision moved, not deleted)",
+        "redirected back here with ?problem=",
+        "the describe re-runs and the problem banner states the reason above the fresh proposal"
+      ]
+    },
+    {
+      "name": "Nothing to remove",
+      "steps": [
+        "the coin carries no deployment, or the radar cannot be read",
+        "'Cannot undeploy' states the reason; no token is minted",
+        "'Back to the agent' is the way out"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Keep it deployed'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "Problem, consequence and refusal messages carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

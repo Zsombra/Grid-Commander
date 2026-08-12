@@ -1,0 +1,298 @@
+{
+  "id": "agent-reactivate-confirm",
+  "title": "Reactivate agent confirmation",
+  "route": "/agents/[id]/reactivate",
+  "capability": "agent-authoring",
+  "status": "functional",
+  "generated_at_commit": "cdecf31",
+  "source_files": [
+    "app/(app)/agents/[id]/reactivate/page.tsx",
+    "src/presentation/components/agent-edit.tsx",
+    "src/presentation/components/money-limits.tsx",
+    "src/presentation/components/binding.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "agent",
+      "shape": "Agent — displayName, status, revision, binding",
+      "source": "app.listAgents.execute, the row matching the route id"
+    },
+    {
+      "name": "creation",
+      "shape": "{ kind: 'at-capacity', explanation } | other",
+      "source": "app.listAgents.execute — reactivating takes a slot, so capacity is read alongside the roster"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal reason a not-permitted reactivate redirected back with"
+    }
+  ],
+  "components": [
+    {
+      "id": "reactivate-page",
+      "role": "container",
+      "purpose": "Ask one question — bring this archived agent back? — with what returns, what it costs (a slot), and the binding's honest state said first.",
+      "states": [
+        "prompt",
+        "prompt-with-problem",
+        "prompt-at-capacity",
+        "not-archived",
+        "roster-unreadable",
+        "no-such-agent",
+        "not-connected"
+      ],
+      "data": [
+        "agent",
+        "creation",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. h1 'Reactivate <name>?', the optional problem banner, then the shared ReactivatePrompt. Deliberately a route of its own rather than archive?to=ACTIVE (DL-104: two consequences behind one URL is how someone confirms wording written for the other operation), and deliberately without a confirmation token — reactivating restores a state the user chose before and commits nothing.",
+      "constraints": [
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "No confirmation token exists on this page by decision (DL-104's sibling reasoning in the route comment) — a design must not add ceremony that implies one, and must not merge this page back into the archive route.",
+        "Reactivation returns the agent in its previous configuration — openspec/specs/agent-authoring/spec.md:211-213 ('it returns to the roster in its previous configuration'); the copy stating that is spec-bearing."
+      ],
+      "children": [
+        "problem",
+        "reactivate-prompt",
+        "why-not-loaded",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted reactivate back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted.",
+      "constraints": [
+        "role=alert must survive.",
+        "The refusal must keep returning to this surface with the operation's own reason — openspec/specs/agent-authoring/spec.md:481-484 ('the user is told, on the surface they acted from … the reason given is the one the operation returned'); the route comment names the alternative as indistinguishable from success."
+      ],
+      "children": []
+    },
+    {
+      "id": "reactivate-prompt",
+      "role": "container",
+      "purpose": "What reactivating returns — the configuration it had when archived, at the cost of a slot — then one committing button and one visible way out.",
+      "states": [
+        "default",
+        "at-capacity",
+        "not-archived"
+      ],
+      "data": [
+        "agent",
+        "creation"
+      ],
+      "actions": [
+        {
+          "id": "reactivate",
+          "effect": "POSTs the server action with agentId and expectedRevision; success lands on /agents/[id], a not-permitted refusal redirects back here with ?problem="
+        }
+      ],
+      "current_implementation": "Shared ReactivatePrompt (agent-edit.tsx): two plain sentences — what returns and that it takes a slot, split deliberately from the binding claim below them — then BindingSummary, the optional at-capacity notice, and the form's buttons in flex flex-wrap gap-3 (no mobile full-width stack). not-archived replaces everything with a role=alert '<name> is not archived.' and an underlined link back. The submit stays offered even at capacity — capacity warns before the act rather than disabling it, and the refusal path handles the rest.",
+      "constraints": [
+        "The what-returns sentence and the binding sentence are deliberately separate paragraphs — the first is true whatever the binding says, the second is a claim about the binding, and this page is where conflating them cost most (Volatilis, ARCHIVED and ORPHANED). A relayout must not merge them.",
+        "Nothing here is styled to look disabled — 'Nothing is styled to look disabled when retrying cannot help' (system.json principle); at capacity the button still works and the platform answers.",
+        "Two hidden inputs (agentId, expectedRevision) carry the revision the intent was formed against — openspec/specs/agent-authoring/spec.md:252-254; the form must keep exactly one submit path."
+      ],
+      "children": [
+        "binding-summary",
+        "atCapacity",
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "binding-summary",
+      "role": "display",
+      "purpose": "What the agent is bound to, in words that stay honest when the binding is broken — on the page where reading 'bound to' about an unreadable strategy would cost most.",
+      "states": [
+        "bound",
+        "orphaned",
+        "unrecognised-state"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "Shared BindingSummary (binding.tsx) in a plain text-sm paragraph. ORPHANED states only what the payload supports: the strategy can no longer be read, and the revision the configuration was materialized from. An unrecognised state renders as the platform's own word, uninterpreted.",
+      "constraints": [
+        "One component for every surface that describes a binding — a design must restyle the shared component, not fork a per-page copy.",
+        "The ORPHANED sentence must not gain copy that guesses what the state means — its operational meaning is unestablished."
+      ],
+      "children": []
+    },
+    {
+      "id": "atCapacity",
+      "role": "feedback",
+      "purpose": "Say before the act, not after the refusal, that reactivating takes a slot the account does not currently have.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "creation"
+      ],
+      "actions": [],
+      "current_implementation": "role=alert paragraph, rounded-gc-2 border border-border-default p-3 text-sm — a neutral border, not danger and not the notice tokens; the explanation text is the platform-derived capacity sentence.",
+      "constraints": [
+        "Capacity is explained before the work — openspec/specs/agent-authoring/spec.md:134-136 ('SHALL tell the user before they begin'); this block must stay above the buttons.",
+        "Advisory is not failure — 'notice never borrows danger's colour' (system.json principle); this must stay visually distinct from the problem banner above it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the reactivation: 'Reactivate <name>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs reactivate"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect.",
+      "constraints": [
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Leave the agent archived and go back to it.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004's hover (border-strong + bg-sunken over duration-fast).",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and a visible peer of the submit (DT-0002 ruling, restated in control.ts).",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell an operator whose archived agent did not load that it is not gone — the one page where 'gone' is a live worry.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded (why-not-loaded.tsx), a plain mt-2 paragraph under the 'Could not load this agent' heading. Two sentences chosen by cause: BattleGrid refused the authority, or could not be reached.",
+      "constraints": [
+        "The refused/unreachable distinction is spec — openspec/specs/agent-authoring/spec.md:43-52; the reassurance that the agent is not gone matters most here, per the route's own comment, and must survive any rewording."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Reactivate an agent",
+      "steps": [
+        "arrive from the agent page or roster",
+        "read what returns, that it takes a slot, and the binding's honest state",
+        "submit 'Reactivate <name>'",
+        "land on /agents/[id] with the agent active"
+      ]
+    },
+    {
+      "name": "The reactivate is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses (not permitted, revision moved)",
+        "redirected back here with ?problem=",
+        "problem banner states the reason above the still-usable form"
+      ]
+    },
+    {
+      "name": "The account is at capacity",
+      "steps": [
+        "arrive with no free slot",
+        "the capacity notice says so before the act",
+        "the button remains offered; a submit that the platform refuses comes back as a problem"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave it archived'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "Problem banner, capacity notice and the not-archived refusal carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

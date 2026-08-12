@@ -25,8 +25,8 @@ export function AgentRoster({
 }) {
   if (roster.kind === 'unreadable') {
     return (
-      <div role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
-        <p className="font-medium">Your roster could not be loaded.</p>
+      <div role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+        <p className="font-semibold">Your roster could not be loaded.</p>
         <p className="mt-1">{roster.reason}</p>
         <WhyNotLoaded cause={roster.cause} subject="your agents are" />
         {/*
@@ -57,7 +57,7 @@ export function AgentRoster({
           {/* One notice for the list, and then no row claims either way — a
               radar hiccup must not relabel a scanning agent as idle. */}
           {deployments.kind === 'unreadable' && (
-            <div role="status" className="text-sm">
+            <div role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
               <p>Whether these agents are deployed could not be read: {deployments.reason}</p>
               {/* The rows below claim nothing either way, so the only thing a
                   reader can take from that silence is that the radar was
@@ -79,7 +79,7 @@ export function AgentRoster({
                  * it. Here rather than in `AgentActions` because a person looks
                  * for the thing itself under its name, not in a list of verbs.
                  */}
-                <h3 className="font-medium">
+                <h3 className="break-words font-medium">
                   <a href={`/agents/${agent.id}`} className="underline">
                     {agent.displayName}
                   </a>
@@ -156,7 +156,7 @@ function CreateAffordance({ creation }: { creation: CreationAvailability }) {
   if (creation.kind === 'at-capacity') {
     // Before the form, not after submission.
     return (
-      <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
+      <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
         {creation.explanation}
       </p>
     );

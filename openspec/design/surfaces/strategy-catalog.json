@@ -3,7 +3,7 @@
   "title": "Strategies — the roster and what each one governs",
   "route": "/strategies",
   "capability": "strategy-authoring",
-  "status": "functional",
+  "status": "designed",
   "generated_at_commit": "485342f",
   "source_files": [
     "app/(app)/strategies/page.tsx",

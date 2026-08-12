@@ -3,7 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText, updateCompileIntent } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CHECKBOX, CONTROL, LABEL } from '@/presentation/components/control.js';
 /**
  * Compose a change, compile it, and review what applying would do.
  *
@@ -41,7 +41,7 @@ export default async function EditStrategyPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
       </main>
     );
@@ -52,7 +52,7 @@ export default async function EditStrategyPage({
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Strategy could not be read</h1>
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
       </main>
     );
@@ -64,13 +64,13 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           Cannot edit this strategy right now
         </h1>
-        <p role="alert" className="text-sm">
+        <p role="alert" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
           The vocabulary a strategy is composed from comes from BattleGrid, and it
           could not be read. Composing a change without it would mean guessing at
           values the platform will reject.
         </p>
         <p className="text-sm">
-          <a href={`/strategies/${id}`} className="underline">Back to strategy</a>
+          <a href={`/strategies/${id}`} className={BUTTON_SECONDARY}>Back to strategy</a>
         </p>
       </main>
     );
@@ -108,11 +108,16 @@ export default async function EditStrategyPage({
       <main className="mx-auto max-w-2xl space-y-6 p-6">
         <div>
           <h1 className="text-2xl font-medium text-text-primary">Edit {strategy.name}</h1>
-          <p className="mt-1 text-sm font-medium">
-            {strategy.boundAgentCount === 0
-              ? 'No agents are bound to this strategy.'
-              : `${strategy.boundAgentCount} agent${strategy.boundAgentCount === 1 ? '' : 's'} would be reconfigured by an applied change.`}
-          </p>
+          {/* The blast radius met a page earlier — the same fact wears the same
+              clothes it wears on the review (DT-0015): consequence when agents
+              are reached, plain when none are. */}
+          {strategy.boundAgentCount === 0 ? (
+            <p className="mt-1 text-sm font-medium">No agents are bound to this strategy.</p>
+          ) : (
+            <p className="mt-2 rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm font-medium text-text-primary">
+              {`${strategy.boundAgentCount} agent${strategy.boundAgentCount === 1 ? '' : 's'} would be reconfigured by an applied change.`}
+            </p>
+          )}
         </div>
         <form method="get" className="space-y-6">
           <div className="space-y-2">
@@ -172,12 +177,13 @@ export default async function EditStrategyPage({
                           (s) => s.sectionKey === template.sectionKey,
                         );
                       return (
-                        <label key={key} className="flex items-center gap-2 text-sm">
+                        <label key={key} className="flex min-h-control items-center gap-2 text-sm tablet:min-h-0">
                           <input
                             type="checkbox"
                             name="sections"
                             value={key}
                             defaultChecked={checked}
+                            className={CHECKBOX}
                           />
                           {template.label}
                         </label>
@@ -202,12 +208,13 @@ export default async function EditStrategyPage({
                         (s) => s.sectionKey === template.sectionKey,
                       );
                     return (
-                      <label key={key} className="flex items-center gap-2 text-sm">
+                      <label key={key} className="flex min-h-control items-center gap-2 text-sm tablet:min-h-0">
                         <input
                           type="checkbox"
                           name="sections"
                           value={key}
                           defaultChecked={checked}
+                          className={CHECKBOX}
                         />
                         {template.label}
                       </label>
@@ -317,8 +324,10 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           BattleGrid could not compile this change to {strategy.name}
         </h1>
-        <p role="alert" className="text-sm">{compiled.reason}</p>
-        <p className="text-sm">Nothing was changed.</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{compiled.reason}</p>
+        {/* The absence of effect, visually committed — quiet, never danger's
+            palette (DT-0015, system principle on absence). */}
+        <p className="rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-sm text-text-primary">Nothing was changed.</p>
         <p className="flex flex-wrap gap-3 text-sm">
           {/* Both, and in this order. The reason usually names what to change,
               so the first thing offered is another attempt. */}
