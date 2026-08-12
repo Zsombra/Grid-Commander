@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p2
 created: 2026-07-29
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: battlegrid-connection
 github: "91"
@@ -79,3 +79,56 @@ What this item still holds — the keep-or-delete decision, settled by a few
 weeks of real use never touching `/connect` — was never that change's scope.
 The same browser session that would settle `prove-token-lifetimes` (#93)
 would also inform this one.
+
+---
+
+# Falsified 2026-08-13 — the untested segment was tested, and it fails
+
+The narrowing above ends: *"a working path with one untested segment, and the
+segment needs the operator at a keyboard."* An operator sat at a keyboard.
+
+A client was registered by DCR, the operator consented twice against live
+BattleGrid, and the segment was walked end to end. **It does not work.** The
+token response carries no `sub`, and `mcp-adapter.ts:430` throws
+`'BattleGrid returned a grant with no subject; cannot establish identity'` on
+every grant. Consent succeeds, the code exchanges, the tokens are valid and were
+used successfully against `/mcp` — and the adapter refuses them.
+
+BattleGrid is plain OAuth 2.1, not OIDC: `/.well-known/openid-configuration` is
+404 and the authorization-server metadata advertises no `userinfo_endpoint`.
+`sub` was never going to be there. Filed as
+[[oauth-cannot-complete-without-a-subject]].
+
+## What that does to this item
+
+The two checklist lines above that this walk touched both hold — registration is
+open and secretless, the callback handles `error=`. What changed is the
+conclusion drawn from them.
+
+This is no longer *keep or delete a working-but-unused path*. It is:
+
+1. **Fix it, then decide** — one authenticated read after the exchange
+   establishes identity honestly. A `/propose`, not a patch.
+2. **Delete it** — now a cleaner call than it was, because the thing being
+   deleted has never completed a single connection, so no use can be lost.
+3. **Keep it as-is** — no longer defensible. Keeping code that ships, is
+   audited, and cannot succeed is the opposite of what this item was filed to
+   prevent.
+
+"A few weeks of real use never touching `/connect`" is also no longer the test
+it was written to be: nothing *could* touch `/connect` successfully, so silence
+there proves nothing about demand.
+
+## What survives unchanged
+
+The two arguments on the other side still stand and are untouched by this:
+
+- BattleGrid deploying a full delegated stack is still the reason the brief
+  believes third-party clients are permitted — and the walk *strengthens* that,
+  because the stack turned out to be more complete than assumed (open dynamic
+  registration, working revocation, enforced PKCE).
+- A multi-tenant version would still need this capability, and rebuilding it
+  correctly is still expensive.
+
+So the case for keeping the *capability* is intact. The case for keeping the
+*current code* is not.
