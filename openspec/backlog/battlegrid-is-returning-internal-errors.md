@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p2
 created: 2026-08-05
-updated: 2026-08-06
+updated: 2026-08-12
 change: ""
 capability: ""
 github: "100"
@@ -242,3 +242,31 @@ same serial pacing, platform 11.0.0 throughout, and calls running 30–180s.
 Consistent with the standing record: individual tools flap `isError`/slow
 while neighbours answer. No product action; recorded so the next phantom
 failure costs a lookup instead of a diagnosis.
+
+## 2026-08-12 — still live, and now on one named tool
+
+Re-probed against **v18.2.0** (the record had v17.2.0; see
+`the-surface-record-was-a-major-version-stale`). One tool fails, reproducibly:
+
+    list_gate_blocks → {"code":"INTERNAL_ERROR","message":"Internal server error"}
+
+Four independent calls: `tools/probe_mcp_surface.py`'s own run (its single
+failure of 69 calls), and three by hand — Undertow at limit 100 and 20,
+Breakwater at limit 5. Two different agents, three different page sizes, same
+answer. Not load, not pagination, not one bad agent.
+
+This is narrower than the 2026-08-05 flapping this item was filed for. Then it
+was several tools intermittently; now it is **one tool, deterministically**,
+and that tool is the one whose description v18.2.0 rewrote — so the most
+likely reading is that the v18 change to gate-block semantics shipped broken
+rather than that the platform is unstable again.
+
+**What it costs us**: `readStoppages` feeds `/agents/[id]` ("what has actually
+been stopping it") and the pipeline page. Both currently render their
+unreadable branch against live. That branch now explains itself properly —
+today's refusal work — so the failure is visible and honest rather than
+silent, but the answer is unavailable.
+
+Nothing to do here but watch: it is upstream, it is not intermittent, and a
+re-probe will show when it returns.
+
