@@ -114,3 +114,12 @@ The linked change `every-value-sent-is-one-the-platform-accepts` shipped
 and archived; the `change:` link is cleared — this item was filed *by*
 that change as a deferred finding, not tracked by it. What remains open
 is upstream's schema, plus the optional probe refinement in Fix #3.
+
+**Fix #3 landed the same day** (`a-refusal-and-an-outage-stop-reading-alike`,
+lite, archived 2026-08-12): the probe now records `call_failed_code` beside
+`call_failed` — the platform's structured code on a refusal, null on prose
+and transport failures — mirroring the adapter's `codeOf`. The key is
+additive; it takes effect in the artifact on the next probe run. Fix #2 was
+already honored (`get_market_context`'s real precondition is recorded here
+and in the reference). What keeps this open is Fix-#1 territory only:
+upstream's declared schema still understates the precondition.

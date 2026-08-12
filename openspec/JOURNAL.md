@@ -56,6 +56,14 @@ surface, with two new scenarios. Closed #115 (`v5-surface-additions-
 unconsumed`) — its residual was exactly this; the rest were records.
 Gates: typecheck, lint, 2130 vitest, build.
 
+**Round three — the probe tells its failures apart**
+(`a-refusal-and-an-outage-stop-reading-alike`, lite, archived; 151
+archived changes). #114's Fix #3: `probe_mcp_surface.py` records
+`call_failed_code` beside `call_failed` — the structured code on a
+refusal, null on prose/transport — mirroring the adapter's `codeOf`.
+Additive key, nothing consumes `call_failed` outside the probe; takes
+effect on the next probe run. #114 stays open for upstream's schema only.
+
 **Watch out**: `min-h-11` must not come back — the controls test forbids
 it by name. The WEARS_BUTTON scan now accepts the composed template form
 (`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's
