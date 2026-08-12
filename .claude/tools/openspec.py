@@ -398,7 +398,7 @@ class Change:
                 "path": pattern,
                 "status": state,
                 "requires": requires,
-                "existing": [str(p.relative_to(self.root)) for p in paths],
+                "existing": [repo_path(p, self.root) for p in paths],
             })
         return out
 
@@ -493,7 +493,7 @@ class BacklogItem:
             "priority": self.priority, "change": self.change or None,
             "capability": self.capability or None, "blockedBy": self.blocked_by,
             "tags": self.tags, "created": self.created, "updated": self.updated,
-            "path": str(self.path.relative_to(self.root)),
+            "path": repo_path(self.path, self.root),
         }
 
 
@@ -524,7 +524,7 @@ def validate_backlog(root: Path, strict: bool) -> list:
     active = set(list_changes(root))
 
     for item in items:
-        rel = str(item.path.relative_to(root))
+        rel = repo_path(item.path, root)
         if not item.meta:
             found.append(diag("error", "backlog_missing_frontmatter",
                               f"{item.slug}: no `---` frontmatter block", rel,
@@ -657,6 +657,22 @@ def load_design(root: Path, kind: str) -> list:
 
 def surface_components(surface: dict) -> dict:
     return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
+
+
+def repo_path(path: Path, root: Path) -> str:
+    r"""A repo-relative path, always with forward slashes.
+
+    `str(Path)` gives the platform's separator, so on Windows every diagnostic
+    named `src\useThings.ts` while every assertion — and every reader — expected
+    `src/useThings.ts`. Six harness tests could not pass there, and CI runs
+    Linux, so the suite was green everywhere it was looked at (#196).
+
+    Normalised where the path becomes a string rather than at each of the six
+    assertions: these strings are read by humans, matched by tests, and written
+    into JSON, and `/` is right for all three. It is what `openspec/` uses
+    everywhere else, including `source_files` in every surface manifest.
+    """
+    return str(path.relative_to(root)).replace("\\", "/")
 
 
 def file_digests(root: Path, files: list) -> dict:
@@ -816,7 +832,7 @@ def local_ui_imports(root: Path, source_files: list) -> set:
                 target = _resolve_import(path, spec)
                 if target and _is_ui_file(target):
                     try:
-                        found.add(str(target.relative_to(root)))
+                        found.add(repo_path(target, root))
                     except ValueError:
                         pass       # import escaped the repo
     return found
@@ -867,7 +883,7 @@ def validate_design(root: Path, strict: bool) -> list:
     base = design_dir(root)
     if not base.is_dir():
         return found
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     # -- design system -----------------------------------------------------
     system_path = base / "system.json"
@@ -1245,7 +1261,7 @@ def diag(severity: str, code: str, message: str, target: str = "", fix: str = ""
 def validate_change(root: Path, change: Change, strict: bool) -> list:
     found: list = []
     deltas = change.delta_paths()
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     meta_rel = f"openspec/changes/{change.name}/.openspec.yaml"
     if not change.meta_path.is_file():
@@ -1468,7 +1484,7 @@ def validate_main_specs(root: Path, strict: bool) -> list:
     for path in sorted(base.glob("**/spec.md")):
         cap = str(path.parent.relative_to(base)).replace("\\", "/")
         doc = SpecDoc(path)
-        rel = str(path.relative_to(root))
+        rel = repo_path(path, root)
         if not doc.purpose:
             found.append(diag("warning", "main_spec_no_purpose", f"{cap}: main spec has no `## Purpose`", rel))
         elif "TBD" in doc.purpose:
@@ -1633,7 +1649,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         except ValueError as exc:
             return {"archived": False, "specs_updated": [], "operations": [],
                     "status": gate + [diag("error", "merge_conflict", str(exc),
-                                           str(delta.relative_to(root)))]}
+                                           repo_path(delta, root))]}
         planned.append((main_spec_path(root, cap), text))
         operations.extend(ops)
 
@@ -1645,7 +1661,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
     if target.exists():
         return {"archived": False, "specs_updated": [], "operations": operations,
                 "status": gate + [diag("error", "archive_target_exists",
-                                       f"{target.relative_to(root)} already exists")]}
+                                       f"{repo_path(target, root)} already exists")]}
 
     if gate:
         return {"archived": False, "specs_updated": [], "operations": operations, "status": gate}
@@ -1654,7 +1670,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         "change": change.name,
         "archived_as": target_name,
         "operations": operations,
-        "specs_updated": [str(p.relative_to(root)) for p, _ in planned],
+        "specs_updated": [repo_path(p, root) for p, _ in planned],
         "status": [],
     }
 
@@ -2046,7 +2062,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({"entries": entries, "root": str(root)}, indent=2))
         elif not entries:
-            print(f"no journal entries. Create {journal_path(root).relative_to(root)} "
+            print(f"no journal entries. Create {repo_path(journal_path(root), root)} "
                   f"and add one — see .claude/references/tracking.md")
         else:
             for e in entries:
@@ -2063,7 +2079,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({
                 "change": change.name, "track": change.track, "skipSpecs": change.skip_specs,
-                "changeRoot": str(change.dir.relative_to(root)),
+                "changeRoot": repo_path(change.dir, root),
                 "artifacts": artifacts,
                 "progress": {"complete": done, "total": total},
                 "isComplete": bool(total) and done == total,

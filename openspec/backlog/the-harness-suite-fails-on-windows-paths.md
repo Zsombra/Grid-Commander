@@ -2,7 +2,7 @@
 id: the-harness-suite-fails-on-windows-paths
 title: Six harness tests fail on Windows because the tool reports paths with backslashes
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-13
 updated: 2026-08-13
@@ -66,3 +66,26 @@ and it is what every other path in the tool's output already uses.
 
 Worth checking whether any other Windows-only difference hides behind this once
 it clears — six failures is enough noise to have masked more.
+
+## Done 2026-08-13
+
+`repo_path(path, root)` — one helper, twelve call sites, always forward slashes.
+`./scripts/check.sh` passes on Windows: **253 tests, all checks passed.**
+
+Normalised where a path *becomes a string*, not at the six assertions. Those
+strings are read by humans, matched by tests, and written into JSON, and `/` is
+right for all three — it is already what `openspec/` uses everywhere else,
+including `source_files` in every surface manifest. Changing the assertions
+would have left the tool still emitting `src\useThings.ts` to every reader.
+
+**Twelve sites, not six.** The failures named six; the same construction
+appeared twice that often, including the archive's `specs_updated` list and the
+`changeRoot` written into `--json` output. Two sites already did the
+`.replace()` by hand — the pattern existed and had never been made a rule.
+
+## Note for later
+
+This gate was red on the machine this project is developed on, and green in CI,
+which runs Linux. **That combination is how it survived**: the person who could
+see it could not act on the difference, and the runner that could act never saw
+it. Worth remembering when a check is described as passing — ask where.
