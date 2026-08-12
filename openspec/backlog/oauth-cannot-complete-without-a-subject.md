@@ -86,3 +86,67 @@ this first, or choose between deleting the path and keeping code that has never
 run to completion.
 
 Found while answering [[prove-token-lifetimes]] (#93).
+
+## How this survived audit, archive, and a green CI
+
+Local CI is green at `bedf6f0` — twelve gates, ten run, including `oauth-live`.
+It stays green with this bug in place, and that is not a failure of any gate.
+
+**`oauth-live` is correctly scoped and does not claim otherwise.** It re-fetches
+the discovery document and checks it still matches
+`docs/battlegrid-oauth-metadata.json` — reachability first, so a dead network
+reports *unchecked* rather than red. Its own comment in `scripts/ci.sh` says
+why: "a recording nothing re-fetches can quietly stop describing the platform,
+and then the guard built on it passes while a user is sent to an endpoint that
+has moved."
+
+That guard works. It is a different guard from the one this needed.
+
+**Nothing exercises a grant.** One file in the suite mentions `grant_type` or
+`authorization_code` — `tests/architecture/oauth-conformance.test.ts` — and it
+runs entirely offline against the recording. So:
+
+```
+discovery document matches the platform   covered, live, every CI run
+PKCE / challenge method advertised        covered, live
+the product's URL shape                   covered, offline
+a token actually being exchanged          NOT COVERED, anywhere
+```
+
+The last line is where `sub` lives, so no gate could have caught this. **And
+nothing said so** — which is the part worth fixing, because the coverage reads
+as complete. `oauth-live` in a green list looks like the OAuth path is exercised
+live. It is the *metadata* that is exercised live.
+
+This cannot be automated away: an authorization code requires a human at a
+consent screen, and that is a real limit rather than a missing test. The
+answerable question is whether the boundary is **written down where someone
+meets it**, the way `tests/rendering/support/render.ts` now states what the
+render harness cannot see (#194).
+
+Same shape as five other findings this session: a check that reads as covering
+more than it covers. Here the check is honest and the *list it appears in* is
+what misleads.
+
+## And the registration premise was already contradicted in-repo
+
+`src/config.ts:95` argues that requiring a `client_id` "would force the operator
+to invent a value … Registration is the thing being avoided; it cannot be a
+precondition for avoiding it."
+
+`docs/battlegrid-oauth-metadata.json` — committed, and re-verified by
+`oauth-live` on every CI run — records:
+
+```json
+"registration_endpoint": "https://mcp.battlegrid.trade/register",
+"token_endpoint_auth_methods_supported": ["client_secret_post", "none"]
+```
+
+Registration is one unauthenticated POST returning a public client with no
+secret; it was walked on 2026-08-13 and answered 201. So the comment's premise
+was contradicted by a file in the same repository, verified by the same CI, for
+as long as both have existed.
+
+Exactly the shape of [[the-performance-design-rests-on-a-dead-premise]] (#189):
+a careful argument that outlived its evidence, with the correction already
+sitting somewhere nobody connected to it.
