@@ -209,3 +209,42 @@ still tracks — the allocation tool answering zero against live margin,
 and `accountEquityUsd: 0` — was never that change's scope. What would
 settle it: a BattleGrid-side fix or documentation of what
 `get_agent_fund_allocation` actually measures.
+
+## 2026-08-12 (v18.2.0) — the two tools have come apart
+
+Probed read-only against **v18.2.0**. The item's premise now holds for only one
+of the two.
+
+**`get_agent_performance` answers, with real figures.** Three agents, one call
+each:
+
+| agent | realizedPnlUsd | drawdownUsd | pnlCurveUsd |
+|---|---|---|---|
+| Undertow | −0.84 | 1.9 | **41 points** |
+| Breakwater | +0.30 | 0.41 | **25 points** |
+| Vanguard | 0 | 0 | empty |
+
+Vanguard's empty curve is not a failure: v18's own description says *"An empty
+curve means no settlements yet, not missing data"*, and Vanguard has settled
+nothing. So the tool is answering correctly on all three.
+
+This is the fact the whole `performance.ts` design was built against, and it has
+reversed. Filed separately as `the-performance-design-rests-on-a-dead-premise`
+because it is a product decision to revisit, not just an observation.
+
+**`get_agent_fund_allocation` still reads all-zero** — `availableUsd`,
+`committedUsd`, `lifetimeAllocatedUsd`, `lifetimeRecalledUsd` all 0 for
+Undertow. But **the disagreement could not be reproduced today**, because
+`list_user_active_positions` also reads zero across the account
+(`openPositionCount: 0`, `marginedUsd: 0`). Zero against zero is agreement, not
+a contradiction.
+
+So the allocation half is **untestable until a position is open**. The previous
+readings (four measurements, most recently 2026-08-12 morning with ~$11
+margined on each of two agents) remain the evidence; today adds only that the
+tool still returns zeros when zero is also the right answer.
+
+**Next reading**: when `list_user_active_positions` shows a non-zero
+`marginedUsd`, call `get_agent_fund_allocation` in the same minute. That is the
+only configuration in which this item can be settled either way.
+

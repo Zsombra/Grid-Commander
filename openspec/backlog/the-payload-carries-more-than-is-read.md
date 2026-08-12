@@ -154,3 +154,41 @@ landed did so under a different change (`the-brains-name-and-the-spend-are-read`
 also archived). What stays open here is only the watch on the four
 deliberately unmapped fields — `provider` was observed null again on all
 three agents on 2026-08-12 (v17.2.0), so nothing has moved.
+
+## 2026-08-12 (v18.2.0) — all six still arrive, and the cost split is confirmed at v18
+
+Read-only, `get_intelligence_agent` on Undertow against this session's
+`list_intelligence_agents` payload.
+
+**The six are still there, still unread**: `last24hCostUsd`, `activeGameCount`,
+`hasActiveAssignments`, `provider`, `modelDisplayName`, `avatarUrl` /
+`modelImageUrl`. v18 added none and removed none — consistent with the surface
+diff, which found no input schema changed and no tool added or removed.
+
+**`provider` is still `null`** — three probes now, across three majors. It has
+never carried a value on this account, so there is nothing to map even if
+something wanted it.
+
+**The cost disagreement reproduces, and this is the fifth measurement and the
+first at v18:**
+
+| tool | Undertow | Breakwater |
+|---|---|---|
+| `list_intelligence_agents` | **0.83259263** | **0.37747612** |
+| `get_intelligence_agent` | **0** | — |
+
+Same agent, same session, calls minutes apart, every other key identical. That
+is the behaviour `the-cost-of-an-agent-reads-differently-from-two-tools`
+recorded and `the-brains-name-and-the-spend-are-read` fixed by reading spend
+from the **list**. **That decision is still correct at v18.2.0** — worth saying
+plainly, because it is the kind of workaround someone eventually tries to
+simplify away.
+
+**Unrelated but observed while here**, for
+`preset-custom-in-the-preset-branch-is-unestablished` (#106): Undertow reads
+back `brainPreset: "CUSTOM"` alongside a real `modelId` (`z-ai/glm-5.2`) and a
+full `behavior` block. So `CUSTOM` is at least a *readable* preset value on a
+live agent, which is more than the item had. It still does not establish what
+`create_intelligence_agent` does with `{kind:"PRESET", preset:"CUSTOM"}` — that
+needs a write, and this sweep was read-only.
+
