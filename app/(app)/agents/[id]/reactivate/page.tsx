@@ -36,6 +36,7 @@ export default async function ReactivatePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{roster.reason}</p>
         {/* An archived agent is the one case where "gone" is a live worry, so
             the sentence matters more here than on any other agent page. */}
@@ -49,6 +50,7 @@ export default async function ReactivatePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such agent</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/agents" className="underline">Back to your agents</a>
         </p>

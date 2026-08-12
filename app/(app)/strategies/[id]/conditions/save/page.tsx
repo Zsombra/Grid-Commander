@@ -6,6 +6,7 @@ import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/cont
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { ConditionStructure } from '@/presentation/components/strategy-conditions.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Saving a condition — the other half of `/strategies/[id]/conditions`.
@@ -169,7 +170,7 @@ export default async function SaveConditionPage({
   const head = (
     <>
       <h1 className="text-xl font-medium">Save a condition to {strategy.name}</h1>
-      {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
+      <CarriedProblem problem={problem} />
     </>
   );
 

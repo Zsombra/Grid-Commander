@@ -2,7 +2,7 @@
 id: a-design-round-stales-the-manifests-it-designed-against
 title: A design round always stales its own manifests — re-pin after implementation, not before
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
@@ -60,3 +60,24 @@ danger roles, mobile stacks) and `CarriedProblem` mounted on every branch.
 
 Deliberately not fixed by bumping `generated_at_commit` without re-reading —
 same reason as #173. The check's value is that freshness is measured.
+
+## Closed 2026-08-12
+
+Both halves done. The nine stale manifests are re-pinned at `e7c56ce`, and the
+structural fix is written into the four places a session looks:
+design-contract §8 (the loop now shows `/surface` twice, and says which pass is
+which), the ui-surveyor skill's refreshing section, the design-director's
+completion checklist, and CLAUDE.md's UI lane.
+
+Also recorded there: never re-pin against an uncommitted working tree, and
+**why this is a convention rather than a check** — a manifest pins to a commit
+hash, the hash of the commit being written does not exist yet, so the re-pin is
+necessarily a second commit and any freshness guard would fail on the
+intermediate state the process requires.
+
+The re-survey earned its keep beyond bookkeeping: it caught that DT-0019/0020/
+0021's acceptance said the reassurance renders *inside* the danger block when
+it renders after it (tickets corrected — the criterion was wrong, not the
+code), and it found `AuthorityLost` and the row treatments uncovered, filed as
+#183.
+

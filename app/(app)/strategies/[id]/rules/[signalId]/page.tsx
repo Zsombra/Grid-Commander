@@ -11,6 +11,7 @@ import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import type { SignalParameter } from '@/ports/strategies.js';
 import { AuthorityLost } from '@/presentation/components/authority-lost.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Retuning one signal rule: the scorecard write, behind the ceremony.
@@ -138,7 +139,7 @@ export default async function RetuneRulePage({
             </>
           ) : null}
         </p>
-        {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
+        <CarriedProblem problem={problem} />
         <form method="get" className="space-y-3 text-sm">
           <label className={LABEL}>
             Allocation (weight, 0–3)
@@ -244,7 +245,7 @@ export default async function RetuneRulePage({
       <h1 className="text-xl font-medium">
         Retune {proposal.signalId} on {proposal.strategyName}?
       </h1>
-      {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
+      <CarriedProblem problem={problem} />
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       {intent.ruleParams !== undefined ? (
         <p className="text-sm">

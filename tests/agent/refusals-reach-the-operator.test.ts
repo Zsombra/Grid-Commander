@@ -62,6 +62,11 @@ const CARRY_PROBLEM = [
   'app/(app)/strategies/[id]/archive/page.tsx',
   'app/(app)/strategies/[id]/restore/page.tsx',
   'app/(app)/strategies/[id]/fork/page.tsx',
+  // Added after the post-round re-survey found both mounting the banner on one
+  // branch each: the list was written from the pages one change happened to
+  // touch, which is not the same as the pages the rule applies to.
+  'app/(app)/agents/[id]/reactivate/page.tsx',
+  'app/(app)/recorder/trim/page.tsx',
 ] as const;
 
 describe('one spelling of a carried refusal, product-wide', () => {
@@ -90,8 +95,17 @@ describe('one spelling of a carried refusal, product-wide', () => {
     })('src/presentation'),
   );
 
+  // `{problem ? (` was the first spelling of this check, and it had a hole:
+  // the rule editor writes `{problem ? <p …>` on one line, with no paren, and
+  // sailed through a guard whose whole claim was "product-wide". Third time in
+  // one session that a check could not fail on the thing it was written for —
+  // the pattern is always the same, a rule written against the shape of the
+  // one example in front of it. `[(<]` covers both, and anything else that
+  // opens an element.
+  const HAND_ROLLED = /\{problem \?\s*[(<]/;
+
   it('nothing hand-rolls the banner CarriedProblem owns', () => {
-    const handRolled = uiFiles.filter((f) => /\{problem \? \(/.test(readFileSync(f, 'utf8')));
+    const handRolled = uiFiles.filter((f) => HAND_ROLLED.test(readFileSync(f, 'utf8')));
     expect(
       handRolled,
       'a copy of this paragraph is how the prefix and the role drifted the first time',
@@ -134,7 +148,7 @@ describe('a carried reason survives the branch that renders next', () => {
       // Fifteen hand-rolled copies of one paragraph is how the treatment
       // drifts and how a branch gets forgotten — the defect WhyNotLoaded was
       // extracted to stop, one paragraph along.
-      expect(source).not.toMatch(/\{problem \? \(/);
+      expect(source).not.toMatch(/\{problem \?\s*[(<]/);
     });
   }
 });
@@ -185,7 +199,7 @@ for (const surface of SURFACES) {
       // it carries the role=alert and the "Refused:" prefix that used to be
       // hand-rolled per branch. Pages that mint a `?problem=` but render
       // their own surface a different way are matched by the second arm.
-      expect(source).toMatch(/<CarriedProblem[\s/>]|\{problem \? \(/);
+      expect(source).toMatch(/<CarriedProblem[\s/>]|\{problem \?\s*[(<]/);
       expect(source).toMatch(/role="alert"|<CarriedProblem[\s/>]/);
     });
 

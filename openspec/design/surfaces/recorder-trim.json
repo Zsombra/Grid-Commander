@@ -4,9 +4,10 @@
   "route": "/recorder/trim",
   "capability": "signal-recording",
   "status": "designed",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "e7c56ce",
   "source_files": [
     "app/(app)/recorder/trim/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/require-connection.tsx"
   ],
@@ -62,7 +63,9 @@
         "The trim is a describe→confirm→perform ceremony — openspec/specs/signal-recording/spec.md:203-209 ('through the same describe→confirm→perform ceremony as its other destructive acts'). A design must not collapse choosing, confirming, and performing into fewer steps.",
         "The description renders before anything is offered — openspec/specs/signal-recording/spec.md:219-224 ('WHEN an operator chooses a boundary date THEN the page states the runs, captures, failed attempts, coins and date span that would go'). The consequence must stay readable before the button that performs.",
         "Rendering the description deletes nothing however many times it renders — openspec/specs/signal-recording/spec.md:243-245. Choosing a boundary must remain a GET navigation, never a POST.",
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change."
+        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "This page has no `?authority=` branch and needs none: the trim is a local record operation keyed on userId, and `TrimRecordResult` is `trimmed | refused` with no authority-lost arm. The `<AuthorityLost>` page the three agent ceremonies gained in `a-lost-authority-is-not-a-refusal` does not apply here — a design must not invent one for symmetry.",
+        "DT-0014's four roles are the page's grammar and all four are implemented: consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim. A ticket that gives two of them the same treatment reverts the ticket."
       ],
       "children": [
         "boundary",
@@ -116,12 +119,14 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "An inline `{problem ? … : null}` block on the describe-confirm branch only, carrying DT-0004's danger treatment byte-for-byte: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted. It is the same paragraph the shared `CarriedProblem` component (carried-problem.tsx) now holds for the six ceremony pages, spelled out here rather than imported — this page was not in that change's scope. Untouched by DT-0014, which left it alone by name. It renders on one of the four branches, which is where `performTrim` always bounces to (the redirect carries `before=` back, so the describe re-runs), but it is not mounted on the other three.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx). CHANGED since the last survey: the inline `{problem ? … : null}` copy this page held is gone and the component is imported — the two-spellings risk this manifest flagged is closed, and `tests/agent/refusals-reach-the-operator.test.ts` now fails any file that hand-rolls the paragraph again. The treatment is unchanged, DT-0004's danger: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix, returning null when there is no problem. Untouched by DT-0014, which left it alone by name. What did NOT change is where it is mounted: the describe-confirm branch only, which is where `performTrim` always bounces to (the redirect carries `before=` back, so the describe re-runs). The other three branches still mount nothing.",
       "constraints": [
         "role=alert must survive.",
         "The refusal reason is the platform/domain's wording for why nothing was deleted (openspec/specs/signal-recording/spec.md:226-229, 'nothing is deleted and the refusal says why') and must be shown, not summarized.",
         "This is a failed attempt, not advisory — it takes a stronger role than the nothing-to-trim answer and shares its palette with nothing else on the page.",
-        "Whatever treatment this takes must stay identical to the shared `CarriedProblem`'s — two spellings of one paragraph is how the ceremony pages drifted before it was extracted, and restyling only one of the two would reopen exactly that."
+        "Shared by eleven pages now (agent deploy/undeploy/rebind/archive/reactivate, strategy archive/restore/fork, both /pending surfaces, recorder trim) — restyle it in the component, never per page. A ticket that restyles the bounced-write banner reaches all eleven at once, which is the point of the extraction.",
+        "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
+        "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state."
       ],
       "children": []
     },
@@ -160,7 +165,7 @@
           "effect": "POSTs the server action with before, describedRuns, confirmationToken; success redirects to the receipt state, refusal redirects back here with ?problem="
         }
       ],
-      "current_implementation": "flex flex-wrap gap-3 form; three hidden inputs carry the confirmation binding (before as ISO instant, describedRuns, confirmationToken). No pending/loading state between click and redirect — the same gap filed as #153 for the archive page.",
+      "current_implementation": "flex flex-wrap gap-3 form; three hidden inputs carry the confirmation binding (before as ISO instant, describedRuns, confirmationToken). Still a wrapping row with no mobile full-width stack: DT-0016/0017/0018 gave the three agent ceremonies the flex-col…tablet:flex-row treatment and did not reach this page, so the product's confirmation rows are now two shapes rather than one. No pending/loading state between click and redirect — the same gap filed as #153 for the archive page.",
       "constraints": [
         "The hidden binding (before, describedRuns, confirmationToken) is the confirmation ceremony — openspec/specs/signal-recording/spec.md:215-217 ('the confirmation SHALL be bound to the boundary and the described extent, so agreement to one trim cannot authorise a different one'). The form must keep exactly one submit path.",
         "A submit without the minted confirmation, or with one minted for a different boundary or extent, deletes nothing (openspec/specs/signal-recording/spec.md:226-229) — a design must not add a second control that could bypass the binding.",
