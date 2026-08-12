@@ -1,5 +1,96 @@
 # Journal
 
+## 2026-08-13 (the live walk) — six questions asked of the platform, and half the answers contradicted the items asking
+
+**Did**: Closed four by walking live BattleGrid v18.2.0, with the operator
+freeing an agent slot and consenting twice in a browser.
+
+- **#103** — every agent tool returns `{agent}`; `create` alone adds
+  `slotUsage`. Dropped `?? payload` from five sites in `agent-adapter.ts`.
+  2239 tests passed *unchanged*, which is the finding: nothing ever covered
+  that branch.
+- **#106** — the platform refuses `{kind: PRESET, preset: CUSTOM}` in words.
+  It also **falsified this item's own narrowing**: `brainPreset` carries the
+  real preset name (`PATTON`), so `brainPreset: "CUSTOM"` is unambiguous, and
+  the consequence recorded against #110 is retracted.
+- **#189** — the dead premise was real, and *the correction was already in the
+  repo*: `performance.ts:5` said the tool "has never once answered";
+  `ports/agents.ts:142` said "the tool is not broken" and had worked out why on
+  2026-08-06. Kept the roster as the record source, corrected the reasoning.
+- **#93** — 3600s lifetime; refresh rotates both tokens; **no incremental
+  step-up**, the user re-approves everything. All tokens revoked and verified
+  dead (401).
+
+Sharpened, not closed: **#100** (retitled — the tool is not broken, it serves
+old rows and 500s on the newest), **#102** (re-confirmed, plus a lost-response
+hazard), **#91** (falsified). Filed #200–#205, all mirrored.
+
+**State**: 27 commits, PR #199 open, 0 uncommitted. `validate --all` 0 errors /
+11 warnings; `check.sh` all passed; 2239 vitest. **Live account restored
+exactly** — Vanguard archived and reactivated (rev 6→8), same slot ids and
+conviction on BTC/ETH/SOL/XRP/AVAX; balance 38.633532 unchanged; slots 3/3;
+strategy quota back to 5/25 after archiving the test fork.
+
+**Next**: `/handoff` is done — land PR #199. Then **#91 is the only P2 whose
+blocker is a decision rather than a wait**, and #203 changed its options.
+
+**Watch out**:
+
+- **The OAuth path has never completed a single connection.** BattleGrid sends
+  no `sub` and `mcp-adapter.ts:430` requires one. It is plain OAuth 2.1, not
+  OIDC — `openid-configuration` is 404. Audited and archived does not mean run
+  (#203).
+- **Never retry a `fork_strategy` blind.** It takes no `idempotencyKey` — only
+  `create_intelligence_agent` and `rebind_intelligence_agent` do. A lost
+  response that already committed makes the retry return `INTERNAL_ERROR`,
+  which reads as a platform fault and is actually "that name is taken" (#102).
+- **`list_gate_blocks` has a read-around**: `page: N, limit: 1` reaches any
+  older row and the data is intact. Only the recent window is unreachable, and
+  the boundary is per-agent, not a global cutoff (#100).
+- **Two comments in one codebase disagreed and the emphatic one was wrong**
+  (#189). A carefully argued comment is not evidence; it is a claim with a
+  date on it.
+- `rebind_intelligence_agent` **rewrites `contextSources`** to the destination
+  strategy's — eight fields changed in the walk. The product's confirm copy
+  already says so, and is now the only verified description of it.
+- `mcp:wager` is **not sufficient to move money** — a Profile-level signer
+  toggle gates it, plus 10 wagers/day and $500 (#205).
+
+## 2026-08-13 (late night) — the reference regenerates, and two records stop lying by omission
+
+**Did**: **#186** — `generate_mcp_reference.py` could not run on Windows at all
+(unpinned `encoding`), and read a directory of raw dumps nothing produced. Added
+`tools/capture_mcp_dump.py`, importing `rpc` from the probe rather than
+re-implementing the protocol. The reference is v18.2.0.
+
+**#198** — regenerating revealed the capabilities record was also a major
+version stale: 188 output-schema leaves across 11 tools unrecorded, including
+`gateStage` declaring `EVALUATION`, which independently confirmed #185.
+
+**#196** — `repo_path()` helper; twelve sites reported Windows backslashes into
+repo-relative paths. **#194** — the render harness header now states what it can
+see (`text`, `headings`, `links`, `values`) and what it cannot (anything needing
+reconciliation, anything CSS decides, anything the client does), with a stated
+bar for adding a collector. Re-pinned the six manifests the round staled.
+
+**State**: all archived/committed. Board warnings 34 → 11. **Zero stale, zero
+never-verified** — all 24 manifests describe committed code, first time true.
+
+**Next**: (superseded by the entry above.)
+
+**Watch out**:
+
+- **A count that has not moved proves nothing.** v18.2.0 changed one tool's
+  *meaning* with 114 tools unchanged, no schema added or removed. Probe the
+  version, never the shape.
+- Four of the six manifests re-pinned were staled by *this session's own*
+  changes. That is design-contract §8 working, not carelessness — a design
+  round edits the files its manifests describe, so the re-pin is that round's
+  last task.
+- `#194` is **half done and stays open**: `values` closed the form-state hole,
+  key collisions still need a real DOM, and *A Listing Shows Every Entry It Was
+  Given* is knowingly uncovered.
+
 ## 2026-08-13 (night) — the round trip, and the harness learns to see form state
 
 **Did**: `the-round-trip-keeps-what-the-person-needs` — #170, #169 and #162,
