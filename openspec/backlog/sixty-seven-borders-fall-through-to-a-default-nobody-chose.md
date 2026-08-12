@@ -2,11 +2,11 @@
 id: sixty-seven-borders-fall-through-to-a-default-nobody-chose
 title: 67 rounded-border boxes wear Tailwind's default grey instead of the border token
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: the-borders-join-the-palette
 capability: app-access
 github: "155"
 blocked_by: []
@@ -43,3 +43,12 @@ is `rounded border` → `rounded-gc-2 border border-border-default` with
 radius unified to `radius.2`, file by file, gated by the full local CI. The
 existing role blocks (danger/notice/consequence/quiet) are already tokened
 and are not part of the sweep.
+
+## Closed 2026-08-12, same day — the sweep ran
+
+`the-borders-join-the-palette` (lite, archived): every bare `rounded
+border` became `rounded-gc-2 border border-border-default`, DT-0008's
+decided treatment. The real count was **86 occurrences across 37 files**
+— the 67 in this item's title undercounted by matching one quoting style.
+Verified before the replace: no border-color companions, no comment
+matches, no `border-*` variants to clip. Full local CI green.

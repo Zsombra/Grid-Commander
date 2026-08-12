@@ -138,7 +138,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         ) : funnel.kind === 'none' ? (
           <p className="text-sm">This agent has evaluated nothing yet.</p>
         ) : (
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <p>
               {funnel.funnel.totalEvaluations ?? '—'} evaluations →{' '}
               {funnel.funnel.totalDecisions ?? '—'} decisions →{' '}
@@ -181,7 +181,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         {blocks.kind === 'entries' ? (
           <ul className="space-y-2">
             {blocks.entries.map((b) => (
-              <li key={b.id} className="rounded border p-3 text-sm space-y-1">
+              <li key={b.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 <p className="font-medium">
                   {b.reasonCode}
                   {b.coinTicker ? ` · ${b.coinTicker}` : ' · account-wide'} · {b.gateStage} stage
@@ -211,7 +211,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         {evaluations.kind === 'entries' ? (
           <ul className="space-y-2">
             {evaluations.entries.map((e) => (
-              <li key={e.id} className="rounded border p-3 text-sm space-y-1">
+              <li key={e.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 <p className="font-medium">
                   {/* Opens the full scorecard: every signal consulted, not
                       only the ones that fired. */}
@@ -254,7 +254,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
         {decisions.kind === 'entries' ? (
           <ul className="space-y-2">
             {decisions.entries.map((d) => (
-              <li key={d.id} className="rounded border p-3 text-sm space-y-1">
+              <li key={d.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 <p className="font-medium">
                   {d.decision} {d.coinTicker ?? ''} {d.direction ?? ''}
                   {d.conviction !== null ? ` · ${pct(d.conviction)} conviction` : ''}

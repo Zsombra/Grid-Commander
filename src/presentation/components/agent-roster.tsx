@@ -25,7 +25,7 @@ export function AgentRoster({
 }) {
   if (roster.kind === 'unreadable') {
     return (
-      <div role="alert" className="rounded border p-4 text-sm">
+      <div role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
         <p className="font-medium">Your roster could not be loaded.</p>
         <p className="mt-1">{roster.reason}</p>
         <WhyNotLoaded cause={roster.cause} subject="your agents are" />
@@ -67,7 +67,7 @@ export function AgentRoster({
           )}
         <ul className="space-y-3">
           {roster.agents.map((agent) => (
-            <li key={agent.id} className="rounded border p-4">
+            <li key={agent.id} className="rounded-gc-2 border border-border-default p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 {/**
                  * The name is the link to the agent, and it was not one.
@@ -156,7 +156,7 @@ function CreateAffordance({ creation }: { creation: CreationAvailability }) {
   if (creation.kind === 'at-capacity') {
     // Before the form, not after submission.
     return (
-      <p role="status" className="rounded border p-3 text-sm">
+      <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
         {creation.explanation}
       </p>
     );

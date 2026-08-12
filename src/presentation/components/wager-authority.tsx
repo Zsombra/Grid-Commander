@@ -18,7 +18,7 @@ import { WhyNotLoaded } from './why-not-loaded.js';
 export function WagerAuthority({ wager }: { wager: WagerAuthorityResult }) {
   if (wager.kind === 'unreadable') {
     return (
-      <div className="rounded border p-3 text-sm space-y-1">
+      <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
         <p>Whether this account permits MCP wagers could not be read: {wager.reason}</p>
         <WhyNotLoaded cause={wager.cause} subject="the account’s wager setting is" />
       </div>

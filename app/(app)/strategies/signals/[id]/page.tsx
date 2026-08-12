@@ -72,7 +72,7 @@ export default async function SignalPage({ params }: { params: Promise<{ id: str
           {d.exampleSetup ? <p>{d.exampleSetup}</p> : null}
           <ul className="space-y-1">
             {d.examples.map((e) => (
-              <li key={e.scenario} className="rounded border p-2">
+              <li key={e.scenario} className="rounded-gc-2 border border-border-default p-2">
                 {e.scenario} → {e.outcome}
               </li>
             ))}
@@ -87,7 +87,7 @@ export default async function SignalPage({ params }: { params: Promise<{ id: str
         ) : (
           <ul className="space-y-1">
             {d.parameters.map((p) => (
-              <li key={p.key} className="rounded border p-2">
+              <li key={p.key} className="rounded-gc-2 border border-border-default p-2">
                 <p className="font-medium">{p.key}</p>
                 {p.description ? <p>{p.description}</p> : null}
                 <p>

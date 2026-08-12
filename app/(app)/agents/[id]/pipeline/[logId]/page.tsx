@@ -206,7 +206,7 @@ export default async function OwnEvaluationPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">The chain it followed</h2>
-        <div className="rounded border p-3 text-sm space-y-1">
+        <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
           {e.chain.gateStatus ? (
             <p>
               Gate: {e.chain.gateStatus}
@@ -284,7 +284,7 @@ export default async function OwnEvaluationPage({
           ) : null}
           <ul className="space-y-2">
             {e.conditions.outcomes.map((c) => (
-              <li key={c.conditionKey} className="rounded border p-3 text-sm space-y-1">
+              <li key={c.conditionKey} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 <p className="font-medium">
                   {`${c.name ?? c.conditionKey}${c.outcome ? ` — ${c.outcome}` : ''}${c.required ? ' · required' : ''}${c.provisional ? ' · provisional' : ''}`}
                 </p>
@@ -394,7 +394,7 @@ export default async function OwnEvaluationPage({
                 BattleGrid would not score that: {simulation.reason}
               </p>
             ) : (
-              <div className="rounded border p-3 text-sm space-y-1">
+              <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 {/*
                   The label is structural, not tonal. A simulated figure
                   beside a real one, unmarked, is the mistake this whole

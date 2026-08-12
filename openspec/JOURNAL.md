@@ -93,6 +93,15 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round nine — the borders join the palette**
+(`the-borders-join-the-palette`, lite, archived; 157 archived changes;
+closes #155 same-day). The mechanical sweep DT-0008's precedent unblocked:
+every bare `rounded border` — Tailwind's untokened default grey — became
+`rounded-gc-2 border border-border-default`. Real count **86 across 37
+files**; the item's 67 undercounted by matching one quoting style.
+Pre-verified: no color companions, no comment hits, no variants clipped.
+Full local CI green.
+
 **Round eight — `/explorer` through the design lane, and a product-wide
 finding** (#108 gap 2, fourth surface pass). The dropped-redirect sweep
 came back clean — connect and pending were the only two instances. The

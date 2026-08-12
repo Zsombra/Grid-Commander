@@ -119,7 +119,7 @@ export default async function PreviewPage({
       {outcome.kind === 'refused' ? (
         <section className="space-y-2">
           <h2 className="text-base font-medium">The platform refused this draft — here is why</h2>
-          <p role="alert" className="rounded border p-3 text-sm">{outcome.reason}</p>
+          <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{outcome.reason}</p>
         </section>
       ) : (
         <>
@@ -149,7 +149,7 @@ export default async function PreviewPage({
           <section className="space-y-3">
             <h2 className="text-base font-medium">The report, as the agent receives it</h2>
             {outcome.preview.sections.map((s) => (
-              <details key={s.sectionKey} className="rounded border p-3 text-sm">
+              <details key={s.sectionKey} className="rounded-gc-2 border border-border-default p-3 text-sm">
                 <summary className="font-medium">{s.title}</summary>
                 <p className="whitespace-pre-wrap pt-2">{s.text}</p>
               </details>

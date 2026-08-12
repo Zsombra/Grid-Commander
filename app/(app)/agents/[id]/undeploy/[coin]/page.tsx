@@ -76,9 +76,9 @@ export default async function UndeployPage({
         Remove {agent.displayName} from {proposal.coinId}?
       </h1>
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>
       ) : null}
-      <p role="alert" className="rounded border p-4 text-sm">{proposal.consequence}</p>
+      <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       <form action={performUndeploy} className="flex flex-wrap gap-3">
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="coinId" value={proposal.coinId} />

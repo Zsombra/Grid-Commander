@@ -78,10 +78,10 @@ export default async function ArchiveStrategyPage({
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Archive {listing.strategy.name}?</h1>
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>
       ) : null}
       {/* BattleGrid's count of what depends on this, not ours. */}
-      <p role="alert" className="rounded border p-4 text-sm">
+      <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">
         {proposal.proposal.consequence}
       </p>
       <form action={archiveStrategy} className="flex flex-wrap gap-3">

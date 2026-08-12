@@ -81,7 +81,7 @@ export default async function TradesPage({
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <h1 className="text-xl font-medium">What this agent did with the money</h1>
 
-      <section className="space-y-2 rounded border p-4 text-sm">
+      <section className="space-y-2 rounded-gc-2 border border-border-default p-4 text-sm">
         <h2 className="text-base font-medium">
           {summary.closed} closed trade{summary.closed === 1 ? '' : 's'} on this page
         </h2>
@@ -106,7 +106,7 @@ export default async function TradesPage({
         <h2 className="text-base font-medium">The trades</h2>
         <ul className="space-y-3">
           {outcomes.map((o) => (
-            <li key={o.id} className="rounded border p-3 text-sm space-y-1">
+            <li key={o.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
               <p className="font-medium">
                 {o.coinTicker} {o.direction} · net {money(o.netPnl)}
               </p>

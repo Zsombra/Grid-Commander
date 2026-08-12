@@ -42,7 +42,7 @@ export default async function SignalLibraryPage() {
           <h2 className="text-base font-medium">{group.module}</h2>
           <ul className="space-y-2">
             {group.signals.map((s) => (
-              <li key={s.id} className="rounded border p-3 text-sm">
+              <li key={s.id} className="rounded-gc-2 border border-border-default p-3 text-sm">
                 <p>
                   <a href={`/strategies/signals/${s.id}`} className="font-medium underline">
                     {s.name}

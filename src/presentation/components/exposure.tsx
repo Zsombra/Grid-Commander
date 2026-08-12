@@ -77,7 +77,7 @@ function Position({ held }: { held: HeldPosition }) {
   const unpriced = p.markPrice === null;
 
   return (
-    <li className="space-y-1 rounded border p-3 text-sm">
+    <li className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
       <p className="font-medium">
         {`${p.coinTicker} ${p.direction}`}
         {p.effectiveLeverage === null ? '' : ` · ${p.effectiveLeverage}× leverage`}

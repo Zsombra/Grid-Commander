@@ -112,7 +112,7 @@ export default async function EvaluationPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-medium">The chain it followed</h2>
-        <div className="rounded border p-3 text-sm space-y-1">
+        <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
           {d.chain.gateStatus ? (
             <p>
               Gate: {d.chain.gateStatus}

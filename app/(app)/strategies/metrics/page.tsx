@@ -43,7 +43,7 @@ export default async function MetricIndexPage() {
           <h2 className="text-base font-medium">{group.family}</h2>
           <ul className="space-y-2">
             {group.metrics.map((m) => (
-              <li key={m.id} className="rounded border p-3 text-sm">
+              <li key={m.id} className="rounded-gc-2 border border-border-default p-3 text-sm">
                 <p>
                   <a href={`/strategies/metrics/${m.id}`} className="font-medium underline">
                     {m.label}

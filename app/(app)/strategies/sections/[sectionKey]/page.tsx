@@ -113,7 +113,7 @@ export default async function SectionColumnsPage({
         ) : (
           <ul className="space-y-2">
             {columns.map((column, index) => (
-              <li key={index} className="rounded border p-3 text-sm space-y-1">
+              <li key={index} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
                 {column.proposal === null ? (
                   <p role="alert">
                     {`Grid-Commander cannot express this column — the platform's entry carries no ${column.missing.join(', ')}.`}
@@ -290,7 +290,7 @@ export default async function SectionColumnsPage({
             {/* Ours to say, and said as ours. Nothing was sent, so BattleGrid
                 has no opinion to report and none is implied. */}
             <h3 className="font-medium">This column is not finished</h3>
-            <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+            <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
               {draft.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
@@ -300,13 +300,13 @@ export default async function SectionColumnsPage({
         ) : null}
 
         {hints?.kind === 'no-such-metric' ? (
-          <p role="alert" className="rounded border p-3 text-sm">
+          <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
             {`BattleGrid does not list a metric by that key, so nothing was sent to be checked.`}
           </p>
         ) : null}
 
         {hints?.kind === 'unreadable' ? (
-          <div className="rounded border p-3 text-sm">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm">
             <p role="alert">{hints.reason}</p>
             <WhyNotLoaded cause={hints.cause} subject="this metric is" />
           </div>
@@ -333,7 +333,7 @@ export default async function SectionColumnsPage({
               renders all of them; here the one being configured is the one
               worth a paragraph. */}
           {chosenTransform ? (
-            <div className="rounded border p-3 text-sm space-y-1">
+            <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
               <p className="font-medium">
                 {chosenTransform.label} · {chosenTransform.id}
                 {chosenTransform.operandRequired ? ' · needs an operand' : ''}
@@ -384,7 +384,7 @@ export default async function SectionColumnsPage({
       {check?.kind === 'contract' ? (
         <section className="space-y-2">
           <h2 className="text-base font-medium">The column compiles</h2>
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             {check.contract.formula ? (
               <p className="font-mono text-xs">{check.contract.formula}</p>
             ) : null}
@@ -432,7 +432,7 @@ export default async function SectionColumnsPage({
               path, the value it received, and what is legal in its place.
               Flattening it to "invalid" would discard the most instructive
               dataset this surface has. */}
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <p role="alert">{check.refusal.message}</p>
             {check.refusal.authoringCode ? <p>Code: {check.refusal.authoringCode}</p> : null}
             {check.refusal.path.length > 0 ? <p>At: {check.refusal.path.join('.')}</p> : null}

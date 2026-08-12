@@ -58,7 +58,7 @@ export default async function RebindPage({
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       {problem ? (
-        <p role="alert" className="rounded border p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>
       ) : null}
       <RebindConfirm proposal={result.proposal} action={performRebind} />
     </main>

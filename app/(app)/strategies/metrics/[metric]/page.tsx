@@ -86,7 +86,7 @@ export default async function MetricPage({
       <section className="space-y-3">
         <h2 className="text-base font-medium">Transforms</h2>
         {transforms.map((t) => (
-          <div key={t.id} className="rounded border p-3 text-sm space-y-1">
+          <div key={t.id} className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <p className="font-medium">
               {t.label} · {t.id}
               {t.operandRequired ? ' · needs an operand' : ''}
@@ -175,7 +175,7 @@ export default async function MetricPage({
             {/* Ours to say, and said as ours. Nothing was sent, so BattleGrid
                 has no opinion to report and none is implied. */}
             <h3 className="font-medium">This column is not finished</h3>
-            <ul role="alert" className="space-y-1 rounded border p-3 text-sm">
+            <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
               {draft.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
@@ -185,7 +185,7 @@ export default async function MetricPage({
         ) : null}
 
         {check?.kind === 'contract' ? (
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <h3 className="font-medium">The column compiles</h3>
             {check.contract.formula ? <p className="font-mono text-xs">{check.contract.formula}</p> : null}
             {check.contract.calculationSummary ? <p>{check.contract.calculationSummary}</p> : null}
@@ -220,7 +220,7 @@ export default async function MetricPage({
         ) : null}
 
         {check?.kind === 'refused' ? (
-          <div className="rounded border p-3 text-sm space-y-1">
+          <div className="rounded-gc-2 border border-border-default p-3 text-sm space-y-1">
             <h3 className="font-medium">The platform refused this column — here is why</h3>
             <p>{check.refusal.message}</p>
             {check.refusal.path.length > 0 ? <p>At: {check.refusal.path.join('.')}</p> : null}

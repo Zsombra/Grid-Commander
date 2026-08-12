@@ -115,7 +115,7 @@ export function TradeChartSvg({ chart }: { chart: TradeChart }) {
       viewBox={`0 0 ${String(W)} ${String(H)}`}
       role="img"
       aria-label={described}
-      className="w-full rounded border"
+      className="w-full rounded-gc-2 border border-border-default"
       style={{ background: 'var(--gc-bg-sunken)' }}
     >
       <title>{described}</title>
