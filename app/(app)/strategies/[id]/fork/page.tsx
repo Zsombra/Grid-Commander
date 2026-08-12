@@ -4,6 +4,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { optionalText, requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Take a private copy of a strategy you cannot edit.
@@ -35,6 +36,9 @@ export default async function ForkStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
+        {/* A bounced submit rode in with its reason; this branch must not eat
+            it — it is the only record of what the click did (or did not) do. */}
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{result.reason}</p>
         <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy: the read that would have said the
@@ -51,6 +55,7 @@ export default async function ForkStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
@@ -64,6 +69,7 @@ export default async function ForkStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No room for another strategy</h1>
+        <CarriedProblem problem={problem} />
         {/* Before the work, not after submitting it. */}
         {/* Reachable by address only, now that neither the roster nor the
             strategy page offers a copy it cannot make. It still has to refuse
@@ -85,12 +91,7 @@ export default async function ForkStrategyPage({
       {/* BattleGrid's answer to a fork it declined, whole and unglossed. What
           it means is the platform's to say — this page adds no diagnosis the
           platform did not state. */}
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+        <CarriedProblem problem={problem} />
 
       <p className="text-sm">
         {strategy.name} belongs to BattleGrid and cannot be edited. A copy is
@@ -148,9 +149,27 @@ export async function forkStrategy(formData: FormData) {
   const name = optionalText(formData, 'name');
   // The use case takes the whole strategy, not an id: it forks at the revision
   // that was on screen, which only the loaded object knows.
-  const { listings } = await app.listStrategies.execute(user.authority);
+  const { result: reread, listings } = await app.listStrategies.execute(user.authority);
+  // A failed re-read is an outcome too. This action used to land the person
+  // on /strategies with no word — a click that did nothing, unexplained. The
+  // typed name travels back with the reason, as the refused arm below already
+  // does.
+  if (reread.kind === 'unreadable') {
+    const query = new URLSearchParams({
+      problem: `Nothing was attempted: your strategies could not be re-read (${reread.reason}).`,
+    });
+    if (name !== null) query.set('name', name);
+    redirect(`/strategies/${strategyId}/fork?${query.toString()}`);
+  }
   const listing = listings.find((l) => l.strategy.id === strategyId);
-  if (!listing) redirect('/strategies');
+  if (!listing) {
+    const query = new URLSearchParams({
+      problem:
+        'Nothing was attempted: this strategy is no longer in your list — it may have been removed in another session.',
+    });
+    if (name !== null) query.set('name', name);
+    redirect(`/strategies/${strategyId}/fork?${query.toString()}`);
+  }
 
   const result = await app.forkStrategy.execute({
     ...user.authority,

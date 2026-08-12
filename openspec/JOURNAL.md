@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-12 (the refusal family) — a refused rebind stops crashing, and a carried reason survives every branch
+
+**Did**: `the-outcome-reaches-the-person` (standard, verified, archived; 162
+archived changes) — #164/#163/#165 in one change, since they were one defect
+in three shapes. **#164's premise was confirmed live first**: the operator
+supplied a key, and a stale-revision `rebind_intelligence_agent` on an
+archived probe agent came back `CONFLICT` as a *thrown* error, before any
+archived-state check, nothing changed on the account. So
+`RebindAgentResult` gained a `refused` arm and the port call a catch — which
+re-throws `ConfirmationRequiredError`, because the product's own guard
+refusal means "this is not what was agreed to", not "BattleGrid said no",
+and `end-to-end` pins it as a rejection. The three lifecycle actions
+(strategy archive/restore/fork) now bounce a failed pre-perform re-read back
+to their ceremony page saying nothing was attempted and why, instead of
+landing on `/strategies` in silence. **The review then found the change had
+done to itself what it set out to fix**: one branch per page carried the
+reason and the others dropped it — five branches across three pages, with a
+guard asserting "two or more" that passed anyway. `CarriedProblem` extracted
+(the `WhyNotLoaded` shape, one paragraph along), every render branch on all
+six pages carries it, and the guard now counts `<main` branches and requires
+equality. Both new guards mutation-verified. New: `carried-problem.tsx`,
+`tests/rendering/carried-refusals.test.ts`,
+`tests/rendering/lifecycle-actions.test.ts` (a first for this repo —
+invokes server actions and reads `redirect()`'s thrown digest).
+
+**State**: main + this branch. 0 active changes, 27 open items ↔ 27 open
+issues. Gates: typecheck, lint, build green; vitest 2146 passed, 19 failed —
+byte-identical to the clean-HEAD Windows baseline (#171).
+
+**Next**: `/design` the #166 ceremony round, which also re-surveys the twelve
+manifests this change made stale (#173). Then #162 (typed values lost on
+refusal) is the last of the survey's harvest worth doing soon.
+
+**Watch out**: `failure-is-explained` scans *whole files*, actions included,
+so an action branch that interpolates a failure reason reads as a render
+branch that forgot its sentence. The fix is the category rule (a branch that
+redirects and renders no JSX), not an exemption — the exemption list has a
+cap of 8 for a reason, and three entries blew it. Deploy's catch
+(`deploy-agent.command.ts:158`) still swallows `ConnectionRevokedError` into
+a refusal banner rather than routing to reconnect; rebind now re-throws only
+the confirmation error, so the two are not quite aligned — noted in the
+review, not filed, because the right answer is a decision about all four
+performs at once.
+
 ## 2026-08-12 (the tail cleared) — #157 done: twelve manifests, DT-0011–0015 designed and implemented, eleven findings filed
 
 **Did**: Worked #157 whole. Twelve surface manifests: the eleven ceremony

@@ -4,6 +4,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
  * Undeploying: the act that stops an agent scanning one market.
@@ -33,6 +34,7 @@ export default async function UndeployPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{roster.reason}</p>
         <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
@@ -43,6 +45,7 @@ export default async function UndeployPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such agent</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/agents" className="underline">Back to your agents</a>
         </p>
@@ -61,6 +64,9 @@ export default async function UndeployPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot undeploy</h1>
+        {/* A bounced perform rode in with its reason; the fresh refusal must
+            not eat it. Both are the outcome the person is owed. */}
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{result.reason}</p>
         <p className="text-sm">
           <a href={`/agents/${agent.id}`} className="underline">Back to the agent</a>
@@ -75,12 +81,7 @@ export default async function UndeployPage({
       <h1 className="text-xl font-medium">
         Remove {agent.displayName} from {proposal.coinId}?
       </h1>
-      {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
-          <span className="font-semibold">Refused: </span>
-          {problem}
-        </p>
-      ) : null}
+      <CarriedProblem problem={problem} />
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       <form action={performUndeploy} className="flex flex-wrap gap-3">
         <input type="hidden" name="agentId" value={proposal.agentId} />
