@@ -1,11 +1,11 @@
 ---
 id: battlegrid-is-returning-internal-errors
-title: BattleGrid is flapping — it came back as v9.0.0 and per-tool INTERNAL_ERRORs returned with it
+title: list_gate_blocks answers INTERNAL_ERROR for every agent — deterministic, on the one tool v18 rewrote
 type: risk
 status: open
 priority: p2
 created: 2026-08-05
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: ""
 github: "100"
@@ -13,7 +13,14 @@ blocked_by: []
 tags: [battlegrid, live, platform]
 ---
 
-# BattleGrid is flapping, and the outage was a deployment
+# list_gate_blocks answers INTERNAL_ERROR for every agent
+
+> **Retitled 2026-08-13.** Filed 2026-08-05 as platform-wide flapping at v9.0.0;
+> at v18.2.0 it is one tool, deterministically, and everything else answers.
+> Original title: *"BattleGrid is flapping — it came back as v9.0.0 and per-tool
+> INTERNAL_ERRORs returned with it"*. The whole history is kept below — the
+> outage, the four majors in a day, and the 504s are all real records of what
+> this platform does.
 
 ## Update 2026-08-06 (later): **v11.0.0**, and the count still has not moved
 
@@ -270,3 +277,45 @@ silent, but the answer is unavailable.
 Nothing to do here but watch: it is upstream, it is not intermittent, and a
 re-probe will show when it returns.
 
+
+## 2026-08-13 — retitled, because the title was nine majors stale
+
+Re-confirmed in the read-only verification sweep. `list_gate_blocks` on
+Undertow, `limit: 50`:
+
+    list_gate_blocks → {"code":"INTERNAL_ERROR","message":"Internal server error"}
+
+Fifth independent call, third agent-and-page-size combination, second day.
+Deterministic.
+
+**Everything else this item was filed about answers.** In the same session:
+`get_account_state`, `list_intelligence_agents`, `list_user_active_positions`,
+`get_agent_performance`, `get_agent_fund_allocation`, `get_open_orders`,
+`list_pending_approvals`, `list_market_grid_sessions`, `list_radar_deployments`,
+`get_strategy` ×3 — every one answered normally. Including
+`list_intelligence_agents`, which is one of the two tools the original
+`INTERNAL_ERROR` observation named.
+
+So the item is renamed. It read *"BattleGrid is flapping — it came back as
+v9.0.0 and per-tool INTERNAL_ERRORs returned with it"*, which described
+2026-08-05 accurately and now describes nothing: the platform is at **v18.2.0**,
+nine majors on, and it is not flapping. One tool is broken, and it is the tool
+v18 rewrote.
+
+**The title mattered more than it looks.** This is the item a session reaches
+for when a live probe fails, and a p2 named *"BattleGrid is flapping"* invites
+reading any single failure as more of the same — which is the opposite of what
+the evidence now says. A deterministic single-tool failure and an unstable
+platform call for different responses, and only one of them is happening.
+
+### What it blocks
+
+[[open-position-conflict-churn-tripled]] (#146) outright: gate-block churn can
+only be counted through this tool. That item cannot be re-measured until this
+clears, and should not be read as stale in the meantime.
+
+### Unchanged
+
+Nothing to do here. It is upstream, it is not intermittent, the product renders
+its unreadable branch honestly against live, and a re-probe will show when it
+returns. It becomes p1 only if it starts costing a write path.

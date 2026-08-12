@@ -1,5 +1,68 @@
 # Journal
 
+## 2026-08-13 (the issues meet the code) — nine were stale, and all nine in the same direction
+
+**Did**: Verified all 32 open issues rather than reading them — every repo claim
+against the file and line it cites, every platform claim re-probed read-only at
+**v18.2.0**. No writes. Then acted on the result: **2 closed, 7 rewritten, 1
+filed, 1 reopened.**
+
+**The find**: nine issues were wrong, and **every one of them was wrong in the
+same direction** — describing a world that was true when filed. Not one had
+become *more* true. The two closable ones were fixed by
+`the-outcome-reaches-the-person`, which names **#163 and #165 in its own Problem
+statement** and closed only #164 behind it.
+
+**What the sweep actually caught**, beyond the bookkeeping:
+
+- **#114 / #116 both claimed `get_open_orders` was unused.** It has been called
+  since #128 — `positions-adapter.ts:16`, `readRestingOrders`,
+  `read-exposure.query.ts:212`. #114 re-measured the *platform* five times and
+  never once re-ran `grep get_open_orders src/`. A claim about our own code aged
+  out because it looked like the settled half of the item.
+- **#165's residual was stated wrong.** *"Staleness rides on the
+  confirmationToken alone"* — fork has **no confirmation token**, deliberately
+  (DL-105). Underneath it is something sharper: `fork/page.tsx:18` and `:150`
+  both promise the fork is taken at the revision on screen, while the action
+  re-reads the roster and sends `sourceRevision: listing.strategy.revision` —
+  current at submit, not rendered. The comment and the code disagree.
+- **#135 said `grep resolvesNow src/` is empty.** It is not —
+  `radar-adapter.ts:161`. The conclusion survives only because `section` is the
+  one field *not* read.
+- **#85 pointed at "the open p1"** that closed on 2026-08-11, and listed as an
+  unblock step a strategy-side risk surface that shipped the same day
+  (`strategy-detail.tsx:99`).
+- **#182 was closed as COMPLETED and never fixed.** `AuthorityLost` still has no
+  `href` and no `BUTTON`. `94bd854` said *"Files #182 and #183"* — #183 stayed
+  open, this one did not. Reopened.
+
+**Also filed**: **#192** — the four currently-stale manifests pin to `e7c56ce`,
+the **direct parent** of `94bd854`, the commit that staled them. That commit is
+"the re-pin belongs at the end of a design round". **Squash-merge defeats the
+convention it established**: however many commits a branch uses to separate the
+re-pin from the code, `main` receives one, and the re-pin inside it necessarily
+names that commit's parent. Fourth guard-with-a-hole of the same shape.
+
+**State**: 32 open items ↔ 32 open issues, reconciled by cross-checking every
+pair's status against its mirror's state — 0 errors from `validate --all`.
+
+**Next**: #189 is still the decision worth making. #192's second half — what a
+re-pin means under squash-merge — is the one that stops this recurring.
+
+**Watch out**: **the mirror drifts in both directions and nothing checks it.**
+Three pairs disagreed: two items `done` with issues open, one item `open` with
+its issue closed. `validate` enforces that an open item *has* a `github:` value;
+it never compares the two states. Every one of these was created at archive
+time by a human closing some-but-not-all of the issues a change named. The
+cross-check that found them is four lines of shell — it belongs in `validate`.
+
+Second: **an issue's title is load-bearing.** #100 read *"BattleGrid is
+flapping"* through nine major versions during which it stopped flapping; it is
+the item a session reaches for when a probe fails, and that title invites
+reading any single failure as more of the same. Bodies were being maintained
+carefully while titles were left as filed — #114's own text says the title is
+"left as filed" as though that were the disciplined choice.
+
 ## 2026-08-12 (the question items meet v18) — a read-only sweep, and a design premise that died
 
 **Did**: The read-only sweep across the question items, against **v18.2.0**.

@@ -5,11 +5,11 @@ type: question
 status: open
 priority: p3
 created: 2026-08-11
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: agent-understanding
 github: "146"
-blocked_by: []
+blocked_by: [battlegrid-is-returning-internal-errors]
 tags: [battlegrid, gate-blocks, churn, live]
 ---
 
@@ -60,3 +60,22 @@ gate-block surfaces feel drowned by it, the product-side option is a
 fold-or-collapse of repeated same-reason blocks on the stoppages surface;
 the account-side options are the agent's coin selection or cadence. If
 nothing is bothered, close this as accepted-noise with that said.
+
+## 2026-08-13 — deferred by the operator until #100 clears
+
+Put to the operator as a close-or-act decision. **Answer: defer.** Neither
+accepted-as-noise nor damped — the figures are three days old and the tool that
+produced them has not answered since.
+
+`list_gate_blocks` returns `INTERNAL_ERROR` for every agent
+([[battlegrid-is-returning-internal-errors]], #100), and it is the only read
+that counts gate blocks. So the churn cannot be re-measured, and closing on the
+2026-08-11 figures would be recording a judgement about a number nobody can
+check.
+
+**This item is now blocked on #100, and should not be triaged again until it
+clears.** When it does, the first step is unchanged: re-measure Undertow's rate,
+then decide whether the churn bothers anything.
+
+Recorded rather than left implicit because a deferral that is not written down
+reads, on the next pass, exactly like an item nobody got to.
