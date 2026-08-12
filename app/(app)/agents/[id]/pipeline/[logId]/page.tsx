@@ -174,7 +174,13 @@ export default async function OwnEvaluationPage({
         {e.evaluatedAt ? ` · ${e.evaluatedAt}` : ''}
       </p>
       {e.hasConflictingSignals ? (
-        <p className="text-sm">Signals disagreed with each other on this candidate.</p>
+        // DT-0009's ruling, landed here too: the aggregate below is a
+        // compromise between opposed readings, not a consensus — and the
+        // simulator further down is how the operator interrogates it.
+        // Notice, never danger. DT-0010.
+        <p className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
+          Signals disagreed with each other on this candidate.
+        </p>
       ) : null}
 
       {/*

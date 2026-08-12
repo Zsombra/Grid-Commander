@@ -1,0 +1,154 @@
+{
+  "id": "pipeline-evaluation",
+  "title": "One of its own evaluations",
+  "route": "/agents/[id]/pipeline/[logId]",
+  "capability": "agent-understanding",
+  "status": "functional",
+  "generated_at_commit": "579e0aa",
+  "source_files": [
+    "app/(app)/agents/[id]/pipeline/[logId]/page.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": ["mobile", "desktop"],
+  "data": [
+    {
+      "name": "evaluation",
+      "shape": "OwnEvaluation — score, bias, cost, chain, conditions, attributions, signals[] | none | unreadable",
+      "source": "app.readOwnEvaluation.execute — the private projection: cost and reasoning the public read nulls"
+    },
+    {
+      "name": "alloc:* / gate",
+      "shape": "per-signal weight tiers 0–3 and a gate percentage",
+      "source": "searchParams — the what-if form's GET round trip"
+    },
+    {
+      "name": "simulation",
+      "shape": "scored | refused | null",
+      "source": "app.simulateAggregate.execute — BattleGrid's own simulator, read-only"
+    }
+  ],
+  "components": [
+    {
+      "id": "own-evaluation-page",
+      "role": "container",
+      "purpose": "The bottom of the agent's own stack: what one evaluation read, cost, followed, and would have scored under different weights.",
+      "states": ["detail", "conflict", "none", "unreadable", "not-connected"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "max-w-3xl centered column: score line, conflict sentence as plain prose when signals disagreed, cost section, chain card, conditions, attributions, the simulator, the scorecard, back link.",
+      "constraints": [
+        "None (the platform publishes no detail) and unreadable (the read failed) must never render alike.",
+        "No client JS — the simulator is a GET form round trip."
+      ],
+      "children": ["cost", "chain", "conditions", "attributions", "simulate", "signals"]
+    },
+    {
+      "id": "cost",
+      "role": "display",
+      "purpose": "What this decision cost to think — yours alone; the public projection nulls it.",
+      "states": ["present", "absent", "model-error"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "One sentence: model, provider, dollars to four places or 'cost not reported', duration, billing type. A model error renders with role=alert.",
+      "constraints": [
+        "Null is not free: an unreported price and a price of zero are different facts, and only one should reassure.",
+        "role=alert on the model-error line must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "chain",
+      "role": "display",
+      "purpose": "Gate → attempt → decision → execution → outcome, the platform's own words, absent stages absent.",
+      "states": ["default"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "One tokened card; execution message whitespace-pre-wrap, unparsed; the outcome line font-medium.",
+      "constraints": [
+        "A stage the platform did not record is absent, never an empty row.",
+        "The execution message is the platform's own words, unparsed."
+      ],
+      "children": []
+    },
+    {
+      "id": "conditions",
+      "role": "display",
+      "purpose": "What the strategy's conditions said — the platform's own comparison, clause by clause; nothing re-evaluates anything.",
+      "states": ["present", "absent", "verdict-populated"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "Tally line (true-of-total, unresolved, strategy revision, provisional), verdict/decidedBy rendered verbatim the day they speak (only ever observed null — #147), tokened cards per condition with evidence clauses.",
+      "constraints": [
+        "The platform publishing no condition evaluation is a real state, not 'all conditions passed' — no block renders for it.",
+        "verdict/decidedBy render verbatim when populated; they have only ever been observed null (backlog #147).",
+        "Evidence clauses are the platform's comparisons; nothing here re-evaluates."
+      ],
+      "children": []
+    },
+    {
+      "id": "attributions",
+      "role": "display",
+      "purpose": "What each contributing signal was worth to the aggregate.",
+      "states": ["present", "absent"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "Plain list: name or id, attribution percent, own score.",
+      "constraints": ["Rendered only when the platform published attributions."],
+      "children": []
+    },
+    {
+      "id": "simulate",
+      "role": "input",
+      "purpose": "What if it had weighted these differently — BattleGrid's own simulator over the weights, never the scores.",
+      "states": ["form", "scored", "refused", "nothing-fired", "over-cap"],
+      "data": ["alloc:* / gate", "simulation"],
+      "actions": [
+        { "id": "score", "effect": "GET round trip: simulate_aggregate_score with the real scores and the chosen weights; nothing is saved" }
+      ],
+      "current_implementation": "Per-fired-signal weight selects (0–3), a gate field, BUTTON_SECONDARY 'Score it', the result in a tokened card; a refusal renders role=alert in BattleGrid's words. Over-cap says the simulator cannot re-score rather than truncating.",
+      "constraints": [
+        "Only the weighting is the user's to change — inventing scores would answer a question about a market that never existed.",
+        "Over the simulator's signal cap, the section refuses rather than truncates: dropping signals would score a different composition than the one that ran.",
+        "Nothing is saved, and the page says so; the strategy's rule editor is named as where a real change happens.",
+        "The submit is secondary — the simulation is a question, not a commit."
+      ],
+      "children": []
+    },
+    {
+      "id": "signals",
+      "role": "display",
+      "purpose": "Every signal consulted, module by module — untriggered ones included.",
+      "states": ["grouped", "empty", "fired", "not-fired"],
+      "data": ["evaluation"],
+      "actions": [],
+      "current_implementation": "Module groups with fired-counts; tokened left rails; Fired/Did-not-fire in words; the platform's sentence and indicator values per row.",
+      "constraints": [
+        "Untriggered signals are never filtered.",
+        "Fired / did not fire is stated in words, never by colour alone."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "The shared turned-away page.",
+      "states": ["default"],
+      "data": [],
+      "actions": [{ "id": "connect", "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)" }],
+      "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
+      "constraints": ["No per-cause variants."],
+      "children": []
+    }
+  ],
+  "flows": [
+    { "name": "Understand one read", "steps": ["arrive from the stages page", "read the cost, chain and conditions", "read the scorecard"] },
+    { "name": "What if", "steps": ["re-weight the fired signals", "Score it", "read BattleGrid's own re-score beside the real one"] }
+  ],
+  "accessibility": {
+    "landmarks": ["main", "form"],
+    "focus_order": ["simulate", "signals"],
+    "notes": "Refusals and model errors carry role=alert. Fired state legible without colour. No client JS."
+  }
+}
