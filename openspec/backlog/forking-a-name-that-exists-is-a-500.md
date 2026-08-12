@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p2
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-13
 change: ""
 capability: strategy-authoring
 github: "102"
@@ -106,3 +106,92 @@ existing names was added, per this item.
 The platform defect itself stands, so this item stays open: **reporting it to
 BattleGrid remains.** A duplicate-name conflict should be `VALIDATION_ERROR`
 or `CONFLICT`, as above.
+
+---
+
+# Re-confirmed 2026-08-13 at v18.2.0 — unchanged, and an accident showed why it is worse than filed
+
+Still deterministic, two majors later. Both arms observed in one sitting on
+`Bastogne` (SYSTEM, revision 6):
+
+| attempt | `Bastogne (fork)` on the account | result |
+|---|---|---|
+| first | no | **created** — `af8cff54…`, revision 1 |
+| second | yes | `INTERNAL_ERROR` |
+| third | yes | `INTERNAL_ERROR` |
+
+The fork was archived afterwards; quota returned to where it started.
+
+## The accident is the finding
+
+The first call did not appear to succeed. It returned
+`net::ERR_NAME_NOT_RESOLVED` — a transport failure, before any BattleGrid
+answer. The natural response, and the one taken, was to retry.
+
+**The retry got `INTERNAL_ERROR`, because the first call had in fact worked.**
+`list_strategies` showed `Bastogne (fork)` created at 23:30:04, forked from
+Bastogne, by the call whose response never arrived.
+
+So the sequence a real operator will hit is:
+
+1. a fork request is lost in transit, after the server committed it
+2. they retry, reasonably
+3. they are told the **server is broken**
+
+They are not told the server is broken. They are told, in the worst possible
+wording, *"that already exists"* — which is the one thing that would let them
+recover. This item already said a duplicate name is "a refusal wearing the wrong
+clothes"; the lost-response case is where those clothes actually cost something,
+because it converts an ordinary network hiccup into an apparent platform fault.
+
+## And `fork_strategy` cannot be retried safely
+
+Exactly two tools on the surface accept an `idempotencyKey`:
+
+```
+create_intelligence_agent   YES
+rebind_intelligence_agent   YES
+fork_strategy               no
+```
+
+So there is no way to make the retry above safe. The platform has the mechanism,
+uses it on the agent writes, and does not offer it here — on a tool whose
+failure mode specifically punishes retrying.
+
+## What this product can actually do, corrected
+
+This item says: *"Nothing in Grid-Commander can improve on that without guessing
+at a cause the platform did not state."* That is right about **diagnosing** it
+and wrong about **avoiding** it.
+
+`fork_strategy` accepts an optional `name`, and
+`strategy-adapter.ts:177-186` already passes it when the user supplies one,
+omitting it when blank so the platform applies its own `<parent> (fork)`. So the
+collision only happens on the default path, and a named fork sidesteps it
+entirely.
+
+The escape hatch exists and is wired. What is not established is whether the
+fork surface *tells* anyone that naming the fork is what avoids the failure —
+that is a copy question, and the honest one to ask next, rather than any change
+to the call.
+
+## Still nothing to fix in the error handling
+
+The classification remains correct: BattleGrid said `INTERNAL_ERROR`, and the
+product renders it as the platform being unwell. Guessing "you probably already
+forked this" from an opaque 500 would be inventing a cause, which is the wrong
+fix and stays the wrong fix.
+
+Carry upstream with [[battlegrid-is-returning-internal-errors]] (#100) and
+[[refresh-rejection-is-indistinguishable-from-an-outage]] (#204) — three
+deterministic INTERNAL_ERRORs, every one of them a refusal or a piece of data
+wearing a crash.
+
+## Noted in passing
+
+`archive_strategy` answers `{"strategy": {...}}`, and
+`strategy-adapter.ts:187` reads `payload['strategy'] ?? payload` — the same
+tolerated-shape fallback that [[confirm-agent-write-response-shape]] (#103)
+removed from the agent adapter once the shapes were walked. The strategy tools
+have **not** been walked that way; archive is one of several. Left alone
+deliberately rather than changed on one observation.
