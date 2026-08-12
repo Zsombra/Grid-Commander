@@ -18,14 +18,63 @@ import { BUTTON_PRIMARY } from '@/presentation/components/control.js';
  * `/authorize` URL with an empty `client_id` — an action that cannot work, on
  * the page the old failure message sent people looking for. See "A Remedy Named
  * Must Exist In That Deployment".
+ *
+ * The callback sends its bad news here — `?declined=` when the user said no at
+ * BattleGrid, `?error=` when the response was incomplete or untrusted — and the
+ * scenario "The user declines" promises an explanation with the retry. Both
+ * render above the consent summary, which *is* the retry. A decline is the
+ * user's own choice, so it wears notice and role="status"; a failed callback is
+ * a failure and wears danger.
  */
-export default async function ConnectPage() {
+export default async function ConnectPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { personal } = await requestApp();
   if (personal) return <NothingToConnect />;
+
+  const q = await searchParams;
+  const one = (v: string | string[] | undefined): string | null => {
+    const s = Array.isArray(v) ? v[0] : v;
+    return s && s.length > 0 ? s : null;
+  };
+  const declined = one(q['declined']);
+  const failure = one(q['error']);
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">Connect your BattleGrid account</h1>
+      {declined ? (
+        <p
+          role="status"
+          className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary"
+        >
+          You declined the authorization at BattleGrid, so no connection was made
+          and nothing was stored. BattleGrid&apos;s answer:{' '}
+          <span className="font-mono">{declined}</span>. You can authorize below
+          whenever you choose to.
+        </p>
+      ) : null}
+      {failure ? (
+        <p
+          role="alert"
+          className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"
+        >
+          <span className="font-semibold">No connection was made: </span>
+          {failure === 'incomplete' ? (
+            'the response from BattleGrid was missing the authorization it should have carried.'
+          ) : failure === 'untrusted' ? (
+            'the response did not match an authorization this product started, so it was rejected.'
+          ) : (
+            <>
+              the authorization could not be completed (
+              <span className="font-mono">{failure}</span>).
+            </>
+          )}{' '}
+          Nothing was stored, and starting again below is safe.
+        </p>
+      ) : null}
       <ConsentSummary grant={new DescribeGrantQuery().execute()} />
       <form action={startAuthorization}>
         <button type="submit" className={BUTTON_PRIMARY}>

@@ -64,6 +64,18 @@ refusal, null on prose/transport — mirroring the adapter's `codeOf`.
 Additive key, nothing consumes `call_failed` outside the probe; takes
 effect on the next probe run. #114 stays open for upstream's schema only.
 
+**Round four — returned with an explanation** (`returned-with-an-
+explanation`, lite, archived; 152 archived changes). Found while opening
+the #108 thread toward `/connect`: the OAuth callback has always sent its
+bad news to `/connect` (`?declined=<error>`, `?error=incomplete|untrusted`)
+and the page read none of it — the spec scenario "The user declines"
+promises an explanation with the retry, and only the retry existed. The
+delegated branch now renders a decline in the notice role (role="status" —
+the user chose; nothing failed) and a failed callback in danger
+(role="alert"), unknown error values verbatim, every message stating
+nothing was stored. Six rendering tests. Gates: typecheck, lint, 2136
+vitest, build.
+
 **Watch out**: `min-h-11` must not come back — the controls test forbids
 it by name. The WEARS_BUTTON scan now accepts the composed template form
 (`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's
