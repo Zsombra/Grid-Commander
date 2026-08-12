@@ -89,7 +89,7 @@ function Evidence({ checklist }: { checklist: readonly SignalVerdict[] }) {
       </summary>
       <ul className="mt-2 space-y-2">
         {checklist.map((s) => (
-          <li key={s.signalId} className="border-l pl-3">
+          <li key={s.signalId} className="border-l border-border-default pl-3">
             <p className="font-medium">
               {s.label ?? s.signalId} — {s.verdict ?? 'no verdict stated'}
             </p>

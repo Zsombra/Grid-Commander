@@ -444,7 +444,7 @@ export default async function OwnEvaluationPage({
               </h3>
               <ul className="space-y-1 text-sm">
                 {signals.map((s) => (
-                  <li key={s.signalId} className="border-l pl-3">
+                  <li key={s.signalId} className="border-l border-border-default pl-3">
                     <p>
                       <span className="font-medium">
                         {s.triggered ? 'Fired' : 'Did not fire'}

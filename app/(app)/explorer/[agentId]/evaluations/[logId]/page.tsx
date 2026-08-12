@@ -107,7 +107,13 @@ export default async function EvaluationPage({
         {d.evaluatedAt ? ` · ${d.evaluatedAt}` : ''}
       </p>
       {d.hasConflictingSignals ? (
-        <p className="text-sm">Signals disagreed with each other on this candidate.</p>
+        // The one fact that changes how the scorecard below should be read:
+        // the aggregate is a compromise between opposed readings, not a
+        // consensus. Notice, never danger — disagreement is information.
+        // DT-0009.
+        <p className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
+          Signals disagreed with each other on this candidate.
+        </p>
       ) : null}
 
       <section className="space-y-2">
@@ -195,7 +201,7 @@ export default async function EvaluationPage({
               </h3>
               <ul className="space-y-1 text-sm">
                 {signals.map((s) => (
-                  <li key={s.signalId} className="border-l pl-3">
+                  <li key={s.signalId} className="border-l border-border-default pl-3">
                     <p>
                       <span className="font-medium">
                         {s.triggered ? 'Fired' : 'Did not fire'}

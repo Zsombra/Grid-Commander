@@ -260,7 +260,7 @@ export function AuditTrail({ audit }: { audit: PositionAuditResult | null }) {
     );
   }
   return (
-    <ol className="space-y-3 border-l pl-4">
+    <ol className="space-y-3 border-l border-border-default pl-4">
       {audit.events.map((e, i) => (
         <AuditEventRow key={`${e.orderId ?? ''}-${e.kind}-${String(i)}`} event={e} />
       ))}
