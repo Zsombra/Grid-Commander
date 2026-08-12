@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-12 (the re-pin lands) — #179 closed, and the re-survey finds three things it was not looking for
+
+**Did**: `#179` both halves. Nine manifests re-pinned at `e7c56ce` by two
+parallel surveys, and the structural fix written into design-contract §8 (the
+loop shows `/surface` twice now, with which pass is which), the ui-surveyor
+skill, the design-director's completion checklist, and CLAUDE.md. Including
+**why it is a convention and not a check**: a manifest pins to a commit hash,
+the hash of the commit being written does not exist yet, so the re-pin is
+necessarily a second commit and any freshness guard would fail on the
+intermediate state the process requires.
+
+**The re-survey paid for itself three times.** It caught that DT-0019/0020/
+0021's acceptance said the reassurance renders *inside* the danger block when
+it renders after it — the criterion was wrong, not the code, and outside is
+the better answer, so the tickets were corrected rather than the code bent.
+It found `AuthorityLost` and three action rows with no design coverage
+(**#183**), and the remedy-without-a-target gap (**#182**). And chasing one of
+its notes exposed a hole in the guard I had called product-wide: it matched
+`{problem ? (` and missed `{problem ? <p …>` on one line, so two more
+hand-rolled banners had been sitting in plain sight. Widened, and it
+immediately caught both.
+
+**State**: 0 active changes, 33 open items ↔ 33 open issues, no p1s. Gates
+green: 169 files / 2207 tests. Zero stale surfaces.
+
+**Next**: a live read-only probe round is arguably overdue — the surface
+record is v17.2.0 from 2026-08-11 and roughly a dozen backlog questions are
+explicitly waiting on live evidence. Then #183's design pass.
+
+**Watch out**: **Third guard-with-a-hole in one session.** The pattern is
+identical every time — a rule written against the shape of the one example in
+front of it (`agentId` rendered anywhere / two-or-more banners / `{problem ? (`
+with a paren). Widen the rule, then mutation-test it, before believing any new
+guard. All three failed versions are recorded in the files rather than quietly
+replaced.
+
 ## 2026-08-12 (authority is not a refusal) — #175, and the obvious fix stays rejected
 
 **Did**: `a-lost-authority-is-not-a-refusal` (standard, archived; 166 archived

@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/restore",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "e7c56ce",
   "source_files": [
     "app/(app)/strategies/[id]/restore/page.tsx",
     "src/presentation/components/control.ts",
@@ -63,10 +63,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. `not-archived` renders when the strategy is already active: h1 'Cannot restore', reason with role=alert, link back. `unreadable` shows the reason with role=alert plus WhyNotLoaded, and leads to the roster — an archived strategy is the one a user most readily believes deleted, so the reassurance sentence carries the most weight here. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. DT-0020 restyled exactly one sentence on this page — `unreadable`'s: the roster read's reason is now `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert, with WhyNotLoaded's reassurance following as a separate plain `mt-2` paragraph beneath the block rather than inside it, and the way out is the roster; an archived strategy is the one a user most readily believes deleted, so that reassurance carries the most weight here. Two sentences were deliberately left plain and still are: `not-archived` (h1 'Cannot restore', then a bare `role=alert text-sm` '<name> is not archived.') because that is a statement of fact about the strategy rather than a failed attempt, and the repair-required guidance block, which keeps role=status and its plain border. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments.",
       "constraints": [
         "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
         "On the repair-required branch the carried danger banner and the guidance block must stay visually separable — the guidance is not a failure and must not be pulled into the banner's palette by proximity ('notice never borrows danger's colour', system.json principle).",
+        "The unreadable reason keeps role=alert and the danger treatment DT-0020 landed; the 'is not archived' sentence and the repair-required guidance were deliberately left out of that sweep and must stay out of it — one is a fact about the strategy, the other is the platform declining and saying what would work. Tinting either as danger reverses a decided ruling.",
+        "WhyNotLoaded's reassurance must survive verbatim wherever it renders relative to the danger block — on this page above all, because an archived strategy is the one a user most readily believes deleted.",
         "Restoring MUST NOT be presented as guaranteed — openspec/specs/strategy-authoring/spec.md:238 ('Restoring MUST NOT be presented as guaranteed where the platform may refuse it'). The paragraph saying BattleGrid may decline is spec-required content, not filler.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "'Absence of effect is stated, not implied' (system.json principle) — the sentence that nothing is reconfigured by restoring must keep visual commitment."
@@ -90,7 +92,7 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix — and it returns null when `problem` is undefined, which is what lets all five branches mount it unconditionally.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix — and it returns null for a falsy `problem`, which is what lets all five branches mount it unconditionally. Its prop now takes `string | null | undefined` (widened by `a-lost-authority-is-not-a-refusal` so a caller reading a parsed query, which yields null, is not tempted to hand-roll a copy); rendering is unchanged. On the unreadable branch it now sits above a block wearing the identical treatment, since DT-0020 gave that page's own reason the danger role too.",
       "constraints": [
         "role=alert must survive.",
         "The reason is BattleGrid's, verbatim — no re-diagnosis. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
@@ -140,7 +142,7 @@
       ],
       "data": [],
       "actions": [],
-      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state. The page's own comment: an archived strategy is the one a user most readily believes has been deleted, so this sentence carries the most weight on this page of all.",
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state — one plain `mt-2` paragraph, a sibling *after* DT-0020's danger block rather than inside it; the component itself was untouched by that ticket. The page's own comment: an archived strategy is the one a user most readily believes has been deleted, so this sentence carries the most weight on this page of all.",
       "constraints": [
         "The two causes must stay distinguishable — a 401 is not an outage.",
         "The reassurance sentence is the point and must not be cut for space."
@@ -304,6 +306,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
+    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
   }
 }

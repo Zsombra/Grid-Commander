@@ -109,6 +109,9 @@ New feature:   /propose → [planner] → executor → /verify → [auditor] →
 Greenfield:    /idea → /spec → /logic → checklist-generator → /propose → ...
 Bug fix:       /debug → /propose (lite) → executor → /archive
 UI work:       executor (plain UI) → /surface → /design → executor → /verify
+               → /surface again (the round staled the manifests it designed
+                 against — re-pinning is its last task, not the next round's
+                 surprise; design-contract §8)
 Understand:    /analyze
 Document:      /document
 ```

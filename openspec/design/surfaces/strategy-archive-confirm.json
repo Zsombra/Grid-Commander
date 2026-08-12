@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/archive",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "e7c56ce",
   "source_files": [
     "app/(app)/strategies/[id]/archive/page.tsx",
     "src/presentation/components/control.ts",
@@ -55,13 +55,15 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton, deliberately following the agent archive page rather than inventing a second shape. Four post-connection branches, and since `the-outcome-reaches-the-person` all four mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. `refused` renders h1 'Cannot archive <name>' plus the platform's reason with role=alert and a plain underlined link back — no form, nothing styled as though retrying could help. `unreadable` is the roster read failing: reason with role=alert, WhyNotLoaded beneath it, and the way out is the roster ('Back to your strategies'), not the strategy — the read that would have said the strategy is there is the one that failed. `no-such-strategy` is a bare h1 and the same roster link. Note what the `-with-problem` pairings mean visually: on `unreadable` and `refused` two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure — and they are two different facts about two different moments.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton, deliberately following the agent archive page rather than inventing a second shape. Four post-connection branches, and since `the-outcome-reaches-the-person` all four mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. Since DT-0019 landed, this page's own two failure sentences wear the danger role rather than body text: `refused` renders h1 'Cannot archive <name>' plus the platform's reason as `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert, and a plain underlined link back — no form, nothing styled as though retrying could help. `unreadable` is the roster read failing: the reason in the same danger block, then WhyNotLoaded's reassurance as a separate plain `mt-2` paragraph *beneath* the block rather than inside it (worth stating plainly: the tinted block holds only the platform's sentence), and the way out is the roster ('Back to your strategies'), not the strategy — the read that would have said the strategy is there is the one that failed. `no-such-strategy` stays deliberately plain — a bare h1 and the same roster link, no reason paragraph at all, because a strategy that is not in the list is an answer rather than a failure. Note what the `-with-problem` pairings mean visually now that both blocks are tinted: on `unreadable` and `refused` two danger blocks stack — the carried reason for the click that bounced, then this page's own fresh failure — identical in treatment and different in fact, separated only by the carried banner's semibold 'Refused: ' prefix and the gap between them.",
       "constraints": [
         "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
-        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your archive was refused' with 'the roster would not load'.",
+        "Where two danger blocks stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your archive was refused' with 'the roster would not load'. They now share one treatment by DT-0019's decision, so whatever keeps them separable is doing the whole job.",
         "Before archiving, the page states what is bound to the strategy — openspec/specs/strategy-authoring/spec.md:237 ('Grid-Commander SHALL state, before a strategy is archived, what is bound to it') and spec.md:245-248 ('they are first told how many agents are bound to it … archiving is described as reversible'). The consequence block is where both live; a design must keep it before the buttons.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
-        "The refused and unreadable reason paragraphs keep role=alert.",
+        "The refused and unreadable reason paragraphs keep role=alert, and keep the danger treatment DT-0019 landed — a design that returns either of them to body text undoes a decided ruling.",
+        "`no-such-strategy` stays plain prose — it carries no reason paragraph at all, and DT-0019 ruled that deliberate: an answer is not a failure and must not be tinted as one.",
+        "WhyNotLoaded's reassurance must survive verbatim wherever it renders relative to the danger block — the tint says something failed; only those words say what did not.",
         "'Nothing is styled to look disabled when retrying cannot help' (system.json principle) — the refused state offers no form and must stay that way."
       ],
       "children": [
@@ -83,7 +85,7 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. Carries DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted — and returns null when `problem` is undefined, which is what lets every branch mount it unconditionally.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. Carries DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted — and returns null for a falsy `problem`, which is what lets every branch mount it unconditionally. Its prop now takes `string | null | undefined` (widened by `a-lost-authority-is-not-a-refusal` so callers reading a parsed query, which yields null, are not tempted to hand-roll their own copy); nothing about its rendering changed. DT-0019 gave this page's own failure sentences the same treatment, so the banner is no longer the only tinted block on the page — it is distinguished by the 'Refused: ' prefix, not by its palette.",
       "constraints": [
         "role=alert must survive.",
         "The reason is BattleGrid's, verbatim — `repair-required` refusals arrive through the same channel and the wording must survive whatever the platform sends. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
@@ -104,7 +106,7 @@
         "proposal"
       ],
       "actions": [],
-      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a plain border, NOT the consequence-border/bg-consequence-subtle treatment DT-0004 gave the agent ceremony pages. The sentence is the platform's, verbatim, and is the same string stored with the confirmation token.",
+      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a plain border, NOT the consequence-border/bg-consequence-subtle treatment DT-0004 gave the agent ceremony pages, and now the only bordered block on this page that is not tinted, since DT-0019 gave the failure sentences danger. The sentence is the platform's, verbatim, and is the same string stored with the confirmation token.",
       "constraints": [
         "The text is the wording the confirmation token was minted against — a design must not paraphrase, truncate, or summarize it; what the user reads, what they agree to, and what the audit can prove are one string.",
         "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
@@ -124,7 +126,7 @@
       ],
       "data": [],
       "actions": [],
-      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state: one sentence, 'This does not mean this strategy is gone —', completed by the cause — authority refused vs. platform unreachable. Shared across every read-failure surface so the wording cannot drift.",
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state: one plain `mt-2` paragraph — 'This does not mean this strategy is gone —', completed by the cause (authority refused vs. platform unreachable). It renders as a sibling *after* the danger block DT-0019 landed, not inside it; the component itself was untouched by that ticket. Shared across every read-failure surface so the wording cannot drift.",
       "constraints": [
         "The two causes must stay distinguishable — a 401 is not an outage, and telling someone with a bad credential to wait for an outage is the dangerous half to get wrong (the component's own history).",
         "The reassurance sentence is the point and must not be cut for space."
@@ -289,6 +291,6 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The carried problem (shared CarriedProblem, present on all four branches), the consequence, and the refused/unreadable reasons all carry role=alert — so a branch that reports its own failure with a reason riding in announces two alerts, deliberately. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so the alerts are read in document order rather than as live-region updates."
+    "notes": "The carried problem (shared CarriedProblem, present on all four branches), the consequence, and the refused/unreadable reasons all carry role=alert — so a branch that reports its own failure with a reason riding in announces two alerts, deliberately. Since DT-0019 the two failure alerts are visually identical as well, which puts the whole burden of telling them apart on wording and order. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so the alerts are read in document order rather than as live-region updates."
   }
 }

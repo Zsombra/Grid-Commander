@@ -4,10 +4,11 @@
   "route": "/agents/[id]/reactivate",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "e7c56ce",
   "source_files": [
     "app/(app)/agents/[id]/reactivate/page.tsx",
     "src/presentation/components/agent-edit.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/money-limits.tsx",
     "src/presentation/components/binding.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -55,11 +56,12 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. h1 'Reactivate <name>?', the optional problem banner, then the shared ReactivatePrompt. Deliberately a route of its own rather than archive?to=ACTIVE (DL-104: two consequences behind one URL is how someone confirms wording written for the other operation), and deliberately without a confirmation token — reactivating restores a state the user chose before and commits nothing. Unchanged by `the-outcome-reaches-the-person`: this page still spells its problem banner out inline and only on the prompt branch, so the roster-unreadable and no-such-agent branches drop a carried ?problem= (a behavior gap, not styling — the sibling ceremony pages closed the same gap by mounting the shared CarriedProblem on every branch).",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. h1 'Reactivate <name>?', `<CarriedProblem>`, then the shared ReactivatePrompt. Deliberately a route of its own rather than archive?to=ACTIVE (DL-104: two consequences behind one URL is how someone confirms wording written for the other operation), and deliberately without a confirmation token — reactivating restores a state the user chose before and commits nothing. CHANGED since the last survey: the hand-rolled `{problem ? ( … ) : null}` banner this page held is gone and it now imports the shared `CarriedProblem` — but only on the prompt branch, exactly where the hand copy was. The roster-unreadable and no-such-agent branches still mount nothing and still drop a carried ?problem=. This page is not in `tests/agent/refusals-reach-the-operator.test.ts`'s CARRY_PROBLEM list, which is what lets that stay true; the six ceremony pages that are in it render one CarriedProblem per branch. The gap is behavior, not styling.",
       "constraints": [
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "No confirmation token exists on this page by decision (DL-104's sibling reasoning in the route comment) — a design must not add ceremony that implies one, and must not merge this page back into the archive route.",
-        "Reactivation returns the agent in its previous configuration — openspec/specs/agent-authoring/spec.md:211-213 ('it returns to the roster in its previous configuration'); the copy stating that is spec-bearing."
+        "Reactivation returns the agent in its previous configuration — openspec/specs/agent-authoring/spec.md:211-213 ('it returns to the roster in its previous configuration'); the copy stating that is spec-bearing.",
+        "This page has no `?authority=` branch. The sibling ceremony pages gained one in `a-lost-authority-is-not-a-refusal`; `reactivate` calls `setLifecycle`, whose only failure arm here is `not-permitted`, so a lost authority still arrives dressed as a refusal of this reactivation. That asymmetry is behavior — a design must not paper over it by styling the problem banner as if it could be either."
       ],
       "children": [
         "problem",
@@ -80,11 +82,13 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "Spelled out inline in the route, not the shared component: a role=alert paragraph, rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary, with the semibold 'Refused: ' prefix. Byte-for-byte what CarriedProblem (carried-problem.tsx) now renders on deploy, undeploy and rebind — this page was outside `the-outcome-reaches-the-person`'s scope, so it holds a hand copy of the shared treatment and mounts it on the prompt branch only.",
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx). CHANGED since the last survey: the hand copy this page held is gone — the two-spellings gap is closed, and `tests/agent/refusals-reach-the-operator.test.ts` now fails any file that hand-rolls the paragraph again. The treatment is unchanged, DT-0004's danger: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix, returning null when there is no problem. What did NOT change is where it is mounted: the prompt branch only. roster-unreadable and no-such-agent still render no banner, so a ?problem= that lands on either is still lost.",
       "constraints": [
         "role=alert must survive.",
         "The refusal must keep returning to this surface with the operation's own reason — openspec/specs/agent-authoring/spec.md:481-484 ('the user is told, on the surface they acted from … the reason given is the one the operation returned'); the route comment names the alternative as indistinguishable from success.",
-        "This banner and CarriedProblem must not be allowed to diverge — a restyle of the bounced-write banner has to reach both, and the honest fix is for this page to adopt the shared component (that is a code change, not a design ticket).",
+        "Shared by eleven pages now (agent deploy/undeploy/rebind/archive/reactivate, strategy archive/restore/fork, both /pending surfaces, recorder trim) — restyle it in the component, never per page.",
+        "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
+        "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state.",
         "The reason is platform-authored and unbounded — the block must wrap rather than clip, and must not truncate or paraphrase."
       ],
       "children": []
@@ -108,7 +112,7 @@
           "effect": "POSTs the server action with agentId and expectedRevision; success lands on /agents/[id], a not-permitted refusal redirects back here with ?problem="
         }
       ],
-      "current_implementation": "Shared ReactivatePrompt (agent-edit.tsx): two plain sentences — what returns and that it takes a slot, split deliberately from the binding claim below them — then BindingSummary, the optional at-capacity notice, and the form's buttons in flex flex-wrap gap-3 (no mobile full-width stack). not-archived replaces everything with a role=alert '<name> is not archived.' and an underlined link back. The submit stays offered even at capacity — capacity warns before the act rather than disabling it, and the refusal path handles the rest.",
+      "current_implementation": "Shared ReactivatePrompt (agent-edit.tsx): two plain sentences — what returns and that it takes a slot, split deliberately from the binding claim below them — then BindingSummary, the optional at-capacity notice, and the form's buttons in flex flex-wrap gap-3 — still no mobile full-width stack: DT-0016/0017/0018 gave deploy, undeploy and rebind the flex-col…tablet:flex-row treatment and left this page out, so it is now the odd one among the agent ceremonies. not-archived replaces everything with a role=alert '<name> is not archived.' and an underlined link back. The submit stays offered even at capacity — capacity warns before the act rather than disabling it, and the refusal path handles the rest.",
       "constraints": [
         "The what-returns sentence and the binding sentence are deliberately separate paragraphs — the first is true whatever the binding says, the second is a claim about the binding, and this page is where conflating them cost most (Volatilis, ARCHIVED and ORPHANED). A relayout must not merge them.",
         "Nothing here is styled to look disabled — 'Nothing is styled to look disabled when retrying cannot help' (system.json principle); at capacity the button still works and the platform answers.",
@@ -275,7 +279,7 @@
       "steps": [
         "submit; the platform refuses and redirects back with ?problem=",
         "the roster will not load, or the agent is no longer in it",
-        "those branches do not render the problem, so the reason for the click is lost — the gap the sibling ceremony pages closed with CarriedProblem"
+        "those branches still do not mount CarriedProblem, so the reason for the click is lost — the gap the six ceremony pages closed and this one did not, still open after this page adopted the shared component on its prompt branch"
       ]
     },
     {

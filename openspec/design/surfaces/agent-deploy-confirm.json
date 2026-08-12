@@ -3,10 +3,11 @@
   "title": "Deploy agent — chooser and confirmation",
   "route": "/agents/[id]/deploy",
   "capability": "agent-deployment",
-  "status": "designed",
-  "generated_at_commit": "6562791",
+  "status": "needs-redesign",
+  "generated_at_commit": "e7c56ce",
   "source_files": [
     "app/(app)/agents/[id]/deploy/page.tsx",
+    "src/presentation/components/authority-lost.tsx",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/why-not-loaded.tsx",
@@ -36,6 +37,11 @@
       "name": "problem",
       "shape": "string | undefined",
       "source": "searchParams — the refusal reason a rejected performDeploy redirected back with, alongside the preserved coin and timeframe"
+    },
+    {
+      "name": "authority",
+      "shape": "string | undefined",
+      "source": "searchParams — since `a-lost-authority-is-not-a-refusal`, the sentence a performDeploy whose account authority is gone redirected back with. Read before anything else and, when present, it replaces the whole page with <AuthorityLost>. It is not a refusal of this deployment and does not travel as ?problem=."
     }
   ],
   "components": [
@@ -56,21 +62,24 @@
         "roster-unreadable-with-problem",
         "no-such-agent",
         "no-such-agent-with-problem",
+        "authority-lost",
         "not-connected"
       ],
       "data": [
         "agent",
         "timeframes",
         "proposal",
-        "problem"
+        "problem",
+        "authority"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Without ?coin&timeframe it is the chooser; with them the describe runs and the page becomes the confirmation. chooser-no-timeframes replaces the form with a role=alert sentence. refused renders h1 'Cannot deploy' + the reason (role=alert, untinted text) + an underlined 'Choose differently' link. no-such-agent and roster-unreadable are the shared refusal skeletons with underlined links. Since `the-outcome-reaches-the-person` all five post-connection branches mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. The refused branch used to drop a carried ?problem=; that gap is closed. Note what the pairings mean visually: on refused and roster-unreadable two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure — and they are two different facts about two different moments.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Branch order: not-connected, then authority-lost, then the roster read. Without ?coin&timeframe it is the chooser; with them the describe runs and the page becomes the confirmation. chooser-no-timeframes replaces the form with a role=alert sentence. refused renders h1 'Cannot deploy' + the reason (role=alert, untinted text) + an underlined 'Choose differently' link. no-such-agent and roster-unreadable are the shared refusal skeletons with underlined links. Since `the-outcome-reaches-the-person` all five describe-reaching branches mount `<CarriedProblem>` unconditionally as the first thing under the h1 — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. Note what the pairings mean visually: on refused and roster-unreadable two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure — and they are two different facts about two different moments. NEW since `a-lost-authority-is-not-a-refusal`: `authority-lost` is a sixth top-level branch, taken before the roster is even read, that returns the shared `<AuthorityLost>` and nothing else — no chooser, no proposal, no form, and deliberately no CarriedProblem even when a ?problem= rode in alongside.",
       "constraints": [
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
         "The two steps must stay two requests: the chooser's GET composes a description and reaches no operation; only the confirm form performs — openspec/specs/agent-deployment/spec.md:40-41 ('SHALL perform it only after a person confirms against the specific agent and market').",
-        "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
-        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your deploy was refused' with 'the roster would not load'."
+        "Every describe-reaching branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` in this file. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims — collapsing them into one block would merge 'your deploy was refused' with 'the roster would not load'.",
+        "The authority-lost branch renders no form and no carried problem, on purpose — 'a control that cannot work is not made honest by the sentence above it' (authority-lost.tsx). A design that gives this branch the chooser back, or dresses it as one more refusal beside the others, changes behavior and is requires-spec-change."
       ],
       "children": [
         "coin",
@@ -79,6 +88,7 @@
         "consequence",
         "perform-deploy",
         "why-not-loaded",
+        "authority-lost",
         "not-connected"
       ]
     },
@@ -133,7 +143,7 @@
       "constraints": [
         "role=alert must survive.",
         "The reason shown is the one the platform returned, on the surface acted from — openspec/specs/agent-deployment/spec.md:76-79. Do not truncate or paraphrase; the string is platform-authored and unbounded, so the block must wrap rather than clip.",
-        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page, or the six renderings of one paragraph drift the way they did before it was extracted.",
+        "Shared by eleven pages now (agent deploy/undeploy/rebind/archive/reactivate, strategy archive/restore/fork, both /pending surfaces, recorder trim) — restyle it in the component, never per page, or the renderings of one paragraph drift the way they did before it was extracted. `tests/agent/refusals-reach-the-operator.test.ts` fails any file that hand-rolls it again.",
         "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
         "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state.",
         "This is a failed attempt, not advisory — 'notice never borrows danger's colour' (system.json principle) binds the consequence block beside it."
@@ -151,7 +161,7 @@
         "proposal"
       ],
       "actions": [],
-      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a neutral border, not the consequence tokens the archive page's callout wears; DT-0004's consequence treatment has not been applied to this page.",
+      "current_implementation": "rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary with role=alert. DT-0016 has landed: the anonymous border-border-default this was built with is gone and the block now wears the house consequence role, the same one the strategy archive callout and the recorder-trim description already wore.",
       "constraints": [
         "The text is the string stored with the confirmation token — a design must not paraphrase, truncate, or summarize it.",
         "Where the market is occupied the sentence names who is replaced, before agreement — openspec/specs/agent-deployment/spec.md:45-47 ('the confirmation MUST say whose deployment is replaced, before agreement'). It must not be de-emphasised below the buttons.",
@@ -173,12 +183,13 @@
       "actions": [
         {
           "id": "performDeploy",
-          "effect": "POSTs the server action with agentId, coinId, timeframe, expectedRevision, confirmationToken; success lands on /agents/[id], refusal redirects back here with coin, timeframe and ?problem= preserved so the describe re-runs"
+          "effect": "POSTs the server action with agentId, coinId, timeframe, expectedRevision, confirmationToken; success lands on /agents/[id], refusal redirects back here with coin, timeframe and ?problem= preserved so the describe re-runs; a lost account authority redirects back with ?authority= alone — no coin, no timeframe — which renders the page as AuthorityLost with no form"
         }
       ],
-      "current_implementation": "flex flex-wrap gap-3 — no mobile full-width stack (the archive page's flex-col tablet:flex-row treatment has not been applied here); five hidden inputs carry the confirmation binding, with expectedRevision serialized as '' when null (a first deployment).",
+      "current_implementation": "flex flex-col gap-3 tablet:flex-row tablet:flex-wrap — DT-0016 has landed: the row stacks full-width below the `tablet` breakpoint and only becomes a wrapping row above it, matching the archive page. Five hidden inputs carry the confirmation binding, with expectedRevision serialized as '' when null (a first deployment).",
       "constraints": [
         "The hidden binding is the confirmation ceremony — the form must keep exactly one submit path.",
+        "The stacking breakpoint is `tablet`; both controls carry `w-full tablet:w-auto` so the commit and its peer are the same width when stacked. A design must not restore a wrapping row at mobile width, which is what put the cancel on its own line under a full-width commit.",
         "expectedRevision: null is the platform's documented first-deploy signal — openspec/specs/agent-deployment/spec.md:49-56 — and must keep riding the form untouched.",
         "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
       ],
@@ -206,7 +217,7 @@
           "effect": "Runs performDeploy"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0016 it carries `w-full tablet:w-auto` on the confirmation branch, so it fills the stacked row on mobile. No pending/loading state between click and redirect.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block naming the replacement.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product.",
@@ -231,7 +242,7 @@
           "effect": "The chooser submit GET-navigates into the describe; the anchors return to /agents/[id] without submitting anything"
         }
       ],
-      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the chooser's 'Back to the agent' anchor and the confirmation's cancel. The refused, roster-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment.",
+      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the chooser's 'Back to the agent' anchor and the confirmation's cancel; the cancel additionally carries `w-full tablet:w-auto` since DT-0016. The chooser's own row is still a plain `flex flex-wrap gap-3`, untouched by that ticket. The refused, roster-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment.",
       "constraints": [
         "The cancel must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
         "The chooser's submit must stay secondary — it composes a description and reaches no operation; promoting it to primary misstates what it does.",
@@ -253,6 +264,27 @@
       "current_implementation": "Shared WhyNotLoaded (why-not-loaded.tsx), a plain mt-2 paragraph under the 'Could not load this agent' heading. Two sentences, chosen by cause carried out of the read itself.",
       "constraints": [
         "The refused/unreachable distinction must stay two different sentences — a platform that answered and declined is not one that could not be reached (agent-authoring's reasoning, shared by this component product-wide)."
+      ],
+      "children": []
+    },
+    {
+      "id": "authority-lost",
+      "role": "feedback",
+      "purpose": "Say that the account's BattleGrid authority is gone — not that this deployment was refused — where the operator was standing when their submit failed.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "authority"
+      ],
+      "actions": [],
+      "current_implementation": "New shared component `AuthorityLost` (src/presentation/components/authority-lost.tsx), added by `a-lost-authority-is-not-a-refusal`. It is a whole page, not a block: its own max-w-2xl space-y-4 p-6 <main>, an h1 'Your BattleGrid authority is no longer valid', the platform's sentence in a role=alert paragraph wearing danger (rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary — the same treatment CarriedProblem wears), and a text-secondary closing paragraph saying nothing was changed and that no operation on this account can succeed until it is fixed. No form, no controls, no link out. Nothing has designed it; it was built wearing existing tokens.",
+      "constraints": [
+        "It renders instead of the ceremony, not above it — a design must not turn this into a banner over the chooser or the proposal. The reason the page has no form is that no call on this account can succeed.",
+        "The sentence is passed in and printed verbatim, remedy included. ConnectionRevokedError builds it with the remedy belonging to the deployment that raised it ('reconnect' where a connection can be made, 'repair the configured credential' where the key is configuration), so a design must not template it, prefix it, or add a generic connect action — that is how a personal deployment gets told to press a connect button it does not have.",
+        "It must stay visually distinct from CarriedProblem even though both currently wear danger: one says this attempt was refused and something else may work, the other says nothing will. If a design keeps them identical it should say that is a decision.",
+        "role=alert must survive on the reason.",
+        "Shared with agent undeploy, agent rebind and the strategy rule editor — restyle it in the component, never per page."
       ],
       "children": []
     },
@@ -307,6 +339,15 @@
       ]
     },
     {
+      "name": "The account's authority is gone",
+      "steps": [
+        "submit 'Deploy <name>'",
+        "the platform answers that the connection or credential is no longer valid",
+        "performDeploy's authority-lost arm redirects back here with ?authority= — not ?problem=, and without the coin and timeframe",
+        "the page renders <AuthorityLost> alone: the reason, and that nothing was changed and nothing on this account can succeed until it is fixed. No form to retry with."
+      ]
+    },
+    {
       "name": "Nothing can be composed",
       "steps": [
         "BattleGrid declares no timeframes, or the describe refuses the chosen market",
@@ -332,6 +373,6 @@
       "button-secondary",
       "button-primary"
     ],
-    "notes": "The carried problem, consequence, no-timeframes and refusal messages all carry role=alert; on a bounced branch two of them are adjacent. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "The carried problem, consequence, no-timeframes, refusal and authority-lost messages all carry role=alert; on a bounced branch two of them are adjacent. The authority-lost branch has an alert and no focusable element at all — it is the one state on this surface with nothing to tab to. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   }
 }

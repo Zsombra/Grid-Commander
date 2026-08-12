@@ -27,6 +27,7 @@ export default async function TrimRecordPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Record trimmed</h1>
+        <CarriedProblem problem={problem} />
         <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">{trimmed}</p>
         <p className="text-sm">
           <a href="/recorder" className="underline">
@@ -44,6 +45,7 @@ export default async function TrimRecordPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Trim the record</h1>
+        <CarriedProblem problem={problem} />
         {before !== undefined ? (
           <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
             “{before}” is not a date this page can read — use the picker below.
@@ -78,6 +80,7 @@ export default async function TrimRecordPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Nothing to trim</h1>
+        <CarriedProblem problem={problem} />
         <p role="status" className="rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-sm text-text-primary">{described.reason}</p>
         <p className="text-sm">
           <a href="/recorder/trim" className="underline">

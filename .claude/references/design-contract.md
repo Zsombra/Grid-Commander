@@ -378,8 +378,40 @@ executor            implements presentation only, ticket by ticket
 /verify             checks acceptance criteria, then status: implemented
      │
      ▼
+/surface again      re-pin the manifests the round just invalidated
+     │
+     ▼
 tickets/done/       moved on archive
 ```
+
+### The last step is not optional, and it is not the first step repeated
+
+A round that does its job **changes the files its manifests describe**, so it
+stales them on commit. That is structural, not sloppiness: the survey the round
+depends on happens before the design, and the source it recorded is exactly what
+implementation then edits.
+
+So `/surface` appears twice, deliberately. The first pass is *input* — what the
+design agent reads. The second is *bookkeeping* — re-pinning
+`generated_at_commit` and recording the treatments that landed, once they have
+landed.
+
+**Do not close a staleness item before the implementation commits.** It reopens
+within the hour. This was learned by doing it: a staleness item was closed
+mid-round, and the round's own commit invalidated eight surfaces immediately
+(backlog `a-design-round-stales-the-manifests-it-designed-against`).
+
+**Do not re-pin against an uncommitted working tree** either. Pinning a hash to
+content that is not at that hash is the silent drift the check exists to catch,
+and it is worse than the warning: a manifest that looks fresh and is not.
+
+**Why this is a convention and not a check.** The obvious guard — "a surface
+with an `implemented` ticket must not be stale" — cannot work, and it is worth
+saying so before someone writes it. A manifest is pinned to a commit hash, and
+the hash of the commit being written does not exist until it is written, so the
+re-pin is *necessarily* a second commit. Any check demanding freshness would
+fail on the intermediate state that the process requires. The warning already
+fires; what was missing was knowing whose job it is and when.
 
 Tickets are **presentation work inside an existing change**, not changes of
 their own. A restyle does not modify behavior, so it has no delta spec and

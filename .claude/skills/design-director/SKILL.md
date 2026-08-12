@@ -206,5 +206,10 @@ change, the design-system status, and the recommended implementation order.
 - [ ] Behavior-affecting tickets are marked and blocked, not smuggled.
 - [ ] Component constraints are respected, or the conflict is stated.
 - [ ] GitHub sync done and `github_issue` written back, if enabled.
+- [ ] The round's handoff says a re-survey is owed **after** implementation
+      commits — the tickets you just wrote will stale the manifests you wrote
+      them against, every time. That is the loop working, not a mistake, and it
+      is the round's last task rather than the next round's surprise. See
+      design-contract §8.
 
 End response with: `DESIGN TICKETS READY`
