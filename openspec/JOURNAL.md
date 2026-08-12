@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-13 (evening) — the app runs locally, #111 lands, and I destroyed the record
+
+**Did**: Stood the app up locally against real data, built and archived
+`the-prose-that-names-a-condition-says-so` (#111), and closed a hazard I walked
+into. 13 commits. 171 files / 2232 tests. **Six of six gates**, including
+`test:db` — blocked all session, and it finally ran.
+
+**I truncated a live signal record.** `npm run test:db` truncates eight tables
+and `databaseUrl()` refused only a *missing* `DATABASE_URL` — any present one
+passed, which is exactly what `.env` sets. I pointed it at `grid_commander` and
+lost GOLD 24 captures / JPY 24 / AVAX 25 across two days. **All 85 tests
+passed. Nothing warned.** That record is the one store this product documents
+as unrecoverable, and the `/recorder/trim` ceremony exists to stop a *person*
+deleting it by accident. A test command did it with no ceremony.
+
+Fixed by `assertDisposable` (#195): the suite now needs a database *named*
+disposable, or an exact `DB_TESTS_MAY_TRUNCATE=yes`. Opt-in, so a typo refuses
+and silence refuses. Eight tests pin it, including that `latest` and `contest`
+are not consent. **The guard was written after the loss — nothing predicted it.**
+"Refuses when unset" had read as "refuses when wrong".
+
+**#111 was not what it said.** Neither of its candidates: the structured answer
+was already on the wire and thrown away. The adapter caught `ToolRefusedError`,
+called `messageOf()`, and returned the whole JSON as a string. Now the refusal
+keeps its code and context, and the save page names the marker the prose uses.
+`refusal` made **required** on the rejected arm named all four fixtures and the
+page branch that did not exist — the save page was falling through to
+`proposal`.
+
+**Local setup**: the `BATTLEGRID_CLIENT_ID` placeholder is not a secret — an
+OAuth client id is a public identifier — so the app boots with no credential at
+all. That is what made the last three findings visible: #100 rendering its
+unreadable branch live, #182's remedy-without-a-target on a personal
+deployment, and both arms of the trim receipt.
+
+**State**: 0 active changes, **30 open items ↔ 30 open issues**, reconciled.
+
+**Next**: #192's second half — eleven surfaces still cannot be checked at all.
+Then #170, #169, #162, #186, #194.
+
+**Watch out**: **I created a fourth instance of the mirror drift I spent the
+morning cataloguing.** #195 was `done` on the item with the issue left open —
+found only because I ran the cross-check by hand again. That is four in one day
+(#163, #173, #182, #195), three found by hand. Five findings this session share
+one shape: a check that reads as passing after it stopped meaning anything.
+Only one destroyed something, and I am the one who ran it.
+
 ## 2026-08-13 (tier 1 lands) — three changes archived, and the freshness check has been blind for months
 
 **Did**: Built and archived three changes off the morning's verification:
