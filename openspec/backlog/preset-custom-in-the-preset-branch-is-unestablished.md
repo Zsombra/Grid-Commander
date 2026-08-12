@@ -2,10 +2,10 @@
 id: preset-custom-in-the-preset-branch-is-unestablished
 title: Establish what {kind PRESET, preset CUSTOM} does before anything offers it
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-06
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: agent-authoring
 github: "106"
@@ -124,3 +124,54 @@ on v17.2.0). So the cost of the probe *is* now measurable before paying
 it — and today the measurement says the probe is impossible: zero slots
 remain. When a slot frees, this stops being a blind trade; until then
 the item is blocked on capacity, not on courage.
+
+
+---
+
+# Answered 2026-08-13 — the platform refuses it, in words
+
+The operator freed a slot (archived `Vanguard`, restored after) and the probe
+ran against v18.2.0. `{kind: "PRESET", preset: "CUSTOM"}` is **refused**:
+
+```
+code: custom
+path: ["brain","preset"]
+message: CUSTOM is not a named preset — use { kind: "CUSTOM", modelId, behavior }
+```
+
+That is outcome one of the three this item predicted. The eleventh enum member
+is **not a real choice**, and `brainPresets()`'s rule — the declared enum minus
+every value that also names a branch — is right for a second, now-stated reason:
+the platform itself says the value belongs to the other branch.
+
+Note the refusal is a *validation* error, so no agent was created and no slot
+was spent answering this.
+
+## The narrowing was wrong about the read, and that matters more
+
+This item concluded that `brainPreset` could not distinguish the two branches,
+because every existing agent reads back `CUSTOM`. The probe shows otherwise.
+
+A preset-brain agent created with `PATTON` reads back:
+
+```
+brainPreset: "PATTON"      modelId: "anthropic/claude-sonnet-4.6"
+behavior:    { risk: AGGRESSIVE, outlook: OPTIMIST, conviction: BOLD }
+```
+
+So `brainPreset` carries **the actual preset name** on the PRESET branch. Put
+that together with the refusal above and the ambiguity this item worried about
+cannot arise: `brainPreset: "CUSTOM"` can only ever mean `{kind: CUSTOM,
+modelId}`, because no agent can be created with a preset named `CUSTOM`.
+
+The consequence recorded here for [[the-payload-carries-more-than-is-read]] —
+"a surface rendering an agent's brain cannot tell 'no preset, a named model'
+from 'the preset called CUSTOM'" — is therefore **retracted**. It can. The
+product showing `CUSTOM` is not merely the honest thing to show; it is
+unambiguous.
+
+## Also established, in passing
+
+A PRESET brain really does carry model *and* trader soul, as the schema claims
+— `PATTON` supplied both a model and a full behavior triple that no request
+field set. First live observation of that; nothing here had seen it before.

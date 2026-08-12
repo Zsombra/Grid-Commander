@@ -143,13 +143,29 @@ export class McpAgentAdapter implements AgentsPort {
     return { kind: 'agents', agents: raw.map(mapRosterAgent), slots };
   }
 
+  /**
+   * Every tool that answers with an agent — this read, and the five writes
+   * below — returns `{ agent: {...} }`. Walked live against v18.2.0 on
+   * 2026-08-13: get, create, update, rebind, archive and activate, each read
+   * off the wire rather than off the reference (#103).
+   *
+   * `create` alone carries a sibling key, `slotUsage`, which is the reason
+   * these read the field instead of treating the envelope as the agent.
+   *
+   * This was `payload['agent'] ?? payload` at all five sites, tolerating a
+   * bare-agent shape the reference does not document and the platform has
+   * never been seen to send. It failed closed either way — `mapAgent` throws
+   * without an id and a revision — so the fallback never cost safety. What it
+   * cost was certainty: nobody reading it could tell which shape arrives, and
+   * the answer had never been asked of the platform.
+   */
   async getAgent(params: {
     userId: string;
     accessToken: string;
     agentId: string;
   }): Promise<Agent> {
     const payload = await this.call(params, TOOLS.get, { agentId: params.agentId });
-    return mapAgent(payload['agent'] ?? payload);
+    return mapAgent(payload['agent']);
   }
 
   async readCatalog(params: { userId: string; accessToken: string }): Promise<CatalogResult> {
@@ -230,7 +246,7 @@ export class McpAgentAdapter implements AgentsPort {
       },
       { idempotencyKey: params.idempotencyKey },
     );
-    return mapAgent(payload['agent'] ?? payload);
+    return mapAgent(payload['agent']);
   }
 
   async updateAgent(params: {
@@ -254,7 +270,7 @@ export class McpAgentAdapter implements AgentsPort {
       // agent id, which is what let an agreement about $25 authorise $25,000.
       { confirmation: params.confirmation },
     );
-    return mapAgent(payload['agent'] ?? payload);
+    return mapAgent(payload['agent']);
   }
 
   async rebindAgent(params: {
@@ -279,7 +295,7 @@ export class McpAgentAdapter implements AgentsPort {
       // is what made the fifth invisible.
       { confirmation: params.confirmation },
     );
-    return mapAgent(payload['agent'] ?? payload);
+    return mapAgent(payload['agent']);
   }
 
   async setLifecycle(params: {
@@ -296,7 +312,7 @@ export class McpAgentAdapter implements AgentsPort {
       { agentId: params.agentId, expectedRevision: params.expectedRevision },
       { confirmation: params.confirmation },
     );
-    return mapAgent(payload['agent'] ?? payload);
+    return mapAgent(payload['agent']);
   }
 
   /**
