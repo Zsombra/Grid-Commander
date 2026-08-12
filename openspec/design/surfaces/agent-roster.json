@@ -4,11 +4,12 @@
   "route": "/agents",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "4ea8f4b",
+  "generated_at_commit": "a047e42",
   "source_files": [
     "app/(app)/agents/page.tsx",
-    "src/presentation/components/agent-roster.tsx",
     "src/presentation/components/agent-actions.tsx",
+    "src/presentation/components/agent-roster.tsx",
+    "src/presentation/components/fleet-spend.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -173,6 +174,25 @@
         "One page for every cause; they differ in cause and not in remedy (design W-C)"
       ],
       "children": []
+    },
+    {
+      "id": "fleet-spend",
+      "role": "display",
+      "purpose": "What the whole fleet spent on model calls in the last 24 hours.",
+      "states": [
+        "amount",
+        "no-figure",
+        "unreadable"
+      ],
+      "data": [
+        "spend"
+      ],
+      "actions": [],
+      "current_implementation": "One line beneath the roster. `unreadable` says the spend could not be read and names why; `no-figure` renders when totalCost24hUsd is null — the platform answered and had no number, which is not zero; otherwise the total, with the active-agent count appended only when the count is known.",
+      "constraints": [
+        "A null total must not render as $0 — the platform answering with no figure and the fleet spending nothing are different facts.",
+        "Spend is read from list_intelligence_agents, not the detail read: the two disagree, and the list is the one that answers (see the-cost-of-an-agent-reads-differently-from-two-tools)."
+      ]
     }
   ],
   "flows": [
@@ -205,5 +225,12 @@
     ],
     "notes": "Per-row nav labelled `Actions for <agent name>`. Roster failure is role=alert; capacity is role=status."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/agents/page.tsx": "sha256:9e1ec53d79c18b58191e37daa39b658893dff2ccd70c0359f4b7551686d57a09",
+    "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
+    "src/presentation/components/agent-roster.tsx": "sha256:6fb7b3ce8b967e647630d88e9926cc3b074e3f0c188b0dae865e8532906be249",
+    "src/presentation/components/fleet-spend.tsx": "sha256:443f0edc2d3e16fdec4948ccc682708eddeddf2ec79c0fbfb21d24ea83fee0f0",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }

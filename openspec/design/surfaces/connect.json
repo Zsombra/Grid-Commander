@@ -4,12 +4,13 @@
   "route": "/connect",
   "capability": "battlegrid-connection",
   "status": "designed",
-  "generated_at_commit": "be525fa",
+  "generated_at_commit": "a047e42",
   "source_files": [
     "app/connect/page.tsx",
+    "src/application/use-cases/describe-grant.query.ts",
     "src/presentation/components/consent-summary.tsx",
-    "src/presentation/components/nothing-to-connect.tsx",
-    "src/presentation/components/control.ts"
+    "src/presentation/components/control.ts",
+    "src/presentation/components/nothing-to-connect.tsx"
   ],
   "viewports": [
     "mobile",
@@ -41,7 +42,8 @@
         "consent",
         "consent-with-declined",
         "consent-with-failure",
-        "nothing-to-connect"
+        "nothing-to-connect",
+        "consent-with-declined-and-failure"
       ],
       "data": [
         "grant",
@@ -49,7 +51,7 @@
         "failure"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-6, p-6 — the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant.",
+      "current_implementation": "max-w-2xl centered column, space-y-6, p-6 — the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant. Both ?declined= and ?error= render when both are present — the notice above the danger banner, in that order — so the two are not exclusive states.",
       "constraints": [
         "The page renders whole from one server round trip — no client JS.",
         "On a personal deployment neither the consent summary nor the start button may render — the button would build an /authorize URL with an empty client_id (requirement: A Remedy Named Must Exist In That Deployment)."
@@ -227,5 +229,11 @@
     ],
     "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. No client JS; every state is a full navigation."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/connect/page.tsx": "sha256:6919682ad5724584680aa1a4136b4ab7e172f627c377e835a2cb20149a279564",
+    "src/application/use-cases/describe-grant.query.ts": "sha256:243fb14462428141517b2c606f07830627299f25909afb4ef0994c1ddb3b3b13",
+    "src/presentation/components/consent-summary.tsx": "sha256:44a3edb7fd0c7789cdb156d7966b31538afbe472c8f9c7f4f20ecf1675dd4b10",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67"
+  }
 }

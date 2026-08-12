@@ -4,7 +4,7 @@
   "route": "/strategies",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "485342f",
+  "generated_at_commit": "a047e42",
   "source_files": [
     "app/(app)/strategies/page.tsx",
     "src/presentation/components/strategy-list.tsx",
@@ -162,5 +162,10 @@
     ],
     "notes": "Per-row nav is labelled `Actions for <strategy name>`. Load failure is role=alert; fork capacity is role=status. No live region for the list itself — it is server-rendered and does not update in place."
   },
-  "source_digest": null
+  "source_digest": {
+    "app/(app)/strategies/page.tsx": "sha256:e3fd74e689438d10671b10284fb080627e0f973cdfe3a813b59b37ea2e5bb5d6",
+    "src/presentation/components/strategy-list.tsx": "sha256:fcc5032cb188602e14e92b8ce4862e0870e79d848ab19248db81b743002b39e6",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
 }
