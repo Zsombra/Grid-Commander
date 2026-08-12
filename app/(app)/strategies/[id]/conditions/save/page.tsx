@@ -169,7 +169,7 @@ export default async function SaveConditionPage({
   const head = (
     <>
       <h1 className="text-xl font-medium">Save a condition to {strategy.name}</h1>
-      {problem ? <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p> : null}
+      {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
     </>
   );
 

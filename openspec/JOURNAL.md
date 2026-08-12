@@ -93,6 +93,16 @@ harness. Full local CI green (scripts/ci.sh with DATABASE_URL +
 CI_SERVING — the operator pointed out this is the CI; Actions are
 billing-blocked by decision).
 
+**Round twelve — the refusals dress alike** (`the-refusals-dress-alike`,
+lite, archived; 159 archived changes; #156 filed and closed same-day).
+Twelve `?problem=` banners still wore the neutral border DT-0004 retired
+— agent deploy/rebind/reactivate/undeploy, strategy
+archive/restore/fork/conditions-save/rules ×2, recorder trim, and
+agent-edit.tsx. All wear danger now; the eleven page banners carry the
+"Refused:" prefix, agent-edit does not (its prop mixes in the product's
+own catalog advisory). Grep gate: no neutral problem banner anywhere.
+Full local CI green.
+
 **Round eleven — the pipeline simulator** (#108 gap 2, sixth surface
 pass). Manifests for both pipeline routes (15 components); DT-0010
 implemented — the disagreement sentence wears notice on the

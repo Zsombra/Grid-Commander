@@ -127,7 +127,10 @@ export default async function DeployPage({
         Deploy {agent.displayName} to {proposal.coinId}?
       </h1>
       {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
       ) : null}
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       <form action={performDeploy} className="flex flex-wrap gap-3">

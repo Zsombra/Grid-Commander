@@ -131,7 +131,7 @@ export default async function RetuneRulePage({
             </>
           ) : null}
         </p>
-        {problem ? <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p> : null}
+        {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
         <form method="get" className="space-y-3 text-sm">
           <label className={LABEL}>
             Allocation (weight, 0–3)
@@ -237,7 +237,7 @@ export default async function RetuneRulePage({
       <h1 className="text-xl font-medium">
         Retune {proposal.signalId} on {proposal.strategyName}?
       </h1>
-      {problem ? <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p> : null}
+      {problem ? <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"><span className="font-semibold">Refused: </span>{problem}</p> : null}
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       {intent.ruleParams !== undefined ? (
         <p className="text-sm">

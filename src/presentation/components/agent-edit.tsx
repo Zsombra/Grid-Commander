@@ -110,7 +110,7 @@ export function AgentEditForm({
 
   return (
     <div className="space-y-6">
-      {problem && <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>}
+      {problem && <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{problem}</p>}
 
       <form method="get" className="space-y-6">
         {/* Puts the page into its confirm branch on the next request. */}

@@ -96,7 +96,10 @@ export default async function TrimRecordPage({
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Trim the record before {before}?</h1>
       {problem ? (
-        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{problem}</p>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          <span className="font-semibold">Refused: </span>
+          {problem}
+        </p>
       ) : null}
       <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
       <form action={performTrim} className="flex flex-wrap gap-3">
