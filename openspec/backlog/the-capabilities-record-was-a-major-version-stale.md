@@ -77,3 +77,63 @@ drifting apart is what produced this.
 
 Worth a separate read: the +46 on both signal-log tools, and the +29
 `breakEvenGeometry`, are the two large ones and neither has been looked at.
+
+## The two large additions, read — 2026-08-13
+
+### v18 publishes what a stop actually did
+
+The `+46` on both signal-log tools is one thing: a **`protection` block**, at
+`log.pipeline.liveOverlay.protection`, carrying two geometries and their states.
+
+```
+breakEvenStatus   DISABLED | ACTIVE | INACTIVE_SETUP | UNDETERMINED
+breakEvenGeometry armPrice, stopPrice, offsetBps, distanceToArmPct, armed
+trailingStatus    (same enum)
+trailingGeometry  trailDistance, trailLevel, observedExtreme, givebackPct, engaged
+```
+
+The same `breakEvenGeometry` is the `+29` on `list_user_active_positions` and
+`list_session_agent_positions`.
+
+**This is the thing every agent on the account is configured with and nobody
+could see.** Undertow carries `breakEvenEnabled: true, breakEvenTriggerR: 0.86,
+trailingEnabled: true, trailingGivebackPct: 45`; Breakwater the same at 1.08.
+Until v18 those were settings that went in and never reported back. The platform
+now says, per position: whether break-even armed, at what price, how far the
+price is from arming, where the trail sits, and **the extreme it has observed**.
+
+`observedExtreme` is the one worth naming. It is the high-water mark the trail
+is measured from — a number this product could not compute without candle
+history, and [[a-stop-inside-the-noise-looks-like-a-tight-stop]] is explicit
+that a floor computed from too little history is worse than none.
+
+### Declared, not observed — and blocked the same way as its neighbours
+
+`liveOverlay` is **null** on a settled log. Read live 2026-08-13 on Undertow's
+most recent SKIPPED evaluation: `pipeline.liveOverlay` is null, and the account
+holds no open position. So the block can only be seen while a position is open —
+the identical blocker as [[trading-telemetry-is-unread]]'s order rows (#116) and
+[[performance-and-allocation-are-unmodelled]]'s committedUsd (#107).
+
+**Do not model it from the declaration.** Three of the dead paths in HANDOFF.md
+began as a schema read as an observation, and this one is nested three levels
+deep behind an `anyOf` that is null today.
+
+### The radar pair
+
+`get_radar_activity` gained `evaluationOutcome` and `screenReason` — two more
+refusal-telemetry fields, alongside the `EVALUATION_FAULTED` value that arrived
+on `blockedReason`. All of it unread, and all of it [[radar-says-why-it-is-blocked]]'s
+territory (#135) rather than this item's.
+
+## What this changes
+
+`#85`'s third blocker is *"the reference number needs history we do not have"*.
+It may not need it: the platform now reports `observedExtreme` per position,
+which is the platform's own measurement rather than one computed here. That does
+not unblock #85 — the trade-level policy is still inert, and the overlay is
+still unobserved — but it changes what the eventual panel would read from.
+
+**First step, when a position is next open**: read one `get_signal_log` and one
+`list_user_active_positions` while it is, and record what `protection` actually
+carries. One observation settles four fields that are currently four guesses.
