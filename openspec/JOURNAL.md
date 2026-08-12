@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-08-12 (the backlog worked) — live probes refresh eight items, and #108's prescription is executed whole
+
+**Did**: The operator asked for the issue tickets to be worked. A read-only
+probe round against live BattleGrid (v17.2.0) refreshed the question items:
+**#107** — `get_agent_fund_allocation` answered all-zero for Undertow AND
+Breakwater in the same minute `list_user_active_positions` reported ~$11
+margined on each, the fourth measurement and the first on two agents at
+once; **#114** — `get_market_context({})` refused identically on a third
+major, and v17's *description prose* now states the precondition its JSON
+Schema still doesn't express; **#135** — no BLOCKED radar deployment yet
+(all 20 `blockedReason: null`), but the fleet summary grew a `blocked`
+count and a top-level `blockedAgents: []` nobody had recorded; **#146** —
+Undertow's gate-block total hit 5,014 (~120/h, was ~90/h), plus one
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` showing equity ($30.14) under the
+sizing floor ($33.33): the agent is benched by arithmetic on new coins;
+**#104** — still zero players on all 50 sessions; **#103/#106** — agent
+slots now read 3/3 used (and the slot cap became *readable*, correcting
+#106's premise). Four `backlog_change_archived` warnings cleared (#91,
+#107, #110, #114 — archived `change:` links cleared with explanations);
+#85's stale `blocked_by` cleared with the upstream inertness now watched
+in the item itself. Then **#108 was executed exactly as prescribed**:
+`/surface` on `/agents/[id]/archive` → `agent-archive-confirm` manifest
+(7 components; survey found the missing pending-feedback state, filed as
+**#153**); `/design` wrote **DT-0003** (tokens: `size.control.min` 44px,
+generator emits it, `min-h-control` replaces raw `min-h-11`) and
+**DT-0004** (restyle: consequence/danger/notice roles for the three
+message blocks, "Refused:" prefix, secondary hover, active states, mobile
+stacking); both implemented, controls test asserts the token chain
+end-to-end. Gates: typecheck, lint, 2126 vitest, build, drizzle clean.
+
+**State**: 22 open items, all touched ones current as of today. Design
+lane: 5 surfaces (2 designed), 4 tickets (4 implemented). #108 narrowed
+to its last gap — `/connect`, `/explorer`, `/pending`, the pipeline
+simulator and remaining confirmations have no manifests/tickets.
+
+**Next**: `/surface` another confirmation page or `/connect`, then
+`/design` — the remaining #108 gap is now routine. Or `/propose` on #153
+(pending feedback needs a client-boundary decision). #94 still waits on
+recorder depth.
+
+**Watch out**: `min-h-11` must not come back — the controls test forbids
+it by name. The WEARS_BUTTON scan now accepts the composed template form
+(`${BUTTON_PRIMARY} w-full tablet:w-auto`), mirroring labels. Undertow's
+equity is under the smallest position's floor; that is the operator's
+knob (#146 note), not the product's.
+
 ## 2026-08-11 (the merge round) — four PRs reviewed, gated and landed; zero P1s remain
 
 **Did**: The operator authorized review→CI→merge on the open PRs, in

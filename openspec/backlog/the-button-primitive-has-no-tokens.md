@@ -5,7 +5,7 @@ type: debt
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-12
 change: ""
 capability: app-access
 github: "108"
@@ -87,3 +87,34 @@ ticket that adds the missing values and a `restyle` ticket that spends them.
 whole change is an extraction of decisions already made, and inventing a danger
 treatment would have been the developer agent designing, which the lane rule in
 `.claude/references/design-contract.md` §2 forbids.
+
+## 2026-08-12 — gaps 1 and 3 are closed; the item narrows to gap 2
+
+The prescription above was executed exactly.
+
+- **Gap 1 (the token) is closed.** `system.json` now carries
+  `size.control.min: 44px`; `generate-theme.mjs` emits
+  `--gc-size-control-min` and a `minHeight.control` Tailwind extension, so
+  the buttons wear `min-h-control` and `min-h-11` appears nowhere under
+  `src/` or `app/`. `tests/architecture/controls.test.ts` asserts the whole
+  chain — system value, theme mapping, CSS variable — so the utility cannot
+  silently become a class Tailwind drops. Ticket: **DT-0003**, implemented.
+- **The first confirmation page is surveyed and designed.**
+  `/agents/[id]/archive` → `openspec/design/surfaces/agent-archive-confirm.json`,
+  restyled under **DT-0004**: consequence block in the `consequence` role, a
+  bounced attempt in `danger` with a semibold "Refused:" prefix, the
+  cannot-archive refusal in `notice`, secondary button's first hover
+  treatment (landed in `control.ts`, so every page inherits it), mobile
+  full-width stacking. The survey also found the missing pending-feedback
+  state — filed separately as
+  `a-submitted-confirmation-gives-no-sign-it-is-working` (#153), since it is
+  behavior, not styling.
+- **Gap 3 (stale strategy-editor manifest) had already been resolved** by an
+  earlier re-survey; `validate --all` reports no `design_surface_stale`.
+
+**What keeps this open, narrowed to gap 2:** `/connect`, `/explorer`,
+`/pending`, the pipeline simulator and the remaining confirmation pages still
+have no manifest and no ticket — their treatments are DT-0002/DT-0004
+precedent worn without a decision recorded per surface. `ghost` and `danger`
+stay deliberately undefined until a surface renders them (DT-0003's rationale
+records this as the design agent's decision now, not a comment's).

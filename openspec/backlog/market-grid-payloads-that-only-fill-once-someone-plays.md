@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-12
 change: ""
 capability: market-grid
 github: "104"
@@ -145,3 +145,12 @@ here can be settled by anything this session or the operator does.
 The one thing that did move: the crowd panel's roster half is observed. Still
 not buildable — `top[]` is where the tickers, `picks`, `upPct`, `intensity`,
 `dir` and `tint` live, and it has never had an entry.
+
+---
+
+# Re-checked 2026-08-12 — unchanged on v17.2.0
+
+50 rows again: PENDING 2, CANCELLED 48, `playerCount: 0` on every one.
+Six days and two platform majors after the last read, still no account
+anywhere visible has entered a session. The item stays blocked on the
+platform having players at all; nothing to poll for.

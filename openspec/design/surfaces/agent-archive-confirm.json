@@ -1,0 +1,234 @@
+{
+  "id": "agent-archive-confirm",
+  "title": "Archive agent confirmation",
+  "route": "/agents/[id]/archive",
+  "capability": "agent-authoring",
+  "status": "designed",
+  "generated_at_commit": "3e705ec",
+  "source_files": [
+    "app/(app)/agents/[id]/archive/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "proposal",
+      "shape": "{ agentId, agentName, consequence, expectedRevision, confirmationToken }",
+      "source": "app.describeArchive.execute \u2014 a confirmation minted server-side; consequence is BattleGrid's own wording"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams \u2014 the refusal reason a rejected performArchive redirected back with"
+    }
+  ],
+  "components": [
+    {
+      "id": "archive-page",
+      "role": "container",
+      "purpose": "Ask one question \u2014 archive this agent? \u2014 with the consequence stated before the button.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "not-connected"
+      ],
+      "data": [
+        "proposal",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 \u2014 the same skeleton as every confirmation page. In the refused state it renders h1 'Cannot archive' plus the platform's reason in a notice block (bg-notice-subtle, border-notice-border, role=alert kept) and offers no form; nothing is styled as though retrying could help.",
+      "constraints": [
+        "Archiving is presented as recoverable and MUST NOT be described or styled as deletion \u2014 openspec/specs/agent-authoring/spec.md:202 ('present archiving as recoverable'). The submit copy says 'and free its slot', which is the benefit, not a loss.",
+        "The page renders whole from one server round trip \u2014 no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "In the refused state the reason paragraph keeps role=alert."
+      ],
+      "children": [
+        "problem",
+        "consequence",
+        "perform-archive"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted archive back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted \u2014 visually distinct from the consequence block below it.",
+      "constraints": [
+        "role=alert must survive.",
+        "This is a failed attempt, not advisory \u2014 it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) still binds the consequence block beside it."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what archiving does, in BattleGrid's own words, before the button that does it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0004: the consequence-callout's consequence role \u2014 rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary, role=alert kept, the platform's sentence verbatim.",
+      "constraints": [
+        "The text is the platform's verbatim consequence sentence \u2014 a design must not paraphrase, truncate, or summarize it.",
+        "Consequence outranks everything on a screen (system.json principle) \u2014 this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "perform-archive",
+      "role": "container",
+      "purpose": "Carry the archive decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performArchive",
+          "effect": "POSTs the server action with agentId, expectedRevision, confirmationToken; success lands on /agents, refusal redirects back here with ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-col gap-3, tablet:flex-row tablet:flex-wrap \u2014 buttons stack full-width under the tablet breakpoint, sit inline above it; three hidden inputs carry the confirmation binding.",
+      "constraints": [
+        "The hidden binding (agentId, expectedRevision, confirmationToken) is the confirmation ceremony \u2014 the form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the archive. Named with the agent and the benefit: 'Archive <name> and free its slot'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performArchive"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts \u2014 accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Page adds w-full tablet:w-auto for the mobile stack. Still no pending/loading state between click and redirect \u2014 filed as #153, behavior not styling.",
+      "constraints": [
+        "Deliberately NOT danger-styled \u2014 DT-0002's ruling, restated in control.ts: archive is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product \u2014 not a per-page className.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css \u2014 do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Leave the agent active and go back to it.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY \u2014 inline-flex centering, min-h-control, and since DT-0004 a hover treatment (border-border-strong + bg-bg-sunken over duration-fast; active holds it at duration-instant). Page adds w-full tablet:w-auto for the mobile stack.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message + underlined text link. Used by every authenticated page, so a design here restyles all of them at once.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) \u2014 a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Archive an agent",
+      "steps": [
+        "arrive from the agent page",
+        "read the consequence in BattleGrid's words",
+        "submit 'Archive <name> and free its slot'",
+        "land on /agents with the row moved"
+      ]
+    },
+    {
+      "name": "Archive is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses (revision moved, not permitted)",
+        "redirected back here with ?problem=",
+        "problem banner states the reason above the still-usable form"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave it active'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "All three message blocks carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  }
+}

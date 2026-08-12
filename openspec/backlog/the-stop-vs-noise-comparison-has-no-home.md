@@ -5,11 +5,11 @@ type: question
 status: open
 priority: p2
 created: 2026-08-10
-updated: 2026-08-10
+updated: 2026-08-12
 change: ""
 capability: strategy-authoring
 github: "85"
-blocked_by: [v15-trade-level-policy-is-declared-but-inert]
+blocked_by: []
 tags: [battlegrid, v15, risk, measurement]
 ---
 
@@ -57,3 +57,17 @@ surface, (3) either the recorder accumulates enough history, **or**
 `minStopLossAtrMultiple` is read as the platform's own volatility-relative
 answer — which may make a bespoke noise floor unnecessary. The third option is
 the cheapest and worth trying first.
+
+## Blocked-by cleared 2026-08-12 — the blocker item closed, the block did not
+
+`blocked_by` named `v15-trade-level-policy-is-declared-but-inert`, which
+closed 2026-08-11 when the *product* half shipped (`v15-trade-level-policy`:
+read, display, refuse to edit). Its closing note is explicit that the
+*platform* half — the fields parsing-and-discarding, last retested against
+v16 on 2026-08-10 — remains BattleGrid's to fix and is watched **here**.
+So the frontmatter link is cleared as stale, and this item is now the
+standing record of blocker (1): before building anything on
+`maxStopLossPct` / `minStopLossAtrMultiple` / `minRiskRewardRatio`,
+re-verify the platform actually applies them (a compile carrying them
+that changes `derive_strategy_rule_view` output, or a trade whose stop
+provably came from the strategy value).

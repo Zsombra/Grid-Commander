@@ -1,0 +1,59 @@
+{
+  "id": "DT-0003",
+  "surface": "agent-archive-confirm",
+  "targets": [
+    "button-primary",
+    "button-secondary"
+  ],
+  "type": "tokens",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The 44px tap-target floor becomes a token, size.control.min, and the two button constants spend it. Nothing visible moves.",
+  "rationale": "system.json states 'tap targets are at least 44x44px' as a principle and provides no token for the number: the space scale runs 32px then 48px, so both button constants in src/presentation/components/control.ts spend the raw utility min-h-11 \u2014 a value the design system owns stated in a vocabulary it does not. control.ts itself filed this (the-button-primitive-has-no-tokens, GitHub #108). The token is now in system.json under size.control.min; this ticket is the wiring that makes it real rather than decorative: tools/generate-theme.mjs currently emits no size group, so the token exists and nothing can reference it. The ghost and danger variants the button primitive declares stay deliberately undefined \u2014 no surface renders either, and defining treatments for variants nothing shows is designing fiction; they get their values with the first surface that needs them.",
+  "design": {
+    "layout": "No layout change. This ticket moves one value from a raw utility into the token pipeline.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "min_height": "size.control.min"
+    },
+    "states": {
+      "default": {
+        "content": "Unchanged. Rendered min-height stays 44px; only its source moves from the raw utility min-h-11 to a generated utility backed by size.control.min."
+      },
+      "hover": {
+        "content": "Unchanged \u2014 treatment untouched by this ticket."
+      },
+      "focused": {
+        "content": "Unchanged \u2014 the global focus-visible ring is untouched."
+      },
+      "active": {
+        "content": "Unchanged \u2014 treatment untouched by this ticket (DT-0004 defines it)."
+      }
+    },
+    "responsive": {
+      "mobile": "Unchanged.",
+      "desktop": "Unchanged."
+    },
+    "content": {
+      "generator": "tools/generate-theme.mjs additionally emits the size group: a CSS custom property per leaf (--gc-size-control-min) and a Tailwind extend.minHeight entry keyed 'control', so min-h-control resolves to var(--gc-size-control-min). system.json stays the single writer; hand-editing tailwind.theme.json stays pointless."
+    }
+  },
+  "acceptance": [
+    "system.json carries size.control.min: 44px and remains the only place the number is stated",
+    "tools/generate-theme.mjs emits --gc-size-control-min and a minHeight.control Tailwind extension sourced from it",
+    "min-h-11 appears nowhere under src/ or app/ \u2014 BUTTON_PRIMARY and BUTTON_SECONDARY reference the generated min-h-control utility instead",
+    "The rendered min-height of both buttons is 44px before and after \u2014 this ticket changes no pixel",
+    "control.ts's header comment about the missing token is updated to say the token now exists, so the file stops filing a bug that is fixed"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog: the-button-primitive-has-no-tokens (GitHub #108) \u2014 this ticket is its first folded gap. Implement before DT-0004."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

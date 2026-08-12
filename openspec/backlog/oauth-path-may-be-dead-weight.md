@@ -5,8 +5,8 @@ type: question
 status: open
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
-change: oauth-endpoints-are-assumed
+updated: 2026-08-12
+change: ""
 capability: battlegrid-connection
 github: "91"
 blocked_by: []
@@ -72,3 +72,10 @@ Worth weighing on the other side:
 Not a defect. Filed so that the decision is made rather than drifted into, and
 so the next person to read `battlegrid-connection` knows the second path exists
 on purpose.
+
+The `change:` link to `oauth-endpoints-are-assumed` was cleared 2026-08-12:
+that change proved everything provable without a credential and archived.
+What this item still holds — the keep-or-delete decision, settled by a few
+weeks of real use never touching `/connect` — was never that change's scope.
+The same browser session that would settle `prove-token-lifetimes` (#93)
+would also inform this one.

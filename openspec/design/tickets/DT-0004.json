@@ -1,0 +1,111 @@
+{
+  "id": "DT-0004",
+  "surface": "agent-archive-confirm",
+  "targets": [
+    "archive-page",
+    "problem",
+    "consequence",
+    "perform-archive",
+    "button-primary",
+    "button-secondary"
+  ],
+  "type": "restyle",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The archive confirmation gets the product's standard shell, and its three messages stop wearing the same anonymous border: the consequence speaks in the consequence role, a bounced attempt speaks in danger, a refusal to mint speaks in notice.",
+  "rationale": "Today every message block on this page is 'rounded border p-N text-sm' \u2014 the platform's consequence sentence, a failed attempt's reason, and the cannot-archive refusal are visually one thing, distinguishable only by reading. DT-0001 built the semantic roles exactly for this (quiet/notice/consequence), and DT-0002 ruled where the weight belongs on a confirmation: never on the button, always on the consequence block. This ticket extends both rulings to the archive page unchanged: the button stays un-dangered per the manifest constraint and spec 'present archiving as recoverable' (agent-authoring spec.md:202) \u2014 but the *problem* banner is not advisory and not the legitimate action; it reports a write the platform refused, and it takes danger.subtle so a bounced attempt cannot be skimmed past as one more bordered paragraph. The secondary button also gains its first hover treatment: an anchor that changes nothing on pointer-over reads as inert text in a box.",
+  "design": {
+    "layout": "Standard confirmation shell exactly as DT-0001's implementation landed it: centred column (stock max-w-2xl), space.5 page padding, vertical rhythm space.4 between blocks, heading at type.size.xl / type.weight.medium. Identical shell in every state, including not-connected and refused.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "shell_background": "color.bg.base",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "problem_bg": "color.danger.subtle",
+      "problem_border": "color.danger.default",
+      "refusal_bg": "color.notice.subtle",
+      "refusal_border": "color.notice.border",
+      "text": "color.text.primary",
+      "radius": "radius.2",
+      "block_padding": "space.4",
+      "row_gap": "space.3",
+      "min_height": "size.control.min"
+    },
+    "states": {
+      "proposal": {
+        "content": "Shell + heading 'Archive <name>?', consequence block, button row. The consequence block is the visually heaviest element between heading and buttons: color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, body text at type.size.sm / color.text.primary. role=alert stays. The platform's sentence renders verbatim \u2014 no truncation, no paraphrase."
+      },
+      "proposal-with-problem": {
+        "content": "Same as proposal with the problem banner first, above the consequence block, in the reading order the redirect put it: what you tried failed, here is what archiving still means, here are the buttons. The two blocks must not share a palette role \u2014 problem is danger.subtle, consequence is consequence.subtle."
+      },
+      "refused": {
+        "content": "Shell + heading 'Cannot archive' + the platform's reason in a notice block: color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, color.text.primary text, role=alert kept. No form beneath, no dismiss control, nothing styled as disabled \u2014 the refusal explains, per DT-0001's vocabulary-unavailable treatment."
+      },
+      "not-connected": {
+        "content": "Rendered by the shared not-connected component. This ticket guarantees only that it inherits the same shell; its own treatment is out of scope here \u2014 it is shared by every page and deserves its own ticket."
+      },
+      "present": {
+        "content": "The problem banner: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, type.size.sm text in color.text.primary. role=alert stays. Not color-alone: it opens with the bolded word 'Refused:' at type.weight.semibold before the platform's reason, so the state is named as well as tinted."
+      },
+      "absent": {
+        "content": "Nothing renders and no space is reserved \u2014 the consequence block sits directly under the heading."
+      },
+      "default": {
+        "content": "Buttons as DT-0002 landed them: primary on color.accent.default with color.accent.text, secondary as a color.border.default bordered peer; both at min-height size.control.min, radius from the shared constants. The button row is flex with space.3 gap and wraps."
+      },
+      "hover": {
+        "content": "Primary: color.accent.hover background over motion.duration.fast (unchanged). Secondary, new: border shifts to color.border.strong and background to color.bg.sunken over motion.duration.fast \u2014 enough to say 'this is a control', not enough to compete with primary."
+      },
+      "focused": {
+        "content": "The global focus-visible ring (2px, color.focus) \u2014 no per-element ring is added, per the manifest constraint."
+      },
+      "active": {
+        "content": "Primary: holds color.accent.hover with transition at motion.duration.instant \u2014 a press reads as immediate, not animated. Secondary: holds its hover treatment the same way. No transform, no layout shift."
+      }
+    },
+    "responsive": {
+      "mobile": "Buttons stretch full width and stack in source order (submit first), each keeping min-height size.control.min; block padding stays space.4.",
+      "desktop": "From breakpoint.tablet the button row is inline: primary then secondary, space.3 gap, natural widths."
+    },
+    "motion": {
+      "hover": "Background and border transitions at motion.duration.fast, motion.easing.standard, colors only \u2014 no layout shift.",
+      "reduced": "Inherited from the generated prefers-reduced-motion block; nothing here gates feedback on motion."
+    },
+    "content": {
+      "problem_prefix": "Refused:",
+      "note": "All copy is otherwise untouched \u2014 heading, consequence sentence, button labels and the refusal reason are behavior and stay verbatim."
+    }
+  },
+  "acceptance": [
+    "The page keeps the DT-0001 shell in all four page states: centred max-w-2xl column, space.5 padding, heading at type.size.xl and type.weight.medium",
+    "The consequence block uses color.consequence.subtle background and color.consequence.border border, and its role=alert survives",
+    "The problem banner uses color.danger.subtle background and color.danger.default border, opens with a semibold 'Refused:' prefix, and its role=alert survives",
+    "The problem banner and the consequence block are distinguishable with color vision deficiency: different border weights or the 'Refused:' prefix make the difference legible without hue",
+    "The refused state renders the reason in a notice block (color.notice.subtle / color.notice.border) with no form and nothing that looks disabled",
+    "The primary button remains accent-colored \u2014 nothing on this page is styled with color.danger except the problem banner",
+    "The secondary button visibly responds to hover: color.border.strong border and color.bg.sunken background",
+    "Both buttons keep a rendered min-height of exactly size.control.min (44px) at every viewport",
+    "On viewports under breakpoint.tablet the buttons are full-width and stacked with the submit first; from breakpoint.tablet they sit inline with space.3 gap",
+    "The platform's consequence sentence and refusal reasons render verbatim \u2014 no truncation or paraphrase at any width",
+    "No raw color, spacing, or size literal is introduced \u2014 every new value resolves to a token"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Implement after DT-0003 \u2014 the min-height acceptance references size.control.min through the generated utility."
+    },
+    {
+      "kind": "note",
+      "value": "Buttons are styled via BUTTON_PRIMARY/BUTTON_SECONDARY in control.ts, shared product-wide; the hover/active additions land there and every confirmation page inherits them. The message-block roles are this page's markup."
+    },
+    {
+      "kind": "note",
+      "value": "Backlog: the-button-primitive-has-no-tokens (GitHub #108), second folded gap \u2014 first design ticket over a confirmation page. The pending-feedback gap found in the survey is NOT this ticket: it is behavior, filed as GitHub #153."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}
