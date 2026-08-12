@@ -1,5 +1,27 @@
 # Journal
 
+## 2026-08-12 (session close) — PR #154 merged; the tail filed; two new items
+
+**Did**: The operator authorized the recommendation: final full local CI
+on the exact head, PR #154 marked ready and squash-merged as `1052adb`
+(twelve changes, 118 files, +4,373/−279). Watch stood down. Close-out
+filed the deferred work: **#157** `the-design-lane-has-a-tail` (eleven
+ceremony manifests + first tickets for the three functional list
+surfaces — split out of #108, which closed: its substance, the button
+primitive's tokens and treatments, is done) and **#158**
+`handoff-predates-the-backlog-session` (HANDOFF.md lags today's twelve
+changes).
+**State**: main at `1052adb` + this bookkeeping. 22 open items ↔ 22 open
+issues. 0 active changes, 0 validation errors. Board: 161 archived
+changes, 13 capabilities.
+**Next**: a fresh session — either the #157 tail (routine), the #158
+reconciliation (short), or the operator's decisions (#153, #146, #91/#93).
+#94 ripens in about a week.
+**Watch out**: Undertow's equity ($30.14) is under its $33.33 sizing
+floor — benched on new coins until funded or resized (the operator's
+knob, #146). The container's PostgreSQL stops when idle; `service
+postgresql start` before `test:db`/`serving` gates.
+
 ## 2026-08-12 (the backlog worked) — live probes refresh eight items, and #108's prescription is executed whole
 
 **Did**: The operator asked for the issue tickets to be worked. A read-only

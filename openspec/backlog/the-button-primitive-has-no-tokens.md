@@ -2,7 +2,7 @@
 id: the-button-primitive-has-no-tokens
 title: The button primitive names four variants and tokenises none of them
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-06
 updated: 2026-08-12
@@ -178,3 +178,13 @@ ticket. **Gap 2 is down to its last slice**: the remaining confirmation
 pages (edit/deploy/rebind/reactivate/undeploy and the strategy-side
 ceremonies) and first tickets for agent-roster / audit-log /
 strategy-catalog.
+
+## Closed 2026-08-12, end of session — the substance is done, the tail has its own record
+
+The title's claim is no longer true: the primitive's missing token exists
+(`size.control.min`, DT-0003), its variants' treatments are decided and
+worn product-wide (DT-0002..DT-0010, the border sweeps,
+`the-refusals-dress-alike`), and `ghost`/`danger` stay deliberately
+undefined by the design agent's recorded decision. The remaining
+record-keeping — eleven ceremony manifests, first tickets for the three
+early list surfaces — is `the-design-lane-has-a-tail` (#157).
