@@ -2,7 +2,7 @@
 id: oauth-path-may-be-dead-weight
 title: The delegated OAuth path may now be dead weight
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-07-29
 updated: 2026-08-13
@@ -170,3 +170,47 @@ What changed for this decision:
   proven, not merely audited.
 
 Still open, still the operator's call, and no longer urgent.
+
+---
+
+# ANSWERED 2026-08-13 — keep the delegated path
+
+**Decision: keep it.** Made by the operator, on the day the path first worked.
+
+This item was filed so the decision would be *made* rather than drifted into. It
+is now made, and the item closes on an answer rather than on neglect.
+
+## Why
+
+**Grid-Commander is a third-party multi-tenant client for BattleGrid** — that is
+`CLAUDE.md`'s own first sentence about the domain, and the delegated path *is*
+that capability. Deleting it would leave the product describing itself as
+something it could no longer be.
+
+The two standing arguments were never weakened and are now stronger:
+
+- It is the only demonstration behind the brief's belief that third-party clients
+  are permitted. BattleGrid deploys a full delegated-authorization stack — open
+  dynamic registration, a secretless public client, enforced PKCE, working
+  revocation — all re-confirmed live on 2026-08-13. That argument used to rest on
+  a stack nobody here had completed. It no longer does.
+- Rebuilding it correctly is expensive: the guard sequence, single-use state, and
+  the one-identity-per-account uniqueness are each tested against a real
+  database, and the walk added a defect class nobody would have re-derived (see
+  `granted-scopes`).
+
+And the thing that made deletion cheap this morning is gone: *"code that ships,
+is audited, and cannot succeed"* was the strongest case against keeping it, and
+`the-connection-asks-who-it-is` removed it. What would have been deleted is now a
+working, live-proven capability.
+
+## What this closes, and what it does not
+
+Closed: the keep-or-delete question, and with it the standing instruction to
+watch `/connect` usage for evidence of disuse. Real use is no longer the test,
+because the answer no longer depends on it.
+
+Not closed, and deliberately left alone: nothing here commits the product to
+*serving* other users. Keeping the capability is not the same as opening the
+door, and the multi-tenant surface has its own unaddressed questions — session
+hardening, and [[a-refresh-is-trusted-to-be-the-same-account]] (#206) among them.
