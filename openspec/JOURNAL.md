@@ -1,5 +1,57 @@
 # Journal
 
+## 2026-08-13 (Tier 0) — a read-only sweep, three false findings caught, and one claim overturned
+
+**Did**: Swept the blocked backlog against the live platform. Read-only —
+`BATTLEGRID_LIVE_WRITES` unset, no mutating tool named anywhere in the probes.
+
+**#207 closed.** All three failing probes pass, unchanged code, same account:
+`own-evaluation-probe` (Vanguard, 5 evaluations; AVAX 84 consulted, 20 fired,
+cost reported), `simulate-probe`, `evaluation-probe` (Market Predator, 10 listed).
+Transient. **Both hypotheses the item carried are falsified** — the account has
+evaluations in quantity (`total` 143 / 27 / 80) and the public field is populated
+(38 entries). Closed on "the suite is green and the cause is unknown" rather than
+on an invented third hypothesis.
+
+**#100 overturned in part.** Its central claim — *"the boundary is clean: every
+row above it fails, every row below it reads"* — is **false**. Row 287 fails on
+its own, three reads out of three, 190 rows below the head, with rows 286 and 288
+serving normally either side. That also explains the `limit: 50` behaviour: a
+page fails if it *contains* a poisoned row. The head is real and contiguous
+(12 of 12 sampled in rows 1–56 fail) and **it grew** — row 56 was `09:29:04` and
+readable yesterday; that row is now ~102 and inside the failing set. The upstream
+report changes from "a recent window is unreachable" to "specific rows are
+unreadable, densely at the head and scattered below".
+
+**#146 is observable, and measured.** Rows 151–250, a 2h01m window: **100
+blocks, all `OPEN_POSITION_CONFLICT` at `gateStage: TOKEN`, 86 of them HYPE.**
+~50/hr against the ~90/hr recorded. One reason code and one gate stage across the
+whole window is itself the finding.
+
+**State**: on `chore/tier-zero-observations`, not pushed. No code changed — three
+backlog items updated, one closed. 0 active changes, 0 validation errors.
+
+**Next**: push and PR the observations. #146 now has data and could be modelled;
+#100 is reportable upstream in much sharper terms.
+
+**Watch out**:
+
+- **Three of this sweep's first findings were my own parsing errors.** The
+  payload key is **`entries`** — not `logs`, not `blocks`, not `agents`. Reading
+  the wrong key produced "zero rows", "empty pages" and "the field is empty", and
+  every one of them would have been filed upstream as a platform fact. Print the
+  payload's keys before concluding anything about what a tool returned.
+- **`get_signal_log` requires `agentId` *and* `logId`.** Passing `logId` alone
+  returns an argument-validation error that reads like a platform fault. Check
+  `required` in `docs/battlegrid-mcp-capabilities.json` first.
+- **A probe that reads a live rate-limited account must stay serial.**
+  `vitest.live.config.ts` pins `fileParallelism: false` because a concurrent
+  sweep once produced nine phantom failures that a serial re-run collapsed to
+  two. The same applies to any agent fan-out over this platform.
+- **A "blocked" item is often only blocked on someone looking.** Of the eleven in
+  Tier 0, this sweep moved three in an afternoon and none of them needed a write.
+
+
 ## 2026-08-13 (harness and radar) — two guards fixed, and a scope changed on contact with the payload
 
 **Did**: Three changes archived after the OAuth round.

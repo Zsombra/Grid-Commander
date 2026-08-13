@@ -416,3 +416,63 @@ history from before the question arose.
   wearing a crash.
 - **Nothing to fix in this product.** It classifies the answer correctly as
   `unreadable`, which is what the platform said. That remains right.
+
+---
+
+# Re-bisected 2026-08-13 (evening) — the boundary is not clean, and the head has grown
+
+`list_gate_blocks` re-probed against Undertow (`total` 5437 → **5483**). Two of
+this item's claims survive and one does not.
+
+## The head is contiguous, and it grew
+
+Twelve rows sampled across 1–56, **all twelve fail**. The first readable row is
+now between 100 (fails) and 105 (`2026-08-12T09:25:04`).
+
+    row   1 … 56   FAIL  (12 of 12 sampled)
+    row 100        FAIL
+    row 105        2026-08-12T09:25:04   ok
+    row 130        2026-08-12T08:52:04   ok
+
+The earlier bisection had row 56 = `09:29:04` **readable**. With 46 rows added
+since, that same row now sits at ~102 — inside the failing head. So a row that
+served yesterday does not serve today: the head is a time window, and it has
+eaten roughly four more minutes of history rather than staying put.
+
+## But the boundary is not clean — there are poisoned rows far below it
+
+This item states: *"The boundary is clean: every row above it fails, every row
+below it reads."* **That is false.**
+
+    row 284   06:15:02 TRUMP   ok
+    row 285   06:14:03 TRUMP   ok
+    row 286   06:14:03 HYPE    ok
+    row 287   FAIL  ← three reads, three failures
+    row 288   06:13:03 HYPE    ok
+    row 289   06:13:03 TRUMP   ok
+
+**Row 287 fails on its own, deterministically, with working rows either side**,
+190 rows below the head. It is also why `limit: 50` behaves oddly — page 4 and
+page 5 serve 50 rows each while pages 3 and 6 refuse: a page fails if it
+*contains* a poisoned row, so a larger limit fails more often.
+
+That reframes the upstream report. It is not "a recent window is unreachable".
+It is **specific rows are unreadable — a dense block at the head, plus isolated
+ones scattered below** — which is a different fault and a much sharper thing to
+hand BattleGrid.
+
+## The read-around still works, and it is how #146 became observable
+
+Everything readable in the sampled range is `OPEN_POSITION_CONFLICT` at
+`gateStage: TOKEN`. Measured over rows 151–250 — a 2h01m window,
+`06:32:05 → 08:33:05` — **100 blocks, 100 of them `OPEN_POSITION_CONFLICT`,
+86 of them HYPE.** See [[open-position-conflict-churn-tripled]] (#146).
+
+## A correction about how this was found
+
+The first three passes of this sweep reported "empty" pages and a zero-length
+agent field. Both were wrong: the payload key is `entries`, and the probe was
+reading `blocks` / `agents`. Nothing was empty. The reading error is recorded
+because it is this repository's own recurring defect arriving in the probe
+written to look for it — and because "the tool returns empty" would have been
+filed upstream as a fact.
