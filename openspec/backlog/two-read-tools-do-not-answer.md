@@ -1,11 +1,11 @@
 ---
 id: two-read-tools-do-not-answer
-title: Two argument-free read tools refuse or error when actually called
+title: get_market_context is refused for omitting an argument its own schema does not require
 type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: battlegrid-connection
 github: "114"
@@ -13,7 +13,12 @@ blocked_by: []
 tags: [battlegrid, probe, declared-vs-observed]
 ---
 
-# Two argument-free read tools refuse or error when actually called
+# get_market_context refuses the call its own schema permits
+
+> **Narrowed to one tool 2026-08-13.** Filed as two; the `get_open_orders` half
+> is finished twice over — the platform stopped erroring, and this product now
+> calls it. Original title: *"Two argument-free read tools refuse or error when
+> actually called"*. The narrowing is recorded below rather than edited away.
 
 ## What
 
@@ -50,6 +55,13 @@ so it may simply be residue. Or it may not.
 
 Neither tool is called by this product today, so nothing is broken. Both are on
 the roadmap: `get_open_orders` belongs to the nine unused positions/orders tools.
+
+> **No longer true of `get_open_orders`, as of 2026-08-13.** It is called —
+> `positions-adapter.ts:16` maps it as `TOOLS.resting`, `readRestingOrders`
+> consumes it, and `read-exposure.query.ts:212` reads it in the exposure
+> fan-out. That landed in `#128` and this paragraph was never revisited. The
+> sentence is left standing because it is what the item argued from; see the
+> 2026-08-13 section at the bottom.
 
 ## Fix
 
@@ -153,3 +165,54 @@ the prose is sometimes the only place a requirement is written down.**
 Recommend: keep open, stop expecting it to change, and re-read only when the
 description changes again.
 
+
+## 2026-08-13 — one tool left, and it is no longer "the product calls neither"
+
+Re-verified in the same read-only sweep that checked every open issue.
+
+**`get_market_context({})` refuses, sixth measurement, unchanged.**
+
+    get_market_context({}) → {"code":"VALIDATION_ERROR",
+                              "message":"Provide sessionId or primaryTimeframe"}
+
+The v18.2.0 tool description still states the precondition in prose — *"exactly
+one of the two"* — while the input schema still declares no `required`, no
+`anyOf`, no `oneOf`. Five majors of the same divergence.
+
+**`get_open_orders` answers, and this product now calls it.** Two things, and
+the second is the correction:
+
+    get_open_orders({}) → {"orders": []}
+
+`positions-adapter.ts:16` maps it as `TOOLS.resting`; `readRestingOrders`
+consumes it and `read-exposure.query.ts:212` reads it alongside the active
+positions, funnel and decisions in one `Promise.all`. It landed with `#128`
+("The protection that actually rests"), and `mapOrder` models fourteen fields
+of a resting order.
+
+So this item's standing sentence — *"the product still calls neither tool"* —
+has been false since #128 and was repeated through three subsequent
+re-observations. **The half of this item that was about `get_open_orders` is
+finished twice over**: the platform stopped erroring, and the product started
+calling it.
+
+### What the item is now
+
+One tool, one defect, and it is upstream's: **`get_market_context`'s schema
+understates its own precondition.** The product does not call it and has no
+reason to until the market-context reads are taken up (see
+[[trading-telemetry-is-unread]], #116).
+
+The standing value is unchanged and worth restating, because it is the reason
+to keep this open rather than close it: **nothing may build a call to
+`get_market_context` from `required` alone.** That is a rule about how this
+product reads a schema, and it is one live counter-example away from being
+forgotten.
+
+### Why the correction was reachable
+
+The item re-measured the *platform* five times and never re-measured the
+*product*. Every re-observation section reads `get_market_context` and
+`get_open_orders` against the live server; none re-ran `grep get_open_orders
+src/`. A claim about our own code aged out precisely because it looked like the
+settled half.

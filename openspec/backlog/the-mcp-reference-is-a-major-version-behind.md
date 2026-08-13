@@ -2,10 +2,10 @@
 id: the-mcp-reference-is-a-major-version-behind
 title: BATTLEGRID_MCP_REFERENCE.md still describes v17.2.0 and cannot be regenerated from the probe
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: platform-mapping
 github: "186"
@@ -56,3 +56,38 @@ dumps `initialize`, `tools/list`, `prompts/list`, `resources/list` and
 `resources/templates/list` into a directory would close the gap and make
 CLAUDE.md's "regenerate both" sentence true. The probe already speaks the
 protocol; it is the dump-to-disk that is missing.
+
+## Done 2026-08-13
+
+`tools/capture_mcp_dump.py` is the missing step. It opens one MCP session and
+dumps `initialize`, `tools/list`, `prompts/list`, `resources/list` and
+`resources/templates/list` as the server's own envelopes, unedited — which is
+what `generate_mcp_reference.py` reads. Protocol handling is imported from
+`probe_mcp_surface.py` rather than repeated; two implementations of "speak MCP
+and unwrap an SSE frame" would drift, and the probe's has run against a live
+server through six major versions.
+
+CLAUDE.md's "regenerate both" sentence is true now:
+
+```
+BATTLEGRID_API_KEY=… python3 tools/capture_mcp_dump.py build_log/dump
+python3 tools/generate_mcp_reference.py build_log/dump
+```
+
+`docs/BATTLEGRID_MCP_REFERENCE.md` is v18.2.0.
+
+**The generator could not run on Windows at all.** `open(..., "w")` takes the
+ANSI codepage there, and the reference contains arrows — `UnicodeEncodeError` at
+position 75162. Every `open()` in it is now explicit about encoding. That is
+part of why this went stale rather than incidental to it: the person who could
+regenerate it was the person not on Windows.
+
+**What the regeneration showed.** Across 114 tools, the only prose that moved
+between v17.2.0 and v18.2.0 is `list_gate_blocks`'s description — independent
+confirmation of the doctrine in CLAUDE.md, and of #185.
+
+**And what it uncovered**: `docs/battlegrid-mcp-capabilities.json` was *also*
+stuck at v17.2.0, and refreshing it exposed **188 output-schema leaves added
+across 11 tools**. Filed as [[the-capabilities-record-was-a-major-version-stale]]
+(#198) — the reference being stale was the visible half of a stale capture step,
+and the schemas were the half nobody could see.

@@ -4,6 +4,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { RecordCoverage } from '@/presentation/components/signal-record.js';
 
 /**
  * Forgetting part of the record, deliberately.
@@ -24,16 +25,38 @@ export default async function TrimRecordPage({
   const { before, problem, trimmed } = await searchParams;
 
   if (trimmed !== undefined) {
+    /**
+     * The receipt states what survives, read now — never what went.
+     *
+     * It used to render the `?trimmed=` parameter verbatim: real figures from
+     * the store, put into an editable address, where they became a claim
+     * nobody could check. Editing the address attested to a removal that never
+     * happened; re-opening the bookmark re-attested one long past, in the past
+     * tense, for an act that can never be undone.
+     *
+     * So no figure here comes from the URL. Coverage is derived from the rows
+     * at render time by the same read `/recorder` uses, which makes the
+     * sentence true whenever it is read rather than true once. What went was
+     * already stated — in the description the operator confirmed, bound to
+     * that exact extent, before anything was deleted.
+     */
+    const coverage = await app.readRecordCoverage.execute({ userId: user.authority.userId });
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Record trimmed</h1>
         <CarriedProblem problem={problem} />
-        <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">{trimmed}</p>
+        <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
+          What the record holds now, read as this page rendered — not a copy of what the trim
+          reported.
+        </p>
+        {/* The same component `/recorder` renders, so the two cannot drift and
+            the unreadable arm keeps its own sentence: the store not answering
+            says nothing about what it holds. */}
+        <RecordCoverage result={coverage} />
         <p className="text-sm">
           <a href="/recorder" className="underline">
             Back to the record
-          </a>{' '}
-          — its coverage now begins where the trim left it.
+          </a>
         </p>
       </main>
     );
@@ -142,9 +165,14 @@ export async function performTrim(formData: FormData) {
     redirect(`/recorder/trim?before=${day}&problem=${encodeURIComponent(result.reason)}`);
   }
 
-  const o = result.outcome;
-  const receipt =
-    `Removed ${o.runs} run${o.runs === 1 ? '' : 's'}: ${o.captures} capture${o.captures === 1 ? '' : 's'}, ` +
-    `${o.failures} failed attempt${o.failures === 1 ? '' : 's'}, ${o.readings} reading${o.readings === 1 ? '' : 's'}.`;
-  redirect(`/recorder/trim?trimmed=${encodeURIComponent(receipt)}`);
+  /**
+   * A marker, carrying no figures.
+   *
+   * `result.outcome` states what was removed and the command still returns it —
+   * that is the trim's answer to its caller. What it must not become is a
+   * sentence in an address bar: the numbers were real, and putting real numbers
+   * somewhere anyone can edit is what turned them into a claim nobody could
+   * check. The receipt reads the record instead.
+   */
+  redirect('/recorder/trim?trimmed=1');
 }

@@ -217,8 +217,8 @@ export const TOOLS: readonly ToolDefinition[] = [
     name: 'read_decision_pipeline',
     description:
       'Why an agent did or did not trade: how much it evaluated against how much it acted on, ' +
-      'then the three places a candidate can end — stopped before evaluation (with the ' +
-      "platform's reason code and its numbers), evaluated and skipped (scored against the " +
+      'then the three places a candidate can end — stopped by a gate (with the stage ' +
+      "BattleGrid names, its reason code and its numbers), evaluated and skipped (scored against the " +
       'threshold that was in force at the time, not today\'s), or decided. Each part can be ' +
       'empty or unreadable on its own.',
     useCase: 'readPipeline',

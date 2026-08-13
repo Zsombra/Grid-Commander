@@ -4,7 +4,7 @@
   "route": "/agents/[id]/edit",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "6562791",
+  "generated_at_commit": "eeb3427",
   "source_files": [
     "app/(app)/agents/[id]/edit/page.tsx",
     "src/presentation/components/agent-edit.tsx",
@@ -415,5 +415,14 @@
       "button-primary"
     ],
     "notes": "Problem and consequence blocks and the not-editable refusals carry role=alert; the position drift line carries role=status. Money hints are associated via aria-describedby. The twelve position-management booleans are native checkboxes inside their own inline labels, so the label is the accessible name and the native control keeps its own checked/disabled/forced-colors rendering. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/edit/page.tsx": "sha256:e62545a870ad50bdb9eb8b49c84026b214b0d53787866f2b22780c9b1ca6f7b0",
+    "src/presentation/components/agent-edit.tsx": "sha256:deadaa2dab731212900d30a1914b3b4c3912e1aac3aaee6c0a98a223c63e5c30",
+    "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

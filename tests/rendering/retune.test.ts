@@ -114,3 +114,58 @@ describe('the retune page, branch by branch', () => {
     expect(r.text).toContain('connect');
   });
 });
+
+/**
+ * A value the page was handed is checked before it is sent.
+ *
+ * `?a=banana` used to reach `describeRetune` as `NaN` and rely on BattleGrid to
+ * refuse it. The platform refusing is a true answer to the wrong question: it
+ * says the request was malformed, where this page already knew which value was.
+ */
+describe('the allocation is checked before anything is described', () => {
+  it('names the value it could not read, and describes nothing', async () => {
+    ruleWorld();
+    // p_threshold supplied so the params check passes and the allocation is
+    // what is actually under test.
+    const r = await retuneRendered('s1', 'rsi_oversold', { a: 'banana', p_threshold: '30' });
+    expect(r.text).toContain('does not read as a number');
+    expect(r.text).toContain('banana');
+    expect(r.text).toContain('nothing was sent to BattleGrid');
+  });
+
+  it('offers a way back that keeps the rest of the composition', async () => {
+    ruleWorld();
+    const r = await retuneRendered('s1', 'rsi_oversold', {
+      a: 'banana',
+      req: '1',
+      p_threshold: '25',
+    });
+    const back = r.links.find((l) => l.includes('edit=1'));
+    expect(back).toBeDefined();
+    // What they chose survives...
+    expect(back).toContain('req=1');
+    expect(back).toContain('p_threshold=25');
+    // ...except the value that could not be read, which would re-fill the
+    // field with the thing to fix.
+    expect(back).not.toContain('a=banana');
+  });
+
+  it('still describes a whole number', async () => {
+    ruleWorld();
+    const r = await retuneRendered('s1', 'rsi_oversold', { a: '2', p_threshold: '30' });
+    expect(r.text).not.toContain('does not read as a number');
+  });
+
+  it('re-opens the composer holding what was composed', async () => {
+    ruleWorld();
+    // edit=1 says "show the form", so carrying values back does not re-run
+    // the describe that just refused.
+    const r = await retuneRendered('s1', 'rsi_oversold', {
+      edit: '1',
+      a: '3',
+      p_threshold: '25',
+    });
+    expect(r.text).toContain('Retune');
+    expect(r.text).not.toContain('does not read as a number');
+  });
+});

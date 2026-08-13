@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v17.2.0`, protocol `2025-06-18`) on 2026-08-11.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v18.2.0`, protocol `2025-06-18`) on 2026-08-12.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -1640,9 +1640,11 @@ _No parameters._
 
 *List Gate Blocks* — read-only
 
-Paginated pre-signal pipeline rejections for one of your agents — the gate stage, reason
-code, quantified reason detail, and linked thought log for each candidate that never reached
-signal evaluation. This is the first place to look when an agent isn't trading.
+Paginated pipeline rejections for one of your agents — the gate stage, reason code, reason
+detail, and linked thought log for each evaluation that ended without a trade decision. Most
+are pre-model admission gates; EVALUATION-stage rows ended after the model was called and
+carry its terminal rejection text. This is the first place to look when an agent isn't
+trading.
 
 Returns: `entries`, `total`
 

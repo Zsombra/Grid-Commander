@@ -2,10 +2,10 @@
 id: the-performance-design-rests-on-a-dead-premise
 title: get_agent_performance answers now, and the product is built on it never having answered
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: agent-understanding
 github: "189"
@@ -86,3 +86,63 @@ Found by the read-only sweep the operator asked for, one probe after the
 freshness check that caught v18. Related: `performance-and-allocation-are-
 unmodelled` (#107), whose allocation half is still open and now known to be
 untestable until a position is open.
+
+
+---
+
+# Decided 2026-08-13 — option 2, and the correction was already in the repo
+
+Re-probed live first. The numbers are **identical to 2026-08-12**, so this is
+settled behaviour rather than a fluke:
+
+| agent | realized | drawdown | stop | curve |
+|---|---|---|---|---|
+| Undertow | -0.84 | 1.90 | 6 | 41 pts |
+| Breakwater | +0.30 | 0.41 | 5 | 25 pts |
+| Vanguard | 0 | 0 | 6 | empty, on nought trades |
+
+## The finding underneath the finding
+
+This item says the product is built on a dead premise. True — but the
+correction was **already in this repository**, unnoticed, in a different file:
+
+- `performance.ts:5` — "a tool that has never once answered"
+- `ports/agents.ts:142` — "So the tool is not broken"
+
+`ports/agents.ts` worked it out on 2026-08-06: the tool measures P&L *since the
+agent's risk-budget baseline*, so an agent with no budget reports zeros while
+carrying real closed losses, and one with a budget "agrees with the outcomes to
+the cent (-0.23 against -0.23582, a 26-point curve for 26 trades)".
+
+**Two comments in one codebase disagreed, and the emphatic one was wrong.** The
+same shape as the render harness and DT-0014 — not a stale fact, but a confident
+one that had already been superseded where nobody was looking.
+
+v18 now states it in the tool's own description: *"An empty curve means no
+settlements yet, not missing data."*
+
+## The decision
+
+**Option 2 — the roster stays the record source, and the comments are
+corrected.** `ports/agents.ts:142`'s argument holds and #189 does not overturn
+it: the roster answers the same question the same way whether or not a budget
+was ever set, which is what a record has to do.
+
+Corrected:
+
+- `src/domain/agent/performance.ts` — header rewritten. Keeps the conclusion,
+  replaces the reasoning, credits `ports/agents.ts` for having got there first,
+  and carries the live confirmation.
+- `src/presentation/components/record.tsx` — the caveat's justification. The
+  rendered sentence is unchanged and still correct; what was wrong was the
+  comment telling the next reader *why* it is there.
+
+## What option 1 was actually pointing at
+
+The tool answers a third question neither record does: **realized dollars
+against the drawdown stop the platform halts on**, trades and wagers totalled.
+Undertow is at 1.90 against a stop of 6 and no surface says so.
+
+That is a real unused capability and it needs a design round for the sparkline,
+so it is filed as [[realized-pnl-against-its-stop-is-unread]] (#202) rather than
+smuggled into a comment fix.

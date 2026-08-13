@@ -4,14 +4,14 @@
   "route": "/strategies/[id]/restore",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "e7c56ce",
+  "generated_at_commit": "e9a615e",
   "source_files": [
     "app/(app)/strategies/[id]/restore/page.tsx",
-    "src/presentation/components/control.ts",
-    "src/presentation/require-connection.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
+    "src/application/use-cases/strategy-lifecycle.command.ts",
     "src/presentation/components/carried-problem.tsx",
-    "src/application/use-cases/strategy-lifecycle.command.ts"
+    "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
   ],
   "viewports": [
     "mobile",
@@ -63,7 +63,7 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. DT-0020 restyled exactly one sentence on this page — `unreadable`'s: the roster read's reason is now `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert, with WhyNotLoaded's reassurance following as a separate plain `mt-2` paragraph beneath the block rather than inside it, and the way out is the roster; an archived strategy is the one a user most readily believes deleted, so that reassurance carries the most weight here. Two sentences were deliberately left plain and still are: `not-archived` (h1 'Cannot restore', then a bare `role=alert text-sm` '<name> is not archived.') because that is a statement of fact about the strategy rather than a failed attempt, and the repair-required guidance block, which keeps role=status and its plain border. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. DT-0020 restyled exactly one sentence on this page — `unreadable`'s: the roster read's reason is now `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert, with WhyNotLoaded's reassurance following as a separate plain `mt-2` paragraph beneath the block rather than inside it, and the way out is the roster; an archived strategy is the one a user most readily believes deleted, so that reassurance carries the most weight here. Two sentences were deliberately left plain and still are: `not-archived` (h1 'Cannot restore', then a bare `role=alert text-sm` '<name> is not archived.') because that is a statement of fact about the strategy rather than a failed attempt, and the repair-required guidance block, which keeps role=status and its plain border. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments. State is now consulted before the address: the isActive branch precedes the ?outcome=repair-required branch, so a stale bookmark on a restored strategy renders 'not archived' rather than 'needs rebuilding first'.",
       "constraints": [
         "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
         "On the repair-required branch the carried danger banner and the guidance block must stay visually separable — the guidance is not a failure and must not be pulled into the banner's palette by proximity ('notice never borrows danger's colour', system.json principle).",
@@ -307,5 +307,13 @@
       "button-secondary"
     ],
     "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/restore/page.tsx": "sha256:2b722a3ab39cdcacad89a2cbb2b00956cf3b6184df117081ed0e9d618cdd89df",
+    "src/application/use-cases/strategy-lifecycle.command.ts": "sha256:c302d00af84f9d4a6b4c3d0d15930f3df2bf37ef8f5b1326515574011d5bc380",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

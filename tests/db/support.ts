@@ -24,7 +24,55 @@ export function databaseUrl(): string {
         'the suite that needs none.',
     );
   }
+  assertDisposable(url);
   return url;
+}
+
+/**
+ * This suite TRUNCATES. It must not do that to a database somebody is using.
+ *
+ * `databaseUrl()` used to refuse only a *missing* URL and accept any present
+ * one — including the app's own, which is exactly what `.env` sets and what a
+ * developer running the app already has exported. On 2026-08-13 that happened:
+ * the suite was pointed at a live `grid_commander` and truncated a recorder
+ * record that BattleGrid cannot re-serve, because it serves current readings
+ * only. The tests all passed. Nothing warned.
+ *
+ * So a truncating suite now requires the database to be named as disposable,
+ * and the check is opt-*in* rather than opt-out: an unrecognised value refuses,
+ * a typo refuses, and silence refuses. The failure mode of getting this wrong
+ * is unrecoverable data, so it fails toward doing nothing.
+ *
+ * Two ways to say it, both explicit:
+ *   - name the database so it says so — anything matching /test|scratch|throwaway/
+ *   - or set DB_TESTS_MAY_TRUNCATE=yes, exactly, for a database named otherwise
+ */
+const DISPOSABLE_NAME = /(^|[_-])(test|tests|scratch|throwaway)([_-]|$)/i;
+
+export function assertDisposable(url: string): void {
+  if (process.env['DB_TESTS_MAY_TRUNCATE'] === 'yes') return;
+
+  let name = '';
+  try {
+    name = new URL(url).pathname.replace(/^\//, '');
+  } catch {
+    // Not a parseable URL. Let the driver produce its own error rather than
+    // guessing — but do not let an unparseable string count as permission.
+  }
+  if (name && DISPOSABLE_NAME.test(name)) return;
+
+  throw new Error(
+    [
+      `Refusing to run the database suite against "${name || url}".`,
+      'This suite TRUNCATES every table it touches, including the signal record — ' +
+        'which BattleGrid cannot re-serve, because it serves current readings only.',
+      'Point DATABASE_URL at a disposable database (a name containing "test", ' +
+        '"scratch" or "throwaway"), or set DB_TESTS_MAY_TRUNCATE=yes if you are ' +
+        'certain this one is disposable.',
+      'This guard exists because the suite was once pointed at a live database and ' +
+        'destroyed a record that could not be rebuilt. Every test passed.',
+    ].join('\n\n'),
+  );
 }
 
 /** Every table the repositories touch. Truncated between tests, in one statement. */

@@ -288,8 +288,8 @@ record that cannot be read SHALL say that instead.
 ### Requirement: Why An Agent Did Not Trade Is Readable
 
 The product SHALL show, for one agent, the three stages at which a trade
-candidate can end: candidates blocked before signal evaluation — with the
-stage, the platform's reason code, and the quantified detail behind it;
+candidate can end: candidates the pipeline stopped — with the stage the
+platform names, its reason code, and the quantified detail behind it;
 evaluations that ran — with the aggregate score against the threshold in
 force, the dominant bias, and the terminal status; and decisions the agent
 reached — with its direction, conviction, the reasoning it wrote, and
@@ -306,8 +306,16 @@ unparaphrased. A decision SHALL also show what it would have staked
 against, and, where the platform gives them, the exchange order ids that
 link the decision to what was actually placed.
 
+**A stopped candidate SHALL NOT be described as one that was never
+evaluated.** The platform's own account of this changed: what it once called
+pre-signal rejections it now describes as every evaluation that ended without
+a trade decision, of which some ended *after* the model was called. The
+product therefore SHALL pass through the stage the platform names and SHALL
+NOT assert, in prose or in a contract comment, where in the pipeline a
+candidate stopped.
+
 #### Scenario: A silent agent explained
-- **GIVEN** an agent whose candidates were blocked before evaluation
+- **GIVEN** an agent whose candidates the pipeline stopped
 - **WHEN** the user opens why it did not trade
 - **THEN** each block shows its stage, the platform's reason code, and the
   numbers behind it

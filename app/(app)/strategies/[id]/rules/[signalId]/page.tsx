@@ -14,6 +14,28 @@ import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
 /**
+ * The address that re-opens the composer holding what was composed.
+ *
+ * `edit=1` is what tells the page to show the form rather than describe — see
+ * `composing`. Without it, carrying the values back would skip the form and
+ * re-run the describe that just refused.
+ */
+function composeAgain(
+  q: Record<string, string | string[] | undefined>,
+  declared: readonly { readonly key: string }[],
+): URLSearchParams {
+  const again = new URLSearchParams({ edit: '1' });
+  const a = one(q, 'a');
+  if (a !== undefined) again.set('a', a);
+  if (one(q, 'req') === '1') again.set('req', '1');
+  for (const p of declared) {
+    const v = one(q, `p_${p.key}`);
+    if (v !== undefined) again.set(`p_${p.key}`, v);
+  }
+  return again;
+}
+
+/**
  * Retuning one signal rule: the scorecard write, behind the ceremony.
  *
  * Two steps on one route, the deploy pattern. Without a proposal in the
@@ -120,7 +142,17 @@ export default async function RetuneRulePage({
   const problem = one(q, 'problem');
   const allocationRaw = one(q, 'a');
 
-  if (allocationRaw === undefined) {
+  /**
+   * Show the form, rather than describe.
+   *
+   * `a` being absent used to be the only signal, which meant a link back to the
+   * form could not carry what was typed — carrying `a` skipped the form and
+   * re-ran the describe. `edit=1` says "compose again, with these values",
+   * so a refusal can return the choice instead of the stored rule.
+   */
+  const composing = allocationRaw === undefined || one(q, 'edit') === '1';
+
+  if (composing) {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">
@@ -150,7 +182,12 @@ export default async function RetuneRulePage({
             </select>
           </label>
           <label className="block">
-            <input type="checkbox" name="req" value="1" defaultChecked={rule.required} /> Required —
+            <input
+                type="checkbox"
+                name="req"
+                value="1"
+                defaultChecked={one(q, 'req') === undefined ? rule.required : one(q, 'req') === '1'}
+              /> Required —
             the setup is gated on this signal firing
           </label>
           {declared.map((p) => (
@@ -162,7 +199,10 @@ export default async function RetuneRulePage({
                 name={`p_${p.key}`}
                 className={CONTROL}
                 defaultValue={String(
-                  (rule.params as Record<string, unknown> | null)?.[p.key] ?? p.defaultValue ?? '',
+                  one(q, `p_${p.key}`) ??
+                    (rule.params as Record<string, unknown> | null)?.[p.key] ??
+                    p.defaultValue ??
+                    '',
                 )}
               />
               {/* The parameter's own description, not part of its name — so it
@@ -201,14 +241,50 @@ export default async function RetuneRulePage({
           be described.
         </p>
         <p className="text-sm">
-          <a href={`/strategies/${id}/rules/${signalId}`} className="underline">Compose it again</a>
+          {/* Back to what was composed, not to the stored rule. The refusal
+              path below already preserves the choice; these two disagreeing
+              was the bug. */}
+          <a href={`/strategies/${id}/rules/${signalId}?${composeAgain(q, declared).toString()}`} className="underline">
+            Compose it again
+          </a>
+        </p>
+      </main>
+    );
+  }
+
+  /**
+   * Checked here, not by the platform.
+   *
+   * `?a=banana` used to reach `describeRetune` as `NaN` and rely on BattleGrid
+   * to refuse it. The platform refusing is a true answer to the wrong question:
+   * it says the request was malformed, where this page already knew *which*
+   * value was and could say so. The shape is `/recorder/trim`'s unreadable
+   * date — name the value it could not read.
+   */
+  const allocation = Number.parseInt(allocationRaw, 10);
+  if (!Number.isInteger(allocation)) {
+    // The allocation itself is deliberately not carried back — it is the value
+    // that could not be read, and returning it would re-fill the field with the
+    // thing to fix.
+    const again = composeAgain(q, declared);
+    again.delete('a');
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">That allocation does not read as a number</h1>
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          {`“${allocationRaw}” is not a whole number, so nothing was described and nothing was sent to BattleGrid.`}
+        </p>
+        <p className="text-sm">
+          <a href={`/strategies/${id}/rules/${signalId}?${again.toString()}`} className="underline">
+            Compose it again
+          </a>
         </p>
       </main>
     );
   }
 
   const intent = {
-    allocation: Number.parseInt(allocationRaw, 10),
+    allocation,
     required: one(q, 'req') === '1',
     ruleParams,
   };

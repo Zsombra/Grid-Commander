@@ -1,11 +1,11 @@
 ---
 id: performance-and-allocation-are-unmodelled
-title: get_agent_performance and get_agent_fund_allocation have never returned a figure
+title: get_agent_fund_allocation reports zero for money the platform reports as committed
 type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: agent-understanding
 github: "107"
@@ -13,7 +13,42 @@ blocked_by: []
 tags: [battlegrid, agent-understanding, mapping]
 ---
 
-# get_agent_performance and get_agent_fund_allocation have never returned a figure
+# get_agent_fund_allocation reports zero for money the platform reports as committed
+
+> **Split 2026-08-13.** The title named two tools. **They have gone different
+> ways and can no longer share an item.**
+>
+> - **`get_agent_performance` answers.** It has real figures on this account and
+>   the premise that it never answers is now the *product's* defect, not the
+>   platform's. That is [[the-performance-design-rests-on-a-dead-premise]] (#189),
+>   which supersedes this item's performance half entirely.
+> - **`get_agent_fund_allocation` is what is left**, and the finding is
+>   sharper than "never returned a figure": it returned **zero for an agent
+>   holding $17.45 of margin**.
+>
+> Original title: *"get_agent_performance and get_agent_fund_allocation have
+> never returned a figure"*. Everything below is kept.
+
+## Status 2026-08-13 — the finding stands, and cannot be re-measured today
+
+Re-read in the read-only sweep:
+
+```
+get_agent_performance(Undertow)      realizedPnlUsd -0.84   pnlCurveUsd 41 points
+get_agent_fund_allocation(Undertow)  availableUsd 0  committedUsd 0
+                                     lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+list_user_active_positions           openPositionCount 0    marginedUsd 0
+```
+
+**`committedUsd: 0` is correct right now.** The account holds no open position,
+so zero committed and zero margined agree. The 2026-08-10 contradiction —
+`committedUsd: 0` against the platform's own `marginedUsd: 17.45` for the same
+agent, seconds apart — **cannot be reproduced until a position is open again.**
+
+That is worth stating precisely, because it changes what a re-check means:
+a reading of zero today is *not* evidence the tool has been fixed, and must not
+be recorded as one. Only a reading taken while `openPositionCount > 0` can
+distinguish the two. The 2026-08-10 evidence remains the decisive measurement.
 
 ## Update 2026-08-06: the zeros are a baseline, not a bug
 

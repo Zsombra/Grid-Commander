@@ -1335,3 +1335,139 @@ product or imply the operator did something wrong.
 - **WHEN** the fork's detail page is viewed
 - **THEN** the trade-level policy the fork inherited is shown
 - **AND** the same inert-state notice applies
+
+### Requirement: A Fork Is Taken At The Revision The Page Named
+Where the product names the revision a copy will start from, the copy SHALL be
+taken from that revision — the one the user was shown and agreed to — and not
+from whatever is current when they click.
+
+The revision SHALL travel with the request rather than being read again at
+perform time. `fork_strategy` takes `sourceRevision` as a parameter, so a
+revision that is no longer current is an ordinary request the platform serves,
+not a conflict the product must invent a refusal for.
+
+The product SHALL NOT state which revision a fork came from once it exists: the
+platform returns no such field, and a lineage claim it cannot back is a claim
+the product does not make.
+
+#### Scenario: The parent moves between reading and clicking
+- **GIVEN** a user is shown that a copy will start from a named revision
+- **WHEN** the parent strategy is edited before they make the copy
+- **THEN** the copy is still taken from the revision they were shown
+- **AND** the copy is not taken from the newer revision they never saw
+
+#### Scenario: The parent is gone by the time they click
+- **WHEN** the strategy is no longer in the user's listing at perform time
+- **THEN** nothing is copied, and the user is returned to the form with the
+  reason and the name they typed
+
+### Requirement: A Stale Address Does Not Describe A Current State
+Where a page can be reached by an address carrying a past outcome, the product
+SHALL consult the entity's current state before it describes that outcome. A
+message about what the platform once refused MUST NOT be shown about a strategy
+whose state has since moved on.
+
+#### Scenario: A bookmark outlives the state it described
+- **GIVEN** an address saying a strategy needed rebuilding
+- **WHEN** it is opened after that strategy has been restored
+- **THEN** the page describes the strategy as it now is
+- **AND** does not say it needs rebuilding
+
+### Requirement: A Listing Shows Every Entry It Was Given
+Where the product lists entries, every entry it was given SHALL render. Two
+entries that happen to display the same text are two entries, and the list MUST
+NOT collapse them into one.
+
+This binds the condition listings in particular, where an entry may carry no key
+of its own and a reason may repeat across entries — the cases where display text
+is least able to tell two things apart.
+
+#### Scenario: Two entries with no key of their own
+- **GIVEN** a submitted list containing more than one entry with no key
+- **WHEN** the page lists what it was given
+- **THEN** every one of them is shown
+
+#### Scenario: Two entries refused for the same reason
+- **GIVEN** two entries the platform refused with identical wording
+- **WHEN** the reasons are listed
+- **THEN** both are shown, not one
+
+### Requirement: A Compile Refused For The Strategy's Own Prose Is Named As That
+Where BattleGrid refuses a condition edit because the strategy's `marketReadText`
+references the condition by marker, the product SHALL say so — naming the marker
+the prose used — rather than presenting the platform's refusal text as an
+unexplained wall.
+
+The naming SHALL come from the refusal the platform sends, never from reading
+the prose. The product does not parse `marketReadText`, does not learn the
+marker grammar, and SHALL NOT assert which markers a strategy's prose contains.
+Where the platform offers a nearest valid key, that is passed through as the
+platform's suggestion; where it offers none, none is invented.
+
+Only a refusal the platform identifies as a market-read marker failure is named
+this way. Any other refusal keeps the platform's own words, unclassified —
+naming a code whose meaning has not been established would be a guess wearing
+the platform's authority.
+
+The edit the operator composed SHALL survive this state, as it survives every
+other refusal.
+
+#### Scenario: The prose names the condition being removed
+- **GIVEN** a strategy whose market-read prose references a condition by marker
+- **WHEN** the operator asks to remove that condition
+- **THEN** they are told the strategy's own prose names it, and which marker
+- **AND** nothing is written
+- **AND** what they composed is still there
+
+#### Scenario: The platform offers a nearest key
+- **WHEN** the refusal carries a nearest valid key
+- **THEN** it is shown as the platform's suggestion
+- **AND** the product offers no suggestion of its own when the platform gives none
+
+#### Scenario: A refusal for any other reason
+- **WHEN** the compile is refused for a reason the platform does not identify
+  as a market-read marker failure
+- **THEN** the refusal is shown in the platform's own words, unclassified
+
+#### Scenario: A refusal that does not parse
+- **WHEN** the refusal body is not the structured shape the platform documents
+- **THEN** the refusal is still shown in full
+- **AND** no marker, path or suggestion is claimed from it
+
+### Requirement: A Failed Read Reaches The Surface With Its Reason
+Where a read fails and a surface must say so, the reason the read gave SHALL
+travel with the failure. A query MUST NOT collapse a failure to its kind alone,
+leaving the surface unable to say anything beyond that something went wrong.
+
+The surface SHALL state the reason and the reassurance the product states
+everywhere else: a read that did not answer says nothing about whether the work
+still exists.
+
+#### Scenario: The strategy could not be read
+- **WHEN** the strategy behind the section editor cannot be read
+- **THEN** the page names the reason the read gave
+- **AND** says the failure does not mean the strategy is gone
+
+#### Scenario: The vocabulary could not be read
+- **WHEN** the vocabulary or its templates cannot be read
+- **THEN** the page names the reason, the same way
+- **AND** does not present it as the strategy having failed
+
+### Requirement: A Value The Page Was Handed Is Checked Before It Is Sent
+Where a surface takes a value from its own address and sends it to the platform,
+it SHALL check that value first and refuse an unusable one by naming it.
+
+An unusable value MUST NOT be forwarded for the platform to reject. The platform
+refusing is a true answer to the wrong question — it says the request was
+malformed, where the product already knew which value was malformed and could
+have said so.
+
+#### Scenario: An allocation that is not a number
+- **WHEN** the address carries an allocation that cannot be read as a whole
+  number
+- **THEN** the page says so, naming the value it was given
+- **AND** nothing is sent to the platform
+
+#### Scenario: A composition that can be returned to
+- **WHEN** a rule edit is refused for any reason
+- **THEN** the way back leads to what was composed, not to an empty form

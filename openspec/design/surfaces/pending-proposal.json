@@ -4,11 +4,13 @@
   "route": "/pending/[id]",
   "capability": "mcp-control",
   "status": "designed",
-  "generated_at_commit": "b1e2153",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/pending/[id]/page.tsx",
-    "src/presentation/components/proposal-difference.tsx",
+    "src/ports/proposals.ts",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/proposal-difference.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -18,13 +20,13 @@
   "data": [
     {
       "name": "result",
-      "shape": "OpenProposalResult \u2014 proposal (consequence, dispositions, confirmationToken) | no-op | not-possible | stale | resolved | unreadable | not-found",
-      "source": "app.openProposal.execute \u2014 describes at the moment of opening, never from recorded values"
+      "shape": "OpenProposalResult — proposal (consequence, dispositions, confirmationToken) | no-op | not-possible | stale | resolved | unreadable | not-found",
+      "source": "app.openProposal.execute — describes at the moment of opening, never from recorded values"
     },
     {
       "name": "problem",
       "shape": "string | null",
-      "source": "searchParams \u2014 the refusal a bounced agree returned with"
+      "source": "searchParams — the refusal a bounced agree returned with"
     }
   ],
   "components": [
@@ -47,9 +49,9 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "Every branch renders through the shared Shell (max-w-3xl, space-y-4, p-6, back-link to /pending). Refusal branches are prose sentences; each says why and offers no control \u2014 'a disabled button still implies the change is available'.",
+      "current_implementation": "Every branch renders through the shared Shell (max-w-3xl, space-y-4, p-6, back-link to /pending). Refusal branches are prose sentences; each says why and offers no control — 'a disabled button still implies the change is available'.",
       "constraints": [
-        "Every branch that cannot be agreed to says why and offers NO control \u2014 never a disabled one (in-code ruling, and the mcp-control scenario 'The change is no longer possible').",
+        "Every branch that cannot be agreed to says why and offers NO control — never a disabled one (in-code ruling, and the mcp-control scenario 'The change is no longer possible').",
         "The describe runs at open time; nothing on this page may render a consequence computed when the proposal was recorded (requirement: A Proposal Is Agreed To Against The World As It Is Then).",
         "No client JS."
       ],
@@ -78,9 +80,9 @@
           "effect": "Sentence link back to /pending"
         }
       ],
-      "current_implementation": "h1, underlined back-link, then the problem in the danger role with a semibold 'Refused:' prefix (role=alert) \u2014 rendered here so the refusal survives whichever branch the redirect lands on. Landed by a-bounced-agree-says-why.",
+      "current_implementation": "h1, underlined back-link, then the problem in the danger role with a semibold 'Refused:' prefix (role=alert) — rendered here so the refusal survives whichever branch the redirect lands on. Landed by a-bounced-agree-says-why.",
       "constraints": [
-        "The problem renders on EVERY branch \u2014 a bounced agree can land on a page that now describes a different state.",
+        "The problem renders on EVERY branch — a bounced agree can land on a page that now describes a different state.",
         "role=alert and the verbatim reason must survive."
       ],
       "children": []
@@ -96,9 +98,9 @@
         "result"
       ],
       "actions": [],
-      "current_implementation": "h2 'What agreeing would do' plus the consequence sentence in the consequence role (DT-0007): rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary \u2014 the same treatment the archive confirmation gives the same vocabulary.",
+      "current_implementation": "h2 'What agreeing would do' plus the consequence sentence in the consequence role (DT-0007): rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary — the same treatment the archive confirmation gives the same vocabulary.",
       "constraints": [
-        "The consequence sentence is the product's own for this write and renders verbatim \u2014 'this page must not grow a second vocabulary for the same write'.",
+        "The consequence sentence is the product's own for this write and renders verbatim — 'this page must not grow a second vocabulary for the same write'.",
         "Consequence outranks everything on a screen (system.json principle)."
       ],
       "children": []
@@ -106,7 +108,7 @@
     {
       "id": "proposal-difference",
       "role": "display",
-      "purpose": "What was proposed beside what will actually happen \u2014 both, always; a page that merges them agrees on the operator's behalf.",
+      "purpose": "What was proposed beside what will actually happen — both, always; a page that merges them agrees on the operator's behalf.",
       "states": [
         "with-values",
         "without-values",
@@ -119,9 +121,9 @@
       "actions": [],
       "current_implementation": "Setting/Proposed/What-happens table in a bordered scroll container, dispositions in words. DT-0007: the departs warning wears notice before the table; the nothing-would-change conclusion wears quiet after it; the carries-no-values sentence stays plain secondary prose.",
       "constraints": [
-        "Every proposed value is listed whatever became of it \u2014 dropping an already-true value under-reports the proposal, omitting a refused one over-reports it.",
+        "Every proposed value is listed whatever became of it — dropping an already-true value under-reports the proposal, omitting a refused one over-reports it.",
         "Dispositions are named in words, never by colour alone.",
-        "The departs warning renders before the table \u2014 a reader who stops at the first sentence must still learn this is not what was suggested.",
+        "The departs warning renders before the table — a reader who stops at the first sentence must still learn this is not what was suggested.",
         "The table stays inside its own overflow-x-auto container."
       ],
       "children": []
@@ -144,7 +146,7 @@
       ],
       "current_implementation": "BUTTON_PRIMARY submit, 'Agree and make this change'; hidden inputs carry id, target, token and the proposed values.",
       "constraints": [
-        "Offered only on the proposal branch \u2014 never on no-op or any refusal branch.",
+        "Offered only on the proposal branch — never on no-op or any refusal branch.",
         "Goes through the same confirm-and-perform path as a web-initiated change (mcp-control scenario).",
         "Styling through BUTTON_PRIMARY."
       ],
@@ -153,7 +155,7 @@
     {
       "id": "decline",
       "role": "action",
-      "purpose": "The other half of the decision \u2014 an operation, not a footnote; it closes the proposal for good.",
+      "purpose": "The other half of the decision — an operation, not a footnote; it closes the proposal for good.",
       "states": [
         "default"
       ],
@@ -166,9 +168,9 @@
           "effect": "Server action: resolves the proposal declined; nothing is written to the account"
         }
       ],
-      "current_implementation": "BUTTON_SECONDARY submit in its own form, labeled 'Decline \u2014 this closes the proposal permanently'.",
+      "current_implementation": "BUTTON_SECONDARY submit in its own form, labeled 'Decline — this closes the proposal permanently'.",
       "constraints": [
-        "A visible peer of agree, never a text link \u2014 'a text link beneath the agree button read as the way out of the page rather than the other half of the decision'.",
+        "A visible peer of agree, never a text link — 'a text link beneath the agree button read as the way out of the page rather than the other half of the decision'.",
         "The permanence stays in the label."
       ],
       "children": []
@@ -232,5 +234,13 @@
       "decline"
     ],
     "notes": "The problem banner carries role=alert. Dispositions are legible without colour. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/pending/[id]/page.tsx": "sha256:d8b9d13ab7640b388319fd7c4479d55242efa8d01d3242d9c2bd3b75d95673fb",
+    "src/ports/proposals.ts": "sha256:016aba2d37d3be1e516da6016ace525e205ad74e5c3a58be38b1efa1770734da",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/proposal-difference.tsx": "sha256:ac9cdbb3a6e7b2e0ef74e0e44a86328b00d5499aac15c7c89765c80df24095d0",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

@@ -104,8 +104,15 @@ cards; the roving tabindex must survive" constrains something.
 
 ```json
 "generated_at_commit": "<git rev-parse --short HEAD>",
-"source_files": ["every file you read to build this"]
+"source_files": ["every file you read to build this"],
+"source_digest": { "<each source file>": "sha256:<of its content>" }
 ```
+
+`source_digest` is what staleness compares — one hash per file, over its
+content with line endings normalised. The commit is provenance and decides
+nothing: it only ever worked while the history it named survived, and
+squash-merge discards it (#192). The tool computes the digest; record what it
+gives you rather than composing one by hand.
 
 `source_files` must be complete — it is what the staleness check runs against.
 An incomplete list means the tool reports a stale surface as fresh, and the

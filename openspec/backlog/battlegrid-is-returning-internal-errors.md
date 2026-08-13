@@ -1,11 +1,11 @@
 ---
 id: battlegrid-is-returning-internal-errors
-title: BattleGrid is flapping — it came back as v9.0.0 and per-tool INTERNAL_ERRORs returned with it
+title: list_gate_blocks serves old rows and 500s on new ones — poisoned at the head, not broken
 type: risk
 status: open
 priority: p2
 created: 2026-08-05
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: ""
 github: "100"
@@ -13,7 +13,14 @@ blocked_by: []
 tags: [battlegrid, live, platform]
 ---
 
-# BattleGrid is flapping, and the outage was a deployment
+# list_gate_blocks answers INTERNAL_ERROR for every agent
+
+> **Retitled 2026-08-13.** Filed 2026-08-05 as platform-wide flapping at v9.0.0;
+> at v18.2.0 it is one tool, deterministically, and everything else answers.
+> Original title: *"BattleGrid is flapping — it came back as v9.0.0 and per-tool
+> INTERNAL_ERRORs returned with it"*. The whole history is kept below — the
+> outage, the four majors in a day, and the 504s are all real records of what
+> this platform does.
 
 ## Update 2026-08-06 (later): **v11.0.0**, and the count still has not moved
 
@@ -270,3 +277,142 @@ silent, but the answer is unavailable.
 Nothing to do here but watch: it is upstream, it is not intermittent, and a
 re-probe will show when it returns.
 
+
+## 2026-08-13 — retitled, because the title was nine majors stale
+
+Re-confirmed in the read-only verification sweep. `list_gate_blocks` on
+Undertow, `limit: 50`:
+
+    list_gate_blocks → {"code":"INTERNAL_ERROR","message":"Internal server error"}
+
+Fifth independent call, third agent-and-page-size combination, second day.
+Deterministic.
+
+**Everything else this item was filed about answers.** In the same session:
+`get_account_state`, `list_intelligence_agents`, `list_user_active_positions`,
+`get_agent_performance`, `get_agent_fund_allocation`, `get_open_orders`,
+`list_pending_approvals`, `list_market_grid_sessions`, `list_radar_deployments`,
+`get_strategy` ×3 — every one answered normally. Including
+`list_intelligence_agents`, which is one of the two tools the original
+`INTERNAL_ERROR` observation named.
+
+So the item is renamed. It read *"BattleGrid is flapping — it came back as
+v9.0.0 and per-tool INTERNAL_ERRORs returned with it"*, which described
+2026-08-05 accurately and now describes nothing: the platform is at **v18.2.0**,
+nine majors on, and it is not flapping. One tool is broken, and it is the tool
+v18 rewrote.
+
+**The title mattered more than it looks.** This is the item a session reaches
+for when a live probe fails, and a p2 named *"BattleGrid is flapping"* invites
+reading any single failure as more of the same — which is the opposite of what
+the evidence now says. A deterministic single-tool failure and an unstable
+platform call for different responses, and only one of them is happening.
+
+### What it blocks
+
+[[open-position-conflict-churn-tripled]] (#146) outright: gate-block churn can
+only be counted through this tool. That item cannot be re-measured until this
+clears, and should not be read as stale in the meantime.
+
+### Unchanged
+
+Nothing to do here. It is upstream, it is not intermittent, the product renders
+its unreadable branch honestly against live, and a re-probe will show when it
+returns. It becomes p1 only if it starts costing a write path.
+
+---
+
+# Re-probed 2026-08-13 at v18.2.0 — it is not broken, it is poisoned at the head
+
+The title says "answers INTERNAL_ERROR for every agent". That is true of every
+call anyone had made, and it is the wrong conclusion. The tool works. It fails
+only on the **newest** rows, and the failure is contiguous from the head.
+
+## The bisection
+
+`limit: 1` isolates one row, so `page: N` reads row N, newest first.
+
+**Undertow** — `total: 5437`
+
+| page | row timestamp | |
+|---|---|---|
+| 1, 10, 50, 53, 55 | — | **INTERNAL_ERROR** |
+| 56 | 2026-08-12T09:29:04 | ok |
+| 62 | 2026-08-12T09:20:04 | ok |
+| 75 | 2026-08-12T08:57:04 | ok |
+| 100 | 2026-08-12T08:38:04 | ok |
+| 999 | 2026-08-12T00:09:30 | ok |
+
+**Breakwater** — `total: 617`
+
+| page | row timestamp | |
+|---|---|---|
+| 1, 15, 18 | — | **INTERNAL_ERROR** |
+| 22 | 2026-08-12T04:58:01 | ok |
+| 30 | 2026-08-12T04:50:01 | ok |
+| 200 | 2026-08-11T15:52:28 | ok |
+
+**Vanguard** — `total: 2`, and **both rows fail** individually.
+
+Nine passing probes and nine failing ones. The boundary is clean: every row
+above it fails, every row below it reads.
+
+## Two things that rule out the obvious explanations
+
+**It is not the agent lookup.** A UUID belonging to no agent answers
+`{"entries": [], "total": 0}` — cleanly, no error. So the query path, the
+pagination and the empty-result serialization are all fine, and a bad id does
+not even 404.
+
+**It is not one global cutoff.** Undertow's boundary sits after 09:29 and
+Breakwater's after 04:58 — more than four hours apart on the same day. A
+deployment-time cutoff would put them together. This is a **per-agent data
+condition**, reached at different times by different agents.
+
+## What the poison probably is, stated as the guess it is
+
+Every row that *can* be read carries `gateStage: "TOKEN"` and
+`reasonCode: "OPEN_POSITION_CONFLICT"`. Not one readable row anywhere in 5437
+carries the two values v18 added, which
+[[the-capabilities-record-was-a-major-version-stale]] (#198) recorded as new:
+
+```
+gateStage  : ACCOUNT, TOKEN, CONDITIONS, EVALUATION   <- EVALUATION is v18
+reasonCode : ..., EVALUATION_FAULTED                  <- v18
+```
+
+The rows that cannot be read are exactly the rows written since v18 landed.
+**That is consistent with the new enum values being what fails to serialize —
+and it is not proof**, because the failing rows cannot be read to check. It is
+recorded as a hypothesis with its evidence, not as a finding.
+
+`get_radar_activity` was tried as a second route and does not settle it:
+`screenReason` is null on all five recent events and `evaluationOutcome` shows
+`BLOCKED_BEFORE_EVALUATION` once, which says evaluation is being blocked before
+the model is called but not what the gate rows contain.
+
+## Why this is worse than a broken tool
+
+The tool's own description: *"This is the first place to look when an agent
+isn't trading."*
+
+None of these three agents is trading. All twenty deployments read `SCANNING`
+with `qualified: false`, most on `AGGREGATE_BELOW_MIN`, and `inPosition` is 0.
+So the diagnostic that exists to answer "why is nothing happening" is broken
+**precisely on the rows that would answer it**, while cheerfully serving the
+history from before the question arose.
+
+## What can be done, here and upstream
+
+- **There is a read-around.** `page: N, limit: 1` reaches any older row, and the
+  data is intact — nothing is lost, only the recent window is unreachable. A
+  surface that needed history could use it. A surface that needs *what just
+  happened* cannot.
+- **Upstream this is now reportable.** "It 500s" is not actionable; "it 500s on
+  rows newer than X per agent, serves everything older, and returns empty for an
+  unknown id" is. Carry it with `fork_strategy` (#102) and the refresh 500
+  ([[refresh-rejection-is-indistinguishable-from-an-outage]], #204) as one
+  report — three deterministic INTERNAL_ERRORs, all of them refusals or data
+  wearing a crash.
+- **Nothing to fix in this product.** It classifies the answer correctly as
+  `unreadable`, which is what the platform said. That remains right.

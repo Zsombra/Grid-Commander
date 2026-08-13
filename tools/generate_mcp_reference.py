@@ -2,12 +2,12 @@
 import json, re, textwrap, sys, time
 
 SP = sys.argv[1]
-init = json.load(open(f"{SP}/init.txt"))["result"]
+init = json.load(open(f"{SP}/init.txt", encoding="utf-8"))["result"]
 cap = {
-    "tools": json.load(open(f"{SP}/tools.json"))["result"]["tools"],
-    "prompts": json.load(open(f"{SP}/prompts.json"))["result"]["prompts"],
-    "resources": json.load(open(f"{SP}/resources.json"))["result"]["resources"],
-    "resourceTemplates": json.load(open(f"{SP}/restemplates.json"))["result"].get("resourceTemplates", []),
+    "tools": json.load(open(f"{SP}/tools.json", encoding="utf-8"))["result"]["tools"],
+    "prompts": json.load(open(f"{SP}/prompts.json", encoding="utf-8"))["result"]["prompts"],
+    "resources": json.load(open(f"{SP}/resources.json", encoding="utf-8"))["result"]["resources"],
+    "resourceTemplates": json.load(open(f"{SP}/restemplates.json", encoding="utf-8"))["result"].get("resourceTemplates", []),
     "serverInfo": init["serverInfo"],
     "protocolVersion": init["protocolVersion"],
     "capabilities": init.get("capabilities", {}),
@@ -244,8 +244,12 @@ for r in cap["resources"]:
     w("| `" + str(r.get("name")) + "` | `" + str(r.get("uri")) + "` | " + clean(r.get("description")) + " |")
 w("")
 
-open(f"{SP}/mcp-reference.md", "w").write("\n".join(out))
-json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w"), indent=2, sort_keys=True)
+# encoding pinned: the reference contains arrows and em-dashes, and Windows
+# hands Python a cp1252 default that cannot encode them — so this script
+# could not run there at all, which is part of why the reference went a
+# major version stale (#186).
+open(f"{SP}/mcp-reference.md", "w", encoding="utf-8").write("\n".join(out))
+json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w", encoding="utf-8"), indent=2, sort_keys=True, ensure_ascii=False)
 
 covered = sum(len([n for n in ns if n in tools]) for _, ns in CATS)
 print("tools in list      :", len(tools))

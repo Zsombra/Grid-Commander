@@ -377,7 +377,7 @@ writes('a condition can be saved, through the product path', () => {
 
       let fork: Strategy | undefined;
       try {
-        const forked = await new ForkStrategyCommand(strategies).execute({ ...who, strategy: source });
+        const forked = await new ForkStrategyCommand(strategies).execute({ ...who, strategy: source, sourceRevision: source.revision });
         if (forked.kind !== 'forked') throw new Error('fork refused with a slot free');
         fork = forked.strategy;
         // eslint-disable-next-line no-console

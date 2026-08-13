@@ -8,6 +8,7 @@ import type {
   StrategySection,
 } from '@/domain/strategy/strategy.js';
 import type {
+  AuthoringRefusal,
   BudgetGauge,
   CoinSelection,
   ColumnCheckOutcome,
@@ -119,7 +120,11 @@ export class McpStrategyAdapter implements StrategiesPort {
       const planToken = payload['planToken'];
       const approvedPlan = payload['approvedPlan'];
       if (typeof planToken !== 'string' || typeof approvedPlan !== 'object' || approvedPlan === null) {
-        return { kind: 'rejected', reason: 'BattleGrid returned no usable plan for this request.' };
+        return {
+          kind: 'rejected',
+          reason: 'BattleGrid returned no usable plan for this request.',
+          refusal: null,
+        };
       }
       return {
         kind: 'compiled',
@@ -130,7 +135,13 @@ export class McpStrategyAdapter implements StrategiesPort {
     } catch (err) {
       // The compiler refusing a request is an ordinary outcome — a bad value, or
       // nothing to change. It is not a failure of the product.
-      return { kind: 'rejected', reason: messageOf(err) };
+      //
+      // The structure comes along now. It was always on the wire —
+      // `ToolRefusedError` carries the refusal body verbatim — and flattening
+      // it to a string was what turned "marker {X} names no condition of this
+      // strategy, nearest is {Y}" into an unexplained wall.
+      const message = messageOf(err);
+      return { kind: 'rejected', reason: message, refusal: mapAuthoringRefusal(message) };
     }
   }
 
@@ -1111,6 +1122,44 @@ function mapColumnRefusal(detail: string): ColumnRefusal {
       ? domain['values'].filter((v): v is string => typeof v === 'string')
       : [],
     allowedRule: typeof domain['rule'] === 'string' ? domain['rule'] : null,
+  };
+}
+
+/**
+ * The platform's structured account of a refusal, or null when it did not give
+ * one.
+ *
+ * Sibling of `mapColumnRefusal`, which reads the same envelope for the column
+ * checker's `allowedDomain`. Kept apart rather than merged: that one flattens
+ * the domain into values and a rule because the column surface renders those,
+ * and this one carries `context` whole because which of its keys matter depends
+ * on the code. Merging them would mean one shape guessing at both readers.
+ *
+ * Null on anything that is not the documented shape — prose, a transport
+ * failure, a body that will not parse. The message survives regardless; it is
+ * returned beside this, not through it.
+ */
+function mapAuthoringRefusal(detail: string): AuthoringRefusal | null {
+  let body: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(detail);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    body = parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  const details = body['details'];
+  if (typeof details !== 'object' || details === null) return null;
+  const d = details as Record<string, unknown>;
+  const context = d['context'];
+  return {
+    message: typeof body['message'] === 'string' ? body['message'] : detail,
+    authoringCode: typeof d['authoringCode'] === 'string' ? d['authoringCode'] : null,
+    path: Array.isArray(d['path'])
+      ? d['path'].filter((p): p is string | number => typeof p === 'string' || typeof p === 'number')
+      : [],
+    context:
+      typeof context === 'object' && context !== null ? (context as Record<string, unknown>) : {},
   };
 }
 

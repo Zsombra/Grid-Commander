@@ -4,11 +4,12 @@
   "route": "/agents/[id]/pipeline/[logId]",
   "capability": "agent-understanding",
   "status": "designed",
-  "generated_at_commit": "c1ad290",
+  "generated_at_commit": "eeb3427",
   "source_files": [
     "app/(app)/agents/[id]/pipeline/[logId]/page.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
+    "src/ports/strategies.ts",
     "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -18,18 +19,18 @@
   "data": [
     {
       "name": "evaluation",
-      "shape": "OwnEvaluation \u2014 score, bias, cost, chain, conditions, attributions, signals[] | none | unreadable",
-      "source": "app.readOwnEvaluation.execute \u2014 the private projection: cost and reasoning the public read nulls"
+      "shape": "OwnEvaluation — score, bias, cost, chain, conditions, attributions, signals[] | none | unreadable",
+      "source": "app.readOwnEvaluation.execute — the private projection: cost and reasoning the public read nulls"
     },
     {
       "name": "alloc:* / gate",
-      "shape": "per-signal weight tiers 0\u20133 and a gate percentage",
-      "source": "searchParams \u2014 the what-if form's GET round trip"
+      "shape": "per-signal weight tiers 0–3 and a gate percentage",
+      "source": "searchParams — the what-if form's GET round trip"
     },
     {
       "name": "simulation",
       "shape": "scored | refused | null",
-      "source": "app.simulateAggregate.execute \u2014 BattleGrid's own simulator, read-only"
+      "source": "app.simulateAggregate.execute — BattleGrid's own simulator, read-only"
     }
   ],
   "components": [
@@ -51,7 +52,7 @@
       "current_implementation": "max-w-3xl centered column: score line, conflict sentence as plain prose when signals disagreed, cost section, chain card, conditions, attributions, the simulator, the scorecard, back link.",
       "constraints": [
         "None (the platform publishes no detail) and unreadable (the read failed) must never render alike.",
-        "No client JS \u2014 the simulator is a GET form round trip."
+        "No client JS — the simulator is a GET form round trip."
       ],
       "children": [
         "cost",
@@ -65,7 +66,7 @@
     {
       "id": "cost",
       "role": "display",
-      "purpose": "What this decision cost to think \u2014 yours alone; the public projection nulls it.",
+      "purpose": "What this decision cost to think — yours alone; the public projection nulls it.",
       "states": [
         "present",
         "absent",
@@ -85,7 +86,7 @@
     {
       "id": "chain",
       "role": "display",
-      "purpose": "Gate \u2192 attempt \u2192 decision \u2192 execution \u2192 outcome, the platform's own words, absent stages absent.",
+      "purpose": "Gate → attempt → decision → execution → outcome, the platform's own words, absent stages absent.",
       "states": [
         "default"
       ],
@@ -103,7 +104,7 @@
     {
       "id": "conditions",
       "role": "display",
-      "purpose": "What the strategy's conditions said \u2014 the platform's own comparison, clause by clause; nothing re-evaluates anything.",
+      "purpose": "What the strategy's conditions said — the platform's own comparison, clause by clause; nothing re-evaluates anything.",
       "states": [
         "present",
         "absent",
@@ -113,9 +114,9 @@
         "evaluation"
       ],
       "actions": [],
-      "current_implementation": "Tally line (true-of-total, unresolved, strategy revision, provisional), verdict/decidedBy rendered verbatim the day they speak (only ever observed null \u2014 #147), tokened cards per condition with evidence clauses.",
+      "current_implementation": "Tally line (true-of-total, unresolved, strategy revision, provisional), verdict/decidedBy rendered verbatim the day they speak (only ever observed null — #147), tokened cards per condition with evidence clauses.",
       "constraints": [
-        "The platform publishing no condition evaluation is a real state, not 'all conditions passed' \u2014 no block renders for it.",
+        "The platform publishing no condition evaluation is a real state, not 'all conditions passed' — no block renders for it.",
         "verdict/decidedBy render verbatim when populated; they have only ever been observed null (backlog #147).",
         "Evidence clauses are the platform's comparisons; nothing here re-evaluates."
       ],
@@ -142,7 +143,7 @@
     {
       "id": "simulate",
       "role": "input",
-      "purpose": "What if it had weighted these differently \u2014 BattleGrid's own simulator over the weights, never the scores.",
+      "purpose": "What if it had weighted these differently — BattleGrid's own simulator over the weights, never the scores.",
       "states": [
         "form",
         "scored",
@@ -160,19 +161,19 @@
           "effect": "GET round trip: simulate_aggregate_score with the real scores and the chosen weights; nothing is saved"
         }
       ],
-      "current_implementation": "Per-fired-signal weight selects (0\u20133), a gate field, BUTTON_SECONDARY 'Score it', the result in a tokened card; a refusal renders role=alert in BattleGrid's words. Over-cap says the simulator cannot re-score rather than truncating.",
+      "current_implementation": "Per-fired-signal weight selects (0–3), a gate field, BUTTON_SECONDARY 'Score it', the result in a tokened card; a refusal renders role=alert in BattleGrid's words. Over-cap says the simulator cannot re-score rather than truncating.",
       "constraints": [
-        "Only the weighting is the user's to change \u2014 inventing scores would answer a question about a market that never existed.",
+        "Only the weighting is the user's to change — inventing scores would answer a question about a market that never existed.",
         "Over the simulator's signal cap, the section refuses rather than truncates: dropping signals would score a different composition than the one that ran.",
         "Nothing is saved, and the page says so; the strategy's rule editor is named as where a real change happens.",
-        "The submit is secondary \u2014 the simulation is a question, not a commit."
+        "The submit is secondary — the simulation is a question, not a commit."
       ],
       "children": []
     },
     {
       "id": "signals",
       "role": "display",
-      "purpose": "Every signal consulted, module by module \u2014 untriggered ones included.",
+      "purpose": "Every signal consulted, module by module — untriggered ones included.",
       "states": [
         "grouped",
         "empty",
@@ -239,5 +240,12 @@
       "signals"
     ],
     "notes": "Refusals and model errors carry role=alert. Fired state legible without colour. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/pipeline/[logId]/page.tsx": "sha256:d843ad730656021ac38c00dcdefddeac225b45561d1cec4ddb2657c1edd2377d",
+    "src/ports/strategies.ts": "sha256:41cf81cdf9fc6b92c033a236888be4763386f020f39ff63a9c85c45dbb62e0ff",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

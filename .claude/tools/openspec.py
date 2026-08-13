@@ -27,6 +27,21 @@ import sys
 from datetime import date
 from pathlib import Path
 
+# The board, the journal and half the backlog are written with em-dashes and
+# arrows, and Windows hands Python a cp1252 stdout. Printing "→" then raises
+# UnicodeEncodeError and the command dies with a traceback instead of an answer
+# — on `board`, which CLAUDE.md names as where every session starts.
+#
+# Re-encode rather than sanitise the text: the characters are deliberate, and a
+# tool that strips them to survive its own console teaches the next writer to
+# avoid them. `errors="replace"` keeps the output readable on a console that
+# genuinely cannot render one.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass  # not a reconfigurable stream (a pipe under an older runtime)
+
 # --------------------------------------------------------------------------
 # Root resolution
 # --------------------------------------------------------------------------
@@ -383,7 +398,7 @@ class Change:
                 "path": pattern,
                 "status": state,
                 "requires": requires,
-                "existing": [str(p.relative_to(self.root)) for p in paths],
+                "existing": [repo_path(p, self.root) for p in paths],
             })
         return out
 
@@ -478,7 +493,7 @@ class BacklogItem:
             "priority": self.priority, "change": self.change or None,
             "capability": self.capability or None, "blockedBy": self.blocked_by,
             "tags": self.tags, "created": self.created, "updated": self.updated,
-            "path": str(self.path.relative_to(self.root)),
+            "path": repo_path(self.path, self.root),
         }
 
 
@@ -509,7 +524,7 @@ def validate_backlog(root: Path, strict: bool) -> list:
     active = set(list_changes(root))
 
     for item in items:
-        rel = str(item.path.relative_to(root))
+        rel = repo_path(item.path, root)
         if not item.meta:
             found.append(diag("error", "backlog_missing_frontmatter",
                               f"{item.slug}: no `---` frontmatter block", rel,
@@ -644,21 +659,96 @@ def surface_components(surface: dict) -> dict:
     return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
 
 
-def git_changed_since(root: Path, commit: str, files: list) -> list:
-    """Which of `files` changed since `commit`. Empty list when git can't answer."""
-    if not commit or not files:
-        return []
+def repo_path(path: Path, root: Path) -> str:
+    r"""A repo-relative path, always with forward slashes.
+
+    `str(Path)` gives the platform's separator, so on Windows every diagnostic
+    named `src\useThings.ts` while every assertion — and every reader — expected
+    `src/useThings.ts`. Six harness tests could not pass there, and CI runs
+    Linux, so the suite was green everywhere it was looked at (#196).
+
+    Normalised where the path becomes a string rather than at each of the six
+    assertions: these strings are read by humans, matched by tests, and written
+    into JSON, and `/` is right for all three. It is what `openspec/` uses
+    everywhere else, including `source_files` in every surface manifest.
+    """
+    return str(path.relative_to(root)).replace("\\", "/")
+
+
+def file_digests(root: Path, files: list) -> dict:
+    """A digest per file a manifest describes, as they stand.
+
+    Freshness is a question about content — have these files changed since the
+    surveyor read them — and a commit hash only answers it while the history it
+    names survives. Under squash-merge it does not: a branch's commits are
+    discarded when the PR lands, and on 2026-08-13 twelve of twenty-four
+    manifests pinned to hashes absent from the repository. `git diff` fails the
+    same way for "that commit is not here" as it succeeds for "nothing
+    changed", so those surfaces could not go stale, silently.
+
+    So the pin is the content. Nothing about git can invalidate it — squash,
+    rebase, amend, or a fresh clone with no history at all.
+
+    Line endings are normalised: a checkout convention is not a change to what
+    a surface describes, and this repository hands Windows CRLF for LF-stored
+    files. Per-file hashes are sorted before the final hash, so reordering
+    `source_files` is not a change either. A path that cannot be read
+    contributes a marker rather than raising — that surface is stale, and
+    validation still completes.
+    """
+    import hashlib
+
+    out = {}
+    for rel_path in files:
+        try:
+            raw = (root / rel_path).read_bytes().replace(b"\r\n", b"\n")
+            out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        except OSError:
+            # A listed file that cannot be read is a change, and says which.
+            out[rel_path] = "missing"
+    return out
+
+
+def digest_at_commit(root: Path, commit: str, files: list) -> dict | None:
+    """The same per-file digests, over the content at `commit`. None if unreadable.
+
+    Used once, to migrate manifests that already name a commit that resolves.
+    Their surveyed content is recoverable, so their freshness is preserved
+    rather than reset — resetting it would assert that today's files are what
+    was surveyed, which is the failure this whole change is about.
+    """
+    import hashlib
     import subprocess
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", f"{commit}..HEAD", "--", *files],
-            capture_output=True, text=True, timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if result.returncode != 0:
-        return []
-    return [line for line in result.stdout.splitlines() if line.strip()]
+
+    out = {}
+    for rel_path in files:
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(root), "show", f"{commit}:{rel_path}"],
+                capture_output=True, timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if result.returncode != 0:
+            return None
+        raw = result.stdout.replace(bytes([13, 10]), bytes([10]))  # CRLF -> LF, escape-free
+        out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+    return out
+
+
+def changed_against_digest(root: Path, recorded: dict, files: list) -> list:
+    """Which of `files` differ from what was surveyed, named individually.
+
+    Recorded per file rather than as one hash over the set, so this can say
+    *which* file moved. A single combined digest cannot be decomposed, and
+    "8 source files differ" when one of them does is the kind of true-but-
+    useless number that gets a warning class ignored.
+
+    A file the manifest does not list is not a change — the surface never
+    claimed to describe it. A listed file that has vanished is.
+    """
+    now = file_digests(root, files)
+    return sorted(p for p in files if now.get(p) != recorded.get(p))
 
 
 # A surface's `source_files` is hand-assembled by an agent reading code, so an
@@ -742,7 +832,7 @@ def local_ui_imports(root: Path, source_files: list) -> set:
                 target = _resolve_import(path, spec)
                 if target and _is_ui_file(target):
                     try:
-                        found.add(str(target.relative_to(root)))
+                        found.add(repo_path(target, root))
                     except ValueError:
                         pass       # import escaped the repo
     return found
@@ -793,7 +883,7 @@ def validate_design(root: Path, strict: bool) -> list:
     base = design_dir(root)
     if not base.is_dir():
         return found
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     # -- design system -----------------------------------------------------
     system_path = base / "system.json"
@@ -891,13 +981,27 @@ def validate_design(root: Path, strict: bool) -> list:
                     "the component was renamed or never existed — the design agent will "
                     "write tickets against nothing"))
 
-        changed = git_changed_since(root, data.get("generated_at_commit", ""), sources)
-        if changed:
-            found.append(diag("warning", "design_surface_stale",
-                              f"{path.stem}: {len(changed)} source file(s) changed since "
-                              f"{data.get('generated_at_commit', '')[:7]} — "
-                              f"{', '.join(changed[:3])}", rel(path),
-                              "re-run the ui-surveyor skill before designing against it"))
+        # Freshness is decided by content. A commit hash only answered it while
+        # the history it named survived, and under squash-merge it does not —
+        # twelve of twenty-four manifests once pinned to hashes absent from the
+        # repository, and the check reported nothing at all for them.
+        recorded = data.get("source_digest")
+        if sources and not recorded:
+            found.append(diag(
+                "warning", "design_surface_never_verified",
+                f"{path.stem}: no source digest — this surface has never been checked, and "
+                "cannot be until it is re-surveyed",
+                rel(path),
+                "run the ui-surveyor skill. Its content at survey time is not recoverable, so "
+                "a digest must NOT be back-filled from the files as they now stand — that "
+                "would record today as though it had been surveyed."))
+        elif sources:
+            changed = changed_against_digest(root, recorded, sources)
+            if changed:
+                found.append(diag("warning", "design_surface_stale",
+                                  f"{path.stem}: {len(changed)} source file(s) differ from what "
+                                  f"was surveyed — {', '.join(changed[:3])}", rel(path),
+                                  "re-run the ui-surveyor skill before designing against it"))
 
     # -- tickets -----------------------------------------------------------
     ticketed_surfaces = set()
@@ -1157,7 +1261,7 @@ def diag(severity: str, code: str, message: str, target: str = "", fix: str = ""
 def validate_change(root: Path, change: Change, strict: bool) -> list:
     found: list = []
     deltas = change.delta_paths()
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     meta_rel = f"openspec/changes/{change.name}/.openspec.yaml"
     if not change.meta_path.is_file():
@@ -1380,7 +1484,7 @@ def validate_main_specs(root: Path, strict: bool) -> list:
     for path in sorted(base.glob("**/spec.md")):
         cap = str(path.parent.relative_to(base)).replace("\\", "/")
         doc = SpecDoc(path)
-        rel = str(path.relative_to(root))
+        rel = repo_path(path, root)
         if not doc.purpose:
             found.append(diag("warning", "main_spec_no_purpose", f"{cap}: main spec has no `## Purpose`", rel))
         elif "TBD" in doc.purpose:
@@ -1545,7 +1649,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         except ValueError as exc:
             return {"archived": False, "specs_updated": [], "operations": [],
                     "status": gate + [diag("error", "merge_conflict", str(exc),
-                                           str(delta.relative_to(root)))]}
+                                           repo_path(delta, root))]}
         planned.append((main_spec_path(root, cap), text))
         operations.extend(ops)
 
@@ -1557,7 +1661,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
     if target.exists():
         return {"archived": False, "specs_updated": [], "operations": operations,
                 "status": gate + [diag("error", "archive_target_exists",
-                                       f"{target.relative_to(root)} already exists")]}
+                                       f"{repo_path(target, root)} already exists")]}
 
     if gate:
         return {"archived": False, "specs_updated": [], "operations": operations, "status": gate}
@@ -1566,7 +1670,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         "change": change.name,
         "archived_as": target_name,
         "operations": operations,
-        "specs_updated": [str(p.relative_to(root)) for p, _ in planned],
+        "specs_updated": [repo_path(p, root) for p, _ in planned],
         "status": [],
     }
 
@@ -1958,7 +2062,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({"entries": entries, "root": str(root)}, indent=2))
         elif not entries:
-            print(f"no journal entries. Create {journal_path(root).relative_to(root)} "
+            print(f"no journal entries. Create {repo_path(journal_path(root), root)} "
                   f"and add one — see .claude/references/tracking.md")
         else:
             for e in entries:
@@ -1975,7 +2079,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({
                 "change": change.name, "track": change.track, "skipSpecs": change.skip_specs,
-                "changeRoot": str(change.dir.relative_to(root)),
+                "changeRoot": repo_path(change.dir, root),
                 "artifacts": artifacts,
                 "progress": {"complete": done, "total": total},
                 "isComplete": bool(total) and done == total,

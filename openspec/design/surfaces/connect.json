@@ -4,12 +4,13 @@
   "route": "/connect",
   "capability": "battlegrid-connection",
   "status": "designed",
-  "generated_at_commit": "be525fa",
+  "generated_at_commit": "a047e42",
   "source_files": [
     "app/connect/page.tsx",
+    "src/application/use-cases/describe-grant.query.ts",
     "src/presentation/components/consent-summary.tsx",
-    "src/presentation/components/nothing-to-connect.tsx",
-    "src/presentation/components/control.ts"
+    "src/presentation/components/control.ts",
+    "src/presentation/components/nothing-to-connect.tsx"
   ],
   "viewports": [
     "mobile",
@@ -19,17 +20,17 @@
     {
       "name": "grant",
       "shape": "{ permissions: string[], notRequested: string[] }",
-      "source": "DescribeGrantQuery \u2014 the one source of the consent wording; tests/connection/consent.test.ts fails if it softens"
+      "source": "DescribeGrantQuery — the one source of the consent wording; tests/connection/consent.test.ts fails if it softens"
     },
     {
       "name": "declined",
       "shape": "string | null",
-      "source": "searchParams \u2014 the OAuth error value the callback returned when the user declined at BattleGrid"
+      "source": "searchParams — the OAuth error value the callback returned when the user declined at BattleGrid"
     },
     {
       "name": "failure",
       "shape": "'incomplete' | 'untrusted' | string | null",
-      "source": "searchParams \u2014 the callback's own refusal of a response it could not use"
+      "source": "searchParams — the callback's own refusal of a response it could not use"
     }
   ],
   "components": [
@@ -41,7 +42,8 @@
         "consent",
         "consent-with-declined",
         "consent-with-failure",
-        "nothing-to-connect"
+        "nothing-to-connect",
+        "consent-with-declined-and-failure"
       ],
       "data": [
         "grant",
@@ -49,10 +51,10 @@
         "failure"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-6, p-6 \u2014 the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant.",
+      "current_implementation": "max-w-2xl centered column, space-y-6, p-6 — the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant. Both ?declined= and ?error= render when both are present — the notice above the danger banner, in that order — so the two are not exclusive states.",
       "constraints": [
-        "The page renders whole from one server round trip \u2014 no client JS.",
-        "On a personal deployment neither the consent summary nor the start button may render \u2014 the button would build an /authorize URL with an empty client_id (requirement: A Remedy Named Must Exist In That Deployment)."
+        "The page renders whole from one server round trip — no client JS.",
+        "On a personal deployment neither the consent summary nor the start button may render — the button would build an /authorize URL with an empty client_id (requirement: A Remedy Named Must Exist In That Deployment)."
       ],
       "children": [
         "declined",
@@ -73,19 +75,19 @@
         "declined"
       ],
       "actions": [],
-      "current_implementation": "Notice role (rounded-gc-2 border-notice-border bg-notice-subtle p-4 text-sm text-text-primary), role=status \u2014 the user chose; nothing failed. Landed by returned-with-an-explanation.",
+      "current_implementation": "Notice role (rounded-gc-2 border-notice-border bg-notice-subtle p-4 text-sm text-text-primary), role=status — the user chose; nothing failed. Landed by returned-with-an-explanation.",
       "constraints": [
-        "role=status must survive \u2014 a decline is advisory, never announced as an error.",
-        "Wears notice, never danger \u2014 'a user who learns to fear advisories learns to abandon valid work' (system.json principle).",
+        "role=status must survive — a decline is advisory, never announced as an error.",
+        "Wears notice, never danger — 'a user who learns to fear advisories learns to abandon valid work' (system.json principle).",
         "The platform's error value renders verbatim.",
-        "Every message states nothing was stored \u2014 spec scenario 'The user declines' promises the explanation with the retry."
+        "Every message states nothing was stored — spec scenario 'The user declines' promises the explanation with the retry."
       ],
       "children": []
     },
     {
       "id": "failure",
       "role": "feedback",
-      "purpose": "Say why a returned authorization could not be used \u2014 incomplete, untrusted, or a value named verbatim.",
+      "purpose": "Say why a returned authorization could not be used — incomplete, untrusted, or a value named verbatim.",
       "states": [
         "incomplete",
         "untrusted",
@@ -107,7 +109,7 @@
     {
       "id": "consent-summary",
       "role": "display",
-      "purpose": "What Grid-Commander will be able to do, in words that are true \u2014 including that this is not view-only access.",
+      "purpose": "What Grid-Commander will be able to do, in words that are true — including that this is not view-only access.",
       "states": [
         "with-not-requested",
         "without-not-requested"
@@ -116,10 +118,10 @@
         "grant"
       ],
       "actions": [],
-      "current_implementation": "aria-labelledby section: h2, plain bullet list of permissions, then DT-0005's hierarchy \u2014 the honesty sentence in the consequence role (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary) and the Not requested block in quiet. Wording verbatim from DescribeGrantQuery, guarded by tests/connection/consent.test.ts.",
+      "current_implementation": "aria-labelledby section: h2, plain bullet list of permissions, then DT-0005's hierarchy — the honesty sentence in the consequence role (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary) and the Not requested block in quiet. Wording verbatim from DescribeGrantQuery, guarded by tests/connection/consent.test.ts.",
       "constraints": [
-        "The wording comes from DescribeGrantQuery and must render verbatim \u2014 requirement 'Configuration Authority Is Described Honestly' forbids calling this read-only, and tests/connection/consent.test.ts fails if it softens.",
-        "The honesty sentence ('This is not view-only access\u2026') must not be demoted below the permissions it qualifies, hidden behind interaction, or reduced to fine print.",
+        "The wording comes from DescribeGrantQuery and must render verbatim — requirement 'Configuration Authority Is Described Honestly' forbids calling this read-only, and tests/connection/consent.test.ts fails if it softens.",
+        "The honesty sentence ('This is not view-only access…') must not be demoted below the permissions it qualifies, hidden behind interaction, or reduced to fine print.",
         "'Grid-Commander cannot move your funds' stays with the not-requested list.",
         "aria-labelledby wiring on the section must survive."
       ],
@@ -130,7 +132,7 @@
     {
       "id": "not-requested",
       "role": "display",
-      "purpose": "The authority deliberately not asked for \u2014 wager scope \u2014 so the absence is stated, not implied.",
+      "purpose": "The authority deliberately not asked for — wager scope — so the absence is stated, not implied.",
       "states": [
         "present",
         "absent"
@@ -139,9 +141,9 @@
         "grant"
       ],
       "actions": [],
-      "current_implementation": "DT-0005: quiet role \u2014 rounded-gc-2 border-quiet-border bg-quiet-subtle p-4 \u2014 h3 'Not requested', the withheld permissions, and the cannot-move-your-funds sentence verbatim. Visibly lighter than the consequence block above it.",
+      "current_implementation": "DT-0005: quiet role — rounded-gc-2 border-quiet-border bg-quiet-subtle p-4 — h3 'Not requested', the withheld permissions, and the cannot-move-your-funds sentence verbatim. Visibly lighter than the consequence block above it.",
       "constraints": [
-        "Rendered only when the grant names withheld permissions \u2014 an empty box would claim an absence the query did not state.",
+        "Rendered only when the grant names withheld permissions — an empty box would claim an absence the query did not state.",
         "The cannot-move-your-funds sentence renders verbatim."
       ],
       "children": []
@@ -149,7 +151,7 @@
     {
       "id": "start-authorization",
       "role": "action",
-      "purpose": "Send the user to BattleGrid to authorize \u2014 the page's one action, and the retry after a decline.",
+      "purpose": "Send the user to BattleGrid to authorize — the page's one action, and the retry after a decline.",
       "states": [
         "default"
       ],
@@ -162,9 +164,9 @@
       ],
       "current_implementation": "A form with a single BUTTON_PRIMARY submit, 'Continue to BattleGrid'. No pending state between click and redirect (the product-wide gap, #153).",
       "constraints": [
-        "Exactly one way in \u2014 no second control may start an authorization.",
+        "Exactly one way in — no second control may start an authorization.",
         "Styling goes through BUTTON_PRIMARY in control.ts.",
-        "Sits below the consent summary \u2014 nobody is offered the button before the words it agrees to."
+        "Sits below the consent summary — nobody is offered the button before the words it agrees to."
       ],
       "children": []
     },
@@ -182,9 +184,9 @@
           "effect": "Sentence link back to /"
         }
       ],
-      "current_implementation": "Own full-page shell: h1 'There is nothing to connect', two explanatory paragraphs (the remedy sentence from describeRemedy \u2014 same source as the failure message), and an underlined sentence link back to the agents.",
+      "current_implementation": "Own full-page shell: h1 'There is nothing to connect', two explanatory paragraphs (the remedy sentence from describeRemedy — same source as the failure message), and an underlined sentence link back to the agents.",
       "constraints": [
-        "The remedy sentence comes from describeRemedy('repair-the-key') and must not be paraphrased \u2014 two copies would become two answers.",
+        "The remedy sentence comes from describeRemedy('repair-the-key') and must not be paraphrased — two copies would become two answers.",
         "No consent summary and no start button may render here."
       ],
       "children": []
@@ -226,5 +228,12 @@
       "start-authorization"
     ],
     "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. No client JS; every state is a full navigation."
+  },
+  "source_digest": {
+    "app/connect/page.tsx": "sha256:6919682ad5724584680aa1a4136b4ab7e172f627c377e835a2cb20149a279564",
+    "src/application/use-cases/describe-grant.query.ts": "sha256:243fb14462428141517b2c606f07830627299f25909afb4ef0994c1ddb3b3b13",
+    "src/presentation/components/consent-summary.tsx": "sha256:44a3edb7fd0c7789cdb156d7966b31538afbe472c8f9c7f4f20ecf1675dd4b10",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67"
   }
 }

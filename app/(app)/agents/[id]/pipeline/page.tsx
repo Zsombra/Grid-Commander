@@ -6,9 +6,9 @@ import type { SignalVerdict, StageResult } from '@/ports/agents.js';
 /**
  * Why an agent did or did not trade.
  *
- * Three stages, in the order a candidate meets them: blocked before it was
- * ever evaluated, evaluated and skipped, or decided against in the agent's
- * own words. Each stage stands alone — one that cannot be read says so
+ * Three stages, in the order a candidate meets them: stopped by a gate at the
+ * stage BattleGrid names, evaluated and skipped, or decided against in the
+ * agent's own words. Each stage stands alone — one that cannot be read says so
  * without hiding the two that answered, and one that is empty says what
  * its emptiness means, because "nothing was blocked" and "we could not ask
  * what was blocked" send an operator to different places.
@@ -117,8 +117,9 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <h1 className="text-xl font-medium">Why it did or didn&apos;t trade</h1>
       <p className="text-sm">
-        A candidate can end at three places: stopped before it was evaluated,
-        evaluated and skipped, or decided against. Newest first.
+        A candidate can end at three places: stopped by a gate, evaluated and
+        skipped, or decided against. Each gate shows the stage BattleGrid named
+        it at. Newest first.
       </p>
 
       {/*
@@ -172,10 +173,10 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-base font-medium">Stopped before evaluation</h2>
+        <h2 className="text-base font-medium">Stopped by a gate</h2>
         <StageNote
           stage={blocks}
-          empty="Nothing was stopped before evaluation — every candidate reached the signal stage."
+          empty="No candidate was stopped by a gate."
           subject="this agent’s record of what stopped it is"
         />
         {blocks.kind === 'entries' ? (

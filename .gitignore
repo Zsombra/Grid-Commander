@@ -30,3 +30,8 @@ next-env.d.ts
 .env
 .env.local
 .env*.local
+
+# Raw MCP capture dumps — regenerate with tools/capture_mcp_dump.py.
+# Not committed: they are a means to the two artifacts in docs/, and a stale
+# copy in the tree is a second source of truth nobody refreshes.
+build_log/

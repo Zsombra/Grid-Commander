@@ -3,8 +3,8 @@
   "title": "Why it did or didn't trade",
   "route": "/agents/[id]/pipeline",
   "capability": "agent-understanding",
-  "status": "designed",
-  "generated_at_commit": "c1ad290",
+  "status": "needs-redesign",
+  "generated_at_commit": "e9a615e",
   "source_files": [
     "app/(app)/agents/[id]/pipeline/page.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -17,15 +17,15 @@
   "data": [
     {
       "name": "funnel / blocks / evaluations / decisions",
-      "shape": "four independent StageResult reads \u2014 entries | none | unreadable, each on its own",
-      "source": "app.readPipeline.execute \u2014 a candidate ends at one of three places: blocked before evaluation, evaluated and skipped, or decided against"
+      "shape": "four independent StageResult reads — entries | none | unreadable, each on its own",
+      "source": "app.readPipeline.execute — a candidate ends at one of three places: blocked before evaluation, evaluated and skipped, or decided against"
     }
   ],
   "components": [
     {
       "id": "pipeline-page",
       "role": "container",
-      "purpose": "The three stages a candidate meets, in order, each standing alone \u2014 plus the funnel that frames them.",
+      "purpose": "The three stages a candidate meets, in order, each standing alone — plus the funnel that frames them.",
       "states": [
         "full",
         "partially-readable",
@@ -35,9 +35,9 @@
         "funnel / blocks / evaluations / decisions"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column, space-y-6, p-6, four sections, back link.",
+      "current_implementation": "max-w-3xl centered column, space-y-6, p-6, four sections, back link. The section heading is now 'Stopped by a gate' (was 'Stopped before evaluation'), the framing sentence names the stage BattleGrid gives rather than a pipeline position, and the empty state reads 'No candidate was stopped by a gate.' — v18 folded EVALUATION-stage rows in, so the old wording asserted something the platform contradicts.",
       "constraints": [
-        "Each stage renders on its own \u2014 one that cannot be read says so without hiding the two that answered.",
+        "Each stage renders on its own — one that cannot be read says so without hiding the two that answered.",
         "'Nothing was blocked' and 'we could not ask what was blocked' send an operator to different places and must never render alike.",
         "No client JS."
       ],
@@ -52,7 +52,7 @@
     {
       "id": "stage-note",
       "role": "feedback",
-      "purpose": "What an empty or unreadable stage says, per stage \u2014 the subject names the record, not the thing recorded.",
+      "purpose": "What an empty or unreadable stage says, per stage — the subject names the record, not the thing recorded.",
       "states": [
         "none",
         "unreadable",
@@ -64,7 +64,7 @@
       "actions": [],
       "current_implementation": "Shared helper: the empty sentence states what the emptiness means; unreadable carries role=alert plus WhyNotLoaded with a per-stage subject.",
       "constraints": [
-        "Each subject names the record ('this agent's record of what stopped it is'), never the blocker \u2014 saying the blocker is gone is the opposite of what failed to load.",
+        "Each subject names the record ('this agent's record of what stopped it is'), never the blocker — saying the blocker is gone is the opposite of what failed to load.",
         "role=alert must survive."
       ],
       "children": []
@@ -82,10 +82,10 @@
         "funnel / blocks / evaluations / decisions"
       ],
       "actions": [],
-      "current_implementation": "One tokened card \u2014 the same shape the competitor page renders, and this figure existed for competitors before it existed for the user's own agents.",
+      "current_implementation": "One tokened card — the same shape the competitor page renders, and this figure existed for competitors before it existed for the user's own agents.",
       "constraints": [
         "The two skip counters the platform names alike are labelled apart and never summed.",
-        "Fractions and platform-percentages go through separate formatters \u2014 one through the other renders 7600%."
+        "Fractions and platform-percentages go through separate formatters — one through the other renders 7600%."
       ],
       "children": []
     },
@@ -104,7 +104,7 @@
       "actions": [],
       "current_implementation": "Tokened cards: reasonCode, coin or account-wide, gate stage, quantified reasonDetail pairs, timestamp.",
       "constraints": [
-        "The reasonDetail numbers are the answer; the code is only the label \u2014 both render.",
+        "The reasonDetail numbers are the answer; the code is only the label — both render.",
         "A block with no coin says 'account-wide' rather than dropping the fact."
       ],
       "children": []
@@ -129,7 +129,7 @@
       ],
       "current_implementation": "Tokened cards: coin (linked), score vs threshold, terminal status, triggered-of-required, bias, read direction, the per-card conflict line in words, gate status, timestamp.",
       "constraints": [
-        "The per-card conflict line stays in words \u2014 a notice block per card would out-shout the cards (DT-0009's ruling).",
+        "The per-card conflict line stays in words — a notice block per card would out-shout the cards (DT-0009's ruling).",
         "Score and threshold are fractions and render through the fraction formatter."
       ],
       "children": []
@@ -160,7 +160,7 @@
     {
       "id": "evidence",
       "role": "display",
-      "purpose": "The signal checklist a decision was drawn from \u2014 the verdict counts legible before any interpretation is read.",
+      "purpose": "The signal checklist a decision was drawn from — the verdict counts legible before any interpretation is read.",
       "states": [
         "present",
         "absent"
@@ -171,12 +171,12 @@
       "actions": [
         {
           "id": "expand",
-          "effect": "Native details/summary disclosure \u2014 no client JS"
+          "effect": "Native details/summary disclosure — no client JS"
         }
       ],
-      "current_implementation": "details/summary: the counts line ('5 CONFIRM \u00b7 2 WARN \u00b7 1 REJECT across 8 signals') as the summary; rows on tokened left rails, verdict printed as the platform sent it.",
+      "current_implementation": "details/summary: the counts line ('5 CONFIRM · 2 WARN · 1 REJECT across 8 signals') as the summary; rows on tokened left rails, verdict printed as the platform sent it.",
       "constraints": [
-        "Verdicts are printed as sent, never mapped to colour or icon \u2014 WARN is a third thing, and green/red teaches certainty the agent did not have.",
+        "Verdicts are printed as sent, never mapped to colour or icon — WARN is a third thing, and green/red teaches certainty the agent did not have.",
         "The counts stay in the summary so the disagreement is legible before the interpretations."
       ],
       "children": []
@@ -208,7 +208,7 @@
       "steps": [
         "arrive from the agent page",
         "read the funnel",
-        "walk blocked \u2192 evaluated \u2192 decided until the answer appears"
+        "walk blocked → evaluated → decided until the answer appears"
       ]
     }
   ],
@@ -221,5 +221,10 @@
       "decisions"
     ],
     "notes": "Per-stage unreadable states carry role=alert. The Evidence disclosure is a native details element. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/pipeline/page.tsx": "sha256:9191293a8adbe708230e668ee85cddb102aa99131533d868508431167bc78829",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

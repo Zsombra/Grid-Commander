@@ -233,7 +233,9 @@ cannot authorise a different one.
 - **THEN** runs started before the boundary are removed with their captures,
   failures and readings
 - **AND** every run started at or after the boundary survives untouched
-- **AND** the outcome states what was removed
+- **AND** the trim returns to its caller what was removed — how many runs,
+  captures, failed attempts and readings — which is a value the caller
+  receives, not a claim any surface makes about the past
 
 #### Scenario: Another account's record is out of reach
 - **WHEN** a trim runs for one account
@@ -243,3 +245,37 @@ cannot authorise a different one.
 #### Scenario: A describe is never a perform
 - **WHEN** the trim page renders its description
 - **THEN** nothing is deleted, however many times it renders
+
+### Requirement: The Trim Receipt States What The Record Now Holds
+After a trim completes, Grid-Commander SHALL state what the signal record
+**now holds** — where its surviving coverage begins and how much of it there
+is — derived from the record when the receipt is rendered.
+
+The receipt SHALL NOT assert what was removed, and SHALL NOT render any claim
+about the trim taken from the request URL. A receipt for an irreversible act
+must be checkable when it is read: the operator was already told what would go,
+in the description they confirmed, so the receipt's job is to confirm the record
+is now what they asked for.
+
+#### Scenario: The receipt states surviving coverage
+- **WHEN** a confirmed trim completes and the operator lands on the receipt
+- **THEN** the page states that the record was trimmed
+- **AND** states what the record now holds, read from the record at that moment
+
+#### Scenario: A re-opened receipt is still true
+- **WHEN** the receipt address is re-opened later, after further recording or
+  a further trim
+- **THEN** it states the record's coverage as it stands at that moment
+- **AND** never restates a removal as though it had just happened
+
+#### Scenario: An altered address cannot fabricate a removal
+- **WHEN** the receipt address is opened carrying an altered or invented
+  payload
+- **THEN** no figure describing a removal is rendered from it
+
+#### Scenario: The record cannot be read while the receipt renders
+- **WHEN** the record does not answer as the receipt is rendered
+- **THEN** the page states that the trim completed and that the record's
+  coverage could not be read, naming the reason
+- **AND** claims neither that the record is empty nor that any particular
+  extent survives

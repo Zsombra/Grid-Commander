@@ -1,5 +1,374 @@
 # Journal
 
+## 2026-08-13 (CI) — twelve gates green, and the one that could never have caught #203
+
+**Did**: Ran `scripts/ci.sh` twice. First the default set against
+`grid_commander_test` — `assertDisposable` (#195) refuses the live database, and
+`.env` still points at it, so the substitution matters. Then the full set with
+`CI_LIVE=1 CI_SERVING=1`: **twelve gates, all ok, nothing skipped**, including
+~9 minutes of serial live probes and the built app booted and probed.
+
+`BATTLEGRID_LIVE_WRITES` was deliberately left unset, so the write halves
+skipped. The suite's own header is the reason: *"a credential is not consent to
+mutate."*
+
+**The finding is `oauth-live`**, which passes with #203 open. It is correctly
+scoped — it re-fetches the discovery document against the recording and never
+claimed to exercise a grant. Exactly one file in the suite mentions
+`grant_type`, and it runs offline. So *a token being exchanged is covered
+nowhere*, which is where `sub` lives. Recorded on #203.
+
+**State**: 29 commits, PR #199 `MERGEABLE / CLEAN`, +7307 −589 / 143 files.
+Local CI green at `4d1fdd7`. Live account unchanged — balance `38.633532`,
+slots 3/3.
+
+**Next**: merge PR #199. Then **#91**, the only P2 whose blocker is a decision.
+
+**Watch out**:
+
+- **`.env` still aims `DATABASE_URL` at `grid_commander`, the live database.**
+  CI was pointed at `grid_commander_test` by hand. `assertDisposable` would
+  refuse rather than truncate, but the default is still aimed at the wrong one.
+- **A green gate list can imply coverage it does not have.** `oauth-live` in a
+  green column reads as "the OAuth path is exercised live"; it is the *metadata*
+  that is exercised live. The boundary cannot be automated away — a code needs a
+  human at a consent screen — but it can be written where someone meets it.
+- `config.ts:95` argues registration is the ceremony being avoided, while
+  `docs/battlegrid-oauth-metadata.json` has recorded `registration_endpoint`
+  and a secretless `"none"` auth method the whole time — re-verified by
+  `oauth-live` on every run. The premise was contradicted by a committed file
+  checked by the same CI.
+
+## 2026-08-13 (the live walk) — six questions asked of the platform, and half the answers contradicted the items asking
+
+**Did**: Closed four by walking live BattleGrid v18.2.0, with the operator
+freeing an agent slot and consenting twice in a browser.
+
+- **#103** — every agent tool returns `{agent}`; `create` alone adds
+  `slotUsage`. Dropped `?? payload` from five sites in `agent-adapter.ts`.
+  2239 tests passed *unchanged*, which is the finding: nothing ever covered
+  that branch.
+- **#106** — the platform refuses `{kind: PRESET, preset: CUSTOM}` in words.
+  It also **falsified this item's own narrowing**: `brainPreset` carries the
+  real preset name (`PATTON`), so `brainPreset: "CUSTOM"` is unambiguous, and
+  the consequence recorded against #110 is retracted.
+- **#189** — the dead premise was real, and *the correction was already in the
+  repo*: `performance.ts:5` said the tool "has never once answered";
+  `ports/agents.ts:142` said "the tool is not broken" and had worked out why on
+  2026-08-06. Kept the roster as the record source, corrected the reasoning.
+- **#93** — 3600s lifetime; refresh rotates both tokens; **no incremental
+  step-up**, the user re-approves everything. All tokens revoked and verified
+  dead (401).
+
+Sharpened, not closed: **#100** (retitled — the tool is not broken, it serves
+old rows and 500s on the newest), **#102** (re-confirmed, plus a lost-response
+hazard), **#91** (falsified). Filed #200–#205, all mirrored.
+
+**State**: 27 commits, PR #199 open, 0 uncommitted. `validate --all` 0 errors /
+11 warnings; `check.sh` all passed; 2239 vitest. **Live account restored
+exactly** — Vanguard archived and reactivated (rev 6→8), same slot ids and
+conviction on BTC/ETH/SOL/XRP/AVAX; balance 38.633532 unchanged; slots 3/3;
+strategy quota back to 5/25 after archiving the test fork.
+
+**Next**: `/handoff` is done — land PR #199. Then **#91 is the only P2 whose
+blocker is a decision rather than a wait**, and #203 changed its options.
+
+**Watch out**:
+
+- **The OAuth path has never completed a single connection.** BattleGrid sends
+  no `sub` and `mcp-adapter.ts:430` requires one. It is plain OAuth 2.1, not
+  OIDC — `openid-configuration` is 404. Audited and archived does not mean run
+  (#203).
+- **Never retry a `fork_strategy` blind.** It takes no `idempotencyKey` — only
+  `create_intelligence_agent` and `rebind_intelligence_agent` do. A lost
+  response that already committed makes the retry return `INTERNAL_ERROR`,
+  which reads as a platform fault and is actually "that name is taken" (#102).
+- **`list_gate_blocks` has a read-around**: `page: N, limit: 1` reaches any
+  older row and the data is intact. Only the recent window is unreachable, and
+  the boundary is per-agent, not a global cutoff (#100).
+- **Two comments in one codebase disagreed and the emphatic one was wrong**
+  (#189). A carefully argued comment is not evidence; it is a claim with a
+  date on it.
+- `rebind_intelligence_agent` **rewrites `contextSources`** to the destination
+  strategy's — eight fields changed in the walk. The product's confirm copy
+  already says so, and is now the only verified description of it.
+- `mcp:wager` is **not sufficient to move money** — a Profile-level signer
+  toggle gates it, plus 10 wagers/day and $500 (#205).
+
+## 2026-08-13 (late night) — the reference regenerates, and two records stop lying by omission
+
+**Did**: **#186** — `generate_mcp_reference.py` could not run on Windows at all
+(unpinned `encoding`), and read a directory of raw dumps nothing produced. Added
+`tools/capture_mcp_dump.py`, importing `rpc` from the probe rather than
+re-implementing the protocol. The reference is v18.2.0.
+
+**#198** — regenerating revealed the capabilities record was also a major
+version stale: 188 output-schema leaves across 11 tools unrecorded, including
+`gateStage` declaring `EVALUATION`, which independently confirmed #185.
+
+**#196** — `repo_path()` helper; twelve sites reported Windows backslashes into
+repo-relative paths. **#194** — the render harness header now states what it can
+see (`text`, `headings`, `links`, `values`) and what it cannot (anything needing
+reconciliation, anything CSS decides, anything the client does), with a stated
+bar for adding a collector. Re-pinned the six manifests the round staled.
+
+**State**: all archived/committed. Board warnings 34 → 11. **Zero stale, zero
+never-verified** — all 24 manifests describe committed code, first time true.
+
+**Next**: (superseded by the entry above.)
+
+**Watch out**:
+
+- **A count that has not moved proves nothing.** v18.2.0 changed one tool's
+  *meaning* with 114 tools unchanged, no schema added or removed. Probe the
+  version, never the shape.
+- Four of the six manifests re-pinned were staled by *this session's own*
+  changes. That is design-contract §8 working, not carelessness — a design
+  round edits the files its manifests describe, so the re-pin is that round's
+  last task.
+- `#194` is **half done and stays open**: `values` closed the form-state hole,
+  key collisions still need a real DOM, and *A Listing Shows Every Entry It Was
+  Given* is knowingly uncovered.
+
+## 2026-08-13 (night) — the round trip, and the harness learns to see form state
+
+**Did**: `the-round-trip-keeps-what-the-person-needs` — #170, #169 and #162,
+built and archived. Three surfaces losing something between the person and the
+platform: a reason, a value's validity, typed input. Also re-surveyed the last
+eight design manifests, closing #197.
+
+**The find is about the suite, not the product.** The first test written for
+#162 **passed against a form re-rendered from stored values** — the exact
+defect it was meant to catch. `rendered()` collects text, and a `defaultValue`
+is a prop. The "first visit prefills" case was worse: it passed only because the
+name appears in the page heading.
+
+The resolver now collects `values`, for the reason it already collected `href`
+— its own comment: *"an assertion on text for a URL the harness never emits
+passes while proving nothing."* One field over, same sentence. That closes half
+of #194; key collisions still need reconciliation, which no prop fixes.
+
+**Two structural things the issues did not anticipate.** #169 needed `edit=1`
+as an explicit "show the composer" signal, because `a` being absent was the only
+one — so carrying values back skipped the form and re-ran the describe that had
+just refused. And #170's two vocabulary reads had to stay separate: folding them
+lost TypeScript's narrowing as well as the reason.
+
+**#197 done**: all eleven re-surveyed, 24 of 24 digested. Five carried an
+**incomplete `source_files`** — `agent-roster` described neither `FleetSpend`
+nor its file, so the design layer could not see that component at all. That is
+the drift no freshness mechanism catches: a file the manifest omits cannot make
+it stale, digest or not.
+
+**State**: 0 active changes, **27 open items ↔ 27 open issues**.
+
+**Next**: #186 (the MCP capture script), #194's remaining half, or the three
+stale surfaces via a design round.
+
+**Watch out**: two tests this session passed while proving nothing, both caught
+only by deliberately breaking the code under them. That check — revert the fix,
+confirm the test fails — is the cheapest guard against a green suite that means
+nothing, and neither test would have been questioned without it.
+
+## 2026-08-13 (late) — the pin stops being a proxy, and #192 closes by disappearing
+
+**Did**: `a-manifest-pins-to-what-it-described` (#192), built and archived.
+Freshness is a per-file content digest now; the commit-based path is gone.
+
+**The question the item posed is answered by deleting it.** "What should a
+re-pin name, given squash-merge destroys the hash" stops mattering when nothing
+names a hash. A digest survives squash, rebase, amend, and a clone with no
+history at all — and it answers the actual question, which was always about
+content rather than time. `harness-integrity` already held the principle one
+layer over: *an exit code alone MUST NOT be accepted as evidence*. A commit hash
+was the same kind of proxy.
+
+**The migration was the interesting part.** Thirteen manifests took their digest
+from `git show <commit>:<path>` — what they actually described, not today's
+files. **Three came out stale**, including `strategy-conditions-save`, which I
+re-pinned this morning and #111 changed again this afternoon. Task 3.3 existed
+so that would not be absorbed silently, and it earned its place.
+
+**Eleven could not be migrated at all** and now say `never verified` — not
+fresh, not stale. Before today they said *fresh*, confidently, on no evidence.
+Filed as **#197**: eleven real `ui-surveyor` passes, and the count must not
+quietly become a fresh one.
+
+**Corrected mid-build**: the first version stored one hash over the file set,
+and its warning then said "8 source file(s) differ" when one did. A combined
+digest cannot be decomposed. Per-file now, so it names the file that moved.
+
+**Also filed**: **#196** — six harness tests fail on Windows over
+backslash-vs-forward-slash in diagnostic messages. Established pre-existing by
+stashing this change and reproducing them identically, which is the only honest
+way to claim it.
+
+**State**: 0 active changes, **31 open items ↔ 31 open issues**, cross-checked
+in both directions and clean.
+
+**Next**: #197's eleven re-surveys — independent, parallelisable, `connect` and
+`agent-roster` first. Then #170, #169, #162, #186, #194.
+
+**Watch out**: I spent six attempts fighting shell→Python→file escaping before
+switching to the editor and to `bytes([13, 10])`. Byte-level patching of source
+through nested quoting is a losing game; after the second failure the answer was
+already "use the editor".
+
+## 2026-08-13 (evening) — the app runs locally, #111 lands, and I destroyed the record
+
+**Did**: Stood the app up locally against real data, built and archived
+`the-prose-that-names-a-condition-says-so` (#111), and closed a hazard I walked
+into. 13 commits. 171 files / 2232 tests. **Six of six gates**, including
+`test:db` — blocked all session, and it finally ran.
+
+**I truncated a live signal record.** `npm run test:db` truncates eight tables
+and `databaseUrl()` refused only a *missing* `DATABASE_URL` — any present one
+passed, which is exactly what `.env` sets. I pointed it at `grid_commander` and
+lost GOLD 24 captures / JPY 24 / AVAX 25 across two days. **All 85 tests
+passed. Nothing warned.** That record is the one store this product documents
+as unrecoverable, and the `/recorder/trim` ceremony exists to stop a *person*
+deleting it by accident. A test command did it with no ceremony.
+
+Fixed by `assertDisposable` (#195): the suite now needs a database *named*
+disposable, or an exact `DB_TESTS_MAY_TRUNCATE=yes`. Opt-in, so a typo refuses
+and silence refuses. Eight tests pin it, including that `latest` and `contest`
+are not consent. **The guard was written after the loss — nothing predicted it.**
+"Refuses when unset" had read as "refuses when wrong".
+
+**#111 was not what it said.** Neither of its candidates: the structured answer
+was already on the wire and thrown away. The adapter caught `ToolRefusedError`,
+called `messageOf()`, and returned the whole JSON as a string. Now the refusal
+keeps its code and context, and the save page names the marker the prose uses.
+`refusal` made **required** on the rejected arm named all four fixtures and the
+page branch that did not exist — the save page was falling through to
+`proposal`.
+
+**Local setup**: the `BATTLEGRID_CLIENT_ID` placeholder is not a secret — an
+OAuth client id is a public identifier — so the app boots with no credential at
+all. That is what made the last three findings visible: #100 rendering its
+unreadable branch live, #182's remedy-without-a-target on a personal
+deployment, and both arms of the trim receipt.
+
+**State**: 0 active changes, **30 open items ↔ 30 open issues**, reconciled.
+
+**Next**: #192's second half — eleven surfaces still cannot be checked at all.
+Then #170, #169, #162, #186, #194.
+
+**Watch out**: **I created a fourth instance of the mirror drift I spent the
+morning cataloguing.** #195 was `done` on the item with the issue left open —
+found only because I ran the cross-check by hand again. That is four in one day
+(#163, #173, #182, #195), three found by hand. Five findings this session share
+one shape: a check that reads as passing after it stopped meaning anything.
+Only one destroyed something, and I am the one who ran it.
+
+## 2026-08-13 (tier 1 lands) — three changes archived, and the freshness check has been blind for months
+
+**Did**: Built and archived three changes off the morning's verification:
+`the-receipt-states-what-remains` (#168), `what-the-page-shows-is-what-happens`
+(#165/#167) and `a-block-does-not-mean-it-was-never-evaluated` (#185). Five
+commits, 2213 tests green, specs merged.
+
+**The find, and it is not any of the three.** Re-pinning the manifests this
+round staled, I checked whether the pins resolve. **Twelve of twenty-four point
+at commits that do not exist in this repository.** The staleness check cannot
+compare against a hash it cannot resolve, so it says nothing — those surfaces
+have been structurally unable to go stale, silently, for as long as their pin
+has been dangling. Squash-merge is the cause: the branch commits a manifest
+pins to are discarded when the PR is squashed onto main. #192 was filed this
+morning about *four manifests pinning to the parent commit*; that is the same
+root cause seen through a keyhole.
+
+**A test that could not fail, caught by trying to break it.** Covering "A
+Listing Shows Every Entry It Was Given" I wrote a test, it passed — then passed
+identically against the old broken keying. `tests/rendering/support/render.ts`
+walks the element tree and never reconciles, and a key collision only exists
+during reconciliation. **No test in this project can observe that class of
+defect.** Removed the test, kept the fix (it is correct in a browser), filed
+**#194**. The requirement stays and is knowingly uncovered.
+
+**Making the field required was the decision that paid.** `sourceRevision` on
+`ForkStrategyRequest` is required rather than optional, so the compiler named
+all six call sites. And #185 was *eight* sites, not the four the issue named or
+the five found at proposal — the third re-grep caught a user-visible
+`<h2>Stopped before evaluation</h2>`.
+
+**State**: 0 active changes, 34 open items ↔ 34 open issues. Gates green except
+`test:db`, blocked on database credentials all session and reported blocked
+every time, never passed.
+
+**Next**: #192 needs rewriting around the twelve dangling pins — the convention
+question is now "what does a pin mean under squash-merge at all", not "which
+commit should it name". Tier 1's remaining work is #167's two scoped-out
+findings.
+
+**Watch out**: three findings this session are the same shape — a check that
+reads as passing after it stopped meaning anything. DT-0014's acceptance
+(#193), the render harness (#194), and the dangling pins. The pattern is worth
+a name: **none of them fails loudly, and all three were found by hand.**
+
+## 2026-08-13 (the issues meet the code) — nine were stale, and all nine in the same direction
+
+**Did**: Verified all 32 open issues rather than reading them — every repo claim
+against the file and line it cites, every platform claim re-probed read-only at
+**v18.2.0**. No writes. Then acted on the result: **2 closed, 7 rewritten, 1
+filed, 1 reopened.**
+
+**The find**: nine issues were wrong, and **every one of them was wrong in the
+same direction** — describing a world that was true when filed. Not one had
+become *more* true. The two closable ones were fixed by
+`the-outcome-reaches-the-person`, which names **#163 and #165 in its own Problem
+statement** and closed only #164 behind it.
+
+**What the sweep actually caught**, beyond the bookkeeping:
+
+- **#114 / #116 both claimed `get_open_orders` was unused.** It has been called
+  since #128 — `positions-adapter.ts:16`, `readRestingOrders`,
+  `read-exposure.query.ts:212`. #114 re-measured the *platform* five times and
+  never once re-ran `grep get_open_orders src/`. A claim about our own code aged
+  out because it looked like the settled half of the item.
+- **#165's residual was stated wrong.** *"Staleness rides on the
+  confirmationToken alone"* — fork has **no confirmation token**, deliberately
+  (DL-105). Underneath it is something sharper: `fork/page.tsx:18` and `:150`
+  both promise the fork is taken at the revision on screen, while the action
+  re-reads the roster and sends `sourceRevision: listing.strategy.revision` —
+  current at submit, not rendered. The comment and the code disagree.
+- **#135 said `grep resolvesNow src/` is empty.** It is not —
+  `radar-adapter.ts:161`. The conclusion survives only because `section` is the
+  one field *not* read.
+- **#85 pointed at "the open p1"** that closed on 2026-08-11, and listed as an
+  unblock step a strategy-side risk surface that shipped the same day
+  (`strategy-detail.tsx:99`).
+- **#182 was closed as COMPLETED and never fixed.** `AuthorityLost` still has no
+  `href` and no `BUTTON`. `94bd854` said *"Files #182 and #183"* — #183 stayed
+  open, this one did not. Reopened.
+
+**Also filed**: **#192** — the four currently-stale manifests pin to `e7c56ce`,
+the **direct parent** of `94bd854`, the commit that staled them. That commit is
+"the re-pin belongs at the end of a design round". **Squash-merge defeats the
+convention it established**: however many commits a branch uses to separate the
+re-pin from the code, `main` receives one, and the re-pin inside it necessarily
+names that commit's parent. Fourth guard-with-a-hole of the same shape.
+
+**State**: 32 open items ↔ 32 open issues, reconciled by cross-checking every
+pair's status against its mirror's state — 0 errors from `validate --all`.
+
+**Next**: #189 is still the decision worth making. #192's second half — what a
+re-pin means under squash-merge — is the one that stops this recurring.
+
+**Watch out**: **the mirror drifts in both directions and nothing checks it.**
+Three pairs disagreed: two items `done` with issues open, one item `open` with
+its issue closed. `validate` enforces that an open item *has* a `github:` value;
+it never compares the two states. Every one of these was created at archive
+time by a human closing some-but-not-all of the issues a change named. The
+cross-check that found them is four lines of shell — it belongs in `validate`.
+
+Second: **an issue's title is load-bearing.** #100 read *"BattleGrid is
+flapping"* through nine major versions during which it stopped flapping; it is
+the item a session reaches for when a probe fails, and that title invites
+reading any single failure as more of the same. Bodies were being maintained
+carefully while titles were left as filed — #114's own text says the title is
+"left as filed" as though that were the disciplined choice.
+
 ## 2026-08-12 (the question items meet v18) — a read-only sweep, and a design premise that died
 
 **Did**: The read-only sweep across the question items, against **v18.2.0**.

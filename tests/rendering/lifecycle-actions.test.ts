@@ -69,7 +69,10 @@ const actions = [
   {
     name: 'fork',
     load: async () => (await import('../../app/(app)/strategies/[id]/fork/page.js')).forkStrategy,
-    fields: { strategyId: 's-1' },
+    // `sourceRevision` is required, not defaulted: the revision the page named
+    // is the one that gets copied, and an action that quietly substituted the
+    // re-read's revision is the defect this field exists to close.
+    fields: { strategyId: 's-1', sourceRevision: '2' },
     page: '/strategies/s-1/fork',
   },
 ] as const;
@@ -111,3 +114,44 @@ for (const action of actions) {
     });
   });
 }
+
+/**
+ * Restore's page, read rather than invoked — which branch it picks.
+ *
+ * `?outcome=repair-required` is written by the action when the platform will
+ * not restore a strategy as it stands. It is also an address, so it outlives
+ * the state it described: bookmarked and re-opened after the strategy was
+ * restored, it said "needs rebuilding" about something already active, with
+ * the state read sitting in the same function unconsulted. State before
+ * address.
+ */
+describe('restore: a stale address does not describe a current state', () => {
+  const render = async (search: Record<string, string>) => {
+    const Page = (await import('../../app/(app)/strategies/[id]/restore/page.js')).default;
+    const { rendered } = await import('./support/render.js');
+    return rendered(
+      await Page({ params: Promise.resolve({ id: 's-1' }), searchParams: Promise.resolve(search) }),
+    );
+  };
+
+  it('says not archived, not needs-rebuilding, when the strategy is already active', async () => {
+    world(true); // BERLIN is active
+    const r = await render({ outcome: 'repair-required' });
+    expect(r.text).toContain('is not archived');
+    expect(r.text).not.toContain('needs rebuilding first');
+  });
+
+  it('still says needs-rebuilding for a strategy that is actually archived', async () => {
+    const archived = aStrategy({
+      id: 's-1',
+      name: 'Berlin',
+      scope: 'PRIVATE',
+      revision: 2,
+      isActive: false,
+    });
+    const strategies = new FakeStrategiesPort([archived]);
+    current = actingWith({ strategies });
+    const r = await render({ outcome: 'repair-required' });
+    expect(r.text).toContain('needs rebuilding first');
+  });
+});

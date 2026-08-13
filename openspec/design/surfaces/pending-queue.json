@@ -4,9 +4,10 @@
   "route": "/pending",
   "capability": "mcp-control",
   "status": "designed",
-  "generated_at_commit": "b1e2153",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/pending/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/proposal-queue.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -17,18 +18,18 @@
   "data": [
     {
       "name": "result",
-      "shape": "ProposalsResult \u2014 { actionable[], stale[], resolved[] } | empty | unreadable",
+      "shape": "ProposalsResult — { actionable[], stale[], resolved[] } | empty | unreadable",
       "source": "app.readProposals.execute"
     },
     {
       "name": "problem",
       "shape": "string | null",
-      "source": "searchParams \u2014 the agree action's aftermath that needs the operator's eyes (a write that succeeded against an already-closed proposal)"
+      "source": "searchParams — the agree action's aftermath that needs the operator's eyes (a write that succeeded against an already-closed proposal)"
     },
     {
       "name": "note",
       "shape": "string | null",
-      "source": "searchParams \u2014 advisory: a decline that found the proposal already resolved; nothing was written"
+      "source": "searchParams — advisory: a decline that found the proposal already resolved; nothing was written"
     }
   ],
   "components": [
@@ -48,10 +49,10 @@
         "note"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column, space-y-4, p-6. The problem banner (danger, role=alert) and note banner (notice, role=status) render above the explainer \u2014 landed by a-bounced-agree-says-why.",
+      "current_implementation": "max-w-3xl centered column, space-y-4, p-6. The problem banner (danger, role=alert) and note banner (notice, role=status) render above the explainer — landed by a-bounced-agree-says-why.",
       "constraints": [
-        "The explainer sentence \u2014 a model can suggest but cannot make a change, nothing here has touched the account \u2014 is spec-adjacent copy and stays.",
-        "problem wears danger with role=alert; note wears notice with role=status \u2014 the mcp-control scenario 'The change was made but the proposal was already closed' forbids dropping either in a silent redirect.",
+        "The explainer sentence — a model can suggest but cannot make a change, nothing here has touched the account — is spec-adjacent copy and stays.",
+        "problem wears danger with role=alert; note wears notice with role=status — the mcp-control scenario 'The change was made but the proposal was already closed' forbids dropping either in a silent redirect.",
         "No client JS."
       ],
       "children": [
@@ -63,7 +64,7 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "The agree aftermath the operator must see \u2014 the account moved even though this page looks routine.",
+      "purpose": "The agree aftermath the operator must see — the account moved even though this page looks routine.",
       "states": [
         "present",
         "absent"
@@ -91,9 +92,9 @@
         "note"
       ],
       "actions": [],
-      "current_implementation": "Notice role, role=status; the known value renders in words ('This proposal was already resolved \u2014 nothing was written to the account'), unknown values verbatim.",
+      "current_implementation": "Notice role, role=status; the known value renders in words ('This proposal was already resolved — nothing was written to the account'), unknown values verbatim.",
       "constraints": [
-        "Wears notice, never danger \u2014 nothing failed.",
+        "Wears notice, never danger — nothing failed.",
         "role=status must survive."
       ],
       "children": []
@@ -114,8 +115,8 @@
       "actions": [],
       "current_implementation": "Sectioned lists in rounded-gc-2 border-border-default boxes; group headings at text-base font-medium. Unreadable renders its own heading plus 'this is not the same as having none'; empty says a model can suggest and none has.",
       "constraints": [
-        "Unreadable and empty must never be the same page \u2014 'a failed read reported as an empty queue is the lie this product refuses everywhere else'.",
-        "Stale is shown, never deleted \u2014 'a model suggested stopping this agent three days ago and nobody looked' must be findable.",
+        "Unreadable and empty must never be the same page — 'a failed read reported as an empty queue is the lie this product refuses everywhere else'.",
+        "Stale is shown, never deleted — 'a model suggested stopping this agent three days ago and nobody looked' must be findable.",
         "Only an actionable row links; a stale or resolved row offers no way to open a describe nobody can agree to."
       ],
       "children": [
@@ -125,7 +126,7 @@
     {
       "id": "row",
       "role": "display",
-      "purpose": "One proposal: what it would do, to what, when \u2014 and a link only if it can still be decided.",
+      "purpose": "One proposal: what it would do, to what, when — and a link only if it can still be decided.",
       "states": [
         "actionable",
         "inert"
@@ -141,7 +142,7 @@
       ],
       "current_implementation": "flex row with border-t separators: operation label (underlined link when actionable), target, recorded-at timestamp in UTC, status suffix when not open.",
       "constraints": [
-        "The actionable/inert distinction must not rest on the link styling alone \u2014 inert rows carry their status in words."
+        "The actionable/inert distinction must not rest on the link styling alone — inert rows carry their status in words."
       ],
       "children": []
     },
@@ -192,5 +193,11 @@
       "row"
     ],
     "notes": "problem carries role=alert, note role=status. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/pending/page.tsx": "sha256:75333085f1cf455f783f43314e85816762cf32d41c3614845aead55ab79e7171",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/proposal-queue.tsx": "sha256:8556d6006cb7f0a0398f39fb5bdcd591fd04c98c74994d2d8e8833181c99dc53",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

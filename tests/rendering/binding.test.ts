@@ -241,3 +241,45 @@ describe('the edit and reactivate copy', () => {
     expect(r.text).toContain('editing that strategy');
   });
 });
+
+/**
+ * A refusal keeps what was composed.
+ *
+ * The edit form used to be re-rendered from the agent's *stored* values on
+ * every refusing branch, so a refusal naming one field cost the person every
+ * other one they had typed. Deploy's refused describe already showed typing
+ * surviving a bounce; this page did not.
+ */
+describe('a refused edit keeps what was entered', () => {
+  /** Active and bound — ORPHANED is ARCHIVED, and archived agents get no form. */
+  const EDITABLE = anAgent({ status: 'ACTIVE' });
+
+  async function editWith(agent: Agent, search: Record<string, string>) {
+    world(agent);
+    const Page = (await import('../../app/(app)/agents/[id]/edit/page.js')).default;
+    return rendered(
+      await Page({ params: params({ id: agent.id }), searchParams: Promise.resolve(search) }),
+    );
+  }
+
+  it('an unresolvable preset leaves the typed name in the form', async () => {
+    // review=1 is what asks for the describe; the preset is resolved there.
+    const r = await editWith(EDITABLE, {
+      review: '1',
+      displayName: 'Renamed while composing',
+      pmPreset: 'NOT_A_PRESET',
+    });
+    // The refusal is stated...
+    expect(r.text).toContain('does not carry a configuration');
+    // ...and the name they typed is still in the field, not the agent's stored
+    // one. Asserted on `values`, not `text`: a defaultValue is a prop, and an
+    // assertion on text here passes whatever the field holds.
+    expect(r.values).toContain('Renamed while composing');
+    expect(r.values).not.toContain(EDITABLE.displayName);
+  });
+
+  it('a first visit still prefills from the agent, not from nothing', async () => {
+    const r = await editWith(EDITABLE, {});
+    expect(r.values).toContain(EDITABLE.displayName);
+  });
+});

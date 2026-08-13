@@ -85,9 +85,14 @@ export function AgentRecord({ performance }: { performance: Performance }) {
       )}
 
       {/**
-       * Said plainly, because the tool called `get_agent_performance` exists and
-       * answers with zeros. Someone comparing this page against that tool's
-       * output needs to know they are not looking at the same number.
+       * Said plainly, because `get_agent_performance` exists and answers a
+       * *different* number: realized P&L since the agent's risk-budget
+       * baseline, trades and wagers totalled, measured against the drawdown
+       * stop the platform halts on. This page is the lifetime record.
+       *
+       * It used to say that tool "answers with zeros". It does so only when
+       * there is no budget or no settlement yet — it does not disagree with
+       * this page, it measures from a different start (#189).
        */}
       <p className="text-xs text-text-secondary">
         As BattleGrid reports it on the agent itself.

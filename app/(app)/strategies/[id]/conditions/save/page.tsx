@@ -189,8 +189,12 @@ export default async function SaveConditionPage({
                 BattleGrid has no opinion to report — showing the list below
                 without this would read as the draft having been forgotten. */}
             <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
-              {parsed.problems.map((problem) => (
-                <li key={problem}>{problem}</li>
+              {/* Keyed by position, not by the sentence. Two rows can be
+                  malformed the same way, and keying on the text collapses them
+                  into one — the operator then fixes one row and meets the
+                  other. */}
+              {parsed.problems.map((problem, i) => (
+                <li key={i}>{problem}</li>
               ))}
             </ul>
             <p className="text-sm text-text-secondary">
@@ -226,8 +230,10 @@ export default async function SaveConditionPage({
         {head}
         <h2 className="text-base font-medium">Part of this draft cannot be sent to BattleGrid</h2>
         <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
-          {result.reasons.map((reason) => (
-            <li key={reason}>Not understood by Grid-Commander: {reason}</li>
+          {/* Position, not text: two entries can be unreadable for the same
+              stated reason, and both have to be shown. */}
+          {result.reasons.map((reason, i) => (
+            <li key={i}>Not understood by Grid-Commander: {reason}</li>
           ))}
         </ul>
         <p className="text-sm text-text-secondary">
@@ -246,13 +252,42 @@ export default async function SaveConditionPage({
           BattleGrid would save something other than what was submitted
         </h2>
         <ul role="alert" className="space-y-1 rounded-gc-2 border border-border-default p-3 text-sm">
-          {result.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
+          {/* Position, not text — the platform can report identical drift on
+              two entries. */}
+          {result.reasons.map((reason, i) => (
+            <li key={i}>{reason}</li>
           ))}
         </ul>
         <p className="text-sm text-text-secondary">
           {`Nothing was written — compiling changes nothing — and no confirmation was minted. This edit names only the condition list, so a plan that moves anything else is not the change that was composed, and agreeing to it would be agreeing to something nobody described.`}
         </p>
+        {list}
+        {back}
+      </main>
+    );
+  }
+
+  if (result.kind === 'prose-names-it') {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 p-6">
+        {head}
+        <h2 className="text-base font-medium">This strategy&rsquo;s own description names it</h2>
+        {/* The fourth place a condition is referenced from, and the one the
+            dangling set below cannot see: the strategy's market-read prose
+            refers to it by marker. The platform found it and said which one —
+            this page repeats that rather than parsing prose it does not own. */}
+        <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
+          {`The description written for this strategy refers to ${result.marker}. Removing it would leave that reference pointing at nothing, so BattleGrid did not save the change.`}
+        </p>
+        {result.nearest === null ? null : (
+          <p className="text-sm text-text-secondary">
+            {`BattleGrid suggests ${result.nearest} as the nearest key it recognises.`}
+          </p>
+        )}
+        {/* The platform's own sentence, kept whole beneath the reading of it —
+            the reading is this product's, and the operator can check it. */}
+        <p className="text-sm text-text-secondary">{result.reason}</p>
+        <p className="text-sm">{`Nothing was written. Edit the description first, or keep the condition.`}</p>
         {list}
         {back}
       </main>
@@ -295,8 +330,12 @@ export default async function SaveConditionPage({
           <p className="text-sm">{`None — the strategy would define no conditions at all.`}</p>
         ) : (
           <ol className="list-inside list-decimal space-y-1 text-sm">
-            {named.map((key) => (
-              <li key={key}>
+            {/* Position, not key. `named` maps every key-less entry to the
+                same literal placeholder, so keying on it renders one row where
+                the strategy would define two — a miscount on the sentence
+                directly above, which states how many conditions survive. */}
+            {named.map((key, i) => (
+              <li key={i}>
                 {key}
                 {key === proposal.conditionKey ? ` — ${proposal.standing}` : ''}
               </li>

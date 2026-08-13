@@ -1,11 +1,11 @@
 ---
 id: trading-telemetry-is-unread
-title: The open side of an agent’s money is invisible — positions, orders and market context unused
+title: The market context around a trade is unread — six coin and regime reads unused
 type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-10
+updated: 2026-08-13
 change: ""
 capability: agent-understanding
 github: "116"
@@ -13,7 +13,60 @@ blocked_by: []
 tags: [battlegrid, reporting, expected-value]
 ---
 
-# The open side of an agent’s money is invisible
+# The market context around a trade is unread
+
+> **Narrowed a third time, 2026-08-13.** The open-orders slice this item still
+> listed as *"blocked on observation — probe while a position is open"*
+> **shipped**, in `#128`. What is left is the six market-context reads and
+> nothing else. Original title: *"The open side of an agent's money is invisible
+> — positions, orders and market context unused"*. Every earlier narrowing is
+> kept below rather than tidied away, because the sequence is the point: this
+> item has been three-quarters finished by four separate changes and its
+> headline never moved.
+
+## What is left, and it is only this
+
+Six reads, none of them called by anything:
+
+```
+get_coin_candles        get_coin_metadata
+get_macd_heatmap        get_coin_performance_history
+get_regime_snapshot     get_regime_history
+```
+
+Everything else this item was filed for is done. The open side of an agent's
+money is **not** invisible any more.
+
+## The open-orders slice shipped (2026-08-13 correction)
+
+The blocking sentence — *"the order-row shape has still never been seen, and an
+unobserved shape is not a shape"* — was true when written and is not the state
+of the code:
+
+```
+positions-adapter.ts:16    TOOLS.resting = 'get_open_orders'
+positions-adapter.ts:77    readRestingOrders(…)
+positions-adapter.ts:183   mapOrder(…) — orderId, symbol, side, status,
+                           orderType, price, triggerPrice, quantity,
+                           originalSize, filledSize, reduceOnly,
+                           clientOrderId, placedAtMs
+read-exposure.query.ts:212 read in the same Promise.all as active positions,
+                           the funnel and the decisions
+```
+
+It landed with `a-stop-that-actually-rests` / `#128` ("The protection that
+actually rests — software's stop vs the exchange's"), which is exactly the
+surface this item predicted: an agent's resting SL/TP legs, read from the venue.
+The mapper's own comment records the discipline that unblocked it — null-and-
+filter a row without an identity rather than inventing an id.
+
+`get_open_orders` answered `{"orders": []}` again on 2026-08-13, empty because
+the account holds no open position, not because anything is wrong.
+
+**What is still genuinely unobserved** is a *populated* order row —
+`list_user_active_positions` reports `openPositionCount: 0` today — and
+`get_order_status`, which nothing calls. Neither blocks this item any more,
+because neither is what this item is now about.
 
 ## Discovery read 2026-08-08: two slices observed, one still unobservable
 

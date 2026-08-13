@@ -624,7 +624,7 @@ export class TradeOutcomePayloadError extends Error {
 }
 
 /**
- * A candidate stopped before evaluation — shaped from the live
+ * A candidate the pipeline stopped — shaped from the live
  * `list_gate_blocks` row of 2026-08-03.
  *
  * `reasonDetail` is carried as the platform structured it rather than

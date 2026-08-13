@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-11
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: agent-deployment
 github: "135"
@@ -52,12 +52,46 @@ pass through instead of leaving a deployment looking idle for no reason.
   top-level `blockedAgents: []` array — a second, agent-level blocked
   surface whose row shape is likewise unobserved. Whatever models the
   coin-level BLOCKED state should expect an agent-level sibling.
+- Live re-read 2026-08-13 (`list_radar_deployments`, **v18.2.0**): unchanged
+  across a major version. 20 policies, every one `blockedReason: null,
+  blockedSince: null`; `summary.blocked: 0`; `blockedAgents: []`. All 20 sit at
+  `section: SCANNING`. Fifteen of the twenty carry a `qualificationBlock`
+  (`AGGREGATE_BELOW_MIN` ×14, `ATR_VOLATILITY_BELOW_MIN` ×1) while still
+  reporting `SCANNING` — so *not qualifying* and *being blocked* are plainly
+  different axes on this payload, which is worth knowing before either is
+  modelled.
 
 ## Notes
 
-The product does not read `resolvesNow` at all today (`grep resolvesNow
-src/` is empty), so nothing renders or mis-renders the new state —
-modelling starts from nothing, which is cleaner than a narrowing to
-retrofit. Observe a blocked deployment first, then model; the house rule
-stands that an unrecognised state renders as unrecognised, never
-invented.
+> **Corrected 2026-08-13.** This section read: *"The product does not read
+> `resolvesNow` at all today (`grep resolvesNow src/` is empty), so nothing
+> renders or mis-renders the new state."* **The first clause is false** — the
+> grep is not empty. The conclusion survives, for a different and narrower
+> reason, which is written out below. The claim was almost certainly true when
+> written and was carried forward unchecked.
+
+The product **does** read `resolvesNow` — `src/infrastructure/battlegrid/radar-adapter.ts:161`
+pulls it out of every policy row:
+
+```ts
+const resolves = (p['resolvesNow'] ?? {}) as Record<string, unknown>;
+…
+onDutyAgentId:       str(resolves['onDutyAgentId']),
+openPositionAgentId: str(resolves['openPositionAgentId']),
+```
+
+**Two fields, and `section` is not one of them.** That is what keeps the
+conclusion standing: a `BLOCKED` section value cannot mis-render, because
+nothing reads `section` to render from. `RadarDeployment` derives its own state
+from on-duty and open-position ids instead.
+
+So modelling still starts from nothing, but the reason to say so is precise:
+not "the block is unread" — the *envelope carrying it* is read, and a mapper
+would have somewhere to land. Whoever takes this adds fields to an existing
+mapping rather than introducing a read.
+
+The unchanged part: observe a blocked deployment first, then model. The house
+rule stands that an unrecognised state renders as unrecognised, never invented —
+and note `mapDeployments` currently treats a missing `resolvesNow` as
+"absence nulls the fields and never fails the row", which is the right default
+and also means a `BLOCKED` row would arrive today looking like an ordinary one.

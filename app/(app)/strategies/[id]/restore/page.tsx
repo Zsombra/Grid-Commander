@@ -66,6 +66,25 @@ export default async function RestoreStrategyPage({
 
   const { strategy } = listing;
 
+  // State before address. A `?outcome=repair-required` bookmark outlives the
+  // state it described: opened after the strategy was restored it said
+  // "needs rebuilding" about something already active, with the state read
+  // sitting right here unconsulted. Whatever is true now wins.
+  if (strategy.isActive) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Cannot restore</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
+        <p className="text-sm">
+          <a href={`/strategies/${strategy.id}`} className="underline">
+            Back to {strategy.name}
+          </a>
+        </p>
+      </main>
+    );
+  }
+
   if (outcome === 'repair-required') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
@@ -81,21 +100,6 @@ export default async function RestoreStrategyPage({
             Compile a change for it
           </a>
           {/* Rebuilding is the way forward, not the only way out. */}
-          <a href={`/strategies/${strategy.id}`} className="underline">
-            Back to {strategy.name}
-          </a>
-        </p>
-      </main>
-    );
-  }
-
-  if (strategy.isActive) {
-    return (
-      <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">Cannot restore</h1>
-        <CarriedProblem problem={problem} />
-        <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
-        <p className="text-sm">
           <a href={`/strategies/${strategy.id}`} className="underline">
             Back to {strategy.name}
           </a>

@@ -3,8 +3,8 @@
   "title": "Retune a signal rule",
   "route": "/strategies/[id]/rules/[signalId]",
   "capability": "strategy-authoring",
-  "status": "functional",
-  "generated_at_commit": "e7c56ce",
+  "status": "needs-redesign",
+  "generated_at_commit": "eeb3427",
   "source_files": [
     "app/(app)/strategies/[id]/rules/[signalId]/page.tsx",
     "src/presentation/components/control.ts",
@@ -59,7 +59,9 @@
         "no-such-strategy",
         "unreadable",
         "authority-lost",
-        "not-connected"
+        "not-connected",
+        "allocation-not-a-number",
+        "tuning-form-recomposing"
       ],
       "data": [
         "rule",
@@ -67,7 +69,7 @@
         "authority"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Two steps on one route: without ?a= the page is the tuning form; with it, the describe runs and the page is the proposal. Since `a-lost-authority-is-not-a-refusal` there is a branch above all of that: after the not-connected check and *before* the strategy is read, `one(q, 'authority')` is tested, and any value returns `<AuthorityLost reason={authority} />` — a whole page of its own, no strategy read, no form, none of the states below reachable. `not-a-rule` renders when the strategy does not weigh the signal: '\"<name>\" does not weigh <signalId>. Only a rule the strategy already carries can be retuned here.' — a plain text-sm paragraph with no role at all, no form, one link back. `params-not-numeric` renders when a p_ param does not parse: h1 'Those parameters do not read as numbers', a bare `role=alert text-sm` explanation, and a 'Compose it again' link back to the bare form (the typed values are discarded — see gap). `cannot-retune` covers every non-proposal describe answer (strategy-missing, not-a-rule, no-op, refused) as one h1 plus a bare `role=alert text-sm` reason and two links ('Choose differently', 'Back to the strategy'). `unreadable` shows a bare `role=alert text-sm` reason with WhyNotLoaded beneath it; `no-such-strategy` mirrors the platform saying it is not there. Worth stating because the three strategy lifecycle ceremonies just diverged from it: DT-0019/0020/0021 gave archive, restore and fork's failure sentences the danger role, and this page was not in that sweep — every failure sentence here is still `role=\"alert\" className=\"text-sm\"` body text, and the only tinted blocks on the page are the two inline problem banners and AuthorityLost's own. The `a` query value is parsed with no validation — a non-numeric value rides into the describe as NaN and is left to the describe to refuse. Gap, recorded rather than designed around: the problem banner is hand-rolled inline in exactly two of the six problem-carrying branches (the tuning form and the proposal), so the other four drop a carried `?problem=` on the floor. `cannot-retune` is the one that bites — `performRetune` bounces a refusal back with the whole choice (a, req, p_*) plus problem, the describe re-runs against the strategy as it now stands, and if it now answers no-op or not-a-rule the operator sees 'Cannot retune' with no word of what their click did. This is the same defect `the-outcome-reaches-the-person` fixed on the six ceremony pages with the shared `CarriedProblem`, which this page still does not import. The `authority` arm does not have that defect: it is checked first, so nothing can swallow it.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Two steps on one route: without ?a= the page is the tuning form; with it, the describe runs and the page is the proposal. Since `a-lost-authority-is-not-a-refusal` there is a branch above all of that: after the not-connected check and *before* the strategy is read, `one(q, 'authority')` is tested, and any value returns `<AuthorityLost reason={authority} />` — a whole page of its own, no strategy read, no form, none of the states below reachable. `not-a-rule` renders when the strategy does not weigh the signal: '\"<name>\" does not weigh <signalId>. Only a rule the strategy already carries can be retuned here.' — a plain text-sm paragraph with no role at all, no form, one link back. `params-not-numeric` renders when a p_ param does not parse: h1 'Those parameters do not read as numbers', a bare `role=alert text-sm` explanation, and a 'Compose it again' link back to the bare form (the typed values are discarded — see gap). `cannot-retune` covers every non-proposal describe answer (strategy-missing, not-a-rule, no-op, refused) as one h1 plus a bare `role=alert text-sm` reason and two links ('Choose differently', 'Back to the strategy'). `unreadable` shows a bare `role=alert text-sm` reason with WhyNotLoaded beneath it; `no-such-strategy` mirrors the platform saying it is not there. Worth stating because the three strategy lifecycle ceremonies just diverged from it: DT-0019/0020/0021 gave archive, restore and fork's failure sentences the danger role, and this page was not in that sweep — every failure sentence here is still `role=\"alert\" className=\"text-sm\"` body text, and the only tinted blocks on the page are the two inline problem banners and AuthorityLost's own. The `a` query value is parsed with no validation — a non-numeric value rides into the describe as NaN and is left to the describe to refuse. Gap, recorded rather than designed around: the problem banner is hand-rolled inline in exactly two of the six problem-carrying branches (the tuning form and the proposal), so the other four drop a carried `?problem=` on the floor. `cannot-retune` is the one that bites — `performRetune` bounces a refusal back with the whole choice (a, req, p_*) plus problem, the describe re-runs against the strategy as it now stands, and if it now answers no-op or not-a-rule the operator sees 'Cannot retune' with no word of what their click did. This is the same defect `the-outcome-reaches-the-person` fixed on the six ceremony pages with the shared `CarriedProblem`, which this page still does not import. The `authority` arm does not have that defect: it is checked first, so nothing can swallow it. Two states added: `allocation-not-a-number` names the value the address carried and describes nothing; `tuning-form-recomposing` is the form reached with `edit=1`, which prefers the query's values over the stored rule so a refusal can return the choice.",
       "constraints": [
         "The two-step ceremony is spec — openspec/specs/strategy-authoring/spec.md:530-540 ('only through describe-then-perform … The describe SHALL read the strategy fresh, refuse a signal that is not among its rules and a change that changes nothing'). A design must not collapse compose and confirm into one step.",
         "A no-op and an absent signal are refused without a token — spec.md:554-561; both land in the cannot-retune state and no confirm form may be drawn there.",
@@ -456,5 +458,12 @@
       "button-secondary"
     ],
     "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). No client JS: the compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:ac0d11e0b1807f18548817ad711a96cadbe71f79af48357b83563deccb9f62a3",
+    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/authority-lost.tsx": "sha256:cb5a331bc0a647090d659b13427ad55cb2e922e1151c15743fbc14d087563da2"
   }
 }
