@@ -4,7 +4,7 @@
   "route": "/agents/[id]/deploy",
   "capability": "agent-deployment",
   "status": "needs-redesign",
-  "generated_at_commit": "35aca9d",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/(app)/agents/[id]/deploy/page.tsx",
     "src/presentation/components/authority-lost.tsx",
@@ -219,7 +219,7 @@
           "effect": "Runs performDeploy"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0016 it carries `w-full tablet:w-auto` on the confirmation branch, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0016 it carries `w-full tablet:w-auto` on the confirmation branch, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block naming the replacement.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product.",
@@ -388,10 +388,10 @@
     "notes": "The carried problem, consequence, no-timeframes, refusal and authority-lost messages all carry role=alert; on a bounced branch two of them are adjacent. The authority-lost branch has an alert and no focusable element at all — it is the one state on this surface with nothing to tab to. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/deploy/page.tsx": "sha256:414fb38be39fd19fb2a319151d3616f4a6c8b7460b0239f4fc30cb7a4abcd098",
-    "src/presentation/components/authority-lost.tsx": "sha256:b08e6ad7f04fcdec097ceb02c301e550ee9a5a2232d412080168a6e919d96450",
+    "app/(app)/agents/[id]/deploy/page.tsx": "sha256:e63a7606c3f1c8bb14ceef3da13ef3c29ca5d9d30fc21815dd3128906198cfd2",
+    "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }

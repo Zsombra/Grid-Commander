@@ -46,5 +46,5 @@ Implementing DT-0022, DT-0023, DT-0024, DT-0025. Every one is
 
 ## 5. Owed after this commits
 
-- [ ] 5.1 Re-survey — these edits stale the manifests they were written
+- [x] 5.1 Re-survey — these edits stale the manifests they were written
       against. That is the round's last task, not the next round's surprise.

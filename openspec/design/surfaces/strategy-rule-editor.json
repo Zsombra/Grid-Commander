@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/rules/[signalId]",
   "capability": "strategy-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "35aca9d",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/(app)/strategies/[id]/rules/[signalId]/page.tsx",
     "src/presentation/components/control.ts",
@@ -329,7 +329,7 @@
           "effect": "Runs performRetune"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, DT-0004 hover/active. No pending/loading state between click and redirect — same class of gap as #153; behavior, not styling.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, DT-0004 hover/active. No pending/loading state between click and redirect — same class of gap as #153; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block, not on flinching at the legitimate action.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts.",
@@ -473,9 +473,9 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:84733195b5ac5615b3578ae629aef111db21007e2227982d128115b607740769",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/components/authority-lost.tsx": "sha256:b08e6ad7f04fcdec097ceb02c301e550ee9a5a2232d412080168a6e919d96450"
+    "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8"
   }
 }

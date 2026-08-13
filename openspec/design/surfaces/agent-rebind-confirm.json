@@ -4,7 +4,7 @@
   "route": "/agents/[id]/rebind",
   "capability": "agent-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "35aca9d",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/(app)/agents/[id]/rebind/page.tsx",
     "src/presentation/components/rebind-confirm.tsx",
@@ -172,7 +172,7 @@
           "effect": "Runs performRebind"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0018 it carries `w-full tablet:w-auto`, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0018 it carries `w-full tablet:w-auto`, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated both in control.ts and in rebind-confirm.tsx's own comment: the weight is on the consequence above, and a hazard-coloured control trains a flinch at the action the page exists to offer.",
         "The label names the operation and both parties — 'OK' or 'Confirm' would be a button that agrees to nothing in particular. Copy changes here are behavior.",
@@ -328,9 +328,9 @@
   "source_digest": {
     "app/(app)/agents/[id]/rebind/page.tsx": "sha256:1db704b33e7ac441df1187289b273191499afce0065aef7c7a0e65f2289dd47a",
     "src/presentation/components/rebind-confirm.tsx": "sha256:5bf7a0132ddda51281da4fcaa369c8c1f3ee35767cadb4f8ce2779d39d427ab7",
-    "src/presentation/components/authority-lost.tsx": "sha256:b08e6ad7f04fcdec097ceb02c301e550ee9a5a2232d412080168a6e919d96450",
+    "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }
