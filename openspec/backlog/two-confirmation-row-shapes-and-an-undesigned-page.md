@@ -59,3 +59,47 @@ the archive page's stack — so neither decides anything new.
 
 Related: `the-authority-page-names-a-remedy-and-offers-no-target` (#182) is
 the *behaviour* half of the same surface and needs a proposal, not a ticket.
+
+---
+
+# Ticketed 2026-08-13, and one row could not be — the sweep missed what the manifests did not name
+
+The design round wrote DT-0022 through DT-0025.
+
+- **DT-0023** answers finding 2: `AuthorityLost` gains a leading `danger.default`
+  edge that `CarriedProblem` does not, so the two are distinguishable with the
+  text masked. Both stay red — moving either to `warning` or `notice` would say
+  a refusal is advisory, which the system's own principle forbids. The
+  difference becomes structural, per the new v2 principle *terminal and
+  recoverable failures are told apart by structure, not by hue*.
+- **DT-0024** and **DT-0025** answer finding 1 for `agent-reactivate-confirm`
+  and for both of `recorder-trim`'s rows.
+- **DT-0022** covers the button's `disabled` and `loading` treatment, which is
+  #153's remaining blocker and is on these same surfaces.
+
+**The deploy chooser's row could not be ticketed, and the reason is the finding
+this item was missing.** It has no component in
+`openspec/design/surfaces/agent-deploy-confirm.json`. It exists only as a
+sentence inside `button-secondary`'s `current_implementation` — *"The chooser's
+own row is still a plain `flex flex-wrap gap-3`, untouched by that ticket."* A
+ticket naming it would fail `design_component_not_found`, because a component id
+that appears in no source file is a ticket aimed at nothing.
+
+This item says the sweep was *"scoped to the pages that had tickets rather than
+to the pattern"*. That is close, and one step short. **The sweep was scoped to
+the components the manifests named.** DT-0016 restyled `perform-deploy` because
+`perform-deploy` was a component; it left the chooser row alone because the
+chooser row was prose. A design agent can only ticket what the survey modelled,
+so a row that is not a unit in the manifest is invisible to the round however
+carefully the round is scoped.
+
+**What that costs, generally**: every surface where two rows do different jobs
+and only one is modelled will drift the same way, and the drift is invisible
+from the design side. Worth a look at the other multi-row surfaces before the
+next sweep rather than after it.
+
+**Next step**: `/surface agent-deploy-confirm` modelling the chooser row as its
+own component — it has its own job (it asks, and reaches no operation), its own
+controls, and its own states — then one more ticket. Not done here because
+re-surveying to satisfy a ticket I am about to write is the design agent editing
+the developer's report of reality, which the contract forbids.

@@ -1,8 +1,8 @@
 {
-  "version": 1,
+  "version": 2,
   "status": "designed",
   "placeholder_groups": [],
-  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance.",
+  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance. Revised 2026-08-13 (v2): two principles added rather than tokens. The palette and scales already carried every value these needed — what the system lacked was the rule for spending them, which is why twelve forms went silent under submission and why two callouts saying opposite things came out identical.",
   "tokens": {
     "color": {
       "bg": {
@@ -274,15 +274,17 @@
     }
   ],
   "principles": [
-    "Never signal state by color alone \u2014 pair it with shape, icon, or text.",
+    "Never signal state by color alone — pair it with shape, icon, or text.",
     "Every interactive element has a visible focus state at 2px offset.",
     "Text on its background meets WCAG AA (4.5:1 body, 3:1 large).",
     "Tap targets are at least 44x44px on touch viewports.",
     "Motion is decoration: respect prefers-reduced-motion, never gate feedback on it.",
-    "Consequence outranks everything on a screen. When an action reaches live agents, the count of what it reaches is the heaviest element present \u2014 never a clause inside a sentence.",
+    "Consequence outranks everything on a screen. When an action reaches live agents, the count of what it reaches is the heaviest element present — never a clause inside a sentence.",
     "Advisory is not failure. `notice` never borrows danger's colour, icon, or weight; a user who learns to fear advisories learns to abandon valid work.",
-    "Absence of effect is stated, not implied. 'Nothing has changed yet' gets the same visual commitment as a warning would \u2014 silence reads as a broken page, not as safety.",
+    "Absence of effect is stated, not implied. 'Nothing has changed yet' gets the same visual commitment as a warning would — silence reads as a broken page, not as safety.",
     "Unknown is not zero. Where the platform declined to tell us a number, that renders differently from the number nought.",
-    "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at."
+    "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at.",
+    "Work in flight is stated, not implied. A control that has been pressed says so before the page it leads to arrives; the counterpart of 'absence of effect is stated', for the moment when effect is under way and nothing on screen has moved yet.",
+    "Terminal and recoverable failures are told apart by structure, not by hue. Both are red because both are bad; what differs is whether anything else on this screen can still work, and a user must be able to see that difference without reading the sentence twice."
   ]
 }

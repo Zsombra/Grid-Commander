@@ -1,0 +1,57 @@
+{
+  "id": "DT-0024",
+  "surface": "agent-reactivate-confirm",
+  "targets": [
+    "reactivate-prompt"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "open",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The reactivate row gets the shape DT-0016/0017/0018 gave deploy, undeploy and rebind: stacked full-width below tablet, a wrapping row above it. One confirmation shape, not two.",
+  "rationale": "The ceremony sweep restyled deploy, undeploy and rebind and stopped, because it was scoped to the surfaces that already had tickets. Reactivate was not among them and still wears the flat `flex flex-wrap gap-3`, so the product now has two confirmation-row shapes where it previously had one.\n\nThat is worse than the state before the sweep, and the backlog item says why: previously they were all equally wrong and nobody could mistake it for a decision. Now a reader has to work out whether reactivate is stacked differently on purpose. A half-applied convention costs more than an unapplied one.\n\nNothing here is new design. The treatment was settled by DT-0016 and this spends it on the surface that was missed, which is why it is p3 and why its acceptance is a comparison rather than a measurement.",
+  "design": {
+    "layout": "The prompt's action row becomes `flex flex-col gap-3` below the tablet breakpoint and `tablet:flex-row tablet:flex-wrap` at and above it, exactly as DT-0016 set for deploy. The submit and the cancel each take `w-full tablet:w-auto`. The prose above the row — what returns, and that it takes a slot — is untouched, including its deliberate split from the binding claim beneath it.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "row_gap": "space.3",
+      "stack_breakpoint": "breakpoint.tablet",
+      "min_height": "size.control.min"
+    },
+    "states": {
+      "default": {
+        "content": "Submit ('Reactivate…') and cancel stack full-width under tablet in that order, submit first; inline and wrapping above it. The reading order is unchanged in both."
+      },
+      "at-capacity": {
+        "content": "Same row treatment. The at-capacity notice keeps its own placement above the row and its own treatment — this ticket does not touch it. The submit is still rendered and still pressable: the system's principle is that nothing is styled to look disabled when retrying cannot help, and the inverse holds here — a control that can succeed once a slot is freed must not be dimmed to suggest otherwise."
+      },
+      "not-archived": {
+        "content": "No action row renders in this state, so there is nothing to restyle. Recorded rather than skipped: the state is declared, and a reader checking this ticket against the manifest should find it accounted for instead of wondering whether it was missed."
+      }
+    },
+    "responsive": {
+      "mobile": "Stacked, each control full width, in the same order as the wrapping row.",
+      "desktop": "A wrapping row at natural widths, matching agent-archive-confirm."
+    },
+    "content": {
+      "copy": "No copy change."
+    }
+  },
+  "acceptance": [
+    "At a viewport below breakpoint.tablet the submit and cancel are each full width and stacked vertically, with space.3 between them.",
+    "At and above breakpoint.tablet they sit on one wrapping row at natural widths.",
+    "Rendered side by side with agent-archive-confirm at the same two viewports, the two action rows are indistinguishable in layout.",
+    "Both controls still meet size.control.min in both layouts.",
+    "The at-capacity notice's own placement and treatment are unchanged by this ticket.",
+    "No raw pixel value for the breakpoint or the gap appears in the component; both resolve through generated token utilities."
+  ],
+  "references": [
+    "openspec/design/tickets/DT-0016.json — the treatment this applies",
+    "openspec/backlog/two-confirmation-row-shapes-and-an-undesigned-page.md (#183)",
+    "openspec/design/system.json — principle 'Nothing is styled to look disabled when retrying cannot help'"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-13",
+  "github_issue": null
+}
