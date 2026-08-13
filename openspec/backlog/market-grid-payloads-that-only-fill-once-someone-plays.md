@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-12
+updated: 2026-08-13
 change: ""
 capability: market-grid
 github: "104"
@@ -68,11 +68,21 @@ arena already calls.
 
 ## First step when taken
 
-Watch, do not play. Poll `list_market_grid_sessions` for a `PENDING` session
-whose `playerCount` is above zero and re-read it; if `coinPicks.top` fills, the
-crowd panel is buildable with no stake and no new call. Then follow one session
-with players through `LIVE → RESOLVING → SETTLED` and record what
-`get_market_grid_results` actually returns.
+**There is nothing to poll for.** `list_market_grid_sessions` has now been read
+whole three times — 2026-08-06, 2026-08-12, 2026-08-13 — and every session on
+every read carried `playerCount: 0`. Running it a fourth time to look for a
+session with players in it is a read whose answer is already on record.
+
+What would have to change first is not a read: **one session, anywhere this
+listing can see, reaching its five-player minimum** — which would first show as
+a row whose `playersNeeded` no longer equals its `minimumPlayers`, meaning at
+least one player counted, not yet five. Nothing this account, this product, or
+the operator can do produces that; it needs other people to enter. If it ever
+happens, the order is unchanged: re-read that row and see whether
+`coinPicks.top` and `crowdUpPercent` / `crowdDownPercent` fill — the crowd
+panel, buildable with no stake and no new call — then follow that same session
+through `LIVE → RESOLVING → SETTLED` and record what `get_market_grid_results`
+actually returns.
 
 Settling 1 and 2 needs an entry, which needs the writes — see
 `market-grid-is-an-unmodelled-module`.
@@ -154,3 +164,77 @@ not buildable — `top[]` is where the tickers, `picks`, `upPct`, `intensity`,
 Six days and two platform majors after the last read, still no account
 anywhere visible has entered a session. The item stays blocked on the
 platform having players at all; nothing to poll for.
+
+---
+
+# Re-checked 2026-08-13 — third confirmation, now on v18.2.0
+
+`list_market_grid_sessions` read whole at ~20:00 UTC, read-only, against the
+account whose `get_account_state` answers `username: "Fibonacci"`, BattleGrid
+v18.2.0.
+
+```
+rows:           50   (payload key is `sessions`, not `entries`)
+status:         PENDING 2   CANCELLED 48
+playerCount:    0 on all 50
+minimumPlayers: 5 on all 50
+playersNeeded:  5 on all 50
+```
+
+`playersNeeded` equal to `minimumPlayers` on every row is the same fact as
+`playerCount: 0`, said from the other side: not one player is counted against
+any session's minimum, on either status.
+
+## Three reads, one week apart, and no player anywhere
+
+| Read | Platform | Rows | PENDING | CANCELLED | `playerCount` |
+|---|---|---|---|---|---|
+| 2026-08-06 | not recorded here — two majors before v17.2.0, per the 2026-08-12 note | 50 | 2 | 48 | 0 on all 50 |
+| 2026-08-12 | v17.2.0 | 50 | 2 | 48 | 0 on all 50 |
+| 2026-08-13 | v18.2.0 | 50 | 2 | 48 | 0 on all 50 |
+
+Three reads spanning a week and at least three platform versions, and not one
+session this listing reaches has ever had a player on it.
+
+**48 of 50 CANCELLED is the answer, not a hole in it.** What is measured is the
+pair: CANCELLED on 48 rows, `playerCount: 0` on every one of them. That they
+cancelled *for want of* the five-player minimum is inferred from that pair — no
+field read here states a cancellation reason. The life cycle that inference
+describes is sessions created, never filled, expiring unplayed. The empty crowd
+panel is not a payload this account has failed to catch; it is a state the
+platform has not produced anywhere this listing reaches.
+
+## Row keys, and the envelope confirmed
+
+The row keys recorded today are `alpha`, `calculatedItmCount`, `coinPicks`,
+`coinPoolPreview`, `crowdDownPercent`, `crowdUpPercent`, `displayName`,
+`distributionCurveId`, `entryFee`, `feeBreakdown`, `feeConfig`,
+`finalScoringSource`, `gamePresetId`, `gameType`. That sample is alphabetical
+and stops at `gameType` — it is a prefix of the row's keys, not an inventory of
+them, and nothing here says a key is absent.
+
+Two things follow. First, `coinPicks`, `crowdUpPercent` and `crowdDownPercent`
+are all still present at v18.2.0 — the envelope this item is about has held
+across all three reads. Their *values* were not recorded in this read; with
+`playerCount: 0` on every row they cannot have filled, but that is inferred
+from the player count, not read off the fields.
+
+Second, the list payload's rows sit under `sessions`. That matches
+`src/infrastructure/battlegrid/market-grid-adapter.ts:70`, which reads
+`content['sessions']` and raises `GridPayloadError('sessions')` otherwise. Worth
+stating because other BattleGrid list tools use an `entries` envelope
+(`src/infrastructure/battlegrid/agent-adapter.ts:367`) and this one does not.
+Nothing to change.
+
+## What this does to the item
+
+It stays open. All three shapes it exists for — the settled results payload, the
+player grid, and a populated `coinPicks.top` — remain unobserved, and remain
+unobservable by anything this account does.
+
+What moved is the first step, rewritten above. The 2026-08-06 note that the
+first step "stands, unchanged in substance" no longer holds: polling for a
+session with players now has three reads of evidence against it, and this item
+should not send a fourth reader to run it. The condition to watch for is stated
+in its place — a row where `playersNeeded` falls below `minimumPlayers` — along
+with the fact that no amount of polling makes it arrive sooner.

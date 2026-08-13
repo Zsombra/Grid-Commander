@@ -1,6 +1,6 @@
 ---
 id: performance-and-allocation-are-unmodelled
-title: get_agent_fund_allocation reports zero for money the platform reports as committed
+title: get_agent_fund_allocation reported zero for money the platform reported as committed
 type: question
 status: open
 priority: p3
@@ -13,7 +13,7 @@ blocked_by: []
 tags: [battlegrid, agent-understanding, mapping]
 ---
 
-# get_agent_fund_allocation reports zero for money the platform reports as committed
+# get_agent_fund_allocation reported zero for money the platform reported as committed
 
 > **Split 2026-08-13.** The title named two tools. **They have gone different
 > ways and can no longer share an item.**
@@ -49,6 +49,17 @@ That is worth stating precisely, because it changes what a re-check means:
 a reading of zero today is *not* evidence the tool has been fixed, and must not
 be recorded as one. Only a reading taken while `openPositionCount > 0` can
 distinguish the two. The 2026-08-10 evidence remains the decisive measurement.
+
+**The item is conditional from here.** It stays open, and the only read that can
+settle it either way is one taken while a position is open: when
+`list_user_active_positions` shows a non-zero `marginedUsd`, call
+`get_agent_fund_allocation` in the same minute. Until then a re-check can only
+report agreement, and agreement is not an answer to this item's question.
+
+The title was moved to past tense on 2026-08-13 for that reason. As written it
+asserted a present-tense mismatch that no read taken today can support. What it
+records -- `committedUsd: 0` against `marginedUsd: 17.45`, 2026-08-10 -- is
+unchanged.
 
 ## Update 2026-08-06: the zeros are a baseline, not a bug
 
@@ -283,3 +294,59 @@ tool still returns zeros when zero is also the right answer.
 `marginedUsd`, call `get_agent_fund_allocation` in the same minute. That is the
 only configuration in which this item can be settled either way.
 
+## Re-checked 2026-08-13, ~20:00 UTC -- zero is the right answer, so zero proves nothing
+
+Second read of the day, read-only, against the account whose `get_account_state`
+answers `username: "Fibonacci"`, at v18.2.0. `get_agent_fund_allocation(Undertow)`
+returns, under the key `allocation`:
+
+```
+agentId               <Undertow>
+availableUsd          0
+committedUsd          0
+lifetimeAllocatedUsd  0
+lifetimeRecalledUsd   0
+haltedAt              null
+perTradePushEnabled   false
+```
+
+`list_user_active_positions` returns the keys `[activeCoinTickers, agents,
+positions, totals, userId]`, and `totals` is zero throughout:
+`openPositionCount: 0`, `activeAgentCount: 0`, `pricedPositionCount: 0`,
+`unpricedPositionCount: 0`, `longCount: 0`, `shortCount: 0`, `marginedUsd: 0`.
+
+**The platform reports nothing committed, and the allocation tool reports
+nothing committed. That is agreement, not a discrepancy.** The item's claim is
+neither confirmed nor falsified by this read. It is untestable while no position
+is open, which is the state the account has been in for both of today's reads.
+
+Worth writing plainly, because this repository's recurring error runs the other
+way: *"the read returned zero" is not "the read is broken" when zero is the
+right answer.* Two matching zeros are evidence of nothing here except that the
+account is flat.
+
+**What the mismatch evidence actually covers.** The comparison in the title
+dates from 2026-08-10, the first reading that records margin open at the same
+moment (five positions, `marginedUsd: 17.45`), and from 2026-08-12, which
+repeats it on two agents at ~$11 each. The original 2026-07-29 filing reports
+zeros across twelve agents but does not record whether any position was open at
+the time, so those zeros cannot be classified either way -- they may have been
+the same agreement seen today. The mismatch rests on the two August readings,
+not on the sweep that opened the item.
+
+Two smaller observations from the same read, neither of them the finding:
+
+- The payload arrives under an `allocation` key. Earlier entries in this item
+  quote the inner object without that envelope.
+- `perTradePushEnabled: false` for Undertow, where account 2's agent read `true`
+  on 2026-08-06. Not investigated; outside this item's question.
+
+**One citation checked while auditing this entry does not hold.** Lines 126-128
+say `tests/agent/performance.test.ts` fails the day a future account populates
+these tools, and call that the cheapest possible trigger. It cannot. The
+assertion at `tests/agent/performance.test.ts:142-148` reads a frozen literal --
+`EMPTY_PERFORMANCE_TOOL_RESPONSE`, defined at
+`tests/support/performance-payloads.ts:102-111` -- so it fails only if someone
+edits the fixture, never because the live tool started answering. The
+performance half is superseded by #189 either way; recorded here so the tripwire
+is not counted on again.
