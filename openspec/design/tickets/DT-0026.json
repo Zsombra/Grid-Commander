@@ -1,0 +1,57 @@
+{
+  "id": "DT-0026",
+  "surface": "agent-deploy-confirm",
+  "targets": [
+    "deploy-chooser-row"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The last row still wearing the old shape gets the new one, so the two rows a user meets on this single route stop disagreeing about what a confirmation looks like.",
+  "rationale": "This is the row DT-0016 could not reach, and the reason is worth keeping: it was not modelled. `perform-deploy` was a component in the surface manifest and got the treatment; this row existed only as a sentence inside `button-secondary`'s description, so no ticket could name it and no design round could see it. It was surveyed as `deploy-chooser-row` on 2026-08-13, and the page now carries that id in a comment — `validate` refuses a component whose id appears in no source file, which is the check that would have caught the omission a month earlier.\n\nThe two rows sit on **one route**. A user names a market in this row, and meets `perform-deploy` on the next request. Today the first wraps and the second stacks full-width under `tablet`, so the same page changes its mind about confirmation layout between two steps of one task. That is worse than the uniform wrongness that preceded DT-0016, because a reader has to work out whether the difference is deliberate.\n\nNo new treatment. DT-0016 settled it; this is the last surface spending it, which is why it is p3 and why the acceptance is a comparison rather than a measurement.\n\nOne thing deliberately left alone: both controls stay `BUTTON_SECONDARY`. This form asks — it composes a description and reaches no operation — and `control.ts` keeps the primary weight for the page that follows. Restacking a row is layout; changing which weight it wears would be saying the page commits something, and it does not.",
+  "design": {
+    "layout": "The row becomes `flex flex-col gap-3` below the tablet breakpoint and `tablet:flex-row tablet:flex-wrap` at and above it, matching DT-0016 exactly. Both controls take `w-full tablet:w-auto`. The two labelled fields above the row keep their own `space-y-3` stacking and are not touched — they are part of the form, not part of this row.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "row_gap": "space.3",
+      "stack_breakpoint": "breakpoint.tablet",
+      "min_height": "size.control.min"
+    },
+    "states": {
+      "default": {
+        "content": "The GET submit ('See what deploying would do') first, then the anchor back to the agent, stacked full-width under tablet and inline above it. Submit first in both, matching every other confirmation row on the product: the reading order does not change with the viewport."
+      },
+      "not-rendered-without-timeframes": {
+        "content": "Nothing to restyle. When BattleGrid declares no permitted timeframes the whole form is replaced by a role=alert sentence saying a deployment cannot be composed, so this row does not render at all. Recorded rather than skipped so a reader checking this ticket against the manifest finds the state accounted for instead of wondering whether it was missed — and so nobody adds a dimmed row here, which the system's own principle forbids where retrying cannot help."
+      }
+    },
+    "responsive": {
+      "mobile": "Stacked, each control full width, in reading order.",
+      "desktop": "A wrapping row at natural widths."
+    },
+    "content": {
+      "copy": "No copy change."
+    }
+  },
+  "acceptance": [
+    "Below breakpoint.tablet the submit and the anchor are each full width and stacked vertically, with space.3 between them.",
+    "At and above breakpoint.tablet they sit on one wrapping row at natural widths.",
+    "Rendered at both viewports beside this same route's proposal branch, the chooser row and perform-deploy are indistinguishable in layout.",
+    "Both controls still wear BUTTON_SECONDARY — neither is promoted to primary.",
+    "The submit remains inside the method=\"get\" form and is not converted to a server action.",
+    "The two labelled fields above the row keep their existing stacking, unchanged at both viewports.",
+    "Both controls meet size.control.min in both layouts.",
+    "No raw pixel value for the breakpoint or the gap appears in the component."
+  ],
+  "references": [
+    "openspec/design/tickets/DT-0016.json — the treatment this applies",
+    "openspec/design/surfaces/agent-deploy-confirm.json — deploy-chooser-row, surveyed 2026-08-13",
+    "openspec/backlog/two-confirmation-row-shapes-and-an-undesigned-page.md (#183)",
+    "src/presentation/components/control.ts — primary is the action the page exists to offer; secondary is every submit that only asks"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-13",
+  "github_issue": null
+}

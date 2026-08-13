@@ -170,7 +170,7 @@
         "hover",
         "focused",
         "active",
-        "disabled"
+        "loading"
       ],
       "data": [
         "proposal"
@@ -181,7 +181,7 @@
           "effect": "Runs archiveStrategy"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect — the same class of gap filed as #153 for the agent archive button; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect — the same class of gap filed as #153 for the agent archive button; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: archive is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",

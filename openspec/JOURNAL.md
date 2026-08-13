@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-13 (late) — #183 closed, and the row that could not be ticketed gets a name
+
+**Did**: surveyed the deploy chooser row, wrote and implemented DT-0026, closed
+**#183**. Filed the secondary-pending gap that #153 left behind.
+
+**The chooser row could not be ticketed because it had no name.** Not a scoping
+failure — a modelling one. `perform-deploy` was a component in the manifest and
+got DT-0016; the chooser row existed only as a sentence inside
+`button-secondary`'s description, so no ticket could name it and no round could
+see it. Adding it to the manifest failed `validate` immediately with
+`design_component_not_found`, which was the tool saying the same thing: a
+component id that appears in no source file is a ticket aimed at nothing.
+
+So the page now carries the id in a comment. That is the actual fix — the row is
+addressable, and the check that refused it is the one that would have caught the
+omission a month ago.
+
+**I corrected my own over-reach from the previous re-survey.** I had added
+`disabled` to `button-primary`'s states on seventeen surfaces, on the surveyor's
+rule that a state which exists but is unhandled should be listed. But nothing in
+the product *enters* `disabled` — so declaring it per-surface is the same fiction
+DT-0003 refused for the ghost and danger variants. Removed. `system.json`
+declares the primitive state and DT-0022 styles it; that is where it belongs.
+
+**One warning pair is left standing deliberately.** `loading` is genuinely
+reachable on surfaces whose tickets predate it, so `validate` reports DT-0003 and
+DT-0004 as not covering it. A ticket carries one surface and this is a shared
+primitive, so the honest options were two advisory warnings or under-reporting a
+state those buttons really reach. Recorded the reasoning in DT-0022 rather than
+silencing either.
+
+**Filed**: `a-secondary-perform-cannot-say-it-is-working` (p3). `/pending/[id]`'s
+Decline mutates, has no undo, and still gives no sign it is working — it wears
+the secondary weight and `PerformButton` wears primary. It needs a secondary
+variant of the pending treatment. Filed as its own item because it was living
+only in a closed item's body and a test comment, which is not a place work gets
+found.
+
+**Gates**: typecheck, lint, 2328 tests / 179 files, build.
+
 ## 2026-08-13 (late) — #153 closed, and a guard taught rather than lowered
 
 **Did**: rolled `PerformButton` across every perform submit. **#153 closed.**

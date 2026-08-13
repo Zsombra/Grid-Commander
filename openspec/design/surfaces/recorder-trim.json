@@ -187,7 +187,7 @@
         "hover",
         "focused",
         "active",
-        "disabled"
+        "loading"
       ],
       "data": [
         "described"
@@ -198,7 +198,7 @@
           "effect": "Runs performTrim"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. The label carries the run count and the word 'permanently', pluralized. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. The label carries the run count and the word 'permanently', pluralized. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: trimming after reading the description is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
         "The label must keep the described run count and 'permanently' — it is the extent the confirmation is bound to, said back at the moment of commitment.",

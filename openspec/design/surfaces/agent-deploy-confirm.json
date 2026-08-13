@@ -4,7 +4,7 @@
   "route": "/agents/[id]/deploy",
   "capability": "agent-deployment",
   "status": "needs-redesign",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "f0473c2",
   "source_files": [
     "app/(app)/agents/[id]/deploy/page.tsx",
     "src/presentation/components/authority-lost.tsx",
@@ -82,6 +82,7 @@
         "The authority-lost branch renders no form and no carried problem, on purpose — 'a control that cannot work is not made honest by the sentence above it' (authority-lost.tsx). A design that gives this branch the chooser back, or dresses it as one more refusal beside the others, changes behavior and is requires-spec-change."
       ],
       "children": [
+        "deploy-chooser-row",
         "coin",
         "timeframe",
         "problem",
@@ -171,6 +172,37 @@
       "children": []
     },
     {
+      "id": "deploy-chooser-row",
+      "role": "container",
+      "purpose": "Ask what deploying to a named market would do, and offer the way back — the step before anything is agreed to.",
+      "states": [
+        "default",
+        "not-rendered-without-timeframes"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "describe",
+          "effect": "GET-navigates to the same route carrying the coin and timeframe, which puts the page into its proposal branch. Composes a description and reaches no operation."
+        },
+        {
+          "id": "back",
+          "effect": "Anchor to /agents/[id]. Submits nothing."
+        }
+      ],
+      "current_implementation": "A plain `flex flex-wrap gap-3` div inside the chooser's `method=\"get\"` form, holding a BUTTON_SECONDARY submit ('See what deploying would do') and a BUTTON_SECONDARY anchor ('Back to the agent'). Both controls are secondary by control.ts's stated rule — this form asks and reaches no operation, so the weight is kept for the page that follows. **It never received DT-0016's mobile treatment**, so it is still a wrapping row while `perform-deploy` one branch along is a full-width stack under `tablet`.",
+      "constraints": [
+        "Both controls stay secondary. This form composes a description and reaches no operation; promoting the submit to primary would say the page commits something, and the weight belongs to the proposal branch that follows.",
+        "The submit must stay a GET submit, not a server action. `reachability.test.ts` leans on that distinction in six places, and `confirmation-is-human.test.ts` exists because a describe and its perform were once the same request.",
+        "The row is inside the form; the field labels above it are not part of it. A design must not restack the fields to suit the row.",
+        "44px minimum tap target (system.json principle), in both layouts.",
+        "This row and `perform-deploy` are two rows on one route that a user meets one after the other. They should not disagree about what a confirmation row looks like."
+      ],
+      "children": [
+        "button-secondary"
+      ]
+    },
+    {
       "id": "perform-deploy",
       "role": "container",
       "purpose": "Carry the deploy decision: one committing button, one visible way out.",
@@ -207,7 +239,6 @@
         "hover",
         "focused",
         "active",
-        "disabled",
         "loading"
       ],
       "data": [
@@ -219,7 +250,7 @@
           "effect": "Runs performDeploy"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0016 it carries `w-full tablet:w-auto` on the confirmation branch, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0016 it carries `w-full tablet:w-auto` on the confirmation branch, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block naming the replacement.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product.",
@@ -244,7 +275,7 @@
           "effect": "The chooser submit GET-navigates into the describe; the anchors return to /agents/[id] without submitting anything"
         }
       ],
-      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the chooser's 'Back to the agent' anchor and the confirmation's cancel; the cancel additionally carries `w-full tablet:w-auto` since DT-0016. The chooser's own row is still a plain `flex flex-wrap gap-3`, untouched by that ticket. The refused, roster-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment. Where this is an anchor it can never be pending — it submits nothing. Where a surface uses it as a GET submit (the deploy chooser's ask), it can, and system.json's declared `disabled` and `loading` states are unimplemented there too (#153). Recorded on button-primary rather than here, because that is the control a perform runs through.",
+      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken). Worn here by the chooser's GET submit (secondary because it only asks — control.ts's stated rule) and by the chooser's 'Back to the agent' anchor and the confirmation's cancel; the cancel additionally carries `w-full tablet:w-auto` since DT-0016. The chooser's own row is modelled as `deploy-chooser-row` since 2026-08-13 — it was prose here before, which is why DT-0016 could not reach it. The refused, roster-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment. Where this is an anchor it can never be pending — it submits nothing. Where a surface uses it as a GET submit (the deploy chooser's ask), it can, and system.json's declared `disabled` and `loading` states are unimplemented there too (#153). Recorded on button-primary rather than here, because that is the control a perform runs through.",
       "constraints": [
         "The cancel must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
         "The chooser's submit must stay secondary — it composes a description and reaches no operation; promoting it to primary misstates what it does.",
@@ -388,7 +419,7 @@
     "notes": "The carried problem, consequence, no-timeframes, refusal and authority-lost messages all carry role=alert; on a bounced branch two of them are adjacent. The authority-lost branch has an alert and no focusable element at all — it is the one state on this surface with nothing to tab to. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/deploy/page.tsx": "sha256:e63a7606c3f1c8bb14ceef3da13ef3c29ca5d9d30fc21815dd3128906198cfd2",
+    "app/(app)/agents/[id]/deploy/page.tsx": "sha256:d8b6867448611feb55052f98df75a799e47b0183bd073e8d46883dcdc3ba6a84",
     "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
