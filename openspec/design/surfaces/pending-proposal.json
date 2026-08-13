@@ -4,12 +4,13 @@
   "route": "/pending/[id]",
   "capability": "mcp-control",
   "status": "designed",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/pending/[id]/page.tsx",
     "src/ports/proposals.ts",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
     "src/presentation/components/proposal-difference.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -133,7 +134,8 @@
       "role": "action",
       "purpose": "The committing half of the decision: perform the ordinary write with the ordinary confirmation.",
       "states": [
-        "default"
+        "default",
+        "loading"
       ],
       "data": [
         "result"
@@ -144,11 +146,12 @@
           "effect": "Server action: updateAgent with the minted confirmationToken; success closes the proposal and lands on /pending; a refusal bounces back here with ?problem="
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY submit, 'Agree and make this change'; hidden inputs carry id, target, token and the proposed values.",
+      "current_implementation": "`<PerformButton pendingLabel=\"Making the change…\">`, resting label 'Agree and make this change'; hidden inputs carry id, target, token and the proposed values. The component wears BUTTON_PRIMARY and carries DT-0022's pending treatment — accent ground kept while working, progressive label, aria-busy, aria-hidden indicator in accent.text. (This entry said only 'BUTTON_PRIMARY submit' until DT-0027's re-survey; the component landed with #153 and the description had not caught up.)",
       "constraints": [
         "Offered only on the proposal branch — never on no-op or any refusal branch.",
         "Goes through the same confirm-and-perform path as a web-initiated change (mcp-control scenario).",
-        "Styling through BUTTON_PRIMARY."
+        "Styling through BUTTON_PRIMARY, spent inside PerformButton rather than on the page.",
+        "It keeps the primary weight: this page exists to offer agreement, and the weights are what say so."
       ],
       "children": []
     },
@@ -157,7 +160,8 @@
       "role": "action",
       "purpose": "The other half of the decision — an operation, not a footnote; it closes the proposal for good.",
       "states": [
-        "default"
+        "default",
+        "loading"
       ],
       "data": [
         "result"
@@ -168,10 +172,15 @@
           "effect": "Server action: resolves the proposal declined; nothing is written to the account"
         }
       ],
-      "current_implementation": "BUTTON_SECONDARY submit in its own form, labeled 'Decline — this closes the proposal permanently'.",
+      "current_implementation": "`<PerformButton weight=\"secondary\" pendingLabel=\"Declining…\">` in its own form, resting label 'Decline — this closes the proposal permanently'. DT-0027: the secondary weight's pending treatment — the border and label colour are unchanged while working, and the whole visible change is the progressive label plus an aria-hidden indicator drawn in text.primary. `aria-busy` is emitted always and is true only while in flight.",
       "constraints": [
         "A visible peer of agree, never a text link — 'a text link beneath the agree button read as the way out of the page rather than the other half of the decision'.",
-        "The permanence stays in the label."
+        "The permanence stays in the label.",
+        "It keeps the secondary weight while working. Promoting it to the primary treatment would say the page is neutral between agreeing and declining, which is a visual claim about a destructive choice — `control.ts`: primary is the action the page exists to offer.",
+        "The progressive label is the state's carrier, not the indicator: the indicator is aria-hidden and is dropped entirely under prefers-reduced-motion, so a reader who never sees it loses nothing.",
+        "The loading state adds no ground and no border change — the rendered className is identical at rest and in flight, so the control cannot move at the moment the user is watching to see whether anything happened.",
+        "It stays in its own `<form action={decline}>`, separate from agree's, so its pending state is its own.",
+        "Whether it disables while pending is contested and unresolved (#229) — the treatment is deliberately drawn to read correctly either way, and no test pins either answer."
       ],
       "children": []
     },
@@ -236,10 +245,11 @@
     "notes": "The problem banner carries role=alert. Dispositions are legible without colour. No client JS."
   },
   "source_digest": {
-    "app/(app)/pending/[id]/page.tsx": "sha256:72abd28498414dde79488b8ed5a4aed26fca35363bb48ac84e0f34ef44d706fb",
+    "app/(app)/pending/[id]/page.tsx": "sha256:402f52313d19c1facef85e67c5d3935924cbbd183b07dc168e0e4572173f7fd7",
     "src/ports/proposals.ts": "sha256:016aba2d37d3be1e516da6016ace525e205ad74e5c3a58be38b1efa1770734da",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/proposal-difference.tsx": "sha256:ac9cdbb3a6e7b2e0ef74e0e44a86328b00d5499aac15c7c89765c80df24095d0",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }

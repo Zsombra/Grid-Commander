@@ -1,5 +1,100 @@
 # Journal
 
+## 2026-08-14 — the secondary weight gets its treatment, and a question turns out to be a contradiction
+
+**Did**: opened #227 and #228 (both were `github: none`), designed and
+implemented **DT-0027** — the secondary weight's pending treatment — closing
+#227. `system.json` to v3. Widened the perform guard to both weights and
+retired its recorded exemption. Filed **#229** and **#230**. Re-surveyed the
+seventeen manifests the round staled.
+
+**State**: 0 active changes, 24 backlog open, 27/27 design tickets implemented,
+`validate --all` 0 errors / 14 warnings. 2338 vitest across 180 files,
+typecheck, lint, build, drizzle all clean. `agent-roster` is still the one
+stale surface, deliberately, for the third round running.
+
+**Next**: `/propose` for **#229**. It is the only p2 here that blocks nothing
+and decides something, and both options are one line of code.
+
+**Watch out**:
+
+- **A question filed as "nobody has decided" had been decided, in writing, the
+  other way.** #228 enumerated three arguments for whether a submit may disable
+  itself and concluded it was open. `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`
+  §State & Interaction 4 says *"Submit controls disable while in flight"* —
+  binding, and `design-contract.md` §2 ranks it above any design ticket. It is
+  not template boilerplate: the generator's template says the weaker
+  *"Buttons prevent duplicate submits during async operations"*, an outcome
+  single-use confirmation tokens already achieve. Someone narrowed it to a
+  mechanism for this project. **Check the checklists before calling something
+  undecided** — they are binding and nothing in the backlog cross-references
+  them.
+
+- **The first draft of DT-0027 asserted design had settled that, and it was
+  wrong to.** It would have shipped a test locking in the status quo, hardening
+  a checklist violation. Caught before implementation by reading the checklist
+  the executor skill points at. The ticket now takes no position and the
+  treatment reads correctly either way, so #229 costs nothing to decide later.
+  A design ticket cannot win an argument against a checklist; it can only
+  notice it is having one.
+
+- **`track: lite` is how the contradiction survived.** The round that decided
+  the non-disabling ran lite — proposer → executor — and lite runs neither the
+  verifier nor the auditor, the two roles that read the UI checklist. Each edit
+  was small, so the track was sized to the edits rather than to the fact that a
+  UI-wide interaction rule was being set. **Size the track by what the change
+  decides, not by how many lines it touches.**
+
+- **`design_surface_incomplete_sources` has never matched anything.**
+  `IMPORT_RE` matches only relative specifiers; this codebase has 23 relative
+  imports and 337 `@/` alias ones, so `local_ui_imports` returns the empty set
+  for essentially every surface and the guard is satisfied vacuously on the
+  first run. Consequence: `perform-button.tsx` was in **no** manifest's
+  `source_files` while fifteen surfaces render it, so changing it staled
+  nothing. This round caught it only because it also touched `control.ts`,
+  which is listed. Listed on all fifteen now; the vacuous check is #230. Same
+  shape as #192 one layer up — the digest is sound, but only over files
+  somebody remembered to list.
+
+- **A design ticket can be wrong about the tokens it cites, and DT-0022 was.**
+  `indicator_size: type.size.sm` (14px) shipped as stock `size-4` (16px), and
+  `indicator_duration: motion.duration.normal` cannot be spent at all —
+  Tailwind's `duration-*` sets *transition*-duration, and `animate-spin` is a
+  1s stock animation. DT-0027 records both deviations rather than restating the
+  claims. **A token reference in a ticket is a claim that the utility exists;
+  this theme emits no spacing or fontSize scale.**
+
+- **The obvious way to add a `weight` prop breaks `controls.test.ts`.** Its
+  `WEARS_BUTTON` requires a button's className to read literally
+  `className={BUTTON_X}` or a template interpolating exactly `${BUTTON_PRIMARY}`
+  / `${BUTTON_SECONDARY}`. A hoisted variable, a ternary, or a lookup map all
+  fail — the file that spends the treatment becomes an offender against the
+  scan that catches buttons styled by hand. Two spelled-out `<button>` branches
+  sharing one indicator and one label expression is the shape that passes.
+
+- **A sibling component would have split two scanners.**
+  `every-perform-says-it-is-working` matches `<PerformButton` by substring and
+  `controls.test.ts` by a word boundary (backslash then b), so a
+  `PerformButtonSecondary` would count toward one floor and vanish from the
+  other. The prop avoids it, and keeps `aria-busy`
+  in exactly one file — which is now an acceptance criterion.
+
+- **The shell ate a backslash again, in the bullet above this one.** Writing
+  that word boundary as the escape itself, through a heredoc'd Python string,
+  delivered a literal backspace byte to the file — the identical incident the
+  previous handoff recorded, reproduced while documenting it. Spelling it in
+  words is not a stylistic choice; it is the only form that survives. **Read
+  back what a shell wrote, in bytes**: the file carried one 0x08 and rendered
+  as an empty pair of backticks, which reads as a typo rather than as a failure.
+  Exit code 0 both times.
+
+- **The widened guard was verified by mutation, and so was the new test.** A
+  bare secondary submit inside a `<form action>` is caught; GET-form previews
+  and the thirteen cancel *anchors* nested inside action forms are not. Both
+  exemptions are read off the elements, so neither can rot into an allowlist.
+  Two mutations on the component (wrong indicator colour, secondary branch made
+  unreachable) each failed the tests that name them.
+
 ## 2026-08-13 (handoff) — the backlog re-verified, five items closed, and a lesson that left the test suite
 
 **Did**: eleven PRs merged (#215, #217-#225). Closed #91, #153, #182, #183,

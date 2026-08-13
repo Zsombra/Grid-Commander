@@ -4,12 +4,13 @@
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
     "src/presentation/components/plan-review.tsx",
-    "src/presentation/require-connection.tsx",
-    "src/presentation/components/control.ts"
+    "src/presentation/require-connection.tsx"
   ],
   "viewports": [
     "mobile",
@@ -330,8 +331,9 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/edit/page.tsx": "sha256:f61be06ace752a083b40f1d8c13b6b685abbf59cebb677bb03f86fa7e6fa356f",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/plan-review.tsx": "sha256:f78b90b6568c658c2767096f7566b2571bb885a6844fcbd9fb38b33abc447a90",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

@@ -4,14 +4,15 @@
   "route": "/agents/[id]/edit",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/agents/[id]/edit/page.tsx",
     "src/presentation/components/agent-edit.tsx",
-    "src/presentation/components/money-limits.tsx",
     "src/presentation/components/binding.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/money-limits.tsx",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
   "viewports": [
@@ -420,10 +421,11 @@
   "source_digest": {
     "app/(app)/agents/[id]/edit/page.tsx": "sha256:e62545a870ad50bdb9eb8b49c84026b214b0d53787866f2b22780c9b1ca6f7b0",
     "src/presentation/components/agent-edit.tsx": "sha256:0cb0c9f78a8db00d58e800906536a308e5927db8beed1a90783856b6bfc56a80",
-    "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

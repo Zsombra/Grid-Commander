@@ -4,11 +4,12 @@
   "route": "/recorder/trim",
   "capability": "signal-recording",
   "status": "needs-redesign",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/recorder/trim/page.tsx",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
     "src/presentation/components/signal-record.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -361,7 +362,8 @@
   "source_digest": {
     "app/(app)/recorder/trim/page.tsx": "sha256:d9fb43d78e490cde57bdde46528923fc9f9b790f495c0694df5f79ac14dc764a",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/signal-record.tsx": "sha256:3b87067fb5bf9456459524d6a7e7cf9db40108f0b2c0e58b4ca76f5fad51161e",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
