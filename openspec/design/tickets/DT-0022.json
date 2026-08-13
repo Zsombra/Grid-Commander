@@ -6,7 +6,7 @@
   ],
   "type": "tokens",
   "priority": "p2",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "The button primitive's declared disabled and loading states get a treatment, so a form that has been pressed can say so. Defines the look only; when a control enters either state is the implementation's call and, for disabled, a behavioural one this ticket deliberately does not make.",

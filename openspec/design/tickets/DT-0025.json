@@ -7,7 +7,7 @@
   ],
   "type": "restyle",
   "priority": "p3",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "Recorder-trim's two rows get the confirmation shape the ceremony sweep established — stacked full-width below tablet, wrapping above it — so the destructive surface stops being the one that looks different.",

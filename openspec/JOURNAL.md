@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-08-13 (late) — the round implemented: four tickets, and the rollout cost showed up on schedule
+
+**Did**: implemented DT-0022, DT-0023, DT-0024, DT-0025.
+
+**#153's silence is broken, on one surface, deliberately.** `PerformButton` is
+the product's second client component and earns it the way `SectionNav` does:
+`useFormStatus` is the only way a form can know it is submitting, and the fact is
+genuinely client-side. Wired on DT-0022's declared surface only — the other
+eleven each need their own progressive label, which is per-surface work and
+#153's, not a mechanical sweep.
+
+**The trigger was refused, on purpose.** The button does not disable itself while
+pending. DT-0022 defined the look and declined to say when a control enters it,
+because entering `disabled` removes an affordance and confirmation tokens are
+single-use with `consume` as the single atomic spender — what a second press does
+today is a decided behaviour. A test asserts no `disabled` prop appears, and says
+in its own comment that a change breaking it needs a spec change rather than a
+fix.
+
+**The predicted rollout cost arrived immediately.** Adding the client component
+turned `pages-name-their-entity.test.ts` red — a file that never mentions forms,
+failing with a React internals message. Per-file mocks would have been N places
+to forget, so the mock is registered once in `tests/setup/form-status.ts` via
+`setupFiles`. That is the same argument `control.ts` makes for one constant over
+seven copies.
+
+**Two of my own mistakes, both caught by running things rather than reasoning.**
+A `python3 -c` inside double quotes let bash command-substitute a backtick, so
+`vitest.config.ts` shipped a comment reading "// is a client component" — found
+by reading the file back rather than trusting the exit code. And the first
+`classNames` walker never called components, so it reported zero classes for a
+page whose whole body is one; it failed loudly instead of passing empty, which is
+the only reason it was cheap.
+
+**One assertion was fragile and got replaced rather than tuned.** `rendered()`
+joins every text node with a space, so `{'Deploy '}{name}` arrives as
+'Deploy  Vanguard' and any assertion spanning an interpolation boundary counts
+spaces rather than testing the feature. Asserting on the single token
+'Deploying' is the robust signal.
+
+**Two mutations, two kills**: no label swap kills the pending test; no leading
+edge kills the DT-0023 test.
+
+**Gates**: typecheck, lint, 2325 tests / 178 files, build, validate 0 errors.
+
+**Owed, and it is this round's last task rather than the next round's
+surprise**: the re-survey. These edits stale the manifests they were written
+against — 30 warnings where there were 14 — which is design-contract §8 working.
+Running it next, against committed source rather than the working tree.
+
 ## 2026-08-13 (late) — the harness decision, which turned out to be "change nothing"
 
 **Did**: settled how the rendering harness should meet a client component. It

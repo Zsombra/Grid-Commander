@@ -4,7 +4,7 @@
   "route": "/connect",
   "capability": "battlegrid-connection",
   "status": "designed",
-  "generated_at_commit": "a047e42",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/connect/page.tsx",
     "src/application/use-cases/describe-grant.query.ts",
@@ -230,10 +230,10 @@
     "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. No client JS; every state is a full navigation."
   },
   "source_digest": {
-    "app/connect/page.tsx": "sha256:6919682ad5724584680aa1a4136b4ab7e172f627c377e835a2cb20149a279564",
+    "app/connect/page.tsx": "sha256:c0055ef978f2e0eb0252cb17e1bb285f80bc64dc635f04a35eb49c24b099600e",
     "src/application/use-cases/describe-grant.query.ts": "sha256:243fb14462428141517b2c606f07830627299f25909afb4ef0994c1ddb3b3b13",
     "src/presentation/components/consent-summary.tsx": "sha256:44a3edb7fd0c7789cdb156d7966b31538afbe472c8f9c7f4f20ecf1675dd4b10",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67"
   }
 }

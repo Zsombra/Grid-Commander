@@ -82,7 +82,18 @@ export const BUTTON_PRIMARY =
   'min-h-control rounded-gc-2 bg-accent-default px-4 py-2 ' +
   'text-base font-medium text-accent-text ' +
   'transition-colors duration-fast hover:bg-accent-hover ' +
-  'active:bg-accent-hover active:duration-instant';
+  'active:bg-accent-hover active:duration-instant ' +
+  // DT-0022. Stated colours rather than an opacity: dimming a control that sits
+  // on an already-tinted panel fades it against the panel instead of against
+  // the page, and `text.disabled` is a value the system decided where an
+  // opacity is whatever falls out. `cursor-not-allowed` is the second signal —
+  // colour alone never carries a state (system.json principle).
+  //
+  // Defining the treatment is not the same as entering it. Nothing in this
+  // product disables a submit while it is in flight; that removes an affordance
+  // and is #153's question for /propose, not a styling decision.
+  'disabled:cursor-not-allowed disabled:bg-bg-sunken disabled:text-text-disabled ' +
+  'disabled:border disabled:border-border-subtle disabled:hover:bg-bg-sunken';
 
 export const BUTTON_SECONDARY =
   'inline-flex min-h-control items-center justify-center rounded-gc-2 ' +

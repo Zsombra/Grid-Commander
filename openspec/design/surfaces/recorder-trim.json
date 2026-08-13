@@ -4,7 +4,7 @@
   "route": "/recorder/trim",
   "capability": "signal-recording",
   "status": "needs-redesign",
-  "generated_at_commit": "e9a615e",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/(app)/recorder/trim/page.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -186,7 +186,8 @@
         "default",
         "hover",
         "focused",
-        "active"
+        "active",
+        "disabled"
       ],
       "data": [
         "described"
@@ -197,7 +198,7 @@
           "effect": "Runs performTrim"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. The label carries the run count and the word 'permanently', pluralized.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. The label carries the run count and the word 'permanently', pluralized. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: trimming after reading the description is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
         "The label must keep the described run count and 'permanently' — it is the extent the confirmation is bound to, said back at the moment of commitment.",
@@ -358,9 +359,9 @@
     "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
   },
   "source_digest": {
-    "app/(app)/recorder/trim/page.tsx": "sha256:bd8dfbb495f7b8f32dc76fcf56cebbb5657bf2409269881ae0de9088384b08f6",
+    "app/(app)/recorder/trim/page.tsx": "sha256:5b92ecb6d1922d47541f33fbac5817cf20735391380588d8d3c32b9b073480ed",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/components/signal-record.tsx": "sha256:3b87067fb5bf9456459524d6a7e7cf9db40108f0b2c0e58b4ca76f5fad51161e",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }

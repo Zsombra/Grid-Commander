@@ -4,7 +4,7 @@
   "route": "/agents/[id]/archive",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "fa151ca",
+  "generated_at_commit": "5a7576e",
   "source_files": [
     "app/(app)/agents/[id]/archive/page.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -127,7 +127,8 @@
         "default",
         "hover",
         "focused",
-        "active"
+        "active",
+        "disabled"
       ],
       "data": [
         "proposal"
@@ -138,7 +139,7 @@
           "effect": "Runs performArchive"
         }
       ],
-      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Page adds w-full tablet:w-auto for the mobile stack. Still no pending/loading state between click and redirect — filed as #153, behavior not styling.",
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Page adds w-full tablet:w-auto for the mobile stack. Still no pending/loading state between click and redirect — filed as #153, behavior not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. Defined and available; **nothing in the product enters it**, because entering `disabled` removes an affordance and is #153's question for /propose rather than a styling decision.",
       "constraints": [
         "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: archive is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
         "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",
@@ -235,7 +236,7 @@
   "source_digest": {
     "app/(app)/agents/[id]/archive/page.tsx": "sha256:051b5edb15395fde6005d5cd4af78974424db093ce44985aae306a11a7de2a69",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:b655118598caf7d06e2c34924ba90714b035568f8ef9458be6ca6aa4f55ffd9f",
+    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

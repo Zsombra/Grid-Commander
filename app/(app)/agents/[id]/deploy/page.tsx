@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import {
-  BUTTON_PRIMARY,
   BUTTON_SECONDARY,
   CONTROL,
   LABEL,
@@ -149,9 +149,12 @@ export default async function DeployPage({
         <input type="hidden" name="timeframe" value={proposal.timeframe} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision === null ? '' : proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton
+          pendingLabel={`Deploying ${agent.displayName}…`}
+          className="w-full tablet:w-auto"
+        >
           Deploy {agent.displayName}
-        </button>
+        </PerformButton>
         <a href={`/agents/${proposal.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave things as they are
         </a>
