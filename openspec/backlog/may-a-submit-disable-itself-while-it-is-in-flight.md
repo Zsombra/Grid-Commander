@@ -2,11 +2,11 @@
 id: may-a-submit-disable-itself-while-it-is-in-flight
 title: Nobody has decided whether a perform submit may disable itself while working
 type: question
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
-change: ""
+updated: 2026-08-14
+change: "a-duplicate-submit-cannot-duplicate-a-write"
 capability: app-access
 github: "228"
 blocked_by: []
@@ -103,9 +103,10 @@ supersedes this item's framing and carries the decision.
 **What this item is still good for**: the three arguments above are the real
 substance of the trade and should be read by whoever resolves #229 — they are
 the strongest statement of the case anywhere in the repo. The accessibility
-argument in particular ('a `disabled` control is also an unreachable one for a
-screen reader moving through the form') is the one thing neither binding record
-mentions. Close this as superseded once #229 lands, not before.
+argument in particular is the one thing neither binding record mentions — **in
+its corrected form**, which is that the pending label has no live region and so
+survives only on the focused control, not the false version this item was filed
+with. Close as superseded once #229 lands, not before.
 
 `DT-0027` takes no position on the trigger: its treatment renders correctly
 whether or not the control disables, and it deliberately writes no test that

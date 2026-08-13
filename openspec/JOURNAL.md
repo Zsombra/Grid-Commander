@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-14 (handoff) — a design round, two p1 fixes, and three false sentences caught
+
+**Did**: eleven commits on `claude/secondary-treatment-variant-19160e`, all
+pushed, **PR #235 open and unreviewed**. Shipped DT-0027 (the secondary weight's
+pending treatment), `system.json` v3, an idempotency key on `/agents/new`, and
+`spending()` on all nine confirmation-spending actions. Closed **#227, #231,
+#232**. Opened **#227-#238**. Proposed
+`a-duplicate-submit-cannot-duplicate-a-write` for #229.
+
+**State**: one active change, 0/14 tasks, **blocked on the operator** — task 1
+runs checklist-generator, which halts for human approval. 2346 vitest across 182
+files; typecheck, lint, build, drizzle all clean. `validate --all` 0 errors / 14
+warnings, the same baseline this session started from.
+
+**Next**: **review and merge PR #235.** Then #229 task 1 *together with* #233 —
+they are the same file, and the generator rewrites all of it.
+
+**Watch out**:
+
+- **Three sentences in binding records turned out to be false, and two were
+  mine.** "A disabled control is unreachable to a screen reader" (conflates *not
+  focusable* with *unreachable*; corrected in four places). "Two presses of Fork
+  make two strategies" — filed p1, refuted by a live probe the same day.
+  "Submit controls disable while in flight" — the checklist's, false since #153.
+  **Measure before filing a severity**, and check the checklists before calling
+  anything undecided.
+
+- **The absence of a client-side guard is not the presence of a defect.** #231
+  reasoned from "no token, no key, therefore nothing stops it" and never asked
+  whether the *server* had a guard. Fork is deduped by BattleGrid — measured,
+  named and auto-named, both `INTERNAL_ERROR` on the second call.
+
+- **Two architecture scanners went blind and one reported a *cleaner* tree.**
+  Wrapping calls in `spending()` moved `app.X.execute(` off the line beginning
+  `await app.`, so `write-results.test.ts` lost nine sites — including a real
+  dropped result whose ledger row then failed as "no longer found". Deleting
+  that row was the available wrong answer. **A guard that breaks on a refactor:
+  suspect its measure, not its threshold** — twice this session, and the repo
+  had already recorded the lesson once.
+
+- **`redirect()` works by throwing.** A `try` around a block that also redirects
+  catches `NEXT_REDIRECT` and swallows the navigation. That is why the fix is a
+  wrapper taking the redirect as a separate argument: the narrow shape becomes
+  unwidenable instead of being retyped nine times.
+
+- **`design_surface_incomplete_sources` has never matched anything.** `IMPORT_RE`
+  only matches relative specifiers; this codebase has 23 of those against 337
+  `@/` aliases. Three separate blind spots followed — `perform-button.tsx` in no
+  manifest while fifteen surfaces render it, `agent-form.tsx` likewise, and
+  `/agents/new` never surveyed at all. #230, and it is the highest-leverage
+  tooling fix on the board.
+
+- **The shell ate a backslash three times**, including inside the bullet
+  documenting it. Spell escapes in words; read back what a shell wrote, in
+  bytes. `0x08` renders as an empty pair of backticks and looks like a typo.
+
+- **`agent-roster` had been deliberately left stale for four rounds and filed
+  zero times** (#237). The decision was right every time; the filing was
+  missing, which is the failure the "no unfiled deferral" rule names.
+
 ## 2026-08-14 (late) — the refusal reaches the person, and two guards that broke correctly
 
 **Did**: opened PR #235 for the DT-0027 round, then closed **#232** — every

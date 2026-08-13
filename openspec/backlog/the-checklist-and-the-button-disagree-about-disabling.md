@@ -2,11 +2,11 @@
 id: the-checklist-and-the-button-disagree-about-disabling
 title: The UI checklist requires submits to disable in flight and fourteen of them do not
 type: risk
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-duplicate-submit-cannot-duplicate-a-write"
 capability: app-access
 github: "229"
 blocked_by: []
