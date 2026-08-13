@@ -37,6 +37,22 @@ import { ConfirmationRequiredError } from '@/domain/errors.js';
  * they do not have a next step to name, and turning them into a `?problem=`
  * would tell the operator a falsehood about whose fault it was.
  *
+ * ## Which half of the error reaches the page
+ *
+ * `err.consequence`, never `err.message`. The class composes its message as
+ * `"<tool>" is destructive and needs confirmation: <consequence>`, and that
+ * preamble contradicts every sentence it would introduce here: a spent
+ * confirmation is not a missing one, and the person reading it *did* confirm.
+ * On the `expired` path it is worse — somebody who agreed thirty seconds ago
+ * would be told the operation needs confirming. It also puts a raw MCP tool
+ * name in front of an operator who never types one.
+ *
+ * `errors.ts` records this same defect being fixed once already, on
+ * `DiscoveryUnavailableError`: a preamble "asserting a category the operation
+ * may not belong to". `consequence` is public for exactly this reason, and
+ * the four refusal sentences are written as lowercase continuations — they
+ * were authored to be joined to that preamble, and are the half worth keeping.
+ *
  * @param run       The command call. Must not redirect — see above.
  * @param onRefused Where the refusal goes. Returns `never`, because
  *                  `redirect()` does; the type is what stops a caller falling
@@ -49,7 +65,7 @@ export async function spending<T>(
   try {
     return await run();
   } catch (err) {
-    if (err instanceof ConfirmationRequiredError) onRefused(err.message);
+    if (err instanceof ConfirmationRequiredError) onRefused(err.consequence);
     throw err;
   }
 }

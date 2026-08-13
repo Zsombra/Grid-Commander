@@ -65,26 +65,61 @@ const CALL = /^(\s*)(const |return |.*= )?await app\.(\w+)\.execute\(/;
 const WRAPPED_OPEN = /^(\s*)(const |return |.*= )?await spending\(/;
 const WRAPPED_CALL = /\bapp\.(\w+)\.execute\(/;
 
+/**
+ * How far past `await spending(` the execute is allowed to be.
+ *
+ * The ten call sites put it two lines down. The bound exists because the
+ * alternative is unbounded: the first version of this loop set a flag on the
+ * opening line and cleared it only when an execute turned up, so a wrapper
+ * whose execute it could not recognise latched the flag and `continue`d over
+ * **every remaining line in the file** — the scanner going quietly blind
+ * mid-file, which is the one failure this file exists to prevent.
+ */
+const WRAPPER_REACH = 12;
+
+/** Wrappers whose execute was never found. A blind scanner must be loud. */
+const unreadable: string[] = [];
+
 function executeSites(): ExecuteSite[] {
   const sites: ExecuteSite[] = [];
+  unreadable.length = 0;
   for (const file of tsxFilesUnder(APP)) {
     const lines = readFileSync(file, 'utf8').split('\n');
     // Set when `await spending(` opens, cleared when its execute is found —
     // the binding belongs to the wrapper, and is what the site inherits.
-    let wrappedBinding: boolean | null = null;
+    let wrapped: { binding: boolean; reach: number } | null = null;
     for (const line of lines) {
       const opened = WRAPPED_OPEN.exec(line);
       if (opened) {
-        wrappedBinding = opened[2] !== undefined;
-        continue;
-      }
-      if (wrappedBinding !== null) {
-        const inner = WRAPPED_CALL.exec(line);
-        if (inner) {
-          sites.push({ file, tool: inner[1] as string, dropped: !wrappedBinding });
-          wrappedBinding = null;
+        wrapped = { binding: opened[2] !== undefined, reach: 0 };
+        // The compact one-line form — `await spending(() => app.X.execute(...))`
+        // — carries its execute on this very line. Checking it here is what
+        // stops the flag latching; without it the loop skipped the rest of the
+        // file the first time anyone wrote the wrapper that way.
+        const sameLine = WRAPPED_CALL.exec(line);
+        if (sameLine) {
+          sites.push({ file, tool: sameLine[1] as string, dropped: !wrapped.binding });
+          wrapped = null;
         }
         continue;
+      }
+      if (wrapped !== null) {
+        const inner = WRAPPED_CALL.exec(line);
+        if (inner) {
+          sites.push({ file, tool: inner[1] as string, dropped: !wrapped.binding });
+          wrapped = null;
+          continue;
+        }
+        wrapped.reach += 1;
+        if (wrapped.reach > WRAPPER_REACH) {
+          // Give up and say so, rather than swallowing the remainder. Then
+          // resume ordinary scanning on this same line, so one unreadable
+          // wrapper costs one site and not a whole file.
+          unreadable.push(file);
+          wrapped = null;
+        } else {
+          continue;
+        }
       }
       if (!line.includes('await app.')) continue;
       const match = CALL.exec(line);
@@ -131,6 +166,18 @@ const key = (s: { file: string; tool: string }): string => `${s.file} :: ${s.too
 describe('the outcome of a write reaches the person who asked for it', () => {
   const sites = executeSites();
   const droppedNow = sites.filter((s) => s.dropped);
+
+  it('can read every spending() wrapper it finds', () => {
+    // The wrapper's execute must be reachable, or this scanner is reporting
+    // on a file it stopped understanding. Silence here was the defect: the
+    // loop used to skip the rest of the file rather than admit it had lost
+    // the thread.
+    expect(
+      unreadable,
+      'a spending() wrapper whose execute was not found within ' +
+        `${WRAPPER_REACH} lines — the scan lost the thread here`,
+    ).toEqual([]);
+  });
 
   it('sees the app at all', () => {
     // A path or regex drift would report zero call sites and pass vacuously —

@@ -30,6 +30,16 @@ import { describe, expect, it } from 'vitest';
  *
  * A hand-rolled `try` is accepted, because one predates this and is correct
  * (`conditions/save`). What is not accepted is neither.
+ *
+ * ## The count, and why it is written down
+ *
+ * Eleven spenders: ten through `spending()`, one hand-rolled. The first
+ * version of this file said nine and ten, because it could not see
+ * `/agents/[id]/edit` --- it passes its token by ES6 shorthand and the filter
+ * matched only `confirmationToken:`. The route that edits loss caps spent a
+ * confirmation with nothing catching its refusal, and this test was green.
+ * The numbers are stated here so the next drift is a contradiction rather
+ * than a silence.
  */
 
 function walk(dir: string): string[] {
@@ -52,10 +62,26 @@ const read = (f: string): string => readFileSync(f, 'utf8');
  * `agent-edit.tsx` and `plan-review.tsx` carry it into a form whose action
  * lives on a page, and that page is where the guarantee has to hold.
  */
+/**
+ * A token being *passed* to a call, in either spelling JavaScript allows.
+ *
+ * This read `includes('confirmationToken:')` and so was blind to ES6 shorthand
+ * — `{ ..., confirmationToken }`. `/agents/[id]/edit` spends one that way, and
+ * the scan reported a closed set of ten with the eleventh missing: the route
+ * that edits loss caps and exposure limits, green on every run. A guard that
+ * encodes one *spelling* of an idiom is not enforcing the rule, and this repo
+ * has now been caught by a vacuous scan three times.
+ *
+ * The trailing `[,:]` is what keeps it off the renderers: `agent-edit.tsx` and
+ * `plan-review.tsx` write `confirmationToken={…}`, which is carrying a token
+ * into a form, not spending one.
+ */
+const SPENDS = /\bconfirmationToken\s*[,:]/;
+
 const spenders = (): string[] =>
   uiFiles.filter((f) => {
     const src = read(f);
-    return src.includes('confirmationToken:') && src.includes('.execute(');
+    return SPENDS.test(src) && src.includes('.execute(');
   });
 
 describe('a refusal reaches the person', () => {
@@ -73,11 +99,18 @@ describe('a refusal reaches the person', () => {
   });
 
   it('finds the spenders it is checking', () => {
-    // Vacuity, the failure mode this repo has hit twice: a scan that stopped
-    // matching reports a clean tree by finding nothing in it. The floor is well
-    // under the real count, so this fails on a broken scan and not on a
-    // deleted page.
-    expect(spenders().length).toBeGreaterThanOrEqual(8);
+    // Vacuity, the failure mode this repo has now hit three times: a scan that
+    // stopped matching reports a clean tree by finding nothing in it.
+    //
+    // The floor used to sit "well under the real count" so a deleted page could
+    // not break it. That is exactly why it did not fire: the scan found ten,
+    // the floor asked for eight, and the eleventh spender was invisible. A
+    // slack floor cannot tell a shrinking product from a shrinking scan.
+    //
+    // So it is pinned at the true count instead. It still permits growth --- a
+    // new spender only makes this pass --- but any loss of reach has to be
+    // acknowledged by editing this number, which is the point.
+    expect(spenders().length).toBeGreaterThanOrEqual(11);
   });
 
   it('keeps the redirect outside the try, where Next requires it', () => {
@@ -98,9 +131,13 @@ describe('a refusal reaches the person', () => {
   });
 
   it('is spent through the one helper rather than re-derived per page', () => {
-    // Nine copies of a narrow try/catch is nine chances to widen it by a line.
+    // Ten copies of a narrow try/catch is ten chances to widen it by a line.
     // control.ts makes the same argument about className strings.
+    //
+    // Ten of the eleven spenders route through `spending()`. The eleventh is
+    // `conditions/save`, whose hand-rolled try predates the helper and is
+    // correct; it is counted out here rather than exempted invisibly.
     const viaHelper = spenders().filter((f) => read(f).includes('spending('));
-    expect(viaHelper.length).toBeGreaterThanOrEqual(8);
+    expect(viaHelper.length).toBeGreaterThanOrEqual(10);
   });
 });
