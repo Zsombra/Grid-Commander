@@ -2,7 +2,7 @@
 id: two-confirmations-can-create-two-things
 title: Fork and Create have no confirmation token, and only one of them is provably safe
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14

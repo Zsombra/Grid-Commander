@@ -106,6 +106,24 @@ can silence the check again exactly as invisibly.
 - `.claude/skills/ui-surveyor/SKILL.md` §5 — the instruction that relies on it
 - `tsconfig.json` — `paths`, where the alias is already declared
 
+## A second blind spot, found the same day
+
+Editing `src/presentation/components/agent-form.tsx` staled **nothing**. It is
+listed by no manifest — and `/agents/new`, the route that renders it, has no
+surface manifest at all. A substantial form, never surveyed, invisible to the
+design lane.
+
+This is the same root cause one step further out, and it is worse in one
+respect: `validate` reports `design_orphan_surface` for a manifest with no
+tickets, but **it cannot report a route with no manifest**, because there is
+nothing to attach the diagnostic to. The import cross-check was the only
+mechanism that could have noticed, by walking from a listed page into files
+nobody had recorded — and it matches no import here.
+
+So the fix should be scoped to both questions: which files a surface lists, and
+which routes have a surface at all. The second is checkable by walking
+`app/**/page.tsx` against the manifests' `route` fields, and is cheap.
+
 ## Notes
 
 Found while re-surveying the manifests DT-0027 staled, by asking why
