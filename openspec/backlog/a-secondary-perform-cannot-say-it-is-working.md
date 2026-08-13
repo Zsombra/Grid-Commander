@@ -8,7 +8,7 @@ created: 2026-08-13
 updated: 2026-08-13
 change: ""
 capability: app-access
-github: none
+github: "227"
 blocked_by: []
 tags: [design, pending-state, confirmation, dt-0022]
 ---
@@ -70,6 +70,14 @@ work around.
    duplicates the hook and the aria wiring, which is two places to forget
    `aria-busy`.
 
+**Step 1 is done.** `DT-0027` defines the treatment and answers the open
+question in it: the indicator wears `color.text.primary`, because an indicator
+wears its label's colour — added to `system.json` v3 as a principle so the next
+weight does not have to ask. The ticket deliberately does not pick between the
+prop and the sibling; its acceptance is written against the outcome (`aria-busy`
+wired in exactly one component) so either implementation can satisfy it.
+Remaining work is step 2, which is now an ordinary executor task.
+
 ## Evidence
 
 - `app/(app)/pending/[id]/page.tsx` — the two submits, one converted and one not
@@ -84,10 +92,10 @@ work around.
 
 ## Notes
 
-`github: none` — filed at the moment it was found rather than at the end of the
-work that found it, so it does not live only in a closed item's body and a test
-comment. The issue should be opened when someone picks it up; it is not urgent
-and it is precisely scoped.
+Filed at the moment it was found rather than at the end of the work that found
+it, so it does not live only in a closed item's body and a test comment. It was
+carried as `github: none` until someone picked it up; mirrored to **#227** when
+this round started, which is the moment the note said to open it.
 
 Found while closing #153. Deliberately not swept in, because sweeping it would
 have meant making a visual decision from the implementation lane — the failure

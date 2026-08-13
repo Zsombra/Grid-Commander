@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { acting, requestApp } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
-import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { editArguments } from '@/presentation/form.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
@@ -136,10 +135,16 @@ export default async function ProposalPage({
         <input type="hidden" name="id" value={result.proposal.id} />
         {/* Declining is an operation, not a footnote — it closes the proposal
             for good. A text link beneath the agree button read as the way out
-            of the page rather than the other half of the decision. */}
-        <button type="submit" className={BUTTON_SECONDARY}>
+            of the page rather than the other half of the decision.
+
+            It keeps the secondary weight and gains the pending treatment for
+            that weight (DT-0027). Promoting it to primary would say the page is
+            neutral between agreeing and declining, which is a claim about a
+            destructive choice; leaving it silent left the one perform submit in
+            the product that never said it was working. */}
+        <PerformButton weight="secondary" pendingLabel="Declining…">
           Decline — this closes the proposal permanently
-        </button>
+        </PerformButton>
       </form>
     </Shell>
   );

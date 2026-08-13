@@ -95,6 +95,22 @@ export const BUTTON_PRIMARY =
   'disabled:cursor-not-allowed disabled:bg-bg-sunken disabled:text-text-disabled ' +
   'disabled:border disabled:border-border-subtle disabled:hover:bg-bg-sunken';
 
+/**
+ * DT-0027 adds nothing here, and that is the treatment rather than an omission.
+ *
+ * The secondary weight's loading state keeps its `border.default` edge and its
+ * `text.primary` label unchanged — a working control is still the control, and
+ * this one has no ground to hold the way `BUTTON_PRIMARY` holds its accent. The
+ * whole visible change is the progressive label and the indicator, both of which
+ * live in `perform-button.tsx`.
+ *
+ * There is also nowhere to put a rule: `disabled` is a CSS pseudo-class, so
+ * DT-0022 could hang `disabled:` variants off this string. "Loading" is not one.
+ * It is a fact the component knows from `useFormStatus` and nothing a stylesheet
+ * can select. Written down because a reader comparing the two constants will
+ * otherwise find `BUTTON_PRIMARY` carrying state rules and this one carrying
+ * none, and conclude the secondary was forgotten.
+ */
 export const BUTTON_SECONDARY =
   'inline-flex min-h-control items-center justify-center rounded-gc-2 ' +
   'border border-border-default px-4 py-2 text-base text-text-primary ' +

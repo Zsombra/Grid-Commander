@@ -8,7 +8,7 @@ created: 2026-08-13
 updated: 2026-08-13
 change: ""
 capability: app-access
-github: none
+github: "228"
 blocked_by: []
 tags: [confirmation, pending-state, dt-0022, behaviour]
 ---
@@ -70,6 +70,33 @@ Whoever takes it: **do not start from the code.** The code is already correct fo
 whichever answer wins — a one-line prop either way. What is missing is the
 decision.
 
+**The premise above is false, and that is the finding.** This item says nobody
+has decided. Something had: `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`
+§State & Interaction 4 states *"Submit controls disable while in flight"* — a
+binding engineering standard, in this project's own words rather than the
+generator's template wording, and `design-contract.md` §2 ranks it above any
+design ticket. DT-0022 decided the opposite without citing it, and the round
+that shipped that decision ran `track: lite`, which runs neither the verifier
+nor the auditor — the two roles that read the checklist.
+
+So this is not an open question. It is a contradiction between two binding
+records, and it is wider than one control: fourteen perform submits inherit it.
+Filed as [[the-checklist-and-the-button-disagree-about-disabling]] (#229), which
+supersedes this item's framing and carries the decision.
+
+**What this item is still good for**: the three arguments above are the real
+substance of the trade and should be read by whoever resolves #229 — they are
+the strongest statement of the case anywhere in the repo. The accessibility
+argument in particular ('a `disabled` control is also an unreachable one for a
+screen reader moving through the form') is the one thing neither binding record
+mentions. Close this as superseded once #229 lands, not before.
+
+`DT-0027` takes no position on the trigger: its treatment renders correctly
+whether or not the control disables, and it deliberately writes no test that
+locks in either answer. An earlier draft of that ticket claimed to settle the
+design half; that claim was withdrawn before implementation, because design does
+not outrank the checklist.
+
 ## Evidence
 
 - `src/presentation/components/perform-button.tsx` — the deliberate absence, and
@@ -83,6 +110,7 @@ decision.
 
 ## Notes
 
-`github: none` — filed at session handoff because it was living only in a
-ticket's rationale, a closed item's body and a test comment. None of those is
-somewhere an open question gets found.
+Filed at session handoff because it was living only in a ticket's rationale, a
+closed item's body and a test comment. None of those is somewhere an open
+question gets found — which is also why the `github: none` it was filed under
+did not survive contact with the next session. Mirrored to **#228**.

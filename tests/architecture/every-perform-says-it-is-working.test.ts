@@ -13,27 +13,37 @@ import { describe, expect, it } from 'vitest';
  * next read a manifest.
  *
  * So the rule is enforced rather than remembered: **a submit inside a server
- * action is a `PerformButton`.**
+ * action is a `PerformButton`, in either weight.**
  *
  * A GET form is deliberately exempt. It composes a preview and reaches no
  * operation — `control.ts` leans on that distinction for which weight a button
  * wears, and this borrows the same line rather than drawing a second one that
  * could disagree with it.
  *
- * ## One exemption that is a gap, not a rule
+ * ## The exemption that used to be here is gone
  *
- * The rule is scoped to submits wearing `BUTTON_PRIMARY`, because that is what
- * DT-0022 designed. **One secondary submit genuinely performs and is therefore
- * uncovered**: `/pending/[id]`'s "Decline — this closes the proposal
- * permanently". It mutates, it gives no sign it is working, and it is exactly
- * the defect #153 describes.
+ * This rule was scoped to `BUTTON_PRIMARY` until DT-0027, because that was all
+ * DT-0022 had designed. That left one genuine perform uncovered — `/pending/[id]`'s
+ * "Decline — this closes the proposal permanently", which mutates with no undo
+ * and said nothing while it worked. It was recorded here as a gap rather than
+ * hidden behind a narrow regex, precisely so it would be found and closed.
  *
- * It is left alone rather than swept in, because `PerformButton` wears the
- * primary treatment and putting Decline in it would promote a deliberately
- * secondary control to the page's main weight — a visual decision this lane
- * does not get to make. Closing it needs a secondary variant, which needs a
- * design ticket. Recorded on #153 rather than hidden behind a narrower regex
- * that reads like the rule was always this shape.
+ * DT-0027 designed the secondary weight's pending treatment, the Decline submit
+ * moved behind `PerformButton weight="secondary"`, and the scope widened to both
+ * weights in the same change. Widening it earlier would have failed on a control
+ * that had nowhere to go.
+ *
+ * ## Two exemptions that are load-bearing — do not relax either
+ *
+ * The scan is gated on `<button` **and** `type="submit"`, which is what keeps it
+ * off the thirteen cancel *anchors* that sit inside `<form action={…}>` blocks
+ * (`plan-review.tsx`, `rebind-confirm.tsx`, every confirm page's cancel). An
+ * anchor navigates; it reaches no operation. Rewriting this as "anything wearing
+ * `BUTTON_SECONDARY` inside an action form" fails on all thirteen at once.
+ *
+ * The `method="get"` reset is what keeps it off the ten secondary submits that
+ * compose previews. Both exemptions are read off the elements themselves, so
+ * neither can rot into an allowlist.
  */
 
 function walk(dir: string): string[] {
@@ -65,7 +75,11 @@ function performSubmits(): { file: string; line: number; text: string }[] {
       if (ln.includes('<form action=')) inAction = true;
       else if (/<form\b[^>]*method=["']get["']/.test(ln)) inAction = false;
       else if (ln.includes('</form>')) inAction = false;
-      if (inAction && /<button\b[^>]*type="submit"/.test(ln) && /BUTTON_PRIMARY/.test(ln)) {
+      if (
+        inAction &&
+        /<button\b[^>]*type="submit"/.test(ln) &&
+        /BUTTON_(?:PRIMARY|SECONDARY)/.test(ln)
+      ) {
         found.push({ file, line: i + 1, text: ln.trim() });
       }
     });
