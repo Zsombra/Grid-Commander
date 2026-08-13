@@ -1,3 +1,4 @@
+import type { Scope } from '@/domain/connection/scope.js';
 import type { BattlegridSubject } from '@/domain/connection/subject.js';
 import type { FailureCause } from './failure.js';
 
@@ -12,16 +13,65 @@ import type { FailureCause } from './failure.js';
  * who we are, and widening one of them to answer it would put an identity read
  * behind a roster interface.
  */
+/**
+ * BattleGrid's id for an account, or why it could not be named.
+ *
+ * Three outcomes, kept as three, because two callers read them oppositely and
+ * one of them needs to tell an operator what happened. A call that did not come
+ * back and a call that came back naming nobody are different situations: the
+ * first may be an outage and the second is the platform answering a question
+ * about an account it does not recognise. Collapsing them is how the original
+ * defect read as "BattleGrid is down" when it was really "we asked the wrong
+ * thing".
+ */
+export type AccountIdentityResult =
+  /** BattleGrid named the account. */
+  | { readonly kind: 'subject'; readonly subject: BattlegridSubject }
+  /** No usable answer came back — the tool is gone, the call failed, or the payload was not one. */
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause }
+  /** An answer came back, and it named no account. */
+  | { readonly kind: 'unnamed'; readonly reason: string };
+
 export interface AccountPort {
   /**
-   * BattleGrid's id for the account this credential belongs to, or `null`.
+   * Which BattleGrid account this credential acts as.
    *
-   * **`null` is a real answer and must not be treated as a mismatch.** A
-   * deployment that cannot establish its own account id must still be able to
-   * work; the platform refuses anything genuinely foreign. Refusing on an
-   * unknown is what made `apply_strategy_plan` unreachable in the first place.
+   * **This port reports; it does not decide.** An unknown identity is survivable
+   * for one caller and fatal for the other, so the policy lives at each call
+   * site rather than here:
+   *
+   * - `OwnerOnlyUser` **must** keep working without an answer. Its `userId` is
+   *   the constant `'owner'`, so an identity exists regardless, and refusing on
+   *   an unknown is exactly what made `apply_strategy_plan` unreachable in the
+   *   first place. It collapses every non-answer to `null`, and says so there.
+   * - `CompleteConnectionCommand` **cannot**. For a delegated connection the
+   *   subject *is* the key the workspace is found by, so an unknown there would
+   *   collide every unidentified connection on one key and hand the second user
+   *   the first one's account. It refuses, and releases the grant.
+   *
+   * This used to return `BattlegridSubject | null` with the first caller's
+   * tolerance baked in as the contract. It was correct for that caller and
+   * quietly wrong for any other, which is the kind of rule this codebase has
+   * been bitten by repeatedly: one written for the case in front of it, read
+   * later as if it were general.
+   *
+   * **`grantedScopes` is required by the delegated caller and omitted by the
+   * personal one**, and the asymmetry is the whole lesson of 2026-08-13. The
+   * guard that decides whether a call may go out reads a user's authority from
+   * their stored connection. This read happens *before* that connection exists,
+   * so the lookup answers "no authority at all" and the call is refused for
+   * lacking the very scope the grant in hand is holding. A personal deployment
+   * never hits it, because its scopes come from configuration — which is why
+   * every test, and both live probes, passed while the delegated path could not
+   * complete a single connection.
+   *
+   * Pass the scopes the grant carries. Omit them only where the deployment's
+   * authority is already known without a connection.
    */
-  subjectFor(accessToken: string): Promise<BattlegridSubject | null>;
+  subjectFor(
+    accessToken: string,
+    grantedScopes?: readonly Scope[] | undefined,
+  ): Promise<AccountIdentityResult>;
 }
 
 /**
@@ -31,16 +81,19 @@ export interface AccountPort {
  * reason is a contract rather than tidiness: the two have opposite failure
  * philosophies and one interface cannot honestly carry both.
  *
- * `subjectFor` runs *before* an identity exists and swallows every failure into
- * `null`, deliberately — a deployment that cannot establish its own account id
- * must still work, and refusing on an unknown is what made
- * `apply_strategy_plan` unreachable in the first place. This read is the
- * opposite: it is an ordinary product read whose whole value is telling
- * *unreadable* apart from *empty*, so it must carry a `FailureCause` out and a
- * surface must be able to say which happened.
+ * `subjectFor` runs *before* an identity exists: it takes a bare credential,
+ * because there is no user yet to attribute the call to. This read is an
+ * ordinary product read for a user we already know — it takes `{userId,
+ * accessToken}`, is audited and scoped like every other, and its whole value is
+ * telling *unreadable* apart from *empty* on a surface someone is looking at.
  *
- * Put them on one port and every future reader has to remember which methods
- * lie about failure and which do not.
+ * **The original justification for this split no longer holds, and the split
+ * does.** It was written as "one lies about failure and one does not":
+ * `subjectFor` swallowed everything into `null` while this carried a
+ * `FailureCause` out. Both now report honestly, so that sentence is retired —
+ * but the preconditions still differ, and a port whose methods disagree about
+ * whether an identity exists yet is one every future reader has to hold two
+ * mental models for.
  */
 export interface AccountStatePort {
   readAccountState(params: { userId: string; accessToken: string }): Promise<AccountStateResult>;

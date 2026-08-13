@@ -20,11 +20,20 @@ import { BUTTON_PRIMARY } from '@/presentation/components/control.js';
  * Must Exist In That Deployment".
  *
  * The callback sends its bad news here — `?declined=` when the user said no at
- * BattleGrid, `?error=` when the response was incomplete or untrusted — and the
- * scenario "The user declines" promises an explanation with the retry. Both
+ * BattleGrid, `?error=` when the response was incomplete or untrusted, or when
+ * the authorization succeeded and the account behind it could not be named — and
+ * the scenario "The user declines" promises an explanation with the retry. Both
  * render above the consent summary, which *is* the retry. A decline is the
  * user's own choice, so it wears notice and role="status"; a failed callback is
  * a failure and wears danger.
+ *
+ * `unidentified` and `unidentified-standing` are the same failure with different
+ * consequences for the reader. In both, nothing was stored. In the second, the
+ * grant could not be withdrawn either, so authority *may* still stand at
+ * BattleGrid — may, because a failed revoke is not proof the grant survived —
+ * and the sentence has to say where to withdraw it. That is the only place this
+ * product tells someone about a state at BattleGrid it could not verify, so it
+ * hedges accurately rather than comfortably.
  */
 export default async function ConnectPage({
   searchParams,
@@ -66,6 +75,19 @@ export default async function ConnectPage({
             'the response from BattleGrid was missing the authorization it should have carried.'
           ) : failure === 'untrusted' ? (
             'the response did not match an authorization this product started, so it was rejected.'
+          ) : failure === 'unidentified' ? (
+            'the authorization succeeded, but BattleGrid did not tell us which account it was for — and a connection has to be filed under an account. The authorization was withdrawn.'
+          ) : failure === 'unidentified-standing' ? (
+            <>
+              the authorization succeeded, but BattleGrid did not tell us which
+              account it was for — and a connection has to be filed under an
+              account. Withdrawing the authorization also failed, so{' '}
+              <span className="font-semibold">
+                it may still stand at BattleGrid
+              </span>
+              . You can withdraw it yourself from your account at{' '}
+              <span className="font-mono">battlegrid.trade</span>.
+            </>
           ) : (
             <>
               the authorization could not be completed (

@@ -1,6 +1,7 @@
-import type { BattlegridSubject } from '@/domain/connection/subject.js';
+import type { Scope } from '@/domain/connection/scope.js';
 import { asSubject } from '@/domain/connection/subject.js';
 import type {
+  AccountIdentityResult,
   AccountPort,
   AccountStatePort,
   AccountStateResult,
@@ -30,34 +31,61 @@ import { OWNER_USER_ID } from '@/application/use-cases/owner-only-user.js';
 export class McpAccountAdapter implements AccountPort {
   constructor(private readonly battlegrid: BattleGridPort) {}
 
-  async subjectFor(accessToken: string): Promise<BattlegridSubject | null> {
+  async subjectFor(
+    accessToken: string,
+    grantedScopes?: readonly Scope[] | undefined,
+  ): Promise<AccountIdentityResult> {
     /**
-     * Every failure is `null`, and that is the whole contract.
+     * Three outcomes, reported rather than decided.
      *
-     * The tool may be absent after a deployment, the account may have no
-     * positions, the call may fail. None of those is evidence about *which*
-     * account this is, so none may produce anything but "unknown" — and unknown
-     * must never become a refusal. Swallowing a failure is usually the wrong
-     * instinct; here the alternative is a deployment that cannot apply a plan
-     * because a positions read was down.
+     * This used to catch everything into `null`, and that was right for the one
+     * caller it had: a personal deployment must keep working without knowing its
+     * own account id, and refusing on an unknown is what made
+     * `apply_strategy_plan` unreachable. It became wrong the moment a second
+     * caller appeared for whom the answer *is* the identity — see the port.
+     *
+     * The tool being gone after a deployment and the platform naming nobody are
+     * kept apart because they have different remedies: one is waited out, the
+     * other never resolves on its own. Flattening them is how the original
+     * defect read as an outage when it was a question asked of the wrong place.
      */
+    let result;
     try {
-      const result = await this.battlegrid.callTool({
+      result = await this.battlegrid.callTool({
         // No session and no local row to attribute this to: it runs before an
         // identity exists, which is the point of it.
         userId: OWNER_USER_ID,
         accessToken,
         tool: 'list_user_active_positions',
         args: {},
+        // The authority to judge this call by, because there is nowhere to look
+        // it up: a delegated connection is not stored until this read answers,
+        // so the guard would otherwise measure the call against a connection
+        // that does not exist yet and refuse it for lacking `mcp:read` — while
+        // holding a grant that carries `mcp:read`. Omitted on a personal
+        // deployment, whose authority is declared in configuration.
+        grantedScopes,
       });
-      const payload = result.content as Record<string, unknown> | null;
-      const subject = payload?.['userId'];
-      // Asserted here because this value came from BattleGrid, which is the only
-      // place the assertion is legitimate.
-      return typeof subject === 'string' && subject.length > 0 ? asSubject(subject) : null;
-    } catch {
-      return null;
+    } catch (err) {
+      return unreadable(err);
     }
+
+    const payload = result.content as Record<string, unknown> | null;
+    if (payload === null || typeof payload !== 'object') {
+      return malformed('the account read returned no payload to identify an account from');
+    }
+
+    const subject = payload['userId'];
+    if (typeof subject !== 'string' || subject.length === 0) {
+      // The call answered. It simply named nobody — which is a fact about the
+      // account, not about the connection to BattleGrid, and waiting will not
+      // change it.
+      return { kind: 'unnamed', reason: 'BattleGrid answered without naming an account' };
+    }
+
+    // Asserted here because this value came from BattleGrid, which is the only
+    // place the assertion is legitimate.
+    return { kind: 'subject', subject: asSubject(subject) };
   }
 }
 

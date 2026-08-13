@@ -64,8 +64,21 @@ describe('the application has one outbound destination', () => {
     const hosts = outboundHosts();
     const distinct = [...new Set(hosts.map((h) => h.host))].sort();
 
+    /**
+     * One entry per file, however many times the file spells the host.
+     *
+     * The claim is *which files can reach a host*, so the file is the unit. Left
+     * undeduplicated, this listed `src/config.ts` twice the moment a comment in
+     * it quoted a BattleGrid URL — a failure about how a host is written rather
+     * than about what the application reaches, which is the exact confusion the
+     * rest of this directory carries warnings about. The set of hosts, which is
+     * what the rule is actually for, was unchanged.
+     */
+    const filesReaching = (host: string): string =>
+      [...new Set(hosts.filter((x) => x.host === host).map((x) => x.file))].join(', ');
+
     expect(
-      distinct.map((h) => `${h}  (${hosts.filter((x) => x.host === h).map((x) => x.file).join(', ')})`),
+      distinct.map((h) => `${h}  (${filesReaching(h)})`),
       'every host the application can reach',
     ).toEqual(['mcp.battlegrid.trade  (src/config.ts)']);
   });

@@ -2,11 +2,11 @@
 id: oauth-cannot-complete-without-a-subject
 title: The OAuth path cannot complete - BattleGrid issues no subject, and the adapter requires one
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "the-connection-asks-who-it-is"
 capability: battlegrid-connection
 github: "203"
 blocked_by: []
@@ -150,3 +150,27 @@ as long as both have existed.
 Exactly the shape of [[the-performance-design-rests-on-a-dead-premise]] (#189):
 a careful argument that outlived its evidence, with the correction already
 sitting somewhere nobody connected to it.
+
+---
+
+# Closed 2026-08-13 — the path completes, and the walk found a second defect
+
+`the-connection-asks-who-it-is` archived. Identity is established by an
+authenticated read performed with the newly granted authority; a grant carrying
+no subject is ordinary; a connection that cannot be identified is refused, stores
+nothing, and releases the grant it was just given.
+
+**Walked live.** Consent, exchange, identity read, session, `/agents` served.
+Verified in the database rather than from the redirect:
+`users.battlegrid_subject = 0eccbf37-d90b-4933-88f2-d120627b23f7` — the same
+account the personal key resolves to — with `users.id` a separate local token,
+`connections.status active`, `scopes ["mcp:read"]`, tokens stored encrypted.
+
+**The first walk failed, and not for the reason this item predicted.** The
+identity read never reached BattleGrid: `callTool` measures authority against the
+caller's *stored connection*, and this read runs before one exists, so the guard
+refused a call whose grant was holding exactly the scope it wanted. Fixed with
+`ToolCallRequest.grantedScopes` and contained by
+`tests/architecture/granted-scopes.test.ts`. Nothing offline could have found it
+— 2257 tests and two live probes were green throughout. See the change's
+`plan/decision-log.md`, DL-11.

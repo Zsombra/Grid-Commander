@@ -132,3 +132,41 @@ The two arguments on the other side still stand and are untouched by this:
 
 So the case for keeping the *capability* is intact. The case for keeping the
 *current code* is not.
+
+---
+
+# 2026-08-13 — the decision gets a working path to be made about
+
+`the-connection-asks-who-it-is` is open (full track) and takes option 1: identity
+established by an authenticated read after the exchange, refusal releasing the
+grant it was just given. It fixes
+[[oauth-cannot-complete-without-a-subject]] (#203).
+
+**This item stays open, and deliberately.** The change is explicit that the
+keep-or-delete decision is out of its scope. What it removes is the reason the
+decision could not be made honestly: until now it was being made about code that
+had never run to completion, so "a few weeks of real use never touching
+`/connect`" measured nothing.
+
+Once one delegated connection has completed live, the original test becomes the
+test it was written to be, and this item can be answered on use rather than on
+argument.
+
+---
+
+# 2026-08-13 (later) — the decision is now a real one
+
+`the-connection-asks-who-it-is` archived and **the delegated path completed live
+for the first time**. This item can finally be answered the way it was written to
+be answered: on use.
+
+What changed for this decision:
+
+- "A few weeks of real use never touching `/connect`" is a meaningful test again.
+  Until today it measured nothing, because nothing *could* touch it successfully.
+- The cost of keeping is now known rather than assumed: the path works, and it is
+  covered by the walk plus `tests/architecture/granted-scopes.test.ts`.
+- The cost of deleting is higher than it was this morning — the capability is
+  proven, not merely audited.
+
+Still open, still the operator's call, and no longer urgent.

@@ -6,7 +6,14 @@ import {
   type Randomness,
   type TokenSource,
 } from '@/application/use-cases/connect.commands.js';
-import { ConnectionRevokedError, UntrustedCallbackError } from '@/domain/errors.js';
+import {
+  AccountUnidentifiedError,
+  ConnectionRevokedError,
+  UntrustedCallbackError,
+} from '@/domain/errors.js';
+import { asSubject } from '@/domain/connection/subject.js';
+import type { AccountIdentityResult, AccountPort } from '@/ports/account.js';
+import type { Scope } from '@/domain/connection/scope.js';
 import type { BattleGridPort, TokenGrant } from '@/ports/battlegrid.js';
 import { FakeClock, FakeConnectionStore, FakeTransactionStore } from '../support/fakes.js';
 
@@ -20,13 +27,44 @@ class SequentialRandom implements Randomness {
   }
 }
 
+/**
+ * An account read that names whoever you say, or refuses to.
+ *
+ * The delegated path's identity comes from here rather than from the grant,
+ * because BattleGrid's token response has never carried one. `calls` records
+ * the credential each ask was made with — the refusal path has to release *the
+ * token it just exchanged*, and a test that only checks `revoke` was called
+ * cannot tell that apart from releasing the wrong one.
+ */
+function fakeAccount(
+  answer: AccountIdentityResult | ((token: string) => AccountIdentityResult) = {
+    kind: 'subject',
+    subject: asSubject('bg-subject-1'),
+  },
+): AccountPort & { calls: string[]; scopesSeen: (readonly Scope[] | undefined)[] } {
+  const calls: string[] = [];
+  // Recorded because omitting the scopes is not a style question. The guard
+  // that lets this call out reads authority from a stored connection, and at
+  // this point in the flow there is none — so a call made without them is
+  // refused for lacking the scope the grant is holding. See the test below.
+  const scopesSeen: (readonly Scope[] | undefined)[] = [];
+  return {
+    calls,
+    scopesSeen,
+    subjectFor: async (accessToken: string, grantedScopes?: readonly Scope[]) => {
+      calls.push(accessToken);
+      scopesSeen.push(grantedScopes);
+      return typeof answer === 'function' ? answer(accessToken) : answer;
+    },
+  };
+}
+
 function fakePort(overrides: Partial<BattleGridPort> = {}): BattleGridPort {
   const grant: TokenGrant = {
     accessToken: 'at-1',
     refreshToken: 'rt-1',
     expiresIn: 3600,
     scopes: ['mcp:read'],
-    subject: 'bg-subject-1',
   };
   return {
     buildAuthorizationUrl: ({ state, codeChallenge, scopes }) =>
@@ -97,8 +135,8 @@ describe('CompleteConnectionCommand', () => {
     random = new SequentialRandom();
   });
 
-  const complete = (port = fakePort()) =>
-    new CompleteConnectionCommand(port, transactions, connections, random, clock);
+  const complete = (port = fakePort(), account: AccountPort = fakeAccount()) =>
+    new CompleteConnectionCommand(port, account, transactions, connections, random, clock);
 
   async function pending(state = 's1') {
     await transactions.create({
@@ -211,19 +249,143 @@ describe('CompleteConnectionCommand', () => {
 
     it('treats a different subject as a different user', async () => {
       const first = await complete().execute({ state: await pending('s1'), code: 'c1' });
-      const other = fakePort({
-        exchangeCode: async () => ({
-          accessToken: 'at-2',
-          refreshToken: null,
-          expiresIn: 60,
-          scopes: ['mcp:read'] as const,
-          subject: 'bg-subject-2',
-        }),
-      });
-      const second = await complete(other).execute({ state: await pending('s2'), code: 'c2' });
+      // The subject now varies at the account read, not at the grant — which is
+      // the whole change. Two people authorizing this product get two answers
+      // from BattleGrid about who they are.
+      const second = await complete(
+        fakePort(),
+        fakeAccount({ kind: 'subject', subject: asSubject('bg-subject-2') }),
+      ).execute({ state: await pending('s2'), code: 'c2' });
       expect(second.userId).not.toBe(first.userId);
       // And a workspace each, rather than one identity adopting both accounts.
       expect(connections.connections.size).toBe(2);
+    });
+  });
+
+  /**
+   * R — a grant carries authority, not identity.
+   *
+   * The test that would have caught #203. Every grant in this file already
+   * carries no subject, because BattleGrid's never has; what is asserted here is
+   * that the absence is *ordinary* — the connection completes — and that the
+   * identity came from asking, with the credential the exchange produced.
+   */
+  describe('identity_comes_from_asking', () => {
+    it('completes a connection from a grant that names no account', async () => {
+      const account = fakeAccount();
+      const res = await complete(fakePort(), account).execute({
+        state: await pending(),
+        code: 'c1',
+      });
+      const stored = await connections.findByUserId(res.userId);
+      expect(stored?.status).toBe('active');
+      // Keyed on what the platform answered, not on anything local.
+      expect(stored?.battlegridSubject).toBe('bg-subject-1');
+      // And asked with the authority just granted — the only credential that
+      // can answer for it. Asserting the argument, not the call: a fake that
+      // records without being checked proves nothing, which is how
+      // `two-edits-in-a-row.test.ts` passed vacuously twice.
+      expect(account.calls).toEqual(['at-1']);
+    });
+
+    /**
+     * The test that would have caught the 2026-08-13 walk failure.
+     *
+     * The scopes are not decoration. `callTool` measures a call against the
+     * authority on the caller's **stored connection**, and this read is what
+     * produces that connection — so with nothing passed, the lookup answers
+     * "no authority at all" and the guard refuses the call for lacking
+     * `mcp:read` while the grant in hand is holding `mcp:read`. The read never
+     * reaches BattleGrid, and the connection is refused for a reason that has
+     * nothing to do with BattleGrid.
+     *
+     * Nothing offline could see it: every unit test fakes this port, and both
+     * live probes wired a personal deployment, whose scopes come from
+     * configuration rather than from a connection. It took a real delegated
+     * authorization to surface, which is exactly what the gate was held open
+     * for.
+     */
+    it('asks with the scopes the grant actually carries, not with nothing', async () => {
+      const account = fakeAccount();
+      await complete(fakePort(), account).execute({ state: await pending(), code: 'c1' });
+      expect(account.scopesSeen).toEqual([['mcp:read']]);
+    });
+  });
+
+  /**
+   * R — a connection whose account cannot be identified is refused, and its
+   * grant released.
+   *
+   * At this point the grant is live: consent happened, the code was exchanged,
+   * and BattleGrid holds an active authorization. Storing nothing is half the
+   * job; the other half is giving it back.
+   *
+   * **Mutation-checked 2026-08-13 (M2).** These three were run against a
+   * deliberately broken `refuseUnidentified` — the `revoke` call removed,
+   * `released` hard-coded to `true` — and all three failed. Without that, the
+   * only thing they would have proven is that the command throws, which it did
+   * before this change too. A guard nobody has seen fail is a guard nobody knows
+   * works.
+   */
+  describe('unidentified_refused_and_released', () => {
+    const unreadable: AccountIdentityResult = {
+      kind: 'unreadable',
+      reason: 'tools/call failed with 502',
+      cause: 'unreachable',
+    };
+    const unnamed: AccountIdentityResult = {
+      kind: 'unnamed',
+      reason: 'BattleGrid answered without naming an account',
+    };
+
+    it.each([
+      ['a read that could not answer', unreadable],
+      ['an answer that named nobody', unnamed],
+    ])('refuses on %s, stores nothing, and releases the grant', async (_label, answer) => {
+      const revoked: string[] = [];
+      const port = fakePort({
+        revoke: async (token: string) => {
+          revoked.push(token);
+        },
+      });
+
+      const err = await complete(port, fakeAccount(answer))
+        .execute({ state: await pending(), code: 'c1' })
+        .catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(AccountUnidentifiedError);
+      expect((err as AccountUnidentifiedError).released).toBe(true);
+      expect(connections.connections.size).toBe(0);
+      // The token from *this* exchange. `toHaveBeenCalled` would pass just as
+      // well if the wrong credential were released, which would leave the live
+      // grant standing and revoke something else.
+      expect(revoked).toEqual(['at-1']);
+    });
+
+    it('still stores nothing when the release fails, and says the grant may stand', async () => {
+      const port = fakePort({
+        revoke: async () => {
+          throw new Error('ECONNREFUSED');
+        },
+      });
+
+      const err = await complete(port, fakeAccount(unreadable))
+        .execute({ state: await pending(), code: 'c1' })
+        .catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(AccountUnidentifiedError);
+      expect((err as AccountUnidentifiedError).released).toBe(false);
+      expect(connections.connections.size).toBe(0);
+      // "may still stand", not "does" — a failed revoke is not proof the grant
+      // survived, and the sentence a user reads must not claim more than we know.
+      expect((err as Error).message).toMatch(/may still stand/i);
+    });
+
+    it('never puts the credential in the message a user could see', async () => {
+      const err = await complete(fakePort(), fakeAccount(unreadable))
+        .execute({ state: await pending(), code: 'c1' })
+        .catch((e: unknown) => e);
+      expect((err as Error).message).not.toContain('at-1');
     });
   });
 
@@ -235,7 +397,6 @@ describe('CompleteConnectionCommand', () => {
         refreshToken: null,
         expiresIn: undefined,
         scopes: ['mcp:read'] as const,
-        subject: 'sub',
       }),
     });
     const res = await complete(port).execute({ state: await pending(), code: 'c1' });

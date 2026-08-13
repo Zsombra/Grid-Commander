@@ -249,8 +249,19 @@ export function app(cookies: CookieStore) {
    * a delegated one resolves a session and refreshes a grant. Every route calls
    * `currentUser` and cannot tell which it got, which is the point.
    */
+  /**
+   * One adapter, two deployments, opposite tolerances.
+   *
+   * `OwnerOnlyUser` collapses an unnameable account to unknown and keeps
+   * working; `CompleteConnectionCommand` refuses the connection and releases the
+   * grant. Both ask the same question of the same tool, and building one
+   * instance is what keeps them asking it identically — two adapters over one
+   * BattleGrid tool is how two callers come to disagree about the same account.
+   */
+  const accountIdentity = new McpAccountAdapter(i.battlegrid);
+
   const currentUser: ActingUser = i.personal
-    ? new OwnerOnlyUser(i.personal.apiKey, new McpAccountAdapter(i.battlegrid))
+    ? new OwnerOnlyUser(i.personal.apiKey, accountIdentity)
     : new CurrentUserQuery(sessions, i.connections, authority);
 
   return {
@@ -263,6 +274,7 @@ export function app(cookies: CookieStore) {
     startConnection: new StartConnectionCommand(i.battlegrid, i.transactions, random, systemClock),
     completeConnection: new CompleteConnectionCommand(
       i.battlegrid,
+      accountIdentity,
       i.transactions,
       i.connections,
       random,

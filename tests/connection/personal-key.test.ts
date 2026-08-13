@@ -152,12 +152,17 @@ describe('scopes come from whichever source is entitled to answer', () => {
 /**
  * A stand-in for the one read that answers "which account is this key".
  *
- * `null` is a first-class answer here, not an error case — see `AccountPort`. The
- * tests below use both, because a deployment whose account read is unavailable
- * must keep working.
+ * A non-answer is first-class here, not an error case. The port now reports
+ * *why* it could not name the account, and `OwnerOnlyUser` deliberately does not
+ * care which reason it was — a deployment whose account read is unavailable must
+ * keep working either way. That collapsing used to live inside the port; the
+ * tests below exist to prove moving it changed nothing observable here.
  */
 const knows = (subject: string | null): AccountPort => ({
-  subjectFor: async () => (subject === null ? null : asSubject(subject)),
+  subjectFor: async () =>
+    subject === null
+      ? { kind: 'unreadable', reason: 'positions read unavailable', cause: 'unreachable' }
+      : { kind: 'subject', subject: asSubject(subject) },
 });
 
 const SUBJECT = 'bb334a1e-2ac2-4956-8dea-7c7cf01097b9';
@@ -195,11 +200,29 @@ describe('the owner, on a deployment that authenticates nobody', () => {
   });
 
   it('reports the account as unknown rather than substituting one', async () => {
-    // The whole point of `string | null`. A deployment that cannot establish its
-    // account id must say so, because the alternative — putting `'owner'` there —
-    // is precisely the substitution that read as a mismatch and refused every
-    // apply.
+    // A deployment that cannot establish its account id must say so, because the
+    // alternative — putting `'owner'` there — is precisely the substitution that
+    // read as a mismatch and refused every apply.
     const result = await new OwnerOnlyUser('bg_live_abc', knows(null)).execute();
+    expect(result.kind === 'acting' && result.authority.battlegridSubject).toBeNull();
+  });
+
+  /**
+   * Every non-answer collapses the same way, and that is this caller's choice.
+   *
+   * The port distinguishes a read that failed from an answer naming nobody
+   * because `CompleteConnectionCommand` tells a user which happened. Here
+   * neither is actionable: the deployment has an identity regardless, and any
+   * refusal built on this being unknown is the defect the type exists to
+   * prevent. Asserted so that a future reader wiring the distinction into this
+   * path has to delete a test that says why not.
+   */
+  it('treats an answer that names nobody exactly like a read that failed', async () => {
+    const namesNobody: AccountPort = {
+      subjectFor: async () => ({ kind: 'unnamed', reason: 'no account on the payload' }),
+    };
+    const result = await new OwnerOnlyUser('bg_live_abc', namesNobody).execute();
+    expect(result.kind, 'a personal deployment keeps working either way').toBe('acting');
     expect(result.kind === 'acting' && result.authority.battlegridSubject).toBeNull();
   });
 
@@ -222,11 +245,34 @@ describe('the owner, on a deployment that authenticates nobody', () => {
     const counting: AccountPort = {
       subjectFor: async () => {
         asked += 1;
-        return asSubject(SUBJECT);
+        return { kind: 'subject', subject: asSubject(SUBJECT) };
       },
     };
     const user = new OwnerOnlyUser('bg_live_abc', counting);
     await user.execute();
+    await user.execute();
+    await user.execute();
+    expect(asked).toBe(1);
+  });
+
+  /**
+   * The unknown is cached as deliberately as an answer would be.
+   *
+   * Otherwise a deployment whose account read is down puts a failing call in
+   * front of every page — which is the cost this cache exists to avoid, and it
+   * is exactly the case where the cache is skipped if `undefined` and `null` are
+   * conflated. `asked` is what proves it; the returned value would look
+   * identical either way.
+   */
+  it('remembers an unknown too, rather than re-asking on every request', async () => {
+    let asked = 0;
+    const alwaysDown: AccountPort = {
+      subjectFor: async () => {
+        asked += 1;
+        return { kind: 'unreadable', reason: 'positions read unavailable', cause: 'unreachable' };
+      },
+    };
+    const user = new OwnerOnlyUser('bg_live_abc', alwaysDown);
     await user.execute();
     await user.execute();
     expect(asked).toBe(1);

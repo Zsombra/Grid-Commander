@@ -19,6 +19,21 @@ import { describe, expect, it } from 'vitest';
  * requires no authority to a variable that grants a lot of it.
  *
  *   BATTLEGRID_OAUTH_LIVE=1 npx vitest run tests/live/oauth-metadata.test.ts
+ *
+ * ---
+ *
+ * **What this does not cover.** This file checks the authorization server's
+ * published *description*. It does not exchange an authorization code for a
+ * token, and **no test in this suite does** — obtaining a code requires a person
+ * at a consent screen, so the exchange cannot be automated. The limit is real;
+ * a reader believing it does not exist is not.
+ *
+ * That belief was reachable and it cost something. Until 2026-08-13 the
+ * delegated path had never completed a single connection: BattleGrid sends no
+ * OIDC `sub` and the adapter required one, so every grant it was ever issued was
+ * refused. The only place `sub` appears is in a token response nothing here
+ * receives, so this gate was green and correct throughout, and the list it
+ * appeared in was what misled. See #203.
  */
 
 const live = process.env['BATTLEGRID_OAUTH_LIVE'] ? describe : describe.skip;

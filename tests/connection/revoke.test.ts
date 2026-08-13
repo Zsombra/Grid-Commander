@@ -158,12 +158,34 @@ describe('R2 — a connection is removed', () => {
   });
 });
 
-describe('R2 — a grant with no subject cannot establish an identity', () => {
+describe('R2 — a grant carries authority, not identity', () => {
   /**
-   * Found by the production gate. Defaulting an absent `sub` to '' made every
-   * such grant collide on the same key: the second user to connect would be
-   * recognised as the first and land in a stranger's workspace, holding a
+   * This block used to assert the opposite, and the opposite was wrong.
+   *
+   * It required `sub` on every token response and refused without one, on
+   * reasoning that was sound: defaulting an absent `sub` to `''` would make
+   * every such grant collide on one key, and the second user to connect would be
+   * recognised as the first, landing in a stranger's workspace holding a
    * stranger's BattleGrid connection.
+   *
+   * The reasoning still holds. It just does not belong to a token response.
+   * BattleGrid is plain OAuth 2.1 — `openid-configuration` 404, no
+   * `userinfo_endpoint` — so `sub` is not a field it sometimes omits; it is a
+   * field its authorization server never had. Three live grants on 2026-08-13
+   * confirmed it, which is also how anyone found out: **this suite was green,
+   * and no delegated connection had ever completed.** Every grant the product
+   * was ever issued was refused right here.
+   *
+   * The refusal now lives in `CompleteConnectionCommand`, where there is an
+   * identity read to refuse *on*, and `tests/connection/connect.test.ts` holds
+   * the collision guarantee.
+   *
+   * **Mutation-checked 2026-08-13 (M1).** The `sub` requirement was re-injected
+   * into `tokenRequest` and the first test below failed, alone. That matters
+   * more here than anywhere: this file's *previous* version was green for the
+   * entire life of the defect, so "the tests pass" was never the evidence. The
+   * only thing that proves a check works is feeding it the failure it was
+   * written for.
    */
   const tokenFetch = (body: Record<string, unknown>): typeof globalThis.fetch =>
     (async () =>
@@ -184,27 +206,44 @@ describe('R2 — a grant with no subject cannot establish an identity', () => {
     });
   };
 
-  it('refuses a token response with no subject', async () => {
+  /**
+   * The shape BattleGrid actually sends, byte for byte, from the 2026-08-13
+   * walk: `access_token, token_type, expires_in, refresh_token, scope`.
+   */
+  it('accepts the token response BattleGrid actually sends', async () => {
     const adapter = adapterWith(
-      tokenFetch({ access_token: 'at', scope: 'mcp:read' }), // no `sub`
+      tokenFetch({
+        access_token: 'at',
+        token_type: 'Bearer',
+        expires_in: 3600,
+        refresh_token: 'rt',
+        scope: 'mcp:read',
+      }),
     );
-    await expect(
-      adapter.exchangeCode({ code: 'c', codeVerifier: 'v' }),
-    ).rejects.toThrow(/no subject/i);
+    const grant = await adapter.exchangeCode({ code: 'c', codeVerifier: 'v' });
+    expect(grant.accessToken).toBe('at');
+    expect(grant.refreshToken).toBe('rt');
+    expect(grant.scopes).toEqual(['mcp:read']);
   });
 
-  it('refuses an empty-string subject just as firmly', async () => {
-    const adapter = adapterWith(tokenFetch({ access_token: 'at', scope: 'mcp:read', sub: '' }));
-    await expect(
-      adapter.exchangeCode({ code: 'c', codeVerifier: 'v' }),
-    ).rejects.toThrow(/no subject/i);
-  });
-
-  it('accepts a grant that carries one', async () => {
+  /**
+   * The grant carries no identity, and cannot be made to.
+   *
+   * Asserted on the whole key set rather than on `subject` being absent, so that
+   * re-adding *any* identity-shaped field to this layer is a decision made in
+   * this file rather than something that reappears quietly.
+   */
+  it('carries no identity out of the token layer, even when the server sends one', async () => {
     const adapter = adapterWith(
       tokenFetch({ access_token: 'at', scope: 'mcp:read', sub: 'bg-user-1', expires_in: 3600 }),
     );
     const grant = await adapter.exchangeCode({ code: 'c', codeVerifier: 'v' });
-    expect(grant.subject).toBe('bg-user-1');
+    expect(Object.keys(grant).sort()).toEqual([
+      'accessToken',
+      'expiresIn',
+      'refreshToken',
+      'scopes',
+    ]);
+    expect(grant).not.toHaveProperty('subject');
   });
 });

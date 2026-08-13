@@ -5,7 +5,12 @@ import type {
 } from '@/domain/connection/connection-repository.js';
 import { expiryFromResponse } from '@/domain/connection/connection.js';
 import { REQUESTED_SCOPES } from '@/domain/connection/scope.js';
-import { ConnectionRevokedError, UntrustedCallbackError } from '@/domain/errors.js';
+import {
+  AccountUnidentifiedError,
+  ConnectionRevokedError,
+  UntrustedCallbackError,
+} from '@/domain/errors.js';
+import type { AccountPort } from '@/ports/account.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import type { Clock } from '@/ports/clock.js';
 
@@ -91,10 +96,16 @@ export interface CompleteConnectionResponse {
  *
  * The connection is the identity: a returning user is recognised by their
  * BattleGrid subject and lands back in the same workspace.
+ *
+ * **The subject is asked for, not read off the grant.** BattleGrid is plain
+ * OAuth 2.1 and its token response names no account — an authorization says what
+ * the bearer may do, and is not obliged to say who they are. So the account is
+ * established by a read performed with the authority just granted.
  */
 export class CompleteConnectionCommand {
   constructor(
     private readonly battlegrid: BattleGridPort,
+    private readonly account: AccountPort,
     private readonly transactions: OAuthTransactionStore,
     private readonly connections: ConnectionReader & ConnectionWriter,
     private readonly random: Randomness,
@@ -119,7 +130,28 @@ export class CompleteConnectionCommand {
       codeVerifier: tx.codeVerifier,
     });
 
-    const existingUserId = await this.connections.findUserIdBySubject(grant.subject);
+    // Who does this authority act as? The grant cannot say, so ask — with the
+    // authority itself, which is the only credential that can answer for it.
+    //
+    // `grant.scopes` is passed because there is nowhere else to get it. The
+    // guard that decides whether a call may go out reads a user's authority
+    // from their stored connection, and this read is what *produces* that
+    // connection — so the lookup finds nothing, reads it as no authority at
+    // all, and refuses a call whose grant is holding exactly the scope it
+    // wants. Found by the first real delegated authorization (2026-08-13);
+    // invisible to every offline test, because they fake this port, and to
+    // both live probes, because a personal deployment takes its scopes from
+    // configuration instead.
+    const identity = await this.account.subjectFor(grant.accessToken, grant.scopes);
+    if (identity.kind !== 'subject') {
+      // Nothing is stored without an account to store it under. A placeholder
+      // would make every unidentified connection collide on one key, and the
+      // second user to arrive would be recognised as the first — landing in a
+      // stranger's workspace with a stranger's BattleGrid connection.
+      throw await this.refuseUnidentified(grant.accessToken, identity.reason);
+    }
+
+    const existingUserId = await this.connections.findUserIdBySubject(identity.subject);
 
     // A proposal, not a decision. Between this read and the write below, another
     // callback for the same new subject can create the identity first — so the
@@ -130,7 +162,7 @@ export class CompleteConnectionCommand {
 
     const resolved = await this.connections.upsert({
       userId: proposedUserId,
-      battlegridSubject: grant.subject,
+      battlegridSubject: identity.subject,
       scopes: grant.scopes,
       accessToken: grant.accessToken,
       refreshToken: grant.refreshToken,
@@ -138,6 +170,31 @@ export class CompleteConnectionCommand {
     });
 
     return { userId: resolved.userId };
+  }
+
+  /**
+   * Give back the authority we cannot use.
+   *
+   * The grant is live at this point — the user consented, the code was
+   * exchanged, and BattleGrid holds an active authorization. Dropping it locally
+   * would leave them holding authority they were told was never established,
+   * which is the same mistake `DisconnectCommand` refuses to make in the other
+   * direction.
+   *
+   * A failed release is not swallowed and not retried: it changes what the user
+   * must be told, so it is carried out as `released: false`.
+   */
+  private async refuseUnidentified(
+    accessToken: string,
+    reason: string,
+  ): Promise<AccountUnidentifiedError> {
+    let released = true;
+    try {
+      await this.battlegrid.revoke(accessToken);
+    } catch {
+      released = false;
+    }
+    return new AccountUnidentifiedError(released, reason);
   }
 }
 
