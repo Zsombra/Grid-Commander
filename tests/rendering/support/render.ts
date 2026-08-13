@@ -52,7 +52,9 @@
  *   is not, and asserting on the outcome still needs a real DOM.
  * - **Anything CSS decides** — layout, visibility, `hidden`, overflow. A
  *   class name is a string on a prop; what it does is not here.
- * - **Anything the client does** — effects, handlers, focus, hydration.
+ * - **Anything the client does** — effects, handlers, focus, hydration. A
+ *   client component is *callable* here once its hooks are mocked at the module
+ *   boundary; what the browser then does with the result is not.
  *
  * If you are adding a collector, the bar is the one `links` met: a property
  * whose absence lets a wrong page pass a reasonable-looking test.
@@ -181,8 +183,10 @@ async function expand(node: unknown, c: Collect, out: string[]): Promise<void> {
   if (typeof type === 'function') {
     // A nested component: call it the way React would, with its props. Async
     // server components return promises; sync ones return trees. A client
-    // component using hooks will throw here — and that is a real limit worth
-    // hearing about, not one to paper over.
+    // component using hooks throws here, because there is no dispatcher outside
+    // a render pass — mock the hook at its module boundary and this walks it
+    // fine. See `support/form-status.ts`, which also records why that is the
+    // only way to reach a pending state rather than a way around this file.
     const rendered = (type as (p: unknown) => unknown)(props ?? {});
     await expand(rendered, c, out);
     return;
