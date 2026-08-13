@@ -1,0 +1,68 @@
+{
+  "id": "DT-0023",
+  "surface": "agent-deploy-confirm",
+  "targets": [
+    "authority-lost"
+  ],
+  "type": "restyle",
+  "priority": "p2",
+  "status": "open",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "AuthorityLost stops looking exactly like CarriedProblem. Both stay red, because both are bad; the difference is that one attempt failed and one account is finished until someone repairs it, and that difference becomes structural rather than a matter of reading the sentence twice.",
+  "rationale": "AuthorityLost was built during a-lost-authority-is-not-a-refusal wearing whatever tokens were to hand and has never been designed. Its alert panel is byte-identical to CarriedProblem's — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary — and the two say opposite things. CarriedProblem: this attempt was refused, something else may work. AuthorityLost: nothing on this account will work until the credential is repaired or the connection remade. Four surfaces record the collision as a constraint, in the developer's own words: 'If a design keeps them identical it should say that is a decision.' This ticket says it is not.\n\nThe distinction is deliberately not a second hue. Moving one of them to warning would say the terminal case is milder, and moving CarriedProblem to notice would say a refusal is advisory, which the system's own principle forbids — 'advisory is not failure'. Red is correct for both. What differs is scope, so scope is what changes shape: a refusal is a block inside a working page, and a lost authority is the whole page. The panel should carry that difference in its structure, which is also what 'never signal state by colour alone' requires.\n\nThe surface gained a second state on 2026-08-13 (#182): where the deployment's remedy is reconnect it now offers a BUTTON_SECONDARY anchor to /connect, and where it is repair-the-key it offers nothing, because replacing an environment variable and restarting a process is not something a link can do. Both states are styled below. They must not diverge in layout — the manifest's constraint is explicit that the difference is whether the anchor renders, not how the page looks, and a design that gave the two deployments different shapes would be designing for a distinction the operator can neither see nor change.\n\nShared by four pages, so this restyles the component and never a page. It introduces no new token.",
+  "design": {
+    "layout": "The page keeps its centred max-width column and its vertical rhythm. The alert panel gains a solid danger.default edge on its leading side at space.1 width, against the existing danger.subtle ground — a bar, not a fill, so the sentence keeps its contrast. That bar is the whole structural difference from CarriedProblem, which keeps its uniform hairline border and gains nothing here. Where the remedy is reachable, its anchor sits below the closing paragraph at space.5, outside the panel: it is the way out of the page, not part of the alert.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "panel_ground": "color.danger.subtle",
+      "panel_border": "color.danger.default",
+      "panel_edge_width": "space.1",
+      "panel_radius": "radius.2",
+      "panel_padding": "space.4",
+      "heading_color": "color.text.primary",
+      "heading_size": "type.size.xl",
+      "body_color": "color.text.primary",
+      "closing_color": "color.text.secondary",
+      "remedy_gap": "space.5"
+    },
+    "states": {
+      "remedy-reconnect": {
+        "content": "Heading, the carried sentence in the edged panel with role=alert, the 'Nothing was changed' paragraph in text.secondary, then the BUTTON_SECONDARY anchor to /connect. The anchor is secondary and stays secondary: it is navigation to where a grant is obtained, not the operation that failed, and promoting it to primary would make the page look like it is offering to retry the write. It sits at space.5 below the closing paragraph — far enough not to read as part of the alert, close enough to be the obvious next move."
+      },
+      "remedy-repair-the-key": {
+        "content": "Identical to the above in every respect except that no anchor renders — same heading, same edged panel, same closing paragraph, same spacing above where the anchor would be absent rather than reserved. Nothing is dimmed and no placeholder control appears: the system's principle is that nothing is styled to look disabled when retrying cannot help, and a greyed connect button here would be exactly that. The sentence already names the environment variable, and the sentence is the remedy."
+      }
+    },
+    "responsive": {
+      "mobile": "The panel keeps its edge and padding. The anchor goes full width under the tablet breakpoint, matching the confirmation rows DT-0016/0017/0018 established, so the one control on the page obeys the same rule as the controls on every page it can be reached from.",
+      "desktop": "The anchor sits inline at its natural width, left-aligned with the column."
+    },
+    "content": {
+      "copy": "No copy change. The heading and the closing paragraph stay exactly as written, and the carried sentence is printed verbatim including its remedy — a design must not template it, prefix it, or summarise it. The anchor's label is unchanged from what shipped.",
+      "accessibility": "role=alert stays on the carried sentence and must survive the panel restyle. The leading edge is decorative and adds no semantics; the difference in meaning it carries is also carried by the heading and by the closing paragraph, so a user who cannot see the bar loses nothing."
+    }
+  },
+  "acceptance": [
+    "AuthorityLost's panel and CarriedProblem's panel are distinguishable in a screenshot with the text masked — the leading edge is present on one and absent on the other.",
+    "Both components still resolve their red from color.danger.default and color.danger.subtle; neither moves to warning, notice or consequence.",
+    "The leading edge measures space.1 and spans the full height of the panel, with the panel's radius.2 preserved on the outer corners.",
+    "The carried sentence renders verbatim in both states, including its remedy clause, and role=alert is on it.",
+    "In remedy-reconnect the /connect anchor renders below the closing paragraph at space.5 and carries the BUTTON_SECONDARY treatment; in remedy-repair-the-key no anchor and no placeholder control renders anywhere on the page.",
+    "The two states differ only by the presence of that anchor: heading, panel, spacing and closing paragraph are byte-identical between them, with no reserved gap where the anchor would be.",
+    "Under the tablet breakpoint the anchor is full width; at desktop it is its natural width.",
+    "The restyle lives in src/presentation/components/authority-lost.tsx and no page under app/ names any of these values.",
+    "No raw colour, spacing or radius literal appears in the component; every value resolves through a generated token utility."
+  ],
+  "references": [
+    "openspec/design/system.json — principle 'Terminal and recoverable failures are told apart by structure, not by hue' (v2)",
+    "openspec/design/system.json — principle 'Nothing is styled to look disabled when retrying cannot help'",
+    "openspec/design/surfaces/agent-deploy-confirm.json — authority-lost constraints, including that both branches are one treatment",
+    "openspec/backlog/two-confirmation-row-shapes-and-an-undesigned-page.md (#183)",
+    "openspec/changes/archive/2026-08-13-a-remedy-is-a-target-not-a-sentence — the branch this styles",
+    "openspec/specs/battlegrid-connection/spec.md — A Remedy Named Must Exist In That Deployment"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-13",
+  "github_issue": null
+}
