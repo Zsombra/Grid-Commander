@@ -1,5 +1,44 @@
 # Journal
 
+## 2026-08-13 (CI) — twelve gates green, and the one that could never have caught #203
+
+**Did**: Ran `scripts/ci.sh` twice. First the default set against
+`grid_commander_test` — `assertDisposable` (#195) refuses the live database, and
+`.env` still points at it, so the substitution matters. Then the full set with
+`CI_LIVE=1 CI_SERVING=1`: **twelve gates, all ok, nothing skipped**, including
+~9 minutes of serial live probes and the built app booted and probed.
+
+`BATTLEGRID_LIVE_WRITES` was deliberately left unset, so the write halves
+skipped. The suite's own header is the reason: *"a credential is not consent to
+mutate."*
+
+**The finding is `oauth-live`**, which passes with #203 open. It is correctly
+scoped — it re-fetches the discovery document against the recording and never
+claimed to exercise a grant. Exactly one file in the suite mentions
+`grant_type`, and it runs offline. So *a token being exchanged is covered
+nowhere*, which is where `sub` lives. Recorded on #203.
+
+**State**: 29 commits, PR #199 `MERGEABLE / CLEAN`, +7307 −589 / 143 files.
+Local CI green at `4d1fdd7`. Live account unchanged — balance `38.633532`,
+slots 3/3.
+
+**Next**: merge PR #199. Then **#91**, the only P2 whose blocker is a decision.
+
+**Watch out**:
+
+- **`.env` still aims `DATABASE_URL` at `grid_commander`, the live database.**
+  CI was pointed at `grid_commander_test` by hand. `assertDisposable` would
+  refuse rather than truncate, but the default is still aimed at the wrong one.
+- **A green gate list can imply coverage it does not have.** `oauth-live` in a
+  green column reads as "the OAuth path is exercised live"; it is the *metadata*
+  that is exercised live. The boundary cannot be automated away — a code needs a
+  human at a consent screen — but it can be written where someone meets it.
+- `config.ts:95` argues registration is the ceremony being avoided, while
+  `docs/battlegrid-oauth-metadata.json` has recorded `registration_endpoint`
+  and a secretless `"none"` auth method the whole time — re-verified by
+  `oauth-live` on every run. The premise was contradicted by a committed file
+  checked by the same CI.
+
 ## 2026-08-13 (the live walk) — six questions asked of the platform, and half the answers contradicted the items asking
 
 **Did**: Closed four by walking live BattleGrid v18.2.0, with the operator
