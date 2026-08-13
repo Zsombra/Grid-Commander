@@ -1682,7 +1682,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
     # Write specs first; only move the change folder once every write succeeded.
     for path, text in planned:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\n")
 
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(change.dir), str(target))

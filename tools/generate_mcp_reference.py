@@ -248,8 +248,8 @@ w("")
 # hands Python a cp1252 default that cannot encode them — so this script
 # could not run there at all, which is part of why the reference went a
 # major version stale (#186).
-open(f"{SP}/mcp-reference.md", "w", encoding="utf-8").write("\n".join(out))
-json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w", encoding="utf-8"), indent=2, sort_keys=True, ensure_ascii=False)
+open(f"{SP}/mcp-reference.md", "w", encoding="utf-8", newline="\n").write("\n".join(out))
+json.dump(cap, open(f"{SP}/mcp-capabilities.json", "w", encoding="utf-8", newline="\n"), indent=2, sort_keys=True, ensure_ascii=False)
 
 covered = sum(len([n for n in ns if n in tools]) for _, ns in CATS)
 print("tools in list      :", len(tools))

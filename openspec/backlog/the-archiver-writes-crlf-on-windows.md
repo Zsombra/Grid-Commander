@@ -2,11 +2,11 @@
 id: the-archiver-writes-crlf-on-windows
 title: The archiver writes CRLF specs on Windows, against the repository's own .gitattributes
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "the-tools-write-lf-everywhere"
 capability: harness-integrity
 github: "209"
 blocked_by: []
@@ -77,3 +77,29 @@ scans for CRLF across the changed set — which is the only reason it surfaced
 rather than being committed a second time. Related in kind, not in cause, to
 [[truncating-the-test-database-strands-a-live-grant]] (#208): both are the
 harness doing something to the working tree that the product's own rules forbid.
+
+---
+
+# Closed 2026-08-13 — and the sweep found six more
+
+`the-tools-write-lf-everywhere` archived. **Proven end to end**: archiving that
+change wrote `openspec/specs/harness-integrity/spec.md` with LF endings — the
+exact operation that produced 799 and 449 carriage returns earlier the same day.
+
+The item asked for a sweep "while it is open", and it was worth doing. The
+archiver was one of **seven** text writers across `.claude/tools/` and `tools/`,
+none of which pinned `newline` — including the probes that write
+`docs/battlegrid-mcp-surface.json` and the vocabulary record. Three pinned no
+`encoding` either, which is #186's defect still sitting in four other files.
+
+`tests/architecture/tools-write-lf.test.ts` holds it, derived from the source
+rather than from output: git normalises on commit, so a check reading committed
+artifacts would pass on every platform and prove nothing. Reading the writers
+covers the eighth on the day it is added.
+
+**The fix broke every tool before it worked.** A scripted replacement put a real
+newline inside each string literal instead of the two characters, so five files
+would not parse and the Python harness went from 255 passing to 151 errors. Two
+more scripted repairs failed the same way before the exact bytes were edited
+directly. Recorded in the change's tasks, because it is the item's own subject:
+a write that looks careful and is not.
