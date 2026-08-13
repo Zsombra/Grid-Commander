@@ -2,10 +2,10 @@
 id: a-secondary-perform-cannot-say-it-is-working
 title: A perform that wears the secondary weight has no pending treatment to wear
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: app-access
 github: "227"
@@ -70,13 +70,24 @@ work around.
    duplicates the hook and the aria wiring, which is two places to forget
    `aria-busy`.
 
-**Step 1 is done.** `DT-0027` defines the treatment and answers the open
-question in it: the indicator wears `color.text.primary`, because an indicator
-wears its label's colour — added to `system.json` v3 as a principle so the next
-weight does not have to ask. The ticket deliberately does not pick between the
-prop and the sibling; its acceptance is written against the outcome (`aria-busy`
-wired in exactly one component) so either implementation can satisfy it.
-Remaining work is step 2, which is now an ordinary executor task.
+**Both steps are done — closed in `7cc042b`.**
+
+Step 1 is `DT-0027`, which answers the open question above: the indicator wears
+`color.text.primary`, because an indicator wears its label's colour. Added to
+`system.json` v3 as a principle rather than a token, so the next weight answers
+without another round trip.
+
+Step 2 took the `weight` prop, and the reason turned out to be sharper than the
+one guessed here. The filed argument was that a sibling duplicates the hook and
+the aria wiring. True — and a sibling would also have split two architecture
+scanners that disagree about word boundaries, counting toward
+`every-perform-says-it-is-working`'s vacuity floor by substring while vanishing
+from `controls.test.ts`'s by `\b`. `aria-busy` stays in exactly one file, which
+is now an acceptance criterion rather than an intention.
+
+The exemption in the guard is gone rather than narrowed, which was this item's
+real concern. Verified by mutation: a bare secondary perform submit is caught,
+GET-form previews and the thirteen cancel anchors inside action forms are not.
 
 ## Evidence
 
