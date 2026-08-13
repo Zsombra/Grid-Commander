@@ -30,9 +30,14 @@ operator as *"Application error: a server-side exception has occurred"*.
 ## What this is not
 
 **It is not #232, which is fixed.** Every confirmation refusal now has a
-product-authored route: `spending()` catches `ConfirmationRequiredError` in all
-nine spending actions and redirects with the sentence the product wrote for it.
-That was the known, reachable, operator-facing case.
+product-authored route: `spending()` catches `ConfirmationRequiredError` in ten
+of the eleven spending actions and redirects with the sentence the product wrote
+for it (`conditions/save`, the eleventh, has its own correct catch). That was
+the known, reachable, operator-facing case.
+
+This paragraph said "nine" and was written while `/agents/[id]/edit` was still
+unprotected — see #232's item for how the scan missed it. The claim is true now;
+it was not when it was written.
 
 This item is the **floor underneath** — the unknown cases. #232 closed the one
 throw anybody had enumerated; it did not give the app a boundary, and the

@@ -55,8 +55,15 @@ group still holds rather than trusting this proposal's table.
       `tests/architecture/a-create-carries-a-dedupe-key.test.ts`.
 - [ ] 3.4 Restore is idempotent; connect mints a fresh OAuth state and only
       redirects to consent.
-- [ ] 3.5 The refusal reaches the person — `spending()` on all nine spending
-      actions, guarded by `tests/architecture/a-refusal-reaches-the-person.test.ts`.
+- [ ] 3.5 The refusal reaches the person — `spending()` on ten of the eleven
+      spending actions, and a correct hand-rolled catch on the eleventh
+      (`conditions/save`). Guarded by
+      `tests/architecture/a-refusal-reaches-the-person.test.ts`. **This said
+      "nine"**: the guard could not see `/agents/[id]/edit`, which passes its
+      token by ES6 shorthand, so the route that edits loss caps spent a
+      confirmation with nothing catching its refusal. Corrected during the
+      review of PR #235, where the action was wrapped and the scan widened.
+      Re-run the count rather than trusting this line — that is what 3.x is for.
 
 ## 4. Leave the code alone
 

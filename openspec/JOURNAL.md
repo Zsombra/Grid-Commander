@@ -5,7 +5,7 @@
 **Did**: eleven commits on `claude/secondary-treatment-variant-19160e`, all
 pushed, **PR #235 open and unreviewed**. Shipped DT-0027 (the secondary weight's
 pending treatment), `system.json` v3, an idempotency key on `/agents/new`, and
-`spending()` on all nine confirmation-spending actions. Closed **#227, #231,
+`spending()` on the confirmation-spending actions. Closed **#227, #231,
 #232**. Opened **#227-#238**. Proposed
 `a-duplicate-submit-cannot-duplicate-a-write` for #229.
 

@@ -77,15 +77,26 @@ and that is a separate hole this finding happens to expose.
 ## What shipped
 
 `src/presentation/confirmation-refusal.ts` exports `spending(run, onRefused)`,
-and all nine confirmation-spending actions go through it. The tenth,
-`conditions/save`, already had its own catch and is left alone.
+and **ten of the eleven** confirmation-spending actions go through it. The
+eleventh, `conditions/save`, already had its own catch and is left alone.
 
-**A wrapper rather than nine try/catches, for a reason specific to Next:**
+**This said "nine" and "the tenth" until review.** The count was wrong because
+the scan that produced it was: `a-refusal-reaches-the-person.test.ts` matched
+the literal `confirmationToken:` and `/agents/[id]/edit` passes its token by ES6
+shorthand, so the route that edits loss caps and exposure limits spent a
+confirmation with nothing catching its refusal, and the guard was green over it.
+Found by review of PR #235, fixed in the same PR: the action now takes the
+wrapper, the filter matches either spelling, and the vacuity floor is pinned at
+the true count instead of sitting slack beneath it. A floor set "well under the
+real count" cannot tell a shrinking product from a shrinking scan — which is
+exactly how ten-found-against-eight-required passed.
+
+**A wrapper rather than ten try/catches, for a reason specific to Next:**
 `redirect()` works *by throwing*. A `try` drawn around a block that also
 redirects catches `NEXT_REDIRECT` and turns a successful navigation into a
 swallowed error. The safe form is narrow — the command call inside, the redirect
 outside — and passing the redirect as a separate argument makes that shape
-unwidenable, where nine hand-written copies would be nine chances to add a line
+unwidenable, where ten hand-written copies would be ten chances to add a line
 inside the `try`.
 
 It catches **only** `ConfirmationRequiredError`. A lost connection, an outage
