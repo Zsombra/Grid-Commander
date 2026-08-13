@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
@@ -95,9 +96,9 @@ export default async function ArchiveStrategyPage({
           name="confirmationToken"
           value={proposal.proposal.confirmationToken}
         />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel={`Archiving ${listing.strategy.name}…`}>
           Archive {listing.strategy.name}
-        </button>
+        </PerformButton>
         {/* Back to the strategy, not to the list. Someone who opens this and
             decides against it has not finished with the strategy, and sending
             them to the roster loses their place — which makes declining the more

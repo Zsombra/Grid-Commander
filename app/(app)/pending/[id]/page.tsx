@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting, requestApp } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { editArguments } from '@/presentation/form.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
@@ -126,9 +127,9 @@ export default async function ProposalPage({
           name="changes"
           value={JSON.stringify(result.proposal.proposedValues['changes'] ?? {})}
         />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel="Making the change…">
           Agree and make this change
-        </button>
+        </PerformButton>
       </form>
 
       <form action={decline}>

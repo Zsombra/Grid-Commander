@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from '@/presentation/components/control.js';
 import { optionalText, requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
@@ -137,9 +138,9 @@ export default async function ForkStrategyPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className={BUTTON_PRIMARY}>
+          <PerformButton pendingLabel="Making your copy…">
             Make my copy
-          </button>
+          </PerformButton>
           {/* The strategy being copied, not the roster. */}
           <a href={`/strategies/${strategy.id}`} className={BUTTON_SECONDARY}>
             Cancel

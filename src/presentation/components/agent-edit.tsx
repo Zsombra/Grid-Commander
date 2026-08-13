@@ -1,3 +1,4 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { Agent } from '@/domain/agent/agent.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { isEditable, isReactivatable } from '@/domain/agent/agent.js';
@@ -7,7 +8,7 @@ import {
   positionFieldKind,
 } from '@/domain/agent/trading-config.js';
 import { BindingInheritance, BindingSummary } from './binding.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
@@ -61,7 +62,7 @@ export function AgentRenameForm({
         required
         className={CONTROL}
       />
-      <button type="submit" className={BUTTON_PRIMARY}>Rename</button>
+      <PerformButton pendingLabel="Renaming…">Rename</PerformButton>
     </form>
   );
 }
@@ -352,9 +353,9 @@ export function AgentEditConfirm({
       ))}
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel={`Applying to ${agent.displayName}…`}>
           Apply this to {agent.displayName}
-        </button>
+        </PerformButton>
         <a href={`/agents/${agent.id}/edit`} className={BUTTON_SECONDARY}>
           Change something else
         </a>
@@ -413,9 +414,12 @@ export function ReactivatePrompt({
       <form action={action} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="agentId" value={agent.id} />
         <input type="hidden" name="expectedRevision" value={agent.revision} />
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton
+          pendingLabel={`Reactivating ${agent.displayName}…`}
+          className="w-full tablet:w-auto"
+        >
           Reactivate {agent.displayName}
-        </button>
+        </PerformButton>
         <a href={`/agents/${agent.id}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave it archived
         </a>

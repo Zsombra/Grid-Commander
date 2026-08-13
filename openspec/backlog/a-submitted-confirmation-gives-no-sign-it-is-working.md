@@ -2,7 +2,7 @@
 id: a-submitted-confirmation-gives-no-sign-it-is-working
 title: A submitted confirmation gives no sign it is working — the button's declared loading state is implemented nowhere
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
@@ -165,3 +165,53 @@ missing is a decision about what a working button looks like.
 `a-remedy-is-a-target-not-a-sentence` (#182) set the precedent for how to
 proceed without prejudging that round: reuse an existing primitive, add no new
 treatment, and say plainly what is still owed.
+
+---
+
+# Closed 2026-08-13 — every perform submit says it is working
+
+Rolled out. `PerformButton` now carries **fourteen** perform submits across
+thirteen files: agent archive, undeploy, deploy, rename, edit-apply, reactivate,
+create, rebind, strategy archive, restore, fork, conditions-save, rule retune,
+recorder trim, plan apply, and connect. Each has its own progressive label,
+because a generic "Working…" would be one wording for fourteen different
+consequences and the label is what a screen reader announces.
+
+**The rule is enforced rather than remembered.**
+`tests/architecture/every-perform-says-it-is-working.test.ts` fails if a submit
+inside a `<form action>` is a bare button, so the next confirmation someone adds
+cannot quietly arrive without it. That guard matters more than the sweep: this
+item existed because eleven manifests recorded the same omission in the same
+words, which is what happens when a convention lives only in prose.
+
+**One submit is deliberately still uncovered, and it is a real gap.**
+`/pending/[id]`'s *"Decline — this closes the proposal permanently"* mutates and
+gives no sign it is working. It wears `BUTTON_SECONDARY`, and `PerformButton`
+wears the primary treatment — putting Decline inside it would promote a
+deliberately secondary control to the page's main weight, which is a visual
+decision the implementation lane does not get to make.
+
+Closing it needs a **secondary variant of the pending treatment**, which needs a
+design ticket. Filed here rather than hidden behind a narrower guard: the test's
+regex is scoped to `BUTTON_PRIMARY` and says in its own comment that the
+exemption is a gap and not a rule.
+
+**What the rollout cost, recorded because it was predicted and arrived.**
+Adding a client component to a page breaks any rendering test that renders it
+without the hook mocked. That is registered once in `tests/setup/form-status.ts`
+via `setupFiles` rather than per file — otherwise every future ceremony page
+breaks a test file someone forgets, and the failure names React rather than the
+cause.
+
+**And one architecture guard had to be taught, not lowered.**
+`controls.test.ts` counted how widely `BUTTON_PRIMARY` is worn, as an
+anti-vacuity floor. The sweep moved fourteen wearers behind one component, so
+the count fell from 20 to 13 and the "worn in at least 8 files" check went to
+zero. The floors were **not** relaxed: the scanner now counts `<PerformButton>`
+as a wearer, and the "widely worn" check measures the component instead of the
+constant. Verified by mutation — removing `BUTTON_PRIMARY` from
+`perform-button.tsx` still fails the guard.
+
+Lowering those numbers would have been the easy read and the wrong one: a
+refactor that removed nothing would have permanently weakened a check written to
+catch a scanner that stopped matching.

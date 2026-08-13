@@ -1,7 +1,8 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
@@ -96,9 +97,12 @@ export default async function UndeployPage({
         <input type="hidden" name="coinId" value={proposal.coinId} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton
+          pendingLabel={`Stopping the scan of ${proposal.coinId}…`}
+          className="w-full tablet:w-auto"
+        >
           Stop scanning {proposal.coinId}
-        </button>
+        </PerformButton>
         <a href={`/agents/${proposal.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Keep it deployed
         </a>

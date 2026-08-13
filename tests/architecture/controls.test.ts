@@ -169,6 +169,20 @@ const WEARS_LABEL = /className=\{(?:LABEL|`[^`]*\$\{LABEL\}[^`]*`)\}/;
 const buttonTags = (src: string): string[] => [...src.matchAll(/<button\b[^>]*>/gs)].map((m) => m[0]);
 
 /**
+ * `<PerformButton>` is a button wearing `BUTTON_PRIMARY`, one indirection out.
+ *
+ * DT-0022 moved every perform submit behind it, so a scanner that reads only
+ * `<button>` tags now watches the treatment vanish from fourteen surfaces and
+ * reports a clean tree — the exact vacuity the floors below exist to catch,
+ * arriving through a refactor rather than through a rename.
+ *
+ * Counted as a wearer rather than excluded, because it is one: the constant is
+ * spent in `perform-button.tsx` and every use of the component inherits it.
+ */
+const performTags = (src: string): string[] =>
+  [...src.matchAll(/<PerformButton\b[^>]*>/gs)].map((m) => m[0]);
+
+/**
  * Matched whole, open tag through close, because the one exclusion is a property
  * of the content: a label wrapping its own checkbox with the text after it is an
  * inline row, and `LABEL`'s `block` would break it.
@@ -216,8 +230,15 @@ describe('every button and label uses the shared treatment', () => {
     // Counted through the same scanners the rule above uses. They were separate
     // literals, which is why killing the scan left these floors standing.
     const buttons = uiFiles.flatMap((f) => buttonTags(stripComments(read(f))));
+    const performs = uiFiles.flatMap((f) => performTags(stripComments(read(f))));
     const labels = uiFiles.flatMap((f) => labelBlocks(stripComments(read(f))).map(openTagOf));
-    expect(buttons.filter((t) => WEARS_BUTTON.test(t)).length).toBeGreaterThanOrEqual(20);
+    // `<PerformButton>` counts toward the floor: it wears BUTTON_PRIMARY in its
+    // own file, so a submit that moved behind it is still a submit wearing the
+    // treatment. Without this the floor would have to be lowered to accommodate
+    // a refactor that removed nothing — which is how an anti-vacuity floor
+    // stops being one.
+    const wearing = buttons.filter((t) => WEARS_BUTTON.test(t)).length + performs.length;
+    expect(wearing).toBeGreaterThanOrEqual(20);
     expect(labels.filter((t) => WEARS_LABEL.test(t)).length).toBeGreaterThanOrEqual(30);
   });
 
@@ -306,17 +327,37 @@ describe('the button and label treatments are made of tokens', () => {
     // imported by nothing. `plan-review.tsx` is where DT-0002 landed them, so it
     // is the one file that must not drift back to spelling them out.
     const panel = readFileSync(join('src', 'presentation', 'components', 'plan-review.tsx'), 'utf8');
-    expect(panel).toMatch(/className=\{BUTTON_PRIMARY\}/);
     expect(panel).toMatch(/className=\{BUTTON_SECONDARY\}/);
+    /**
+     * BUTTON_PRIMARY's home moved, and this follows it rather than relaxing.
+     *
+     * DT-0002 landed both constants in `plan-review.tsx`, which is why that file
+     * anchors them. DT-0022 then put every perform submit behind
+     * `PerformButton`, so the primary treatment is now spent in exactly one
+     * place. One deliberate wearer is a stronger guarantee than eight
+     * incidental ones — but only if this test names it, or the constant could
+     * again satisfy every assertion above while being imported by nothing.
+     */
+    const perform = readFileSync(join('src', 'presentation', 'components', 'perform-button.tsx'), 'utf8');
+    expect(perform).toMatch(/BUTTON_PRIMARY/);
   });
 
   it('is worn widely enough to be a treatment rather than a page style', () => {
     const uses = (needle: string) =>
       uiFiles.filter((f) => stripComments(read(f)).includes(needle)).length;
     // A treatment one page imports is a page's style, not a system's.
-    expect(uses('className={BUTTON_PRIMARY}')).toBeGreaterThanOrEqual(8);
     expect(uses('className={BUTTON_SECONDARY}')).toBeGreaterThanOrEqual(8);
     expect(uses('className={LABEL}')).toBeGreaterThanOrEqual(8);
+    /**
+     * BUTTON_PRIMARY is measured through its component now, deliberately.
+     *
+     * DT-0022 gave it one wearer and fourteen surfaces reach it through that,
+     * so counting files that name the constant would report 1 and read as a
+     * treatment nobody uses — the opposite of the truth. What has to stay true
+     * is that the component is spread as widely as the constant used to be, so
+     * that is what is counted.
+     */
+    expect(uses('<PerformButton')).toBeGreaterThanOrEqual(8);
   });
 });
 

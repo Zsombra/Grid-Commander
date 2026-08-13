@@ -1,3 +1,4 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
@@ -143,9 +144,9 @@ export default async function TrimRecordPage({
         <input type="hidden" name="before" value={proposal.before.toISOString()} />
         <input type="hidden" name="describedRuns" value={proposal.preview.runs} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton pendingLabel="Trimming the record…" className="w-full tablet:w-auto">
           Trim {proposal.preview.runs} run{proposal.preview.runs === 1 ? '' : 's'} permanently
-        </button>
+        </PerformButton>
         <a href="/recorder" className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Keep the record whole
         </a>

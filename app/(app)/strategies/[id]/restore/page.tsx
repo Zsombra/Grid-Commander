@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { REPAIR_REQUIRED_GUIDANCE } from '@/application/use-cases/strategy-lifecycle.command.js';
 import { requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
@@ -123,9 +124,9 @@ export default async function RestoreStrategyPage({
       </p>
       <form action={restoreStrategy} className="flex flex-wrap gap-3">
         <input type="hidden" name="strategyId" value={strategy.id} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel={`Restoring ${strategy.name}…`}>
           Restore {strategy.name}
-        </button>
+        </PerformButton>
         {/* The strategy, not the roster — declining leaves the user where they
             were rather than at the top of a list of seventeen. */}
         <a href={`/strategies/${strategy.id}`} className={BUTTON_SECONDARY}>

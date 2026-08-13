@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText } from '@/presentation/form.js';
 import { draftFromQuery } from '@/presentation/condition-form.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { ConditionStructure } from '@/presentation/components/strategy-conditions.js';
@@ -365,9 +366,9 @@ export default async function SaveConditionPage({
         <input type="hidden" name="plan" value={JSON.stringify(proposal.plan)} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
         <input type="hidden" name="draft" value={editQuery(q)} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel="Saving the condition list…">
           Save this condition list
-        </button>
+        </PerformButton>
         <a href={`/strategies/${proposal.strategyId}`} className={BUTTON_SECONDARY}>
           Leave things as they are
         </a>
