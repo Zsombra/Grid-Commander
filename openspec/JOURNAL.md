@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-08-14 (late) — the probe that refuted my own p1, and the key that was already plumbed
+
+**Did**: investigated #229 properly, corrected a false accessibility claim I had
+published in four places, filed #231-#234, then **probed BattleGrid live** and
+refuted the central claim of #231 — which I had filed as p1 an hour earlier.
+Wired the `idempotencyKey` into `/agents/new` with a guard.
+
+**State**: 2342 vitest across 181 files, typecheck, lint, build all clean.
+`validate --all` 0 errors. Six commits on the branch, not pushed.
+
+**Next**: #232 — a spent confirmation renders a framework crash page to someone
+whose action succeeded. It is the biggest thing found this session and nothing
+argues against fixing it.
+
+**Watch out**:
+
+- **I filed a p1 by reasoning from an absence, and measurement refuted it.**
+  #231 said two presses of Fork make two strategies, reasoning from "no
+  confirmation token, no idempotency key, therefore nothing stops it". Four live
+  `fork_strategy` calls say otherwise: the second identical call returns
+  `INTERNAL_ERROR`, both with an explicit name and with the name omitted — and
+  the no-name case is the default, since the field is optional. **The guard was
+  on the platform, where nobody had looked.** Absence of a client-side guard is
+  not presence of a defect.
+
+- **The correction cut the work roughly in half, and it was the cheap check.**
+  Fork needs no client change at all; its second-press defect is #232 wearing a
+  different hat. Only create needed anything. One probe removed a whole branch
+  of planned work.
+
+- **`agentSlots` read 3/3, so create could not be probed** — a create would be
+  refused for capacity and prove nothing, and freeing a slot means archiving a
+  real agent. So #231's remaining half is honestly *unknown*, and is written
+  that way. The platform may dedupe create by name exactly as it dedupes fork.
+
+- **The a11y claim in #228/#229 was false and I repeated it before checking.**
+  "A disabled control is unreachable to a screen reader" conflates *not
+  focusable* with *unreachable*: `disabled` leaves the tab order, not the
+  accessibility tree. The accurate argument is narrower and rests on this
+  codebase — `perform-button.tsx` has no live region, so the progressive label
+  is announced only because the pressed control holds focus. There are 19
+  `role="status"`/`role="alert"` regions in the product and none on the pending
+  state. Corrected in both items and both issues.
+
+- **Two agents overstated findings in the same sweep; both were checkable in a
+  minute.** "grep aria-live returns 0" — there are 19 live regions, just none on
+  the pending state. "The UI tells users the connection is read-only" — the
+  sentence is wager-scoped and its operative claim is true. Filed both at the
+  size they actually are. Agent findings are leads, not conclusions.
+
+- **A key minted inside the server action would dedupe nothing**, and would
+  typecheck, pass review, and look exactly like protection. It is a new key per
+  press. Minted per *render* and carried as a hidden input, a resubmit sends the
+  key it was rendered with. The guard mutation-tests precisely that swap,
+  because it is the one an unaware refactor would make.
+
+- **A quarter of the UI checklist governs zustand, shadcn and `cn()`** — none of
+  which exist here — and its Tailwind item 3 mandates a spelling
+  `controls.test.ts` rejects. #229 is not an isolated false line in a true
+  document; it is one line in a partly-generated one. #233.
+
 ## 2026-08-14 — the secondary weight gets its treatment, and a question turns out to be a contradiction
 
 **Did**: opened #227 and #228 (both were `github: none`), designed and

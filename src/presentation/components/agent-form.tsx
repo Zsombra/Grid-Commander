@@ -24,9 +24,20 @@ export function AgentForm({
   catalog,
   strategies,
   action,
+  idempotencyKey,
   issues = [],
 }: {
   catalog: Catalog;
+  /**
+   * A dedupe key for this render, minted by the page.
+   *
+   * Required rather than optional, and minted by the caller rather than here:
+   * this is a server component, but a default computed in the component body
+   * would still be one key per render of *this* subtree, and the guarantee has
+   * to be owned by whoever renders the page. Making it required means a second
+   * create surface cannot quietly ship without one.
+   */
+  idempotencyKey: string;
   /**
    * What the new agent may read, as the platform lists it.
    *
@@ -50,6 +61,26 @@ export function AgentForm({
 
   return (
     <form action={action} className="space-y-6">
+      {/*
+        The dedupe key, minted once when this form rendered.
+
+        Creating an agent is one of the few writes in the product with no
+        single-use confirmation to spend — there is no describe step to mint one
+        — so a resubmit is refused by nothing on this side. BattleGrid accepts a
+        key for exactly this: "a retry with the same key returns the original
+        result rather than repeating the command."
+
+        Carried as a hidden input rather than minted inside the action, and that
+        is the whole mechanism: a value minted per *call* would be a fresh key on
+        every press and would dedupe nothing. Minted per *render*, a resubmit of
+        this form — a double press, a back-button replay, a second tab opened
+        from the same page — sends the key it was rendered with.
+
+        Whether BattleGrid would also refuse the duplicate by name is untested
+        (the probe that answered it for `fork_strategy` could not reach create,
+        with no agent slot free). This does not depend on the answer.
+      */}
+      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {issues.length > 0 && (
         <div role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
           <p className="font-medium">
