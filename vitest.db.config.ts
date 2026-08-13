@@ -17,6 +17,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/db/**/*.test.ts'],
+    // Asked once, before any file runs: does this database hold a live
+    // BattleGrid grant? Truncating one deletes the only copy of tokens whose
+    // authorization survives it (#208). It belongs here rather than in the
+    // harness because the question is about the state the suite *found*, not
+    // the state it creates.
+    globalSetup: ['tests/db/global-setup.ts'],
     pool: 'threads',
     poolOptions: { threads: { singleThread: true } },
     fileParallelism: false,

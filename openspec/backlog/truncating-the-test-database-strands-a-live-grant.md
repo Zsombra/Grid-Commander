@@ -2,11 +2,11 @@
 id: truncating-the-test-database-strands-a-live-grant
 title: Truncating the test database strands a live grant at BattleGrid
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "a-live-grant-is-not-disposable-data"
 capability: battlegrid-connection
 github: "208"
 blocked_by: []
@@ -122,3 +122,28 @@ database around it is.
 
 Small: one condition, one test, `lite` track. The 85-test db suite is already
 the harness for it.
+
+---
+
+# Closed 2026-08-13 — the suite refuses rather than warns
+
+`a-live-grant-is-not-disposable-data` archived. `tests/db/global-setup.ts` asks
+once, before any test file runs, whether the database holds an active BattleGrid
+connection — and aborts the run if it does, naming both remedies. Proven end to
+end: a planted connection stopped the suite with `no tests` executed and **the
+row survived**.
+
+`DB_TESTS_MAY_TRUNCATE` deliberately does not override it. That flag says the
+*database* is disposable; this is a claim about what is *in* it, and conflating
+the two is what produced the bug.
+
+**The guard was scoped wrong twice first**, which is worth keeping: per-`reset()`
+re-asked a settled question, and per-file fired on `connections.test.ts`'s own
+fixtures and refused 42 tests. The question is only ever what the database held
+*before the suite started*. Same confusion as the original bug, one level down —
+`assertDisposable` asked about the database when the fact was in the data; the
+first two attempts asked about the run when the fact was about what preceded it.
+
+Not fixed here, and still true: the two grants already orphaned today cannot be
+revoked from the product. Their tokens are gone. They need withdrawing from the
+BattleGrid account interface.
