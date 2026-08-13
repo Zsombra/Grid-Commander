@@ -930,7 +930,7 @@ def refresh_declared(capabilities_path: str = CAPABILITIES, out_path: str = OUT)
         entry.clear()
         entry.update(rebuilt)
 
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(surface, f, indent=2, sort_keys=False)
         f.write("\n")
     print(f"refreshed declared fields for {len(surface['tools'])} tools in {out_path}")
@@ -1133,7 +1133,7 @@ def main() -> int:
         "tools": entries,
     }
 
-    with open(OUT, "w") as f:
+    with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(surface, f, indent=2, sort_keys=False)
         f.write("\n")
 

@@ -153,7 +153,7 @@ def main() -> int:
         "vocabulary": vocabulary,
     }
 
-    with open(OUT, "w") as f:
+    with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(artifact, f, indent=2, sort_keys=False)
         f.write("\n")
     print(f"wrote {OUT}")

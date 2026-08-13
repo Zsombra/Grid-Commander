@@ -78,7 +78,7 @@ def main() -> int:
             # a bad one. Fail here, with what the server said.
             print(f"{method}: no result — {json.dumps(response)[:200]}", file=sys.stderr)
             return 1
-        (out / name).write_text(json.dumps(response, indent=2), encoding="utf-8")
+        (out / name).write_text(json.dumps(response, indent=2), encoding="utf-8", newline="\n")
         result = response["result"]
         size = (
             len(result.get("tools") or result.get("prompts") or result.get("resources")
