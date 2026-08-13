@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-08-13 (records) — two guards that compared the wrong thing
+
+**Did**: Built and archived `the-two-records-describe-one-server` (#198).
+`docs/battlegrid-mcp-capabilities.json` sat at v17.2.0 while the surface record
+said v18.2.0 — a major version apart, hiding **188 output-schema leaves across
+11 tools**, including a whole `protection` block the platform now publishes per
+position.
+
+**Two guards should have caught it and both read the wrong field.**
+`tests/architecture/surface-freshness.test.ts` already compared the surface
+record to the *vocabulary* record, with the reasoning written out — and
+hard-coded that pair, so a third record was never covered.
+`refresh_declared` refused only on differing tool *sets*, and v18 added no
+tools: the count held at 114, none added, none removed, and it derived a v18
+artifact's declared fields from a v17.2.0 dump while both files agreed perfectly
+about which tools existed. A guard written against *"a count that has not moved
+proves nothing"* concluded currency from a matching set of names.
+
+Now: a **derived** sweep over every `docs/*.json` that declares a server, reading
+either `server` or `serverInfo`; `refresh_declared` compares versions before
+deriving; and the spec's tool-identity rule widened from "the number of tools
+agreeing with the live server" to any tool-identity comparison against anything.
+`CLAUDE.md` and `HANDOFF.md` now say what *"nothing a count could see moved"* was
+scoped to — **inputs** — and that outputs grew unseen.
+
+**The verifier earned its place.** It caught that the new sweep's own failure
+path had no permanent test — proven only by a mutation run by hand and reverted,
+which is the same defect one layer up, in the fix for it. `records()` now takes a
+directory and four tests drive the refusal against synthetic fixtures, including
+**identical tool sets at different versions**.
+
+Also filed **#209**: the archiver writes CRLF specs on Windows
+(`openspec.py:1685`, `newline=` absent), against this repository's own
+`.gitattributes`. Both of today's archives did it; the first was committed that
+way.
+
+**State**: commits `1536477` + this one, on `claude/handout-board-command-f3dc98`,
+**not pushed**. Gates: typecheck, lint, **2264** vitest (172 files), **255**
+Python harness, build, drizzle clean, **85** db tests. 0 active changes, 27 open
+backlog items, 0 validation errors.
+
+**Next**: push and open the PR for the day's work — five commits before this one.
+
+**Watch out**:
+
+- **`path.write_text(text, encoding='utf-8')` translates newlines on Windows.**
+  Pinning `encoding` and not `newline` is the trap, and it looks careful. #209.
+- **A guard that compares *names* is not comparing *generations*.** The tool set
+  agreeing proves nothing, exactly as the tool count proves nothing — the same
+  lesson the repo already had, scoped one case too narrowly.
+- **`battlegrid-mcp-capabilities.json` has no `probed_at`.** It is a faithful MCP
+  handshake dump, so it can say which server answered but not when. Left that
+  way on purpose: its value is being unedited.
+- **The `protection` / `breakEvenGeometry` block is declared and unobserved** —
+  `liveOverlay` is null unless a position is open. #198's own instruction stands:
+  do not model it from the declaration. One read while a position is open settles
+  four fields that are currently four guesses.
+
+
 ## 2026-08-13 (the walk) — the delegated path completes, and the gate catches what nobody predicted
 
 **Did**: Built and archived `the-connection-asks-who-it-is` (full track, 22
