@@ -1,5 +1,76 @@
 # Journal
 
+## 2026-08-14 (review) — PR #235 reviewed, three defects amended, two findings refuted
+
+**Did**: reviewed PR #235 against the merged tree, found three defects, fixed
+them on the branch, and filed five findings as **#239–#243**. Re-surveyed
+`agent-edit`, which the fix staled. Two commits on top of the eleven.
+
+The three, each one a guard or a record claiming a completeness it did not have:
+
+- **`spending()` forwarded `err.message`.** `ConfirmationRequiredError` composes
+  that as `"<tool>" is destructive and needs confirmation: <consequence>`, so
+  the fix whose whole purpose was to deliver four carefully-written sentences
+  delivered each behind a preamble that contradicts it — the reader *did*
+  confirm — and in front of a raw MCP tool name. Nothing in the repo read
+  `.consequence`, though it is public for exactly this. `errors.ts` records the
+  same class being fixed once already on `DiscoveryUnavailableError`.
+- **`/agents/[id]/edit` was the eleventh confirmation spender**, unprotected.
+  It passes its token by ES6 shorthand; the scan matched the literal
+  `confirmationToken:`. So the route that edits loss caps spent a confirmation
+  with nothing catching its refusal, while the guard written to find exactly
+  that ran green, and four records asserted a closed set of "nine, and the
+  tenth".
+- **`write-results.test.ts` latched.** It set the wrapper flag on the opening
+  line and never checked *that* line for the execute, so a compact one-line
+  `spending()` lost its own site and handed its binding to the next call down
+  the file. Probed: the old loop reported `beta`, the fixed one reports `alpha`.
+
+**State**: PR #235 reviewed and amended on its branch, gates green, merged
+immediately after this entry. `spending()` now has the first test that
+*executes* it. One active change, `a-duplicate-submit-cannot-duplicate-a-write`,
+0/14, still blocked on the operator at task 1. 2352 vitest across 183 files;
+typecheck, lint, build, drizzle clean. `validate --all` 0 errors / 14 warnings —
+back to baseline after the re-survey.
+
+**Next**: #239 (p1) is the biggest thing open — the idempotency key never
+reaches BattleGrid and a duplicate create is a raw Postgres error. Then #229
+task 1 together with #233, unchanged.
+
+**Watch out**:
+
+- **Green is not evidence; a mutation is.** All three defects sat under passing
+  tests, and two of the three *were* the tests. Every fix here was mutation-
+  checked: revert it and its guard fails. The PR mutation-tested the rule it
+  widened and not the *idiom* the rule matched, which is the gap the shorthand
+  slipped through. **Mutate the spelling, not only the behaviour.**
+
+- **A slack anti-vacuity floor cannot tell a shrinking product from a shrinking
+  scan.** The floor asked for 8, the scan found 10, and the eleventh was
+  invisible — so the guard against vacuity was itself satisfied vacuously. Now
+  pinned at the true count, which still permits growth but forces any loss of
+  reach into an edit. #241 files the general case: a floor that counts a
+  *different pattern* than its rule can never fail with it.
+
+- **Two of the review's own findings did not survive checking, and I nearly
+  filed both.** The rule editor does not drop `edit=1`/`p_*` — both arms build
+  the identical query. And "eleven submits carry a confirmation, not fourteen"
+  conflated *files* with *submits*: five more live in components whose actions
+  sit on those pages, so fourteen was right. Measuring before filing is the
+  same discipline yesterday's entry asked for, applied to a reviewer instead of
+  an implementer.
+
+- **A constraint asserted by hand drifts silently.** Two surfaces
+  (`pending-proposal`, `agent-edit`) both said "no client JS" while rendering
+  `PerformButton`. A surface constraint is the design agent's veto; a false one
+  either blocks legitimate work or teaches that constraints are unreliable.
+  "No client JS" is mechanically derivable from `source_files` — #243.
+
+- **Re-pin against what is committed.** The surveyor skill is explicit and it
+  matters: re-pinning a digest over uncommitted edits makes the manifest's
+  commit claim false *while removing the warning*, which is strictly worse than
+  the warning. Committed first, surveyed second.
+
 ## 2026-08-14 (handoff) — a design round, two p1 fixes, and three false sentences caught
 
 **Did**: eleven commits on `claude/secondary-treatment-variant-19160e`, all

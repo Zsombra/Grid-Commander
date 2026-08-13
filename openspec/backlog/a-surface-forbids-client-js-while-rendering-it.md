@@ -37,6 +37,19 @@ The constraint was true when written. The Agree button on this page has been a
 worth checking the manifest's history rather than assuming this round
 introduced it.
 
+## A second instance, found and corrected the same day
+
+`agent-edit` carried the same falsehood: *"The page renders whole from one
+server round trip — no client JS, no hydration."* Its own `source_files` list
+`perform-button.tsx`, and `agent-edit.tsx` renders three `<PerformButton>`s.
+Found while re-surveying that surface (PR #235's review changed its page), and
+corrected there to state the truth: full navigation, no client state, with
+`PerformButton` named as the one exception and the design veto kept — no client
+state, no optimistic rendering, no partial update.
+
+Two surfaces out of the handful anyone has looked at. That is the reason to
+treat this as a class rather than two edits.
+
 ## The wider question
 
 This is the second thing the re-survey should have caught and did not (the
