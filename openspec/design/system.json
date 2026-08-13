@@ -1,8 +1,8 @@
 {
-  "version": 2,
+  "version": 3,
   "status": "designed",
   "placeholder_groups": [],
-  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance. Revised 2026-08-13 (v2): two principles added rather than tokens. The palette and scales already carried every value these needed — what the system lacked was the rule for spending them, which is why twelve forms went silent under submission and why two callouts saying opposite things came out identical.",
+  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance. Revised 2026-08-13 (v2): two principles added rather than tokens. The palette and scales already carried every value these needed — what the system lacked was the rule for spending them, which is why twelve forms went silent under submission and why two callouts saying opposite things came out identical. Revised again 2026-08-13 (v3), same shape and for the same reason: DT-0022 gave the primary weight a pending treatment and the secondary weight had none, so the one secondary control that performs stayed silent. What was missing was not a colour but the rule that picks it — an indicator belongs to its label, not to the accent — plus a stated position on whether a working control may stop being pressable, which had been left implicit and was read as undecided.",
   "tokens": {
     "color": {
       "bg": {
@@ -285,6 +285,8 @@
     "Unknown is not zero. Where the platform declined to tell us a number, that renders differently from the number nought.",
     "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at.",
     "Work in flight is stated, not implied. A control that has been pressed says so before the page it leads to arrives; the counterpart of 'absence of effect is stated', for the moment when effect is under way and nothing on screen has moved yet.",
-    "Terminal and recoverable failures are told apart by structure, not by hue. Both are red because both are bad; what differs is whether anything else on this screen can still work, and a user must be able to see that difference without reading the sentence twice."
+    "Terminal and recoverable failures are told apart by structure, not by hue. Both are red because both are bad; what differs is whether anything else on this screen can still work, and a user must be able to see that difference without reading the sentence twice.",
+    "A working control's indicator wears its label's colour, never the system's accent. The spinner is the label's companion — on the primary weight that resolves to `accent.text`, on the secondary to `text.primary`, and any weight added later answers the question without a new decision. An indicator that reached for the accent would make a working secondary louder than a resting primary beside it.",
+    "A pending treatment says a control is working; it does not decide whether the control stays pressable. Every treatment here is drawn so it reads correctly either way, because that trigger is not this system's to pull — and it is currently contested rather than merely unstated: `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` (State & Interaction 4) requires submits to disable while in flight, DT-0022 deliberately declined to enter the state, and the two have never been reconciled. Design defers to the checklist under design-contract 2; a ticket must not assert either answer as settled while it stands."
   ]
 }

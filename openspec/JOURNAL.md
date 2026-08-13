@@ -1,5 +1,349 @@
 # Journal
 
+## 2026-08-14 (review) — PR #235 reviewed, three defects amended, two findings refuted
+
+**Did**: reviewed PR #235 against the merged tree, found three defects, fixed
+them on the branch, and filed five findings as **#239–#243**. Re-surveyed
+`agent-edit`, which the fix staled. Two commits on top of the eleven.
+
+The three, each one a guard or a record claiming a completeness it did not have:
+
+- **`spending()` forwarded `err.message`.** `ConfirmationRequiredError` composes
+  that as `"<tool>" is destructive and needs confirmation: <consequence>`, so
+  the fix whose whole purpose was to deliver four carefully-written sentences
+  delivered each behind a preamble that contradicts it — the reader *did*
+  confirm — and in front of a raw MCP tool name. Nothing in the repo read
+  `.consequence`, though it is public for exactly this. `errors.ts` records the
+  same class being fixed once already on `DiscoveryUnavailableError`.
+- **`/agents/[id]/edit` was the eleventh confirmation spender**, unprotected.
+  It passes its token by ES6 shorthand; the scan matched the literal
+  `confirmationToken:`. So the route that edits loss caps spent a confirmation
+  with nothing catching its refusal, while the guard written to find exactly
+  that ran green, and four records asserted a closed set of "nine, and the
+  tenth".
+- **`write-results.test.ts` latched.** It set the wrapper flag on the opening
+  line and never checked *that* line for the execute, so a compact one-line
+  `spending()` lost its own site and handed its binding to the next call down
+  the file. Probed: the old loop reported `beta`, the fixed one reports `alpha`.
+
+**State**: PR #235 reviewed and amended on its branch, gates green, merged
+immediately after this entry. `spending()` now has the first test that
+*executes* it. One active change, `a-duplicate-submit-cannot-duplicate-a-write`,
+0/14, still blocked on the operator at task 1. 2352 vitest across 183 files;
+typecheck, lint, build, drizzle clean. `validate --all` 0 errors / 14 warnings —
+back to baseline after the re-survey.
+
+**Next**: #239 (p1) is the biggest thing open — the idempotency key never
+reaches BattleGrid and a duplicate create is a raw Postgres error. Then #229
+task 1 together with #233, unchanged.
+
+**Watch out**:
+
+- **Green is not evidence; a mutation is.** All three defects sat under passing
+  tests, and two of the three *were* the tests. Every fix here was mutation-
+  checked: revert it and its guard fails. The PR mutation-tested the rule it
+  widened and not the *idiom* the rule matched, which is the gap the shorthand
+  slipped through. **Mutate the spelling, not only the behaviour.**
+
+- **A slack anti-vacuity floor cannot tell a shrinking product from a shrinking
+  scan.** The floor asked for 8, the scan found 10, and the eleventh was
+  invisible — so the guard against vacuity was itself satisfied vacuously. Now
+  pinned at the true count, which still permits growth but forces any loss of
+  reach into an edit. #241 files the general case: a floor that counts a
+  *different pattern* than its rule can never fail with it.
+
+- **Two of the review's own findings did not survive checking, and I nearly
+  filed both.** The rule editor does not drop `edit=1`/`p_*` — both arms build
+  the identical query. And "eleven submits carry a confirmation, not fourteen"
+  conflated *files* with *submits*: five more live in components whose actions
+  sit on those pages, so fourteen was right. Measuring before filing is the
+  same discipline yesterday's entry asked for, applied to a reviewer instead of
+  an implementer.
+
+- **A constraint asserted by hand drifts silently.** Two surfaces
+  (`pending-proposal`, `agent-edit`) both said "no client JS" while rendering
+  `PerformButton`. A surface constraint is the design agent's veto; a false one
+  either blocks legitimate work or teaches that constraints are unreliable.
+  "No client JS" is mechanically derivable from `source_files` — #243.
+
+- **Re-pin against what is committed.** The surveyor skill is explicit and it
+  matters: re-pinning a digest over uncommitted edits makes the manifest's
+  commit claim false *while removing the warning*, which is strictly worse than
+  the warning. Committed first, surveyed second.
+
+## 2026-08-14 (handoff) — a design round, two p1 fixes, and three false sentences caught
+
+**Did**: eleven commits on `claude/secondary-treatment-variant-19160e`, all
+pushed, **PR #235 open and unreviewed**. Shipped DT-0027 (the secondary weight's
+pending treatment), `system.json` v3, an idempotency key on `/agents/new`, and
+`spending()` on the confirmation-spending actions. Closed **#227, #231,
+#232**. Opened **#227-#238**. Proposed
+`a-duplicate-submit-cannot-duplicate-a-write` for #229.
+
+**State**: one active change, 0/14 tasks, **blocked on the operator** — task 1
+runs checklist-generator, which halts for human approval. 2346 vitest across 182
+files; typecheck, lint, build, drizzle all clean. `validate --all` 0 errors / 14
+warnings, the same baseline this session started from.
+
+**Next**: **review and merge PR #235.** Then #229 task 1 *together with* #233 —
+they are the same file, and the generator rewrites all of it.
+
+**Watch out**:
+
+- **Three sentences in binding records turned out to be false, and two were
+  mine.** "A disabled control is unreachable to a screen reader" (conflates *not
+  focusable* with *unreachable*; corrected in four places). "Two presses of Fork
+  make two strategies" — filed p1, refuted by a live probe the same day.
+  "Submit controls disable while in flight" — the checklist's, false since #153.
+  **Measure before filing a severity**, and check the checklists before calling
+  anything undecided.
+
+- **The absence of a client-side guard is not the presence of a defect.** #231
+  reasoned from "no token, no key, therefore nothing stops it" and never asked
+  whether the *server* had a guard. Fork is deduped by BattleGrid — measured,
+  named and auto-named, both `INTERNAL_ERROR` on the second call.
+
+- **Two architecture scanners went blind and one reported a *cleaner* tree.**
+  Wrapping calls in `spending()` moved `app.X.execute(` off the line beginning
+  `await app.`, so `write-results.test.ts` lost nine sites — including a real
+  dropped result whose ledger row then failed as "no longer found". Deleting
+  that row was the available wrong answer. **A guard that breaks on a refactor:
+  suspect its measure, not its threshold** — twice this session, and the repo
+  had already recorded the lesson once.
+
+- **`redirect()` works by throwing.** A `try` around a block that also redirects
+  catches `NEXT_REDIRECT` and swallows the navigation. That is why the fix is a
+  wrapper taking the redirect as a separate argument: the narrow shape becomes
+  unwidenable instead of being retyped nine times.
+
+- **`design_surface_incomplete_sources` has never matched anything.** `IMPORT_RE`
+  only matches relative specifiers; this codebase has 23 of those against 337
+  `@/` aliases. Three separate blind spots followed — `perform-button.tsx` in no
+  manifest while fifteen surfaces render it, `agent-form.tsx` likewise, and
+  `/agents/new` never surveyed at all. #230, and it is the highest-leverage
+  tooling fix on the board.
+
+- **The shell ate a backslash three times**, including inside the bullet
+  documenting it. Spell escapes in words; read back what a shell wrote, in
+  bytes. `0x08` renders as an empty pair of backticks and looks like a typo.
+
+- **`agent-roster` had been deliberately left stale for four rounds and filed
+  zero times** (#237). The decision was right every time; the filing was
+  missing, which is the failure the "no unfiled deferral" rule names.
+
+## 2026-08-14 (late) — the refusal reaches the person, and two guards that broke correctly
+
+**Did**: opened PR #235 for the DT-0027 round, then closed **#232** — every
+confirmation refusal now reaches the operator instead of a framework crash page.
+Filed **#236**. Re-surveyed the nine manifests this staled.
+
+**State**: 2346 vitest across 182 files, typecheck, lint, build clean.
+`validate --all` 0 errors. Nine commits on the branch; PR #235 is open and this
+work is pushed to it.
+
+**Next**: **#229** — the checklist contradiction. Its facts have now stopped
+moving: fork is deduped by the platform (measured), create carries a key, and
+the guard's refusal is legible, so "the guard answers" is finally true and the
+amendment can be an honest sentence rather than an aspiration.
+
+**Watch out**:
+
+- **`redirect()` works by throwing, so a `try` around one swallows the
+  navigation.** This is why the fix is `spending(run, onRefused)` rather than
+  nine hand-written try/catches: passing the redirect as a separate argument
+  makes the narrow shape — call inside, redirect outside — unwidenable. Nine
+  copies would be nine chances to add a line inside the `try`, and the failure
+  would look like a page that silently does nothing.
+
+- **My refactor blinded an architecture scanner, and the scanner said so by
+  reporting a *cleaner* tree.** `write-results.test.ts` matches
+  `await app.X.execute(` at line start; wrapping the call moved it inside an
+  arrow function, so nine sites vanished from the scan — including one genuinely
+  dropped result, whose ledger row then failed as "no longer found". **Deleting
+  that row was the available wrong answer.** The result is still dropped; only
+  the measure stopped reaching it. Taught the scanner to read the binding off
+  the wrapper. Same lesson as `controls.test.ts` and `<PerformButton>`: a
+  refactor that removed nothing must not be able to weaken a check.
+
+- **A guard failing after a refactor is not a guard to relax.** Both breakages
+  were correct detections of a real change, and neither threshold moved — one
+  scanner learned a shape, one regex followed a spelling it already asserted.
+  Both re-verified by mutation afterwards, because a widened matcher silences a
+  rule as completely as a dead one.
+
+- **Only nine of the twelve confirmation-carrying files actually spend one.**
+  `agent-edit.tsx` and `plan-review.tsx` render the token into a form whose
+  action lives on a page; `conditions/save` already had its own catch. Counting
+  files that *mention* `confirmationToken` would have produced three phantom
+  fixes — the guard scans for `.execute(` alongside it for that reason.
+
+- **#232 is closed and the app still has no error boundary.** Those are
+  different things and folding them together would have made a fixed defect look
+  unfixed and an unscoped one look done. Filed as #236, with the check that
+  should come first: whether `error.tsx` even catches a throw from a server
+  action, which is not the case it is documented for.
+
+## 2026-08-14 (late) — the probe that refuted my own p1, and the key that was already plumbed
+
+**Did**: investigated #229 properly, corrected a false accessibility claim I had
+published in four places, filed #231-#234, then **probed BattleGrid live** and
+refuted the central claim of #231 — which I had filed as p1 an hour earlier.
+Wired the `idempotencyKey` into `/agents/new` with a guard.
+
+**State**: 2342 vitest across 181 files, typecheck, lint, build all clean.
+`validate --all` 0 errors. Six commits on the branch, not pushed.
+
+**Next**: #232 — a spent confirmation renders a framework crash page to someone
+whose action succeeded. It is the biggest thing found this session and nothing
+argues against fixing it.
+
+**Watch out**:
+
+- **I filed a p1 by reasoning from an absence, and measurement refuted it.**
+  #231 said two presses of Fork make two strategies, reasoning from "no
+  confirmation token, no idempotency key, therefore nothing stops it". Four live
+  `fork_strategy` calls say otherwise: the second identical call returns
+  `INTERNAL_ERROR`, both with an explicit name and with the name omitted — and
+  the no-name case is the default, since the field is optional. **The guard was
+  on the platform, where nobody had looked.** Absence of a client-side guard is
+  not presence of a defect.
+
+- **The correction cut the work roughly in half, and it was the cheap check.**
+  Fork needs no client change at all; its second-press defect is #232 wearing a
+  different hat. Only create needed anything. One probe removed a whole branch
+  of planned work.
+
+- **`agentSlots` read 3/3, so create could not be probed** — a create would be
+  refused for capacity and prove nothing, and freeing a slot means archiving a
+  real agent. So #231's remaining half is honestly *unknown*, and is written
+  that way. The platform may dedupe create by name exactly as it dedupes fork.
+
+- **The a11y claim in #228/#229 was false and I repeated it before checking.**
+  "A disabled control is unreachable to a screen reader" conflates *not
+  focusable* with *unreachable*: `disabled` leaves the tab order, not the
+  accessibility tree. The accurate argument is narrower and rests on this
+  codebase — `perform-button.tsx` has no live region, so the progressive label
+  is announced only because the pressed control holds focus. There are 19
+  `role="status"`/`role="alert"` regions in the product and none on the pending
+  state. Corrected in both items and both issues.
+
+- **Two agents overstated findings in the same sweep; both were checkable in a
+  minute.** "grep aria-live returns 0" — there are 19 live regions, just none on
+  the pending state. "The UI tells users the connection is read-only" — the
+  sentence is wager-scoped and its operative claim is true. Filed both at the
+  size they actually are. Agent findings are leads, not conclusions.
+
+- **A key minted inside the server action would dedupe nothing**, and would
+  typecheck, pass review, and look exactly like protection. It is a new key per
+  press. Minted per *render* and carried as a hidden input, a resubmit sends the
+  key it was rendered with. The guard mutation-tests precisely that swap,
+  because it is the one an unaware refactor would make.
+
+- **A quarter of the UI checklist governs zustand, shadcn and `cn()`** — none of
+  which exist here — and its Tailwind item 3 mandates a spelling
+  `controls.test.ts` rejects. #229 is not an isolated false line in a true
+  document; it is one line in a partly-generated one. #233.
+
+## 2026-08-14 — the secondary weight gets its treatment, and a question turns out to be a contradiction
+
+**Did**: opened #227 and #228 (both were `github: none`), designed and
+implemented **DT-0027** — the secondary weight's pending treatment — closing
+#227. `system.json` to v3. Widened the perform guard to both weights and
+retired its recorded exemption. Filed **#229** and **#230**. Re-surveyed the
+seventeen manifests the round staled.
+
+Three commits on `claude/secondary-treatment-variant-19160e`: `7cc042b` the
+implementation, `bf3aed5` the re-survey (its own commit, because a manifest may
+only be re-pinned against committed source — design-contract §8), `a191606` the
+closure. Not pushed; no PR opened.
+
+**State**: 0 active changes, 24 backlog open, 27/27 design tickets implemented,
+`validate --all` 0 errors / 14 warnings. 2338 vitest across 180 files,
+typecheck, lint, build, drizzle all clean. `agent-roster` is still the one
+stale surface, deliberately, for the third round running.
+
+**Next**: `/propose` for **#229**. It is the only p2 here that blocks nothing
+and decides something, and both options are one line of code.
+
+**Watch out**:
+
+- **A question filed as "nobody has decided" had been decided, in writing, the
+  other way.** #228 enumerated three arguments for whether a submit may disable
+  itself and concluded it was open. `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`
+  §State & Interaction 4 says *"Submit controls disable while in flight"* —
+  binding, and `design-contract.md` §2 ranks it above any design ticket. It is
+  not template boilerplate: the generator's template says the weaker
+  *"Buttons prevent duplicate submits during async operations"*, an outcome
+  single-use confirmation tokens already achieve. Someone narrowed it to a
+  mechanism for this project. **Check the checklists before calling something
+  undecided** — they are binding and nothing in the backlog cross-references
+  them.
+
+- **The first draft of DT-0027 asserted design had settled that, and it was
+  wrong to.** It would have shipped a test locking in the status quo, hardening
+  a checklist violation. Caught before implementation by reading the checklist
+  the executor skill points at. The ticket now takes no position and the
+  treatment reads correctly either way, so #229 costs nothing to decide later.
+  A design ticket cannot win an argument against a checklist; it can only
+  notice it is having one.
+
+- **`track: lite` is how the contradiction survived.** The round that decided
+  the non-disabling ran lite — proposer → executor — and lite runs neither the
+  verifier nor the auditor, the two roles that read the UI checklist. Each edit
+  was small, so the track was sized to the edits rather than to the fact that a
+  UI-wide interaction rule was being set. **Size the track by what the change
+  decides, not by how many lines it touches.**
+
+- **`design_surface_incomplete_sources` has never matched anything.**
+  `IMPORT_RE` matches only relative specifiers; this codebase has 23 relative
+  imports and 337 `@/` alias ones, so `local_ui_imports` returns the empty set
+  for essentially every surface and the guard is satisfied vacuously on the
+  first run. Consequence: `perform-button.tsx` was in **no** manifest's
+  `source_files` while fifteen surfaces render it, so changing it staled
+  nothing. This round caught it only because it also touched `control.ts`,
+  which is listed. Listed on all fifteen now; the vacuous check is #230. Same
+  shape as #192 one layer up — the digest is sound, but only over files
+  somebody remembered to list.
+
+- **A design ticket can be wrong about the tokens it cites, and DT-0022 was.**
+  `indicator_size: type.size.sm` (14px) shipped as stock `size-4` (16px), and
+  `indicator_duration: motion.duration.normal` cannot be spent at all —
+  Tailwind's `duration-*` sets *transition*-duration, and `animate-spin` is a
+  1s stock animation. DT-0027 records both deviations rather than restating the
+  claims. **A token reference in a ticket is a claim that the utility exists;
+  this theme emits no spacing or fontSize scale.**
+
+- **The obvious way to add a `weight` prop breaks `controls.test.ts`.** Its
+  `WEARS_BUTTON` requires a button's className to read literally
+  `className={BUTTON_X}` or a template interpolating exactly `${BUTTON_PRIMARY}`
+  / `${BUTTON_SECONDARY}`. A hoisted variable, a ternary, or a lookup map all
+  fail — the file that spends the treatment becomes an offender against the
+  scan that catches buttons styled by hand. Two spelled-out `<button>` branches
+  sharing one indicator and one label expression is the shape that passes.
+
+- **A sibling component would have split two scanners.**
+  `every-perform-says-it-is-working` matches `<PerformButton` by substring and
+  `controls.test.ts` by a word boundary (backslash then b), so a
+  `PerformButtonSecondary` would count toward one floor and vanish from the
+  other. The prop avoids it, and keeps `aria-busy`
+  in exactly one file — which is now an acceptance criterion.
+
+- **The shell ate a backslash again, in the bullet above this one.** Writing
+  that word boundary as the escape itself, through a heredoc'd Python string,
+  delivered a literal backspace byte to the file — the identical incident the
+  previous handoff recorded, reproduced while documenting it. Spelling it in
+  words is not a stylistic choice; it is the only form that survives. **Read
+  back what a shell wrote, in bytes**: the file carried one 0x08 and rendered
+  as an empty pair of backticks, which reads as a typo rather than as a failure.
+  Exit code 0 both times.
+
+- **The widened guard was verified by mutation, and so was the new test.** A
+  bare secondary submit inside a `<form action>` is caught; GET-form previews
+  and the thirteen cancel *anchors* nested inside action forms are not. Both
+  exemptions are read off the elements, so neither can rot into an allowlist.
+  Two mutations on the component (wrong indicator colour, secondary branch made
+  unreachable) each failed the tests that name them.
+
 ## 2026-08-13 (handoff) — the backlog re-verified, five items closed, and a lesson that left the test suite
 
 **Did**: eleven PRs merged (#215, #217-#225). Closed #91, #153, #182, #183,

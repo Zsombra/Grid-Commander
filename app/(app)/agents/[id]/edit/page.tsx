@@ -11,6 +11,7 @@ import {
   presetPosition,
   requiredText,
 } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 
 /**
  * Change what an agent owns, in two requests.
@@ -271,13 +272,43 @@ export async function applyEdit(formData: FormData) {
     ? { ...(tradingConfigChanges ?? {}), positionManagement: position }
     : tradingConfigChanges;
 
-  const result = await app.updateAgent.execute({
-    ...user.authority,
-    agentId,
-    changes,
-    ...(fullConfig ? { tradingConfigChanges: fullConfig } : {}),
-    confirmationToken,
-  });
+  /**
+   * The reason, and everything that was typed.
+   *
+   * Carrying only the reason sent the person back to a form re-rendered from
+   * the agent's stored values — so a refusal naming one field cost them every
+   * other one. Every submitted field except the confirmation binding rides
+   * back; the token and revision are re-minted by the describe, and replaying
+   * a stale pair is what the binding exists to prevent.
+   *
+   * Hoisted above the call so the **confirmation guard's own** refusal takes
+   * this road too. This action was the eleventh confirmation spender and the
+   * one #232 missed: the scan written to find them matched the literal
+   * `confirmationToken:` and this file passes the token by shorthand, so the
+   * guard reported a closed set of ten and stayed green over the route that
+   * edits loss caps. A second press landed the edit, then rendered a framework
+   * crash page to the person whose edit had just succeeded.
+   */
+  const backTo = (problem: string): never => {
+    const back = new URLSearchParams({ problem });
+    for (const [k, v] of formData.entries()) {
+      if (k === 'agentId' || k === 'confirmationToken' || k === 'expectedRevision') continue;
+      if (typeof v === 'string' && v.length > 0) back.set(k, v);
+    }
+    redirect(`/agents/${agentId}/edit?${back.toString()}`);
+  };
+
+  const result = await spending(
+    () =>
+      app.updateAgent.execute({
+        ...user.authority,
+        agentId,
+        changes,
+        ...(fullConfig ? { tradingConfigChanges: fullConfig } : {}),
+        confirmationToken,
+      }),
+    backTo,
+  );
 
   if (result.kind === 'updated') redirect(`/agents/${agentId}`);
 
@@ -288,20 +319,6 @@ export async function applyEdit(formData: FormData) {
         ? result.issues.map((i) => `${i.field}: ${i.reason}`)
         : [result.reason];
 
-  /**
-   * The reason, and everything that was typed.
-   *
-   * Carrying only the reason sent the person back to a form re-rendered from
-   * the agent's stored values — so a refusal naming one field cost them every
-   * other one. Every submitted field except the confirmation binding rides
-   * back; the token and revision are re-minted by the describe, and replaying
-   * a stale pair is what the binding exists to prevent.
-   */
-  const back = new URLSearchParams({ problem: reasons.join(' · ') });
-  for (const [k, v] of formData.entries()) {
-    if (k === 'agentId' || k === 'confirmationToken' || k === 'expectedRevision') continue;
-    if (typeof v === 'string' && v.length > 0) back.set(k, v);
-  }
-  redirect(`/agents/${agentId}/edit?${back.toString()}`);
+  backTo(reasons.join(' · '));
 }
 

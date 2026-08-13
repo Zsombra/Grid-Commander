@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentForm } from '@/presentation/components/agent-form.js';
@@ -93,7 +94,15 @@ export default async function NewAgentPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">New agent</h1>
-      <AgentForm catalog={catalog.catalog} strategies={listings} action={create} />
+      {/* Minted here, per render, and carried through the form — see the note
+          on the hidden input in AgentForm. A key minted inside `create` would
+          be a new key per press and would dedupe nothing. */}
+      <AgentForm
+        catalog={catalog.catalog}
+        strategies={listings}
+        action={create}
+        idempotencyKey={randomUUID()}
+      />
     </main>
   );
 }
@@ -129,6 +138,11 @@ export async function create(formData: FormData) {
     // A catalog preset's own values, or CUSTOM for the assembled set. The
     // command refuses a name the catalog cannot answer for.
     positionPreset: optionalText(formData, 'positionPreset') ?? undefined,
+    // The key the form was rendered with, so a resubmit of that form is the
+    // same command rather than a second one. `?? undefined` rather than a
+    // freshly minted fallback: a key invented here would be new on every press
+    // and would read as protection while providing none.
+    idempotencyKey: optionalText(formData, 'idempotencyKey') ?? undefined,
   });
 
   if (result.kind === 'created') redirect(`/agents/${result.agent.id}`);

@@ -5,6 +5,7 @@ import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
@@ -118,13 +119,20 @@ export async function performUndeploy(formData: FormData) {
 
   const agentId = requiredText(formData, 'agentId');
   const coinId = requiredText(formData, 'coinId');
-  const result = await app.performUndeploy.execute({
-    ...user.authority,
-    agentId,
-    coinId,
-    expectedRevision: requiredInteger(formData, 'expectedRevision'),
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
+  const result = await spending(
+    () =>
+      app.performUndeploy.execute({
+        ...user.authority,
+        agentId,
+        coinId,
+        expectedRevision: requiredInteger(formData, 'expectedRevision'),
+        confirmationToken: requiredText(formData, 'confirmationToken'),
+      }),
+    (problem) => {
+      const target = `/agents/${agentId}/undeploy/${encodeURIComponent(coinId)}`;
+      redirect(`${target}?problem=${encodeURIComponent(problem)}`);
+    },
+  );
   // Lost authority is not a refusal of this operation — nothing on this account
   // will work until it is fixed — so it travels under its own name and the page
   // renders no form for it.

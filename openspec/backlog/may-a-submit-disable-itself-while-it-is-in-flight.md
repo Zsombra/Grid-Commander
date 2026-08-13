@@ -2,13 +2,13 @@
 id: may-a-submit-disable-itself-while-it-is-in-flight
 title: Nobody has decided whether a perform submit may disable itself while working
 type: question
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
-change: ""
+updated: 2026-08-14
+change: "a-duplicate-submit-cannot-duplicate-a-write"
 capability: app-access
-github: none
+github: "228"
 blocked_by: []
 tags: [confirmation, pending-state, dt-0022, behaviour]
 ---
@@ -46,10 +46,26 @@ Three things pull in different directions:
   make them unreachable — but the product's guarantee is currently "the guard
   refuses it", and a UI that prevents the attempt changes what that guarantee is
   for.
-- **Neither, and this is the one worth weighing.** A `disabled` control is also
-  an unreachable one for a screen reader moving through the form, and the page
-  is mid-navigation. `aria-busy` on an enabled control may be the better answer
-  and needs no decision at all.
+- **Neither, and this is the one worth weighing.** `aria-busy` on an enabled
+  control may be the better answer and needs no decision at all.
+
+  > **Corrected 2026-08-14.** This bullet originally read "a `disabled` control
+  > is also an unreachable one for a screen reader moving through the form".
+  > **That is false**, and it was repeated into #229 and into a GitHub comment
+  > before anyone checked it. `disabled` removes a control from the *focus
+  > order* — MDN is explicit that "disabled controls can not receive focus" —
+  > but a screen reader in browse mode traverses the accessibility tree rather
+  > than the tab order, and a disabled button is conventionally exposed there
+  > with a disabled state rather than deleted. "Not focusable" was conflated
+  > with "unreachable".
+  >
+  > The accurate version is narrower and still real, and it is the one that
+  > should be weighed: disabling moves focus out of the form mid-navigation,
+  > and **the pending label has no live region carrying it** — `perform-button.tsx`
+  > has no `role="status"` or `aria-live`, so the progressive label is announced
+  > today only because the pressed control still holds focus. Disabling would
+  > remove the only channel that announcement travels on. (The product does have
+  > 19 live regions elsewhere; none is on the pending state.)
 
 ## Why it stays open rather than being guessed
 
@@ -70,6 +86,34 @@ Whoever takes it: **do not start from the code.** The code is already correct fo
 whichever answer wins — a one-line prop either way. What is missing is the
 decision.
 
+**The premise above is false, and that is the finding.** This item says nobody
+has decided. Something had: `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`
+§State & Interaction 4 states *"Submit controls disable while in flight"* — a
+binding engineering standard, in this project's own words rather than the
+generator's template wording, and `design-contract.md` §2 ranks it above any
+design ticket. DT-0022 decided the opposite without citing it, and the round
+that shipped that decision ran `track: lite`, which runs neither the verifier
+nor the auditor — the two roles that read the checklist.
+
+So this is not an open question. It is a contradiction between two binding
+records, and it is wider than one control: fourteen perform submits inherit it.
+Filed as [[the-checklist-and-the-button-disagree-about-disabling]] (#229), which
+supersedes this item's framing and carries the decision.
+
+**What this item is still good for**: the three arguments above are the real
+substance of the trade and should be read by whoever resolves #229 — they are
+the strongest statement of the case anywhere in the repo. The accessibility
+argument in particular is the one thing neither binding record mentions — **in
+its corrected form**, which is that the pending label has no live region and so
+survives only on the focused control, not the false version this item was filed
+with. Close as superseded once #229 lands, not before.
+
+`DT-0027` takes no position on the trigger: its treatment renders correctly
+whether or not the control disables, and it deliberately writes no test that
+locks in either answer. An earlier draft of that ticket claimed to settle the
+design half; that claim was withdrawn before implementation, because design does
+not outrank the checklist.
+
 ## Evidence
 
 - `src/presentation/components/perform-button.tsx` — the deliberate absence, and
@@ -83,6 +127,7 @@ decision.
 
 ## Notes
 
-`github: none` — filed at session handoff because it was living only in a
-ticket's rationale, a closed item's body and a test comment. None of those is
-somewhere an open question gets found.
+Filed at session handoff because it was living only in a ticket's rationale, a
+closed item's body and a test comment. None of those is somewhere an open
+question gets found — which is also why the `github: none` it was filed under
+did not survive contact with the next session. Mirrored to **#228**.

@@ -2,13 +2,13 @@
 id: a-secondary-perform-cannot-say-it-is-working
 title: A perform that wears the secondary weight has no pending treatment to wear
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: app-access
-github: none
+github: "227"
 blocked_by: []
 tags: [design, pending-state, confirmation, dt-0022]
 ---
@@ -70,6 +70,25 @@ work around.
    duplicates the hook and the aria wiring, which is two places to forget
    `aria-busy`.
 
+**Both steps are done — closed in `7cc042b`.**
+
+Step 1 is `DT-0027`, which answers the open question above: the indicator wears
+`color.text.primary`, because an indicator wears its label's colour. Added to
+`system.json` v3 as a principle rather than a token, so the next weight answers
+without another round trip.
+
+Step 2 took the `weight` prop, and the reason turned out to be sharper than the
+one guessed here. The filed argument was that a sibling duplicates the hook and
+the aria wiring. True — and a sibling would also have split two architecture
+scanners that disagree about word boundaries, counting toward
+`every-perform-says-it-is-working`'s vacuity floor by substring while vanishing
+from `controls.test.ts`'s by `\b`. `aria-busy` stays in exactly one file, which
+is now an acceptance criterion rather than an intention.
+
+The exemption in the guard is gone rather than narrowed, which was this item's
+real concern. Verified by mutation: a bare secondary perform submit is caught,
+GET-form previews and the thirteen cancel anchors inside action forms are not.
+
 ## Evidence
 
 - `app/(app)/pending/[id]/page.tsx` — the two submits, one converted and one not
@@ -84,10 +103,10 @@ work around.
 
 ## Notes
 
-`github: none` — filed at the moment it was found rather than at the end of the
-work that found it, so it does not live only in a closed item's body and a test
-comment. The issue should be opened when someone picks it up; it is not urgent
-and it is precisely scoped.
+Filed at the moment it was found rather than at the end of the work that found
+it, so it does not live only in a closed item's body and a test comment. It was
+carried as `github: none` until someone picked it up; mirrored to **#227** when
+this round started, which is the moment the note said to open it.
 
 Found while closing #153. Deliberately not swept in, because sweeping it would
 have meant making a visual decision from the implementation lane — the failure

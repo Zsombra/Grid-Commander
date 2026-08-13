@@ -4,12 +4,13 @@
   "route": "/strategies/[id]/restore",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/strategies/[id]/restore/page.tsx",
     "src/application/use-cases/strategy-lifecycle.command.ts",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -313,7 +314,8 @@
     "app/(app)/strategies/[id]/restore/page.tsx": "sha256:49076339758876941c31f558fe0111a382ea7a0732f2307f142c0f709bf9543f",
     "src/application/use-cases/strategy-lifecycle.command.ts": "sha256:c302d00af84f9d4a6b4c3d0d15930f3df2bf37ef8f5b1326515574011d5bc380",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }

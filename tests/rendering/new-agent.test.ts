@@ -5,6 +5,9 @@ import { aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { actingWith } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
 
+/** Any stable value: these tests assert on structure, not on the key itself. */
+const KEY = 'test-idempotency-key';
+
 /**
  * Creating an agent, from the form a person actually meets.
  *
@@ -71,7 +74,7 @@ const listings = [
 
 describe('the new-agent form asks what the operation requires', () => {
   it('renders a strategy control at all', () => {
-    const tree = AgentForm({ catalog: defaultCatalog(), strategies: listings, action: async () => {} });
+    const tree = AgentForm({ catalog: defaultCatalog(), strategies: listings, action: async () => {}, idempotencyKey: KEY });
     expect(
       elementNamed(tree, 'select', 'strategyId'),
       'create reads strategyId; a form that does not ask for it cannot be submitted',
@@ -90,7 +93,7 @@ describe('the new-agent form asks what the operation requires', () => {
   });
 
   it('chooses nothing on the operator’s behalf', () => {
-    const tree = AgentForm({ catalog: defaultCatalog(), strategies: listings, action: async () => {} });
+    const tree = AgentForm({ catalog: defaultCatalog(), strategies: listings, action: async () => {}, idempotencyKey: KEY });
     const select = elementNamed(tree, 'select', 'strategyId');
     // A strategy is the agent's whole reasoning; a default would bind money to
     // a policy nobody read.

@@ -71,7 +71,20 @@ describe('the surface says what happened', () => {
 
   it('reads the result of the write instead of discarding it', () => {
     // The original defect, stated directly: `await …execute({…}); redirect(…)`.
-    expect(page).toMatch(/const result = await app\.updateAgent\.execute/);
+    //
+    // The execute moved inside `spending()` when this action came under the
+    // confirmation-refusal wrapper, so it no longer sits adjacent to its
+    // binding. The property asserted is unchanged — the action *reads* its
+    // result — and only its spelling moved, so the matcher follows it rather
+    // than the assertion being dropped. Same shape, and same reasoning, as
+    // `reads()` in `tests/agent/refusals-reach-the-operator.test.ts`.
+    //
+    // The gap is bounded deliberately: an unbounded one would let
+    // `const result` bind something else entirely and still match an execute
+    // further down the file, which is how a scanner stops being one.
+    expect(page).toMatch(
+      /const result = await (?:spending\([\s\S]{0,80})?app\.updateAgent\.execute/,
+    );
     expect(page).toMatch(/result\.kind === 'updated'/);
   });
 

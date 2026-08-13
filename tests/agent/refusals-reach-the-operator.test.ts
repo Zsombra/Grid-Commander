@@ -15,25 +15,41 @@ import { describe, expect, it } from 'vitest';
  * still discarded the `refused` arm).
  */
 
+/**
+ * `const result = await <tool>.execute` — through the `spending()` wrapper or not.
+ *
+ * #232 moved every confirmation-spending call inside
+ * `spending(() => app.X.execute(…))`, so the execute is no longer adjacent to
+ * the binding. The property these rows assert is unchanged — the action *reads*
+ * its result — and only its spelling moved, so the matcher follows it rather
+ * than the rows being edited one by one into whichever shape shipped last.
+ *
+ * Deliberately not `[\s\S]*`: an unbounded gap would let `const result` bind
+ * something else entirely and still match the execute further down the file,
+ * which is how a scanner stops being one.
+ */
+const reads = (tool: string): RegExp =>
+  new RegExp(`const result = await (?:spending\\([\\s\\S]{0,80})?app\\.${tool}\\.execute`);
+
 const SURFACES = [
   {
     page: 'app/(app)/agents/[id]/reactivate/page.tsx',
-    call: /const result = await app\.setLifecycle\.execute/,
+    call: reads('setLifecycle'),
     refusal: /result\.kind === 'not-permitted'/,
   },
   {
     page: 'app/(app)/agents/[id]/archive/page.tsx',
-    call: /const result = await app\.setLifecycle\.execute/,
+    call: reads('setLifecycle'),
     refusal: /result\.kind === 'not-permitted'/,
   },
   {
     page: 'app/(app)/strategies/[id]/archive/page.tsx',
-    call: /const result = await app\.setStrategyActive\.execute/,
+    call: reads('setStrategyActive'),
     refusal: /result\.kind === 'refused' \|\| result\.kind === 'repair-required'/,
   },
   {
     page: 'app/(app)/strategies/[id]/restore/page.tsx',
-    call: /const result = await app\.setStrategyActive\.execute/,
+    call: reads('setStrategyActive'),
     refusal: /result\.kind === 'refused'/,
   },
   {
@@ -42,7 +58,7 @@ const SURFACES = [
     // cannot see: the call site reads its result perfectly and still rendered
     // a framework error page. The refused arm is what makes it an outcome.
     page: 'app/(app)/agents/[id]/rebind/page.tsx',
-    call: /const result = await app\.rebindAgent\.execute/,
+    call: reads('rebindAgent'),
     refusal: /result\.kind === 'destination-moved' \|\| result\.kind === 'refused'/,
   },
 ] as const;

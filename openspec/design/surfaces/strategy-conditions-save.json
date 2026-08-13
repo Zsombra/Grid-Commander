@@ -4,14 +4,15 @@
   "route": "/strategies/[id]/conditions/save",
   "capability": "strategy-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "72d2c86",
+  "generated_at_commit": "7cc042b",
   "source_files": [
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
     "src/presentation/components/control.ts",
-    "src/presentation/require-connection.tsx",
-    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/components/perform-button.tsx",
     "src/presentation/components/strategy-conditions.tsx",
-    "src/presentation/condition-form.ts"
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/condition-form.ts",
+    "src/presentation/require-connection.tsx"
   ],
   "viewports": [
     "mobile",
@@ -429,10 +430,11 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:f7f8619d2356adf87af81554e9dd04faac9074946c21b7a7f1fb0045bd38f008",
-    "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
-    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/strategy-conditions.tsx": "sha256:e9614fb32ac281064d2192fa6c774831fdb76189ec4cc358a333205ac533eefc",
-    "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc"
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

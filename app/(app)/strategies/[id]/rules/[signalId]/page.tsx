@@ -9,6 +9,7 @@ import {
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import type { SignalParameter } from '@/ports/strategies.js';
 import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
@@ -367,14 +368,24 @@ export async function performRetune(formData: FormData) {
       ? (JSON.parse(paramsJson) as Record<string, number>)
       : undefined;
 
-  const result = await app.retuneRule.execute({
-    ...user.authority,
-    strategyId,
-    signalId,
-    expectedRevision: requiredInteger(formData, 'expectedRevision'),
-    intent: { allocation, required, ruleParams },
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
+  const result = await spending(
+    () =>
+      app.retuneRule.execute({
+        ...user.authority,
+        strategyId,
+        signalId,
+        expectedRevision: requiredInteger(formData, 'expectedRevision'),
+        intent: { allocation, required, ruleParams },
+        confirmationToken: requiredText(formData, 'confirmationToken'),
+      }),
+    // The refused arm's road, with the same choice preserved so the describe
+    // re-runs against the fresh strategy.
+    (problem) => {
+      const query = new URLSearchParams({ a: String(allocation), problem });
+      if (required) query.set('req', '1');
+      redirect(`/strategies/${strategyId}/rules/${signalId}?${query.toString()}`);
+    },
+  );
 
   // Lost authority is not a refusal of this operation — nothing on this account
   // will work until it is fixed — so it travels under its own name and the page
