@@ -4,7 +4,7 @@
   "route": "/pending/[id]",
   "capability": "mcp-control",
   "status": "designed",
-  "generated_at_commit": "7cc042b",
+  "generated_at_commit": "c26a728",
   "source_files": [
     "app/(app)/pending/[id]/page.tsx",
     "src/ports/proposals.ts",
@@ -245,7 +245,7 @@
     "notes": "The problem banner carries role=alert. Dispositions are legible without colour. No client JS."
   },
   "source_digest": {
-    "app/(app)/pending/[id]/page.tsx": "sha256:402f52313d19c1facef85e67c5d3935924cbbd183b07dc168e0e4572173f7fd7",
+    "app/(app)/pending/[id]/page.tsx": "sha256:286cdc94daf5508e08f4d80781e1625661665790e77e8ef71aef0e1244bbf7f5",
     "src/ports/proposals.ts": "sha256:016aba2d37d3be1e516da6016ace525e205ad74e5c3a58be38b1efa1770734da",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",

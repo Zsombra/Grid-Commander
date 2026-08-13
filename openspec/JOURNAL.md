@@ -1,5 +1,57 @@
 # Journal
 
+## 2026-08-14 (late) — the refusal reaches the person, and two guards that broke correctly
+
+**Did**: opened PR #235 for the DT-0027 round, then closed **#232** — every
+confirmation refusal now reaches the operator instead of a framework crash page.
+Filed **#236**. Re-surveyed the nine manifests this staled.
+
+**State**: 2346 vitest across 182 files, typecheck, lint, build clean.
+`validate --all` 0 errors. Nine commits on the branch; PR #235 is open and this
+work is pushed to it.
+
+**Next**: **#229** — the checklist contradiction. Its facts have now stopped
+moving: fork is deduped by the platform (measured), create carries a key, and
+the guard's refusal is legible, so "the guard answers" is finally true and the
+amendment can be an honest sentence rather than an aspiration.
+
+**Watch out**:
+
+- **`redirect()` works by throwing, so a `try` around one swallows the
+  navigation.** This is why the fix is `spending(run, onRefused)` rather than
+  nine hand-written try/catches: passing the redirect as a separate argument
+  makes the narrow shape — call inside, redirect outside — unwidenable. Nine
+  copies would be nine chances to add a line inside the `try`, and the failure
+  would look like a page that silently does nothing.
+
+- **My refactor blinded an architecture scanner, and the scanner said so by
+  reporting a *cleaner* tree.** `write-results.test.ts` matches
+  `await app.X.execute(` at line start; wrapping the call moved it inside an
+  arrow function, so nine sites vanished from the scan — including one genuinely
+  dropped result, whose ledger row then failed as "no longer found". **Deleting
+  that row was the available wrong answer.** The result is still dropped; only
+  the measure stopped reaching it. Taught the scanner to read the binding off
+  the wrapper. Same lesson as `controls.test.ts` and `<PerformButton>`: a
+  refactor that removed nothing must not be able to weaken a check.
+
+- **A guard failing after a refactor is not a guard to relax.** Both breakages
+  were correct detections of a real change, and neither threshold moved — one
+  scanner learned a shape, one regex followed a spelling it already asserted.
+  Both re-verified by mutation afterwards, because a widened matcher silences a
+  rule as completely as a dead one.
+
+- **Only nine of the twelve confirmation-carrying files actually spend one.**
+  `agent-edit.tsx` and `plan-review.tsx` render the token into a form whose
+  action lives on a page; `conditions/save` already had its own catch. Counting
+  files that *mention* `confirmationToken` would have produced three phantom
+  fixes — the guard scans for `.execute(` alongside it for that reason.
+
+- **#232 is closed and the app still has no error boundary.** Those are
+  different things and folding them together would have made a fixed defect look
+  unfixed and an unscoped one look done. Filed as #236, with the check that
+  should come first: whether `error.tsx` even catches a throw from a server
+  action, which is not the case it is documented for.
+
 ## 2026-08-14 (late) — the probe that refuted my own p1, and the key that was already plumbed
 
 **Did**: investigated #229 properly, corrected a false accessibility claim I had

@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/rules/[signalId]",
   "capability": "strategy-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "7cc042b",
+  "generated_at_commit": "c26a728",
   "source_files": [
     "app/(app)/strategies/[id]/rules/[signalId]/page.tsx",
     "src/presentation/components/authority-lost.tsx",
@@ -472,7 +472,7 @@
     "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). No client JS: the compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:a393056b4b61d4001e9118e2e943e44416a16b08bd4b7cd2aa9ab1fafec1d87b",
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:00af98a0681e0db0d5bb33e63968930cb46408ef07f4b44c770fe34ddf4ac13b",
     "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
