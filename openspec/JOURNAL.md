@@ -1,5 +1,77 @@
 # Journal
 
+## 2026-08-13 (late) — five questions measured, one answered, and none closed
+
+**Did**: recorded today's live measurements into the five backlog items whose
+open questions they bear on, and archived
+`the-stoppage-summary-reads-around-a-refusal` (merged as #215).
+
+**I said this batch would close about a fifth of the board. It closed nothing,
+and that was the right outcome.** Reading the five items properly showed each
+asks for an *observation* that still has not happened: #104's three payload
+shapes need a session with players, #147's `verdict`/`decidedBy` need a
+condition that requires something, #107 needs an open position to compare
+against. A measurement that confirms a premise is not a measurement that
+answers the question. Four got sharper; one got a real answer.
+
+**#205 — half the question is now definitively answered.** An exhaustive walk of
+every output schema across all 114 tools, matching wager / signer / consent /
+daily-cap field names, returns exactly two tools:
+`get_account_state.mcpWagerEnabled` and `stats.totalWagered`, and
+`get_agents_hub.summary.dailyLimit`. That last one sits beside
+`messagesUsedToday` and `avgCostPerMessageUsd` — it is the **message** quota.
+So **the daily wager cap (10/day, $500) is not readable over MCP at all**, and
+`totalWagered` is lifetime rather than per-day so it cannot stand in. A limit
+the platform enforces is invisible to its own API. `mcpWagerEnabled` is the only
+signer-consent candidate that exists anywhere on the surface, which is stronger
+than the item's "neither is obviously the switch" — and still unproven. Also
+corrected: the product *does* model the account toggle
+(`read-wager-authority.query.ts:24`), so "we do not model" was half stale.
+
+**#146 — the headline reversed, and then my own reading of it was wrong twice.**
+
+Measured: 102 blocks/hour across 874 rows on 2026-08-12. `total` 5,496 with row
+126 at `09:11:05` means **exactly 125 blocks are newer than that** — arithmetic
+on total and row position, not a rate extrapolation.
+
+I first read that as "the churn stopped, because the account holds no open
+position and the code is `OPEN_POSITION_CONFLICT`". The audit pass caught that
+this was inference wearing the clothes of measurement. Then the series in #100
+(`5437 → 5483`) showed blocks still accruing, so I measured it directly instead
+of arguing about it:
+
+    13:30 UTC   total 5496
+    13:46 UTC   total 5497
+
+**One block in sixteen minutes — 3.75/hour, now.** Within 4% of the ~3.6/hour the
+125-in-35-hours arithmetic gives, from a completely independent method. The churn
+did not stop; it fell about 27x and is still running.
+
+That also **falsifies one of the item's own three candidate causes**: a halted,
+archived or undeployed agent writes no blocks at all, so "the agent stopped
+evaluating" is out. What it cannot settle is which reason is stopping it now —
+the new rows land at the head, and the head is exactly what `list_gate_blocks`
+refuses. Second time on this item that the answer sits behind #100.
+
+**The audit stage earned its cost.** Five recording agents, five auditors. The
+auditors corrected the churn item ("do not decay" → "the rate has fallen", a
+settled-fact claim the item's own judgement section held open) and the market-grid
+item twice — a cancellation *cause* asserted from a cancellation *count*, and
+`playersNeeded` below `minimumPlayers` glossed as "reached the five-player
+minimum" when it means at least one player, not five. Both errors were the same
+species this session keeps finding: inference stated as measurement.
+
+**Archived**: `the-stoppage-summary-reads-around-a-refusal` — 2 requirements
+added, 1 modified, merged into `openspec/specs/agent-understanding/spec.md`.
+
+**Next**: the render-harness cluster. #194 says no test here can observe a React
+key collision because the harness never reconciles — true of the harness, but the
+conclusion that it *needs* reconciliation is wrong. `expand()` walks the element
+objects and React elements carry `.key` directly; collecting keys per sibling
+group in the array branch (`render.ts:71`) observes the collision without a
+renderer, at the same bar the file's own doc comment sets for `links`. That makes
+#194 + #167 much cheaper than filed.
+
 ## 2026-08-13 (evening) — the backlog re-verified, and three of my own claims overturned
 
 **Why**: the operator's read was that "a lot of these issues might be wrong or
