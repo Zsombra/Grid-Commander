@@ -1,5 +1,34 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-13 (third session)
+
+**State**: green — **2328 vitest + 90 db**, typecheck, lint and build clean,
+`openspec validate --all` at 0 errors. 21 backlog items open, 191 closed, **0
+active changes**, 26 design tickets all implemented, `system.json` at **v2**.
+
+**This session re-verified the backlog instead of trusting it, and that was the
+finding.** The operator's read was that "a lot of these issues might be wrong".
+Partly right, and wrong about which part: **no open item was wholly false** —
+every core defect survived checking — but **15 false sentences across 15 items
+were, without exception, quantifiers**: "the only", "every", "nothing else",
+"and nothing more". Three items contradicted themselves inside their own file.
+The defects were real; the counts around them had never been re-derived.
+
+The practical consequence is a ratio worth remembering before the next planning
+pass: **of nine items examined closely, five needed no code at all.** #200 closed
+(the dropped `slotUsage` has no observable consequence — the only surface
+refetches every request), #204 narrowed to the upstream report it always was (the
+product's behaviour is self-healing, and the item was wrong in *both*
+directions), #104/#147/#107 confirmed and sharpened without closing. The cost was
+in reading them properly, not in fixing them.
+
+**Shipped**: the stoppage summary reads around a refusal (#100's product impact),
+the rendering harness can see a key collision (#194), a remedy is a target not a
+sentence (#182), every perform submit says it is working (#153), and a full
+design round — system v2 plus DT-0022–DT-0026 (#183).
+
+**Superseded header from 2026-08-12 follows.**
+
 **Date**: 2026-08-12 (second session)
 **State**: green — 2207 vitest + 85 db + 243 harness, and **the suite runs clean on Windows for the first time** (#171: path separators, CRLF, and `npx`-as-`npx.cmd`; the last one turned out to be esbuild refusing to parse a CRLF `.mjs` at all). **BattleGrid is v18.2.0** — re-probed 2026-08-12, a full major version ahead of the record, found already at patch .2 so 18.0 and 18.1 were never seen. Nothing a count could see moved: 114 tools, none added or removed, **no input schema changed on any tool**, classification split identical, vocabulary values byte-identical. One description changed and it was semantic — `list_gate_blocks` may now report rows from *after* the model was called, which this product asserts the opposite of in two places (**#185**, p2). That same tool returns `INTERNAL_ERROR` for every agent, deterministically (#100 refreshed).
 
@@ -244,12 +273,24 @@ filed and closed the same session by `the-agent-write-follows-v14`.)
 
 ## Start Here — Where The Next Session Picks Up
 
-**After 2026-08-12 the sharpest picks are:** the operator's pending decisions
-(#153 submit feedback needs a client-JS call; #146 churn verdict — and the
-equity-under-floor fact is the operator's knob); **#94** once the recorder has
-about a week of depth (it captures hourly on the operator's machine since
-2026-08-11); **#157**, the design lane's routine record-keeping tail. The
-2026-08-12 journal entries are per-round and complete.
+**After 2026-08-13 the sharpest pick is one thread, not a list.** The secondary
+pending treatment: `/pending/[id]`'s **Decline** mutates, has no undo, and still
+gives no sign it is working. It wears `BUTTON_SECONDARY` and `PerformButton`
+wears primary, so sweeping it in would promote a deliberately secondary control
+to the page's main weight. It needs a design ticket, and that same round should
+settle `may-a-submit-disable-itself-while-it-is-in-flight` — DT-0022 defined what
+`disabled` looks like and **deliberately refused to authorise entering it**,
+because that removes an affordance and confirmation tokens are single-use. Both
+items are filed; neither has a GitHub issue yet.
+
+Then: **#94** once the recorder has depth (hourly since 2026-08-11), and **#216**
+— the build's type check silently skips every route type Next generates, because
+`tsconfig` excludes `.next`, which is where they are written. Six pages fail that
+check and nobody has decided whether they are defects.
+
+*Stale, kept for the record*: the 2026-08-12 note pointed at #153 (closed
+2026-08-13), #146 (measured — the churn fell 27x to 3.75/hour, still running, and
+one of its three candidate causes is falsified) and #157.
 
 Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
 key** — if `freshness` is red, BattleGrid has deployed and the map needs
@@ -332,7 +373,41 @@ TLS-intercepted (npm dies on `SELF_SIGNED_CERT_IN_CHAIN` behind an opaque
 "Exit handler never called!"). Through the CONNECT proxy, certificates are real
 and verification stays on.
 
-### The lesson that keeps recurring, now six times
+### The lesson that keeps recurring, now eight times — and it left the test suite
+
+**2026-08-13 added two, and the second one matters most because it is not a
+test.**
+
+**Seventh: three false findings in one sweep, from reading `logs` where the
+payload says `entries`.** A live probe reported "0 rows", "empty pages" and
+"field size 0" for tools that were answering normally. Caught only because
+`total: 143` sat beside `rows: 0` in the same output. Exactly the shape below —
+matching how a payload is *spelled* rather than what it *carries*.
+
+**Eighth: a design round restyled what the manifest named, not what the page
+contained.** DT-0016/0017/0018 gave three confirmation rows a mobile treatment
+and silently skipped a fourth. The backlog item blamed scope. It was not scope:
+`perform-deploy` was a **component** in the surface manifest and the deploy
+chooser row was a *sentence inside another component's description*, so no ticket
+could name it and no design round could see it. `openspec.py validate` refuses a
+component whose id appears in no source file — that check would have caught it a
+month earlier, and the fix was to give the row a name in the code.
+
+That is the first time this lesson has appeared outside a test guard. **Any
+surface where two units do different jobs and only one is modelled will drift the
+same way, invisibly from the design side**, and it will not announce itself.
+
+Corollary the same day: **when a guard breaks because of a refactor, suspect the
+guard's measure before its threshold.** `controls.test.ts` counts how widely
+`BUTTON_PRIMARY` is worn as an anti-vacuity floor. Moving fourteen wearers behind
+one component dropped the count from 20 to 13 and the file count to zero.
+Lowering the numbers was the easy read and would have permanently weakened a
+check written to catch a scanner that stopped matching. The scanner was taught to
+count the component instead, and the fix was verified by mutation.
+
+### The original six
+
+
 
 **A check that matches how something is *spelled* rather than what it
 *reaches* is the defect shape this codebase produces.** The read-only guard

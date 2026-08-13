@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-08-13 (handoff) — the backlog re-verified, five items closed, and a lesson that left the test suite
+
+**Did**: eleven PRs merged (#215, #217-#225). Closed #91, #153, #182, #183,
+#194, #200; opened #216. Shipped: the stoppage summary reads around a refusal,
+the harness can see a key collision, a remedy is a target not a sentence, every
+perform submit says it is working, and a full design round — system.json v2 plus
+DT-0022-DT-0026. Rewrote HANDOFF.md, which was 14 merged PRs stale. Filed
+`a-secondary-perform-cannot-say-it-is-working` and
+`may-a-submit-disable-itself-while-it-is-in-flight`, both `github: none`.
+
+**State**: 0 active changes, 21 backlog open, 26/26 design tickets implemented,
+`validate --all` 0 errors / 14 warnings. 2328 vitest + 90 db, typecheck, lint,
+build all clean. Two warnings are deliberate and explained in DT-0022; one
+(`agent-roster` stale) predates this session and was left rather than re-pinned
+against source nobody read.
+
+**Next**: `/design` a secondary variant of the pending treatment. It unblocks
+`a-secondary-perform-cannot-say-it-is-working` and should settle
+`may-a-submit-disable-itself-while-it-is-in-flight` in the same round.
+
+**Watch out**:
+
+- **The backlog's defects were real; its counts were not.** 15 false sentences
+  across 15 items, every one a quantifier — "the only", "every", "nothing else".
+  Three items contradicted themselves inside their own file. Re-derive a number
+  before building on it; the premise is usually sound.
+- **Five of nine items examined needed no code.** #200 closed as real-but-inert,
+  #204 was wrong about the product in *both* directions. Read the item against
+  the code before scheduling the work.
+- **The shell layer eats backslashes and backticks.** Four incidents: a comment
+  lost `PerformButton` to command substitution; a word-boundary escape (backslash
+  then b) in a shell-passed Python string arrived as a literal backspace byte, so
+  an anchor silently failed to match; a commit message lost two words; and **this
+  very bullet lost its backslash the first time it was written**, which is why
+  the escape is spelled out in words here. Exit
+  code 0 is identical for "replaced nothing". Use the Edit tool for source, and
+  read back anything written through a shell.
+- **A guard that breaks on a refactor: suspect its measure, not its threshold.**
+  `controls.test.ts` fell from 20 to 13 because fourteen wearers moved behind one
+  component. Lowering the floor would have permanently weakened it; the scanner
+  was taught to count `<PerformButton>` and the fix verified by mutation.
+- **A design round can only ticket what the manifest models as a unit.** The
+  deploy chooser row was skipped by three tickets because it was prose inside
+  another component's description. `validate` refuses a component id that appears
+  in no source file — that is the check, and the fix is to name the thing in code.
+- **`useFormStatus` is unreachable from any server render.** `renderToStaticMarkup`
+  reports `pending=false`, so swapping the walker for a real renderer would have
+  cost 36 files and still never reached the state. Mock the hook; it is the only
+  route short of a browser. Pinned by a test that fails if React ever changes.
+
 ## 2026-08-13 (late) — #183 closed, and the row that could not be ticketed gets a name
 
 **Did**: surveyed the deploy chooser row, wrote and implemented DT-0026, closed
@@ -76,7 +126,7 @@ A refactor that removed nothing would otherwise have permanently weakened a
 check written to catch a scanner that stopped matching.
 
 **Two escaping mishaps, same family, both caught by reading rather than by
-trusting an exit code.** A `` in a shell-passed Python string arrived as a
+trusting an exit code.** A word-boundary escape (backslash then b) in a shell-passed Python string arrived as a
 backspace character, so an anchor silently failed to match; earlier the same
 layer command-substituted a backtick out of a comment. The fix both times was to
 stop routing source edits through the shell — the Edit tool has no such layer.
