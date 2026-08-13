@@ -49,6 +49,7 @@ live('the block history folds into conditions', () => {
 
     const query = new ReadStoppagesQuery(agents);
     let sawStanding = false;
+    let sawRefusal = false;
 
     for (const agent of roster.agents) {
       const out = await query.execute({ ...who, agentId: agent.id });
@@ -57,9 +58,22 @@ live('the block history folds into conditions', () => {
         console.log(`  ${agent.displayName}: ${out.kind}`);
         continue;
       }
-      const { reasons, readCount, total } = out.summary;
+      const { reasons, readCount, total, refused, windowEndsAt } = out.summary;
       // eslint-disable-next-line no-console
-      console.log(`  ${agent.displayName}: ${readCount} read of ${total ?? '?'}`);
+      console.log(
+        `  ${agent.displayName}: ${readCount} read of ${total ?? '?'}` +
+          (refused === null
+            ? ' (served whole)'
+            : ` — ${refused.windows} window(s) refused, up to ${refused.rows} blocks unseen` +
+              `, window ends ${windowEndsAt?.slice(0, 16) ?? '?'}`),
+      );
+      if (refused !== null) {
+        sawRefusal = true;
+        // A summary assembled around a hole must be able to say where its
+        // window ends, or the count reads as current when it is not.
+        expect(refused.windows).toBeGreaterThan(0);
+        expect(windowEndsAt).not.toBeNull();
+      }
       for (const r of reasons) {
         if (isStanding(r)) sawStanding = true;
         // eslint-disable-next-line no-console
@@ -86,5 +100,15 @@ live('the block history folds into conditions', () => {
     expect(sawStanding, 'at least one reason recurs — otherwise the fold answers nothing').toBe(
       true,
     );
+
+    /**
+     * Not an assertion, on purpose. The refusals are the platform's (#100) and
+     * the day they stop this must not turn red — a probe that fails when the
+     * thing it works around is fixed is a probe that pins the bug in place.
+     */
+    if (!sawRefusal) {
+      // eslint-disable-next-line no-console
+      console.log('  (no agent needed the refusal fallback — #100 may be fixed)');
+    }
   });
 });

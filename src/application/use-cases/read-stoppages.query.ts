@@ -46,6 +46,12 @@ export class ReadStoppagesQuery {
       return { kind: 'unreadable', reason: blocks.reason, cause: blocks.cause };
     }
     if (blocks.kind === 'none') return { kind: 'none' };
-    return { kind: 'summary', summary: summariseBlocks(blocks.entries, blocks.total) };
+    // `blocks.refused` is the adapter's admission that it assembled this around
+    // a hole. Passed through rather than interpreted: the use case has no way
+    // to know which rows were missed, only that some were.
+    return {
+      kind: 'summary',
+      summary: summariseBlocks(blocks.entries, blocks.total, blocks.refused),
+    };
   }
 }

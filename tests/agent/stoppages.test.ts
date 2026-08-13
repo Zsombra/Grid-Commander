@@ -66,6 +66,7 @@ describe('folding blocks into reasons', () => {
         APPROVAL('2026-08-01T09:00:00.000Z'),
       ],
       118,
+      null,
     );
     const [reason] = summary.reasons;
     expect(reason?.reasonCode).toBe('AGENT_APPROVAL_EXPIRED');
@@ -77,9 +78,9 @@ describe('folding blocks into reasons', () => {
   });
 
   it('calls a repeat a standing condition and a single event not', () => {
-    const summary = summariseBlocks([row(), row({ at: '2026-08-06T15:35:40.870Z' })], 2);
+    const summary = summariseBlocks([row(), row({ at: '2026-08-06T15:35:40.870Z' })], 2, null);
     expect(isStanding(summary.reasons[0]!)).toBe(true);
-    expect(isStanding(summariseBlocks([row()], 1).reasons[0]!)).toBe(false);
+    expect(isStanding(summariseBlocks([row()], 1, null).reasons[0]!)).toBe(false);
   });
 
   it('orders by how often, not by how recent', () => {
@@ -96,6 +97,7 @@ describe('folding blocks into reasons', () => {
         ...Array.from({ length: 5 }, (_, i) => APPROVAL(`2026-08-0${i + 1}T10:00:00.000Z`)),
       ],
       118,
+      null,
     );
     expect(summary.reasons.map((r) => r.reasonCode)).toEqual([
       'AGENT_APPROVAL_EXPIRED',
@@ -106,7 +108,7 @@ describe('folding blocks into reasons', () => {
   it('keeps a detail that is empty empty, rather than inventing one', () => {
     // The finding: the account's most frequent block carries `{}` on every
     // occurrence. It must survive the fold as itself.
-    const summary = summariseBlocks([APPROVAL('2026-08-06T10:15:45.836Z')], 1);
+    const summary = summariseBlocks([APPROVAL('2026-08-06T10:15:45.836Z')], 1, null);
     expect(summary.reasons[0]?.detail).toEqual({});
   });
 
@@ -120,6 +122,7 @@ describe('folding blocks into reasons', () => {
         }),
       ],
       2,
+      null,
     );
     expect(summary.reasons[0]?.detail).toEqual({ executedToday: 11, maxDailyTrades: 10 });
   });
@@ -132,13 +135,14 @@ describe('folding blocks into reasons', () => {
         { ...NOTIONAL, coinTicker: 'BTC' },
       ],
       3,
+      null,
     );
     expect(summary.reasons[0]?.coinTickers).toEqual(['BTC', 'ETH']);
     expect(summary.reasons[0]?.gateStage).toBe('TOKEN');
   });
 
   it('carries what it read and what exists, so a window can be admitted', () => {
-    const summary = summariseBlocks([row(), row()], 118);
+    const summary = summariseBlocks([row(), row()], 118, null);
     expect(summary.readCount).toBe(2);
     expect(summary.total).toBe(118);
   });
@@ -156,6 +160,7 @@ describe('reading what stops an agent', () => {
       kind: 'entries',
       entries: [row(), row({ at: '2026-08-06T15:35:40.870Z' })],
       total: 118,
+      refused: null,
     });
     const out = await q.execute({ ...who, agentId: 'a-1' });
     if (out.kind !== 'summary') throw new Error(out.kind);

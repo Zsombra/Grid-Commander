@@ -1,5 +1,88 @@
 # Journal
 
+## 2026-08-13 (evening) — the backlog re-verified, and three of my own claims overturned
+
+**Why**: the operator's read was that "a lot of these issues might be wrong or
+not true". Partly right, and wrong about which ones. **No open item is wholly
+false.** Every core defect survived checking. What had rotted was the decoration:
+15 false sentences and 15 stale ones across 15 items, and every false one is a
+**quantifier** — "the only", "every", "nothing else", "and nothing more". The
+defects were real; the counts around them were never re-derived.
+
+Three items contradict themselves inside their own file. #116 says "nothing but
+the six is left" on line 27 and "`get_order_status`, which nothing calls" on line
+68 — and it descopes it explicitly on line 69, which is why that falsification
+was **overturned** rather than applied.
+
+**Corrections that stuck.** #202 had four wrong sentences of eleven and now has
+none: `haltedAt` is read (`read-budget.query.ts:53`), the product already draws a
+chart (`TradeChartSvg`, `trade-story.tsx:98`), and `/limits` renders the stop and
+the drawdown. Its case narrows to `realizedPnlUsd` and `pnlCurveUsd` rather than
+closing. #116 was left exactly as written.
+
+**Three of my own claims were wrong, all the same defect — measuring something
+adjacent to the claim.**
+
+1. The delta spec I wrote said "every agent on the operator's account" reported
+   `unreadable`. It was **3 of 15**. A grep filter had hidden the readable rows.
+   The measured split is stronger than the overstatement: all three **active**
+   agents dark, three archived ones served whole — because the refusals track the
+   newest rows, so an agent still writing history is the one that goes blind.
+2. #201's "uncheckable" verdict came from guessing `includeArchived: true`. The
+   product passes `statuses: ['ACTIVE','ARCHIVED']` (`agent-adapter.ts`). Reading
+   the adapter instead of guessing turned 3 agents into 15.
+3. Then I wrote that nine probe agents had accumulated and "eight creates have
+   happened since, none reused it". **False.** The epoch stamps in the names
+   decode to **2026-07-29** — a week before the reuse fixture existed and two
+   weeks before the item was filed. And the eight are byte-identical to the eight
+   `probes-have-littered-the-second-account` recorded and closed on 2026-08-06.
+   `get_account_state` answers `username: "Fibonacci"` — **the second account**.
+   There is no seventeen. There are nine on one account, eight of them already
+   filed and closed, and the rate of recurrence is **one**, by a hand walk no
+   fixture can reach.
+
+**Shipped**: `the-stoppage-summary-reads-around-a-refusal`. `readGateBlocks`
+keeps one call as the happy path and pages in 25-row windows only when the
+platform refuses, bounded at eight. The result carries `refused`, and the summary
+carries `windowEndsAt` — computed by comparison, not by taking the head of the
+array, because the fold already learned that lesson once.
+
+**Live, against the account that was dark this morning:**
+
+```
+Vanguard:     unreadable                     (every window refuses — correct)
+Undertow:     75 read of 5494 — 5 windows refused, window ends 2026-08-12T09:01
+Breakwater:   100 read of 634 — 3 windows refused, window ends 2026-08-12T04:46
+THE .0:       100 read of 297  (served whole)
+Volatilis:    100 read of 970  (served whole)
+Quadratorum:   27 read of 27   (served whole)
+```
+
+`served whole` is the load-bearing half: the fallback stays off when the platform
+answers, so it retires itself when #100 is fixed. And Undertow's window ends
+**over a day ago** — which is exactly why R2 requires the end to be stated. "75x
+OPEN_POSITION_CONFLICT" without it reads as current on a surface that answers
+*what is stopping this agent now*.
+
+**Four mutations, four kills.** Swallow the refusal → 2 adapter tests fail. Page
+unconditionally → "costs exactly one call" fails. Drop the gap paragraph → 2
+rendering tests fail. Present the count as a total → 1 fails. Worth recording
+that mutation 1 did *not* fail the rendering tests: those inject `refused`
+directly, so an adapter defect is not theirs to catch. Layering, not a gap.
+
+**Filed**: `the-build-never-checks-nexts-generated-route-types` (p2, no issue
+yet). `tsconfig` excludes `.next`, which is where `next build` writes the route
+types it then type-checks — so the check is generated on every build and run on
+none. Six pages fail it. Found only because a `next start` server was running and
+building into a distDir outside `.next` exposed it. Whether the six are real
+defects is unknown, and that is the point: the gate never asked.
+
+**Gates**: typecheck, lint, 2295 tests / 175 files, 90 db tests, build, live
+stoppages probe. All green.
+
+**Next**: open the issue for the build-gate item; decide whether `mcpWagerEnabled`
+is the Profile signer toggle (#205's open question).
+
 ## 2026-08-13 (Tier 0) — a read-only sweep, three false findings caught, and one claim overturned
 
 **Did**: Swept the blocked backlog against the live platform. Read-only —

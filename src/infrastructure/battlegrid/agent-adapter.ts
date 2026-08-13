@@ -8,6 +8,7 @@ import type {
   CatalogResult,
   EntryDecision,
   GateBlock,
+  GateBlocksResult,
   JournalResult,
   RosterResult,
   SignalEvaluation,
@@ -22,6 +23,7 @@ import type {
   FleetSpendResult,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
+import type { FailureCause } from '@/ports/failure.js';
 import { isSilent } from '@/domain/agent/journal.js';
 import {
   mapAgent,
@@ -83,6 +85,21 @@ const TOOLS = {
   tradeChart: 'get_trade_chart',
   positionAudit: 'get_position_audit_history',
 } as const;
+
+/**
+ * The window the refusal fallback reads in, and how many of them it will take.
+ *
+ * Small enough that one poisoned row costs 25 rows instead of 100, large enough
+ * that filling a hundred-row summary takes four calls rather than a hundred.
+ * Eight windows absorbs four refusals and still fills the request; past that
+ * the result admits the gap instead of walking further, because a fallback that
+ * keeps calling a platform that keeps refusing is the outage, not the remedy.
+ *
+ * These bound the fallback only. The ordinary read is one call at whatever
+ * limit the caller asked for and never reaches this.
+ */
+const FALLBACK_WINDOW = 25;
+const FALLBACK_WINDOWS = 8;
 
 /**
  * How many tickers `get_agent_coin_qualification` will screen in one call.
@@ -428,13 +445,101 @@ export class McpAgentAdapter implements AgentsPort {
     };
   }
 
+  /**
+   * Gate blocks, reading around a refusal if the platform makes one.
+   *
+   * **One call is the happy path and stays the happy path.** The fallback below
+   * engages only when the ordinary read comes back `unreadable`, so a platform
+   * that answers costs exactly what it always did and this whole workaround
+   * retires itself the day #100 is fixed — rather than becoming permanent
+   * machinery nobody dares remove.
+   */
   async readGateBlocks(params: {
     userId: string;
     accessToken: string;
     agentId: string;
     limit?: number | undefined;
-  }): Promise<StageResult<GateBlock>> {
-    return this.stage(params, TOOLS.gateBlocks, mapGateBlock);
+  }): Promise<GateBlocksResult> {
+    const whole = await this.stage(params, TOOLS.gateBlocks, mapGateBlock);
+    if (whole.kind === 'none') return whole;
+    if (whole.kind === 'entries') return { ...whole, refused: null };
+    return this.readAroundRefusal(params, whole);
+  }
+
+  /**
+   * The same history, in windows small enough that one poisoned row does not
+   * take the rest with it.
+   *
+   * `list_gate_blocks` refuses on **specific rows**, deterministically, and the
+   * refusals cluster at the head of the history (#100, re-bisected 2026-08-13).
+   * A single call for a hundred rows therefore fails whenever any one of the
+   * hundred is poisoned, while rows 151-250 on the same agent read perfectly.
+   *
+   * Bounded on purpose. The account carries an agent with 5,483 blocks, and
+   * walking those to summarise a reason obvious from the first hundred would
+   * answer an outage with a second one. Eight windows is enough to fill the
+   * requested count while absorbing four refusals, and when it is not enough
+   * the result says so rather than pretending it read everything.
+   */
+  private async readAroundRefusal(
+    params: {
+      userId: string;
+      accessToken: string;
+      agentId: string;
+      limit?: number | undefined;
+    },
+    refusal: { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause },
+  ): Promise<GateBlocksResult> {
+    const want = params.limit ?? FALLBACK_WINDOW;
+    const entries: GateBlock[] = [];
+    let total: number | null = null;
+    let refusedWindows = 0;
+
+    for (let page = 1; page <= FALLBACK_WINDOWS && entries.length < want; page += 1) {
+      let payload: Record<string, unknown>;
+      try {
+        payload = await this.call(params, TOOLS.gateBlocks, {
+          agentId: params.agentId,
+          limit: FALLBACK_WINDOW,
+          page,
+        });
+      } catch {
+        // The reason is already held in `refusal`; a per-window reason would be
+        // one of several and the surface can only show one honestly.
+        refusedWindows += 1;
+        continue;
+      }
+      const raw = payload['entries'];
+      if (!Array.isArray(raw)) {
+        refusedWindows += 1;
+        continue;
+      }
+      // Every window that answers restates it, so the last one wins rather than
+      // the first — `total` is the platform's current count, not a snapshot
+      // taken before the walk began.
+      if (typeof payload['total'] === 'number') total = payload['total'];
+      // An empty window is the end of the history, not a refusal. Counting it
+      // as a gap would put a permanent "some could not be read" on every agent
+      // whose history is shorter than the walk.
+      if (raw.length === 0) break;
+      for (const row of raw) entries.push(mapGateBlock(row));
+    }
+
+    // Nothing survived. `unreadable` with the platform's own first reason, not
+    // an empty summary: reading around a refusal is not inventing one.
+    if (entries.length === 0) return refusal;
+
+    return {
+      kind: 'entries',
+      entries,
+      total,
+      refused:
+        refusedWindows === 0
+          ? // Every window answered, so the single call failed on a row the
+            // smaller windows never asked for. There is no gap to admit.
+            null
+          : { windows: refusedWindows, rows: refusedWindows * FALLBACK_WINDOW },
+    };
   }
 
   async readSignalLogs(params: {
