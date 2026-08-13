@@ -154,6 +154,47 @@ describe('describing what saving a draft would do', () => {
   });
 });
 
+/**
+ * The regression #194 could not write.
+ *
+ * `/strategies/[id]/conditions/save` lists what the whole submission would be,
+ * and `named` maps every key-less entry to one literal placeholder. Keying the
+ * list on that string rendered one row where the strategy would define two —
+ * a miscount on the sentence directly above it, which states how many
+ * conditions survive.
+ *
+ * That was fixed by keying on position. The test written to hold it fixed
+ * passed against the broken code too, because the harness counted nodes and a
+ * key collision only removes a node during reconciliation. It was deleted
+ * rather than kept. `duplicateKeys` is what lets it exist.
+ */
+describe('a list whose entries have no keys', () => {
+  /** Two conditions the platform returned with no key of their own. */
+  function keylessWorld() {
+    const strategies = saveWorld();
+    const keyless = [
+      { name: 'One without a key', verdict: 'DOWN', required: false, definition: { kind: 'group', op: 'AND', members: [] } },
+      { name: 'Another without a key', verdict: 'UP', required: false, definition: { kind: 'group', op: 'AND', members: [] } },
+    ] as Record<string, unknown>[];
+    // Non-null: saveWorld() has just set it. Spreading the nullable field
+    // would widen every property to optional.
+    strategies.detail = { ...strategies.detail!, conditions: mapConditions(keyless) };
+    strategies.conditionsAsGiven = keyless;
+    return strategies;
+  }
+
+  it('renders one row per entry rather than collapsing them', async () => {
+    keylessWorld();
+    const r = await saveRendered('s1', A_DRAFT);
+    expect(r.text).toContain('The whole list that would be submitted');
+    // The placeholder appears for each key-less entry.
+    expect(r.text).toContain('(an entry with no key)');
+    // And the rows do not collide, which is the thing no assertion on `text`
+    // or on node count could ever have said.
+    expect(r.duplicateKeys).toEqual([]);
+  });
+});
+
 describe('every branch that mints nothing says nothing was written', () => {
   it('a condition the strategy does not define', async () => {
     saveWorld();

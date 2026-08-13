@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-08-13 (late) — the harness can see a key collision, and #194's conclusion was wrong
+
+**Did**: shipped `the-harness-can-see-a-key-collision`. Closed #194, narrowed
+#167 to its second finding.
+
+**The item's premise held and its conclusion did not.** #194 was right that no
+test here could observe a React key collision, and right that a collision only
+*takes effect* during reconciliation. From that it inferred the fix needed a
+real DOM, and its first step contemplated a renderer migration across 35
+consumer files. That is why it sat at p3.
+
+The inference confused the *effect* with the *key*. A React element is
+`{$$typeof, type, key, ref, props}` — the key is a property of the object
+`expand` already visited; it destructured `type` and `props` off it and never
+read `key`. React reconciles siblings within one array, which is exactly where
+`expand` already iterated. The whole fix is a `Set` in that loop.
+
+**The proof is the mutation.** Reverting the real fix on the conditions-save
+page — `key={i}` back to `key={key}`, the change that shipped in
+`what-the-page-shows-is-what-happens` with nothing able to hold it — now fails:
+
+    AssertionError: expected [ '(an entry with no key)' ] to deeply equal []
+
+That is the test #194 says could not be written. It exists.
+
+**Four mutations, four kills.** Collector never records → 4 harness tests fail.
+Null keys folded under one pseudo-key → exactly the false-positive guard fails.
+Component drops the gap → the two page tests fail. Plus the keying revert above.
+
+**Design decisions worth keeping.** `duplicateKeys` is *reported, never
+asserted globally* — a blanket assertion across 35 files is a different change
+with a much larger blast radius and should be argued separately. Key-less
+siblings are skipped rather than folded together: most elements are not in
+arrays and carry no key, so folding `null` would report a collision on nearly
+every page, and a loud wrong answer is worse than the quiet blind spot it
+replaced. `expand`'s four positional collectors became one object, because a
+fifth threaded through eight recursive calls is how the sixth gets skipped in
+one branch and silently under-reports.
+
+**`tsc` caught what 2,305 tests did not.** Spreading the nullable
+`strategies.detail` widened every property to optional; vitest does not
+typecheck, so the suite was green while the file did not compile. Worth
+remembering next time the suite is offered as evidence.
+
+**Still uncovered, and now recorded in `render.ts` rather than in the backlog**:
+what reconciliation *does* — that two collided rows become one, and which
+survives. Collisions are visible; their outcome is not.
+
+**Gates**: typecheck, lint, 2305 tests / 176 files, build.
+
+**Next**: #200 (create returns a slot count nothing reads) and #204 (refresh
+rejection), then the pending-state cluster #153 + #182 + #183.
+
 ## 2026-08-13 (late) — five questions measured, one answered, and none closed
 
 **Did**: recorded today's live measurements into the five backlog items whose
