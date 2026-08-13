@@ -120,3 +120,48 @@ Re-read the ordering that follows from that: #183's design round should cover
 the button's loading and disabled states while it is covering `AuthorityLost`
 and the two confirmation-row shapes, because they are the same surfaces and the
 same sweep. The harness decision is independent and can happen first.
+
+---
+
+# Blocker 1 is gone — 2026-08-13, later
+
+The harness needed no change, and the migration this item was priced for would
+not have worked.
+
+**The hook is mockable at its module boundary**, which is the move this suite
+already makes for `@/presentation/session.js`. `tests/rendering/support/form-status.ts`
+holds the double; `tests/rendering/form-status.test.ts` proves the walker calls
+a client component through it and reaches **both** states.
+
+**And a real renderer would not have helped.** Measured, not reasoned:
+
+    renderToStaticMarkup(<form><Probe /></form>)
+    -> '<form><span>pending=false</span></form>'
+
+`useFormStatus` is a client runtime state — it becomes true after hydration,
+when a submission is in flight. React's own server renderer reports `false`. So
+swapping the walker for `react-dom/server` would have cost 36 test files and
+still rendered exactly one of the two states, never the one worth asserting.
+
+That inverts the reasoning in the section above. Mocking is not a shortcut
+around a weak harness; short of driving a browser it is the **only** way to
+reach a pending form at all. The claim is pinned by a test rather than left in
+prose: if React ever lets a server render report a pending form, that test fails
+and tells us the mock has stopped being the only route.
+
+## What is still blocking
+
+**Only the treatment**, which is blocker 2 above and unchanged.
+`openspec/design/system.json` declares the button's states as names —
+`[default, hover, active, focused, disabled, loading]` — and says nothing about
+what `loading` or `disabled` look like. Implementing them means choosing a look
+the design agent owns.
+
+So the ordering is now: **#183's design round, then this.** The implementation
+itself is no longer the hard part — the double exists, both states are
+assertable, and the twelve surfaces share one server-action shape. What is
+missing is a decision about what a working button looks like.
+
+`a-remedy-is-a-target-not-a-sentence` (#182) set the precedent for how to
+proceed without prejudging that round: reuse an existing primitive, add no new
+treatment, and say plainly what is still owed.

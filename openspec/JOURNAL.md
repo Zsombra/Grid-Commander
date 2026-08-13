@@ -1,5 +1,59 @@
 # Journal
 
+## 2026-08-13 (late) — the harness decision, which turned out to be "change nothing"
+
+**Did**: settled how the rendering harness should meet a client component. It
+should not. #153's first blocker is gone; its second is unchanged.
+
+**The question was framed wrong, and measuring it inverted the answer.** #153 was
+priced for teaching the walker to render — `react-dom/server` or a testing
+library — across 36 test files, because `useFormStatus()` needs a client
+component and the walker throws on one:
+
+    THREW: Cannot read properties of null (reading 'useHostTransitionStatus')
+
+Two probes settled it. First, mocking the hook at its module boundary — the move
+this suite already makes for `@/presentation/session.js` — lets the existing
+walker call the component and reach **both** states, idle and pending. Second,
+and this is the one that matters:
+
+    renderToStaticMarkup(<form><Probe /></form>)
+    -> '<form><span>pending=false</span></form>'
+
+**A real server render reports `pending=false`.** `useFormStatus` is a client
+runtime state; it becomes true after hydration, when a submission is in flight.
+So the migration would have cost 36 files and still rendered exactly one of the
+two states — never the one worth asserting.
+
+That turns mocking from a shortcut into the only route. Short of driving a
+browser, there is no other way to reach a pending form.
+
+**Pinned rather than argued.** The SSR fact is a test, taking the real hook past
+this file's own mock with `importActual`, so if React ever lets a server render
+report a pending form it fails and says the mock has stopped being necessary.
+That is the shape this repository keeps reaching for: a guard that fails when
+its premise stops being true, rather than a comment that quietly goes stale.
+
+**Caught myself writing the exact defect this session keeps finding.** The first
+version of that test rendered a component returning the literal string
+`pending=false is what SSR reports` and asserted the string was present. It
+would have passed forever without calling React at all. Rewritten to read
+`actual.useFormStatus().pending`.
+
+**Two mutations, two kills**: `setPending` a no-op kills the pending assertion;
+`resetPending` a no-op kills the idle-again assertion, which is the one that
+stops module state leaking into a neighbouring file.
+
+**What still blocks #153**: only the treatment. `system.json` declares the
+button's states as names — `[default, hover, active, focused, disabled,
+loading]` — and says nothing about what they look like. Implementing them means
+choosing a look the design agent owns. So the ordering is #183's design round,
+then the implementation, which is no longer the hard part: the double exists,
+both states are assertable, and the twelve surfaces share one server-action
+shape.
+
+**Gates**: typecheck, lint, 2318 tests / 177 files.
+
 ## 2026-08-13 (late) — a remedy is a target, and the blocker was already solved
 
 **Did**: shipped `a-remedy-is-a-target-not-a-sentence`. Closed #182.
