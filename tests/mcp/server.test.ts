@@ -176,6 +176,7 @@ describe('the MCP server, over a real client', () => {
       slotAgentIds: [AGENT.id],
       onDutyAgentId: AGENT.id,
       openPositionAgentId: null,
+      resolution: null,
     };
 
     function radarWorld(agents: FakeAgentsPort) {

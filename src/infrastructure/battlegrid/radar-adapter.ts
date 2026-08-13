@@ -1,4 +1,4 @@
-import type { RadarDeployment } from '@/domain/agent/deployment.js';
+import type { RadarDeployment, RadarResolution } from '@/domain/agent/deployment.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import type { McpBattleGridAdapter } from './mcp-adapter.js';
@@ -172,9 +172,48 @@ export function mapDeployments(raw: unknown): readonly RadarDeployment[] {
       }),
       onDutyAgentId: str(resolves['onDutyAgentId']),
       openPositionAgentId: str(resolves['openPositionAgentId']),
+      resolution: p['resolvesNow'] ? resolution(resolves) : null,
     };
   });
 }
+
+/**
+ * What the platform resolved, carried rather than interpreted.
+ *
+ * Absent stays absent at every field. A missing `qualified` is not `false`, and
+ * a missing `section` is not `SCANNING` — the whole value of this block is
+ * telling *the platform declined* apart from *the platform was silent*, and a
+ * default would erase exactly that.
+ *
+ * Non-fatal by construction, matching the row mapper above: `policyId`,
+ * `coinTicker` and `revision` throw because a write cannot be composed without
+ * them, and nothing here is write-critical. A resolution that arrives malformed
+ * costs a sentence on a surface, not a refused deployment.
+ */
+function resolution(resolves: Record<string, unknown>): RadarResolution {
+  const qualified = resolves['qualified'];
+  return {
+    qualified: typeof qualified === 'boolean' ? qualified : null,
+    // Verbatim. Two block values have ever been observed, so anything else is
+    // still the platform's word for something and is shown as such.
+    qualificationBlock: str(resolves['qualificationBlock']),
+    section: str(resolves['section']),
+    cooldownUntil: date(resolves['cooldownUntil']),
+    // Whether it is still running is not the adapter's to say — it has no
+    // clock, and inventing one here is what the boundary rule forbids. The
+    // read fills this in against the injected clock.
+    cooldownActive: null,
+    regime: str(resolves['regimeUsed']),
+    regimeConviction: str(resolves['regimeConviction']),
+  };
+}
+
+/** A timestamp the platform sent, or null — an unparseable one is not a date. */
+const date = (v: unknown): Date | null => {
+  if (typeof v !== 'string' || !v) return null;
+  const parsed = new Date(v);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
 export class RadarPayloadError extends Error {
   constructor(field: string) {

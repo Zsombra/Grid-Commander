@@ -179,10 +179,10 @@ live('every read controller, against one account', () => {
       new ReadExposureQuery(positions, agents, systemClock).execute(forAgent),
     );
     await walk('readDeployments', () =>
-      new ReadDeploymentsQuery(radar).execute({ ...who, agent: subject, roster: owned }),
+      new ReadDeploymentsQuery(radar, systemClock).execute({ ...who, agent: subject, roster: owned }),
     );
     await walk('readDeployments.summary', () =>
-      new ReadDeploymentsQuery(radar).summary({ ...who, roster: owned }),
+      new ReadDeploymentsQuery(radar, systemClock).summary({ ...who, roster: owned }),
     );
     await walk('readQualification', () =>
       new ReadQualificationQuery(agents, radar, market).execute(forAgent),

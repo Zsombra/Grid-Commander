@@ -1,6 +1,7 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
 import type { DeploymentSummaryResult } from '@/application/use-cases/read-deployments.query.js';
 import type { AgentDeployment } from '@/domain/agent/deployment.js';
+import { isRecognisedSection } from '@/domain/agent/deployment.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
 import { BindingSummary } from './binding.js';
@@ -102,6 +103,21 @@ export function AgentRoster({
                       ? (deployments.byAgent[agent.id] ?? []).map(rosterStanding).join(' · ')
                       : 'Not deployed — scanning no market'}
                   </p>
+                  {/* What the platform is letting happen, which the standing
+                      above cannot say. Fifteen of twenty markets on this
+                      account were "Scanning" and not qualifying at the same
+                      time; the standing was true and the row was misleading. */}
+                  {(deployments.byAgent[agent.id] ?? []).map((d) => {
+                    const note = resolutionNote(d);
+                    return note === null ? null : (
+                      <p
+                        key={`res-${d.coinTicker}-${d.timeframe}`}
+                        className="mt-1 text-sm text-text-secondary"
+                      >
+                        {d.coinTicker} ({d.timeframe}): {note}
+                      </p>
+                    );
+                  })}
                   {/* The other half of the same join: a market whose slots hold
                       nobody active. It rides on the agent's row because this is
                       the only place the product describes a policy at all. */}
@@ -143,6 +159,61 @@ function rosterStanding(d: AgentDeployment): string {
     return `Holds the ${d.coinTicker} slot (${d.timeframe}) and is not scanning it — this agent is not active`;
   }
   return `In the rotation for ${d.coinTicker} (${d.timeframe})`;
+}
+
+/**
+ * What the platform is letting happen here, appended to the standing.
+ *
+ * A separate sentence from `rosterStanding` because it answers a separate
+ * question. "Scanning HYPE (15m)" was true on 2026-08-13 for fifteen markets
+ * that were also **not qualifying**, each with the platform's own reason — and
+ * an operator reading the row had no way to know.
+ *
+ * Nothing here is translated. `AGGREGATE_BELOW_MIN` is shown as
+ * `AGGREGATE_BELOW_MIN`, because two block values from twenty rows on one
+ * account is not a vocabulary, and rendering an unseen token as a sentence of
+ * ours would invent a meaning for a value whose range is unknown. The same rule
+ * covers `section`: a state this product does not recognise is *named* as
+ * unrecognised, never shown as scanning or idle.
+ *
+ * `null` yields nothing at all. A deployment the platform resolved nothing for
+ * supports no statement in either direction — the same rule the occupancy line
+ * follows for an agent whose lifecycle was never read.
+ */
+export function resolutionNote(d: AgentDeployment): string | null {
+  const r = d.resolution;
+  if (!r) return null;
+
+  const parts: string[] = [];
+
+  if (!isRecognisedSection(r.section) && r.section !== null) {
+    // Declared by the platform and never observed here — `BLOCKED` is the one
+    // in the record. Named rather than interpreted, which is what lets it
+    // arrive honestly without having been modelled in advance.
+    parts.push(`the platform reports a state this product does not recognise: ${r.section}`);
+  }
+
+  if (r.qualified === false) {
+    parts.push(
+      r.qualificationBlock
+        ? `not qualifying — the platform gives ${r.qualificationBlock}`
+        : 'not qualifying, and the platform did not say why',
+    );
+  }
+
+  // Whether it is still running was decided in the read, against the injected
+  // clock. This only words it — see `tests/architecture/boundaries.test.ts`.
+  if (r.cooldownActive === true && r.cooldownUntil) {
+    parts.push(`sitting out a cooldown until ${r.cooldownUntil.toISOString()}`);
+  }
+
+  if (r.regime) {
+    parts.push(
+      r.regimeConviction ? `regime ${r.regime} (${r.regimeConviction})` : `regime ${r.regime}`,
+    );
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 /** The markets on this row that nothing active is deployed on. */

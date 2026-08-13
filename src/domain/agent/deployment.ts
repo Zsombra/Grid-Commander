@@ -51,6 +51,90 @@ export interface RadarDeployment {
   readonly onDutyAgentId: string | null;
   /** The agent holding an open position here, if any. */
   readonly openPositionAgentId: string | null;
+  /**
+   * What the platform resolved about this deployment right now, or `null` where
+   * it resolved nothing.
+   *
+   * `null` is a real answer and is not "qualifying". A payload carrying no
+   * resolution supports neither statement, the same way a deployment naming an
+   * agent whose lifecycle was not read supports neither "covered" nor
+   * "unscanned".
+   */
+  readonly resolution: RadarResolution | null;
+}
+
+/**
+ * The platform's own account of why a deployment is or is not acting.
+ *
+ * `resolvesNow` carries twenty-two fields and this product read two of them —
+ * the on-duty and open-position ids — until 2026-08-13. On that day fifteen of
+ * twenty deployments on the operator's account were **not qualifying**, each
+ * with a named block, and every one of them rendered as an ordinary deployment.
+ *
+ * Everything here is carried, not interpreted. The observed block vocabulary is
+ * two values from twenty rows on one account, so a value this product has not
+ * seen is still a value the platform meant — see `qualificationBlock`.
+ */
+export interface RadarResolution {
+  /**
+   * Whether the platform qualified this deployment to act.
+   *
+   * `null` where it did not say. Distinct from `false`: one is "the platform
+   * declined", the other is "the platform was silent", and only the first is
+   * something to tell an operator.
+   */
+  readonly qualified: boolean | null;
+  /**
+   * The platform's own token for what stopped it — `AGGREGATE_BELOW_MIN` and
+   * `ATR_VOLATILITY_BELOW_MIN` are the two observed, on 2026-08-13.
+   *
+   * **Carried verbatim and never translated.** Two values from one account is
+   * not a vocabulary, and rendering an unseen token as a sentence of ours would
+   * invent a meaning for a value whose range is unknown.
+   */
+  readonly qualificationBlock: string | null;
+  /**
+   * The resolution state the platform reported — `SCANNING` is the only value
+   * observed here, across two major versions.
+   *
+   * Carried as the platform's string rather than a modelled union, deliberately.
+   * The platform declares states this product has never seen, `BLOCKED` among
+   * them, and a union would either omit them or force one to be invented. A
+   * state that is carried can be *named* as unrecognised the day it first
+   * arrives, which is the honest rendering and needs no anticipation.
+   */
+  readonly section: string | null;
+  /** When the deployment may act again, where it is sitting one out. */
+  readonly cooldownUntil: Date | null;
+  /**
+   * Whether that cooldown is still running, decided in the read.
+   *
+   * Measured against the injected clock rather than in the component, because
+   * `Clock` exists so that what a page *says* can be pinned by a test — a
+   * comparison against `Date.now()` inside a component is a different string on
+   * every run, and `tests/architecture/boundaries.test.ts` refuses it. `null`
+   * where there is no cooldown to be running.
+   */
+  readonly cooldownActive: boolean | null;
+  /** The market regime the platform judged it in, and how strongly. */
+  readonly regime: string | null;
+  readonly regimeConviction: string | null;
+}
+
+/** The resolution states this product recognises. Anything else is named, not mapped. */
+const KNOWN_SECTIONS = ['SCANNING', 'IDLE'] as const;
+
+/**
+ * Whether the product recognises a resolution state.
+ *
+ * The negative is what callers need: an unrecognised section must be shown as
+ * itself rather than presented as scanning or idle, because presenting it either
+ * way is a claim the product cannot support. `BLOCKED` is declared by the
+ * platform and has never been observed here — this is what lets it arrive
+ * honestly without being modelled first.
+ */
+export function isRecognisedSection(section: string | null): boolean {
+  return section !== null && (KNOWN_SECTIONS as readonly string[]).includes(section);
 }
 
 /**
@@ -97,6 +181,16 @@ export interface AgentDeployment {
    * covered, and on 2026-08-06 one of them held nothing but an archived agent.
    */
   readonly occupancy: SlotOccupancy;
+  /**
+   * What the platform resolved about this market right now, or `null`.
+   *
+   * A third axis, and independent of the other two. `standing` says what this
+   * agent is doing in the slot; `occupancy` says what the market has; this says
+   * whether the platform is letting anything happen. On 2026-08-13 fifteen of
+   * twenty deployments were on duty, occupied, and **not qualifying** — three
+   * facts that were all true at once, of which the surface could state two.
+   */
+  readonly resolution: RadarResolution | null;
 }
 
 /**
@@ -136,6 +230,7 @@ export function deploymentsFor(
   deployments: readonly RadarDeployment[],
   agent: AgentLifecycle,
   roster: readonly AgentLifecycle[],
+  now: Date,
 ): readonly AgentDeployment[] {
   const lifecycles = new Map<string, AgentStatus>(roster.map((a) => [a.id, a.status]));
   return deploymentsNaming(deployments, agent.id).map((d) => ({
@@ -143,6 +238,13 @@ export function deploymentsFor(
     timeframe: d.timeframe,
     standing: standingIn(d, agent),
     occupancy: occupancyOf(d, lifecycles),
+    resolution: d.resolution && {
+      ...d.resolution,
+      cooldownActive:
+        d.resolution.cooldownUntil === null
+          ? null
+          : d.resolution.cooldownUntil.getTime() > now.getTime(),
+    },
   }));
 }
 
@@ -205,8 +307,9 @@ function occupancyOf(
 export function deploymentsByAgent(
   deployments: readonly RadarDeployment[],
   roster: readonly AgentLifecycle[],
+  now: Date,
 ): Readonly<Record<string, readonly AgentDeployment[]>> {
   const byAgent: Record<string, readonly AgentDeployment[]> = {};
-  for (const agent of roster) byAgent[agent.id] = deploymentsFor(deployments, agent, roster);
+  for (const agent of roster) byAgent[agent.id] = deploymentsFor(deployments, agent, roster, now);
   return byAgent;
 }

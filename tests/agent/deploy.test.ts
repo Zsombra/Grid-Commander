@@ -34,6 +34,7 @@ function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
     slotAgentIds: ['a-old'],
     onDutyAgentId: 'a-old',
     openPositionAgentId: null,
+    resolution: null,
     ...over,
   };
 }
