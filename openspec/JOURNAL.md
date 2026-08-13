@@ -1,5 +1,64 @@
 # Journal
 
+## 2026-08-13 (harness and radar) — two guards fixed, and a scope changed on contact with the payload
+
+**Did**: Three changes archived after the OAuth round.
+
+**`the-tools-write-lf-everywhere`** (#209). `openspec.py` pinned `encoding` and
+not `newline`, so both of the day's archives wrote CRLF specs — 799 and 449
+carriage returns, the first committed that way. The sweep found **six more**
+writers with the same defect, three of which pinned no `encoding` either (#186's
+bug, still sitting in four other files). `tests/architecture/tools-write-lf.test.ts`
+holds it, **derived from the source rather than from output**: git normalises on
+commit, so a check reading committed artifacts passes everywhere and proves
+nothing. Proven end to end — archiving that change wrote its own merged spec
+with LF, and every archive since has stayed LF.
+
+**`a-live-grant-is-not-disposable-data`** (#208). `test:db` truncated a database
+holding a live delegated connection **twice in one session**, stranding two
+grants at BattleGrid with their only tokens destroyed. Re-priced p3 → p2 on that
+evidence: the item had recommended "a sentence, not a mechanism", and the
+sentence existed and did not stop the second occurrence. `global-setup.ts` now
+refuses the run outright. Both orphaned grants were withdrawn by the operator.
+
+**`the-radar-says-what-is-stopping-it`** (#135). The item asks for *blocked*
+telemetry; observing the payload said **do not build it** — `blockedReason` is
+null on all twenty rows across two major versions and no blocked deployment has
+ever existed. What the observation found instead: `resolvesNow` carries **22
+fields and the adapter read 2**. Fifteen of twenty deployments were not
+qualifying, each with the platform's own token, and every one rendered as
+ordinary. One was sitting out an invisible cooldown. Built the observed half;
+carried `section` as the platform's **string** rather than a modelled union, so
+`BLOCKED` will render as an unrecognised state the day it first appears without
+anyone having modelled it. Live: **20 of 20 deployments now say something they
+did not before**.
+
+**State**: PRs #210, #211, #212 merged; **#213 open**. Gates: `typecheck`,
+`lint`, **2281** vitest (174 files), **255** Python harness, `build`, drizzle
+clean, **90** db tests. 0 active changes, 25 open backlog items, 0 validation
+errors.
+
+**Next**: merge #213. Then **#207** is the only item this session opened and left
+open — one read of `list_signal_logs` settles it.
+
+**Watch out**:
+
+- **`path.write_text(text, encoding="utf-8")` translates newlines on Windows.**
+  Pinning `encoding` and not `newline` looks careful and is not. Fixing it broke
+  all five Python tools first, because the replacement's escape survived one
+  decoding layer and not two — 255 harness tests went to 151 errors. Edit the
+  exact bytes rather than scripting a replacement through a shell.
+- **`tests/architecture/boundaries.test.ts` refuses `Date.now()` in a
+  component**, and it is right: measure the age in the read against the injected
+  clock and let the surface word it. Threading a `Clock` into
+  `ReadDeploymentsQuery` was most of the radar change's diff.
+- **A schema is not an observation.** `blockedReason` has been declared for two
+  major versions and populated never. Carrying the platform's string instead of
+  modelling a union is how an unseen state arrives honestly.
+- **The archiver's LF fix held** on its first archive after landing — checked
+  rather than assumed, because that is how it was found in the first place.
+
+
 ## 2026-08-13 (records) — two guards that compared the wrong thing
 
 **Did**: Built and archived `the-two-records-describe-one-server` (#198).
