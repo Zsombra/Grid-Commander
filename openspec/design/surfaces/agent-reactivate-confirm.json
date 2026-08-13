@@ -4,7 +4,7 @@
   "route": "/agents/[id]/reactivate",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "72d2c86",
   "source_files": [
     "app/(app)/agents/[id]/reactivate/page.tsx",
     "src/presentation/components/agent-edit.tsx",
@@ -312,7 +312,7 @@
   },
   "source_digest": {
     "app/(app)/agents/[id]/reactivate/page.tsx": "sha256:d007ee77f0b503a348ffe3083e45abb39d21cee7b51e6d1f07408a701ee159ed",
-    "src/presentation/components/agent-edit.tsx": "sha256:58dfcdd04e667d67c0e332a1b6851229716ffe21c9582f79261ea7d4b42c9717",
+    "src/presentation/components/agent-edit.tsx": "sha256:0cb0c9f78a8db00d58e800906536a308e5927db8beed1a90783856b6bfc56a80",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",

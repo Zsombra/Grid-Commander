@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/fork",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "72d2c86",
   "source_files": [
     "app/(app)/strategies/[id]/fork/page.tsx",
     "src/presentation/components/control.ts",
@@ -338,7 +338,7 @@
     "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Since DT-0021 the two alerts are visually identical as well, so on `unreadable-with-problem` only wording and order tell them apart. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so stacked alerts are read in document order rather than as live-region updates."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/fork/page.tsx": "sha256:015ea7711cd333afee44c8ab334971479fa17bffdd06323b1ae851b2546c6d32",
+    "app/(app)/strategies/[id]/fork/page.tsx": "sha256:5ce5ee420d8a87c34ce916eae47fb9c7f042ced4407d9b00e9c1ae5104bf761c",
     "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",

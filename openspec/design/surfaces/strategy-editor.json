@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "72d2c86",
   "source_files": [
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/plan-review.tsx",
@@ -330,7 +330,7 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/edit/page.tsx": "sha256:f61be06ace752a083b40f1d8c13b6b685abbf59cebb677bb03f86fa7e6fa356f",
-    "src/presentation/components/plan-review.tsx": "sha256:0865cb2732142b7f9b47e8ed3369eae488e9129036397876ceef433441fc0860",
+    "src/presentation/components/plan-review.tsx": "sha256:f78b90b6568c658c2767096f7566b2571bb885a6844fcbd9fb38b33abc447a90",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
     "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb"
   }

@@ -4,7 +4,7 @@
   "route": "/agents/[id]/archive",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "72d2c86",
   "source_files": [
     "app/(app)/agents/[id]/archive/page.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -234,7 +234,7 @@
     "notes": "All three message blocks carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/archive/page.tsx": "sha256:051b5edb15395fde6005d5cd4af78974424db093ce44985aae306a11a7de2a69",
+    "app/(app)/agents/[id]/archive/page.tsx": "sha256:8de797975c4da1d24411842cd654016bddbd460d04bd58e7b98b7283f1bf3fb1",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
