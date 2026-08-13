@@ -95,14 +95,26 @@ export default async function DeployPage({
                 ))}
               </select>
             </label>
-            <div className="flex flex-wrap gap-3">
+            {/*
+              deploy-chooser-row — the ask, and the way back.
+
+              Named here because it was not. DT-0016/0017/0018 restyled
+              `perform-deploy` and left this row alone, and the reason was not
+              scope: a design round can only ticket what the surface manifest
+              models as a unit, this row was a sentence inside another
+              component's description, and so it was invisible from that side.
+              The id is what makes it addressable — `openspec.py validate`
+              refuses a component whose id appears in no source file, which is
+              the check that would have caught the omission a month ago.
+            */}
+            <div className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
               {/* This form asks rather than acts — it composes a description of
                   the deployment and reaches no operation. Secondary, so the
                   weight is kept for the page that follows. */}
-              <button type="submit" className={BUTTON_SECONDARY}>
+              <button type="submit" className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
                 See what deploying would do
               </button>
-              <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
+              <a href={`/agents/${agent.id}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
                 Back to the agent
               </a>
             </div>

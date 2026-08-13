@@ -2,7 +2,7 @@
 id: two-confirmation-row-shapes-and-an-undesigned-page
 title: Confirmation rows come in two shapes now, and AuthorityLost has never been designed
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
@@ -103,3 +103,40 @@ own component — it has its own job (it asks, and reaches no operation), its ow
 controls, and its own states — then one more ticket. Not done here because
 re-surveying to satisfy a ticket I am about to write is the design agent editing
 the developer's report of reality, which the contract forbids.
+
+---
+
+# Closed 2026-08-13 — both findings answered, and the second one taught us why the first happened
+
+**Finding 1, the two row shapes.** DT-0024 gave reactivate DT-0016's treatment,
+DT-0025 gave both of recorder-trim's rows the same, and DT-0026 finished the
+deploy chooser. Every confirmation row in the product now stacks full-width
+under `tablet` and wraps above it. There is one shape.
+
+**Finding 2, AuthorityLost undesigned.** DT-0023 gave it a leading
+`danger.default` edge that `CarriedProblem` does not carry. Both stay red —
+moving either to `warning` or `notice` would say a refusal is advisory, which
+the system's own principle forbids — so the difference is structural, under a
+new v2 principle: *terminal and recoverable failures are told apart by
+structure, not by hue*.
+
+## The chooser row is the finding this item did not know it had
+
+This item said the sweep was *"scoped to the pages that had tickets rather than
+to the pattern"*. That is close and one step short.
+
+**The sweep was scoped to the components the manifests named.** DT-0016
+restyled `perform-deploy` because `perform-deploy` was a component. It left the
+chooser row alone because the chooser row was a *sentence inside another
+component's description* — and a design agent can only ticket what the survey
+models as a unit. No amount of care in scoping the round would have reached it.
+
+The row now exists as `deploy-chooser-row`, and the page carries that id in a
+comment, because `openspec.py validate` refuses a component whose id appears in
+no source file. That check is what would have caught this a month ago, and it is
+what stops the next one: a row nobody named is a row no design round can see.
+
+**Worth carrying forward**: any surface where two rows do different jobs and
+only one is modelled will drift the same way, invisibly from the design side.
+This one was found because a user asked why the shapes disagreed; the others
+will not announce themselves.
