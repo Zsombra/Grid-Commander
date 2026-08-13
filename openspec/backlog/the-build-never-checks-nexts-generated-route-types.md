@@ -8,7 +8,7 @@ created: 2026-08-13
 updated: 2026-08-13
 change: ""
 capability: harness-integrity
-github: none
+github: "216"
 blocked_by: []
 tags: [build, typescript, nextjs, quality-gate, silent-skip]
 ---
@@ -104,11 +104,10 @@ discards is not.
 
 ## Notes
 
-`github: none` — filed at the end of the session that found it, alongside the
-stoppages change. The issue is not open yet and should be, since the item is
-about a quality gate rather than a single defect. Whoever opens it: this is not
-urgent in the sense of breaking anything today, and is exactly the kind of thing
-that stays invisible for another three weeks if it is only in a checkout.
+Mirrored as #216. Filed at the end of the session that found it, alongside the
+stoppages change. Not urgent in the sense of breaking anything today, and exactly
+the kind of thing that stays invisible for another three weeks if it lives only
+in a checkout — which is why it has a number.
 
 Found while running the `build` gate for
 `the-stoppage-summary-reads-around-a-refusal`, with a `next start` server
