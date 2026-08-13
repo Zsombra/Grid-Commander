@@ -75,4 +75,48 @@ describe('/connect, branch by branch', () => {
     expect(r.text).toContain('could not be completed');
     expect(r.text).toContain('server_error');
   });
+
+  /**
+   * The authorization worked and the account behind it could not be named.
+   *
+   * The distinction between these two is the only place this product tells
+   * someone about a state at BattleGrid it could not verify, so the copy has to
+   * hedge accurately rather than comfortably — and the retry has to survive
+   * both, because the scenario promises it.
+   */
+  it('an unidentified account says the authorization was withdrawn', async () => {
+    const r = await connectRendered({ error: 'unidentified' });
+    expect(r.text).toContain('No connection was made');
+    expect(r.text).toContain('did not tell us which account');
+    expect(r.text).toContain('authorization was withdrawn');
+    expect(r.text).toContain('Continue to BattleGrid');
+    // It must not raise a doubt that does not apply here.
+    expect(r.text).not.toContain('may still stand');
+  });
+
+  it('a grant that could not be withdrawn says so, and where to withdraw it', async () => {
+    const r = await connectRendered({ error: 'unidentified-standing' });
+    expect(r.text).toContain('did not tell us which account');
+    expect(r.text).toContain('may still stand at BattleGrid');
+    expect(r.text).toContain('battlegrid.trade');
+    expect(r.text).toContain('Continue to BattleGrid');
+    // "may", not "does". A failed revoke is not proof the grant survived, and
+    // the difference is the whole reason this branch exists.
+    expect(r.text).not.toMatch(/does still stand|is still active/i);
+  });
+
+  /**
+   * Neither refusal falls through to the generic branch.
+   *
+   * The fallback prints the raw `error=` value, which for these two would be a
+   * slug where a sentence belongs — and would silently swallow the "where to
+   * withdraw it" the un-released case owes the reader.
+   */
+  it('neither unidentified branch degrades into the raw-value fallback', async () => {
+    for (const error of ['unidentified', 'unidentified-standing']) {
+      const r = await connectRendered({ error });
+      expect(r.text, error).not.toContain('could not be completed');
+      expect(r.text, error).not.toContain(error);
+    }
+  });
 });

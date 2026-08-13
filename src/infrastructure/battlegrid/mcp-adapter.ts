@@ -251,7 +251,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
     const view = await this.capabilities.load(request.accessToken);
     const classification = view.classify(request.tool);
 
-    const heldScopes = await this.scopesFor(request.userId);
+    const heldScopes = await this.scopesFor(request.userId, request.grantedScopes);
 
     const auditEntryId = await beginGuardedCall(
       { audit: this.deps.audit, confirmations: this.deps.confirmations, heldScopes },
@@ -355,7 +355,23 @@ export class McpBattleGridAdapter implements BattleGridPort {
    * it stopped being true. See PG-004: whatever answers this must be entitled to,
    * never a convenient constant.
    */
-  private async scopesFor(userId: string): Promise<readonly Scope[]> {
+  /**
+   * The authority this call is measured against.
+   *
+   * A caller may supply it, and exactly one does: the account read that
+   * establishes which account an authorization grant acts as. It runs before a
+   * connection is stored, so there is no row to read the scopes from — see
+   * `ToolCallRequest.grantedScopes`.
+   *
+   * The lookup stays the default rather than the fallback: an operation
+   * performed by a connected user must be measured against what their
+   * connection actually holds, never against something a caller asserted.
+   */
+  private async scopesFor(
+    userId: string,
+    granted?: readonly Scope[] | undefined,
+  ): Promise<readonly Scope[]> {
+    if (granted) return granted;
     return this.deps.heldScopes.forUser(userId);
   }
 
@@ -418,19 +434,20 @@ export class McpBattleGridAdapter implements BattleGridPort {
       refresh_token?: string;
       expires_in?: number;
       scope?: string;
-      sub?: string;
     };
 
     const scopes = (json.scope ?? '').split(' ').filter(isScope);
 
-    // A grant with no subject cannot establish an identity. Defaulting it to ''
-    // would make every such grant collide on the same key, and the second user
-    // to connect would be recognised as the first — landing in a stranger's
-    // workspace with a stranger's BattleGrid connection. Refuse instead.
-    if (!json.sub) {
-      throw new Error('BattleGrid returned a grant with no subject; cannot establish identity');
-    }
-
+    // No identity is read here, and none is expected. BattleGrid is plain OAuth
+    // 2.1 — no OpenID configuration, no userinfo endpoint — so `sub` is not a
+    // field it omits, it is a field its authorization server never had.
+    //
+    // This function used to require one and throw without it, which refused
+    // every grant this product was ever issued. The reasoning behind that throw
+    // was sound and now lives beside the refusal it justifies, in
+    // `CompleteConnectionCommand`: an unidentified connection must not be stored
+    // under a placeholder key. What was wrong was only asking this layer, which
+    // is handed a token response and has no way to find out.
     return {
       accessToken: json.access_token,
       refreshToken: json.refresh_token ?? null,
@@ -438,7 +455,6 @@ export class McpBattleGridAdapter implements BattleGridPort {
       // fallback rather than this layer inventing a comfortable number.
       expiresIn: json.expires_in,
       scopes,
-      subject: json.sub,
     };
   }
 }

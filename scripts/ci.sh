@@ -121,6 +121,24 @@ fi
 # distinction between unreadable and empty the product makes everywhere else.
 # A gate that goes red because a call did not complete teaches its readers to
 # disregard red.
+#
+# WHAT THIS GATE DOES NOT COVER, AND WHY NOTHING HERE CAN.
+#
+# It verifies the authorization server's published *description*. It does not
+# exercise a grant, and **no gate in this list does**: obtaining an
+# authorization code requires a person at a consent screen, so a token exchange
+# cannot be automated. That is a real limit, not a missing test.
+#
+# It is written here because the limit was invisible: "oauth-live ok" in a green
+# column reads as "the OAuth path is exercised live", and on 2026-08-13 that
+# reading was wrong in the most expensive way. The delegated path had never
+# completed a single connection — the adapter required an OIDC `sub` BattleGrid
+# has never sent — and twelve green gates could not have caught it, because the
+# only place `sub` appears is in a token response nothing in this suite ever
+# receives. See #203.
+#
+# The exchange is proven by an operator walking it, and the walk is recorded in
+# openspec/JOURNAL.md rather than here.
 DISCOVERY_URL="https://mcp.battlegrid.trade/.well-known/oauth-authorization-server"
 if curl -sSf --max-time 10 -o /dev/null "$DISCOVERY_URL" 2>/dev/null; then
   gate "oauth-live" env BATTLEGRID_OAUTH_LIVE=1 npx vitest run --silent \

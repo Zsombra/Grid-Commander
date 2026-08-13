@@ -2,11 +2,11 @@
 id: the-capabilities-record-was-a-major-version-stale
 title: v18 grew 188 output-schema leaves across 11 tools, and the capabilities record never saw them
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "the-two-records-describe-one-server"
 capability: platform-mapping
 blocked_by: []
 github: "198"
@@ -137,3 +137,43 @@ still unobserved — but it changes what the eventual panel would read from.
 **First step, when a position is next open**: read one `get_signal_log` and one
 `list_user_active_positions` while it is, and record what `protection` actually
 carries. One observation settles four fields that are currently four guesses.
+
+---
+
+# Closed 2026-08-13 — the records can no longer drift apart silently
+
+`the-two-records-describe-one-server` archived.
+
+**What was actually wrong was sharper than this item said.** It reads as though
+nothing compared the two records. Two things did, and both were reading the
+wrong field:
+
+- `tests/architecture/surface-freshness.test.ts` already asserted *"was taken
+  from the same server version as the surface record"* — for
+  `docs/battlegrid-vocabulary.json`, with the reasoning written out. Applied to
+  two of the three records and hard-coded as a pair, so the third was never
+  covered.
+- `refresh_declared` refused only when the files disagreed about *which tools
+  exist*. v18 added no tools, so it derived a v18 artifact's declared fields
+  from a v17.2.0 dump while both files agreed perfectly about the tool set.
+
+A guard written against *"a count that has not moved proves nothing"* concluded
+currency from a matching set of names.
+
+**Now**: a derived sweep over every `docs/*.json` that declares a server, reading
+either `server` or `serverInfo`; `refresh_declared` compares versions before
+deriving; and the spec's tool-identity rule is widened from "the number of tools
+agreeing with the live server" to any tool-identity comparison against anything.
+`CLAUDE.md` and `HANDOFF.md` now say what "nothing a count could see moved" was
+scoped to — inputs — and that outputs grew by 188 leaves unseen.
+
+**Left open deliberately**: the `protection` / `breakEvenGeometry` block is
+declared and unobserved (`liveOverlay` is null without an open position). This
+item's own instruction stands — do not model it from the declaration; take one
+read while a position is open. The radar telemetry stays with
+[[radar-says-why-it-is-blocked]] (#135).
+
+One limitation recorded rather than fixed: `battlegrid-mcp-capabilities.json` is
+a faithful MCP handshake dump and carries no `probed_at`, so it cannot state its
+own age — only which server answered. Rewriting it to match the curated records
+was rejected: its value is being unedited.

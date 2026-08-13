@@ -2,7 +2,7 @@
 id: oauth-path-may-be-dead-weight
 title: The delegated OAuth path may now be dead weight
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-07-29
 updated: 2026-08-13
@@ -132,3 +132,85 @@ The two arguments on the other side still stand and are untouched by this:
 
 So the case for keeping the *capability* is intact. The case for keeping the
 *current code* is not.
+
+---
+
+# 2026-08-13 — the decision gets a working path to be made about
+
+`the-connection-asks-who-it-is` is open (full track) and takes option 1: identity
+established by an authenticated read after the exchange, refusal releasing the
+grant it was just given. It fixes
+[[oauth-cannot-complete-without-a-subject]] (#203).
+
+**This item stays open, and deliberately.** The change is explicit that the
+keep-or-delete decision is out of its scope. What it removes is the reason the
+decision could not be made honestly: until now it was being made about code that
+had never run to completion, so "a few weeks of real use never touching
+`/connect`" measured nothing.
+
+Once one delegated connection has completed live, the original test becomes the
+test it was written to be, and this item can be answered on use rather than on
+argument.
+
+---
+
+# 2026-08-13 (later) — the decision is now a real one
+
+`the-connection-asks-who-it-is` archived and **the delegated path completed live
+for the first time**. This item can finally be answered the way it was written to
+be answered: on use.
+
+What changed for this decision:
+
+- "A few weeks of real use never touching `/connect`" is a meaningful test again.
+  Until today it measured nothing, because nothing *could* touch it successfully.
+- The cost of keeping is now known rather than assumed: the path works, and it is
+  covered by the walk plus `tests/architecture/granted-scopes.test.ts`.
+- The cost of deleting is higher than it was this morning — the capability is
+  proven, not merely audited.
+
+Still open, still the operator's call, and no longer urgent.
+
+---
+
+# ANSWERED 2026-08-13 — keep the delegated path
+
+**Decision: keep it.** Made by the operator, on the day the path first worked.
+
+This item was filed so the decision would be *made* rather than drifted into. It
+is now made, and the item closes on an answer rather than on neglect.
+
+## Why
+
+**Grid-Commander is a third-party multi-tenant client for BattleGrid** — that is
+`CLAUDE.md`'s own first sentence about the domain, and the delegated path *is*
+that capability. Deleting it would leave the product describing itself as
+something it could no longer be.
+
+The two standing arguments were never weakened and are now stronger:
+
+- It is the only demonstration behind the brief's belief that third-party clients
+  are permitted. BattleGrid deploys a full delegated-authorization stack — open
+  dynamic registration, a secretless public client, enforced PKCE, working
+  revocation — all re-confirmed live on 2026-08-13. That argument used to rest on
+  a stack nobody here had completed. It no longer does.
+- Rebuilding it correctly is expensive: the guard sequence, single-use state, and
+  the one-identity-per-account uniqueness are each tested against a real
+  database, and the walk added a defect class nobody would have re-derived (see
+  `granted-scopes`).
+
+And the thing that made deletion cheap this morning is gone: *"code that ships,
+is audited, and cannot succeed"* was the strongest case against keeping it, and
+`the-connection-asks-who-it-is` removed it. What would have been deleted is now a
+working, live-proven capability.
+
+## What this closes, and what it does not
+
+Closed: the keep-or-delete question, and with it the standing instruction to
+watch `/connect` usage for evidence of disuse. Real use is no longer the test,
+because the answer no longer depends on it.
+
+Not closed, and deliberately left alone: nothing here commits the product to
+*serving* other users. Keeping the capability is not the same as opening the
+door, and the multi-tenant surface has its own unaddressed questions — session
+hardening, and [[a-refresh-is-trusted-to-be-the-same-account]] (#206) among them.

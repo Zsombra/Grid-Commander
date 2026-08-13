@@ -56,10 +56,18 @@ nothing, and one that has says only that *something* changed — neither is a
 freshness check. **v18.2.0 is the current record** (2026-08-12), and it is the
 best example this project has of why the count is not the check: a whole major
 version arrived between two probes a day apart and **nothing structural moved
-at all** — 114 tools, none added or removed, no input schema changed on any
+at all** — 114 tools, none added or removed, no **input** schema changed on any
 tool, the read/write/destructive split identical, the vocabulary's values
 byte-identical. What moved was one tool's *meaning* (`list_gate_blocks`; see
-#185). v17.2.0 before it (2026-08-11) had moved seventeen schemas —
+#185).
+
+**That paragraph was scoped to inputs and read as general, and the scoping cost
+something.** Outputs grew by **188 schema leaves across 11 tools** at v18 —
+including a whole `protection` block the platform now publishes per position.
+Nothing saw it because `docs/battlegrid-mcp-capabilities.json`, the artifact
+holding output schemas, was *itself* a major version behind: two of the three
+records were compared to each other and the third was not (#198). "Nothing
+structural moved" was a true claim about the half that was being checked. v17.2.0 before it (2026-08-11) had moved seventeen schemas —
 `positionManagement` redesigned (break-even on an R-multiple, trailing as a
 single giveback percentage, 15 → 13 keys), which had broken the create path
 until the domain followed. The vocabulary's *values* are now recorded too

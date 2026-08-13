@@ -1,5 +1,151 @@
 # Journal
 
+## 2026-08-13 (records) — two guards that compared the wrong thing
+
+**Did**: Built and archived `the-two-records-describe-one-server` (#198).
+`docs/battlegrid-mcp-capabilities.json` sat at v17.2.0 while the surface record
+said v18.2.0 — a major version apart, hiding **188 output-schema leaves across
+11 tools**, including a whole `protection` block the platform now publishes per
+position.
+
+**Two guards should have caught it and both read the wrong field.**
+`tests/architecture/surface-freshness.test.ts` already compared the surface
+record to the *vocabulary* record, with the reasoning written out — and
+hard-coded that pair, so a third record was never covered.
+`refresh_declared` refused only on differing tool *sets*, and v18 added no
+tools: the count held at 114, none added, none removed, and it derived a v18
+artifact's declared fields from a v17.2.0 dump while both files agreed perfectly
+about which tools existed. A guard written against *"a count that has not moved
+proves nothing"* concluded currency from a matching set of names.
+
+Now: a **derived** sweep over every `docs/*.json` that declares a server, reading
+either `server` or `serverInfo`; `refresh_declared` compares versions before
+deriving; and the spec's tool-identity rule widened from "the number of tools
+agreeing with the live server" to any tool-identity comparison against anything.
+`CLAUDE.md` and `HANDOFF.md` now say what *"nothing a count could see moved"* was
+scoped to — **inputs** — and that outputs grew unseen.
+
+**The verifier earned its place.** It caught that the new sweep's own failure
+path had no permanent test — proven only by a mutation run by hand and reverted,
+which is the same defect one layer up, in the fix for it. `records()` now takes a
+directory and four tests drive the refusal against synthetic fixtures, including
+**identical tool sets at different versions**.
+
+Also filed **#209**: the archiver writes CRLF specs on Windows
+(`openspec.py:1685`, `newline=` absent), against this repository's own
+`.gitattributes`. Both of today's archives did it; the first was committed that
+way.
+
+**State**: commits `1536477` + this one, on `claude/handout-board-command-f3dc98`,
+**not pushed**. Gates: typecheck, lint, **2264** vitest (172 files), **255**
+Python harness, build, drizzle clean, **85** db tests. 0 active changes, 27 open
+backlog items, 0 validation errors.
+
+**Next**: push and open the PR for the day's work — five commits before this one.
+
+**Watch out**:
+
+- **`path.write_text(text, encoding='utf-8')` translates newlines on Windows.**
+  Pinning `encoding` and not `newline` is the trap, and it looks careful. #209.
+- **A guard that compares *names* is not comparing *generations*.** The tool set
+  agreeing proves nothing, exactly as the tool count proves nothing — the same
+  lesson the repo already had, scoped one case too narrowly.
+- **`battlegrid-mcp-capabilities.json` has no `probed_at`.** It is a faithful MCP
+  handshake dump, so it can say which server answered but not when. Left that
+  way on purpose: its value is being unedited.
+- **The `protection` / `breakEvenGeometry` block is declared and unobserved** —
+  `liveOverlay` is null unless a position is open. #198's own instruction stands:
+  do not model it from the declaration. One read while a position is open settles
+  four fields that are currently four guesses.
+
+
+## 2026-08-13 (the walk) — the delegated path completes, and the gate catches what nobody predicted
+
+**Did**: Built and archived `the-connection-asks-who-it-is` (full track, 22
+tasks, gate **PASS**). BattleGrid is plain OAuth 2.1 and sends no `sub`;
+`tokenRequest` required one, so **no delegated connection had ever completed**
+(#203). Identity now comes from an authenticated read made with the newly granted
+authority. `TokenGrant.subject` removed rather than made optional. A connection
+that cannot be named is refused, stores nothing, and **releases the grant it was
+just given** — with a distinct outcome, and honestly hedged copy, when the
+release also fails. `AccountPort.subjectFor` reports its cause instead of
+flattening to null; `OwnerOnlyUser` collapses it at its own call site, so
+personal mode is unchanged.
+
+**The walk found a second defect and it was ours.** The first two live
+authorizations refused with `?error=unidentified` — and the identity read had
+never reached BattleGrid. Zero audit rows, and `callTool` audits *before* it
+attempts. `callTool` measures authority against the caller's **stored
+connection**; this read runs before one exists, so the lookup answered "no
+authority at all" and the guard refused a call whose grant held exactly the scope
+it wanted. Fixed with `ToolCallRequest.grantedScopes`, contained by
+`tests/architecture/granted-scopes.test.ts`.
+
+Then it worked: consent → exchange → identity read → session → `/agents` served.
+`users.battlegrid_subject` = `0eccbf37-…`, the same account the personal key
+resolves to; connection active, scopes `["mcp:read"]`, tokens encrypted.
+
+Also filed **#206** (refresh reuses the stored subject and never re-asks) and
+**#207** (three live probes can no longer find an evaluation — proven *not* caused
+by this change, by reachability). Corrected the `config.ts` registration comment
+against a committed file that had contradicted it all along.
+
+**State**: commit `6545c2f`, 38 files, on `claude/handout-board-command-f3dc98`,
+**not pushed**. All six quality gates green: typecheck, lint, **2257** vitest,
+build, drizzle schema check, **85** db tests. 0 active changes, 29 open backlog
+items, 0 validation errors. **A delegated connection is standing** in
+`grid_commander_test` (subject `0eccbf37-…`), left deliberately at the operator's
+request, with rotated tokens written back. An **earlier** connection was
+truncated mid-session by `npm run test:db` during the re-audit (#208) — that
+grant is still live at BattleGrid and can no longer be revoked from here, because
+its tokens went with the row.
+
+**Next**: push and open the PR. **#91 is decided — keep** (2026-08-13):
+Grid-Commander is a third-party multi-tenant client and the delegated path is
+that capability; the case for deleting rested on it being code that could never
+succeed, and the walk removed that case. **#206 is answered — the assumption holds**: a
+delegated grant was refreshed and the account re-read with the refreshed token;
+same subject, refresh token rotated, scopes preserved, and the refreshed grant
+carries no identity field either — an independent re-confirmation that a token
+response carries authority and not identity, on refresh as well as on exchange.
+
+**Watch out**:
+
+- **A grant is standing at BattleGrid that nothing here can revoke.** The walk's
+  connection was truncated by `npm run test:db` during the re-audit — the tokens
+  existed only as ciphertext in that row, so `DisconnectCommand` has nothing to
+  work with. Revoke it from the BattleGrid account interface. The registered
+  public client is `b4cf1fcf-…`. Filed as **#208**: truncating locally does not
+  revoke upstream, which is the exact failure `DisconnectCommand` exists to
+  prevent, arriving through a door it does not watch.
+- **Never run `npm run build` while `npm run dev` is up.** They share `.next`,
+  and the production build overwrites the dev server's chunk map — which then
+  fails with `Cannot find module './5873.js'` on the first route it had not yet
+  compiled. It cost a consent click. Silent until first use, which is the same
+  shape as the scope-guard bug. `rm -rf .next` and restart; pre-warm a route with
+  `curl` before spending a human's click on it.
+- **`. ./.env` in Git Bash corrupts a value that starts with `/`.** MSYS path
+  conversion rewrote a base64 `TOKEN_ENCRYPTION_KEY` into `C:/Program Files/…`
+  — 44 chars became 64, 32 bytes became 45, and the file was correct the whole
+  time. Use `node --env-file=.env` / `npx tsx --env-file=.env`.
+- **`.env` in the worktree is real and gitignored.** Delegated mode, pointed at
+  `grid_commander_test`. It holds no BattleGrid key by design — adding one flips
+  the app to personal mode and makes `/connect` unreachable.
+- **The operator's `bg_live_` key was pasted into a session transcript.** Rotate
+  it. `mcp:read` is write-capable: 11 tools mutate on it, 6 destructively.
+- **A guard that reads a *stored* fact cannot serve a call that creates it.**
+  That is PG-005 in one line, and nothing offline could see it — 2257 tests fake
+  the port, and both live probes wire `DeclaredScopes`, whose scopes come from
+  configuration. It took a real delegated grant.
+- **Python's `io.open(p,'w')` writes CRLF on Windows.** Four files drifted that
+  way and the gate caught it; `.gitattributes` says why it matters (#171). Pass
+  `newline='
+'`.
+- **`one-destination.test.ts` counted matches, not files.** Quoting a BattleGrid
+  URL in a comment failed it. Fixed by deduplicating per file — the guard was
+  reacting to spelling, not reach.
+
+
 ## 2026-08-13 (CI) — twelve gates green, and the one that could never have caught #203
 
 **Did**: Ran `scripts/ci.sh` twice. First the default set against

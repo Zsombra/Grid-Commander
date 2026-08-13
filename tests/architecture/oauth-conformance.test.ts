@@ -158,3 +158,50 @@ describe('the scopes the product models are the scopes the server has', () => {
     for (const s of metadata.scopes_supported) expect(scope).toContain(s);
   });
 });
+
+/**
+ * The gate says what it does not cover.
+ *
+ * Requirement *The Coverage Around Consent Is Stated Where It Is Read*. There is
+ * one segment of the authorization path nothing here can exercise — obtaining an
+ * authorization code needs a person at a consent screen — and until 2026-08-13
+ * that limit was invisible. `oauth-live` sitting green in the gate list read as
+ * "the OAuth path is exercised live", while the delegated path had never
+ * completed a single connection: BattleGrid sends no OIDC `sub` and the adapter
+ * required one, so every grant the product was ever issued was refused (#203).
+ *
+ * No gate could have caught that, and none was at fault. What was at fault was
+ * a list that implied coverage it did not have. So the boundary is written where
+ * someone meets it, and this is what notices if it is deleted.
+ *
+ * Matched on meaning rather than on a sentence: two independent ideas — that no
+ * check exchanges a token, and that a human at a consent screen is why — so a
+ * rewrite that keeps the point keeps passing, and one that drops it does not.
+ */
+describe('the coverage boundary around consent is stated where it is read', () => {
+  const places = {
+    'scripts/ci.sh': readFileSync('scripts/ci.sh', 'utf8'),
+    'tests/live/oauth-metadata.test.ts': readFileSync('tests/live/oauth-metadata.test.ts', 'utf8'),
+  };
+
+  for (const [where, text] of Object.entries(places)) {
+    it(`${where} says a human at a consent screen is the reason`, () => {
+      expect(text.toLowerCase()).toContain('consent screen');
+    });
+
+    it(`${where} says no check exchanges a token`, () => {
+      // "exchange" plus a negation of coverage, within the same file. Either
+      // half alone is satisfiable by prose that does not make the claim.
+      expect(text.toLowerCase()).toMatch(/exchang/);
+      expect(text.toLowerCase()).toMatch(/no (gate|test|check)/);
+    });
+  }
+
+  it('is reading files that exist and have content', () => {
+    // A scan that silently found nothing would pass vacuously, which is the
+    // failure this directory exists to prevent.
+    for (const [where, text] of Object.entries(places)) {
+      expect(text.length, where).toBeGreaterThan(500);
+    }
+  });
+});

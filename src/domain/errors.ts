@@ -94,6 +94,38 @@ export class UntrustedCallbackError extends DomainError {
 }
 
 /**
+ * The authorization succeeded and the account behind it could not be named.
+ *
+ * A connection is keyed by BattleGrid's id for the account, so without one there
+ * is nothing to store the connection under — and any placeholder would collide
+ * every unidentified connection on a single key, handing the second user the
+ * first one's workspace. Nothing is stored, and the grant is released.
+ *
+ * **`released` is the second sentence a user needs.** The grant was live at the
+ * moment this was raised: they consented, the code was exchanged, and BattleGrid
+ * holds an active authorization. When the release also fails, authority *may*
+ * still stand at BattleGrid — may, not does, because a failed revoke is not
+ * proof the grant survived — and the person is owed that, plus where to withdraw
+ * it. Telling them the connection simply failed would be the local-deletion
+ * mistake `DisconnectCommand` exists to refuse.
+ *
+ * **It carries no token.** The refusal path is the one place in this product
+ * where a live access token sits next to something a user will see.
+ */
+export class AccountUnidentifiedError extends DomainError {
+  constructor(
+    readonly released: boolean,
+    reason: string,
+  ) {
+    super(
+      released
+        ? `BattleGrid could not tell us which account authorized this connection, so nothing was stored and the authorization was withdrawn. ${reason}`
+        : `BattleGrid could not tell us which account authorized this connection, so nothing was stored. Withdrawing the authorization also failed, so it may still stand at BattleGrid. ${reason}`,
+    );
+  }
+}
+
+/**
  * The connection is gone or was revoked at BattleGrid.
  *
  * The diagnosis is fixed; the remedy is not. A deployment that authenticates
