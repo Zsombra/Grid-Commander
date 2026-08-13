@@ -304,6 +304,7 @@ function deployedOn(tickers: readonly string[]): RadarReadResult {
       slotAgentIds: ['a-1'],
       onDutyAgentId: 'a-1',
       openPositionAgentId: null,
+      resolution: null,
     })),
   };
 }

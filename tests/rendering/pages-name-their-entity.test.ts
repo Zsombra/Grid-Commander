@@ -56,6 +56,7 @@ function hypeDeployment() {
         slotAgentIds: [AGENT.id],
         onDutyAgentId: AGENT.id,
         openPositionAgentId: null,
+        resolution: null,
       },
     ],
   };

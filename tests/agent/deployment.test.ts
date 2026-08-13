@@ -26,6 +26,9 @@ import { mapDeployments } from '@/infrastructure/battlegrid/radar-adapter.js';
 
 const who = { userId: 'owner', accessToken: 'tok' };
 
+/** Fixed, because a cooldown decision must be pinnable rather than clock-dependent. */
+const NOW = new Date('2026-08-13T12:00:00.000Z');
+
 const active = (id: string): AgentLifecycle => ({ id, status: 'ACTIVE' });
 const archived = (id: string): AgentLifecycle => ({ id, status: 'ARCHIVED' });
 
@@ -39,6 +42,7 @@ function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
     slotAgentIds: ['a1'],
     onDutyAgentId: 'a1',
     openPositionAgentId: null,
+    resolution: null,
     ...over,
   };
 }
@@ -87,6 +91,19 @@ describe('the mapper carries the observed shape and repairs nothing', () => {
       slotAgentIds: ['a1'],
       onDutyAgentId: 'a1',
       openPositionAgentId: null,
+      // A `resolvesNow` that carries only the two ids still produces a
+      // resolution — every other field absent rather than defaulted, which is
+      // the distinction the block exists for. `cooldownActive` is null because
+      // the adapter has no clock: the read decides it.
+      resolution: {
+        qualified: null,
+        qualificationBlock: null,
+        section: null,
+        cooldownUntil: null,
+        cooldownActive: null,
+        regime: null,
+        regimeConviction: null,
+      },
     });
   });
 
@@ -121,28 +138,29 @@ describe('the standing an agent holds in a deployment', () => {
       [deployment({ onDutyAgentId: 'a1', openPositionAgentId: 'a1' })],
       active('a1'),
       roster,
+      NOW,
     );
     expect(mine?.standing).toBe('holding-position');
   });
 
   it('on duty when the radar resolves this agent as matched', () => {
-    expect(deploymentsFor([deployment()], active('a1'), roster)[0]?.standing).toBe('on-duty');
+    expect(deploymentsFor([deployment()], active('a1'), roster, NOW)[0]?.standing).toBe('on-duty');
   });
 
   it('in the rotation when slotted while another agent is on duty', () => {
     const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
-    expect(deploymentsFor([d], active('a1'), roster)[0]?.standing).toBe('in-rotation');
+    expect(deploymentsFor([d], active('a1'), roster, NOW)[0]?.standing).toBe('in-rotation');
   });
 
   it('a position holder is deployed even if it fell out of the slots', () => {
     // The radar can resolve a position to an agent a re-slotting removed.
     // Money is at stake there; membership must not hide it.
     const d = deployment({ slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a1' });
-    expect(deploymentsFor([d], active('a1'), roster)[0]?.standing).toBe('holding-position');
+    expect(deploymentsFor([d], active('a1'), roster, NOW)[0]?.standing).toBe('holding-position');
   });
 
   it('an agent in no deployment gets an empty list, not an invented row', () => {
-    expect(deploymentsFor([deployment()], active('somebody-else'), roster)).toEqual([]);
+    expect(deploymentsFor([deployment()], active('somebody-else'), roster, NOW)).toEqual([]);
   });
 });
 
@@ -153,14 +171,14 @@ describe('lifecycle joins the radar, because the radar cannot see it', () => {
      * with the radar naming it on duty exactly as it would an active agent.
      */
     const sp500 = deployment({ coinTicker: 'SP500', slotAgentIds: ['a1'], onDutyAgentId: 'a1' });
-    const [mine] = deploymentsFor([sp500], archived('a1'), [archived('a1')]);
+    const [mine] = deploymentsFor([sp500], archived('a1'), [archived('a1')], NOW);
     expect(mine?.standing).toBe('slot-held-not-scanning');
   });
 
   it('an archived agent waiting in a rotation is not called in-rotation either', () => {
     // "In the rotation" says its turn is coming. It is not.
     const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
-    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')]);
+    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')], NOW);
     expect(mine?.standing).toBe('slot-held-not-scanning');
   });
 
@@ -171,12 +189,12 @@ describe('lifecycle joins the radar, because the radar cannot see it', () => {
      * can still cost the operator money.
      */
     const d = deployment({ openPositionAgentId: 'a1', onDutyAgentId: 'a2', slotAgentIds: ['a2'] });
-    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')]);
+    const [mine] = deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')], NOW);
     expect(mine?.standing).toBe('holding-position');
   });
 
   it('an ACTIVE agent reads exactly as it did before the join', () => {
-    expect(deploymentsFor([deployment()], active('a1'), [active('a1')])[0]?.standing).toBe(
+    expect(deploymentsFor([deployment()], active('a1'), [active('a1')], NOW)[0]?.standing).toBe(
       'on-duty',
     );
   });
@@ -185,14 +203,14 @@ describe('lifecycle joins the radar, because the radar cannot see it', () => {
 describe('whether the market has anyone active at all', () => {
   it('says no active agent when every agent it names is archived', () => {
     const sp500 = deployment({ coinTicker: 'SP500', slotAgentIds: ['a1'], onDutyAgentId: 'a1' });
-    expect(deploymentsFor([sp500], archived('a1'), [archived('a1')])[0]?.occupancy).toBe(
+    expect(deploymentsFor([sp500], archived('a1'), [archived('a1')], NOW)[0]?.occupancy).toBe(
       'no-active-agent',
     );
   });
 
   it('claims nothing when one of the others is still active', () => {
     const d = deployment({ slotAgentIds: ['a1', 'a2'], onDutyAgentId: 'a2' });
-    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')])[0]?.occupancy).toBe(
+    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')], NOW)[0]?.occupancy).toBe(
       'active-agent-present',
     );
   });
@@ -201,7 +219,7 @@ describe('whether the market has anyone active at all', () => {
     // Not a scanner, but "nobody active is here" is the strongest sentence on
     // this row and it must not be said over an agent with money on the market.
     const d = deployment({ slotAgentIds: ['a1'], onDutyAgentId: 'a1', openPositionAgentId: 'a2' });
-    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')])[0]?.occupancy).toBe(
+    expect(deploymentsFor([d], archived('a1'), [archived('a1'), active('a2')], NOW)[0]?.occupancy).toBe(
       'active-agent-present',
     );
   });
@@ -210,12 +228,12 @@ describe('whether the market has anyone active at all', () => {
     // The claim is about *every* agent in the policy. One unread lifecycle and
     // there is no honest negative to state.
     const d = deployment({ slotAgentIds: ['a1', 'ghost'], onDutyAgentId: 'a1' });
-    expect(deploymentsFor([d], archived('a1'), [archived('a1')])[0]?.occupancy).toBe('unknown');
+    expect(deploymentsFor([d], archived('a1'), [archived('a1')], NOW)[0]?.occupancy).toBe('unknown');
   });
 
   it('is unknown for every deployment when no lifecycles were read at all', () => {
     const d = deployment({ openPositionAgentId: 'a1' });
-    expect(deploymentsFor([d], archived('a1'), [])[0]?.occupancy).toBe('unknown');
+    expect(deploymentsFor([d], archived('a1'), [], NOW)[0]?.occupancy).toBe('unknown');
   });
 });
 
@@ -241,6 +259,7 @@ describe('the query answers with one of three distinct states', () => {
         kind: 'deployments',
         deployments: [deployment(), deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a1'], onDutyAgentId: 'a9' })],
       }),
+      { now: () => NOW },
     );
     const res = await q.execute({ ...who, agent: active('a1'), roster: [active('a1'), active('a9')] });
     expect(res.kind).toBe('deployed');
@@ -254,6 +273,7 @@ describe('the query answers with one of three distinct states', () => {
   it('not-deployed when the radar answered and this agent is nowhere', async () => {
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      { now: () => NOW },
     );
     expect(
       (await q.execute({ ...who, agent: active('zz'), roster: [active('a1')] })).kind,
@@ -268,6 +288,7 @@ describe('the query answers with one of three distinct states', () => {
      */
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      { now: () => NOW },
     );
     const res = await q.execute({ ...who, agent: archived('a1'), roster: [archived('a1')] });
     expect(res.kind).toBe('deployed');
@@ -281,6 +302,7 @@ describe('the query answers with one of three distinct states', () => {
     // agent's owner that it is idle.
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'unreadable', reason: 'no usable answer', cause: 'unreachable' }),
+      { now: () => NOW },
     );
     const res = await q.execute({ ...who, agent: active('a1'), roster: [active('a1')] });
     expect(res.kind).toBe('unreadable');
@@ -360,10 +382,10 @@ describe('the roster asks for everyone at once', () => {
       deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a2'], onDutyAgentId: 'a2', openPositionAgentId: 'a3' }),
     ];
     const roster = [active('a1'), archived('a2'), active('a3')];
-    const byAgent = deploymentsByAgent(ds, roster);
+    const byAgent = deploymentsByAgent(ds, roster, NOW);
     expect(Object.keys(byAgent).sort()).toEqual(['a1', 'a2', 'a3']);
     for (const agent of roster) {
-      expect(byAgent[agent.id]).toEqual(deploymentsFor(ds, agent, roster));
+      expect(byAgent[agent.id]).toEqual(deploymentsFor(ds, agent, roster, NOW));
     }
   });
 
@@ -375,23 +397,25 @@ describe('the roster asks for everyone at once', () => {
      * entry for `ghost` would mean inventing a lifecycle for it.
      */
     const ds = [deployment({ slotAgentIds: ['a1', 'ghost'] })];
-    expect(Object.keys(deploymentsByAgent(ds, [active('a1')]))).toEqual(['a1']);
+    expect(Object.keys(deploymentsByAgent(ds, [active('a1')], NOW))).toEqual(['a1']);
   });
 
   it('an agent the radar names nowhere gets an empty list, not a missing key', () => {
-    const byAgent = deploymentsByAgent([deployment()], [active('a1'), active('idle')]);
+    const byAgent = deploymentsByAgent([deployment()], [active('a1'), active('idle')], NOW);
     expect(byAgent['idle']).toEqual([]);
   });
 
   it('summary answers with the map, or carries unreadable through', async () => {
     const ok = await new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      { now: () => NOW },
     ).summary({ ...who, roster: [active('a1')] });
     expect(ok.kind).toBe('summary');
     if (ok.kind === 'summary') expect(ok.byAgent['a1']?.[0]?.standing).toBe('on-duty');
 
     const bad = await new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'unreadable', reason: 'nope', cause: 'unreachable' }),
+      { now: () => NOW },
     ).summary({ ...who, roster: [active('a1')] });
     expect(bad.kind).toBe('unreadable');
   });
@@ -400,6 +424,7 @@ describe('the roster asks for everyone at once', () => {
     // The roster and the detail page must not disagree within one account.
     const summary = await new ReadDeploymentsQuery(
       new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      { now: () => NOW },
     ).summary({ ...who, roster: [archived('a1')] });
     expect(summary.kind === 'summary' && summary.byAgent['a1']?.[0]?.standing).toBe(
       'slot-held-not-scanning',

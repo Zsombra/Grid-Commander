@@ -1,5 +1,6 @@
 import type { AgentDeployment, AgentLifecycle } from '@/domain/agent/deployment.js';
 import { deploymentsByAgent, deploymentsFor } from '@/domain/agent/deployment.js';
+import type { Clock } from '@/ports/clock.js';
 import type { FailureCause } from '@/ports/failure.js';
 import type { RadarPort } from '@/ports/radar.js';
 
@@ -50,7 +51,19 @@ export type DeploymentSummaryResult =
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export class ReadDeploymentsQuery {
-  constructor(private readonly radar: RadarPort) {}
+  /**
+   * The clock is injected and required, never defaulted to the system one.
+   *
+   * A deployment's cooldown is either still running or not, and that decision
+   * belongs in the read: `tests/architecture/boundaries.test.ts` refuses a
+   * component that measures its own time, because a sentence compared against
+   * `Date.now()` is a different string on every run and can only be pinned by
+   * freezing global time. Same reasoning as `read-exposure.query.ts`.
+   */
+  constructor(
+    private readonly radar: RadarPort,
+    private readonly clock: Clock,
+  ) {}
 
   /** The roster's question: everyone's deployments in one read. */
   async summary(req: {
@@ -63,7 +76,7 @@ export class ReadDeploymentsQuery {
     if (read.kind === 'unreadable') {
       return { kind: 'unreadable', reason: read.reason, cause: read.cause };
     }
-    return { kind: 'summary', byAgent: deploymentsByAgent(read.deployments, req.roster) };
+    return { kind: 'summary', byAgent: deploymentsByAgent(read.deployments, req.roster, this.clock.now()) };
   }
 
   async execute(req: ReadDeploymentsRequest): Promise<AgentDeploymentResult> {
@@ -71,7 +84,7 @@ export class ReadDeploymentsQuery {
     if (read.kind === 'unreadable') {
       return { kind: 'unreadable', reason: read.reason, cause: read.cause };
     }
-    const mine = deploymentsFor(read.deployments, req.agent, req.roster);
+    const mine = deploymentsFor(read.deployments, req.agent, req.roster, this.clock.now());
     /**
      * An agent that is not ACTIVE is still *deployed* — it holds the slot, and
      * the operator can still undeploy it. `not-deployed` stays the answer to

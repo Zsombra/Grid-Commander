@@ -48,6 +48,7 @@ function sp500(over: Partial<RadarDeployment> = {}): RadarDeployment {
     slotAgentIds: ['a1'],
     onDutyAgentId: 'a1',
     openPositionAgentId: null,
+    resolution: null,
     ...over,
   };
 }

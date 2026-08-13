@@ -2,11 +2,11 @@
 id: radar-says-why-it-is-blocked
 title: v17 radar deployments carry blockedReason/blockedSince and a BLOCKED state — refusal telemetry, unread
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-11
 updated: 2026-08-13
-change: ""
+change: "the-radar-says-what-is-stopping-it"
 capability: agent-deployment
 github: "135"
 blocked_by: []
@@ -95,3 +95,32 @@ rule stands that an unrecognised state renders as unrecognised, never invented �
 and note `mapDeployments` currently treats a missing `resolvesNow` as
 "absence nulls the fields and never fails the row", which is the right default
 and also means a `BLOCKED` row would arrive today looking like an ordinary one.
+
+---
+
+# Closed 2026-08-13 — the observed half is built, the blocked half is not
+
+`the-radar-says-what-is-stopping-it` archived. **The scope changed on contact
+with the payload, deliberately.**
+
+This item asks for blocked telemetry. Read live at v18.2.0, `blockedReason` and
+`blockedSince` are still null on all twenty rows, `summary.blocked` is 0 and
+`blockedAgents` is empty — unchanged across two major versions, and no blocked
+deployment has ever been observed. Building it would have been the schema read as
+an observation, which this item's own note warns against.
+
+**What the observation found instead**: `resolvesNow` carries twenty-two fields
+and the adapter read two. Fifteen of twenty deployments were *not qualifying*,
+each with the platform's own token, and every one rendered as an ordinary
+scanning deployment. One carried a cooldown nobody could see.
+
+So the built half is what is observed — `qualified`, `qualificationBlock`,
+`regimeUsed`, `regimeConviction`, `cooldownUntil` — and `section` is carried as
+the platform's own string rather than a modelled union. That last choice is what
+this item was really asking for: **`BLOCKED` will render honestly the day it
+first appears**, named as a state the product does not recognise, without anyone
+having modelled it in advance. Verified with a fixture no account has produced.
+
+Still open elsewhere, and still waiting on an observation: the `blockedAgents[]`
+row shape, and `override_agent_protection`'s `observedLiveStopLoss` (wager-scoped,
+no path from this product). Both were recorded here rather than lost.

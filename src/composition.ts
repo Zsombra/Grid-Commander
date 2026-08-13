@@ -306,7 +306,7 @@ export function app(cookies: CookieStore) {
     readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
-    readDeployments: new ReadDeploymentsQuery(i.radar),
+    readDeployments: new ReadDeploymentsQuery(i.radar, systemClock),
     // Three ports because the question needs three answers: the gates come
     // from the agent, the coins from the radar, and the fallback coins from
     // the market. The use-case is the only place that knows all three.

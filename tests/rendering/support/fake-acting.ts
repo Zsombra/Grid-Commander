@@ -131,7 +131,7 @@ export function actingWith({
       new DescribeEditQuery(agents, confirmations, random, clock),
       clock,
     ),
-    readDeployments: new ReadDeploymentsQuery(radar),
+    readDeployments: new ReadDeploymentsQuery(radar, clock),
     readBudget: new ReadBudgetQuery(agents),
     readRiskReading: new ReadRiskReadingQuery(agents, accountState),
     readWagerAuthority: new ReadWagerAuthorityQuery(accountState),

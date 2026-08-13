@@ -188,10 +188,10 @@ describe('the deployments choose when nothing is named', () => {
   const deployments: RadarReadResult = {
     kind: 'deployments',
     deployments: [
-      { policyId: 'p1', coinTicker: 'HYPE', revision: 3, timeframe: '15m', enabled: true, slotAgentIds: ['a1'], onDutyAgentId: 'a1', openPositionAgentId: null },
-      { policyId: 'p2', coinTicker: 'BTC', revision: 1, timeframe: '4h', enabled: true, slotAgentIds: ['a2'], onDutyAgentId: null, openPositionAgentId: null },
+      { policyId: 'p1', coinTicker: 'HYPE', revision: 3, timeframe: '15m', enabled: true, slotAgentIds: ['a1'], onDutyAgentId: 'a1', openPositionAgentId: null, resolution: null },
+      { policyId: 'p2', coinTicker: 'BTC', revision: 1, timeframe: '4h', enabled: true, slotAgentIds: ['a2'], onDutyAgentId: null, openPositionAgentId: null, resolution: null },
       // The same coin+timeframe twice — two slots, one capture.
-      { policyId: 'p3', coinTicker: 'HYPE', revision: 2, timeframe: '15m', enabled: false, slotAgentIds: ['a3'], onDutyAgentId: null, openPositionAgentId: null },
+      { policyId: 'p3', coinTicker: 'HYPE', revision: 2, timeframe: '15m', enabled: false, slotAgentIds: ['a3'], onDutyAgentId: null, openPositionAgentId: null, resolution: null },
     ],
   };
 
