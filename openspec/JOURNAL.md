@@ -34,17 +34,32 @@ against a committed file that had contradicted it all along.
 **State**: commit `6545c2f`, 38 files, on `claude/handout-board-command-f3dc98`,
 **not pushed**. All six quality gates green: typecheck, lint, **2257** vitest,
 build, drizzle schema check, **85** db tests. 0 active changes, 29 open backlog
-items, 0 validation errors. A **live delegated connection exists** in
-`grid_commander_test` and its grant is standing at BattleGrid — see Watch out.
+items, 0 validation errors. **No local connection remains** — the walk's row was
+truncated by `npm run test:db` during the re-audit (#208). The grant it created
+is still standing at BattleGrid and can no longer be revoked from here, because
+its tokens went with the row.
 
-**Next**: push and open the PR. Then **#91** — keep-or-delete for the delegated
-path — which is finally a real decision, because the path now works.
+**Next**: push and open the PR. **#91 is decided — keep** (2026-08-13):
+Grid-Commander is a third-party multi-tenant client and the delegated path is
+that capability; the case for deleting rested on it being code that could never
+succeed, and the walk removed that case. **#206 remains open and needs one
+consent click** — refresh a delegated grant, re-read the account, compare the
+subject. The harness and the exact experiment are written down; only the click
+is missing.
 
 **Watch out**:
 
-- **A live grant is standing.** The walk left an active connection and a
-  registered public client (`b4cf1fcf-…`). Disconnect through the product, or
-  revoke at BattleGrid, when you are done looking at it.
+- **A grant is standing at BattleGrid that nothing here can revoke.** The walk's
+  connection was truncated by `npm run test:db` during the re-audit — the tokens
+  existed only as ciphertext in that row, so `DisconnectCommand` has nothing to
+  work with. Revoke it from the BattleGrid account interface. The registered
+  public client is `b4cf1fcf-…`. Filed as **#208**: truncating locally does not
+  revoke upstream, which is the exact failure `DisconnectCommand` exists to
+  prevent, arriving through a door it does not watch.
+- **`. ./.env` in Git Bash corrupts a value that starts with `/`.** MSYS path
+  conversion rewrote a base64 `TOKEN_ENCRYPTION_KEY` into `C:/Program Files/…`
+  — 44 chars became 64, 32 bytes became 45, and the file was correct the whole
+  time. Use `node --env-file=.env` / `npx tsx --env-file=.env`.
 - **`.env` in the worktree is real and gitignored.** Delegated mode, pointed at
   `grid_commander_test`. It holds no BattleGrid key by design — adding one flips
   the app to personal mode and makes `/connect` unreachable.
