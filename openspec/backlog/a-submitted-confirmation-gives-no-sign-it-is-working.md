@@ -61,3 +61,62 @@ question first. Filed so the decision is made rather than drifted into.
 A `/propose` (lite) that decides whether confirmation pages may carry a
 minimal client boundary for submit feedback, and if yes, implements it once
 in the shared control layer rather than per page.
+
+---
+
+# Blocked, and by two measured things — 2026-08-13
+
+Attempted. Stopped before writing code, because the obvious implementation
+breaks something and the non-obvious part is not this agent's to decide.
+
+## 1. The harness cannot render the fix
+
+A pending state on a server-action form is `useFormStatus()`, which requires a
+**client component inside the `<form>`**. `tests/rendering/support/render.ts`
+calls function components directly, outside React's renderer, so a hook has no
+dispatcher. Probed rather than assumed:
+
+    THREW: Cannot read properties of null (reading 'useHostTransitionStatus')
+
+Twelve confirmation pages have rendering tests that render the page component.
+Putting a `useFormStatus` component inside their forms turns all twelve red.
+
+This is not the same limit as [[the-render-harness-cannot-see-a-key-collision]]
+(#194, now closed) — that one was a blind spot and the keys turned out to be
+readable without a renderer. This one is a hard stop: the hook needs a real
+render pass, and no amount of walking the tree provides one.
+
+**`section-nav.tsx` is not a counter-example.** It is the product's only client
+component and it is rendered by the layout, which page-level rendering tests
+never invoke. The harness has never actually met a client component.
+
+So this needs a decision first: teach the harness to render (react-dom/server,
+or a testing library) for the pages that need it, or mock the submit component
+in those twelve files. Either is a change of its own, with a blast radius across
+36 rendering test files.
+
+## 2. The state is declared but not designed
+
+`openspec/design/system.json` declares the button primitive as
+`states: [default, hover, active, focused, disabled, loading]`. It declares the
+state **names**. It does not say what `loading` or `disabled` look like — no
+token, no treatment.
+
+So implementing it means choosing a treatment, and per `CLAUDE.md` the design
+agent owns tokens and treatments; the dev agent implementing a look nobody
+designed is the failure the two-agent handoff exists to prevent. This wants a
+design ticket, and it is the same surface
+[[two-confirmation-row-shapes-and-an-undesigned-page]] (#183) already says has
+never been designed.
+
+## What this changes about the item
+
+Nothing about the defect, which is real and unfixed on all twelve surfaces. It
+changes the **shape of the work**: this is not a small implementation task that
+nobody got to. It is one harness decision plus one design ticket, and only then
+an implementation.
+
+Re-read the ordering that follows from that: #183's design round should cover
+the button's loading and disabled states while it is covering `AuthorityLost`
+and the two confirmation-row shapes, because they are the same surfaces and the
+same sweep. The harness decision is independent and can happen first.

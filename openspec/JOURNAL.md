@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-13 (late) — two items settled without code, because neither needed any
+
+**#200 closed.** `createAgent` does drop `slotUsage`, and nothing is worse for
+it. The only surface rendering a slot count is `CreateAffordance`, fed by
+`app/(app)/agents/page.tsx:14` which calls `listAgents` in the page body on a
+dynamic route, and create redirects to `/agents/{id}`, which renders no slot
+count at all. There is no moment at which anyone sees a count one short.
+
+Capturing the field would add a value nothing reads, to close a p3 with no
+symptom — in a repository that has an open item about payloads carrying more
+than anything reads. The item's other reason (a create is when you most want to
+know your remaining slots) is a **feature** with a delta spec, not this defect,
+and nobody has asked for it.
+
+Its claim to be "the only agent write that carries a second key" was also wrong:
+`update_intelligence_agent` declares `feasibilityAdvisory` in the v18.2.0
+contract, and `updateAgent` drops that too. The wire walk saw `{agent}` from
+update and the claim was checked against the observation rather than the
+declared contract — #198's lesson, again.
+
+**#204 narrowed to what it actually is: an upstream report.** The platform half
+stands — every invalid refresh token gets 500 `server_error`, never
+`400 invalid_grant`, against RFC 6749 §5.2.
+
+The product half was wrong **in both directions**, which is unusual enough to
+record. The sole caller of `refresh()` catches everything and throws
+`ConnectionRevokedError('reconnect')`, so the mapping the item calls wrong is
+not in force. And `ConnectionRevokedError` deletes nothing —
+`current-user.query.ts:67` turns it into `notConnected()`, the stored connection
+row is untouched, and the next request retries the refresh. **The behaviour is
+self-healing.** So neither "the user waits for a recovery that cannot come" nor
+the feared alternative "tears down a healthy connection" happens.
+
+What is left is cosmetic: during an outage a user is told to reconnect when
+waiting would have done. That is a wording problem on the authority surface —
+#182 — and belongs there, not in a second mapping here.
+
+**Worth noting about the session's arithmetic**: three of the five items I
+picked as "cheapest to build" needed no build at all. The cost was in reading
+them properly, not in fixing them. That is a better outcome than three small
+changes, and it is only visible because the re-verification happened first.
+
+**Next**: the pending-state cluster — #153 (no surface gives any sign it is
+working between click and redirect, across eleven forms), #182 (the authority
+page names a remedy and offers no target), #183 (two confirmation row shapes and
+an undesigned page).
+
 ## 2026-08-13 (late) — the harness can see a key collision, and #194's conclusion was wrong
 
 **Did**: shipped `the-harness-can-see-a-key-collision`. Closed #194, narrowed

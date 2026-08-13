@@ -68,3 +68,54 @@ Option 1 should happen regardless; it costs a comment and removes a trap.
 
 Only reachable with a real refresh token, so it could not have been found
 without the consent walk. Found answering [[prove-token-lifetimes]] (#93).
+
+---
+
+# Re-verified 2026-08-13 — the platform half stands, the product half was wrong in both directions
+
+**The platform observation is untouched and is the reason this stays open**:
+`POST /token` with `grant_type=refresh_token` answers 500 `server_error` for
+every invalid token and never `400 invalid_grant`, which RFC 6749 section 5.2
+requires. That is an upstream report, and
+[[battlegrid-is-returning-internal-errors]] already earmarks it to be carried
+with `fork_strategy` (#102) as one bundle of three deterministic
+INTERNAL_ERRORs.
+
+**What this item says the product does is not what it does.** The sole caller of
+`refresh()` is `src/application/use-cases/resolve-authority.query.ts:95`, and it
+catches *everything*:
+
+    } catch {
+      // BattleGrid refused the refresh. Whatever the cause, the remedy is the
+      // same one.
+      throw new ConnectionRevokedError('reconnect');
+    }
+
+So the mapping this item calls wrong is not in force. `PlatformUnavailableError`
+never reaches the user from this path; the product already says "reconnect".
+
+**And the consequence this item fears in the other direction does not happen
+either.** `ConnectionRevokedError` deletes nothing.
+`current-user.query.ts:67` turns it into `notConnected()` and
+`failure-outcome.ts:39` into `{kind: 'authority-lost'}`. The stored connection
+row is untouched, so the next request runs `resolve-authority` again, tries the
+refresh again, and — if the platform has recovered — succeeds. **The behaviour
+is self-healing.**
+
+That falsifies both halves of the item's argument. It is not true that "a
+permanently dead connection reports as a platform outage, and the user waits for
+a recovery that cannot come": it reports as authority lost, which is correct for
+that case. And it is not true that the opposite mapping "would tear down a
+healthy connection": nothing is torn down under either.
+
+**What is actually left is cosmetic and transient.** During a platform outage a
+user is told to reconnect when waiting would have done. If they act on it, they
+complete an OAuth round trip they did not need — no harm, just wasted effort —
+and if they ignore it, it fixes itself. That is a wording problem on the
+authority surface, which is
+[[the-authority-page-names-a-remedy-and-offers-no-target]] (#182), and it should
+be solved there rather than by a second mapping here.
+
+**Re-priced from the risk it names to the report it is.** No product change is
+proposed. The item stays open as the product-side record of an upstream defect,
+and closes when the report is sent.
