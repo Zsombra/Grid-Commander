@@ -1,5 +1,68 @@
 # Journal
 
+## 2026-08-13 (the walk) — the delegated path completes, and the gate catches what nobody predicted
+
+**Did**: Built and archived `the-connection-asks-who-it-is` (full track, 22
+tasks, gate **PASS**). BattleGrid is plain OAuth 2.1 and sends no `sub`;
+`tokenRequest` required one, so **no delegated connection had ever completed**
+(#203). Identity now comes from an authenticated read made with the newly granted
+authority. `TokenGrant.subject` removed rather than made optional. A connection
+that cannot be named is refused, stores nothing, and **releases the grant it was
+just given** — with a distinct outcome, and honestly hedged copy, when the
+release also fails. `AccountPort.subjectFor` reports its cause instead of
+flattening to null; `OwnerOnlyUser` collapses it at its own call site, so
+personal mode is unchanged.
+
+**The walk found a second defect and it was ours.** The first two live
+authorizations refused with `?error=unidentified` — and the identity read had
+never reached BattleGrid. Zero audit rows, and `callTool` audits *before* it
+attempts. `callTool` measures authority against the caller's **stored
+connection**; this read runs before one exists, so the lookup answered "no
+authority at all" and the guard refused a call whose grant held exactly the scope
+it wanted. Fixed with `ToolCallRequest.grantedScopes`, contained by
+`tests/architecture/granted-scopes.test.ts`.
+
+Then it worked: consent → exchange → identity read → session → `/agents` served.
+`users.battlegrid_subject` = `0eccbf37-…`, the same account the personal key
+resolves to; connection active, scopes `["mcp:read"]`, tokens encrypted.
+
+Also filed **#206** (refresh reuses the stored subject and never re-asks) and
+**#207** (three live probes can no longer find an evaluation — proven *not* caused
+by this change, by reachability). Corrected the `config.ts` registration comment
+against a committed file that had contradicted it all along.
+
+**State**: commit `6545c2f`, 38 files, on `claude/handout-board-command-f3dc98`,
+**not pushed**. All six quality gates green: typecheck, lint, **2257** vitest,
+build, drizzle schema check, **85** db tests. 0 active changes, 29 open backlog
+items, 0 validation errors. A **live delegated connection exists** in
+`grid_commander_test` and its grant is standing at BattleGrid — see Watch out.
+
+**Next**: push and open the PR. Then **#91** — keep-or-delete for the delegated
+path — which is finally a real decision, because the path now works.
+
+**Watch out**:
+
+- **A live grant is standing.** The walk left an active connection and a
+  registered public client (`b4cf1fcf-…`). Disconnect through the product, or
+  revoke at BattleGrid, when you are done looking at it.
+- **`.env` in the worktree is real and gitignored.** Delegated mode, pointed at
+  `grid_commander_test`. It holds no BattleGrid key by design — adding one flips
+  the app to personal mode and makes `/connect` unreachable.
+- **The operator's `bg_live_` key was pasted into a session transcript.** Rotate
+  it. `mcp:read` is write-capable: 11 tools mutate on it, 6 destructively.
+- **A guard that reads a *stored* fact cannot serve a call that creates it.**
+  That is PG-005 in one line, and nothing offline could see it — 2257 tests fake
+  the port, and both live probes wire `DeclaredScopes`, whose scopes come from
+  configuration. It took a real delegated grant.
+- **Python's `io.open(p,'w')` writes CRLF on Windows.** Four files drifted that
+  way and the gate caught it; `.gitattributes` says why it matters (#171). Pass
+  `newline='
+'`.
+- **`one-destination.test.ts` counted matches, not files.** Quoting a BattleGrid
+  URL in a comment failed it. Fixed by deduplicating per file — the guard was
+  reacting to spelling, not reach.
+
+
 ## 2026-08-13 (CI) — twelve gates green, and the one that could never have caught #203
 
 **Did**: Ran `scripts/ci.sh` twice. First the default set against
