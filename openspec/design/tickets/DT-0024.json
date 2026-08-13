@@ -6,7 +6,7 @@
   ],
   "type": "restyle",
   "priority": "p3",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "The reactivate row gets the shape DT-0016/0017/0018 gave deploy, undeploy and rebind: stacked full-width below tablet, a wrapping row above it. One confirmation shape, not two.",

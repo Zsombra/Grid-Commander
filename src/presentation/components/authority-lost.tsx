@@ -40,9 +40,20 @@ export function AuthorityLost({ reason, remedy }: { reason: string; remedy: Reme
       <h1 className="text-xl font-medium text-text-primary">
         Your BattleGrid authority is no longer valid
       </h1>
+      {/*
+        DT-0023. The leading edge is the whole visual difference from
+        `CarriedProblem`, which keeps its uniform hairline. Both stay red
+        because both are bad; what differs is scope — a refusal is a block
+        inside a page that still works, and this is the page. Moving either to
+        `warning` or `notice` would have said a refusal is advisory, which the
+        system's own principle forbids, so the distinction is structural.
+
+        Decorative: the same difference is carried by the heading and by the
+        closing paragraph, so nothing is lost to a reader who cannot see it.
+      */}
       <p
         role="alert"
-        className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"
+        className="rounded-gc-2 border border-l-4 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"
       >
         {reason}
       </p>

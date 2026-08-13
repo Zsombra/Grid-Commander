@@ -6,7 +6,7 @@
   ],
   "type": "restyle",
   "priority": "p2",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "AuthorityLost stops looking exactly like CarriedProblem. Both stay red, because both are bad; the difference is that one attempt failed and one account is finished until someone repairs it, and that difference becomes structural rather than a matter of reading the sentence twice.",

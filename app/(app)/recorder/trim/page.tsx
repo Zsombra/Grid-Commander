@@ -81,15 +81,25 @@ export default async function TrimRecordPage({
         {/* A GET form navigates: choosing a boundary is a question about the
             record, and the answer is the description of what that boundary
             would take. */}
-        <form method="get" className="flex flex-wrap items-end gap-3">
-          <label className={LABEL}>
+        {/*
+          DT-0025. The one decision DT-0016 did not have to make: this row
+          carries a field as well as controls, so the field stacks full-width
+          above them and `items-end` is kept only above the breakpoint, where a
+          shared baseline between a labelled input and its buttons still means
+          something. In a column it means nothing.
+        */}
+        <form
+          method="get"
+          className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap tablet:items-end"
+        >
+          <label className={`${LABEL} w-full tablet:w-auto`}>
             Remove runs started before
             <input type="date" name="before" required className={CONTROL} />
           </label>
-          <button type="submit" className={BUTTON_PRIMARY}>
+          <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
             Describe what would go
           </button>
-          <a href="/recorder" className={BUTTON_SECONDARY}>
+          <a href="/recorder" className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
             Leave the record alone
           </a>
         </form>
@@ -124,14 +134,19 @@ export default async function TrimRecordPage({
       <h1 className="text-xl font-medium">Trim the record before {before}?</h1>
       <CarriedProblem problem={problem} />
       <p role="alert" className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary">{proposal.consequence}</p>
-      <form action={performTrim} className="flex flex-wrap gap-3">
+      {/*
+        DT-0025. The surface that most deserved the sweep and did not get it:
+        trimming deletes signal history nothing can recover, and a wrapping row
+        puts a destructive submit and its cancel side by side at thumb width.
+      */}
+      <form action={performTrim} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="before" value={proposal.before.toISOString()} />
         <input type="hidden" name="describedRuns" value={proposal.preview.runs} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
           Trim {proposal.preview.runs} run{proposal.preview.runs === 1 ? '' : 's'} permanently
         </button>
-        <a href="/recorder" className={BUTTON_SECONDARY}>
+        <a href="/recorder" className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Keep the record whole
         </a>
       </form>

@@ -27,6 +27,11 @@ export default defineConfig({
     // probe that stops parsing still fails `npm run typecheck`. Asserted in
     // `tests/architecture/live-probes-are-named.test.ts`.
     exclude: ['**/node_modules/**', 'tests/db/**', 'tests/live/**'],
+    // `PerformButton` is a client component and the rendering harness calls
+    // components directly, so its hook has no dispatcher and throws. Registered
+    // once here rather than at the top of every file that renders a ceremony
+    // page — see the setup file for why mocking is the only route.
+    setupFiles: ['tests/setup/form-status.ts'],
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

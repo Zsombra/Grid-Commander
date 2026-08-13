@@ -404,13 +404,19 @@ export function ReactivatePrompt({
       </p>
       {/* Capacity before the act, not after the refusal. */}
       {atCapacity && <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{atCapacity}</p>}
-      <form action={action} className="flex flex-wrap gap-3">
+      {/*
+        DT-0024. The shape DT-0016 gave deploy, undeploy and rebind, applied to
+        the surface that sweep did not reach. Two confirmation shapes is worse
+        than the one wrong shape it replaced: before, nobody could mistake it
+        for a decision.
+      */}
+      <form action={action} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="agentId" value={agent.id} />
         <input type="hidden" name="expectedRevision" value={agent.revision} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
           Reactivate {agent.displayName}
         </button>
-        <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
+        <a href={`/agents/${agent.id}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave it archived
         </a>
       </form>
