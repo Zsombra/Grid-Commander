@@ -68,3 +68,24 @@ entry maps to the same literal.
 (#194): the rendering harness never reconciles, so a key collision is invisible
 to it. A test was written, passed, and then passed identically against the
 broken code — it was removed rather than kept.
+
+---
+
+# 2026-08-13 — the key half is now held by a test
+
+The keying was already fixed (`key={i}`, position rather than the display
+string, `app/(app)/strategies/[id]/conditions/save/page.tsx:338`). What it did
+not have was anything able to keep it fixed: the test written for it passed
+against the broken code too, and was deleted.
+
+`the-harness-can-see-a-key-collision` closed that gap.
+`tests/rendering/condition-write.test.ts` now renders a strategy defining two
+key-less conditions and asserts `duplicateKeys` is empty, and reverting
+`key={i}` to `key={key}` makes it fail. Finding 1 is fixed **and covered**.
+
+**What is left is finding 2 and only finding 2**: the listing state's
+existing-condition cards near-duplicate `ConditionCard` from
+`strategy-conditions.tsx` inline, with a different verdict annotation, so the
+two renderings of one thing can drift apart. That is a presentation refactor
+with no bearing on the harness, and it is why this item stays open at p3 rather
+than closing alongside #194.

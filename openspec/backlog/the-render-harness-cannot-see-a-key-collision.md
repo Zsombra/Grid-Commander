@@ -2,11 +2,11 @@
 id: the-render-harness-cannot-see-a-key-collision
 title: The rendering harness never reconciles, so no test in this project can observe a React key collision
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "the-harness-can-see-a-key-collision"
 capability: app-access
 github: "194"
 blocked_by: []
@@ -107,3 +107,35 @@ it). **Key collisions still need a real DOM**, and the requirement
 What has changed is that the gap is now written where someone meets it, rather
 than being something they discover by trusting a false green. That was always
 the minimum; it is not the fix.
+
+---
+
+# Closed 2026-08-13 — the harness can see one, and it did not need a reconciler
+
+Fixed by `the-harness-can-see-a-key-collision`. `Rendered` now carries
+`duplicateKeys`, and the regression this item says could not be written exists
+at `tests/rendering/condition-write.test.ts`, verified by reverting the real fix
+and watching it fail:
+
+    AssertionError: expected [ '(an entry with no key)' ] to deeply equal []
+
+**This item's premise held and its conclusion did not.** It is true that no test
+here could observe a collision, and true that collisions only *take effect*
+during reconciliation. From that it inferred the fix needed a real DOM, and its
+first step contemplated swapping in a renderer across 35 consumer files.
+
+That inference confused the effect with the key. A React element is
+`{$$typeof, type, key, ref, props}` — the key is a property of the object the
+walker already visited, and `expand` destructured `type` and `props` off it and
+never read `key`. React reconciles siblings within one array, which is exactly
+where `expand` already iterated. The whole fix is a `Set` in that loop.
+
+Worth naming, because the same shape has now appeared several times in this
+repository this week: **a correct observation, a correct mechanism, and a
+conclusion that skipped a step nobody checked.** The item sat at p3 for the cost
+of a renderer migration it never needed.
+
+The blind spot that remains is real and smaller: what reconciliation *does* —
+that the two collided rows become one, and which survives — still needs a DOM.
+Collisions are now visible; their outcome is not. That is recorded in
+`render.ts`'s own doc comment rather than left here.

@@ -28,6 +28,7 @@
  * - `headings` — the text of each h1–h6
  * - `links` — every `href` reached
  * - `values` — every `defaultValue`, `value`, and `checked`
+ * - `duplicateKeys` — every key found twice among one array's members
  *
  * `links` and `values` exist because the alternative was a green test that
  * proved nothing: a page that renders a label without linking it reads
@@ -35,20 +36,23 @@
  * identically to one holding what the user typed. If you are asserting about
  * *reachability* or *what a field holds*, assert on those, never on `text`.
  *
+ * `duplicateKeys` exists for the sharpest version of the same failure. Two
+ * `<li>` sharing a key are two nodes in this tree and one in the DOM, so a
+ * test that counts nodes passes whatever the keys are — verified once by
+ * reverting the fix and re-running, after which the test was deleted (#194).
+ * **The keys themselves were never the problem.** A React element is
+ * `{$$typeof, type, key, ref, props}`; the key sits in the tree this walker
+ * already visits, and React reconciles siblings within one array, which is
+ * where the walk already iterates. Reading it needs no DOM and no reconciler.
+ *
  * **Not collected, and not assertable here at all:**
  *
- * - **Anything that only exists after reconciliation.** React `key`s are the
- *   case that bit: two `<li>` sharing a key are two nodes in this tree and one
- *   in the DOM, so a collision is invisible. A test for it passes whatever the
- *   keys are — verified by reverting the fix and re-running (#194).
+ * - **What reconciliation *does*** — that the two collided `<li>` become one
+ *   node, and which one survives. The collision is now visible; its outcome
+ *   is not, and asserting on the outcome still needs a real DOM.
  * - **Anything CSS decides** — layout, visibility, `hidden`, overflow. A
  *   class name is a string on a prop; what it does is not here.
  * - **Anything the client does** — effects, handlers, focus, hydration.
- *
- * For the first of those you need a real DOM, which this deliberately does not
- * have. Filed as #194: the requirement "A Listing Shows Every Entry It Was
- * Given" is knowingly uncovered because of it, and that is recorded rather
- * than papered over with an assertion that cannot fail.
  *
  * If you are adding a collector, the bar is the one `links` met: a property
  * whose absence lets a wrong page pass a reasonable-looking test.
@@ -62,18 +66,70 @@ interface ReactishElement {
 const isElement = (node: unknown): node is ReactishElement =>
   typeof node === 'object' && node !== null && 'type' in node && 'props' in node;
 
-async function expand(node: unknown, out: string[], headings: string[], links: string[], values: string[]): Promise<void> {
+/**
+ * Everything the walk gathers, in one place.
+ *
+ * One object rather than five positional arguments. A fifth positional
+ * collector threaded through eight recursive calls is how the sixth gets
+ * skipped in one branch and quietly under-reports.
+ */
+interface Collect {
+  readonly text: string[];
+  readonly headings: string[];
+  readonly links: string[];
+  readonly values: string[];
+  readonly duplicateKeys: string[];
+}
+
+/**
+ * A React element's key, as React stores it.
+ *
+ * `{$$typeof, type, key, ref, props}` — the key is a property of the element
+ * object, not something the reconciler computes. #194 concluded that key
+ * collisions "only exist during reconciliation", which is true of the
+ * *collision's effect* and false of the *key*: it is sitting in the tree this
+ * walker already visits. React normalises it to a string or leaves it null.
+ */
+function keyOf(node: unknown): string | null {
+  if (typeof node !== 'object' || node === null || !('key' in node)) return null;
+  const key = (node as { key?: unknown }).key;
+  return typeof key === 'string' ? key : null;
+}
+
+async function expand(node: unknown, c: Collect, out: string[]): Promise<void> {
   if (node === null || node === undefined || typeof node === 'boolean') return;
   if (typeof node === 'string' || typeof node === 'number') {
     out.push(String(node));
     return;
   }
   if (Array.isArray(node)) {
-    for (const child of node) await expand(child, out, headings, links, values);
+    /**
+     * The one place a key collision exists.
+     *
+     * React reconciles siblings **within one array**, so this loop is exactly
+     * its scope. A key seen twice here renders as two nodes in this tree and
+     * one in the DOM — invisible to a walker that only counts nodes, which is
+     * why no test in this project could observe one (#194).
+     *
+     * Key-less members are skipped rather than folded together under one
+     * pseudo-key. Most elements are not in arrays and need no key, and
+     * treating `null` as a value would report a collision on every page with
+     * two unkeyed siblings — a false positive worse than the blind spot,
+     * because it would be loud.
+     */
+    const seen = new Set<string>();
+    for (const child of node) {
+      const key = keyOf(child);
+      if (key !== null) {
+        if (seen.has(key)) c.duplicateKeys.push(key);
+        else seen.add(key);
+      }
+      await expand(child, c, out);
+    }
     return;
   }
   if (node instanceof Promise) {
-    await expand(await node, out, headings, links, values);
+    await expand(await node, c, out);
     return;
   }
   if (!isElement(node)) {
@@ -89,7 +145,7 @@ async function expand(node: unknown, out: string[], headings: string[], links: s
   // and an assertion on text for a URL the harness never emits passes while
   // proving nothing.
   const href = props?.['href'];
-  if (typeof href === 'string') links.push(href);
+  if (typeof href === 'string') c.links.push(href);
 
   // Collected for the same reason as `href`, and learned the same way: a form
   // re-rendered from stored values and one holding what the person typed are
@@ -98,27 +154,27 @@ async function expand(node: unknown, out: string[], headings: string[], links: s
   // proving nothing — which is exactly what it did before this existed.
   for (const key of ['defaultValue', 'value'] as const) {
     const v = props?.[key];
-    if (typeof v === 'string' && v.length > 0) values.push(v);
-    else if (typeof v === 'number') values.push(String(v));
+    if (typeof v === 'string' && v.length > 0) c.values.push(v);
+    else if (typeof v === 'number') c.values.push(String(v));
   }
-  if (props?.['defaultChecked'] === true) values.push('checked');
+  if (props?.['defaultChecked'] === true) c.values.push('checked');
 
   // Fragments and other symbol-typed wrappers render only their children.
   if (typeof type === 'symbol') {
-    await expand(children, out, headings, links, values);
+    await expand(children, c, out);
     return;
   }
 
   if (typeof type === 'string') {
     if (/^h[1-6]$/.test(type)) {
       const inner: string[] = [];
-      await expand(children, inner, headings, links, values);
+      await expand(children, c, inner);
       const text = inner.join('');
-      headings.push(text);
+      c.headings.push(text);
       out.push(text);
       return;
     }
-    await expand(children, out, headings, links, values);
+    await expand(children, c, out);
     return;
   }
 
@@ -128,7 +184,7 @@ async function expand(node: unknown, out: string[], headings: string[], links: s
     // component using hooks will throw here — and that is a real limit worth
     // hearing about, not one to paper over.
     const rendered = (type as (p: unknown) => unknown)(props ?? {});
-    await expand(rendered, out, headings, links, values);
+    await expand(rendered, c, out);
     return;
   }
 
@@ -147,14 +203,30 @@ export interface Rendered {
    * checked box. What a field *holds*, which its text never says.
    */
   readonly values: readonly string[];
+  /**
+   * Every key found twice among the members of one array.
+   *
+   * The collector that meets this file's own bar most literally: its absence
+   * let a wrong page pass a reasonable-looking test, and did. A test written
+   * for two colliding key-less entries passed against the fixed code and
+   * against the broken code alike, and was deleted rather than kept (#194).
+   *
+   * Reported, never asserted globally. Only a test that reads this can fail on
+   * it — a blanket assertion across 35 files is a different change.
+   */
+  readonly duplicateKeys: readonly string[];
 }
 
 /** Render (resolve) what an awaited page component returned. */
 export async function rendered(tree: unknown): Promise<Rendered> {
   const out: string[] = [];
-  const headings: string[] = [];
-  const links: string[] = [];
-  const values: string[] = [];
-  await expand(tree, out, headings, links, values);
-  return { text: out.join(' '), headings, links, values };
+  const c: Collect = { text: out, headings: [], links: [], values: [], duplicateKeys: [] };
+  await expand(tree, c, out);
+  return {
+    text: out.join(' '),
+    headings: c.headings,
+    links: c.links,
+    values: c.values,
+    duplicateKeys: c.duplicateKeys,
+  };
 }
