@@ -2,11 +2,11 @@
 id: truncating-the-test-database-strands-a-live-grant
 title: Truncating the test database strands a live grant at BattleGrid
 type: risk
-status: open
-priority: p3
+status: done
+priority: p2
 created: 2026-08-13
 updated: 2026-08-13
-change: ""
+change: "a-live-grant-is-not-disposable-data"
 capability: battlegrid-connection
 github: "208"
 blocked_by: []
@@ -70,3 +70,82 @@ BattleGrid, which is a worse trade than a warning.
 Found while settling [[a-refresh-is-trusted-to-be-the-same-account]] (#206) —
 the connection needed for that observation had been truncated by the gate run
 that preceded it.
+
+---
+
+# Re-priced p3 -> p2 on 2026-08-13, after it happened a second time
+
+**The p3 was wrong, and the recommended fix was wrong with it.**
+
+This item was filed at p3 with the reasoning *"nothing breaks, and it will only
+ever bite where someone connects a real account to a disposable database"*, and
+recommended *"a sentence, not a mechanism"*. Within the same session it fired
+again, in the same way, run by the same person who had just written that
+sentence.
+
+## Two occurrences, hours apart
+
+| | connection | destroyed by |
+|---|---|---|
+| first | `users.id 3smvWg_Hs_-wVvEtLcKPEA`, subject `0eccbf37-…` | `npm run test:db` during the production-gate re-audit |
+| second | `users.id s8mcA7rlg5xmTbyoVs5u-w`, same subject | `npm run test:db` during the post-verifier gate sweep |
+
+Both were live delegated connections in `grid_commander_test`. Both left an
+authorization standing at BattleGrid that **can no longer be revoked from
+here**, because the tokens existed only as ciphertext in the truncated row. Two
+grants are now orphaned, revocable only from the account's own interface.
+
+## Why the priority moves
+
+The consequence did not change; the **rate** did. A hazard that recurs twice in
+one session, the second time after being documented, is not waiting on someone
+to read a warning — it is waiting on a guard.
+
+The specific evidence against "a sentence" is that the sentence existed and did
+not work. The person who truncated it the second time had written the item
+describing the hazard about ninety minutes earlier. Documentation loses to habit,
+and `npm run test:db` is habit: it is one of six quality gates, run on every
+change, by reflex.
+
+## What the fix should be now
+
+`tests/db/support.ts` already refuses a database that is not named disposable.
+It should also refuse to truncate one holding an **active delegated
+connection**, and name `DisconnectCommand` — or the disconnect surface — as the
+repair.
+
+That is a real guard rather than a warning, it is the same shape as the check
+already there, and it fails closed. `assertDisposable` asks whether the
+*database* is disposable and answers correctly; nothing asks whether the *data*
+is, and a row holding a live credential is not disposable just because the
+database around it is.
+
+Small: one condition, one test, `lite` track. The 85-test db suite is already
+the harness for it.
+
+---
+
+# Closed 2026-08-13 — the suite refuses rather than warns
+
+`a-live-grant-is-not-disposable-data` archived. `tests/db/global-setup.ts` asks
+once, before any test file runs, whether the database holds an active BattleGrid
+connection — and aborts the run if it does, naming both remedies. Proven end to
+end: a planted connection stopped the suite with `no tests` executed and **the
+row survived**.
+
+`DB_TESTS_MAY_TRUNCATE` deliberately does not override it. That flag says the
+*database* is disposable; this is a claim about what is *in* it, and conflating
+the two is what produced the bug.
+
+**The guard was scoped wrong twice first**, which is worth keeping: per-`reset()`
+re-asked a settled question, and per-file fired on `connections.test.ts`'s own
+fixtures and refused 42 tests. The question is only ever what the database held
+*before the suite started*. Same confusion as the original bug, one level down —
+`assertDisposable` asked about the database when the fact was in the data; the
+first two attempts asked about the run when the fact was about what preceded it.
+
+The two grants already orphaned could not be revoked from the product — their
+tokens were gone with the rows — and were **withdrawn by the operator at
+BattleGrid on 2026-08-13**. Nothing is left standing. The guard prevents a
+third; it could not recover those two, which is the honest cost of the two
+occurrences it took to justify building it.

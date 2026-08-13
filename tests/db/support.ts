@@ -75,6 +75,63 @@ export function assertDisposable(url: string): void {
   );
 }
 
+/**
+ * A live grant is not disposable data.
+ *
+ * `assertDisposable` asks whether the **database** is disposable and answers
+ * correctly. Nothing asked whether the **data** was, and on 2026-08-13 this
+ * suite twice truncated a database holding a live delegated connection. Both
+ * times the authorization at BattleGrid survived: the access and refresh tokens
+ * exist only as ciphertext *in the row*, so deleting it leaves a grant nobody
+ * can enumerate and the product cannot revoke. That is exactly what
+ * `DisconnectCommand` refuses to do — relinquishing locally is not
+ * relinquishing — arriving through a door it does not watch (#208).
+ *
+ * **`DB_TESTS_MAY_TRUNCATE` deliberately does not override this.** That flag
+ * says the database may be truncated; this is a claim about what is in it, and
+ * treating one as the other is the confusion that produced the bug. Nobody is
+ * stuck: the message names both remedies.
+ *
+ * It reads the **data**, not the connection string, because that is where the
+ * fact lives — and a connection can arrive after `DATABASE_URL` is set, which is
+ * how it happened both times.
+ *
+ * Called from `tests/db/global-setup.ts`, once, before any file runs. Not from
+ * `reset()`: after the first truncate every connection in the database is the
+ * suite's own fixture, and asking again interrogates them instead.
+ */
+export async function assertNoLiveGrant(pool: Pool): Promise<void> {
+  let active = 0;
+  try {
+    const { rows } = await pool.query<{ n: number }>(
+      "select count(*)::int as n from connections where status = 'active'",
+    );
+    active = rows[0]?.n ?? 0;
+  } catch (err) {
+    // A database that predates the schema holds nothing, so there is nothing to
+    // strand. Any *other* failure is refused: a table we could not read is not
+    // a table we know is empty, and this guard fails toward doing nothing.
+    if ((err as { code?: string }).code === '42P01') return;
+    throw err;
+  }
+  if (active === 0) return;
+
+  throw new Error(
+    [
+      `Refusing to truncate: this database holds ${active} active BattleGrid connection(s).`,
+      'The access and refresh tokens exist only as ciphertext in those rows. ' +
+        'Truncating deletes the only copy while the authorization stays live at ' +
+        'BattleGrid — leaving a grant this product can no longer revoke.',
+      'Disconnect through the product first (/connect → disconnect), which ' +
+        'relinquishes the authority upstream before the row goes.',
+      'If the app is not running, revoke at BattleGrid and then clear the row: ' +
+        `delete from connections;`,
+      'DB_TESTS_MAY_TRUNCATE does not override this. It says the database is ' +
+        'disposable; a live credential in it is a different claim.',
+    ].join('\n\n'),
+  );
+}
+
 /** Every table the repositories touch. Truncated between tests, in one statement. */
 const TABLES = [
   'audit_entries',
@@ -105,6 +162,8 @@ export function harness(): Harness {
     // that the key is secret.
     cipher: createCipher(Buffer.alloc(32, 7).toString('base64')),
     async reset() {
+      // No live-grant check here: `tests/db/global-setup.ts` asks once, before
+      // any file runs. Asking again would interrogate the suite's own fixtures.
       await pool.query(`truncate ${TABLES.join(', ')} cascade`);
     },
     async close() {

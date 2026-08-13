@@ -97,8 +97,9 @@ items, 0 validation errors. **A delegated connection is standing** in
 `grid_commander_test` (subject `0eccbf37-…`), left deliberately at the operator's
 request, with rotated tokens written back. An **earlier** connection was
 truncated mid-session by `npm run test:db` during the re-audit (#208) — that
-grant is still live at BattleGrid and can no longer be revoked from here, because
-its tokens went with the row.
+grant it created was live at BattleGrid and could not be revoked from here, its
+tokens having gone with the row — **withdrawn by the operator 2026-08-13**,
+along with a second one from the same cause.
 
 **Next**: push and open the PR. **#91 is decided — keep** (2026-08-13):
 Grid-Commander is a third-party multi-tenant client and the delegated path is
@@ -111,13 +112,14 @@ response carries authority and not identity, on refresh as well as on exchange.
 
 **Watch out**:
 
-- **A grant is standing at BattleGrid that nothing here can revoke.** The walk's
-  connection was truncated by `npm run test:db` during the re-audit — the tokens
-  existed only as ciphertext in that row, so `DisconnectCommand` has nothing to
-  work with. Revoke it from the BattleGrid account interface. The registered
-  public client is `b4cf1fcf-…`. Filed as **#208**: truncating locally does not
-  revoke upstream, which is the exact failure `DisconnectCommand` exists to
-  prevent, arriving through a door it does not watch.
+- **Truncating locally does not revoke upstream.** The walk's connection was
+  truncated by `npm run test:db` during the re-audit — the tokens existed only as
+  ciphertext in that row, so `DisconnectCommand` had nothing to work with. It
+  happened twice; both grants were **withdrawn by the operator 2026-08-13**, and
+  the registered public client was `b4cf1fcf-…`. **Closed by
+  `a-live-grant-is-not-disposable-data`** (#208): the suite now refuses to run
+  against a database holding an active connection, aborting before it touches a
+  table. The guard prevents a third; it could not recover the two.
 - **Never run `npm run build` while `npm run dev` is up.** They share `.next`,
   and the production build overwrites the dev server's chunk map — which then
   fails with `Cannot find module './5873.js'` on the first route it had not yet
