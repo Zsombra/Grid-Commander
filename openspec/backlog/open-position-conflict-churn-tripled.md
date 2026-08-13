@@ -79,3 +79,30 @@ then decide whether the churn bothers anything.
 
 Recorded rather than left implicit because a deferral that is not written down
 reads, on the next pass, exactly like an item nobody got to.
+
+---
+
+# Observed 2026-08-13 (evening) — the churn is measurable, and it is one coin
+
+This item says *observe before modelling*. The observation is now available: the
+`list_gate_blocks` read-around (#100) serves rows below its failing head, and the
+churn sits squarely in the readable range.
+
+**Rows 151–250 on Undertow — a 2h01m window, `06:32:05 → 08:33:05`:**
+
+    100 blocks
+    reasonCode   OPEN_POSITION_CONFLICT ×100   (nothing else)
+    gateStage    TOKEN ×100
+    coins        HYPE 86 · TRUMP 10 · MELANIA 4
+
+**~50 blocks an hour in this window**, against the ~90/hr this item recorded —
+and **86% of them on a single coin**. That the whole window is one reason code
+and one gate stage is itself the finding: this is not mixed traffic with a
+conflict problem in it, it is a single condition repeating.
+
+What is still not established, and what modelling would need: whether HYPE's
+share is a property of the coin, of the position that was open at the time, or of
+the deployment. One window on one agent does not separate those.
+
+The tooling exists now — sampling is `list_gate_blocks` at `page: N, limit: 50`
+below the failing head, which #100 documents.

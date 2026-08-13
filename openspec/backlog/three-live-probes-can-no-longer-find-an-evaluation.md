@@ -2,7 +2,7 @@
 id: three-live-probes-can-no-longer-find-an-evaluation
 title: Three live probes can no longer find an evaluation to read
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
@@ -88,3 +88,38 @@ fails, this belongs to #100.
 Found while running the live suite as extra assurance for
 `the-connection-asks-who-it-is`; it is not a gate for that change and did not
 block it.
+
+---
+
+# Closed 2026-08-13 (evening) — all three pass, and it was transient
+
+Re-run against the same account, unchanged code:
+
+    own-evaluation-probe   PASS   Vanguard: 5 evaluations · AVAX 84 consulted,
+                                  20 fired, 20 attributed -> SKIP (LLM_DECLINED),
+                                  cost GLM-5.2 $0.02378971 reported
+    simulate-probe         PASS
+    evaluation-probe       PASS   Market Predator: 10 evaluations listed
+
+Nothing was fixed. The condition cleared on its own.
+
+**Both hypotheses this item carried are falsified.** It offered *account state*
+or *a platform read failing* (#100). Neither holds: the account has evaluations
+in quantity — `list_signal_logs` answers `total` 143 / 27 / 80 for the three
+agents — and `get_signal_log` serves details for every one sampled. The public
+field is populated too (`get_agent_explorer` → 38 entries).
+
+So the failures were real — observed twice, identically, hours apart — and were
+neither of the two things they looked like. The cause is unidentified and the
+item closes anyway: it exists to record a red suite, the suite is green, and
+inventing a third hypothesis to close it on would be worse than saying this.
+
+**What to do if it recurs**: the diagnostic that settles it is
+`list_signal_logs` → `get_signal_log` on the returned `entries[].id` with
+**both** `agentId` and `logId` — the tool requires both, and calling it with
+`logId` alone returns an argument-validation error that reads like a platform
+fault and is not one. That mistake cost three passes of this sweep.
+
+The reachability argument in the original filing stands unchanged: these probes
+import nothing that `the-connection-asks-who-it-is` touched, and its diff inside
+`mcp-adapter.ts` is confined to `tokenRequest`, which none of them reach.
