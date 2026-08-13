@@ -1,3 +1,6 @@
+import type { Remedy } from '@/domain/connection/remedy.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
+
 /**
  * The account's authority is gone, said where the operator was standing.
  *
@@ -15,12 +18,23 @@
  * repeating it verbatim is what keeps a personal deployment from being told to
  * go and click a connect button it does not have.
  *
- * For the same reason this does not redirect anywhere. Sending the operator to
+ * For the same reason this does not *redirect* anywhere. Sending the operator to
  * `/connect` is right on a delegated deployment and lands a personal one on
  * "there is nothing to connect", which is a true fact about the deployment and
  * no answer at all to "the write I just submitted failed".
+ *
+ * It does offer a **target** where one exists, which is a different thing from
+ * redirecting and is what DT-0006 ruled for `NotConnected` one step earlier: a
+ * remedy is a target, not a sentence. The deployment's remedy is decided once
+ * at assembly and passed in, so this surface never works out which deployment
+ * it is running on — it is told, by the same value the adapter was given.
+ *
+ * On `repair-the-key` nothing is added. There is no target: the operator must
+ * replace an environment variable and restart the process, and a control that
+ * cannot perform the remedy is the false affordance the requirement forbids.
+ * The sentence already names the variable.
  */
-export function AuthorityLost({ reason }: { reason: string }) {
+export function AuthorityLost({ reason, remedy }: { reason: string; remedy: Remedy }) {
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium text-text-primary">
@@ -36,6 +50,17 @@ export function AuthorityLost({ reason }: { reason: string }) {
         Nothing was changed. Until this is fixed, no operation on this account
         can succeed — including the one you just tried.
       </p>
+
+      {/* Secondary, not primary, and for the same reason `NotConnected` is:
+          this is navigation to where a grant is obtained, not the commit. The
+          operation that failed is deliberately not offered again. */}
+      {remedy === 'reconnect' ? (
+        <p className="text-sm">
+          <a href="/connect" className={BUTTON_SECONDARY}>
+            Connect your BattleGrid account again
+          </a>
+        </p>
+      ) : null}
     </main>
   );
 }

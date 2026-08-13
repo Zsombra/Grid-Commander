@@ -1,5 +1,65 @@
 # Journal
 
+## 2026-08-13 (late) — a remedy is a target, and the blocker was already solved
+
+**Did**: shipped `a-remedy-is-a-target-not-a-sentence`. Closed #182.
+
+`AuthorityLost` stated the remedy in prose and offered nothing to click, while
+`NotConnected` — the same question one step earlier — renders an anchor, because
+DT-0006 ruled a remedy is a target rather than a sentence. The newer surface was
+the weaker one, reached at the worse moment.
+
+**The component was not missing a link; it argued against one, and the argument
+was correct.** Linking to `/connect` is right on a delegated deployment and
+lands a personal one on "there is nothing to connect" — which is what
+*A Remedy Named Must Exist In That Deployment* forbids. With no way to tell the
+deployments apart, refusing to link was the only honest option it had.
+
+**What unblocked it was an existing decision nobody had wired through.**
+`composition.ts` already fixes the remedy once, under the comment *"Fixed here so
+that no failure path has to work it out"* — and then hands it only to the MCP
+adapter. Exposing it on `App` was the whole change. The expression **moved**
+rather than being copied, so "which deployment is this" still has one answer;
+copying it would have recreated the defect the original comment was written to
+prevent.
+
+Rejected two alternatives on the same principle: carrying it on
+`ConnectionRevokedError` (which discards the `Remedy` it is built with) or on the
+URL beside `authority=`. Both put a deployment-scoped fact somewhere per-failure.
+
+**The fake hid the branch, and nearly hid it from me.** The first run after
+wiring the component showed 9/9 green — because `actingWith` supplied no
+`remedy`, so `remedy === 'reconnect'` was false and the link never rendered.
+Vacuously green in exactly the way this repository keeps catching. The fake now
+carries it, defaulting to `reconnect`, and the personal branch is selectable.
+
+**Two mutations, six kills.** Link unconditionally → the three "offers no
+control" tests fail. Never link → the three "offers the remedy" tests fail.
+Asserted on `links` rather than `text` throughout, because a label without an
+href reads identically.
+
+**Corrected in passing**: #182 quoted the delegated remedy as *"Connect your
+account again"*, which is a test fixture. The sentence a user reads is
+*"Reconnect to continue."* The item's argument was unaffected.
+
+**Gates**: typecheck, lint, 2314 tests / 176 files, build. Archived: 1
+requirement modified.
+
+**Still owed on this surface**: `AuthorityLost` has never been designed and its
+danger treatment is byte-identical to `CarriedProblem`'s, which says something
+different (#183). This change reused `BUTTON_SECONDARY` and introduced no new
+treatment, so it does not prejudge that round.
+
+**And four manifests are now stale, which is the documented consequence of a UI
+change and not a surprise**: `agent-deploy-confirm`, `agent-rebind-confirm`,
+`agent-undeploy-confirm` and `strategy-rule-editor` all pin
+`authority-lost.tsx`. The flow in `CLAUDE.md` is `executor -> /surface ->
+/design`, so the survey is owed before #183's round designs against them.
+Deliberately not run here: #183 must survey this surface anyway, and surveying
+twice for one change is the churn [[a-design-round-stales-the-manifests-it-designed-against]]
+already describes. Flagged rather than left silent — `validate` reports them,
+and whoever opens #183 should start with the survey.
+
 ## 2026-08-13 (late) — two items settled without code, because neither needed any
 
 **#200 closed.** `createAgent` does drop `slotUsage`, and nothing is worse for

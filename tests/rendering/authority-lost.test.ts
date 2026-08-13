@@ -24,6 +24,10 @@ vi.mock('@/presentation/session.js', () => ({
 
 const AGENT = anAgent({ id: 'a1', displayName: 'Vanguard' });
 const DELEGATED = 'Your BattleGrid connection is no longer valid. Connect your account again.';
+/** The same failure on a deployment holding a configured key. */
+const PERSONAL =
+  'Your BattleGrid connection is no longer valid. ' +
+  'Check the BATTLEGRID_API_KEY this deployment was configured with, then restart it.';
 
 beforeEach(() => {
   current = actingWith({ agents: new FakeAgentsPort([AGENT]) });
@@ -98,6 +102,44 @@ for (const page of pages) {
       const Page = await page.load();
       const r = await rendered(await Page(page.args(DELEGATED) as never));
       expect(r.text).toContain('Nothing was changed');
+    });
+
+    /**
+     * A remedy is a target, not a sentence — DT-0006's ruling for
+     * `NotConnected`, applied one step later where it matters more. Which
+     * remedy exists is a property of the deployment, so the two branches are
+     * two deployments, not two failures.
+     */
+    it('offers the remedy where the deployment has one', async () => {
+      current = actingWith({ agents: new FakeAgentsPort([AGENT]), remedy: 'reconnect' });
+      const Page = await page.load();
+      const r = await rendered(await Page(page.args(DELEGATED) as never));
+
+      // On `links`, never on `text`: a label without an href reads identically
+      // and would pass a reasonable-looking assertion while going nowhere.
+      expect(r.links).toContain('/connect');
+      // Still not the control that performs the operation.
+      expect(hasAny(await Page(page.args(DELEGATED) as never), ['form', 'button'])).toBe(false);
+    });
+
+    it('offers no control where no control can perform the remedy', async () => {
+      current = actingWith({ agents: new FakeAgentsPort([AGENT]), remedy: 'repair-the-key' });
+      const Page = await page.load();
+      const r = await rendered(await Page(page.args(PERSONAL) as never));
+
+      // Nothing to click, because replacing an environment variable and
+      // restarting a process is not something a link can do. Offering one
+      // would send the operator to a page that says there is nothing to
+      // connect — the false affordance the requirement forbids.
+      expect(r.links).not.toContain('/connect');
+      expect(r.text).toContain(PERSONAL);
+    });
+
+    it('renders the carried sentence verbatim under either deployment', async () => {
+      current = actingWith({ agents: new FakeAgentsPort([AGENT]), remedy: 'repair-the-key' });
+      const Page = await page.load();
+      const r = await rendered(await Page(page.args(PERSONAL) as never));
+      expect(r.text).toContain('BATTLEGRID_API_KEY');
     });
   });
 }

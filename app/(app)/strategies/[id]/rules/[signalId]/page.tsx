@@ -89,7 +89,7 @@ export default async function RetuneRulePage({
   // there is nothing to read when no call can succeed — and no form, because a
   // control that cannot work is not made honest by the sentence above it.
   const authority = one(q, 'authority');
-  if (authority) return <AuthorityLost reason={authority} />;
+  if (authority) return <AuthorityLost reason={authority} remedy={app.remedy} />;
 
   const read = await app.readStrategy.execute({ ...user.authority, strategyId: id });
   if (read.kind === 'missing') {

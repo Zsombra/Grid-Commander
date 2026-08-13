@@ -1,3 +1,4 @@
+import type { Remedy } from '@/domain/connection/remedy.js';
 import { DescribeArchiveQuery } from '@/application/use-cases/lifecycle.command.js';
 import { DescribeArchiveStrategyQuery } from '@/application/use-cases/strategy-lifecycle.command.js';
 import {
@@ -105,6 +106,15 @@ export function actingWith({
    * that read the wall clock would assert a different sentence every run.
    */
   clock = new FakeClock(),
+  /**
+   * Which deployment this is, said the way the product says it.
+   *
+   * `reconnect` by default because the delegated deployment is the one nearly
+   * every page test is about. A surface that offers a remedy has to know which
+   * one exists here, and a fake that omitted it would let the personal branch
+   * pass by never being rendered.
+   */
+  remedy = 'reconnect' as Remedy,
 }: {
   agents?: FakeAgentsPort;
   accountState?: FakeAccountStatePort;
@@ -117,11 +127,13 @@ export function actingWith({
   positions?: FakePositionsPort;
   signalRecord?: InMemorySignalRecordStore;
   clock?: FakeClock;
+  remedy?: Remedy;
 } = {}) {
   const confirmations = new FakeConfirmationStore(clock);
   const random = new SequentialRandom();
 
   const app = {
+    remedy,
     listAgents: new ListAgentsQuery(agents),
     readFleetSpend: new ReadFleetSpendQuery(agents),
     readProposals: new ReadProposalsQuery(proposals, clock),
