@@ -2,11 +2,11 @@
 id: the-authority-page-names-a-remedy-and-offers-no-target
 title: AuthorityLost states the remedy in words and offers nothing to click, unlike NotConnected
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
 updated: 2026-08-12
-change: ""
+change: "a-remedy-is-a-target-not-a-sentence"
 capability: battlegrid-connection
 github: "182"
 blocked_by: []
@@ -63,3 +63,44 @@ proposal rather than a design ticket.
 
 Filed as a deferral of `a-lost-authority-is-not-a-refusal`, which decided the
 routing question and left this one open deliberately.
+
+---
+
+# Closed 2026-08-13 — the remedy is a target where one exists
+
+Fixed by `a-remedy-is-a-target-not-a-sentence`. `AuthorityLost` renders a
+`BUTTON_SECONDARY` anchor to `/connect` when the deployment's remedy is
+`reconnect`, and nothing when it is `repair-the-key`.
+
+**The component was not simply missing a link — it argued against one**, and the
+argument was right:
+
+> Sending the operator to `/connect` is right on a delegated deployment and
+> lands a personal one on "there is nothing to connect".
+
+The spec agrees: *A Remedy Named Must Exist In That Deployment*. With no way to
+tell the deployments apart, refusing to link was the only honest option the
+component had.
+
+What unblocked it was not a new decision but an existing one nobody had wired
+through. `composition.ts` already fixes the remedy once — 
+`config.personal ? 'repair-the-key' : 'reconnect'` — under the comment *"Fixed
+here so that no failure path has to work it out."* It was handed to the MCP
+adapter and never to the presentation layer. The change exposes it on `App` and
+moves the expression rather than copying it, so "which deployment is this" still
+has exactly one answer.
+
+**One wording correction this item carried**: it quotes the delegated remedy as
+*"Connect your account again"*. That string is a test fixture
+(`tests/rendering/authority-lost.test.ts`). The sentence a user reads is
+*"Reconnect to continue."* (`src/domain/connection/remedy.ts:31`). The item's
+argument is unaffected — it was about the absence of a target, not the wording —
+but the quotation was of the wrong artifact.
+
+**Not fixed here**: `AuthorityLost` has still never been designed, and its
+danger border and background remain byte-identical to `CarriedProblem`'s, which
+says something different. That is
+[[two-confirmation-row-shapes-and-an-undesigned-page]] (#183) and still owed.
+This change reused `BUTTON_SECONDARY` — the primitive `NotConnected` already
+uses for exactly this — and introduced no new treatment, so it does not
+prejudge that round.

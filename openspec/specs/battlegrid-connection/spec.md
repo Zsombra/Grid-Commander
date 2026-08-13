@@ -337,33 +337,36 @@ correct on a deployment that can begin one, and on a deployment acting with a
 configured credential it renders "there is nothing to connect" — a true fact
 about the deployment, and an answer to a question they did not ask.
 
+**Where the remedy is something the user can reach, the surface SHALL offer it
+as a target and not only as a sentence.** A remedy stated in prose on a surface
+with nothing to click leaves the user to find the route themselves, at the moment
+they have least reason to trust the product. Where the remedy is not something a
+control can perform — a credential the operator must replace and a process they
+must restart — the surface SHALL state it and add nothing, because a control
+that cannot perform the remedy is the same false affordance this requirement
+exists to prevent.
+
+Which of the two applies is a property of the **deployment**, decided once where
+the deployment is assembled. A surface deciding it per failure is a second
+answer to a settled question, and the two will disagree.
+
+#### Scenario: A remedy the user can reach
+- **GIVEN** a deployment whose authority can be obtained again
+- **WHEN** a surface reports that authority is no longer valid
+- **THEN** it offers a way to begin that, alongside the sentence the failure
+  carried
+
+#### Scenario: A remedy no control can perform
+- **GIVEN** a deployment acting with a configured credential
+- **WHEN** a surface reports that authority is no longer valid
+- **THEN** it states the remedy and offers no control
+- **AND** it does not offer to begin an authorization the deployment cannot make
+
 #### Scenario: A configured credential is refused
-- **WHEN** the platform refuses the credential a deployment was configured with
-- **THEN** the user is told the authority is no longer valid
-- **AND** told to repair the configured credential
-- **AND** not told to reconnect
-
-#### Scenario: A delegated authority is lost
-- **WHEN** a deployment that authenticates users loses its authority for one of
-  them
-- **THEN** the user is told the authority is no longer valid
-- **AND** invited to reconnect
-
-#### Scenario: A remedy carried by a failure is not replaced by a redirect
-- **WHEN** a failure carries the remedy for the deployment that raised it
-- **THEN** that sentence is what the operator is shown
-- **AND** they are not sent instead to a page that names a different remedy or
-  none
-
-#### Scenario: Offering to connect where there is nothing to connect
-- **WHEN** a user reaches the page that begins an authorization, on a deployment
-  acting with a configured credential
-- **THEN** they are told this deployment acts with a configured credential
-- **AND** no authorization can be started from it
-
-#### Scenario: Which remedy applies is not decided per request
-- **WHEN** the product is assembled
-- **THEN** the remedy its failures will name is fixed for that deployment
+- **GIVEN** a deployment acting with a configured credential
+- **WHEN** its authority is refused
+- **THEN** the remedy named is to replace that credential
+- **AND** the user is not told to reconnect
 
 ### Requirement: A Tool Result Is Read From Its Envelope, Or Refused
 Grid-Commander SHALL extract the payload a tool returned from the transport

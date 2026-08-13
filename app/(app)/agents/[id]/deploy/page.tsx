@@ -39,7 +39,7 @@ export default async function DeployPage({
   // because there is nothing to describe when no call can succeed — and no
   // form, because a control that cannot work is not made honest by the
   // sentence above it.
-  if (authority) return <AuthorityLost reason={authority} />;
+  if (authority) return <AuthorityLost reason={authority} remedy={app.remedy} />;
 
 
   const { roster } = await app.listAgents.execute(user.authority);

@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
+import type { Remedy } from '@/domain/connection/remedy.js';
 import type { PersonalConfig } from './config.js';
 import { DeclaredScopes } from './domain/connection/held-scopes.js';
 import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
@@ -155,6 +156,14 @@ interface Infrastructure {
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
   readonly personal: PersonalConfig | undefined;
+  /**
+   * What a user of *this* deployment can do when its authority stops working.
+   *
+   * Held here rather than derived from `personal` at each surface, because
+   * "which deployment is this" answered in two places is two answers that can
+   * disagree — the reason it was fixed at assembly in the first place.
+   */
+  readonly remedy: Remedy;
   /** One trivial database round trip; resolves nothing else. */
   readonly health: () => Promise<void>;
 }
@@ -172,6 +181,11 @@ function infrastructure(): Infrastructure {
   const proposals = new DrizzleProposalStore(db);
   const signalRecord = new DrizzleSignalRecordStore(db, randomUUID);
 
+  // Where "what can this user do about it" is answered, once. A delegated
+  // grant can be obtained again; a configured key can only be replaced by the
+  // person who configured it.
+  const remedy: Remedy = config.personal ? 'repair-the-key' : 'reconnect';
+
   const battlegrid = new McpBattleGridAdapter({
     config: config.battlegrid,
     audit,
@@ -182,11 +196,9 @@ function infrastructure(): Infrastructure {
     heldScopes: config.personal
       ? new DeclaredScopes(config.personal.scopes)
       : new ConnectionScopes(connections),
-    // And where "what can this user do about it" is answered. Same shape, same
-    // reason: a delegated grant can be obtained again, a configured key can only
-    // be replaced by the person who configured it. Fixed here so that no failure
-    // path has to work it out.
-    remedy: config.personal ? 'repair-the-key' : 'reconnect',
+    // Fixed above so that no failure path has to work it out — and so that the
+    // surface reporting the failure names the same one this adapter does.
+    remedy,
     fetch: globalThis.fetch,
   });
 
@@ -208,6 +220,7 @@ function infrastructure(): Infrastructure {
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
+    remedy,
     health: async () => {
       await db.execute(sql`select 1`);
     },
@@ -270,6 +283,10 @@ export function app(cookies: CookieStore) {
     // Null on a delegated deployment. The surface uses it to disclose that a
     // deployment authenticates nobody, which is true only of the personal one.
     personal: i.personal ?? null,
+    // What a user of this deployment can do when its authority stops working.
+    // Passed to the surface so a remedy can be offered as a target where one
+    // exists, rather than only stated in prose.
+    remedy: i.remedy,
 
     startConnection: new StartConnectionCommand(i.battlegrid, i.transactions, random, systemClock),
     completeConnection: new CompleteConnectionCommand(
