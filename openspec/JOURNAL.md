@@ -8,6 +8,11 @@ implemented **DT-0027** — the secondary weight's pending treatment — closing
 retired its recorded exemption. Filed **#229** and **#230**. Re-surveyed the
 seventeen manifests the round staled.
 
+Three commits on `claude/secondary-treatment-variant-19160e`: `7cc042b` the
+implementation, `bf3aed5` the re-survey (its own commit, because a manifest may
+only be re-pinned against committed source — design-contract §8), `a191606` the
+closure. Not pushed; no PR opened.
+
 **State**: 0 active changes, 24 backlog open, 27/27 design tickets implemented,
 `validate --all` 0 errors / 14 warnings. 2338 vitest across 180 files,
 typecheck, lint, build, drizzle all clean. `agent-roster` is still the one
