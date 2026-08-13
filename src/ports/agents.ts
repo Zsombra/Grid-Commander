@@ -7,6 +7,7 @@ import type { Catalog } from '@/domain/agent/catalog.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { EvaluationScorecard } from '@/domain/agent/scorecard.js';
+import type { RefusedRows } from '@/domain/agent/blocks.js';
 
 /**
  * Re-exported so routes reach these through the port they already depend
@@ -173,7 +174,7 @@ export interface AgentsPort {
     accessToken: string;
     agentId: string;
     limit?: number | undefined;
-  }): Promise<StageResult<GateBlock>>;
+  }): Promise<GateBlocksResult>;
 
   /** Evaluations that ran: score against the threshold that was in force. */
   readSignalLogs(params: {
@@ -415,6 +416,31 @@ export type FunnelResult =
  */
 export type StageResult<T> =
   | { readonly kind: 'entries'; readonly entries: readonly T[]; readonly total: number | null }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * Gate blocks, and what the platform would not serve.
+ *
+ * A `StageResult<GateBlock>` in every respect a caller already handles, plus
+ * `refused` — which is why it is its own type rather than a widened
+ * `StageResult`. The other two stages do not refuse: `list_signal_logs` and
+ * `list_entry_decisions` were walked live on 2026-08-13 and answered in full
+ * while `list_gate_blocks` was 500ing on specific rows (#100). Giving all
+ * three a field only one can populate would say this product expects the
+ * fault everywhere, and the day the platform is fixed there would be three
+ * places to unwind instead of one.
+ *
+ * `refused` is null on the ordinary path, including when a single call
+ * succeeds. It is non-null only where a summary was assembled around a hole.
+ */
+export type GateBlocksResult =
+  | {
+      readonly kind: 'entries';
+      readonly entries: readonly GateBlock[];
+      readonly total: number | null;
+      readonly refused: RefusedRows | null;
+    }
   | { readonly kind: 'none' }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 

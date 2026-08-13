@@ -14,7 +14,7 @@ import type {
   EntryDecision,
   EvaluationResult,
   FunnelResult,
-  GateBlock,
+  GateBlocksResult,
   JournalResult,
   RosterResult,
   SignalEvaluation,
@@ -238,7 +238,7 @@ export class FakeAgentsPort implements AgentsPort {
   }
 
   /** The three pipeline stages, each settable on its own. */
-  gateBlocks: StageResult<GateBlock> = { kind: 'none' };
+  gateBlocks: GateBlocksResult = { kind: 'none' };
   /**
    * Every `limit` the gate-block read was asked for, in order.
    *
@@ -262,7 +262,7 @@ export class FakeAgentsPort implements AgentsPort {
    */
   readonly entryDecisionLimits: Array<number | undefined> = [];
 
-  async readGateBlocks(params: { limit?: number | undefined }): Promise<StageResult<GateBlock>> {
+  async readGateBlocks(params: { limit?: number | undefined }): Promise<GateBlocksResult> {
     this.gateBlockLimits.push(params.limit);
     return this.gateBlocks;
   }

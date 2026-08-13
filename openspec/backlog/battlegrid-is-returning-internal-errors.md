@@ -6,7 +6,7 @@ status: open
 priority: p2
 created: 2026-08-05
 updated: 2026-08-13
-change: ""
+change: "the-stoppage-summary-reads-around-a-refusal"
 capability: ""
 github: "100"
 blocked_by: []

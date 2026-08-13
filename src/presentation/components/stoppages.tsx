@@ -101,7 +101,18 @@ function span(reason: BlockReason): string | null {
     : `from ${day(reason.firstAt)} to ${day(reason.lastAt)}`;
 }
 
-function Reason({ reason }: { reason: BlockReason }) {
+/**
+ * When the window ends, to the minute.
+ *
+ * The date alone is not enough here. A summary that stopped at 06:00 and one
+ * that stopped at 23:50 render the same day, and the question this surface
+ * answers is whether the condition is current.
+ */
+function endOfWindow(iso: string): string {
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
+}
+
+function Reason({ reason, partial }: { reason: BlockReason; partial: boolean }) {
   const { comparisons, rest } = readDetail(reason.detail);
   const standing = isStanding(reason);
   const when = span(reason);
@@ -144,8 +155,8 @@ function Reason({ reason }: { reason: BlockReason }) {
 
       {standing ? (
         <p>
-          {`This has happened ${reason.count} times, so it is a standing ` +
-            'condition rather than one bad cycle.'}
+          {`This has happened ${reason.count} times${partial ? ' in the part of the history that could be read' : ''}, ` +
+            'so it is a standing condition rather than one bad cycle.'}
         </p>
       ) : null}
     </li>
@@ -161,6 +172,8 @@ function Reason({ reason }: { reason: BlockReason }) {
  */
 export function Stoppages({ summary }: { summary: BlockSummary }) {
   const worst = summary.reasons[0];
+  const refused = summary.refused;
+  const partial = refused !== null;
 
   return (
     <section className="space-y-2">
@@ -169,15 +182,34 @@ export function Stoppages({ summary }: { summary: BlockSummary }) {
       {worst && isStanding(worst) ? (
         <p className="text-sm font-medium">
           {`Mostly one thing: ${worst.reasonCode}, ${worst.count} times` +
-            `${span(worst) ? ` ${span(worst)}` : ''}.`}
+            `${span(worst) ? ` ${span(worst)}` : ''}` +
+            `${partial ? ', in what could be read' : ''}.`}
         </p>
       ) : null}
 
       <ul className="space-y-2">
         {summary.reasons.map((r) => (
-          <Reason key={r.reasonCode} reason={r} />
+          <Reason key={r.reasonCode} reason={r} partial={partial} />
         ))}
       </ul>
+
+      {/*
+        The hole, admitted — and admitted louder than the window is, because a
+        window is visibly a window and a hole is not. BattleGrid refuses on
+        specific rows and the refusals cluster at the newest end (#100), so the
+        rows missing here are the recent ones and this surface answers what is
+        stopping the agent *now*. A partial summary rendered without this line
+        would be worse than the outage it works around: an outage is visibly
+        nothing, and a partial summary looks like everything.
+      */}
+      {refused !== null ? (
+        <p className="text-sm text-text-secondary">
+          {`BattleGrid would not serve ${refused.windows} ` +
+            `${refused.windows === 1 ? 'window' : 'windows'} of this history — up to ` +
+            `${refused.rows} blocks, the most recent ones, are not counted above.` +
+            `${summary.windowEndsAt === null ? '' : ` What is counted ends ${endOfWindow(summary.windowEndsAt)}.`}`}
+        </p>
+      ) : null}
 
       {/*
         The window, admitted. A summary of the most recent 100 of 118 that
@@ -186,8 +218,12 @@ export function Stoppages({ summary }: { summary: BlockSummary }) {
       */}
       {summary.total !== null && summary.total > summary.readCount ? (
         <p className="text-sm text-text-secondary">
-          {`Summarised the ${summary.readCount} most recent of ${summary.total} — ` +
-            'there are older ones this does not count.'}
+          {partial
+            ? // Not "the most recent": on this path the most recent are exactly
+              // the ones that refused, so the phrase would be precisely inverted.
+              `Summarised ${summary.readCount} of ${summary.total}.`
+            : `Summarised the ${summary.readCount} most recent of ${summary.total} — ` +
+              'there are older ones this does not count.'}
         </p>
       ) : null}
     </section>

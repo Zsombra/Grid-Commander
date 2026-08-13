@@ -49,6 +49,28 @@ export interface BlockReason {
   readonly coinTickers: readonly string[];
 }
 
+/**
+ * Rows the platform refused to serve while this summary was being assembled.
+ *
+ * Not the same as rows that were never asked for. `total` already admits the
+ * window; this admits a **hole inside** it. The distinction matters because
+ * the refusals cluster at the head of the history (#100), so the rows missing
+ * from a summary assembled around them are the newest ones — and this surface
+ * answers *what is stopping this agent now*.
+ */
+export interface RefusedRows {
+  /** How many windows the platform declined. */
+  readonly windows: number;
+  /**
+   * How many rows those windows span.
+   *
+   * The size of the gap, not a count of rows known to exist: the windows are
+   * a fixed size and the platform may have had fewer rows to put in one. It is
+   * an upper bound, and the surface words it as one.
+   */
+  readonly rows: number;
+}
+
 export interface BlockSummary {
   /** Most frequent first; ties broken by most recent. */
   readonly reasons: readonly BlockReason[];
@@ -62,6 +84,22 @@ export interface BlockSummary {
    * silent-truncation failure this repository keeps writing tests against.
    */
   readonly total: number | null;
+  /**
+   * The newest occurrence anywhere in the rows folded.
+   *
+   * `total` says how big the window was; this says **where it ends**. A count
+   * over a window that stops eighteen hours ago, rendered without that fact,
+   * reads as current. Null when no row carried a timestamp at all.
+   */
+  readonly windowEndsAt: string | null;
+  /**
+   * Null when the platform served the history whole.
+   *
+   * Deliberately not optional: a fold that can omit this field is a fold that
+   * can report a partial summary as a complete one, which is the failure the
+   * whole change exists to prevent.
+   */
+  readonly refused: RefusedRows | null;
 }
 
 /**
@@ -75,6 +113,7 @@ export interface BlockSummary {
 export function summariseBlocks(
   rows: readonly BlockRow[],
   total: number | null,
+  refused: RefusedRows | null,
 ): BlockSummary {
   const byReason = new Map<string, {
     reasonCode: string;
@@ -123,7 +162,14 @@ export function summariseBlocks(
     }))
     .sort((a, b) => b.count - a.count || (b.lastAt ?? '').localeCompare(a.lastAt ?? ''));
 
-  return { reasons, readCount: rows.length, total };
+  // Computed by comparison, like the per-reason window above, so a list that
+  // arrived oldest-first still reports the end of the window and not its start.
+  let windowEndsAt: string | null = null;
+  for (const row of rows) {
+    if (row.at !== null && (windowEndsAt === null || row.at > windowEndsAt)) windowEndsAt = row.at;
+  }
+
+  return { reasons, readCount: rows.length, total, windowEndsAt, refused };
 }
 
 /**

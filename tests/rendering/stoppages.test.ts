@@ -73,6 +73,7 @@ describe('a reason that keeps repeating', () => {
         ),
       ],
       total: 118,
+      refused: null,
     });
     const r = await page();
     expect(r.text).toContain('Mostly one thing: AGENT_APPROVAL_EXPIRED, 5 times');
@@ -80,7 +81,7 @@ describe('a reason that keeps repeating', () => {
   });
 
   it('does not call a single occurrence a condition', async () => {
-    world({ kind: 'entries', entries: [block()], total: 1 });
+    world({ kind: 'entries', entries: [block()], total: 1, refused: null });
     const r = await page();
     expect(r.text).toContain('INSUFFICIENT_EQUITY · 1 time');
     expect(r.text).not.toContain('standing condition');
@@ -89,7 +90,7 @@ describe('a reason that keeps repeating', () => {
 
 describe('the platform’s own words and numbers', () => {
   it('renders the detail as a comparison, not as field names', async () => {
-    world({ kind: 'entries', entries: [block(), block()], total: 2 });
+    world({ kind: 'entries', entries: [block(), block()], total: 2, refused: null });
     const r = await page();
     // Dollars, because the field is named `…Usd`. The old pipeline rendering
     // showed `equityUsd: 4.199037 · thresholdUsd: 10`.
@@ -107,6 +108,7 @@ describe('the platform’s own words and numbers', () => {
       kind: 'entries',
       entries: [block({ reasonCode: 'AGENT_APPROVAL_EXPIRED', reasonDetail: {} })],
       total: 1,
+      refused: null,
     });
     const r = await page();
     expect(r.text).toContain('AGENT_APPROVAL_EXPIRED');
@@ -121,6 +123,7 @@ describe('the platform’s own words and numbers', () => {
         block({ reasonCode: 'SOMETHING_NEW_IN_V10', reasonDetail: { availableUsd: 3, requiredUsd: 25 } }),
       ],
       total: 1,
+      refused: null,
     });
     const r = await page();
     expect(r.text).toContain('SOMETHING_NEW_IN_V10');
@@ -141,6 +144,7 @@ describe('the platform’s own words and numbers', () => {
         }),
       ],
       total: 1,
+      refused: null,
     });
     const r = await page();
     // The backlog item assumed this had to be derived from scraped rejection
@@ -154,7 +158,7 @@ describe('the platform’s own words and numbers', () => {
 
 describe('the window, and the two ways of having nothing', () => {
   it('admits summarising less than the whole history', async () => {
-    world({ kind: 'entries', entries: [block(), block()], total: 118 });
+    world({ kind: 'entries', entries: [block(), block()], total: 118, refused: null });
     const r = await page();
     expect(r.text).toContain('Summarised the 2 most recent of 118');
   });
@@ -170,5 +174,77 @@ describe('the window, and the two ways of having nothing', () => {
     const r = await page();
     expect(r.text).toContain('could not be read');
     expect(r.text).not.toContain('Nothing has stopped this agent');
+  });
+});
+
+/**
+ * A summary assembled around a hole.
+ *
+ * The third way of having nothing, and the most dangerous: an outage is
+ * visibly nothing, but a partial summary looks like everything. On
+ * 2026-08-13 the platform was refusing the newest rows of every active
+ * agent's history while serving the older ones, so the counts a summary can
+ * still produce are counts over the past — on a surface that answers *what is
+ * stopping this agent now*.
+ */
+describe('a summary the platform would not serve whole', () => {
+  const PARTIAL = {
+    kind: 'entries' as const,
+    entries: [
+      block({ reasonCode: 'OPEN_POSITION_CONFLICT', reasonDetail: {}, at: '2026-08-12T04:15:00.000Z' }),
+      block({ reasonCode: 'OPEN_POSITION_CONFLICT', reasonDetail: {}, at: '2026-08-12T22:40:00.000Z' }),
+      block({ reasonCode: 'OPEN_POSITION_CONFLICT', reasonDetail: {}, at: '2026-08-11T09:05:00.000Z' }),
+    ],
+    total: 297,
+    refused: { windows: 2, rows: 50 },
+  };
+
+  it('says part of the history could not be read', async () => {
+    world(PARTIAL);
+    const r = await page();
+    expect(r.text).toContain('would not serve 2 windows');
+    // The size of the hole, worded as the bound it is.
+    expect(r.text).toContain('up to 50 blocks');
+    // And which end of the history it is missing, because that is the end
+    // this surface is about.
+    expect(r.text).toContain('most recent');
+  });
+
+  it('says when the window it summarised ends', async () => {
+    world(PARTIAL);
+    const r = await page();
+    // To the minute, not the day: a window that stopped at 04:15 and one that
+    // stopped at 22:40 are the same date and a different answer. Taken by
+    // comparison across the rows, so the deliberately out-of-order fixture
+    // above still yields the newest.
+    expect(r.text).toContain('What is counted ends 2026-08-12 22:40');
+  });
+
+  it('presents the count as a count over what could be read', async () => {
+    world(PARTIAL);
+    const r = await page();
+    expect(r.text).toContain('in the part of the history that could be read');
+    // The lead sentence too — it is the one an operator reads first.
+    expect(r.text).toContain('in what could be read');
+  });
+
+  it('does not call the summarised rows the most recent ones', async () => {
+    world(PARTIAL);
+    const r = await page();
+    expect(r.text).toContain('Summarised 3 of 297');
+    // The exact inversion this path would otherwise produce: on a partial
+    // read the rows that are missing are the recent ones.
+    expect(r.text).not.toContain('most recent of 297');
+  });
+
+  it('claims nothing about unreadable rows when the history was served whole', async () => {
+    world({ kind: 'entries', entries: [block(), block()], total: 118, refused: null });
+    const r = await page();
+    // No empty clause on the healthy path. A surface that always mentions
+    // refusals teaches an operator to stop reading the sentence.
+    expect(r.text).not.toContain('would not serve');
+    expect(r.text).not.toContain('could be read');
+    expect(r.text).not.toContain('What is counted ends');
+    expect(r.text).toContain('Summarised the 2 most recent of 118');
   });
 });

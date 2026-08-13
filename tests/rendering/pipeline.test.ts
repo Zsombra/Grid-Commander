@@ -132,7 +132,7 @@ beforeEach(() => {
 describe('the pipeline page, branch by branch', () => {
   it('a gate block shows its code and the numbers behind it', async () => {
     const agents = world();
-    agents.gateBlocks = { kind: 'entries', entries: [BLOCK], total: 1 };
+    agents.gateBlocks = { kind: 'entries', entries: [BLOCK], total: 1, refused: null };
     const r = await pipelineRendered();
     expect(r.headings[0]).toBe("Why it did or didn't trade");
     expect(r.text).toContain('INSUFFICIENT_EQUITY');
