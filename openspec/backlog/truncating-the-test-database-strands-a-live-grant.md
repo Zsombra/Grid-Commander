@@ -144,6 +144,8 @@ fixtures and refused 42 tests. The question is only ever what the database held
 `assertDisposable` asked about the database when the fact was in the data; the
 first two attempts asked about the run when the fact was about what preceded it.
 
-Not fixed here, and still true: the two grants already orphaned today cannot be
-revoked from the product. Their tokens are gone. They need withdrawing from the
-BattleGrid account interface.
+The two grants already orphaned could not be revoked from the product — their
+tokens were gone with the rows — and were **withdrawn by the operator at
+BattleGrid on 2026-08-13**. Nothing is left standing. The guard prevents a
+third; it could not recover those two, which is the honest cost of the two
+occurrences it took to justify building it.
