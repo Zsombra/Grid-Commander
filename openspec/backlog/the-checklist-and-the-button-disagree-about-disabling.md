@@ -107,9 +107,28 @@ options change something binding.
    product's guarantee stops being "the guard refuses it" and becomes "the UI
    prevents it".
 
-The accessibility argument belongs in that decision and is not decorative: a
-`disabled` control is unreachable to a screen reader moving through the form,
-and the page is mid-navigation when it happens.
+The accessibility argument belongs in that decision and is not decorative — but
+**the version this item was filed with was false and is corrected here.**
+
+It originally said a `disabled` control is "unreachable to a screen reader
+moving through the form". That conflates *not focusable* with *unreachable*.
+`disabled` removes a control from the focus order (MDN: "disabled controls can
+not receive focus"), but a screen reader in browse mode walks the accessibility
+tree, not the tab order, and a disabled button is conventionally exposed there
+carrying a disabled state.
+
+The accurate argument is narrower and survives: **the pending label has no live
+region.** `src/presentation/components/perform-button.tsx` carries no
+`role="status"` and no `aria-live`, so the progressive label reaches assistive
+tech today only because the pressed control still holds focus. Disabling removes
+focus from that control and therefore removes the only channel the announcement
+travels on. The product has 19 live regions elsewhere — on refusals and
+consequence blocks — and none on the pending state, which is a WCAG 4.1.3 gap in
+the code *as it stands*, independent of how this question is resolved.
+
+That reframes the option set: adding a live region is worth doing whichever way
+the disable question goes, and doing it first makes the disable question cheaper
+rather than harder.
 
 **Whoever takes it: do not start from the code.** Both options are a one-line
 change. What is missing is which record is wrong.

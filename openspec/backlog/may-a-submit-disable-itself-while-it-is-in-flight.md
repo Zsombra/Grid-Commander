@@ -46,10 +46,26 @@ Three things pull in different directions:
   make them unreachable — but the product's guarantee is currently "the guard
   refuses it", and a UI that prevents the attempt changes what that guarantee is
   for.
-- **Neither, and this is the one worth weighing.** A `disabled` control is also
-  an unreachable one for a screen reader moving through the form, and the page
-  is mid-navigation. `aria-busy` on an enabled control may be the better answer
-  and needs no decision at all.
+- **Neither, and this is the one worth weighing.** `aria-busy` on an enabled
+  control may be the better answer and needs no decision at all.
+
+  > **Corrected 2026-08-14.** This bullet originally read "a `disabled` control
+  > is also an unreachable one for a screen reader moving through the form".
+  > **That is false**, and it was repeated into #229 and into a GitHub comment
+  > before anyone checked it. `disabled` removes a control from the *focus
+  > order* — MDN is explicit that "disabled controls can not receive focus" —
+  > but a screen reader in browse mode traverses the accessibility tree rather
+  > than the tab order, and a disabled button is conventionally exposed there
+  > with a disabled state rather than deleted. "Not focusable" was conflated
+  > with "unreachable".
+  >
+  > The accurate version is narrower and still real, and it is the one that
+  > should be weighed: disabling moves focus out of the form mid-navigation,
+  > and **the pending label has no live region carrying it** — `perform-button.tsx`
+  > has no `role="status"` or `aria-live`, so the progressive label is announced
+  > today only because the pressed control still holds focus. Disabling would
+  > remove the only channel that announcement travels on. (The product does have
+  > 19 live regions elsewhere; none is on the pending state.)
 
 ## Why it stays open rather than being guessed
 
