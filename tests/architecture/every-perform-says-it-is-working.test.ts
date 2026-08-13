@@ -1,0 +1,118 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+/**
+ * Every form that performs something says it is working.
+ *
+ * `#153` was not one broken page. It was the same omission on every ceremony
+ * surface, recorded in eleven manifests in identical words, because each page
+ * spelled its own submit and there was nothing to make them agree. Fixing them
+ * one at a time and leaving it there would put the next new confirmation
+ * straight back into the same state — silently, and only visible to whoever
+ * next read a manifest.
+ *
+ * So the rule is enforced rather than remembered: **a submit inside a server
+ * action is a `PerformButton`.**
+ *
+ * A GET form is deliberately exempt. It composes a preview and reaches no
+ * operation — `control.ts` leans on that distinction for which weight a button
+ * wears, and this borrows the same line rather than drawing a second one that
+ * could disagree with it.
+ *
+ * ## One exemption that is a gap, not a rule
+ *
+ * The rule is scoped to submits wearing `BUTTON_PRIMARY`, because that is what
+ * DT-0022 designed. **One secondary submit genuinely performs and is therefore
+ * uncovered**: `/pending/[id]`'s "Decline — this closes the proposal
+ * permanently". It mutates, it gives no sign it is working, and it is exactly
+ * the defect #153 describes.
+ *
+ * It is left alone rather than swept in, because `PerformButton` wears the
+ * primary treatment and putting Decline in it would promote a deliberately
+ * secondary control to the page's main weight — a visual decision this lane
+ * does not get to make. Closing it needs a secondary variant, which needs a
+ * design ticket. Recorded on #153 rather than hidden behind a narrower regex
+ * that reads like the rule was always this shape.
+ */
+
+function walk(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) out.push(...walk(p));
+    else if (p.endsWith('.tsx')) out.push(p);
+  }
+  return out;
+}
+
+const uiFiles = [...walk('app'), ...walk('src/presentation')];
+
+/**
+ * Submits inside a `<form action=…>`, with the file and line that carries them.
+ *
+ * Tracked by walking lines rather than by matching a form-to-close regex,
+ * because these forms nest hidden inputs, comments and conditional blocks, and
+ * a lazy `[\s\S]*?` across them attributes a submit to whichever form opened
+ * first. That would silently exempt the very pages this is for.
+ */
+function performSubmits(): { file: string; line: number; text: string }[] {
+  const found: { file: string; line: number; text: string }[] = [];
+  for (const file of uiFiles) {
+    const lines = readFileSync(file, 'utf8').split('\n');
+    let inAction = false;
+    lines.forEach((ln, i) => {
+      if (ln.includes('<form action=')) inAction = true;
+      else if (/<form\b[^>]*method=["']get["']/.test(ln)) inAction = false;
+      else if (ln.includes('</form>')) inAction = false;
+      if (inAction && /<button\b[^>]*type="submit"/.test(ln) && /BUTTON_PRIMARY/.test(ln)) {
+        found.push({ file, line: i + 1, text: ln.trim() });
+      }
+    });
+  }
+  return found;
+}
+
+describe('a submit that performs something', () => {
+  it('is never a bare button', () => {
+    const bare = performSubmits().map((s) => `${s.file}:${s.line}`);
+    expect(
+      bare,
+      'a form that performs must submit through PerformButton, so it can say it is working (#153)',
+    ).toEqual([]);
+  });
+
+  it('is a PerformButton, on enough surfaces to be the rule', () => {
+    // Anti-vacuity, the same shape `controls.test.ts` uses for its treatments:
+    // the assertion above passes trivially if the scanner stops matching, or if
+    // someone deletes every confirmation in the product. The floor is well
+    // under the real count, so it fails on a broken scan rather than on one
+    // retired page.
+    const uses = uiFiles.filter((f) => readFileSync(f, 'utf8').includes('<PerformButton')).length;
+    expect(uses).toBeGreaterThanOrEqual(10);
+  });
+
+  it('always carries a progressive label, because the label is the state', () => {
+    /**
+     * The spinner is decoration and is hidden under prefers-reduced-motion; the
+     * label is what a screen reader announces and what survives that. A
+     * `PerformButton` without one would render a control that changes nothing
+     * visible when pressed — which is the defect, reintroduced through the
+     * component built to fix it.
+     *
+     * TypeScript already requires the prop. This catches the other half: a
+     * prop passed as an empty string still type-checks.
+     */
+    const empty: string[] = [];
+    for (const file of uiFiles) {
+      const src = readFileSync(file, 'utf8');
+      for (const m of src.matchAll(/<PerformButton\b[\s\S]*?>/g)) {
+        const tag = m[0];
+        if (!/pendingLabel=/.test(tag) || /pendingLabel=(""|{``}|{''})/.test(tag)) {
+          empty.push(`${file}: ${tag.slice(0, 60)}`);
+        }
+      }
+    }
+    expect(empty, 'a pending state with no label says nothing').toEqual([]);
+  });
+});

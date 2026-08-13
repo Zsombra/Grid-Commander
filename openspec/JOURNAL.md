@@ -1,5 +1,53 @@
 # Journal
 
+## 2026-08-13 (late) — #153 closed, and a guard taught rather than lowered
+
+**Did**: rolled `PerformButton` across every perform submit. **#153 closed.**
+
+Fourteen submits, thirteen files, each with its own progressive label — a
+generic "Working…" would be one wording for fourteen consequences, and the label
+is what a screen reader announces.
+
+**The guard matters more than the sweep.**
+`tests/architecture/every-perform-says-it-is-working.test.ts` fails if a submit
+inside a `<form action>` is a bare button. This item existed because eleven
+manifests recorded the same omission in the same words, which is what happens
+when a convention lives only in prose.
+
+**One submit is deliberately uncovered, and it is a gap rather than a rule.**
+`/pending/[id]`'s "Decline — this closes the proposal permanently" mutates and
+still says nothing. It wears `BUTTON_SECONDARY`; `PerformButton` wears primary,
+and promoting a deliberately secondary control to the page's main weight is a
+visual decision this lane does not make. It needs a secondary variant of the
+pending treatment, which needs a ticket. The guard's regex is scoped to
+`BUTTON_PRIMARY` and says so in its own comment, rather than being drawn
+narrowly enough to look like the rule was always this shape.
+
+**An architecture guard broke, and lowering it would have been the easy wrong
+answer.** `controls.test.ts` counts how widely `BUTTON_PRIMARY` is worn, as an
+anti-vacuity floor: 20 buttons, 8 files. The sweep moved fourteen wearers behind
+one component, so the count fell to 13 and the file count to **zero**.
+
+The numbers were not relaxed. The scanner now counts `<PerformButton>` as a
+wearer — because it is one, spending the constant in its own file — and the
+"widely worn" check measures the component instead of the constant. Verified by
+mutation: stripping `BUTTON_PRIMARY` out of `perform-button.tsx` still fails it.
+A refactor that removed nothing would otherwise have permanently weakened a
+check written to catch a scanner that stopped matching.
+
+**Two escaping mishaps, same family, both caught by reading rather than by
+trusting an exit code.** A `` in a shell-passed Python string arrived as a
+backspace character, so an anchor silently failed to match; earlier the same
+layer command-substituted a backtick out of a comment. The fix both times was to
+stop routing source edits through the shell — the Edit tool has no such layer.
+Worth remembering: exit code 0 from a script that "found nothing to replace" is
+indistinguishable from success.
+
+**Gates**: typecheck, lint, 2328 tests / 179 files, build.
+
+**Owed**: the re-survey, again — this staled the manifests. Running it next
+against committed source.
+
 ## 2026-08-13 (late) — the round implemented: four tickets, and the rollout cost showed up on schedule
 
 **Did**: implemented DT-0022, DT-0023, DT-0024, DT-0025.

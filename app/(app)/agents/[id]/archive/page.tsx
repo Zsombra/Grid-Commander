@@ -1,7 +1,8 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '@/presentation/components/control.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
@@ -45,9 +46,12 @@ export default async function ArchivePage({
         <input type="hidden" name="agentId" value={proposal.agentId} />
         <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton
+          pendingLabel={`Archiving ${proposal.agentName}…`}
+          className="w-full tablet:w-auto"
+        >
           Archive {proposal.agentName} and free its slot
-        </button>
+        </PerformButton>
         <a href={`/agents/${proposal.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave it active
         </a>

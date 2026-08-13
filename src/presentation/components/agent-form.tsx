@@ -1,8 +1,9 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { StrategyListing } from '@/application/use-cases/list-strategies.query.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
-import { BUTTON_PRIMARY, CONTROL, LABEL } from './control.js';
+import { CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
@@ -183,9 +184,9 @@ export function AgentForm({
       <MoneyLimits catalog={catalog} />
 
 
-      <button type="submit" className={BUTTON_PRIMARY}>
+      <PerformButton pendingLabel="Creating the agent…">
         Create agent
-      </button>
+      </PerformButton>
     </form>
   );
 }

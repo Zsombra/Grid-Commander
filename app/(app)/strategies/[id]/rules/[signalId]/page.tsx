@@ -1,7 +1,7 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import {
-  BUTTON_PRIMARY,
   BUTTON_SECONDARY,
   CONTROL,
   LABEL,
@@ -341,9 +341,9 @@ export default async function RetuneRulePage({
           <input type="hidden" name="paramsJson" value={JSON.stringify(proposal.intent.ruleParams)} />
         ) : null}
         <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
-        <button type="submit" className={BUTTON_PRIMARY}>
+        <PerformButton pendingLabel={`Retuning ${proposal.signalId}…`}>
           Retune {proposal.signalId}
-        </button>
+        </PerformButton>
         <a href={`/strategies/${proposal.strategyId}`} className={BUTTON_SECONDARY}>
           Leave things as they are
         </a>

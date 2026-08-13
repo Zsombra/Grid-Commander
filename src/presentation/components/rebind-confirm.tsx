@@ -1,5 +1,6 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { RebindProposal } from '@/application/use-cases/rebind-agent.command.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from './control.js';
+import { BUTTON_SECONDARY } from './control.js';
 
 /**
  * The confirmation for the most destructive thing this product can do.
@@ -49,9 +50,12 @@ export function RebindConfirm({
         {/* Not danger-styled, for DT-0002's reason: the weight is on the
             consequence above, and a hazard-coloured control here would train a
             flinch at the action the page exists to offer. */}
-        <button type="submit" className={`${BUTTON_PRIMARY} w-full tablet:w-auto`}>
+        <PerformButton
+          pendingLabel={`Replacing ${rebind.agentName}’s configuration…`}
+          className="w-full tablet:w-auto"
+        >
           Replace {rebind.agentName}&apos;s configuration with {rebind.toStrategyName}&apos;s
-        </button>
+        </PerformButton>
         <a href={`/agents/${rebind.agentId}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Keep it bound to {rebind.fromStrategyName}
         </a>

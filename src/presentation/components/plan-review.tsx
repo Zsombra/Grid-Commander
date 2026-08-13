@@ -1,5 +1,6 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { PlanReview } from '@/application/use-cases/compile-plan.command.js';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from './control.js';
+import { BUTTON_SECONDARY } from './control.js';
 
 /**
  * The review screen.
@@ -151,12 +152,12 @@ export function PlanReviewPanel({
               thing; styling it as a hazard teaches people to flinch at the
               correct action. The weight lives on the consequence above it.
             */}
-            <button type="submit" className={BUTTON_PRIMARY}>
+            <PerformButton pendingLabel="Applying the change…">
               Apply this{' '}
               {boundAgentCount !== null && boundAgentCount > 0
                 ? `— reconfigures ${boundAgentCount} agent${boundAgentCount === 1 ? '' : 's'} now`
                 : 'change'}
-            </button>
+            </PerformButton>
             {/* A visible peer of Apply, not a footnote. Going back is the
                 expected outcome of a review that surprised the user. */}
             <a href={changeIt} className={BUTTON_SECONDARY}>

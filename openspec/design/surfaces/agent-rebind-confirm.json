@@ -4,7 +4,7 @@
   "route": "/agents/[id]/rebind",
   "capability": "agent-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "5a7576e",
+  "generated_at_commit": "72d2c86",
   "source_files": [
     "app/(app)/agents/[id]/rebind/page.tsx",
     "src/presentation/components/rebind-confirm.tsx",
@@ -327,7 +327,7 @@
   },
   "source_digest": {
     "app/(app)/agents/[id]/rebind/page.tsx": "sha256:1db704b33e7ac441df1187289b273191499afce0065aef7c7a0e65f2289dd47a",
-    "src/presentation/components/rebind-confirm.tsx": "sha256:5bf7a0132ddda51281da4fcaa369c8c1f3ee35767cadb4f8ce2779d39d427ab7",
+    "src/presentation/components/rebind-confirm.tsx": "sha256:cd10c1579610beed5e892c856a7ce134b2af3083052df96527cf36e1b8d197fc",
     "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:3318d30a8b36997dcac97d2cf68e9e902cae5ebd0b771e1386fca93c0b2458bb",
