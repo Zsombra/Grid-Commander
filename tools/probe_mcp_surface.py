@@ -843,14 +843,50 @@ def refresh_declared(capabilities_path: str = CAPABILITIES, out_path: str = OUT)
     exactly as it was: a refresh MUST NOT invent an observation, and a value it
     cannot derive it does not touch.
 
-    Refuses when the two files disagree about which tools exist. That means
-    they are snapshots of different deployments, and the honest fix is a live
-    re-probe, not a merge of two generations of the truth.
+    Refuses when the two files came from different server versions, and when
+    they disagree about which tools exist. Either means they are snapshots of
+    different deployments, and the honest fix is a live re-probe, not a merge of
+    two generations of the truth.
+
+    **The version check is the load-bearing one, and it was missing.** The tool
+    check alone concluded "same deployment" from a matching set of names — and
+    v18 added no tools. The count held at 114, none added, none removed, and
+    this function happily derived a v18 artifact's declared fields from a
+    v17.2.0 dump while both files agreed perfectly about which tools existed
+    (#198). A guard written against *"a count that has not moved proves
+    nothing"* was reading the names instead of the version.
+
+    The tool check stays. It catches a same-version dump that is somehow not the
+    same surface, which the version check cannot see.
     """
     with open(capabilities_path) as f:
-        dump = {t["name"]: t for t in json.load(f)["tools"]}
+        capabilities = json.load(f)
+    dump = {t["name"]: t for t in capabilities["tools"]}
     with open(out_path) as f:
         surface = json.load(f)
+
+    # The dump is a faithful MCP handshake and carries the protocol's own
+    # `serverInfo`; the curated artifact carries `server`. Different spellings of
+    # the same fact, and neither is worth rewriting to match the other.
+    dump_version = (capabilities.get("serverInfo") or {}).get("version")
+    surface_version = (surface.get("server") or {}).get("version")
+    if not dump_version or not surface_version:
+        print(
+            "one of the records names no server version, so they cannot be "
+            f"compared — dump: {dump_version or 'none'}, artifact: "
+            f"{surface_version or 'none'}; re-probe live",
+            file=sys.stderr,
+        )
+        return 2
+    if dump_version != surface_version:
+        print(
+            f"these are different generations — capabilities dump {dump_version}, "
+            f"artifact {surface_version}. Deriving from the older would backdate "
+            "the artifact without changing the version stamped on it. Re-probe "
+            "live and re-capture the dump instead of merging them.",
+            file=sys.stderr,
+        )
+        return 2
 
     artifact_names = {e["name"] for e in surface["tools"]}
     if artifact_names != set(dump):

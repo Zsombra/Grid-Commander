@@ -41,9 +41,16 @@ Three facts that shape almost every decision:
    proves nothing and a count that has says only that something changed.
    **v18.2.0 is the sharpest case**: a whole major version arrived between two
    probes a day apart, and *nothing* a count could see moved — 114 tools, none
-   added or removed, no input schema changed, the read/write/destructive split
-   identical. What moved was one tool's meaning. Probe the version, never the
-   shape.
+   added or removed, no **input** schema changed, the read/write/destructive
+   split identical. Probe the version, never the shape.
+
+   That sentence is exactly true and was read as more general than it is. It is
+   scoped to *inputs*, and **outputs grew by 188 schema leaves across 11 tools**
+   — a whole `protection` block the platform now publishes per position among
+   them. Nothing saw it, because the artifact holding output schemas
+   (`docs/battlegrid-mcp-capabilities.json`) was itself a major version behind
+   and nothing compared it to the surface record. Two of the three records were
+   compared to each other; the third was not (#198).
 3. **This product holds credentials that configure other people's agents**, and
    with wager scope, move their money. Read-only by default, explicit step-up,
    audit every write.

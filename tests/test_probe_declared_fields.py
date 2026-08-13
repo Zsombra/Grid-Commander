@@ -287,13 +287,24 @@ class Refs(unittest.TestCase):
 
 
 class RefreshDeclared(unittest.TestCase):
-    def _write(self, directory, capabilities, surface):
+    def _write(self, directory, capabilities, surface, dump_v="18.2.0", artifact_v="18.2.0"):
+        """Both records name a server, because both real ones do.
+
+        The versions are parameters rather than constants: a refresh derives one
+        record from the other, and deriving across a version boundary is the
+        defect these fixtures exist to pin. Defaults match, so a test that does
+        not care about versions does not have to mention them.
+
+        The dump spells it `serverInfo` and the artifact spells it `server` —
+        the protocol's own field name against the curated one, which is what the
+        two real files carry.
+        """
         caps_path = os.path.join(directory, "caps.json")
         out_path = os.path.join(directory, "surface.json")
         with open(caps_path, "w") as f:
-            json.dump(capabilities, f)
+            json.dump({**capabilities, "serverInfo": {"name": "battlegrid", "version": dump_v}}, f)
         with open(out_path, "w") as f:
-            json.dump(surface, f)
+            json.dump({**surface, "server": {"name": "battlegrid", "version": artifact_v}}, f)
         return caps_path, out_path
 
     def test_observed_fields_survive_and_declared_fields_update(self):
@@ -351,6 +362,56 @@ class RefreshDeclared(unittest.TestCase):
             assert refresh_declared(caps_path, out_path) == 2
             with open(out_path) as f:
                 assert f.read() == before, "a refused refresh must write nothing"
+
+    def test_a_source_from_another_generation_is_refused(self):
+        """The case that shipped, and the one the tool check could not see.
+
+        Identical tool sets — *identical*, not merely the same size — and two
+        server versions. v18 added no tools, so the existing refusal had nothing
+        to catch, and this function derived a v18 artifact's declared fields
+        from a v17.2.0 dump (#198). Nothing about the tools differs here, so the
+        test cannot pass for any reason except the version.
+        """
+        capabilities = {"tools": [{"name": "list_things", "inputSchema": {}}]}
+        surface = {"tools": [{"name": "list_things", "input_constants": {}}]}
+        with tempfile.TemporaryDirectory() as directory:
+            caps_path, out_path = self._write(
+                directory, capabilities, surface, dump_v="17.2.0", artifact_v="18.2.0"
+            )
+            with open(out_path) as f:
+                before = f.read()
+            assert refresh_declared(caps_path, out_path) == 2
+            with open(out_path) as f:
+                assert f.read() == before, "a refused refresh must write nothing"
+
+    def test_a_record_that_names_no_version_is_refused(self):
+        """Absent is not matching.
+
+        A record with no version cannot be compared, and treating that as
+        agreement is how the surface record itself went two major versions
+        unnoticed. Refused rather than derived-from, in both directions.
+        """
+        capabilities = {"tools": [{"name": "list_things", "inputSchema": {}}]}
+        surface = {"tools": [{"name": "list_things", "input_constants": {}}]}
+        for dump_v, artifact_v in [(None, "18.2.0"), ("18.2.0", None)]:
+            with tempfile.TemporaryDirectory() as directory:
+                caps_path = os.path.join(directory, "caps.json")
+                out_path = os.path.join(directory, "surface.json")
+                caps = dict(capabilities)
+                if dump_v:
+                    caps["serverInfo"] = {"name": "battlegrid", "version": dump_v}
+                surf = dict(surface)
+                if artifact_v:
+                    surf["server"] = {"name": "battlegrid", "version": artifact_v}
+                with open(caps_path, "w") as f:
+                    json.dump(caps, f)
+                with open(out_path, "w") as f:
+                    json.dump(surf, f)
+                with open(out_path) as f:
+                    before = f.read()
+                assert refresh_declared(caps_path, out_path) == 2, (dump_v, artifact_v)
+                with open(out_path) as f:
+                    assert f.read() == before, "a refused refresh must write nothing"
 
 
 CAPABILITIES = os.path.join(
