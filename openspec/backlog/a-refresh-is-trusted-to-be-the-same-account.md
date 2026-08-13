@@ -2,7 +2,7 @@
 id: a-refresh-is-trusted-to-be-the-same-account
 title: A refreshed grant is assumed to be for the same account, and nothing checks it
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-13
@@ -60,3 +60,38 @@ Settling it needs one live observation rather than a build: refresh a delegated
 grant, read the account with the refreshed token, and compare. That is one extra
 call inside a walk the operator is already doing for
 [[oauth-cannot-complete-without-a-subject]].
+
+---
+
+# ANSWERED 2026-08-13 — the assumption holds, and is now observed rather than assumed
+
+Settled the way this item said it should be: **one live observation, not a
+build.** A delegated connection was refreshed and the account re-read with the
+refreshed token.
+
+    stored battlegrid_subject : 0eccbf37-d90b-4933-88f2-d120627b23f7
+    subject after refresh     : 0eccbf37-d90b-4933-88f2-d120627b23f7   SAME
+
+Observed in the same call, all cheap and worth recording:
+
+| | |
+|---|---|
+| refresh token rotated | **YES** — consistent with #93 |
+| scopes on the refreshed grant | `["mcp:read"]` — preserved, not widened |
+| `expires_in` | 3600 — consistent with #93 |
+| identity on the grant | **none** — keys are exactly `accessToken`, `expiresIn`, `refreshToken`, `scopes` |
+
+That last row is an independent re-confirmation of the change's central premise:
+a token response carries authority and not identity, on **refresh** as well as on
+the initial exchange. `TokenGrant` having no subject field is correct for both.
+
+## The decision this closes
+
+Re-reading identity on every refresh is **not** worth the round trip. The
+platform reissues against the same account, and the product's practice of
+establishing identity once at connect time and trusting the stored subject
+thereafter is now backed by an observation rather than by reasoning.
+
+Closed as **answered**, not as wontfix: the question was worth asking, the answer
+is recorded, and the next person reading the refresh path can tell *considered*
+from *never thought about* — which is the whole reason this was filed.

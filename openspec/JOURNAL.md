@@ -34,18 +34,21 @@ against a committed file that had contradicted it all along.
 **State**: commit `6545c2f`, 38 files, on `claude/handout-board-command-f3dc98`,
 **not pushed**. All six quality gates green: typecheck, lint, **2257** vitest,
 build, drizzle schema check, **85** db tests. 0 active changes, 29 open backlog
-items, 0 validation errors. **No local connection remains** — the walk's row was
-truncated by `npm run test:db` during the re-audit (#208). The grant it created
-is still standing at BattleGrid and can no longer be revoked from here, because
+items, 0 validation errors. **A delegated connection is standing** in
+`grid_commander_test` (subject `0eccbf37-…`), left deliberately at the operator's
+request, with rotated tokens written back. An **earlier** connection was
+truncated mid-session by `npm run test:db` during the re-audit (#208) — that
+grant is still live at BattleGrid and can no longer be revoked from here, because
 its tokens went with the row.
 
 **Next**: push and open the PR. **#91 is decided — keep** (2026-08-13):
 Grid-Commander is a third-party multi-tenant client and the delegated path is
 that capability; the case for deleting rested on it being code that could never
-succeed, and the walk removed that case. **#206 remains open and needs one
-consent click** — refresh a delegated grant, re-read the account, compare the
-subject. The harness and the exact experiment are written down; only the click
-is missing.
+succeed, and the walk removed that case. **#206 is answered — the assumption holds**: a
+delegated grant was refreshed and the account re-read with the refreshed token;
+same subject, refresh token rotated, scopes preserved, and the refreshed grant
+carries no identity field either — an independent re-confirmation that a token
+response carries authority and not identity, on refresh as well as on exchange.
 
 **Watch out**:
 
@@ -56,6 +59,12 @@ is missing.
   public client is `b4cf1fcf-…`. Filed as **#208**: truncating locally does not
   revoke upstream, which is the exact failure `DisconnectCommand` exists to
   prevent, arriving through a door it does not watch.
+- **Never run `npm run build` while `npm run dev` is up.** They share `.next`,
+  and the production build overwrites the dev server's chunk map — which then
+  fails with `Cannot find module './5873.js'` on the first route it had not yet
+  compiled. It cost a consent click. Silent until first use, which is the same
+  shape as the scope-guard bug. `rm -rf .next` and restart; pre-warm a route with
+  `curl` before spending a human's click on it.
 - **`. ./.env` in Git Bash corrupts a value that starts with `/`.** MSYS path
   conversion rewrote a base64 `TOKEN_ENCRYPTION_KEY` into `C:/Program Files/…`
   — 44 chars became 64, 32 bytes became 45, and the file was correct the whole
