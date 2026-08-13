@@ -4,6 +4,7 @@ import { RebindConfirm } from '@/presentation/components/rebind-confirm.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { requiredInteger, requiredText } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
@@ -90,14 +91,25 @@ export async function performRebind(formData: FormData) {
 
   const agentId = requiredText(formData, 'agentId');
   const toStrategyId = requiredText(formData, 'toStrategyId');
-  const result = await app.rebindAgent.execute({
-    ...user.authority,
-    agentId,
-    toStrategyId,
-    toStrategyRevision: requiredInteger(formData, 'toStrategyRevision'),
-    expectedRevision: requiredInteger(formData, 'expectedRevision'),
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
+  const result = await spending(
+    () =>
+      app.rebindAgent.execute({
+        ...user.authority,
+        agentId,
+        toStrategyId,
+        toStrategyRevision: requiredInteger(formData, 'toStrategyRevision'),
+        expectedRevision: requiredInteger(formData, 'expectedRevision'),
+        confirmationToken: requiredText(formData, 'confirmationToken'),
+      }),
+    // The comment below already describes a refusal escaping as a thrown error
+    // and rendering a framework page in place of the reason. That was fixed for
+    // the platform's CONFLICT; the confirmation guard's own refusal was still
+    // doing it, and this is the same road for the same reason.
+    (problem) => {
+      const query = new URLSearchParams({ to: toStrategyId, problem });
+      redirect(`/agents/${agentId}/rebind?${query.toString()}`);
+    },
+  );
   // A moved destination returns to this page: the describe re-runs against
   // what the platform holds now, so the fresh proposal and the reason it was
   // needed arrive together. A platform refusal takes the same road — it used

@@ -9,6 +9,7 @@ import {
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { nullableInteger, requiredText } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { AuthorityLost } from '@/presentation/components/authority-lost.js';
 
@@ -183,14 +184,23 @@ export async function performDeploy(formData: FormData) {
   const agentId = requiredText(formData, 'agentId');
   const coinId = requiredText(formData, 'coinId');
   const timeframe = requiredText(formData, 'timeframe');
-  const result = await app.performDeploy.execute({
-    ...user.authority,
-    agentId,
-    coinId,
-    timeframe,
-    expectedRevision: nullableInteger(formData, 'expectedRevision'),
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
+  const result = await spending(
+    () =>
+      app.performDeploy.execute({
+        ...user.authority,
+        agentId,
+        coinId,
+        timeframe,
+        expectedRevision: nullableInteger(formData, 'expectedRevision'),
+        confirmationToken: requiredText(formData, 'confirmationToken'),
+      }),
+    // Same road as a platform refusal, and the choice is preserved the same way
+    // so the describe re-runs against what they picked.
+    (problem) => {
+      const query = new URLSearchParams({ coin: coinId, timeframe, problem });
+      redirect(`/agents/${agentId}/deploy?${query.toString()}`);
+    },
+  );
   // The reason returns to the page that asked, where the person who clicked is
   // still standing — with their choice preserved so the describe re-runs.
   // Lost authority is not a refusal of this deployment — nothing on this

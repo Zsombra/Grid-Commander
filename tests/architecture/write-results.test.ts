@@ -44,11 +44,48 @@ interface ExecuteSite {
 
 const CALL = /^(\s*)(const |return |.*= )?await app\.(\w+)\.execute\(/;
 
+/**
+ * The same call, one indirection out: `spending(() => app.X.execute(…))`.
+ *
+ * #232 moved every confirmation-spending call inside that wrapper, so the
+ * execute no longer sits on a line beginning `await app.` and `CALL` stopped
+ * seeing it. The scanner went blind on nine sites and reported a *cleaner*
+ * tree than before — including one genuine dropped result whose ledger row
+ * then failed as "no longer found".
+ *
+ * Deleting that row was the available wrong answer. The result is still
+ * dropped; only the measure had stopped reaching it, which is the same failure
+ * `controls.test.ts` records about `<PerformButton>` — a refactor that removed
+ * nothing must not be able to weaken a check.
+ *
+ * So the binding is read from the wrapper, where it now lives:
+ *   `const result = await spending(() => app.X.execute(…))`  → read
+ *   `await spending(() => app.X.execute(…))`                 → dropped
+ */
+const WRAPPED_OPEN = /^(\s*)(const |return |.*= )?await spending\(/;
+const WRAPPED_CALL = /\bapp\.(\w+)\.execute\(/;
+
 function executeSites(): ExecuteSite[] {
   const sites: ExecuteSite[] = [];
   for (const file of tsxFilesUnder(APP)) {
     const lines = readFileSync(file, 'utf8').split('\n');
+    // Set when `await spending(` opens, cleared when its execute is found —
+    // the binding belongs to the wrapper, and is what the site inherits.
+    let wrappedBinding: boolean | null = null;
     for (const line of lines) {
+      const opened = WRAPPED_OPEN.exec(line);
+      if (opened) {
+        wrappedBinding = opened[2] !== undefined;
+        continue;
+      }
+      if (wrappedBinding !== null) {
+        const inner = WRAPPED_CALL.exec(line);
+        if (inner) {
+          sites.push({ file, tool: inner[1] as string, dropped: !wrappedBinding });
+          wrappedBinding = null;
+        }
+        continue;
+      }
       if (!line.includes('await app.')) continue;
       const match = CALL.exec(line);
       if (!match) continue;

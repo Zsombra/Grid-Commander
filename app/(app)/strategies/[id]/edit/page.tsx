@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { compiledPlan, requiredText, updateCompileIntent } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
@@ -418,12 +419,18 @@ export async function apply(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const strategyId = requiredText(formData, 'strategyId');
-  await app.applyPlan.execute({
-    ...user.authority,
-    strategyId,
-    plan: compiledPlan(formData, 'plan'),
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
+  await spending(
+    () =>
+      app.applyPlan.execute({
+        ...user.authority,
+        strategyId,
+        plan: compiledPlan(formData, 'plan'),
+        confirmationToken: requiredText(formData, 'confirmationToken'),
+      }),
+    // Back to the review that was agreed to, not to the roster: a refusal that
+    // lands on /strategies has discarded both the reason and the plan.
+    (problem) => redirect(`/strategies/${strategyId}/edit?problem=${encodeURIComponent(problem)}`),
+  );
   redirect('/strategies');
 }
 

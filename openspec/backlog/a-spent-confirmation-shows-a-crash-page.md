@@ -2,7 +2,7 @@
 id: a-spent-confirmation-shows-a-crash-page
 title: A second press shows a framework crash page to someone whose action succeeded
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-08-14
 updated: 2026-08-14
@@ -73,6 +73,50 @@ Prefer the first for the confirmation case specifically: the sentence and the
 redirect convention both already exist. Consider the second **as well** — a
 product with no error boundary anywhere has no floor under any unexpected throw,
 and that is a separate hole this finding happens to expose.
+
+## What shipped
+
+`src/presentation/confirmation-refusal.ts` exports `spending(run, onRefused)`,
+and all nine confirmation-spending actions go through it. The tenth,
+`conditions/save`, already had its own catch and is left alone.
+
+**A wrapper rather than nine try/catches, for a reason specific to Next:**
+`redirect()` works *by throwing*. A `try` drawn around a block that also
+redirects catches `NEXT_REDIRECT` and turns a successful navigation into a
+swallowed error. The safe form is narrow — the command call inside, the redirect
+outside — and passing the redirect as a separate argument makes that shape
+unwidenable, where nine hand-written copies would be nine chances to add a line
+inside the `try`.
+
+It catches **only** `ConfirmationRequiredError`. A lost connection, an outage
+and a bug are not refusals, have no next step to name, and must not be dressed
+as `?problem=`.
+
+`tests/architecture/a-refusal-reaches-the-person.test.ts` enforces it, including
+that no spender wraps a redirect in its own try. Mutation-verified.
+
+## Two existing guards broke, and neither was lowered
+
+The wrapper moved `app.X.execute(` off the line beginning `await app.`, so
+`write-results.test.ts` stopped seeing nine call sites and reported a *cleaner*
+tree than before — including one genuinely dropped result whose ledger row then
+failed as "no longer found". Deleting that row was the available wrong answer:
+the result is still dropped, only the measure had stopped reaching it. The
+scanner now reads the binding off the wrapper, where it moved.
+
+`refusals-reach-the-operator.test.ts` pinned five call shapes by regex. The
+property — the action reads its result — is unchanged; only the spelling moved,
+so the matcher follows it, bounded rather than `[\s\S]*` so it cannot match a
+`const result` bound to something else further down. Both re-verified by
+mutation.
+
+## Still open
+
+An `error.tsx` was **not** added. Every confirmation refusal now has a
+product-authored route, which is the defect this item names; a boundary is a
+floor under *unexpected* throws, which is a wider question than this. Worth
+doing — the product still has no boundary anywhere — and worth its own item
+rather than being folded in here.
 
 ## Evidence
 

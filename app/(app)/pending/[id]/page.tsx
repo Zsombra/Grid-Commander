@@ -4,6 +4,7 @@ import { acting, requestApp } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
 import { editArguments } from '@/presentation/form.js';
+import { spending } from '@/presentation/confirmation-refusal.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 
@@ -195,13 +196,22 @@ async function agree(formData: FormData) {
   // and replacing all twenty with the one that was proposed.
   const { changes: rest, tradingConfigChanges } = editArguments(changes);
 
-  const result = await app.updateAgent.execute({
-    ...user.authority,
-    agentId: text(formData, 'agentId'),
-    changes: rest,
-    ...(tradingConfigChanges ? { tradingConfigChanges } : {}),
-    confirmationToken: text(formData, 'confirmationToken'),
-  });
+  const result = await spending(
+    () =>
+      app.updateAgent.execute({
+        ...user.authority,
+        agentId: text(formData, 'agentId'),
+        changes: rest,
+        ...(tradingConfigChanges ? { tradingConfigChanges } : {}),
+        confirmationToken: text(formData, 'confirmationToken'),
+      }),
+    // Back to this proposal, where the Shell renders the reason on every branch
+    // — including the one that now describes a world where the change landed.
+    // The double-submit note below is the *other* half of the same story: that
+    // one is a write that succeeded against a closed proposal, this one is a
+    // confirmation already spent.
+    (problem) => redirect(`/pending/${id}?problem=${encodeURIComponent(problem)}`),
+  );
 
   if (result.kind !== 'updated') {
     const reason =
