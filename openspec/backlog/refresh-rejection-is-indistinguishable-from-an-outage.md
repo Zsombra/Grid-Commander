@@ -2,7 +2,7 @@
 id: refresh-rejection-is-indistinguishable-from-an-outage
 title: Every rejected refresh token returns 500, so reconnect and retry-later look identical
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-14
@@ -139,29 +139,40 @@ invalid-*grant* case falls through to 500. Added to the report. The
 gate-blocks issue in the same report healed upstream between 2026-08-13 and
 2026-08-14; this one did not.
 
-## Re-scoped 2026-08-14 — not reported, so the product answers it itself
+<details>
+<summary><b>Re-scoped 2026-08-14 — WRONG, corrected the same day.</b> A
+bounded-retry-then-reconnect change was designed here. It was written from
+this item's opening argument and its tail, without the 2026-08-13
+re-verification in the middle — which had already falsified the premise. The
+product does not lean toward "outage" on a refresh failure; it already says
+"reconnect" on the first one (`resolve-authority.query.ts:96-100`), nothing
+is torn down, and the behaviour is self-healing. "N failures → flip to
+reconnect" would have made the first N−1 failures read as an outage —
+reintroducing exactly the failure mode this item originally feared, on a
+path already proven correct. Kept folded per the correction rule: the
+mistake was reachable because a long item was read at its ends, and this
+repository's recurring defect is exactly an argument outliving the evidence
+recorded beside it.</summary>
 
-The operator decided the report will not be sent (its header records the
-decision), which voids this item's closing condition ("closes when the
-report is sent"). The item now closes when the client-side mitigation lands,
-and the mitigation is chosen: **option 2, bounded retry then reconnect**,
-with option 1's comment written in the same change.
+The withdrawn design proposed: N consecutive refresh 500s → surface the
+reconnect remedy; counter reset on success; tradeoff documented at the
+mapping site; change name `a-dead-token-stops-looking-like-an-outage`.
 
-Design, recorded now so the change starts from it:
+</details>
 
-- N consecutive refresh failures with 500 → treat the connection as revoked
-  and surface the reconnect remedy, instead of reporting a platform outage
-  forever. The threshold guesses, but it converges on the right answer in
-  both worlds: a real outage clears before N in practice, and a dead token
-  never does.
-- The tradeoff stays stated at the mapping site (`mcp-adapter.ts:415`
-  territory): a 500 here is ambiguous *by platform behaviour* — measured,
-  RFC-violating, and deliberately unreported — and the outage-leaning single
-  failure stays the safer read. The counter must reset on any success.
-- The wrong-way cost is bounded and honest: if it really was an N-minute
-  outage, the user is offered a reconnect they did not need — a wasted OAuth
-  round trip, which [[the-authority-page-names-a-remedy-and-offers-no-target]]
-  (#182) already prices as no-harm.
+## Closed 2026-08-14 — unreported by decision, and the product half needs nothing
 
-Next: `/propose` `a-dead-token-stops-looking-like-an-outage` (standard) from
-this design.
+**Why closed**: both halves are resolved. The **product half** was
+re-verified correct on 2026-08-13 and re-read today: every refresh failure
+already surfaces the reconnect remedy, nothing is deleted, and a recovered
+platform heals the connection on the next request without help. No product
+change is warranted; the one residue — outage-time wording that says
+"reconnect" when waiting would do — is cosmetic, priced no-harm, and belongs
+to [[the-authority-page-names-a-remedy-and-offers-no-target]] (#182). The
+**platform half** (500 where RFC 6749 §5.2 requires `invalid_grant`, six
+probes across 2026-08-13/14) will not be reported: the operator decided so,
+and `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — closed unsent — holds the
+full measurement record. Reopen only if the mapping in
+`resolve-authority.query.ts` changes, or the platform starts answering
+`invalid_grant` (at which point the catch-all could distinguish what it
+today cannot).

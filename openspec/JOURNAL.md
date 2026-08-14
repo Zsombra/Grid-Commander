@@ -1,5 +1,41 @@
 # Journal
 
+## 2026-08-14 (stand-down) — the token change died on contact with its own item, and #204 closed anyway
+
+**Did**: went to build `a-dead-token-stops-looking-like-an-outage` and
+**stood down before proposing**: the first code read
+(`resolve-authority.query.ts:93-100`) showed every refresh failure already
+surfaces the reconnect remedy — and #204's own 2026-08-13 middle section
+had already established it, called the behaviour self-healing, and
+concluded "no product change is proposed". The bounded-retry design
+recorded on the item an hour earlier was written from the item's head and
+tail without that middle, and would have made the first N−1 failures read
+as an outage — reintroducing the exact failure mode the item feared, on a
+path proven correct. The wrong re-scope is kept folded in the item per the
+correction rule; issue #204 carries the correction and is **closed**:
+product half needs nothing, platform half deliberately unreported (operator
+decision), measurement record in the unsent report. All three report
+tickets are now closed — #100 (fixed upstream), #102 (mitigated in
+product), #204 (verified already-correct).
+
+**State**: 0 active changes, 26 open items. `validate --all` 0 errors / 20
+warnings. Branch about to be pushed; PR next.
+
+**Next**: operator review of the PR. On merge, the sharpest small items are
+#257 (re-date the gate-blocks fallback comments) and #255 (agent editor's
+hand-rolled refusal banner). Watch `list_pending_approvals` when Radar
+unpauses (#101, Vanguard is the producer).
+
+**Watch out**: today's cleanest lesson — **read the middle of a long item
+before designing from it.** Twice this session an argument written at an
+item's ends was falsified by evidence recorded in its own body (#204's
+bounded retry; the report's gate-blocks section). The items are doing their
+job; the failure mode is reading them as head+tail summaries. Also: do not
+"fix" `resolve-authority`'s catch-all into distinguishing outage from
+revocation — the response carries no information to distinguish them
+(platform answers 500 for both), and the catch-all + self-healing retry is
+the correct design until the platform ever answers `invalid_grant`.
+
 ## 2026-08-14 (ourselves) — the report closes unsent, and the product answers what it can
 
 **Did**: operator decision — the upstream report will **not** be sent
