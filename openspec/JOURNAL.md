@@ -1,6 +1,61 @@
 # Journal
 
-## 2026-08-14 (close) — three merges, two archives, and both dedupe layers measured
+## 2026-08-14 (arms) — the create action reads all five arms, and a chosen fork name collides the same way
+
+**Did**: two threads. **(1)** #245 as
+**`the-create-action-reads-every-arm`** (standard; proposed and executed,
+operator pre-approved the chain and the fix shape): the create action's three
+silent arms — `at-capacity`, `invalid`, `no-catalog` — now bounce to
+`/agents/new?problem=` with the submitted values carried (the edit action's
+`backTo` pattern), the composition prefills the re-rendered form
+(`AgentForm.composed`, money via `MoneyLimits.current`), the dedupe key
+deliberately stays behind (fresh key per render, unchanged), and the tail is
+`result satisfies never` so a sixth arm fails typecheck — **measured**: a
+scratch arm failed `tsc` at the action's default branch, then reverted. Dead
+`issues` prop removed. Partial-read pins added to
+`refusals-reach-the-operator.test.ts` (+ the page joined CARRY_PROBLEM); the
+action seam walked per arm in `new-agent.test.ts`. One test amended:
+`money-limits.test.ts` pinned "no `current` at create" — its own principle
+("prefill only from what was passed in") survives; the spelling moved.
+**(2)** The fork-500 thread: the never-measured half of #102 measured with one
+authorized call — `fork_strategy(name: "Alesia")` against an existing name →
+**INTERNAL_ERROR**, nothing created, account unchanged (verified before/after,
+17 strategies, 5/25). So the copy question is settled: the fork form's copy
+stays — the "naming avoids the error" claim is now measured **false**, not
+merely unestablished; comment at the naming hint updated, item + issue #102
+annotated. Upstream report drafted bundling #102/#100/#204:
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — **draft only, nothing sent**,
+awaiting operator review.
+
+**State**: the change is **verified, archived, and on PR #251** (operator's
+"follow recommendation"): verifier passed clean — one suggestion, filed as
+`the-new-agent-form-has-no-surface` (#250: no surface manifest covers
+`agent-form.tsx`, which is why the real UI change tripped no staleness warning
+while comment-only diffs elsewhere did) — then the deltas merged into
+`agent-authoring` (verified landed: 7 scenarios on the Outcome requirement,
+3 on the added one), #245's item and issue closed. Two commits so the threads
+stay separable (`8310540` the change, `553149e` the fork-500 records), plus
+this journal commit. Gates green at commit: typecheck, lint, 2386 vitest /
+185 files, build, drizzle no-op; `test:db` skipped — no db surface, no local
+DATABASE_URL. 28 open items (#245 closed, #250 opened).
+
+**Next**: operator — review the upstream report draft and choose the send
+channel (nothing sends itself), and merge **PR #251**. Then the board's top p2
+(`a-vacuity-floor-that-does-not-exercise-its-own-scan`).
+
+**Watch out**: three `design_surface_stale` warnings are new
+(17 total, 14 before): `agent-edit` and `agent-reactivate-confirm` moved on a
+**comment-only** diff in `money-limits.tsx`, `strategy-fork-confirm` on a
+comment in the fork page — no visual change anywhere; re-pin cheaply or ignore
+knowingly. The probe's negative is load-bearing: a colliding chosen name 500s
+**identically** to the default name, so any future copy or automation that
+treats naming as the escape hatch is building on a falsehood — the only safe
+name is one not on the account, and which those are is the platform's to
+refuse. And the create form's `invalid` arm carries its refused value back
+into a select that cannot re-offer it (the options come from the catalog):
+the value survives in the URL and the banner names it, but the control shows
+the first option — inherent to selects, noted so nobody files it as a
+dropped-value bug.
 
 **Did**: closed out the session. **PR #246** (the #239 dedupe fix + checklist
 v2.0.0 + the `a-duplicate-submit` archive), **PR #247** (the #238 probe
