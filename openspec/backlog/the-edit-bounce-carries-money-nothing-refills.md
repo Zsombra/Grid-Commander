@@ -2,11 +2,11 @@
 id: the-edit-bounce-carries-money-nothing-refills
 title: A bounced edit carries the money values home, and the boxes refill from storage
 type: debt
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-14
-updated: 2026-08-14
-change: ""
+updated: 2026-08-15
+change: "the-bounced-money-refills-the-boxes"
 capability: agent-authoring
 github: "260"
 blocked_by: []
