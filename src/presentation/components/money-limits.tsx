@@ -26,11 +26,14 @@ export function MoneyLimits({
 }: {
   catalog: Catalog;
   /**
-   * The agent's values, when editing rather than composing.
+   * The agent's values when editing — or, on the create form, what the
+   * operator typed before a refusal bounced it back. Same reasoning either
+   * way: the numbers already exist and the operator chose them.
    *
-   * One component for both, so the zero-means-unbounded warning cannot drift
-   * between the screen that creates an agent and the screen that changes it —
-   * which is exactly the drift `zero-does-not-mean-nothing` was written about.
+   * One component for both screens, so the zero-means-unbounded warning cannot
+   * drift between the screen that creates an agent and the screen that changes
+   * it — which is exactly the drift `zero-does-not-mean-nothing` was written
+   * about.
    */
   current?: Readonly<Record<string, unknown>> | undefined;
 }) {
