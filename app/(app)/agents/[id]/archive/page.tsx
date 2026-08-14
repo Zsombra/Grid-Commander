@@ -25,9 +25,16 @@ export default async function ArchivePage({
   if (result.kind !== 'proposal') {
     // A refusal to mint is advisory, not failure: notice, never danger, and
     // nothing beneath it styled as though retrying could help. DT-0004.
+    //
+    // The carried reason mounts here too — this is the branch a bounced
+    // archive lands on by construction, because after a spent confirmation
+    // the agent is usually already archived and the describe declines to
+    // re-mint. "Cannot archive" and "your archive was refused" are two
+    // different facts, and the operator is owed both (#240).
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot archive</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
           {result.reason}
         </p>

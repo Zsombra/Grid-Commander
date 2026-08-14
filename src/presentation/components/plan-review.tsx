@@ -23,6 +23,7 @@ export function PlanReviewPanel({
   changeIt,
   confirmation,
   applyBlockedBecause,
+  carry,
 }: {
   review: PlanReview;
   /**
@@ -53,6 +54,22 @@ export function PlanReviewPanel({
   };
   /** Why applying is unavailable, when it is. Always a reason the user can act on. */
   applyBlockedBecause?: string;
+  /**
+   * The composition this review was compiled from, carried through the apply.
+   *
+   * A refused apply redirects back to the editor, and without these the
+   * editor renders the blank compose form — the refusal would cost the
+   * operator the change they had already reviewed. Carried as hidden inputs
+   * so the action can rebuild the compile query and land them on a fresh
+   * review with the refusal above it. A fresh review, deliberately: the old
+   * confirmation is known-dead, and re-showing the panel it belonged to
+   * would invite a second press of a button that cannot succeed.
+   */
+  carry?: {
+    readonly tagline: string;
+    readonly sections: readonly string[];
+    readonly unknownSections: readonly string[];
+  };
 }) {
   const { viable, concerns, changedAxes, boundAgentCount, proposedRevision, summary } = review;
 
@@ -146,6 +163,17 @@ export function PlanReviewPanel({
                 it changes its digest, the confirmation stops matching, and the
                 write is refused before it reaches BattleGrid. */}
             <input type="hidden" name="plan" value={JSON.stringify(review.plan)} />
+            {carry && (
+              <>
+                <input type="hidden" name="tagline" value={carry.tagline} />
+                {carry.sections.map((s) => (
+                  <input key={s} type="hidden" name="sections" value={s} />
+                ))}
+                {carry.unknownSections.map((s) => (
+                  <input key={s} type="hidden" name="unknownSections" value={s} />
+                ))}
+              </>
+            )}
             {/*
               Not danger-styled, deliberately. Applying is the legitimate purpose
               of this page, and a user who has read the review is doing the right

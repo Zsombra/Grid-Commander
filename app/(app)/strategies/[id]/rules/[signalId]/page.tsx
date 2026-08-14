@@ -92,11 +92,17 @@ export default async function RetuneRulePage({
   const authority = one(q, 'authority');
   if (authority) return <AuthorityLost reason={authority} remedy={app.remedy} />;
 
+  // Read before the earliest branch: a refused retune can bounce back to a
+  // page whose strategy has since gone missing or unreadable, and the refusal
+  // must survive whichever state this surface now describes (#240).
+  const problem = one(q, 'problem');
+
   const read = await app.readStrategy.execute({ ...user.authority, strategyId: id });
   if (read.kind === 'missing') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to strategies</a>
         </p>
@@ -107,6 +113,7 @@ export default async function RetuneRulePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The strategy could not be read</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{read.reason}</p>
         {/* Distinct from the `missing` branch above, which is the platform
             saying the strategy is not there. This one says nothing at all. */}
@@ -124,6 +131,7 @@ export default async function RetuneRulePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Not one of this strategy&apos;s rules</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           &quot;{summary.name}&quot; does not weigh {signalId}. Only a rule the
           strategy already carries can be retuned here.
@@ -140,7 +148,6 @@ export default async function RetuneRulePage({
   const signal = await app.readSignal.execute({ ...user.authority, signalId });
   const declared = signal.kind === 'signal' ? signal.definition.parameters : [];
 
-  const problem = one(q, 'problem');
   const allocationRaw = one(q, 'a');
 
   /**
@@ -237,6 +244,7 @@ export default async function RetuneRulePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Those parameters do not read as numbers</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">
           Every declared parameter needs a numeric value before the change can
           be described.
@@ -272,6 +280,7 @@ export default async function RetuneRulePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">That allocation does not read as a number</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
           {`“${allocationRaw}” is not a whole number, so nothing was described and nothing was sent to BattleGrid.`}
         </p>
@@ -306,6 +315,7 @@ export default async function RetuneRulePage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot retune</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{reason}</p>
         <p className="text-sm">
           <a href={`/strategies/${id}/rules/${signalId}`} className="underline">Choose differently</a>

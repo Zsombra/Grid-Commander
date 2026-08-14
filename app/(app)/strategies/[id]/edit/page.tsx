@@ -5,6 +5,7 @@ import { spending } from '@/presentation/confirmation-refusal.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { BUTTON_SECONDARY, CHECKBOX, CONTROL, LABEL } from '@/presentation/components/control.js';
 /**
  * Compose a change, compile it, and review what applying would do.
@@ -24,6 +25,7 @@ export default async function EditStrategyPage({
     tagline?: string;
     sections?: string | string[];
     unknownSections?: string | string[];
+    problem?: string;
   }>;
 }) {
   const { app, user } = await acting();
@@ -32,6 +34,10 @@ export default async function EditStrategyPage({
   const { id } = await params;
   const sp = await searchParams;
   const compile = sp.compile;
+  // The refusal a bounced apply carried back. Read on every branch this page
+  // can render, because until it was, this route was the one where #232
+  // converted a crash into silence (#240).
+  const problem = sp.problem;
   const tagline = sp.tagline ?? '';
   const selectedKeys = toArray(sp.sections);
   const unknownSectionParams = toArray(sp.unknownSections);
@@ -42,6 +48,7 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
@@ -53,6 +60,7 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Strategy could not be read</h1>
+        <CarriedProblem problem={problem} />
         {/* The reason the read gave, and the reassurance every other unreadable
             branch states. This one could not comply until the query stopped
             dropping them — the words existed, and stopped one layer down. */}
@@ -73,6 +81,7 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           Cannot edit this strategy right now
         </h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
           The vocabulary a strategy is composed from comes from BattleGrid, and it
           could not be read. Composing a change without it would mean guessing at
@@ -118,6 +127,7 @@ export default async function EditStrategyPage({
 
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
+        <CarriedProblem problem={problem} />
         <div>
           <h1 className="text-2xl font-medium text-text-primary">Edit {strategy.name}</h1>
           {/* The blast radius met a page earlier — the same fact wears the same
@@ -336,6 +346,7 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           BattleGrid could not compile this change to {strategy.name}
         </h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{compiled.reason}</p>
         {/* The absence of effect, visually committed — quiet, never danger's
             palette (DT-0015, system principle on absence). */}
@@ -364,6 +375,7 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
+        <CarriedProblem problem={problem} />
         {/* The review still renders — the user should see what was compiled even
             when it cannot be applied, because the reason usually names what to
             change. */}
@@ -381,12 +393,15 @@ export default async function EditStrategyPage({
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
+      {/* A refused apply lands back on this recompiled review, reason first. */}
+      <CarriedProblem problem={problem} />
       <PlanReviewPanel
         review={compiled.review}
         action={apply}
         // The compose form, which is what "change it" means. Without compile in
         // the query it renders the section checklist at the strategy's current state.
         changeIt={`/strategies/${strategy.id}/edit`}
+        carry={{ tagline, sections: selectedKeys, unknownSections: unknownSectionParams }}
         confirmation={{
           strategyId: id,
           confirmationToken: proposal.proposal.confirmationToken,
@@ -419,6 +434,29 @@ export async function apply(formData: FormData) {
   if (user.kind === 'not-connected') redirect('/connect');
 
   const strategyId = requiredText(formData, 'strategyId');
+
+  /**
+   * Back to a *recompiled* review with the refusal above it — never to the
+   * blank compose form, and never to the roster. The form carries the
+   * composition (tagline, sections) precisely so this can rebuild the compile
+   * query; the confirmation that was refused is dead either way, and an
+   * expired one means "review again and nothing is wrong", so the fresh
+   * review is the recovery, not a detour (#240).
+   */
+  const backToReview = (problem: string): string => {
+    const query = new URLSearchParams({ compile: '1' });
+    const tagline = formData.get('tagline');
+    if (typeof tagline === 'string') query.set('tagline', tagline);
+    for (const s of formData.getAll('sections')) {
+      if (typeof s === 'string') query.append('sections', s);
+    }
+    for (const s of formData.getAll('unknownSections')) {
+      if (typeof s === 'string') query.append('unknownSections', s);
+    }
+    query.set('problem', problem);
+    return `/strategies/${strategyId}/edit?${query.toString()}`;
+  };
+
   await spending(
     () =>
       app.applyPlan.execute({
@@ -427,9 +465,7 @@ export async function apply(formData: FormData) {
         plan: compiledPlan(formData, 'plan'),
         confirmationToken: requiredText(formData, 'confirmationToken'),
       }),
-    // Back to the review that was agreed to, not to the roster: a refusal that
-    // lands on /strategies has discarded both the reason and the plan.
-    (problem) => redirect(`/strategies/${strategyId}/edit?problem=${encodeURIComponent(problem)}`),
+    (problem) => redirect(backToReview(problem)),
   );
   redirect('/strategies');
 }
