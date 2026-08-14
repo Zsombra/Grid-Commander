@@ -2,7 +2,7 @@
 id: whether-battlegrid-dedupes-a-duplicate-create-is-untested
 title: Nobody has tested whether BattleGrid refuses a duplicate agent create
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-14
 updated: 2026-08-14
@@ -14,6 +14,19 @@ tags: [idempotency, battlegrid, probe, write-path]
 ---
 
 # Nobody has tested whether BattleGrid refuses a duplicate agent create
+
+> **Closed 2026-08-14 — measured, the key half.** Operator authorised the
+> writes and chose Vanguard (idle, 0 trades) as the slot to free. Probe:
+> archived Vanguard → created "Probe 238 Dedupe" (`tradingMode: OFF`, key
+> `gc-probe-238-key-alpha`) → repeated byte-identical with the same key →
+> **the same agent came back** (id `b4697027…`, same `createdAt`, revision 1,
+> no error, slots unchanged) — at full capacity, so the dedupe outranks the
+> capacity check. BattleGrid honours its documented contract. Cleaned up:
+> probe agent archived, Vanguard reactivated (revision 10, config intact).
+> The name-collision-without-key half stays unmeasured (needs two free
+> slots) and no longer matters to this product: create always sends a key,
+> and the local ledger dedupes regardless (#239). Recorded in
+> `docs/BATTLEGRID_MCP_REFERENCE.md` under `create_intelligence_agent`.
 
 ## What
 
