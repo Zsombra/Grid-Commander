@@ -498,6 +498,14 @@ attempted, and why. A reason already being carried back to a surface (a
 `?problem=` from an earlier bounce) is part of the outcome the person is owed,
 and re-rendering the surface MUST NOT discard it, whatever branch renders.
 
+Reading the result once is not reading the outcome. A result union read
+partially — some arms branched on, the rest falling off the end of the action —
+is the same discard wearing a compliant spelling, and it hides from any check
+that asks only whether the result was read: the create action read one arm of
+five for as long as the union existed and passed every gate. A surface that
+reads a result MUST read it exhaustively, and a partial read MUST fail a check
+that gates a change, the same as a result never read at all.
+
 #### Scenario: A write that succeeds
 - **WHEN** a user performs a write that succeeds
 - **THEN** they are shown its effect
@@ -529,6 +537,12 @@ and re-rendering the surface MUST NOT discard it, whatever branch renders.
 - **WHEN** a surface performs a write and does not read its outcome
 - **THEN** this fails a check that gates a change, rather than being found by an
   operator whose action silently did nothing
+
+#### Scenario: A result read partially, not fully
+- **WHEN** a surface branches on some arms of a write's result and lets the
+  remaining arms fall through unhandled
+- **THEN** this fails a check that gates a change, rather than being found by
+  an operator whose refused press looked like a page reload
 
 ### Requirement: A Destructive Change Is Agreed To By A Person
 Where an operation requires a confirmation naming its consequence,
@@ -777,3 +791,44 @@ and is not destructive, so no confirmation is sought; the key is the guard.
 - **WHEN** a create carrying a key is sent to the platform
 - **THEN** the key is present in the create operation's own declared argument,
   not only in this product's records
+
+### Requirement: A Refused Create Keeps What Was Composed
+Where a submitted create is refused before anything is created — the values
+invalid, the account at capacity, the catalog or roster unreadable — the
+operator SHALL be told on the surface they acted from, with the reason the
+operation returned, and the values they composed SHALL travel with the refusal
+rather than being discarded.
+
+The three refusals are reachable mostly by race: the page refuses to render
+the form at capacity or without a catalog, so the state has to move between
+render and submit — a slot filled from another tab, the catalog moving under a
+long-open form, HTML validation bypassed. Rare is not silent: a press that
+does nothing teaches the operator the product ignores them.
+
+Where the refusal's branch renders no form (at capacity, no catalog), the
+composition still travels with the refusal, so the form next rendered from
+that surface still holds what was typed. Carrying the composition is not
+carrying the dedupe key: a resubmission of the re-rendered form is a new
+command under "A Create Submitted Twice Is One Create", not a retry of the
+refused one.
+
+#### Scenario: A value the command refuses
+- **WHEN** a submitted create is refused because a value is invalid
+- **THEN** the reasons are shown on the surface acted from, each naming its
+  field
+- **AND** the form still holds what was entered
+
+#### Scenario: Capacity moved between render and submit
+- **WHEN** a create is submitted and the account is at capacity by the time
+  the command checks
+- **THEN** the operator is told on the surface they acted from, with the
+  platform's explanation
+- **AND** what was composed travels with the refusal, so the form next
+  rendered from that surface still holds it
+
+#### Scenario: The catalog cannot be consulted at submit
+- **WHEN** the catalog or roster the create must consult cannot be read at
+  submit time
+- **THEN** the operator is told why, on the surface they acted from
+- **AND** nothing is created
+- **AND** what was composed travels with the refusal

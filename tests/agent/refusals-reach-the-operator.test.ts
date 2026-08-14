@@ -83,6 +83,9 @@ const CARRY_PROBLEM = [
   // touch, which is not the same as the pages the rule applies to.
   'app/(app)/agents/[id]/reactivate/page.tsx',
   'app/(app)/recorder/trim/page.tsx',
+  // Every branch of the create page is a branch a bounce can land on — a
+  // refused create arrives at capacity or without a catalog by construction.
+  'app/(app)/agents/new/page.tsx',
 ] as const;
 
 describe('one spelling of a carried refusal, product-wide', () => {
@@ -224,6 +227,51 @@ for (const surface of SURFACES) {
     });
   });
 }
+
+describe('the create action reads every arm the union carries', () => {
+  /**
+   * "Reads the result" is not "reads every arm the union carries." The general
+   * scan in `write-results.test.ts` sees a binding and is satisfied; this
+   * action branched on `created` (later `duplicate`) and let `at-capacity`,
+   * `invalid` and `no-catalog` fall off the end for the life of the route —
+   * the refused press returned undefined and the page re-rendered unchanged
+   * (#245). It is the synonym-mutation lens applied to a result union instead
+   * of a spelling: the compliant-looking read is the disguise.
+   *
+   * These pins hold the spelling of each arm's read; the `satisfies never`
+   * tail in the action makes a *new* arm a typecheck failure rather than a
+   * fourth silent one.
+   */
+  const source = readFileSync('app/(app)/agents/new/page.tsx', 'utf8');
+
+  it('reads the result of the create at all', () => {
+    expect(source).toMatch(/const result = await app\.createAgent\.execute/);
+  });
+
+  it('branches on every arm, by name', () => {
+    for (const arm of ['created', 'duplicate', 'at-capacity', 'no-catalog', 'invalid']) {
+      expect(source, `the '${arm}' arm must be read — a missing arm is a press that does nothing`)
+        .toContain(`'${arm}'`);
+    }
+  });
+
+  it('a new arm cannot fall off the end again', () => {
+    expect(
+      source,
+      'the exhaustive tail is what turns a sixth arm into a typecheck failure',
+    ).toContain('satisfies never');
+  });
+
+  it('carries the reason each refusal returned, unglossed', () => {
+    expect(source).toContain('backTo(result.explanation)');
+    expect(source).toContain('backTo(result.reason)');
+    expect(source).toContain('result.issues.map((i) => `${i.field}: ${i.reason}`)');
+  });
+
+  it('the composition rides the bounce; the dedupe key and framework transport do not', () => {
+    expect(source).toContain("k === 'idempotencyKey' || k.startsWith('$ACTION')");
+  });
+});
 
 describe('the restore page keeps its dedicated repair-required rendering', () => {
   it('repair-required is guidance, not a problem banner', () => {
