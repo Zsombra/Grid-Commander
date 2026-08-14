@@ -1,5 +1,31 @@
 # Journal
 
+## 2026-08-14 (vanguard) — the operator named the agent, and approvals have a producer
+
+**Did**: operator decision executed on the live account (#101 step 1):
+**Vanguard → `APPROVAL_REQUIRED`**, `signalTimeoutMinutes` 5 → 15,
+via `update_intelligence_agent` at `expectedRevision: 10`, complete config
+sent verbatim otherwise; read-back revision 11, both values landed, nothing
+else moved. Conditions recorded in the item: balance $38.63 (> the $35
+threshold), Vanguard on duty on five Radar coins, `list_pending_approvals`
+baselined empty after the flip. Item #101 and its issue carry the full
+audit entry.
+
+**State**: no approval can arrive yet — **the entire Radar fleet reads
+`PLATFORM_PAUSED`** (all 20 policies, `radarPaused: true`, nothing fired
+since 2026-08-13 evening). That is the platform's pause, not ours.
+
+**Next**: when Radar fires again, read `list_pending_approvals` inside a
+candidate's 15-minute window; the first Vanguard row is the shape #101
+needs observed before anything is modelled. Then /propose the full-track
+answer surface, cancel before accept.
+
+**Watch out**: do not read an empty queue as "the flip did not work" — the
+producer chain is mode ✓, deployment ✓, balance ✓, platform pause ✗, and
+the pause is the only red light. And the flip is reversible with one write
+at `expectedRevision: 11`; flipping back silently would erase the only
+producer #101 has, so it goes through the operator either way.
+
 ## 2026-08-14 (elders) — the oldest items got their reads, and the oldest workable one landed
 
 **Did**: worked the backlog oldest-first per operator direction. The three

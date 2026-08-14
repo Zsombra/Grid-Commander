@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-03
-updated: 2026-08-06
+updated: 2026-08-14
 capability: agent-understanding
 github: "101"
 blocked_by: []
@@ -107,3 +107,39 @@ behaves, and it is the operator's call, not this client's:
 3. Read `list_pending_approvals` **with a row in it** and model from that.
 4. `/propose` the full-track change, with `cancel` built and proven before
    `accept` — cancelling costs nothing, accepting opens a position.
+
+## Step 1 taken, 2026-08-14 — Vanguard is in APPROVAL_REQUIRED
+
+The operator named the agent ("the one with basically no traits" — Vanguard,
+0 games, 0 trades, empty curve) and the write was made this session over MCP:
+
+```
+update_intelligence_agent(Vanguard c8f20b9e…, expectedRevision: 10)
+  tradingConfig sent complete and verbatim except:
+    tradingMode           FULL_EXECUTION → APPROVAL_REQUIRED
+    signalTimeoutMinutes  5 → 15   (longest window the platform allows —
+                                    a 5-minute window on an unwatched
+                                    account expires before anyone reads it)
+  read-back: revision 11, both values landed, every other field identical;
+  strategyTimeframe / regime fields (not in the write schema) preserved.
+```
+
+Conditions at the time of the write, all read in the same minutes:
+
+- Account balance **$38.63** — above Vanguard's own `balanceThresholdUsd: 35`
+  (it was $2.18 when this item was first blocked).
+- Vanguard is on duty on **five Radar coins** (BTC, ETH, SOL, XRP, AVAX),
+  default slot on each, conviction bar 0.6.
+- **The whole Radar fleet is `PLATFORM_PAUSED`** — all 20 policies,
+  `summary.radarPaused: true`, nothing fired since 2026-08-13 evening. Until
+  the platform unpauses, no candidate reaches any agent and no approval can
+  arrive; this is the platform's pause, not a setting on this account that
+  was found writable.
+- `list_pending_approvals` → `{approvals: []}` — the baseline, taken after
+  the flip.
+
+**What to watch**: when Radar shows fired rows again, read
+`list_pending_approvals` within a candidate's 15-minute window. The first
+Vanguard candidate that clears its gates lands in the queue instead of
+auto-executing — that is the row this item needs observed before anything
+is modelled. Steps 2–4 above unchanged.
