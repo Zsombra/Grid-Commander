@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentForm } from '@/presentation/components/agent-form.js';
-import { defaultCatalog } from '../support/agent-fakes.js';
+import { defaultCatalog, FakeAgentsPort } from '../support/agent-fakes.js';
 import { aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { actingWith } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
@@ -228,5 +228,206 @@ describe('the create action bounces a duplicate to the surface acted from', () =
     const digest = decodeURIComponent(await bounceOf('attempted'));
     expect(digest).toContain('/agents/new?problem=');
     expect(digest).toContain('may have landed');
+  });
+});
+
+/**
+ * The three arms that used to fall off the end of the action (#245): the
+ * refused press returned undefined and the page re-rendered unchanged, so a
+ * swallowed refusal read exactly like a page reload. Each arm is walked to its
+ * bounce here — the reason it returned, on `/agents/new`, with what was
+ * composed riding along and the dedupe key deliberately left behind.
+ */
+describe('a refused create bounces back with what was composed', () => {
+  function composedSubmit(overrides: Record<string, string> = {}) {
+    const form = new FormData();
+    form.set('displayName', 'Meridian');
+    form.set('brainPreset', 'ROMMEL');
+    form.set('strategyId', 'own-1');
+    form.set('tradingMode', 'OFF');
+    form.set('minAllocationUsd', '10');
+    form.set('balanceThresholdUsd', '10');
+    form.set('maxConcurrentExposureUsd', '100');
+    form.set('maxCumulativeDrawdownUsd', '100');
+    form.set('maxDailyLossUsd', '50');
+    form.set('idempotencyKey', 'k-bounce');
+    // Next's transport rides in real submissions (see the edit action's
+    // allowlist note) — the bounce must not carry it into a visible URL.
+    form.set('$ACTION_ID_405deadbeef', 'framework-transport');
+    for (const [k, v] of Object.entries(overrides)) form.set(k, v);
+    return form;
+  }
+
+  /** The bounce's query, parsed — URLSearchParams owns the +/%20 question. */
+  async function bounceQuery(
+    prepare: (agents: FakeAgentsPort) => void,
+    form = composedSubmit(),
+  ): Promise<{ landing: string; params: URLSearchParams }> {
+    const agents = new FakeAgentsPort([]);
+    prepare(agents);
+    current = actingWith({ agents, strategies: new FakeStrategiesPort([BERLIN, CANNAE]) });
+
+    const { create } = await import('../../app/(app)/agents/new/page.js');
+    try {
+      await create(form);
+    } catch (err) {
+      // `redirect()` works by throwing; the destination rides in the digest.
+      const digest = String((err as { digest?: string }).digest ?? '');
+      const url = digest.split(';')[2] ?? '';
+      const at = url.indexOf('?');
+      return {
+        landing: at === -1 ? url : url.slice(0, at),
+        params: new URLSearchParams(at === -1 ? '' : url.slice(at + 1)),
+      };
+    }
+    throw new Error('the action neither redirected nor threw — the refusal went nowhere');
+  }
+
+  it('at capacity: the platform’s explanation, with the composition carried', async () => {
+    const { landing, params } = await bounceQuery((agents) => {
+      agents.slots = { limit: 3, used: 3, remaining: 0, rankName: 'Recruit III' };
+    });
+    expect(landing).toBe('/agents/new');
+    expect(params.get('problem')).toContain('all 3 of your agent slots');
+    expect(params.get('displayName')).toBe('Meridian');
+    expect(params.get('maxDailyLossUsd')).toBe('50');
+  });
+
+  it('no catalog: the read’s own reason, with the composition carried', async () => {
+    const { landing, params } = await bounceQuery((agents) => {
+      agents.catalogReadable = false;
+    });
+    expect(landing).toBe('/agents/new');
+    expect(params.get('problem')).toContain('catalog unavailable');
+    expect(params.get('strategyId')).toBe('own-1');
+  });
+
+  it('invalid: each reason names its field, with the composition carried', async () => {
+    const { landing, params } = await bounceQuery(
+      () => {},
+      composedSubmit({ brainPreset: 'NAPOLEON' }),
+    );
+    expect(landing).toBe('/agents/new');
+    expect(params.get('problem')).toContain('brain.preset');
+    expect(params.get('problem')).toContain('is not a brain preset');
+    // The refused value itself rides back — fixing it must not cost the rest.
+    expect(params.get('brainPreset')).toBe('NAPOLEON');
+    expect(params.get('displayName')).toBe('Meridian');
+  });
+
+  it('the dedupe key and framework transport stay behind', async () => {
+    const { params } = await bounceQuery((agents) => {
+      agents.catalogReadable = false;
+    });
+    // A fresh key is minted by the re-render — carrying the old one would
+    // read as protection while providing none (the form instance is gone).
+    expect(params.has('idempotencyKey')).toBe(false);
+    expect([...params.keys()].filter((k) => k.startsWith('$ACTION'))).toEqual([]);
+  });
+});
+
+/**
+ * The other half of the bounce: what rides back must be *in the form* when it
+ * renders. A form re-rendered from nothing reads identically in text to one
+ * holding what was typed — so nothing here asserts on text, and nothing
+ * asserts a select's prefill through `values` either: every `<option value>`
+ * lands in `values` too, so "own-1 is present" is true on a first visit and
+ * proves nothing. Selects are read as `defaultValue` props; pass-through
+ * components (Choice, MoneyLimits) as the props they were handed.
+ */
+describe('the re-rendered form holds what was composed', () => {
+  const composed = {
+    displayName: 'Meridian',
+    strategyId: 'own-1',
+    brainPreset: 'NAPOLEON',
+    risk: 'AGGRESSIVE',
+    maxDailyLossUsd: '50',
+  };
+
+  /** Any element whose `name` prop matches — function-typed ones included. */
+  function elementWithNameProp(node: unknown, name: string): Record<string, unknown> | null {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const hit = elementWithNameProp(child, name);
+        if (hit) return hit;
+      }
+      return null;
+    }
+    if (!isElement(node)) return null;
+    if (node.props?.['name'] === name) return node.props;
+    return elementWithNameProp(node.props?.['children'], name);
+  }
+
+  it('every control kind takes its default from what was carried', () => {
+    const tree = AgentForm({
+      catalog: defaultCatalog(),
+      strategies: listings,
+      action: async () => {},
+      idempotencyKey: KEY,
+      composed,
+    });
+    expect(elementNamed(tree, 'input', 'displayName')?.['defaultValue']).toBe('Meridian');
+    expect(elementNamed(tree, 'select', 'strategyId')?.['defaultValue']).toBe('own-1');
+    expect(elementNamed(tree, 'select', 'brainPreset')?.['defaultValue']).toBe('NAPOLEON');
+    // The behavior enums render inside Choice, uninvoked in this tree — the
+    // property owned here is that the carried value reaches it.
+    expect(elementWithNameProp(tree, 'risk')?.['current']).toBe('AGGRESSIVE');
+  });
+
+  it('the money questions receive the carried answers', () => {
+    const tree = AgentForm({
+      catalog: defaultCatalog(),
+      strategies: listings,
+      action: async () => {},
+      idempotencyKey: KEY,
+      composed,
+    });
+    // MoneyLimits is the one element in the tree carrying both a catalog and
+    // a `current` — the same prop the edit surface fills, for the same reason.
+    const money = (function find(node: unknown): Record<string, unknown> | null {
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const hit = find(child);
+          if (hit) return hit;
+        }
+        return null;
+      }
+      if (!isElement(node)) return null;
+      if (node.props?.['catalog'] && node.props?.['current']) return node.props;
+      return find(node.props?.['children']);
+    })(tree);
+    expect((money?.['current'] as Record<string, unknown>)?.['maxDailyLossUsd']).toBe('50');
+  });
+
+  it('the page passes the carried query through, and the reason renders above', async () => {
+    const Page = await newAgentPage();
+    const r = await rendered(
+      await Page({
+        searchParams: Promise.resolve({
+          ...composed,
+          problem: 'brain.preset: "NAPOLEON" is not a brain preset.',
+          idempotencyKey: 'k-injected',
+        }),
+      }),
+    );
+    expect(r.text).toContain('Refused:');
+    expect(r.text).toContain('is not a brain preset');
+    // Input-borne values — never option values, so present only if carried.
+    expect(r.values).toContain('Meridian');
+    expect(r.values).toContain('50');
+    // The key from the URL is adopted nowhere: the form's key is minted per
+    // render, and a carried one would read as protection while providing none.
+    expect(r.values).not.toContain('k-injected');
+  });
+
+  it('a first visit still chooses nothing on the operator’s behalf', () => {
+    const tree = AgentForm({
+      catalog: defaultCatalog(),
+      strategies: listings,
+      action: async () => {},
+      idempotencyKey: KEY,
+    });
+    expect(elementNamed(tree, 'select', 'strategyId')?.['defaultValue']).toBe('');
+    expect(elementNamed(tree, 'input', 'displayName')?.['defaultValue']).toBeUndefined();
   });
 });

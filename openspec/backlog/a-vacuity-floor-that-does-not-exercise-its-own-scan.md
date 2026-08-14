@@ -2,11 +2,11 @@
 id: a-vacuity-floor-that-does-not-exercise-its-own-scan
 title: Anti-vacuity floors count a different pattern than the rule they are guarding
 type: debt
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-floor-fails-when-its-scan-goes-blind"
 capability: app-access
 github: "241"
 blocked_by: []

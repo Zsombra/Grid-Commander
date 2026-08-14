@@ -253,12 +253,17 @@ describe('the safe answer is the default answer', () => {
     expect(source).not.toMatch(/type="number"[\s\S]{0,220}?defaultValue="/);
   });
 
-  it('passes nothing to prefill when composing', () => {
-    // The create form renders `MoneyLimits` with no `current`, so every box is
-    // empty there whatever the edit form does.
+  it('passes only what the operator themselves typed when composing', () => {
+    // This pinned "no `current` at create" until the refused-create bounce
+    // (#245): the create form now passes `current={composed}` — what a refusal
+    // carried back, which is the operator's own typing and nothing else. A
+    // first visit carries nothing, so every box is still empty; either way the
+    // prefill can only come from a value the operator chose, which is the
+    // property this test has always held. A literal here would be the product
+    // choosing a loss cap on their behalf, and still fails.
     const create = readFileSync('src/presentation/components/agent-form.tsx', 'utf8');
-    expect(create).toMatch(/<MoneyLimits\s+catalog=\{[^}]*\}\s*\/>/);
-    expect(create).not.toMatch(/<MoneyLimits[^>]*current=/);
+    expect(create).toMatch(/<MoneyLimits\s+catalog=\{catalog\}\s+current=\{composed\}\s*\/>/);
+    expect(create).not.toMatch(/<MoneyLimits[^>]*current=\{\{/);
   });
 
   it('requires every money field it renders', () => {

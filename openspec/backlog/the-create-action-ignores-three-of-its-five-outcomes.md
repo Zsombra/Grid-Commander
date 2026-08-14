@@ -2,11 +2,11 @@
 id: the-create-action-ignores-three-of-its-five-outcomes
 title: The create action reads only `created` — invalid, at-capacity and no-catalog vanish
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "the-create-action-reads-every-arm"
 capability: agent-authoring
 github: "245"
 blocked_by: []

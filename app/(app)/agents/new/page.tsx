@@ -110,6 +110,17 @@ export default async function NewAgentPage({
     );
   }
 
+  // What a bounce carried back, so a refusal naming one field does not cost
+  // the operator every other one. `problem` is the banner, not composition,
+  // and a dedupe key in the URL is never composition: the form's key is
+  // minted per render, below, whatever the URL claims.
+  const composed: Record<string, string> = {};
+  for (const [key, value] of Object.entries(q)) {
+    if (key === 'problem' || key === 'idempotencyKey') continue;
+    const one = Array.isArray(value) ? value[0] : value;
+    if (one && one.length > 0) composed[key] = one;
+  }
+
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">New agent</h1>
@@ -124,6 +135,7 @@ export default async function NewAgentPage({
         strategies={listings}
         action={create}
         idempotencyKey={randomUUID()}
+        composed={composed}
       />
     </main>
   );
@@ -171,11 +183,47 @@ export async function create(formData: FormData) {
   if (result.kind === 'duplicate') {
     // A second press of the same form. Which sentence depends on what the
     // first press did — carried as a field, never parsed from a message. The
-    // wording reads after CarriedProblem's "Refused:" prefix.
+    // wording reads after CarriedProblem's "Refused:" prefix. The composition
+    // does not ride this bounce: the first press already landed, or may have,
+    // so there is nothing the operator needs to re-enter.
     const sentence =
       result.originalOutcome === 'succeeded'
         ? 'this form was already submitted and the agent was created — the earlier press worked. It is on your agents page.'
         : 'this form was already submitted and the outcome is not yet recorded — it may have landed. Check your agents page before pressing again.';
     redirect(`/agents/new?problem=${encodeURIComponent(sentence)}`);
+  }
+
+  /**
+   * The refusals, each with what was typed riding along — the edit action's
+   * pattern. Carrying only the reason would send the person back to an empty
+   * form, so a refusal naming one field would cost them every other one.
+   *
+   * The dedupe key stays behind on purpose: all three of these refuse before
+   * the create is attempted, so no attempt exists under the old key, and the
+   * re-rendered form mints a fresh one — the dedupe binds a form instance,
+   * not the operator. `$ACTION*` is Next's transport, not composition.
+   */
+  const backTo = (problem: string): never => {
+    const back = new URLSearchParams({ problem });
+    for (const [k, v] of formData.entries()) {
+      if (k === 'idempotencyKey' || k.startsWith('$ACTION')) continue;
+      if (typeof v === 'string' && v.length > 0) back.set(k, v);
+    }
+    redirect(`/agents/new?${back.toString()}`);
+  };
+
+  switch (result.kind) {
+    case 'at-capacity':
+      return backTo(result.explanation);
+    case 'no-catalog':
+      return backTo(result.reason);
+    case 'invalid':
+      return backTo(result.issues.map((i) => `${i.field}: ${i.reason}`).join(' · '));
+    default:
+      // A sixth arm added to `CreateAgentResult` lands here and fails
+      // typecheck, instead of falling off the end of the action the way
+      // `at-capacity`, `invalid` and `no-catalog` did for the life of the
+      // route (#245).
+      return result satisfies never;
   }
 }

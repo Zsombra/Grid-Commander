@@ -1,7 +1,6 @@
 import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import type { StrategyListing } from '@/application/use-cases/list-strategies.query.js';
-import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { CONVICTIONS, OUTLOOKS, RISKS } from '@/domain/agent/brain.js';
 import { CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
@@ -25,7 +24,7 @@ export function AgentForm({
   strategies,
   action,
   idempotencyKey,
-  issues = [],
+  composed = {},
 }: {
   catalog: Catalog;
   /**
@@ -55,10 +54,17 @@ export function AgentForm({
    * nothing — which is what this was for the whole life of the project.
    */
   action: (formData: FormData) => Promise<void>;
-  issues?: readonly ValidationIssue[];
+  /**
+   * What was typed before a refusal bounced it back.
+   *
+   * A refused create returns here as `?problem=` with the submitted fields
+   * riding along (the edit action's pattern), and every control below takes
+   * its default from this — so a refusal naming one field does not cost the
+   * operator every other one. Empty means a first visit, and the form renders
+   * exactly as it always has: nothing chosen on the operator's behalf.
+   */
+  composed?: Readonly<Record<string, string | undefined>>;
 }) {
-  const issueFor = (field: string) => issues.find((i) => i.field === field)?.reason;
-
   return (
     <form action={action} className="space-y-6">
       {/*
@@ -81,21 +87,15 @@ export function AgentForm({
         with no agent slot free). This does not depend on the answer.
       */}
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
-      {issues.length > 0 && (
-        <div role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">
-          <p className="font-medium">
-            {issues.length} value{issues.length === 1 ? '' : 's'} need attention.
-          </p>
-        </div>
-      )}
 
-      <Field label="Name" name="displayName" error={issueFor('displayName')}>
+      <Field label="Name" name="displayName">
         <input
           id="displayName"
           name="displayName"
           type="text"
           maxLength={80}
           required
+          defaultValue={composed['displayName']}
           className={CONTROL}
         />
       </Field>
@@ -116,8 +116,14 @@ export function AgentForm({
         decide whether the strategy can later be edited or only forked, and a
         roster row states it for the same reason.
       */}
-      <Field label="Strategy" name="strategyId" error={issueFor('strategyId')}>
-        <select id="strategyId" name="strategyId" required defaultValue="" className={CONTROL}>
+      <Field label="Strategy" name="strategyId">
+        <select
+          id="strategyId"
+          name="strategyId"
+          required
+          defaultValue={composed['strategyId'] ?? ''}
+          className={CONTROL}
+        >
           <option value="" disabled>
             Choose what this agent reads
           </option>
@@ -150,8 +156,13 @@ export function AgentForm({
             offered here. Choose a model and set the temperament yourself.
           </p>
         ) : (
-          <Field label="Preset" name="brainPreset" error={issueFor('brain.preset')}>
-            <select id="brainPreset" name="brainPreset" className={CONTROL}>
+          <Field label="Preset" name="brainPreset">
+            <select
+              id="brainPreset"
+              name="brainPreset"
+              defaultValue={composed['brainPreset'] ?? ''}
+              className={CONTROL}
+            >
               <option value="">Choose a model instead</option>
               {catalog.brainPresets.map((preset) => (
                 <option key={preset} value={preset}>
@@ -162,8 +173,13 @@ export function AgentForm({
           </Field>
         )}
 
-        <Field label="Model" name="modelId" error={issueFor('brain.modelId')}>
-          <select id="modelId" name="modelId" className={CONTROL}>
+        <Field label="Model" name="modelId">
+          <select
+            id="modelId"
+            name="modelId"
+            defaultValue={composed['modelId'] ?? ''}
+            className={CONTROL}
+          >
             <option value="">Use a preset instead</option>
             {catalog.models.map((m) => (
               <option key={m.modelId} value={m.modelId}>
@@ -173,9 +189,14 @@ export function AgentForm({
           </select>
         </Field>
 
-        <Choice label="Risk" name="risk" options={RISKS} />
-        <Choice label="Outlook" name="outlook" options={OUTLOOKS} />
-        <Choice label="Conviction" name="conviction" options={CONVICTIONS} />
+        <Choice label="Risk" name="risk" options={RISKS} current={composed['risk']} />
+        <Choice label="Outlook" name="outlook" options={OUTLOOKS} current={composed['outlook']} />
+        <Choice
+          label="Conviction"
+          name="conviction"
+          options={CONVICTIONS}
+          current={composed['conviction']}
+        />
       </fieldset>
 
       {/*
@@ -198,8 +219,13 @@ export function AgentForm({
           A preset is BattleGrid&apos;s own twelve values for how positions are
           tightened, trailed and timed out. CUSTOM uses the assembled defaults.
         </p>
-        <Field label="Preset" name="positionPreset" error={issueFor('positionPreset')}>
-          <select id="positionPreset" name="positionPreset" className={CONTROL}>
+        <Field label="Preset" name="positionPreset">
+          <select
+            id="positionPreset"
+            name="positionPreset"
+            defaultValue={composed['positionPreset']}
+            className={CONTROL}
+          >
             <option value="CUSTOM">CUSTOM — the assembled defaults</option>
             {catalog.positionManagementPresets
               .filter((p) => p.config !== null)
@@ -212,8 +238,12 @@ export function AgentForm({
         </Field>
       </fieldset>
 
-      <MoneyLimits catalog={catalog} />
-
+      {/* The bounce's carried values ride through `current` — the same prop
+          the edit surface fills with the agent's stored values, and the same
+          reasoning: these numbers already exist and the operator chose them.
+          A first visit passes nothing and no money question is answered for
+          anybody. */}
+      <MoneyLimits catalog={catalog} current={composed} />
 
       <PerformButton pendingLabel="Creating the agent…">
         Create agent
@@ -225,12 +255,10 @@ export function AgentForm({
 function Field({
   label,
   name,
-  error,
   children,
 }: {
   label: string;
   name: string;
-  error?: string | undefined;
   children: React.ReactNode;
 }) {
   return (
@@ -239,12 +267,6 @@ function Field({
         {label}
       </label>
       {children}
-      {/* Named, not colour-coded: the reason must survive without the styling. */}
-      {error && (
-        <p role="alert" className="text-sm">
-          {error}
-        </p>
-      )}
     </div>
   );
 }
@@ -253,14 +275,17 @@ function Choice({
   label,
   name,
   options,
+  current,
 }: {
   label: string;
   name: string;
   options: readonly string[];
+  /** A bounced value. Absent, the browser keeps the first option — as ever. */
+  current?: string | undefined;
 }) {
   return (
     <Field label={label} name={name}>
-      <select id={name} name={name} className={CONTROL}>
+      <select id={name} name={name} defaultValue={current} className={CONTROL}>
         {options.map((o) => (
           <option key={o} value={o}>
             {o}

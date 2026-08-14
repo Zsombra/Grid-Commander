@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p2
 created: 2026-08-06
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: strategy-authoring
 github: "102"
@@ -195,3 +195,45 @@ tolerated-shape fallback that [[confirm-agent-write-response-shape]] (#103)
 removed from the agent adapter once the shapes were walked. The strategy tools
 have **not** been walked that way; archive is one of several. Left alone
 deliberately rather than changed on one observation.
+
+---
+
+# Measured 2026-08-14 — a colliding *chosen* name answers the same 500, so the copy question is settled
+
+The half this item flagged as never probed, probed, with operator
+authorization. One call:
+
+    fork_strategy({ strategyId: <Bastogne>, sourceRevision: 6, name: "Alesia" })
+
+`Alesia` is an existing PRIVATE strategy on the account (active, revision 1,
+zero bound agents). Answer:
+
+    INTERNAL_ERROR   Internal server error
+
+`list_strategies` before and after: 17 strategies both times, quota 5/25
+unchanged, no fork created — nothing to clean up. Same session, minutes apart,
+v18.x live.
+
+## What this settles
+
+- **The escape hatch is narrower than the 2026-08-13 note hoped.** "A named
+  fork sidesteps it entirely" is true only of a name not already on the
+  account. Naming as such avoids nothing — the collision is on the resulting
+  strategy name, however it was produced.
+- **The copy question is answered: the fork form's copy is already right and
+  stays.** It says a name tells copies apart and makes no claim about
+  avoiding errors; the claim it declined to make is now measured false rather
+  than merely unestablished. The comment at the naming hint records the
+  measurement (`app/(app)/strategies/[id]/fork/page.tsx`). Saying "choose a
+  name you have not used" would be this product enforcing the platform's
+  unpublished constraint — the same wrong fix as the pre-check this item
+  already rules out.
+- **The upstream report sharpens.** The defect is not "the default name can
+  collide"; it is that *any* duplicate strategy name, submitted or defaulted,
+  is answered with `INTERNAL_ERROR` instead of the `VALIDATION_ERROR`/
+  `CONFLICT` the server uses well elsewhere.
+
+Error handling stays untouched, as re-affirmed 2026-08-13: the product renders
+the platform's own answer without re-diagnosis, and that remains right.
+
+**Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
