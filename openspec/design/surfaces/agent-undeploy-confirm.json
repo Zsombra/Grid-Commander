@@ -4,8 +4,9 @@
   "route": "/agents/[id]/undeploy/[coin]",
   "capability": "agent-deployment",
   "status": "needs-redesign",
-  "generated_at_commit": "c26a728",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/agents/[id]/undeploy/[coin]/actions.ts",
     "app/(app)/agents/[id]/undeploy/[coin]/page.tsx",
     "src/presentation/components/authority-lost.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -339,7 +340,8 @@
     "notes": "The carried problem, consequence, refusal and authority-lost messages all carry role=alert; on a bounced branch two of them are adjacent. The authority-lost branch has an alert and no focusable element at all — it is the one state on this surface with nothing to tab to. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/undeploy/[coin]/page.tsx": "sha256:ed7234145a700c65f4223748a631792885396f0699502884d947075268d001b0",
+    "app/(app)/agents/[id]/undeploy/[coin]/actions.ts": "sha256:078e59d7fce6742d84900f61e187910c22b32b97d7b6b1d1990c518ccee03c13",
+    "app/(app)/agents/[id]/undeploy/[coin]/page.tsx": "sha256:8c065613d219e9b1ec99a0678adbfedb7e8c0e9448f6e4f75ea5d8d4b59fdace",
     "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",

@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-15 (gate) — the discarded check comes back on, and six pages had become fourteen
+
+**Did**: four tripwires checked **cold** first (#107 flat account, #101 Radar
+still 20/20 `PLATFORM_PAUSED`, #94 no `DATABASE_URL` + record at 4 days, #104
+fifth confirmation of `playersNeeded == minimumPlayers` on all 50) — each item
+carries its dated line. Then the three unblocked p2s read in full and **#216**
+taken as `the-build-checks-what-next-generates` (standard, verified,
+archived). The item's six failing pages had become **fourteen** in two days —
+measured by building into a non-excluded distDir, then `tsc --noEmit` to
+enumerate past the first error. All fourteen server actions moved to
+colocated `actions.ts` modules; `agents/new` lost the `= {}` default that
+broke `PageProps`; `exclude: [".next"]` dropped so `.next/types` is really
+checked; gate proven both ways (planted export → build fails naming the
+route; clean tree passes; Next did not rewrite the fixed tsconfig). New
+mutation-proven guard `tsconfig-coherence.test.ts` (both blind directions
+KILLED via `mutate-guard.mjs`). Eleven scanner test files re-pointed, walks
+taught `actions.ts`, floors raised to true counts (form cross-check ≥14),
+and every re-pointed absence assertion mutation-checked — four for four
+caught. Thirteen surface manifests re-pinned at `6441015` with `actions.ts`
+added to `source_files` (prose read; every "server action" mention is
+behavioral and survives). #216 closed on GitHub; **#263 filed**
+(`three-actions-live-outside-the-form-field-cross-check` — pending/connect's
+unexported actions are invisible to both action scanners).
+
+**State**: 0 active changes, 25 open items, no p1. Gates at archive:
+typecheck, lint, **2410 vitest / 189 files**, build, drizzle no-op; test:db
+skipped (no `DATABASE_URL`). `validate --all` 0 errors / 14 deliberate
+warnings (the assistant-capability seven, agent-roster #237, DT-0003/0004/0014
+state coverage). Branch `claude/board-tripwire-checks-8750a8`; PR is this
+handoff's last act.
+
+**Next**: operator — merge the PR. Next working session: re-check the four
+tripwires from their items first (each carries its condition and fire-time
+instruction), then the two remaining p2s — read
+`the-source-completeness-check-matches-no-import-here` (#230) and
+`the-wager-sentence-offers-scope-as-a-safety-boundary` (#234) in full before
+choosing. #260 (bounced edits refill money boxes) stays the well-scoped
+fallback.
+
+**Watch out**: `git checkout <page>` to undo a probe edit restores the
+COMMITTED page — it silently reverted the whole action-move on the archive
+page mid-proof, not just the planted line; re-apply and re-build before
+trusting any "reverted" state. The scanner ecosystem defines a server action
+as `export async function X(formData: FormData)` — three walks were taught
+`actions.ts` this session (`a-refusal-reaches-the-person`, `write-results`,
+`a-problem-redirect-…`), and any NEW scanner that walks only `.tsx` will
+report a product whose writes all vanished, and pass; `write-results` was
+exactly that blind for one commit's span. And `spending` vs *carrying* a
+confirmation token now splits by `formData`: the strategy edit page writes
+`confirmationToken:` into the confirm panel's props and is not a spender.
+
 ## 2026-08-14 (trirequire) — four tripwires checked cold, three items closed, one gap found
 
 **Did**: merged **PR #258** (main `ff5220d`; `validate --all` clean after —

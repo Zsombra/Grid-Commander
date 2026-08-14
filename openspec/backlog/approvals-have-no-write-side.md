@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-03
-updated: 2026-08-14
+updated: 2026-08-15
 capability: agent-understanding
 github: "101"
 blocked_by: []
@@ -137,6 +137,11 @@ Conditions at the time of the write, all read in the same minutes:
   was found writable.
 - `list_pending_approvals` → `{approvals: []}` — the baseline, taken after
   the flip.
+
+**Checked 2026-08-15** (tripwire sweep): the whole fleet is still
+`PLATFORM_PAUSED` — all 20 policies, `summary.radarPaused: true`, nothing
+fired since 2026-08-13 evening. No candidate can reach Vanguard, so no
+approval can exist and `list_pending_approvals` was deliberately not read.
 
 **What to watch**: when Radar shows fired rows again, read
 `list_pending_approvals` within a candidate's 15-minute window. The first

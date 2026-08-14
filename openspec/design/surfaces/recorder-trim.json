@@ -4,8 +4,9 @@
   "route": "/recorder/trim",
   "capability": "signal-recording",
   "status": "needs-redesign",
-  "generated_at_commit": "c26a728",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/recorder/trim/actions.ts",
     "app/(app)/recorder/trim/page.tsx",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
@@ -360,7 +361,8 @@
     "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
   },
   "source_digest": {
-    "app/(app)/recorder/trim/page.tsx": "sha256:9de416aeacbda7d5c3b099739b8aacd913b4ef1e48d2203eb51ca0832006cbe6",
+    "app/(app)/recorder/trim/actions.ts": "sha256:6010a94d3db12924a50f496f24d669f81b9ec1decd8b49bc7e628da7765620ae",
+    "app/(app)/recorder/trim/page.tsx": "sha256:9a5775abdd074f9e9a769380bdc0a4232e581c78e0dfcdefb494955c7ec2f959",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",

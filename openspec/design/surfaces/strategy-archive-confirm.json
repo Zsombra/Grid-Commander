@@ -4,8 +4,9 @@
   "route": "/strategies/[id]/archive",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "c26a728",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/strategies/[id]/archive/actions.ts",
     "app/(app)/strategies/[id]/archive/page.tsx",
     "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
@@ -296,7 +297,8 @@
     "notes": "The carried problem (shared CarriedProblem, present on all four branches), the consequence, and the refused/unreadable reasons all carry role=alert — so a branch that reports its own failure with a reason riding in announces two alerts, deliberately. Since DT-0019 the two failure alerts are visually identical as well, which puts the whole burden of telling them apart on wording and order. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so the alerts are read in document order rather than as live-region updates."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/archive/page.tsx": "sha256:48553bb9a4bf0027890505f05ee7ba947c141f57337f3577de7ec0c83454fd5b",
+    "app/(app)/strategies/[id]/archive/actions.ts": "sha256:72b6531c20c4d61c38c7bbb327c47bf2b0ba3fd56119d89a9d892ab09df7e9f3",
+    "app/(app)/strategies/[id]/archive/page.tsx": "sha256:a0a44d3cf169a660a2fd9fb95c68cd83d3f9f900872a64aed1861456e35564f8",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",

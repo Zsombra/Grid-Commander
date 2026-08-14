@@ -2,7 +2,7 @@
 id: the-build-never-checks-nexts-generated-route-types
 title: The build's type check silently skips every route type Next generates
 type: risk
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-13
 updated: 2026-08-15
@@ -127,3 +127,14 @@ sessions added eight, which is the gate's absence measured directly.
 
 Taken as `the-build-checks-what-next-generates` (standard track). The change
 carries the full list.
+
+## Closed 2026-08-15 — the gate is real and proven both ways
+
+Archived as `2026-08-15-the-build-checks-what-next-generates`. All fourteen
+actions moved to colocated `actions.ts` modules, `agents/new` satisfies
+`PageProps`, and `exclude` no longer swallows `.next/types`. Proven in both
+directions: a planted forbidden export failed `npm run build` naming the
+route; the clean tree passes; `tests/architecture/tsconfig-coherence.test.ts`
+pins the include/exclude coherence generally and was mutation-checked
+(match-nothing and match-everything both KILLED). `next build` left the fixed
+tsconfig unrewritten.

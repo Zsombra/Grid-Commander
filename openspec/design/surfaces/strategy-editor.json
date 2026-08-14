@@ -4,8 +4,9 @@
   "route": "/strategies/[id]/edit",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "28bbb27",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/strategies/[id]/edit/actions.ts",
     "app/(app)/strategies/[id]/edit/page.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/perform-button.tsx",
@@ -335,7 +336,8 @@
     "notes": "Review section is labelled by `review-heading`. Blast radius (reached and unknown cases), the consequence sentence, the vocabulary-unavailable reason, the compile-rejected reason, and both apply-refusal states are role=alert; the plan summary is role=status. The compose branch's bound-agent sentence carries no role — it is read in document order above the fields. Sections are native checkboxes inside nested fieldsets with legends, tinted by accent-color only so the browser's own checked/indeterminate/disabled/forced-colors rendering survives; each label row meets the 44px tap floor below the tablet breakpoint. Compiling is a full page navigation, so the review is reached by normal document order rather than a live region."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/edit/page.tsx": "sha256:b2d5e63cc6bd728c40dec8953b8f17d13f18bf095d66af9a99b5cd6b72cbb60d",
+    "app/(app)/strategies/[id]/edit/actions.ts": "sha256:404fbdc797f428c9987fd27588a8be84f80e55de3bbdca9e10a290907b8510c9",
+    "app/(app)/strategies/[id]/edit/page.tsx": "sha256:8edd1d4792c610472458208acb63f9a83f50a943ed5d8165b0382bdacece16cd",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/plan-review.tsx": "sha256:9114b3e4b5c0f9141b5008eda2d1dfac8727d224244886d03da062ca68ac7eb8",
