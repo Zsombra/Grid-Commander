@@ -121,3 +121,20 @@ proposed. The item stays open as the product-side record of an upstream defect,
 and closes when the report is sent.
 
 **Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
+
+## Re-confirmed 2026-08-14 — still a 500, and the 4xx machinery provably exists
+
+Re-probed before sending, with a fresh public client registered via
+`/register` (201, `token_endpoint_auth_method: none`, no secret involved):
+
+| call | answer |
+|---|---|
+| `refresh_token=nope`, valid client_id | **500 server_error** |
+| random 64-hex refresh, valid client_id | **500 server_error** |
+| no client_id at all | **400 invalid_request**, structured detail |
+
+The third row is new and sharpens the finding: the endpoint classifies
+request-shape errors into well-formed RFC 6749 4xx responses — only the
+invalid-*grant* case falls through to 500. Added to the report. The
+gate-blocks issue in the same report healed upstream between 2026-08-13 and
+2026-08-14; this one did not.

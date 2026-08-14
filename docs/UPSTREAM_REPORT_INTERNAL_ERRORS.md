@@ -1,22 +1,26 @@
-# DRAFT — Three deterministic INTERNAL_ERRORs on the BattleGrid MCP surface
+# DRAFT — Two deterministic INTERNAL_ERRORs on the BattleGrid MCP surface
 
-> **Status: draft for operator review. Not sent.** Intended recipient:
-> BattleGrid (battlegrid.trade) — whichever channel the operator chooses.
-> Sources: backlog items #102 (`forking-a-name-that-exists-is-a-500`),
-> #100 (`battlegrid-is-returning-internal-errors`),
-> #204 (`refresh-rejection-is-indistinguishable-from-an-outage`).
-> Every claim below is a live measurement with dates; nothing is inferred
-> from documentation.
+> **Status: draft for operator review, re-verified live 2026-08-14. Not sent.**
+> Intended recipient: BattleGrid (battlegrid.trade) — whichever channel the
+> operator chooses. Sources: backlog items #102
+> (`forking-a-name-that-exists-is-a-500`) and #204
+> (`refresh-rejection-is-indistinguishable-from-an-outage`).
+> Every claim below is a live measurement with dates; nothing is inferred from
+> documentation.
+>
+> **A third issue was drafted here and withdrawn.** The `list_gate_blocks`
+> row-level 500s (#100) were re-tested on 2026-08-14 and found **fixed** —
+> details at the bottom, kept so the team can confirm the fix is the one they
+> shipped.
 
 ---
 
 We build and operate Grid-Commander, a third-party client for your MCP surface
 at `https://mcp.battlegrid.trade/mcp`. Across several weeks of live use we have
-isolated three failures that share one shape: **a refusal or an ordinary data
-condition is answered with `INTERNAL_ERROR` (or HTTP 500), where the server
-demonstrably has a better answer available and uses it elsewhere.** All three
-are deterministic — none is load, flap, or outage — and each was re-confirmed
-on v18.x.
+isolated two failures that share one shape: **a refusal is answered with
+`INTERNAL_ERROR` (or HTTP 500), where the server demonstrably has a better
+answer available and uses it elsewhere.** Both are deterministic — neither is
+load, flap, or outage — and both were re-confirmed on 2026-08-14.
 
 A client can classify what a server *says*; it cannot improve on it without
 guessing. In each case below we render your answer as given, so your wording is
@@ -53,47 +57,25 @@ the wording they got was "the server broke".
 in either of those shapes would be complete. Accepting an `idempotencyKey` on
 `fork_strategy` would close the lost-response case as well.
 
-## 2. `list_gate_blocks`: specific rows 500 the whole page — newest first
+## 2. OAuth token endpoint: every rejected refresh is a 500
 
-**Observed** (2026-08-12 → 2026-08-13, v18.2.0): `list_gate_blocks` answers
-`INTERNAL_ERROR` for recent rows while serving older history cleanly. Bisected
-with `limit: 1, page: N`:
-
-- Agent A (5,437 rows): pages 1–~100 fail; ~105 onward read cleanly. Agent B
-  (617 rows): pages 1–~18 fail; 22 onward read. The boundary is per-agent —
-  hours apart on the same day — not a global cutoff.
-- The failing head *grows*: a row readable on the first bisection was inside
-  the failing head a day later.
-- It is not only the head: at least one isolated row (row 287 at the time of
-  measurement, agent A) fails deterministically with readable rows on both
-  sides. A page fails iff it *contains* a poisoned row, which is why larger
-  `limit`s fail more often.
-- An unknown agent id answers `{"entries": [], "total": 0}` cleanly — the
-  query path, pagination, and empty-result serialization are all fine.
-
-**A hypothesis, offered as such**: every readable row predates v18; v18 added
-`gateStage: EVALUATION` and `reasonCode: EVALUATION_FAULTED`. The unreadable
-rows are exactly the ones written since. Consistent with a serialization
-failure on the new enum values — unproven, because the failing rows cannot be
-read to check.
-
-**Why it costs something real**: your own tool description says this is "the
-first place to look when an agent isn't trading". The failure is dense at the
-head, so the tool breaks precisely on the rows that would answer that
-question, while serving history from before the question arose.
-
-## 3. OAuth token endpoint: every rejected refresh is a 500
-
-**Observed** (2026-08-13): `POST /token` with `grant_type=refresh_token`:
+**Observed** (2026-08-13, re-confirmed 2026-08-14): `POST /token` with
+`grant_type=refresh_token` and a valid `client_id`:
 
 | token | answer |
 |---|---|
 | valid | 200, new access + refresh token |
-| replayed after rotation | 500 `server_error` (3/3, deterministic) |
-| random 64-char string | 500 `server_error` |
-| the literal `"nope"` | 500 `server_error` |
+| replayed after rotation | 500 `server_error` (3/3, deterministic, 2026-08-13) |
+| random 64-char string | 500 `server_error` (both dates) |
+| the literal `"nope"` | 500 `server_error` (both dates) |
 
 There is no `400 invalid_grant` path. RFC 6749 §5.2 requires one.
+
+**The 4xx machinery demonstrably exists**: the same endpoint, called on
+2026-08-14 *without* a `client_id`, answers a well-formed
+`400 {"error":"invalid_request"}` with a structured validation detail. So
+request-shape errors are classified correctly; only the invalid-*grant* case
+falls through to 500.
 
 **Why it costs something real**: the two cases behind that 500 demand opposite
 client responses — a revoked/rotated token means *stop retrying and
@@ -104,21 +86,34 @@ round-trip whenever the truth was "bad minute".
 
 ## The pattern, and the ask
 
-All three are refusals or data conditions wearing a crash. The server clearly
-distinguishes these cases internally — it validates fork names enough to fail
-on duplicates, reads gate rows enough to fail on specific ones, and rejects
-bad refresh tokens reliably — it just answers all three with the code reserved
-for "something unexpected broke".
+Both are refusals wearing a crash. The server clearly distinguishes these
+cases internally — it validates fork names enough to fail on duplicates, and
+rejects bad refresh tokens reliably — it just answers both with the code
+reserved for "something unexpected broke".
 
 The ask, in order of value to operators:
 
 1. `fork_strategy` duplicate name → `VALIDATION_ERROR` or `CONFLICT`, naming
    the collision; ideally accept `idempotencyKey` here as the agent writes do.
-2. `list_gate_blocks` unreadable rows → skip-and-flag or repair, so the recent
-   window answers; at minimum, a row-level error rather than failing the page.
-3. `POST /token` invalid refresh → `400 invalid_grant` per RFC 6749 §5.2.
+2. `POST /token` invalid refresh → `400 invalid_grant` per RFC 6749 §5.2.
 
-We are happy to provide exact timestamps, account, request payloads, and the
-full bisection tables for any of the three.
+We are happy to provide exact timestamps, account, request payloads, and full
+measurement tables for either.
+
+## Withdrawn: `list_gate_blocks` — fixed, and confirmed fixed
+
+Drafted here as issue 2 of 3: between 2026-08-12 and 2026-08-13 (v18.2.0),
+`list_gate_blocks` answered `INTERNAL_ERROR` for recent rows while serving
+older history cleanly — bisected to per-row poisoning, dense at the head,
+consistent with a serialization failure on the v18 `gateStage: EVALUATION`
+rows.
+
+Re-tested 2026-08-14: **fixed everywhere we can measure.** Page 1 reads
+cleanly on both affected agents (5,520 and 649 rows), 100-row pages read
+cleanly, the previously-poisoned isolated row reads cleanly, and the
+`EVALUATION` rows now arrive with a structured
+`reasonDetail.evaluationFaultDetail` — plus a new `summary` roll-up on the
+envelope. Whatever you shipped, it took. Withdrawn from the asks; recorded
+here only so you can match it to the fix you made.
 
 — Grid-Commander (operator: rafaelmorel809@gmail.com)

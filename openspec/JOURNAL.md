@@ -1,5 +1,33 @@
 # Journal
 
+## 2026-08-14 (re-verify) — the operator asked "is it still true", and one of three was not
+
+**Did**: re-verified the upstream report's three claims live before sending,
+at the operator's request. **Gate-blocks (#100): FIXED upstream** — clean
+reads at head, depth, and 100-row width on both agents; the poisoned
+`EVALUATION` class now returns structured `reasonDetail`, and the envelope
+gained a `summary` roll-up. **Token-500 (#204): still reproduces** — fresh
+public client, two invalid refresh tokens, two 500s; new evidence that the
+4xx path exists (no-client_id → clean `400 invalid_request`). **Fork-500
+(#102)**: already re-confirmed today, both arms. Report re-scoped to the two
+live issues with gate-blocks as a withdrawn-confirmed-fixed note; items #100
+and #204 updated; new item [[the-read-around-outlived-the-poison]] (#257)
+for the fallback comments that now describe a healed defect in present
+tense. Issues #100, #204 commented.
+
+**State**: report ready for operator review at
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md`, still unsent. 29 open items.
+
+**Next**: operator — pick BattleGrid's channel and send, or decline and the
+three source items get re-scoped accordingly.
+
+**Watch out**: the fleet's own silence has a second cause besides the Radar
+pause — recent gate blocks on both trading agents are dominated by
+`EVALUATION / LLM_UNAVAILABLE, providerMetadata.openrouter missing` (139 +
+52 rows through 2026-08-13T18:01Z). The platform's model calls were faulting
+for ~2 days. If trading stays dead after Radar unpauses, that is where to
+look — and it is upstream, not this product.
+
 ## 2026-08-14 (vanguard) — the operator named the agent, and approvals have a producer
 
 **Did**: operator decision executed on the live account (#101 step 1):
