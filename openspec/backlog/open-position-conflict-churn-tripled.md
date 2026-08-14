@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-11
-updated: 2026-08-13
+updated: 2026-08-15
 change: ""
 capability: agent-understanding
 github: "146"
@@ -280,3 +280,23 @@ the order they should be tried: `get_agent_automation_status(Undertow)`, then
 Record the wall-clock time of every read filed against this item. The 20:30
 figures are usable only because the read time was written down; the earlier read
 the same evening is worth less for the want of that one line.
+
+## 2026-08-15 (read ~2026-08-14T22:00Z) — the first candidate read is the wrong tool, and cause 2 weakens
+
+Two facts from this session's reads:
+
+1. **`get_agent_automation_status` does not report evaluation activity.** It
+   answers game-preset assignments — for Undertow: `assignments: []` plus the
+   two assignable Market Grid presets. The "next read" list above inferred its
+   purpose from its name; strike it. The separating read is
+   `get_agent_activity_feed` / `list_entry_decisions` over the window from
+   2026-08-12T09:11Z onward, still untaken.
+2. **Undertow was still being evaluated well after the fall.** The same
+   session's `list_radar_deployments` read (taken for #101) shows Undertow's
+   coins with `lastFireAt` / `lastFlipAt` values through **2026-08-13T18:01Z**
+   (WIF 16:00, FARTCOIN 16:46, MOODENG 18:01). A radar that flips and fires
+   for an agent's coins on 08-13 is dispatching candidates to it — so cause 2
+   ("the agent stopped evaluating") is weakened for the 08-12→08-13 window,
+   though it is radar-side evidence, not a gate-block read. Since
+   2026-08-13T18:01Z the whole fleet is `PLATFORM_PAUSED`, which confounds
+   any current-rate measurement — zero blocks while paused separates nothing.

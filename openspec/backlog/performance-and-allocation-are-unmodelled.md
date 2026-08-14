@@ -359,6 +359,9 @@ The settling paired read remains untakeable; `get_agent_fund_allocation`
 deliberately not called, per the 2026-08-13 rule that a zero/zero pair is
 agreement and proves nothing.
 
+A second sweep the same local day (2026-08-14T21:51Z / 04:51 local) read
+identically — totals zero throughout, paired read again untaken.
+
 ## Re-checked 2026-08-14 — still flat, still untestable
 
 `list_user_active_positions` totals read zero throughout (`openPositionCount: 0`,

@@ -84,6 +84,18 @@ days — both halves cold (earliest the depth half can hold stays ~2026-08-18). 
 What/Notes (forward returns per signal state, sample sizes beside every
 figure), `/propose`d as its own change.
 
+Checked 2026-08-15, second sweep (2026-08-14T21:52Z / 04:52 local):
+**environment half HOT, depth half cold — measured from the db itself.**
+`DATABASE_URL` is present in the persistent **user registry** (verified via
+`[Environment]::GetEnvironmentVariable('DATABASE_URL','User')`, value not
+printed) but was **not** inherited by this session's process environment —
+a session spawned from a parent that predates the `setx` won't see it in
+`$env:`; read the registry, don't conclude absence from the process env.
+The depth read (read-only, arithmetic in UTC): 51 runs, one user,
+`first_run 2026-08-12T19:46:14Z`, `last_run 2026-08-14T21:17Z` (recorder
+current to the half-hour), **age 2.09 days**. A week of record holds from
+**2026-08-19T19:46Z (~Aug 20 02:46 local)**, unchanged.
+
 ## Measured 2026-08-15 (evening) — both halves re-anchored on evidence
 
 The operator surfaced the database ("running, and not Docker") and directed
