@@ -1316,6 +1316,20 @@ The statement SHALL name the cause honestly: the platform declares these fields
 but its compiler does not yet process changes to them. It SHALL NOT blame the
 product or imply the operator did something wrong.
 
+Where the stop-loss floor arrives as an ATR multiple, Grid-Commander SHALL
+present it as what the platform's declaration makes it: the platform's own
+volatility-relative reading of where ordinary market movement ends — a stop
+closer than that multiple of the ATR sits inside ordinary movement, by the
+platform's own declaration. The presentation SHALL claim the declaration only:
+it MUST NOT state or imply that the platform enforces the floor on live
+trades, because enforcement has not been observed and the fleet's realized
+record is evidence against assuming it.
+
+The panel SHALL name where the measured half of the comparison lives — the
+realized moves derived from an agent's own closed trades on that agent's
+trading record — and MUST NOT compute or render a realized-move figure on the
+strategy page itself.
+
 #### Scenario: The policy is visible on the strategy page
 - **GIVEN** a strategy the platform returns with trade-level policy values
 - **WHEN** the user views the strategy
@@ -1335,6 +1349,23 @@ product or imply the operator did something wrong.
 - **WHEN** the fork's detail page is viewed
 - **THEN** the trade-level policy the fork inherited is shown
 - **AND** the same inert-state notice applies
+
+#### Scenario: The floor is read as the platform's own noise reference
+- **GIVEN** a strategy whose trade-level policy carries a stop-loss floor as an
+  ATR multiple
+- **WHEN** the user views the trade-level policy
+- **THEN** the floor is presented as the platform's own volatility-relative
+  statement — a stop closer than that multiple of the ATR is inside ordinary
+  market movement, by the platform's own declaration
+- **AND** the statement attributes the reading to the platform's declaration
+  and does not state or imply that the platform enforces the floor on live
+  trades
+
+#### Scenario: The measured half is named, not duplicated
+- **WHEN** the user views the trade-level policy
+- **THEN** the panel names the agent's trading record as where realized moves
+  are measured from its own closed trades
+- **AND** no realized-move figure is computed or rendered on the strategy page
 
 ### Requirement: A Fork Is Taken At The Revision The Page Named
 Where the product names the revision a copy will start from, the copy SHALL be

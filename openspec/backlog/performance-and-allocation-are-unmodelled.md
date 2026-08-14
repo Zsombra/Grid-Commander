@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: agent-understanding
 github: "107"
@@ -350,3 +350,13 @@ assertion at `tests/agent/performance.test.ts:142-148` reads a frozen literal --
 edits the fixture, never because the live tool started answering. The
 performance half is superseded by #189 either way; recorded here so the tripwire
 is not counted on again.
+
+## Re-checked 2026-08-14 — still flat, still untestable
+
+`list_user_active_positions` totals read zero throughout (`openPositionCount: 0`,
+`marginedUsd: 0`, `activeAgentCount: 0`). The settling read — calling
+`get_agent_fund_allocation` while margin is open — remains untakeable, so
+`get_agent_fund_allocation` was deliberately not called: another zero/zero pair
+would be agreement, which this item has already established proves nothing.
+This line exists only so the watch reads as current. The 2026-08-10 and
+2026-08-12 contradictions remain the decisive evidence.

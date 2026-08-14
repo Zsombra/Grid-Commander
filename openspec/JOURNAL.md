@@ -1,5 +1,52 @@
 # Journal
 
+## 2026-08-14 (elders) — the oldest items got their reads, and the oldest workable one landed
+
+**Did**: worked the backlog oldest-first per operator direction. The three
+2026-07-29 watches re-read live, read-only: **#107** still untestable — the
+account is flat, and `get_agent_fund_allocation` was deliberately *not*
+called, because a zero/zero pair is agreement the item has already ruled
+non-evidence; **#110** unmoved — `provider` null on a fourth consecutive
+probe, the cost split untestable while the fleet has been idle since
+2026-08-12 (list and detail both 0); **#114** refused identically a seventh
+time (`get_market_context({})` → VALIDATION_ERROR, schema still declares
+nothing required). Walked the age order past them and recorded why each next
+item was not workable: #116 (no question asks for its six reads), #101
+(blocked twice over, needs the operator), #104 (blocked on the platform
+having players anywhere), #97 (upstream ask), #94 (gated on record depth; no
+local DATABASE_URL to even measure it). Oldest workable was **#85 option
+(3)** → proposed, executed, verified and archived
+**`the-floor-is-the-platforms-own-noise-answer`** (standard): the strategy
+detail's trade-level policy panel now reads the declared stop-loss floor as
+the platform's own volatility-relative statement of where noise ends, at the
+payload's multiple, claiming declaration only — never enforcement — and
+names the agent's trading record as the measured half.
+`tests/rendering/noise-floor.test.ts` (4 tests, non-default-multiple 2.5
+guard against hard-coding). #85 re-scoped open p2→p3 as the upstream watch;
+issues #107, #110, #114, #85 all commented.
+
+**State**: 0 active changes, 28 open items, no p1. Gates at archive:
+typecheck, lint, **2397 vitest** (2393 before), build, drizzle no-op;
+test:db skipped (no db surface, no local DATABASE_URL). `validate --all`
+0 errors / 21 warnings — the same set as session start; the change added
+none and staled no surface manifest (strategy-detail has none). Branch
+`claude/older-issues-backlog-e67bb3` carries probes + change + archive.
+
+**Next**: operator — the two oldest p2 remainders are yours: send
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` (#100), and decide whether an
+agent goes `APPROVAL_REQUIRED` (#101's named question). For the next working
+session: #255 is the board's sharpest workable p2 (agent editor's hand-rolled
+refusal banner, widening `HAND_ROLLED` with it).
+
+**Watch out**: the oldest three items are watches, not work — each now states
+the exact condition under which a re-read means anything, and a read before
+that condition arrives adds noise, not evidence (#107 says it in its own
+words: agreement is not an answer). And the noise-floor copy claims
+declaration only: `noise-floor.test.ts` asserts the absence of enforcement
+vocabulary (`/enforc|guarantee|prevent|protect/i`) over the whole strategy
+detail page text, so any future sentence using "protects" anywhere on that
+page fails the test — widen the assertion deliberately, never by deleting it.
+
 ## 2026-08-14 (roads) — every refusal road arrives, and the property is checked from now on
 
 **Did**: proposed, executed, verified and archived
