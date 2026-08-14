@@ -218,16 +218,10 @@ function mainRegions(src: string): string[] {
  * stale — delete it; the ledger only shrinks).
  */
 const KNOWN_SILENT: ReadonlyArray<{ page: string; verdict: string }> = [
-  {
-    page: 'app/(app)/agents/[id]/edit/page.tsx',
-    verdict:
-      'renders refusals its own way — AgentEditForm takes the reason as a prop and shows it ' +
-      'beside the fields it refused, through a hand-rolled banner that predates CarriedProblem. ' +
-      'Three early branches and the confirm drop a bounced reason outright, and the hand-rolled ' +
-      'spelling ({problem && <p…) evades the product-wide banner guard, whose matcher covers ' +
-      'only the ternary form. Not a mechanical mount: the form pattern must reconcile with the ' +
-      'shared component first. Filed as the-agent-editor-reads-a-refusal-its-own-way (#255).',
-  },
+  // Empty since `a-bounced-reason-survives-the-agent-editor` reconciled the
+  // last row's page (the agent editor, #255) onto the shared banner. The
+  // ledger stays, and stays enforced in both directions, so the next
+  // exemption has to be argued into a row rather than into silence.
 ];
 
 interface Verdict {

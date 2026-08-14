@@ -8,6 +8,7 @@ import {
   positionFieldKind,
 } from '@/domain/agent/trading-config.js';
 import { BindingInheritance, BindingSummary } from './binding.js';
+import { CarriedProblem } from './carried-problem.js';
 import { BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
@@ -93,6 +94,13 @@ export function AgentEditForm({
 }: {
   agent: Agent;
   catalog: Catalog;
+  /**
+   * A refusal formed on the branch rendering this form — a preset the catalog
+   * cannot answer for, a describe the platform declined. Never the bounced
+   * `?problem=`: that one is the page's to render, on every branch, so the
+   * two facts stay distinct instead of the fresher sentence replacing the
+   * only record of what the click did.
+   */
   problem?: string | undefined;
   /**
    * What the person had entered, when they are being sent back here.
@@ -122,7 +130,7 @@ export function AgentEditForm({
 
   return (
     <div className="space-y-6">
-      {problem && <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{problem}</p>}
+      <CarriedProblem problem={problem} />
 
       <form method="get" className="space-y-6">
         {/* Puts the page into its confirm branch on the next request. */}

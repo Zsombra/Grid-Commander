@@ -424,12 +424,12 @@ export type StageResult<T> =
  *
  * A `StageResult<GateBlock>` in every respect a caller already handles, plus
  * `refused` — which is why it is its own type rather than a widened
- * `StageResult`. The other two stages do not refuse: `list_signal_logs` and
+ * `StageResult`. The other two stages never refused: `list_signal_logs` and
  * `list_entry_decisions` were walked live on 2026-08-13 and answered in full
- * while `list_gate_blocks` was 500ing on specific rows (#100). Giving all
- * three a field only one can populate would say this product expects the
- * fault everywhere, and the day the platform is fixed there would be three
- * places to unwind instead of one.
+ * while `list_gate_blocks` was 500ing on specific rows (#100 — refused
+ * 2026-08-12→13, healed upstream by 2026-08-14). Giving all three a field
+ * only one has ever needed would say this product expects the fault
+ * everywhere, and it would leave three places to unwind instead of one.
  *
  * `refused` is null on the ordinary path, including when a single call
  * succeeds. It is non-null only where a summary was assembled around a hole.

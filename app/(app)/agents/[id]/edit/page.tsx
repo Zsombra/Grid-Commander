@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import {
   editArguments,
@@ -55,6 +56,11 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
+        {/* On every branch, unconditionally — a bounced apply can land while
+            *any* of the seven is the one that answers, and the reason in the
+            URL is the only record of what that click did. The branch's own
+            failure below is a different fact and both are owed. */}
+        <CarriedProblem problem={query['problem']} />
         <p role="alert" className="text-sm">{roster.reason}</p>
         {/* Said before the form is refused rather than after: an editor who
             cannot see their agent should know whether to wait or to reconnect,
@@ -69,6 +75,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such agent</h1>
+        <CarriedProblem problem={query['problem']} />
         <p className="text-sm">
           <a href="/agents" className="underline">Back to your agents</a>
         </p>
@@ -80,6 +87,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        <CarriedProblem problem={query['problem']} />
         {/*
           The form asks the catalog which limits BattleGrid refuses to default.
           Without it this page cannot know what to ask for, and guessing would
@@ -102,10 +110,13 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        {/* The bounced reason renders here, not through the form's `problem`
+            prop — that prop now carries only a refusal formed on the branch
+            rendering it, so the two facts cannot double-render as one. */}
+        <CarriedProblem problem={query['problem']} />
         <AgentEditForm
           agent={agent}
           catalog={catalog.catalog}
-          problem={query['problem']}
           composed={query}
         />
       </main>
@@ -146,6 +157,7 @@ export default async function EditAgentPage({
       return (
         <main className="mx-auto max-w-3xl space-y-6 p-6">
           <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+          <CarriedProblem problem={query['problem']} />
           <AgentEditForm
             agent={agent}
             catalog={catalog.catalog}
@@ -189,6 +201,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        <CarriedProblem problem={query['problem']} />
         <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} composed={query} />
       </main>
     );
@@ -196,6 +209,7 @@ export default async function EditAgentPage({
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
+      <CarriedProblem problem={query['problem']} />
       <AgentEditConfirm
         agent={agent}
         consequence={proposed.proposal.consequence}

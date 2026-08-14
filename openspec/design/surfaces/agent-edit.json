@@ -4,7 +4,7 @@
   "route": "/agents/[id]/edit",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "b4fb716",
+  "generated_at_commit": "28bbb27",
   "source_files": [
     "app/(app)/agents/[id]/edit/page.tsx",
     "src/presentation/components/agent-edit.tsx",
@@ -50,11 +50,17 @@
         "form",
         "form-with-problem",
         "review",
+        "review-with-problem",
         "refused-proposal",
+        "refused-proposal-with-problem",
         "preset-unresolvable",
+        "preset-unresolvable-with-problem",
         "roster-unreadable",
+        "roster-unreadable-with-problem",
         "no-such-agent",
+        "no-such-agent-with-problem",
         "catalog-unreadable",
+        "catalog-unreadable-with-problem",
         "not-connected"
       ],
       "data": [
@@ -64,7 +70,7 @@
         "query"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column in the form branch, max-w-2xl in the review branch, space-y-6/4, p-6. The two branches are one route split on ?review=1 — submitting the form is a GET that navigates back here, and this page then proposes the change and renders the consequence the confirmation was issued against. refused-proposal and preset-unresolvable both re-render the form with the reason as its problem banner — but with the agent's current values as defaults, so everything the operator typed is lost (behavior, not styling). catalog-unreadable renders h1 + role=alert reason + a plain underlined link back; no-such-agent renders h1 + underlined link to /agents. This route was outside `the-outcome-reaches-the-person`'s scope: the problem only reaches the screen through AgentEditForm, so roster-unreadable, no-such-agent and catalog-unreadable all drop a carried ?problem= (the same gap the deploy/undeploy/rebind pages closed by mounting the shared CarriedProblem on every branch).",
+      "current_implementation": "max-w-3xl centered column in the form branch, max-w-2xl in the review branch, space-y-6/4, p-6. The two branches are one route split on ?review=1 — submitting the form is a GET that navigates back here, and this page then proposes the change and renders the consequence the confirmation was issued against. Since `a-bounced-reason-survives-the-agent-editor` (#255) all seven render branches mount the shared `<CarriedProblem problem={query['problem']} />` unconditionally under their h1 (the confirm branch at the top of its main), so every `-with-problem` pairing above is a real rendering; the page owns the bounced reason and no longer forwards it into the form. refused-proposal and preset-unresolvable re-render the form with THEIR OWN reason as its `problem` prop — a branch-local refusal, rendered inside the form through the same shared component, distinct from and stackable with the page-level carried banner. Typed values survive a bounce for the name and the twelve pm.* fields (`composed` wins over stored values — `the-round-trip-keeps-what-the-person-needs`); the six money boxes still prefill from the agent's stored values because AgentEditForm does not pass `composed` into MoneyLimits — recorded as backlog `the-edit-bounce-carries-money-nothing-refills`. catalog-unreadable renders h1 + carried banner + role=alert reason + a plain underlined link back; no-such-agent renders h1 + carried banner + underlined link to /agents.",
       "constraints": [
         "The two-request split is spec, not layout: 'the consequence is shown and the change is not yet made / it is made only on a further request the user initiated' — openspec/specs/agent-authoring/spec.md:520-523. A design that merges form and confirmation into one submission changes behavior and is requires-spec-change.",
         "Every state change is a full navigation — the page renders whole from one server round trip and holds no client state. The only client code is `PerformButton` (`'use client'`, `useFormStatus`), which reports that a submit is in flight and nothing else; it is the exception the rule is stated around, not a contradiction of it. A design may not introduce client state, optimistic rendering, or a partial update.",
@@ -102,7 +108,7 @@
           "effect": "Anchor to /agents/[id] without submitting anything"
         }
       ],
-      "current_implementation": "space-y-6 form: name input, MoneyLimits fieldset, PositionManagement section, then two BUTTON_SECONDARY controls ('Review the change' and 'Back to <name>') in flex flex-wrap gap-3 — no mobile full-width stack. Below the form, a 'Not editable here' section renders the binding through the shared components. The not-editable states replace the whole form with a role=alert sentence: archived names reactivation as the way back; platform-locked says BattleGrid does not permit the change.",
+      "current_implementation": "space-y-6 form: the branch-local `CarriedProblem` mount (null unless this branch formed a refusal — the bounced `?problem=` is the page's to render, per the prop's own doc), name input, MoneyLimits fieldset, PositionManagement section, then two BUTTON_SECONDARY controls ('Review the change' and 'Back to <name>') in flex flex-wrap gap-3 — no mobile full-width stack. Below the form, a 'Not editable here' section renders the binding through the shared components. The not-editable states replace the whole form with a role=alert sentence: archived names reactivation as the way back; platform-locked says BattleGrid does not permit the change.",
       "constraints": [
         "'Review the change' is deliberately BUTTON_SECONDARY, not primary — a method=get form composes a preview and reaches no operation (control.ts's stated rule). The primary in this flow belongs to agent-edit-confirm, one request later.",
         "Inherited configuration MUST stay presented as inherited, not editable — openspec/specs/agent-authoring/spec.md:144-147 ('MUST NOT present strategy-owned configuration as editable from the agent').",
@@ -121,21 +127,24 @@
     {
       "id": "problem",
       "role": "feedback",
-      "purpose": "Show the refusal that bounced a submitted edit back to the person who typed it.",
+      "purpose": "Two mounts of one treatment: the page-level banner carrying a bounced apply's reason on every branch, and the form-level banner carrying a refusal formed while composing.",
       "states": [
-        "present",
+        "carried-present",
+        "branch-local-present",
+        "both-present",
         "absent"
       ],
       "data": [
         "query"
       ],
       "actions": [],
-      "current_implementation": "Spelled out inline in AgentEditForm, not the shared component: a role=alert paragraph, rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary. Two ways it now differs from CarriedProblem (carried-problem.tsx), which deploy, undeploy and rebind adopted: it carries no semibold 'Refused:' prefix, so the reason text stands alone, and it lives inside the form component rather than on the page, so only the branches that render the form can show it. Its content is often several reasons joined with ' · ', which makes it the longest bounced-write banner in the product.",
+      "current_implementation": "The shared `CarriedProblem` component in both positions since `a-bounced-reason-survives-the-agent-editor` (#255) — the hand-rolled `{problem && <p…}` copy is gone, and `tests/agent/refusals-reach-the-operator.test.ts` now fails either spelling of a hand-rolled copy (`?` or `&&`). DT-0004's treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary, role=alert, semibold 'Refused: ' prefix. The page mounts it for `query['problem']` (the bounced apply's reason); AgentEditForm mounts a second one for its `problem` prop, which since #255 carries only a branch-local refusal (unresolvable preset, refused describe) — so on those branches with a bounce in the URL, two banners stack, and that is the point: 'your apply was refused' and 'what you are composing now has a problem' are different facts (app-access scenario: a fresher refusal does not replace a carried one). The refused-describe content is often several reasons joined with ' · ', still the longest bounced-write banner in the product.",
       "constraints": [
-        "role=alert must survive.",
+        "role=alert must survive, on both mounts.",
         "The reason shown is the one the operation returned — openspec/specs/agent-authoring/spec.md:474-475; a design must not truncate or paraphrase it.",
         "Several joined reasons is the normal case here, not the overflow case — the block must wrap and stay readable at multi-line length.",
-        "This banner and CarriedProblem must not be allowed to diverge further — a restyle of the bounced-write banner has to reach both, and the honest fix is for this page to adopt the shared component (that is a code change, not a design ticket)."
+        "The two mounts are one component and must stay one — restyle it in carried-problem.tsx, never per position. Collapsing the stacked pair into one banner is behavior (it deletes one of two facts) and requires-spec-change: openspec/specs/app-access/spec.md, 'A fresher refusal does not replace a carried one'.",
+        "Every render branch mounts the page-level banner — `a-problem-redirect-is-read-where-it-lands.test.ts` (derived, no exemption rows) and the CARRY_PROBLEM pin both fail a branch that drops it."
       ],
       "children": []
     },
@@ -377,16 +386,16 @@
       "steps": [
         "submit the confirm form",
         "platform or product refuses (rejected fields, invalid values, revision moved)",
-        "redirected back to the form branch with ?problem=",
-        "problem banner states every reason above a fresh form (typed values are not restored)"
+        "redirected back to the form branch with ?problem= and every submitted value except the confirmation binding",
+        "the page-level banner states every reason; the typed name and pm.* values are back in their fields (money boxes prefill from stored values — see backlog `the-edit-bounce-carries-money-nothing-refills`)"
       ]
     },
     {
-      "name": "The bounce lands on a branch that cannot show it",
+      "name": "The bounce lands on a branch with its own bad news",
       "steps": [
         "the apply is refused and redirects back with ?problem=",
-        "the roster or the catalog will not load, or the agent is no longer in the roster",
-        "those branches render before the form, so the reason for the click is lost — the gap the deploy/undeploy/rebind pages closed with CarriedProblem"
+        "the roster or the catalog will not load, the agent is no longer in the roster, or the re-run describe refuses",
+        "whichever branch renders carries the bounced reason above its own — two facts, neither replacing the other (#255 closed the drop; this page was the derived scan's last KNOWN_SILENT row)"
       ]
     },
     {
@@ -394,7 +403,7 @@
       "steps": [
         "submit 'Review the change'",
         "describeEdit refuses a field or the preset cannot be resolved",
-        "the form re-renders with the reason as its problem banner, defaults back to current values"
+        "the form re-renders with that reason as its own banner, typed name and pm.* values preserved"
       ]
     },
     {
@@ -416,14 +425,14 @@
       "button-secondary",
       "button-primary"
     ],
-    "notes": "Problem and consequence blocks and the not-editable refusals carry role=alert; the position drift line carries role=status. Money hints are associated via aria-describedby. The twelve position-management booleans are native checkboxes inside their own inline labels, so the label is the accessible name and the native control keeps its own checked/disabled/forced-colors rendering. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "Problem and consequence blocks and the not-editable refusals carry role=alert; the position drift line carries role=status. On a branch that both received a bounce and formed its own refusal, two role=alert banners stack and are read in document order — carried first, branch-local second. Money hints are associated via aria-describedby. The twelve position-management booleans are native checkboxes inside their own inline labels, so the label is the accessible name and the native control keeps its own checked/disabled/forced-colors rendering. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/edit/page.tsx": "sha256:adb465296bc0684c92563283ca6b653b862068c95b283c21097426714b11631e",
-    "src/presentation/components/agent-edit.tsx": "sha256:0cb0c9f78a8db00d58e800906536a308e5927db8beed1a90783856b6bfc56a80",
+    "app/(app)/agents/[id]/edit/page.tsx": "sha256:7f95a47fa2849d0103a2e971c6e097ee5620a7f6f93aa5d9a2976231f6d27761",
+    "src/presentation/components/agent-edit.tsx": "sha256:357ebb646fba2b537ab5104e2a0209c4e205834cad232e24ac70889661a7d8af",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
-    "src/presentation/components/money-limits.tsx": "sha256:50a025829e77c8c98ed3a345f5862b34d3a5d6b1ba237af658eb6e8328abd735",
+    "src/presentation/components/money-limits.tsx": "sha256:e1ef88575cafd94eedb18e098bfe51eaa5e5391e4edec685ca5f241acfc6d842",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"

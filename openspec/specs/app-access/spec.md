@@ -579,6 +579,16 @@ change landed is worse than silence.
   must report, so the two roads this scenario was written for cannot go
   silently dark again by the check itself going blind
 
+#### Scenario: A fresher refusal does not replace a carried one
+- **WHEN** a bounced reason lands on a surface whose rendering branch forms a
+  refusal of its own — a value it cannot resolve, a proposal the platform
+  declined
+- **THEN** both are rendered as distinct facts, in the product's one shared
+  refusal treatment
+- **AND** neither stands in for the other, because "your apply was refused"
+  and "what you are composing now has a problem" earn different next actions
+  from the operator
+
 ### Requirement: An Unanticipated Failure Lands On The Product's Own Page
 Where a render or a submitted action fails in a way no handler anticipated,
 Grid-Commander SHALL show the operator its own page, in its own words. It MUST

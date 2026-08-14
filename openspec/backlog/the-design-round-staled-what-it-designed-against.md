@@ -2,7 +2,7 @@
 id: the-design-round-staled-what-it-designed-against
 title: Seven surveyed surfaces are stale and the design lane aims at old targets
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-14
 updated: 2026-08-14
@@ -51,7 +51,27 @@ Run `/surface` across the seven (one ui-surveyor pass), or confirm
 per-surface that the drift is cosmetic and re-pin. Nothing here blocks
 feature work; it blocks the next *design* round.
 
+## Resolution (2026-08-14)
+
+All seven re-surveyed and re-pinned at `28bbb27` — deliberately after
+`a-bounced-reason-survives-the-agent-editor` (#255) landed and was committed,
+so one pass captured the refusal round's mounts, the fork pre-flight (#102),
+AND #255's reconciliation; re-pinning against committed content only, per the
+surveyor's rule. None of the drift was cosmetic: every manifest needed prose
+corrections, the sharpest being agent-reactivate-confirm, whose prose still
+claimed one-branch-only mounting and "not in CARRY_PROBLEM" while the code
+mounted per-branch and the pin list held it — a digest refreshed without its
+prose, which is its own small lesson. `validate --all` shows zero
+`design_surface_stale` for the seven; agent-roster (#237) alone remains, as
+intended. Two artifacts of the survey: gap filed as
+[[the-edit-bounce-carries-money-nothing-refills]] (#260), and DT-0004 now
+reads `design_state_not_covered` for the archive page's new
+`refused-with-problem` state — the ticket is incomplete for a state that now
+exists, which is the flag doing its job; it waits for the design lane.
+
 ## Related
 
 - [[agent-roster-has-been-stale-for-four-rounds]] (#237) — the eighth
   surface, tracked separately and longer.
+- [[the-edit-bounce-carries-money-nothing-refills]] (#260) — found by this
+  re-survey.

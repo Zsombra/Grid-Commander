@@ -4,7 +4,7 @@
   "route": "/strategies/[id]/fork",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "7cc042b",
+  "generated_at_commit": "28bbb27",
   "source_files": [
     "app/(app)/strategies/[id]/fork/page.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -31,7 +31,7 @@
     {
       "name": "problem",
       "shape": "string | undefined",
-      "source": "searchParams — the reason a rejected forkStrategy redirected back with. Two producers: a platform `refused`, and — since `the-outcome-reaches-the-person` — the action's own pre-perform re-read failing or the strategy having left the roster, both prefixed 'Nothing was attempted: …'"
+      "source": "searchParams — the reason a rejected forkStrategy redirected back with. Three producers: a platform `refused`; the action's own pre-perform re-read failing or the strategy having left the roster (since `the-outcome-reaches-the-person`); and — since `a-taken-name-is-refused-before-it-is-sent` (#102) — the name pre-flight, which refuses a resulting name that exactly matches one of the user's own PRIVATE strategies before anything is sent, because BattleGrid answers that collision with an unexplained INTERNAL_ERROR. The last two are prefixed 'Nothing was attempted: …'"
     },
     {
       "name": "name",
@@ -156,10 +156,10 @@
       "actions": [
         {
           "id": "forkStrategy",
-          "effect": "POSTs the server action with strategyId and the name only when one was typed; success lands on the copy's edit page (/strategies/[newId]/edit), refusal redirects back here with ?problem= and the typed name preserved as ?name=, and a pre-perform re-read that fails or a strategy that has left the roster also redirects back here with ?problem= prefixed 'Nothing was attempted: …' — carrying ?name= too"
+          "effect": "POSTs the server action with strategyId, sourceRevision, and the name only when one was typed; success lands on the copy's edit page (/strategies/[newId]/edit), refusal redirects back here with ?problem= and the typed name preserved as ?name=, and three pre-perform outcomes also bounce with 'Nothing was attempted: …' — a failed re-read, a strategy no longer in the roster, and a resulting name (typed, or the default '<parent> (fork)') that exactly matches one of the user's own PRIVATE strategies, refused before it is sent because the platform answers that collision with an unexplained INTERNAL_ERROR (#102, measured; PRIVATE and exact-match only, so a copy the platform might accept is never pre-refused)"
         }
       ],
-      "current_implementation": "space-y-4 form; one hidden input (strategyId), the name field, then a flex flex-wrap gap-3 button row. Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back to this route with a 'Nothing was attempted: …' problem and the typed name, where they used to redirect to /strategies unexplained and drop what was typed.",
+      "current_implementation": "space-y-4 form; two hidden inputs (strategyId, sourceRevision — the revision the prose names, carried so the copy is taken from what the page showed), the name field, then a flex flex-wrap gap-3 button row. Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back with 'Nothing was attempted: …' and the typed name. Since `a-taken-name-is-refused-before-it-is-sent` (#102) it also pre-checks the resulting name against the user's own PRIVATE rows on that same re-read and refuses an exact collision before sending — narrowing the road to the platform's unexplained INTERNAL_ERROR without closing the refused arm, which still catches a collision created by another session in the gap.",
       "constraints": [
         "A click that reached no operation still lands somewhere that says so, with the typed name intact — the two 'Nothing was attempted: …' paths must not be redesigned back into a silent redirect to the roster.",
         "The form must keep exactly one submit path.",
@@ -311,6 +311,15 @@
       ]
     },
     {
+      "name": "The name is already taken",
+      "steps": [
+        "submit with a name (or blank) whose resulting name exactly matches one of your own PRIVATE strategies",
+        "the pre-flight refuses before anything is sent — BattleGrid answers this collision with an unexplained 'Internal server error' (measured, #102)",
+        "redirected back with ?problem= 'Nothing was attempted: you already have a strategy named …' and the typed name preserved",
+        "the sentence says what to do: type a name of your own (blank collision) or pick one you do not already have (typed collision)"
+      ]
+    },
+    {
       "name": "Arrive at capacity",
       "steps": [
         "open the fork address while the account is full",
@@ -339,7 +348,7 @@
     "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Since DT-0021 the two alerts are visually identical as well, so on `unreadable-with-problem` only wording and order tell them apart. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so stacked alerts are read in document order rather than as live-region updates."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/fork/page.tsx": "sha256:5ce5ee420d8a87c34ce916eae47fb9c7f042ced4407d9b00e9c1ae5104bf761c",
+    "app/(app)/strategies/[id]/fork/page.tsx": "sha256:d7e10de07c6eba1e5c1b7c8d02edd9705db91cda1fb6c3c078b62c02e4ac70dd",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",

@@ -1,5 +1,61 @@
 # Journal
 
+## 2026-08-14 (trirequire) — four tripwires checked cold, three items closed, one gap found
+
+**Did**: merged **PR #258** (main `ff5220d`; `validate --all` clean after —
+the archive-resurrection trap did not fire). All four tripwires checked and
+**cold**: `marginedUsd` 0 with zero open positions (#107 waits), the Radar
+fleet 20/20 `PLATFORM_PAUSED` with `radarPaused: true` (#101 waits — no
+approvals read attempted), no `DATABASE_URL` (#94 blocked), and no session
+among 50 with `playersNeeded < minimumPlayers` (#104 blocked; 48 CANCELLED /
+2 PENDING, all 5/5). Then oldest-first on the unconditionals. **#257** →
+`a-healed-defect-reads-as-dated-history` (lite, archived): three comments
+re-worded into dated history — refused 2026-08-12→13, healed by 2026-08-14,
+fallback kept — comment-only proven by diff. **#255** →
+`a-bounced-reason-survives-the-agent-editor` (standard, verified, archived):
+all seven edit-page branches mount `CarriedProblem`; the form's banner is the
+shared component with its `problem` prop narrowed to branch-local refusals;
+`KNOWN_SILENT` emptied; `HAND_ROLLED` widened to `&&` in both copies; the
+page joined `CARRY_PROBLEM`; new `app-access` scenario ("a fresher refusal
+does not replace a carried one") with a rendering test; two mutations, both
+killed — M2 by two guards independently. **#259** → all seven stale manifests
+re-surveyed and re-pinned at `28bbb27`, deliberately after #255 so one pass
+captured everything; the re-survey found the edit form never wired
+`MoneyLimits` to `composed`, filed as
+`the-edit-bounce-carries-money-nothing-refills` (**#260**).
+
+**State**: 0 active changes, 25 open items, no p1. Gates at #255's archive:
+typecheck, lint, **2404 vitest / 188 files**, build, drizzle no-op; test:db
+skipped (no `DATABASE_URL`). Branch `claude/board-issue-triage-217439`
+carries three commits (`1c695c6`, `28bbb27`, `3fe9d39`); PR is this
+handoff's last act. `validate --all` 0 errors / 15 warnings — the
+assistant-capability seven, agent-roster (#237, deliberate), DT-0003/0014
+state coverage, and one **new deliberate** one: DT-0004
+`design_state_not_covered` on the archive page's `refused-with-problem` —
+the state now exists and the ticket does not style it; the design lane's
+queue, recorded in #259's resolution.
+
+**Next**: operator — merge this PR. Next working session: re-check the four
+tripwires first (each closes its issue the moment it fires), then the three
+unblocked p2s — `the-build-never-checks-nexts-generated-route-types`,
+`the-source-completeness-check-matches-no-import-here`,
+`the-wager-sentence-offers-scope-as-a-safety-boundary` — read in full before
+choosing. `recorded-signals-are-not-yet-evidence` stays #94-blocked despite
+being the board's computed NEXT.
+
+**Watch out**: a manifest's digest can be refreshed without its prose —
+agent-reactivate-confirm passed staleness while still describing
+one-branch mounting the code had outgrown, so a quiet staleness check proves
+content matched, never that the words were re-read; re-survey means reading.
+And a closed item can be honest and still half-done: #162's landing note says
+"all three refusing sites pass `composed`", true for the name and pm.* groups
+while the money boxes silently refill from storage — the pin that closed it
+asserted only `displayName` survival, which is how the half stayed invisible
+(#260 carries it now). On the edit page the split is load-bearing: the PAGE
+owns the bounced `?problem=`, the FORM owns branch-local refusals — passing
+`query['problem']` back into the form double-renders the same sentence.
+
+
 ## 2026-08-14 (wrap) — the oldest-first session hands off: two changes, three closures, one PR
 
 **Did**: closed out the day's six rounds. **PR #258 opened** carrying all

@@ -86,6 +86,10 @@ const CARRY_PROBLEM = [
   // Every branch of the create page is a branch a bounce can land on — a
   // refused create arrives at capacity or without a catalog by construction.
   'app/(app)/agents/new/page.tsx',
+  // The last KNOWN_SILENT ledger row, reconciled onto the shared component by
+  // `a-bounced-reason-survives-the-agent-editor` (#255): seven branches,
+  // seven mounts, and the form's own banner is CarriedProblem now too.
+  'app/(app)/agents/[id]/edit/page.tsx',
 ] as const;
 
 describe('one spelling of a carried refusal, product-wide', () => {
@@ -120,8 +124,11 @@ describe('one spelling of a carried refusal, product-wide', () => {
   // one session that a check could not fail on the thing it was written for —
   // the pattern is always the same, a rule written against the shape of the
   // one example in front of it. `[(<]` covers both, and anything else that
-  // opens an element.
-  const HAND_ROLLED = /\{problem \?\s*[(<]/;
+  // opens an element. `(?:\?|&&)` closes the second hole the same way: the
+  // agent editor wrote `{problem && <p` and evaded a matcher that knew only
+  // the ternary (#255) — widened together with that page's fix, not before,
+  // so the ledger row recording the evasion never went stale while it stood.
+  const HAND_ROLLED = /\{problem (?:\?|&&)\s*[(<]/;
 
   it('nothing hand-rolls the banner CarriedProblem owns', () => {
     const handRolled = uiFiles.filter((f) => HAND_ROLLED.test(readFileSync(f, 'utf8')));
@@ -166,8 +173,10 @@ describe('a carried reason survives the branch that renders next', () => {
       const source = readFileSync(page, 'utf8');
       // Fifteen hand-rolled copies of one paragraph is how the treatment
       // drifts and how a branch gets forgotten — the defect WhyNotLoaded was
-      // extracted to stop, one paragraph along.
-      expect(source).not.toMatch(/\{problem \?\s*[(<]/);
+      // extracted to stop, one paragraph along. Both spellings, same property
+      // as HAND_ROLLED above — a matcher split between them recreates the
+      // one-spelling hole one guard over.
+      expect(source).not.toMatch(/\{problem (?:\?|&&)\s*[(<]/);
     });
   }
 });

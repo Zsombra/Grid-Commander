@@ -4,7 +4,7 @@
   "route": "/agents/[id]/archive",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "c26a728",
+  "generated_at_commit": "28bbb27",
   "source_files": [
     "app/(app)/agents/[id]/archive/page.tsx",
     "src/presentation/components/carried-problem.tsx",
@@ -37,6 +37,7 @@
         "proposal",
         "proposal-with-problem",
         "refused",
+        "refused-with-problem",
         "not-connected"
       ],
       "data": [
@@ -44,7 +45,7 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. In the refused state it renders h1 'Cannot archive' plus the platform's reason in a notice block (bg-notice-subtle, border-notice-border, role=alert kept) and offers no form; nothing is styled as though retrying could help.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. In the refused state it renders h1 'Cannot archive' plus the platform's reason in a notice block (bg-notice-subtle, border-notice-border, role=alert kept) and offers no form; nothing is styled as though retrying could help. Since `a-refusal-lands-where-someone-reads-it` (#240) BOTH branches mount `<CarriedProblem>` under the h1 — the refused branch is where a bounced archive lands by construction (a spent confirmation means the re-run describe declines), so 'Cannot archive' and 'your archive was refused' render as two stacked facts: the danger-tinted carried banner above the notice-tinted refusal-to-mint.",
       "constraints": [
         "Archiving is presented as recoverable and MUST NOT be described or styled as deletion — openspec/specs/agent-authoring/spec.md:202 ('present archiving as recoverable'). The submit copy says 'and free its slot', which is the benefit, not a loss.",
         "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
@@ -68,10 +69,11 @@
         "problem"
       ],
       "actions": [],
-      "current_implementation": "DT-0004: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted — visually distinct from the consequence block below it.",
+      "current_implementation": "The shared `CarriedProblem` component, mounted unconditionally on both post-connection branches (it renders null without a problem). DT-0004's treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused:' prefix so the state is named as well as tinted — visually distinct from the consequence block on the proposal branch and from the notice block on the refused branch.",
       "constraints": [
         "role=alert must survive.",
-        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) still binds the consequence block beside it."
+        "This is a failed attempt, not advisory — it may take a stronger role than the consequence block, but 'notice never borrows danger's colour' (system.json principle) still binds the consequence block beside it.",
+        "Mounted on every branch — `a-problem-redirect-is-read-where-it-lands.test.ts` derives this page as a problem destination and fails any render branch that drops the reason. A design that suppresses it on the refused branch changes behavior and is requires-spec-change."
       ],
       "children": []
     },
@@ -216,6 +218,14 @@
       ]
     },
     {
+      "name": "The bounce lands on the refused branch",
+      "steps": [
+        "submit; the confirmation is refused (most often already spent — the first press succeeded)",
+        "redirected back here with ?problem=; the re-run describe declines to re-mint",
+        "'Cannot archive' renders with the carried refusal above the notice block — both facts, neither replacing the other"
+      ]
+    },
+    {
       "name": "Walk away",
       "steps": [
         "click 'Leave it active'",
@@ -235,7 +245,7 @@
     "notes": "All three message blocks carry role=alert. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/archive/page.tsx": "sha256:84316c6530a070c5f6931dd71d6270901fa4cca6a0c2c38840cf430eacd6f91e",
+    "app/(app)/agents/[id]/archive/page.tsx": "sha256:a34cdf08924c872447f4f7357b2eb0de41451c63af7e3319da59661bdf57a6f2",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
