@@ -58,9 +58,12 @@ surface a checked property rather than a remembered one.
   pinned list, loud on drift, and cheap. The derived check covers a superset
   by a different mechanism; removing the list is cleanup that risks reach and
   buys a few lines.
-- **The rule editor** (`strategies/[id]/rules/[signalId]`) — checked during
-  the item's own review and it does not hold; recorded there so it is not
-  re-raised.
+- **The rule editor's mint-side params** (`strategies/[id]/rules/[signalId]`)
+  — the item's third suspect, that the mint drops `edit=1` / `p_*`, was
+  checked during the item's own review and does not hold; recorded there so
+  it is not re-raised. (The page's *landing* branches were a separate gap the
+  new check found on its first honest run, and were fixed under task 2.3 —
+  that is coverage the check earned, not this suspect re-raised.)
 - **Refusals that do not travel as `?problem=`** — `repair-required` rides
   `outcome=` deliberately (guidance, not a problem banner) and keeps its
   dedicated rendering; the check keys on the `problem` convention only.
