@@ -3,11 +3,14 @@
 ### Requirement: A Confirmation Pressed Twice Writes Once
 Pressing a perform submit more than once SHALL NOT produce more than one write.
 Grid-Commander MAY achieve this by any means that holds — a single-use
-confirmation, an idempotency key the platform honours, an operation that is
+confirmation, an idempotency key under which a repeat cannot create a second
+object and is answered with the original outcome, an operation that is
 naturally idempotent, or the platform's own refusal of the duplicate. It MUST
 NOT rely on the control becoming unpressable, because a control cannot be
 unpressable in a second tab, on a replayed POST, or before the page has
-hydrated.
+hydrated. Where the key is the means, the guarantee claimed is the one that is
+measured: the product's own ledger dedupes today, and the key is also offered
+to the platform, whose honouring of it is untested (#238).
 
 Stated as an outcome rather than a mechanism because the mechanism differs per
 surface and each one is separately checkable. `docs/checklists/` states the same

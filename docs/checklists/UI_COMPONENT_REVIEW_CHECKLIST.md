@@ -1,8 +1,11 @@
 # Grid-Commander UI Component Review Checklist
 
-**Version**: 1.1.0
-**Last Updated**: 2026-08-07
-**Based On**: Clean Architecture + React / Next.js App Router + shadcn/ui + Tailwind + Zustand
+**Version**: 2.0.0
+**Last Updated**: 2026-08-14
+**Based On**: Clean Architecture + React 19 / Next.js 15 App Router (Server
+Components) + Tailwind with `system.json` design tokens + shared control-class
+constants. No shadcn/ui, no Zustand, no custom hooks — by design; see
+[Deliberately Absent](#deliberately-absent).
 **Companion To**: `ARCHITECTURE_REVIEW_CHECKLIST.md`, `DATA_PIPELINE_REVIEW_CHECKLIST.md`
 
 ---
@@ -22,15 +25,13 @@ before the click.
 ## Table of Contents
 
 1. [Component Structure](#component-structure-checklist)
-2. [Hooks Design](#hooks-design-checklist)
-3. [Store Design (Zustand)](#store-design-checklist-zustand)
-4. [shadcn/ui Usage](#shadcnui-usage-checklist)
-5. [Tailwind](#tailwind-checklist)
-6. [Consequence & Confirmation](#consequence--confirmation-checklist)
-7. [Accessibility & Semantics](#accessibility--semantics-checklist)
-8. [Responsive Layout](#responsive-layout-checklist)
-9. [State & Interaction](#state--interaction-checklist)
-10. [Common Anti-Patterns](#common-anti-patterns)
+2. [Deliberately Absent](#deliberately-absent)
+3. [Tailwind](#tailwind-checklist)
+4. [Consequence & Confirmation](#consequence--confirmation-checklist)
+5. [Accessibility & Semantics](#accessibility--semantics-checklist)
+6. [Responsive Layout](#responsive-layout-checklist)
+7. [State & Interaction](#state--interaction-checklist)
+8. [Common Anti-Patterns](#common-anti-patterns)
 
 ---
 
@@ -51,18 +52,18 @@ before the click.
 // ✅ CORRECT — server component fetches, presentational component renders
 // app/(app)/agents/page.tsx
 export default async function AgentsPage() {
-  const data = await container.listAgents.execute({ userId: await requireUserId() });
-  return <AgentRoster agents={data.agents} snapshotAgeSeconds={data.snapshotAgeSeconds} isStale={data.isStale} />;
+  const { app, user } = await acting();
+  if (user.kind === 'not-connected') return <NotConnected result={user} />;
+  const { roster } = await app.listAgents.execute(user.authority);
+  return <AgentRoster roster={roster} />;
 }
 
 // src/presentation/components/agent-roster.tsx
 export interface AgentRosterProps {
-  agents: AgentSummary[];
-  snapshotAgeSeconds: number;
-  isStale: boolean;
+  roster: RosterResult;
 }
 
-export function AgentRoster({ agents, snapshotAgeSeconds, isStale }: AgentRosterProps) {
+export function AgentRoster({ roster }: AgentRosterProps) {
   return ( /* renders only */ );
 }
 ```
@@ -78,59 +79,24 @@ export function AgentRoster() {
 
 ---
 
-## Hooks Design Checklist
+## Deliberately Absent
+
+This product has **no custom hooks, no `useEffect`, no client store, and no
+component library**. Interactivity lives in a handful of small client
+components (`PerformButton` and its siblings); everything else is a Server
+Component, and state that matters lives on the server. These are decisions,
+not omissions — a checklist that governed machinery this product does not have
+taught its readers to skim, and a skimmed standard is how item 4 below sat
+false for a month (#229, #233).
 
 | # | Check | Status |
 |---|-------|--------|
-| 1 | Custom hooks live in `src/presentation/hooks/`, named `use*` | ☐ |
-| 2 | A hook orchestrates state and effects; it does not compute business values | ☐ |
-| 3 | Every effect declares a complete dependency array | ☐ |
-| 4 | Every effect that subscribes also cleans up | ☐ |
-| 5 | No `??` default applied to a server-provided field | ☐ |
+| 1 | **Introducing a custom hook, a client store, or a component library requires regenerating this checklist first** — checklist-generator in UPDATE mode, before the PR that adds the dependency | ☐ |
 
----
-
-## Store Design Checklist (Zustand)
-
-| # | Check | Status |
-|---|-------|--------|
-| 1 | Stores live in `src/presentation/stores/`, one per domain area | ☐ |
-| 2 | Store holds server data and UI state; it does not derive business values | ☐ |
-| 3 | Selectors read fields; they do not aggregate or calculate | ☐ |
-| 4 | Actions are named for intent (`beginReview`, not `setStep`) | ☐ |
-| 5 | Cached data is invalidated after a successful mutation | ☐ |
-| 6 | **No token, plan token, or credential is ever put in a client store** | ☐ |
-
-**Pattern**:
-```typescript
-// ✅ CORRECT — multi-step authoring state, which genuinely belongs on the client
-interface StrategyAuthoringState {
-  step: 'editing' | 'compiling' | 'reviewing' | 'applying';
-  draft: StrategyDraft | null;
-  compiled: CompiledPlan | null;      // what the server returned, unmodified
-  beginReview: (compiled: CompiledPlan) => void;
-  reset: () => void;
-}
-
-// ❌ WRONG — deriving, and holding a credential
-interface BadState {
-  planToken: string;                                   // never on the client
-  isViable: boolean;                                   // the server said this already
-  affectedAgentCount: number;                          // and this
-}
-```
-
----
-
-## shadcn/ui Usage Checklist
-
-| # | Check | Status |
-|---|-------|--------|
-| 1 | Component added via the CLI into `src/presentation/components/ui/` | ☐ |
-| 2 | Local modifications to a generated component are commented with a reason | ☐ |
-| 3 | Variants extended through `cva`, not by forking the component | ☐ |
-| 4 | Destructive actions use the `destructive` variant, consistently | ☐ |
-| 5 | `AlertDialog` — not `Dialog` — for anything irreversible | ☐ |
+Two rules from the removed sections were real and moved rather than died:
+credentials in client state (now State & Interaction 7) and irreversible
+actions confirming with their consequence (Consequence & Confirmation, which
+always owned it).
 
 ---
 
@@ -139,8 +105,8 @@ interface BadState {
 | # | Check | Status |
 |---|-------|--------|
 | 1 | Utility classes in the markup; no parallel stylesheet | ☐ |
-| 2 | Design tokens from the theme, not arbitrary values (`p-4`, not `p-[17px]`) | ☐ |
-| 3 | Conditional classes composed with `cn()`, not string concatenation | ☐ |
+| 2 | Design tokens from the theme, not arbitrary values (`p-4`, not `p-[17px]`; token classes like `rounded-gc-2`, `border-danger-default` come from `system.json`) | ☐ |
+| 3 | Shared control classes come from the exported constants in `src/presentation/components/control.ts` — `className={BUTTON_X}` or a template interpolating exactly them, the spelling `tests/architecture/controls.test.ts` enforces. There is no `cn()` helper here, and hand-composing a control's classes makes the file an offender against that scan | ☐ |
 | 4 | No inline `style` except for genuinely dynamic values | ☐ |
 | 5 | Colour never the only carrier of meaning — see accessibility | ☐ |
 | 6 | A change that unifies N class spellings into one ships, in the same diff, the scan that the spelling cannot recur — a deferred guard never arrives, and a file born beside the sweep drifts the day it is born (`condition-composer.tsx`, round three) | ☐ |
@@ -157,7 +123,7 @@ interface BadState {
 | 2 | A **destructive** action names what will change or be lost, in the confirmation itself | ☐ |
 | 3 | Confirmation copy states the consequence, not the mechanism | ☐ |
 | 4 | Blast radius — which agents a change reaches — is shown **before** the apply control | ☐ |
-| 5 | Apply is unreachable until the diff has been rendered | ☐ |
+| 5 | Apply is unreachable until the diff has been rendered — by not rendering the control, never by styling it disabled (`system.json` principle 10) | ☐ |
 | 6 | Compile and Apply are not styled as sibling buttons of equal weight | ☐ |
 | 7 | An expired plan token produces a "recompiled, review again" state, not an error toast | ☐ |
 | 8 | A revision conflict explains that the underlying state moved, and does not offer a one-click retry | ☐ |
@@ -165,30 +131,29 @@ interface BadState {
 
 **Pattern**:
 ```tsx
-// ✅ CORRECT — the consequence is the message
-<AlertDialogDescription>
+// ✅ CORRECT — the consequence is the message, in the product's own idiom
+<p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm">
   Rebinding <strong>{agent.displayName}</strong> to <strong>{strategy.name}</strong> replaces
   its context sources, signal rules, prose, and timeframe. This is not a merge — its current
   configuration is discarded and cannot be recovered from here.
-</AlertDialogDescription>
+</p>
 
 // ❌ WRONG — describes the mechanism, not what the user loses
-<AlertDialogDescription>
-  This will call rebind_intelligence_agent with confirm: true. Continue?
-</AlertDialogDescription>
+<p>This will call rebind_intelligence_agent with confirm: true. Continue?</p>
 ```
 
 ```tsx
-// ✅ CORRECT — blast radius before the control
+// ✅ CORRECT — blast radius before the control, and the control exists only
+// once there is a reviewed diff to apply. Gating by not rendering is the
+// product's pattern; a rendered-but-disabled apply is forbidden twice over
+// (item 5 here, principle 10 there).
 {plan.boundAgents.length > 0 && (
-  <Alert>
-    <AlertTitle>{plan.boundAgents.length} agent(s) will change immediately</AlertTitle>
-    <AlertDescription>
-      <ul>{plan.boundAgents.map(a => <li key={a.id}>{a.displayName}</li>)}</ul>
-    </AlertDescription>
-  </Alert>
+  <p role="alert">
+    {plan.boundAgents.length} agent(s) will change immediately:{' '}
+    {plan.boundAgents.map((a) => a.displayName).join(', ')}
+  </p>
 )}
-<ApplyButton disabled={!hasReviewedDiff} />
+{hasReviewedDiff && <PerformButton label="Apply" pendingLabel="Applying…" />}
 ```
 
 ---
@@ -233,9 +198,21 @@ from a refresh.
 | 1 | Loading, empty, and error states exist for every data-backed view | ☐ |
 | 2 | Empty states say what to do next, not just "no data" | ☐ |
 | 3 | Errors are actionable — what happened, what to do | ☐ |
-| 4 | Submit controls disable while in flight | ☐ |
+| 4 | A duplicate submit cannot produce a duplicate write. The guarantee is the mechanism behind the control, never the control: a single-use confirmation spent by one atomic `consume`; a per-form idempotency key deduped by the product's own ledger, returning the original outcome, and offered to the platform in the field its create tool declares (platform honour unmeasured — #238); or natural idempotence of the write. A control that stops accepting presses is a mitigation, not a guarantee, and must not be relied on alone | ☐ |
 | 5 | No optimistic UI on any BattleGrid mutation | ☐ |
 | 6 | Long operations show progress, not a frozen control | ☐ |
+| 7 | **No token, plan token, or credential in any client-held state** — the client receives results, never authority | ☐ |
+
+**Why 4 is written as an outcome**: the previous wording — "submit controls
+disable while in flight" — prescribed one client-side mechanism this product
+deliberately does not use (`perform-button.tsx` keeps focus on the pressed
+control because that focus is the announcement channel; DT-0022, #229). The
+outcome is guarded where it can actually hold: fourteen submits spend a
+single-use confirmation, create carries a per-form idempotency key
+(`tests/architecture/a-create-carries-a-dedupe-key.test.ts` for the plumbing,
+`tests/agent/duplicate-create.test.ts` and the db idempotency suite for where
+the key lands and what dedupes), fork is refused by the platform (measured
+2026-08-14), restore and connect are idempotent by nature.
 
 **Why 5**: optimistic UI shows a change as done before the server agrees.
 With `expectedRevision` conflicts and a five-minute plan token, "done" is a claim
@@ -272,11 +249,11 @@ export function StrategyList() {
 
 ```tsx
 // WRONG — two identical buttons, one of which is irreversible
-<Button onClick={compile}>Compile</Button>
-<Button onClick={apply}>Apply</Button>
+<button className={BUTTON_PRIMARY}>Compile</button>
+<button className={BUTTON_PRIMARY}>Apply</button>
 ```
-**Fix**: compile is the default action; apply is destructive-variant, gated on a
-rendered diff, and confirms with its consequence.
+**Fix**: compile is the default action; apply renders only once a diff has been
+reviewed, wears the destructive treatment, and confirms with its consequence.
 
 ---
 
@@ -296,16 +273,16 @@ rendered diff, and confirms with its consequence.
 // WRONG
 <div onClick={handleApply} className="cursor-pointer">Apply</div>
 ```
-**Fix**: `<Button onClick={handleApply}>Apply</Button>` — focusable, keyboard
-operable, announced as a button.
+**Fix**: a real `<button>` carrying a `control.ts` constant — focusable,
+keyboard operable, announced as a button, and visible to the scan.
 
 ---
 
 ### ❌ Credential In Client State
 
 ```typescript
-// WRONG
-useAuthStore.setState({ accessToken, planToken });
+// WRONG — wherever the client holds state, authority must not be in it
+const [accessToken, setAccessToken] = useState(props.accessToken);
 ```
 **Fix**: tokens stay server-side. The client receives results, never authority.
 
@@ -317,29 +294,23 @@ useAuthStore.setState({ accessToken, planToken });
 ## UI Review: [ComponentName]
 
 **File**: [path]
-**Type**: [Server Component / Client Component / Hook / Store]
+**Type**: [Server Component / Client Component]
 
 ### Checklist Results
 
 | Category | Pass | Fail | N/A |
 |----------|------|------|-----|
 | Component Structure | X/7 | X/7 | - |
-| Hooks | X/5 | X/5 | - |
-| Store | X/6 | X/6 | - |
-| shadcn/ui | X/5 | X/5 | - |
+| Deliberately Absent | X/1 | X/1 | - |
 | Tailwind | X/6 | X/6 | - |
 | Consequence & Confirmation | X/9 | X/9 | - |
 | Accessibility | X/9 | X/9 | - |
 | Responsive | X/6 | X/6 | - |
-| State & Interaction | X/6 | X/6 | - |
+| State & Interaction | X/7 | X/7 | - |
 
 ## Violations Found
 
 1. [file:line] — [rule] — [what and why]
-
-## Hook & Store Architecture Findings
-
-- [finding]
 
 ## Accessibility & Semantics Findings
 
