@@ -24,11 +24,20 @@ lint, build, drizzle clean; `validate --all` 0 errors. One active change left
 (`a-duplicate-create-returns-the-original`, 15/15, awaiting CI). 31 open items,
 no p1 once #239's item closes with its change.
 
-**Next**: **confirm PR #246's `test:db` job is green** — the partial-index
-semantics have never executed anywhere yet (no local Postgres; the db tests
-are written and CI is the first place they run). Then merge, archive
-`a-duplicate-create-returns-the-original`, and close #239's item. #238
-(does the platform honour the key it now receives) is the natural next probe.
+**Next**: **merge PR #246** — everything on it is proven. The db suite could
+not wait for CI (Actions are billing-blocked, manual dispatch only — the
+2026-08-01 decision; this session rediscovered it the hard way), so the local
+policy gate ran instead: disposable postgres:16 in Docker, migrations applied
+twice, **96/96 `test:db` green** including all new idempotency tests. Both
+changes are archived; #239's item is closed. After the merge, #238 (does the
+platform honour the key it now receives) is the natural next probe. Two
+side-fixes from the db run rode along: `validate.yml` now points `test:db` at
+`gridcommander_test`, because the suite's own disposability guard (2026-08-13)
+refuses the name CI had been using — a latent first-dispatch failure; and
+Docker Desktop on this machine was crash-looping on corrupt AF_UNIX socket
+files under `%LOCALAPPDATA%` (`Docker\run`, `docker-secrets-engine`) — remedy
+was renaming the parent dirs aside; the `.stale.*` leftovers there are inert
+and deletable after a reboot.
 
 **Watch out**:
 

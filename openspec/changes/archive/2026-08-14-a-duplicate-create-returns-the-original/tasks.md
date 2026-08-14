@@ -66,9 +66,17 @@
 - [x] 4.6 Quality gates: typecheck, lint, test, build, db:generate diff,
       test:db (needs DATABASE_URL; skip locally if absent, CI provides it).
 
-> **Executed 2026-08-14**: typecheck, lint, vitest (2362 across 184 files, up
+> **Executed 2026-08-14**: typecheck, lint, vitest (2364 across 184 files, up
 > from 2352/183), build, and `db:generate` ("no schema changes") all pass
-> locally. **4.1/4.2 are written but have not executed locally** — no
-> DATABASE_URL and no local Postgres, the config's own skip condition. They
-> run in CI's `test:db`, which is where the partial index's semantics are
-> actually proven; do not archive this change on a red or unrun db suite.
+> locally.
+>
+> **Db suite executed later the same day**: CI turned out to be
+> billing-blocked (manual dispatch only), so the local policy gate ran
+> instead — disposable `postgres:16` in Docker, migrations applied twice
+> (idempotence), **96/96 `test:db` green**, including every new idempotency
+> test: typed refusal naming the outcome, retry after a failure, dedupe after
+> success, live-entry lookup among failed siblings, and the race. The archive
+> blocker in the previous version of this note is lifted. Two side-findings
+> from getting there: the db suite's own disposability guard (correctly)
+> refused a database named `gridcommander`, which CI's workflow was pointing
+> it at — fixed in `validate.yml` in this change's branch.
