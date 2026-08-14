@@ -2,11 +2,11 @@
 id: the-app-has-no-error-boundary-anywhere
 title: The app has no error boundary, so any unexpected throw is a framework page
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "an-unanticipated-failure-has-a-floor"
 capability: app-access
 github: "236"
 blocked_by: []
@@ -14,6 +14,14 @@ tags: [error-handling, operator-facing, nextjs]
 ---
 
 # The app has no error boundary, so any unexpected throw is a framework page
+
+> **Closed 2026-08-14** — `an-unanticipated-failure-has-a-floor` (archived).
+> `app/error.tsx` + `app/global-error.tsx`, one boundary at the app root so
+> every route is covered including `/connect` and the group layout. The
+> item's open question is settled: a server-action throw from a submitted
+> form IS caught by the nearest boundary on Next 15, so the floor covers the
+> case that mattered. No retry control (idiom-tested — no prop may hold the
+> `reset` callback); digest shown, raw message never. GitHub #236 closed.
 
 ## What
 
