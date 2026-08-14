@@ -47,6 +47,16 @@ next session. The measurement also found three fixture-shaped runs in the
 live table — filed as #266, `sr-5` the one that matters (it sits under
 `owner` and fabricates a six-day hole). #94 carries the full re-anchor;
 read it before trusting any earlier date arithmetic.)*
+*(Second addendum, same evening: the operator approved both removals by
+name. `sr-5` went through the product's own trim ceremony — the describe
+previewed exactly the agreed one-run extent and the perform spent the
+confirmation; `sr-8`/`sr-12` went by guarded transactional SQL. Post-clean
+measurement reconciled to the row: 49 runs, one user, zero fixture rows,
+`first_run = 2026-08-12T19:46:14Z`, 920/920 recorded, 20 series — exactly
+the Radar set. #266 filed and closed the same day; #94 needs no exclusion
+rules. `DATABASE_URL` is in the persistent user environment, verified
+present without printing it — the next session inherits it from a fresh
+terminal.)*
 
 **Watch out**: a source file can stale a manifest you think of as another
 surface's — `agent-edit.tsx` hosts both `AgentEditForm` and

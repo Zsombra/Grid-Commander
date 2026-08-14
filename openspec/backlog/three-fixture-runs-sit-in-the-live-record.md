@@ -2,7 +2,7 @@
 id: three-fixture-runs-sit-in-the-live-record
 title: Three fixture-shaped capture runs sit in the live signal record, one inside the owner's read path
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-15
 updated: 2026-08-15
@@ -78,6 +78,29 @@ read — but pollutes whole-table measures like the one that found it.
 - The #94 analysis layer should not need to special-case any of this once
   the trim lands; until it does, any depth/coverage figure must be computed
   from `user_id = 'owner'` AND excluding `sr-5`.
+
+## Resolved 2026-08-15, same day — both removals, operator-approved by name
+
+- **`sr-5`**: removed through the product's own trim ceremony, run from the
+  recorder checkout via the composed `describeTrimRecord` → `trimRecord`
+  pair. The describe previewed exactly the agreed extent (the perform was
+  scripted to abort on any other number) and stated: *"1 capture run will be
+  removed — 1 recorded capture, 0 failed attempts and 1 signal reading
+  across BTC, spanning 2026-08-07 through 2026-08-07."* The perform
+  consumed the confirmation; outcome `{runs:1, captures:1, failures:0,
+  readings:1}`.
+- **`sr-8` / `sr-12`**: guarded transactional SQL (owner-check asserted
+  `someone-else` on both ids before any delete; readings → captures → runs).
+  Deleted `{runs:2, captures:3, readings:2}`.
+- **Post-clean measurement, every figure reconciled**: 49 runs (one fresh
+  hourly run arrived mid-cleanup, on schedule), 1 user, 0 fixture rows,
+  `first_run = 2026-08-12T19:46:14Z`, largest inter-run gap 1h07m,
+  920/920 captures `recorded` — the record's single "failed" capture rode a
+  stray run and left with it — and 20 series, exactly the Radar deployment
+  set. 924−1−3=920 captures, 77283−1−2=77280 readings.
+
+The analysis layer needs no exclusion rules; #94's interim rule is obsolete
+and struck there.
 
 ## Related
 

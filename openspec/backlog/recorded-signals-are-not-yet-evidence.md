@@ -111,6 +111,9 @@ Both halves of the gate move:
 
 **For the session that starts the analysis layer**: read as
 `user_id = 'owner'` (`OwnerOnlyUser`'s constant — the recorder's identity on
-a personal deployment), and until #266's trim lands, exclude run `sr-5` from
-every depth/coverage/gap figure — it fabricates a six-day hole at the front
-of the record.
+a personal deployment). ~~Until #266's trim lands, exclude run `sr-5`~~ —
+obsolete the same evening: #266 was resolved (ceremonied trim of `sr-5`,
+guarded SQL for the `someone-else` pair) and the post-clean measurement
+reconciled to the row: 49 runs, one user, zero fixture rows, `first_run =
+2026-08-12T19:46:14Z`, 920/920 recorded, 20 series. **No exclusion rules
+are needed; the record is clean from its true start.**
