@@ -130,7 +130,10 @@ export default async function ForkStrategyPage({
           />
           {/* The whole truth about naming, and no more of it: what blank does,
               and the one thing a name of your own buys. Not "avoids an error" —
-              nothing established supports that claim. */}
+              measured false 2026-08-14: a chosen name that collides with an
+              existing strategy answers the same INTERNAL_ERROR as the default
+              name does (#102). Only a name not already on the account avoids
+              it, and which names those are is the platform's to refuse. */}
           <p className="text-sm">
             Left blank, BattleGrid names the copy &ldquo;{strategy.name} (fork)&rdquo;
             — and names every copy of {strategy.name} the same way. A name of

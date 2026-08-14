@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p2
 created: 2026-08-05
-updated: 2026-08-13
+updated: 2026-08-14
 change: "the-stoppage-summary-reads-around-a-refusal"
 capability: ""
 github: "100"
@@ -476,3 +476,5 @@ reading `blocks` / `agents`. Nothing was empty. The reading error is recorded
 because it is this repository's own recurring defect arriving in the probe
 written to look for it — and because "the tool returns empty" would have been
 filed upstream as a fact.
+
+**Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.

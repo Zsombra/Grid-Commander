@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: battlegrid-connection
 github: "204"
@@ -119,3 +119,5 @@ be solved there rather than by a second mapping here.
 **Re-priced from the risk it names to the report it is.** No product change is
 proposed. The item stays open as the product-side record of an upstream defect,
 and closes when the report is sent.
+
+**Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
