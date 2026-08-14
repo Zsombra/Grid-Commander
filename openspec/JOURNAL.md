@@ -1,5 +1,93 @@
 # Journal
 
+## 2026-08-14 (wrap) — the vacuity sweep is proposed, and the pipeline has a handle
+
+**Did**: proposed **`a-floor-fails-when-its-scan-goes-blind`** (#241,
+standard; proposal + app-access delta + design + tasks, validation clean,
+item `in-progress`) — the sweep making every offender-style scan in
+`tests/architecture/` fail when its own machinery goes blind: inventory and
+classify every floor first ((a) rule's-own-intermediate, (b) independent
+pattern, (c) none), convert only (b)/(c), positive fixtures preferred, each
+converted guard mutation-tested red-then-green. **Deliberately not executed**
+— it is the fresh session's first task. Also wrote
+`docs/PIPELINE_HANDLE.md`, the one-page grab of every binding pipeline
+requirement (session bookends, item↔issue mirroring, delta discipline,
+gates, lanes, the house lessons that gate work).
+
+**State**: one active change (`a-floor-fails-when-its-scan-goes-blind`, 0/7,
+proposed only). PR #251 carries the whole day. `validate --all` 0 errors.
+
+**Next**: new session — `/board`, then **executor** on
+`a-floor-fails-when-its-scan-goes-blind`. Operator: merge PR #251, and
+review/send `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` (still a draft,
+still unsent).
+
+**Watch out**: the proposal's load-bearing part is the fixture mechanics in
+`design.md` — the scan runs **twice** (production roots expect zero, fixture
+root expects exactly the planted set), and fixtures live under
+`tests/architecture/fixtures/` outside every production scan root. An
+executor who merges the roots and filters by path has rebuilt the
+independent-mechanism defect the change exists to remove. And (a)-class
+floors are left alone on purpose: `write-results`' floor already counts
+`executeSites()` — converting it is churn wearing the change's clothes.
+
+## 2026-08-14 (arms) — the create action reads all five arms, and a chosen fork name collides the same way
+
+**Did**: two threads. **(1)** #245 as
+**`the-create-action-reads-every-arm`** (standard; proposed and executed,
+operator pre-approved the chain and the fix shape): the create action's three
+silent arms — `at-capacity`, `invalid`, `no-catalog` — now bounce to
+`/agents/new?problem=` with the submitted values carried (the edit action's
+`backTo` pattern), the composition prefills the re-rendered form
+(`AgentForm.composed`, money via `MoneyLimits.current`), the dedupe key
+deliberately stays behind (fresh key per render, unchanged), and the tail is
+`result satisfies never` so a sixth arm fails typecheck — **measured**: a
+scratch arm failed `tsc` at the action's default branch, then reverted. Dead
+`issues` prop removed. Partial-read pins added to
+`refusals-reach-the-operator.test.ts` (+ the page joined CARRY_PROBLEM); the
+action seam walked per arm in `new-agent.test.ts`. One test amended:
+`money-limits.test.ts` pinned "no `current` at create" — its own principle
+("prefill only from what was passed in") survives; the spelling moved.
+**(2)** The fork-500 thread: the never-measured half of #102 measured with one
+authorized call — `fork_strategy(name: "Alesia")` against an existing name →
+**INTERNAL_ERROR**, nothing created, account unchanged (verified before/after,
+17 strategies, 5/25). So the copy question is settled: the fork form's copy
+stays — the "naming avoids the error" claim is now measured **false**, not
+merely unestablished; comment at the naming hint updated, item + issue #102
+annotated. Upstream report drafted bundling #102/#100/#204:
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — **draft only, nothing sent**,
+awaiting operator review.
+
+**State**: the change is **verified, archived, and on PR #251** (operator's
+"follow recommendation"): verifier passed clean — one suggestion, filed as
+`the-new-agent-form-has-no-surface` (#250: no surface manifest covers
+`agent-form.tsx`, which is why the real UI change tripped no staleness warning
+while comment-only diffs elsewhere did) — then the deltas merged into
+`agent-authoring` (verified landed: 7 scenarios on the Outcome requirement,
+3 on the added one), #245's item and issue closed. Two commits so the threads
+stay separable (`8310540` the change, `553149e` the fork-500 records), plus
+this journal commit. Gates green at commit: typecheck, lint, 2386 vitest /
+185 files, build, drizzle no-op; `test:db` skipped — no db surface, no local
+DATABASE_URL. 28 open items (#245 closed, #250 opened).
+
+**Next**: operator — review the upstream report draft and choose the send
+channel (nothing sends itself), and merge **PR #251**. Then the board's top p2
+(`a-vacuity-floor-that-does-not-exercise-its-own-scan`).
+
+**Watch out**: three `design_surface_stale` warnings are new
+(17 total, 14 before): `agent-edit` and `agent-reactivate-confirm` moved on a
+**comment-only** diff in `money-limits.tsx`, `strategy-fork-confirm` on a
+comment in the fork page — no visual change anywhere; re-pin cheaply or ignore
+knowingly. The probe's negative is load-bearing: a colliding chosen name 500s
+**identically** to the default name, so any future copy or automation that
+treats naming as the escape hatch is building on a falsehood — the only safe
+name is one not on the account, and which those are is the platform's to
+refuse. And the create form's `invalid` arm carries its refused value back
+into a select that cannot re-offer it (the options come from the catalog):
+the value survives in the URL and the banner names it, but the control shows
+the first option — inherent to selects, noted so nobody files it as a
+dropped-value bug.
+
 ## 2026-08-14 (close) — three merges, two archives, and both dedupe layers measured
 
 **Did**: closed out the session. **PR #246** (the #239 dedupe fix + checklist
