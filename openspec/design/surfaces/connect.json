@@ -55,7 +55,7 @@
       "actions": [],
       "current_implementation": "max-w-2xl centered column, space-y-6, p-6 — the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant. Both ?declined= and ?error= render when both are present — the notice above the danger banner, in that order — so the two are not exclusive states.",
       "constraints": [
-        "The page renders whole from one server round trip — no client JS.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else.",
         "On a personal deployment neither the consent summary nor the start button may render — the button would build an /authorize URL with an empty client_id (requirement: A Remedy Named Must Exist In That Deployment)."
       ],
       "children": [
@@ -229,7 +229,7 @@
     "focus_order": [
       "start-authorization"
     ],
-    "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. No client JS; every state is a full navigation."
+    "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. Every state is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
   },
   "source_digest": {
     "app/connect/actions.ts": "sha256:09a7bb3c966c529924769e29b5f5c3c7d955d3ca74c4a2a9ac11ea750b4df52d",

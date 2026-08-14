@@ -82,7 +82,7 @@
       "constraints": [
         "The two-step ceremony is spec — openspec/specs/strategy-authoring/spec.md:530-540 ('only through describe-then-perform … The describe SHALL read the strategy fresh, refuse a signal that is not among its rules and a change that changes nothing'). A design must not collapse compose and confirm into one step.",
         "A no-op and an absent signal are refused without a token — spec.md:554-561; both land in the cannot-retune state and no confirm form may be drawn there.",
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
         "'Nothing is styled to look disabled when retrying cannot help' (system.json principle) — cannot-retune, not-a-rule and authority-lost offer links or prose, never dimmed controls.",
         "A lost authority is not a refusal of this retune and must not be folded into the problem banner or the cannot-retune state — spec: it is about the account, not the attempt, and the page renders no form for it. Merging the two is behavior and requires-spec-change.",
         "The authority check runs before the strategy read, so `authority-lost` renders without any BattleGrid read succeeding. A design must not assume the strategy name, the rule, or the signal contract is available on that state — none of it has been read."
@@ -477,7 +477,7 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). No client JS: the compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation."
+    "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). The compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation, and the only client code is PerformButton, reporting submit-in-flight."
   },
   "source_digest": {
     "app/(app)/strategies/[id]/rules/[signalId]/actions.ts": "sha256:ae338a50d069cbb30d98da74bd428670ebfc436bd154fa4069d7dd5df88b49aa",

@@ -476,6 +476,18 @@ def _(p, t):
                            "states": ["default"]}])
 
 
+@case("design_surface_denies_client_js", "warning")
+def _(p, t):
+    # The denial and the directive in one manifest: prose the digest check
+    # carries forward unread, contradicted by the head of a listed source.
+    p.write("src/Perform.tsx", "'use client';\nexport const Perform = () => null;\n")
+    digest = openspec.file_digests(p.root, ["src/Perform.tsx"])
+    p.surface(source_files=["src/Perform.tsx"], source_digest=digest,
+              notes="No client JS: every state change is a full navigation.",
+              components=[{"id": "perform", "role": "display", "purpose": "Submits things",
+                           "states": ["default"]}])
+
+
 @case("design_no_acceptance")
 def _(p, t):
     p.surface()

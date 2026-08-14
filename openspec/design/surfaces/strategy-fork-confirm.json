@@ -69,7 +69,7 @@
         "No confirmation ceremony may be added — DL-105's ruling, stated in the page: a consequence-free confirmation erodes the ones that carry consequence. Adding one is behavior and requires-spec-change.",
         "The unreadable reason keeps role=alert and the danger treatment DT-0021 landed; the at-capacity explanation was deliberately left out of that sweep and must stay out of it — capacity is a fact about the account, not a failure, and tinting it as one reverses a decided ruling.",
         "WhyNotLoaded's reassurance must survive verbatim wherever it renders relative to the danger block — the tint says something failed; only those words say what did not.",
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
         "The copy is offered instead of editing, never alongside it — openspec/specs/strategy-authoring/spec.md:206-209 ('they are offered a private copy to change instead … the original is not presented as editable')."
       ],
       "children": [
@@ -346,7 +346,7 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Since DT-0021 the two alerts are visually identical as well, so on `unreadable-with-problem` only wording and order tell them apart. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so stacked alerts are read in document order rather than as live-region updates."
+    "notes": "The carried problem (shared CarriedProblem, mounted on all four branches) and the unreadable reason carry role=alert; the at-capacity explanation carries role=status. Since DT-0021 the two alerts are visually identical as well, so on `unreadable-with-problem` only wording and order tell them apart. Focus ring is global (focus-visible, 2px). Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight — so stacked alerts are read in document order rather than as live-region updates."
   },
   "source_digest": {
     "app/(app)/strategies/[id]/fork/actions.ts": "sha256:3e2bbc1f96b2b20641975e65b6dc30b048253589e2f3ae3c0eae436773db6b54",

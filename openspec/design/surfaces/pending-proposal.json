@@ -55,7 +55,7 @@
       "constraints": [
         "Every branch that cannot be agreed to says why and offers NO control — never a disabled one (in-code ruling, and the mcp-control scenario 'The change is no longer possible').",
         "The describe runs at open time; nothing on this page may render a consequence computed when the proposal was recorded (requirement: A Proposal Is Agreed To Against The World As It Is Then).",
-        "No client JS."
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change."
       ],
       "children": [
         "shell",
@@ -243,7 +243,7 @@
       "agree",
       "decline"
     ],
-    "notes": "The problem banner carries role=alert. Dispositions are legible without colour. No client JS."
+    "notes": "The problem banner carries role=alert. Dispositions are legible without colour. Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
   },
   "source_digest": {
     "app/(app)/pending/[id]/actions.ts": "sha256:0480d002b14af650c7fbdab356fd381413cd4fbcd4396fd231f1506f06b3c269",
