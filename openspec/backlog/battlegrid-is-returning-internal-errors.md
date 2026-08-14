@@ -2,7 +2,7 @@
 id: battlegrid-is-returning-internal-errors
 title: list_gate_blocks serves old rows and 500s on new ones — poisoned at the head, not broken
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-05
 updated: 2026-08-14
@@ -509,3 +509,15 @@ with `evaluationFaultDetail: "providerMetadata.openrouter missing"` — 139 on
 Undertow, 52 on Breakwater, latest 2026-08-13T18:01Z — i.e. the platform's
 model calls were faulting for ~2 days, which is why the fleet stopped trading
 before the platform-wide Radar pause was observed.
+
+## Closed 2026-08-14 — the defect this item tracked is fixed upstream
+
+**Why closed**: settled by the platform. The row-level 500s were re-verified
+fixed on 2026-08-14 (head, depth, and 100-row width on both agents, zero
+refusals; the previously-poisoned `EVALUATION` class reads back with
+structured detail). What survives the close lives elsewhere, deliberately:
+the stale present-tense comments on the dormant `readAroundRefusal` fallback
+are [[the-read-around-outlived-the-poison]] (#257), and the report's
+courtesy note ("withdrawn — confirmed fixed") rides with #102/#204 in
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md`. Reopen only if the 500s return —
+and if they do, the fallback is still wired and will absorb them.
