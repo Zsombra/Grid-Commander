@@ -1,5 +1,32 @@
 # Journal
 
+## 2026-08-14 (floor) — the unanticipated failure gets the product's own words
+
+**Did**: merged the #238 probe record (PR #247), then implemented, verified
+and archived **`an-unanticipated-failure-has-a-floor`** (#236, operator-
+approved): `app/error.tsx` and `app/global-error.tsx`, the floors under every
+route and under the root layout. The copy states what is known — the failure
+was not anticipated, the last action's outcome is unknown, the activity log
+can answer — and deliberately renders **no retry control**: the boundary
+receives Next's `reset()` and does not wire it, guarded by an idiom test (no
+prop in the tree may hold the callback, so a "Reload" spelling fails too).
+Digest shown, raw message never (where a leaked internal would surface).
+
+**State**: 2371 vitest / 185 files, typecheck, lint, build green. `app-access`
+gained the requirement. 29 open items, no p1. Board's next p2s: the fork 500,
+and #245's silent arms.
+
+**Next**: the fork-name 500 (`forking-a-name-that-exists-is-a-500`) — now the
+sharpest remaining operator-facing crash, and the boundary just built is a
+floor for it, not a fix: the platform's refusal deserves an authored sentence.
+
+**Watch out**: the two scenarios only the framework can exercise — Next
+invoking the boundary on a real throw, and `redirect()` passing through
+before boundaries are consulted — rest on the build plus Next's documented
+contract, not an offline test. If a future Next major changes boundary
+semantics for server actions, nothing in this suite would notice; re-read the
+migration notes for exactly that clause when upgrading.
+
 ## 2026-08-14 (probe) — the platform honours the key, measured at full capacity
 
 **Did**: merged **PR #246** (squash, `9a2cb7d`) — #239 closed. Then ran the
