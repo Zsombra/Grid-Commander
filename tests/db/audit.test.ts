@@ -152,10 +152,72 @@ describe('idempotency', () => {
     expect(await r.listForUser('u1', 10)).toHaveLength(3);
   });
 
-  it('refuses a second entry with the same key for one user', async () => {
+  it('refuses a second entry with the same key for one user, as the typed refusal', async () => {
     const { repo: r } = repo();
     await r.begin(attempt({ idempotencyKey: 'k1' }));
-    await expect(r.begin(attempt({ idempotencyKey: 'k1' }))).rejects.toThrow();
+    // The earlier attempt has no recorded outcome, and the refusal says so as
+    // a FIELD — the honest unknown, never parsed out of a message.
+    await expect(r.begin(attempt({ idempotencyKey: 'k1' }))).rejects.toMatchObject({
+      name: 'DuplicateIdempotencyKeyError',
+      originalOutcome: 'attempted',
+    });
+  });
+
+  it('a failed attempt releases its key, so the same key can retry', async () => {
+    // The retry after a failure is the situation the key exists to make safe.
+    // Before the partial index, the failed row still held the key and the one
+    // press this feature was built to protect was the one it refused.
+    const { repo: r } = repo();
+    const first = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(first, 'failed', 'BattleGrid returned 503');
+
+    const second = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    expect(second).not.toBe(first);
+    // Retrying does not erase that the failure happened.
+    expect(await r.listForUser('u1', 10)).toHaveLength(2);
+  });
+
+  it('a succeeded attempt dedupes, and the refusal names the success', async () => {
+    const { repo: r } = repo();
+    const id = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(id, 'succeeded');
+    await expect(r.begin(attempt({ idempotencyKey: 'k1' }))).rejects.toMatchObject({
+      name: 'DuplicateIdempotencyKeyError',
+      originalOutcome: 'succeeded',
+    });
+  });
+
+  it('the retry can itself succeed and then dedupe, with the failure still on the record', async () => {
+    const { repo: r } = repo();
+    const first = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(first, 'failed', 'BattleGrid returned 503');
+    const second = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(second, 'succeeded');
+
+    await expect(r.begin(attempt({ idempotencyKey: 'k1' }))).rejects.toMatchObject({
+      originalOutcome: 'succeeded',
+    });
+    const outcomes = (await r.listForUser('u1', 10)).map((e) => e.outcome).sort();
+    expect(outcomes).toEqual(['failed', 'succeeded']);
+  });
+
+  it('finds the live entry among failed siblings sharing the key', async () => {
+    const { repo: r } = repo();
+    const first = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(first, 'failed', 'BattleGrid returned 503');
+    const second = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(second, 'succeeded');
+
+    const live = await r.findByIdempotencyKey('u1', 'k1');
+    expect(live?.id).toBe(second);
+    expect(live?.outcome).toBe('succeeded');
+  });
+
+  it('finds nothing when every attempt under the key failed', async () => {
+    const { repo: r } = repo();
+    const only = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(only, 'failed', 'BattleGrid returned 503');
+    expect(await r.findByIdempotencyKey('u1', 'k1')).toBeNull();
   });
 
   it('lets two different users use the same key', async () => {
@@ -180,13 +242,18 @@ describe('idempotency', () => {
     expect(await r.findByIdempotencyKey('u1', 'k1')).toBeNull();
   });
 
-  it('two concurrent attempts with one key: exactly one is recorded', async () => {
+  it('two concurrent attempts with one key: exactly one is recorded, the loser refused legibly', async () => {
+    // The race path IS the collision path — there is no pre-read to
+    // interleave. Whichever press loses gets the same typed refusal a
+    // sequential second press gets, not a raw storage error.
     const { repo: r } = repo();
     const results = await Promise.allSettled([
       r.begin(attempt({ idempotencyKey: 'k1' })),
       r.begin(attempt({ idempotencyKey: 'k1' })),
     ]);
     expect(results.filter((x) => x.status === 'fulfilled')).toHaveLength(1);
+    const loser = results.find((x) => x.status === 'rejected');
+    expect(loser && (loser.reason as Error).name).toBe('DuplicateIdempotencyKeyError');
     expect(await r.listForUser('u1', 10)).toHaveLength(1);
   });
 });

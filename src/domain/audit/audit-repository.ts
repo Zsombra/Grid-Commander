@@ -2,6 +2,12 @@ import type { AuditActor, AuditEntry, AuditOutcome } from './audit-entry.js';
 
 export interface AuditReader {
   listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]>;
+  /**
+   * The LIVE entry for this key — the one that currently holds it. A failed
+   * attempt releases its key (only `succeeded` and the undecided `attempted`
+   * dedupe), so with retries several entries can share a key and this returns
+   * the non-failed one, or null when every attempt failed.
+   */
   findByIdempotencyKey(userId: string, key: string): Promise<AuditEntry | null>;
 }
 

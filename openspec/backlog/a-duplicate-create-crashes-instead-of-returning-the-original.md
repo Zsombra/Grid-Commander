@@ -2,11 +2,11 @@
 id: a-duplicate-create-crashes-instead-of-returning-the-original
 title: The idempotency key never reaches BattleGrid, and a duplicate create is a raw Postgres error
 type: risk
-status: open
+status: in-progress
 priority: p1
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-duplicate-create-returns-the-original"
 capability: agent-authoring
 github: "239"
 blocked_by: []

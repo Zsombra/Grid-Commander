@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   doublePrecision,
@@ -72,7 +73,14 @@ export const auditEntries = pgTable(
   },
   (t) => [
     index('audit_entries_user_id_created_at_idx').on(t.userId, t.createdAt),
-    uniqueIndex('audit_entries_user_idempotency_idx').on(t.userId, t.idempotencyKey),
+    // Partial: only the live attempt holds the key. A failed attempt keeps its
+    // key for the record while no longer blocking a retry — only `succeeded`
+    // (and the undecided `attempted`) dedupe. The invariant this enforces is
+    // "at most one non-failed entry per (user, key)", and it lives here so a
+    // race cannot slip past it.
+    uniqueIndex('audit_entries_user_idempotency_idx')
+      .on(t.userId, t.idempotencyKey)
+      .where(sql`${t.outcome} != 'failed'`),
   ],
 );
 

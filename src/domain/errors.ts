@@ -204,6 +204,33 @@ function describeStatus(status: number): string {
 }
 
 /**
+ * An operation carrying this idempotency key already has a live attempt.
+ *
+ * "Live" means `succeeded` or the undecided `attempted` — a `failed` attempt
+ * releases its key, because retrying after a failure is the situation the key
+ * exists to make safe. Which of the two it was travels as a **field**, never
+ * only as message text: the last change delivered four careful sentences
+ * behind a message-composing preamble, and nothing downstream may need to
+ * parse this one.
+ *
+ * Raised by the audit repository when the insert collides, which makes the
+ * race path and the sequential path the same path.
+ */
+export class DuplicateIdempotencyKeyError extends DomainError {
+  constructor(
+    readonly tool: string,
+    /** What the attempt that holds the key did. `attempted` is the honest unknown. */
+    readonly originalOutcome: 'succeeded' | 'attempted',
+  ) {
+    super(
+      originalOutcome === 'succeeded'
+        ? `"${tool}" already succeeded under this key; nothing was repeated.`
+        : `"${tool}" was already attempted under this key and its outcome is not yet known; nothing was repeated.`,
+    );
+  }
+}
+
+/**
  * Whatever answers questions could not produce an answer at all.
  *
  * Distinct from an answer that came back incomplete. A failed read degrades an

@@ -327,5 +327,11 @@ function refusalOf(result: Exclude<CreateAgentResult, { kind: 'created' }>): str
       return result.explanation;
     case 'no-catalog':
       return result.reason;
+    case 'duplicate':
+      // A probe re-running with a reused key. The outcome is a field, so the
+      // sentence can be composed here without parsing anything.
+      return result.originalOutcome === 'succeeded'
+        ? 'this key already created an agent — the earlier run worked'
+        : 'this key already has an attempt with no recorded outcome';
   }
 }

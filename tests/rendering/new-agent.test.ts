@@ -132,3 +132,49 @@ describe('when there is nothing to bind to, there is no form', () => {
     expect(r.text).toMatch(/nothing here has\s+failed|nothing here has failed/);
   });
 });
+
+/**
+ * The aftermath of a bounced submit. A duplicate press redirects back here
+ * with `?problem=`, and the sentence must render on whatever branch the
+ * re-render takes — a duplicate whose first press succeeded arrives at
+ * capacity by construction, which is exactly the branch that historically
+ * dropped a carried reason (#240).
+ */
+describe('a carried problem renders on every branch', () => {
+  const PROBLEM = 'this form was already submitted and the agent was created';
+  const withProblem = { searchParams: Promise.resolve({ problem: PROBLEM }) };
+
+  it('renders the sentence above the form', async () => {
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.text).toContain('Refused:');
+    expect(r.text).toContain(PROBLEM);
+    // The form is still there, with a fresh key — a deliberate second agent
+    // stays one press away.
+    expect(r.text).toContain('New agent');
+  });
+
+  it('renders the sentence on the no-strategies branch too', async () => {
+    world(new FakeStrategiesPort([]));
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.headings[0]).toBe('Nothing to bind an agent to');
+    expect(r.text).toContain(PROBLEM);
+  });
+
+  it('renders the sentence on the unreadable-strategies branch too', async () => {
+    const strategies = new FakeStrategiesPort([BERLIN]);
+    strategies.readable = false;
+    world(strategies);
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.text).toContain('Cannot create an agent right now');
+    expect(r.text).toContain(PROBLEM);
+  });
+
+  it('renders nothing extra when no problem is carried', async () => {
+    const Page = await newAgentPage();
+    const r = await rendered(await Page({ searchParams: Promise.resolve({}) }));
+    expect(r.text).not.toContain('Refused:');
+  });
+});
