@@ -83,3 +83,34 @@ both halves cold. Checked 2026-08-15: still no `DATABASE_URL`, record at 4
 days — both halves cold (earliest the depth half can hold stays ~2026-08-18). When both hold, start the analysis layer per this item's
 What/Notes (forward returns per signal state, sample sizes beside every
 figure), `/propose`d as its own change.
+
+## Measured 2026-08-15 (evening) — both halves re-anchored on evidence
+
+The operator surfaced the database ("running, and not Docker") and directed
+the session to it; the record was measured read-only for the first time.
+Both halves of the gate move:
+
+1. **The connection half is satisfiable on demand.** The record lives in the
+   **native Windows service `postgresql-x64-18`** (db `grid_commander`,
+   localhost:5432) — not the Docker `gridcommander-db`, which has been dead
+   since ~2026-08-07 and would collide on 5432 if ever restarted. The
+   connection string lives in the recorder's own
+   `~/grid-commander/record.ps1`; the operator was handed a one-liner to
+   `setx DATABASE_URL` from it, so the next session should find the
+   environment half hot. The recorder is verified beyond `LastTaskResult: 0`:
+   rows arrive hourly (last row matches the task's LastRunTime to the
+   second), 923/924 captures `recorded`, 22 series, ~77k readings.
+
+2. **The depth half was two days optimistic.** The item dated the record
+   from the 2026-08-11 stand-up; the genuine rows start
+   **2026-08-12T19:46Z** (2026-08-13 02:46 local) and are continuous since.
+   A week of record therefore holds earliest **~2026-08-19/20**, not
+   ~2026-08-18. The naive `min(started_at)` reads 2026-07-01 — that is a
+   stray fixture row, not history; see
+   [[three-fixture-runs-sit-in-the-live-record]] (#266).
+
+**For the session that starts the analysis layer**: read as
+`user_id = 'owner'` (`OwnerOnlyUser`'s constant — the recorder's identity on
+a personal deployment), and until #266's trim lands, exclude run `sr-5` from
+every depth/coverage/gap figure — it fabricates a six-day hole at the front
+of the record.
