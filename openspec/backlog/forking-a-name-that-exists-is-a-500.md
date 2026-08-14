@@ -2,7 +2,7 @@
 id: forking-a-name-that-exists-is-a-500
 title: fork_strategy answers INTERNAL_ERROR when a strategy of the fork's name already exists
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-06
 updated: 2026-08-14
@@ -237,3 +237,20 @@ Error handling stays untouched, as re-affirmed 2026-08-13: the product renders
 the platform's own answer without re-diagnosis, and that remains right.
 
 **Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
+
+## Closed 2026-08-14 — not reported, mitigated where the product could
+
+**Why closed**: the operator decided the defect will not be reported upstream
+(the report is closed unsent — its header records the decision), and the one
+product-side improvement that does not re-diagnose anything landed the same
+day: `a-taken-name-is-refused-before-it-is-sent` (archived). The fork action
+now pre-flights the resulting name — chosen or defaulted — against the
+PRIVATE names in the listing it already re-reads at submit time, and refuses
+before sending, naming the collision and keeping what was typed. The
+platform backstop is untouched: a collision the pre-flight cannot see
+(another session, a SYSTEM-name collision, both unmeasured or racy) still
+renders the platform's answer whole and unglossed. The upstream defect
+itself is unchanged and unreported, by decision; reopen only if its cost
+changes — e.g. the platform starts refusing cleanly (delete the pre-flight's
+justification) or the pre-flight starts refusing forks the platform would
+accept.

@@ -1316,6 +1316,20 @@ The statement SHALL name the cause honestly: the platform declares these fields
 but its compiler does not yet process changes to them. It SHALL NOT blame the
 product or imply the operator did something wrong.
 
+Where the stop-loss floor arrives as an ATR multiple, Grid-Commander SHALL
+present it as what the platform's declaration makes it: the platform's own
+volatility-relative reading of where ordinary market movement ends — a stop
+closer than that multiple of the ATR sits inside ordinary movement, by the
+platform's own declaration. The presentation SHALL claim the declaration only:
+it MUST NOT state or imply that the platform enforces the floor on live
+trades, because enforcement has not been observed and the fleet's realized
+record is evidence against assuming it.
+
+The panel SHALL name where the measured half of the comparison lives — the
+realized moves derived from an agent's own closed trades on that agent's
+trading record — and MUST NOT compute or render a realized-move figure on the
+strategy page itself.
+
 #### Scenario: The policy is visible on the strategy page
 - **GIVEN** a strategy the platform returns with trade-level policy values
 - **WHEN** the user views the strategy
@@ -1335,6 +1349,23 @@ product or imply the operator did something wrong.
 - **WHEN** the fork's detail page is viewed
 - **THEN** the trade-level policy the fork inherited is shown
 - **AND** the same inert-state notice applies
+
+#### Scenario: The floor is read as the platform's own noise reference
+- **GIVEN** a strategy whose trade-level policy carries a stop-loss floor as an
+  ATR multiple
+- **WHEN** the user views the trade-level policy
+- **THEN** the floor is presented as the platform's own volatility-relative
+  statement — a stop closer than that multiple of the ATR is inside ordinary
+  market movement, by the platform's own declaration
+- **AND** the statement attributes the reading to the platform's declaration
+  and does not state or imply that the platform enforces the floor on live
+  trades
+
+#### Scenario: The measured half is named, not duplicated
+- **WHEN** the user views the trade-level policy
+- **THEN** the panel names the agent's trading record as where realized moves
+  are measured from its own closed trades
+- **AND** no realized-move figure is computed or rendered on the strategy page
 
 ### Requirement: A Fork Is Taken At The Revision The Page Named
 Where the product names the revision a copy will start from, the copy SHALL be
@@ -1471,3 +1502,47 @@ have said so.
 #### Scenario: A composition that can be returned to
 - **WHEN** a rule edit is refused for any reason
 - **THEN** the way back leads to what was composed, not to an empty form
+
+### Requirement: A Taken Name Is Refused Before It Is Sent
+Where the fork perform can see, in the same listing it re-reads at submit
+time, that the name the copy would receive — the chosen name, or the default
+name the platform would assign — exactly matches a strategy the user already
+owns, it SHALL refuse before sending the fork. The refusal SHALL name the
+colliding name, SHALL keep what the user typed, and SHALL say what the
+platform's answer to that submission would have been, as a measured fact
+about the platform rather than a diagnosis of any response.
+
+The pre-flight SHALL cover only the user's own strategies. A name matching
+only a SYSTEM strategy MUST NOT be pre-refused: that collision has never been
+measured, and refusing it could block a copy the platform would accept.
+
+The pre-flight narrows the road to the platform's unexplained error; it MUST
+NOT be treated as closing it. A fork that passes the pre-flight and is
+refused by the platform anyway SHALL render the platform's answer whole and
+unglossed, exactly as a refusal renders today.
+
+#### Scenario: The default name collides with an earlier copy
+- **GIVEN** the user already owns a strategy named "X (fork)"
+- **WHEN** they submit a fork of X with the name left blank
+- **THEN** nothing is sent
+- **AND** they are returned to the form with a reason naming "X (fork)" as
+  already theirs and pointing at typing a name of their own
+
+#### Scenario: A chosen name is already theirs
+- **GIVEN** the user owns a strategy named "Y"
+- **WHEN** they submit a fork with the name "Y"
+- **THEN** nothing is sent
+- **AND** the reason names "Y" and the typed name is kept in the form
+
+#### Scenario: A SYSTEM name is not pre-refused
+- **GIVEN** the chosen name matches a SYSTEM strategy and none of the user's
+  own
+- **WHEN** they submit the fork
+- **THEN** the fork is sent, and whatever the platform answers is rendered as
+  it answers it
+
+#### Scenario: The race is still the platform's to answer
+- **GIVEN** the pre-flight found no collision
+- **WHEN** the platform refuses the fork anyway
+- **THEN** the platform's answer renders whole and unglossed, with the typed
+  name kept

@@ -2,7 +2,7 @@
 id: battlegrid-is-returning-internal-errors
 title: list_gate_blocks serves old rows and 500s on new ones — poisoned at the head, not broken
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-05
 updated: 2026-08-14
@@ -478,3 +478,46 @@ written to look for it — and because "the tool returns empty" would have been
 filed upstream as a fact.
 
 **Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
+
+## Re-verified 2026-08-14 (evening) — the gate-blocks half is FIXED upstream
+
+The operator asked for a re-evaluation before sending, and it earned its cost.
+Re-probed live, read-only:
+
+- **Undertow (5,520 rows)**: `page 1, limit 1` → a real row. `page 1, limit
+  100` → 100 rows. `page 287, limit 1` → a real row. Zero refusals.
+- **Breakwater (649 rows)**: `page 1, limit 100` → 100 rows, zero refusals.
+- The rows that read back are exactly the previously-poisoned class —
+  `gateStage: EVALUATION` — and they now carry a **structured**
+  `reasonDetail: {evaluationFaultDetail: …}`. The envelope gained a `summary`
+  roll-up (per stage/reason counts with `latestAt`) that did not exist in any
+  earlier read. The platform reshaped the payload, not just patched it.
+
+The report was re-scoped to the two live issues (fork-500 re-confirmed
+2026-08-13/14; token-500 re-confirmed by fresh probe 2026-08-14) and the
+gate-blocks section moved to a "withdrawn, confirmed fixed" note so the team
+can match it to their fix.
+
+**What this item still holds open**: sending the re-scoped report. The
+product's `readAroundRefusal` windowed fallback and its comments now describe
+a healed defect in present tense — filed separately as
+[[the-read-around-outlived-the-poison]].
+
+**Operational observation from the same probe, not this item's subject**: both
+agents' recent gate blocks are dominated by `EVALUATION / LLM_UNAVAILABLE`
+with `evaluationFaultDetail: "providerMetadata.openrouter missing"` — 139 on
+Undertow, 52 on Breakwater, latest 2026-08-13T18:01Z — i.e. the platform's
+model calls were faulting for ~2 days, which is why the fleet stopped trading
+before the platform-wide Radar pause was observed.
+
+## Closed 2026-08-14 — the defect this item tracked is fixed upstream
+
+**Why closed**: settled by the platform. The row-level 500s were re-verified
+fixed on 2026-08-14 (head, depth, and 100-row width on both agents, zero
+refusals; the previously-poisoned `EVALUATION` class reads back with
+structured detail). What survives the close lives elsewhere, deliberately:
+the stale present-tense comments on the dormant `readAroundRefusal` fallback
+are [[the-read-around-outlived-the-poison]] (#257), and the report's
+courtesy note ("withdrawn — confirmed fixed") rides with #102/#204 in
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md`. Reopen only if the 500s return —
+and if they do, the fallback is still wired and will absorb them.

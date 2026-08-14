@@ -1,7 +1,10 @@
 import type { Remedy } from '@/domain/connection/remedy.js';
 import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { DescribeArchiveQuery } from '@/application/use-cases/lifecycle.command.js';
-import { DescribeArchiveStrategyQuery } from '@/application/use-cases/strategy-lifecycle.command.js';
+import {
+  DescribeArchiveStrategyQuery,
+  ForkStrategyCommand,
+} from '@/application/use-cases/strategy-lifecycle.command.js';
 import {
   DescribeDeployQuery,
   DescribeUndeployQuery,
@@ -167,6 +170,9 @@ export function actingWith({
     readStrategy: new ReadStrategyQuery(strategies),
     listStrategies: new ListStrategiesQuery(strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(confirmations, random, clock),
+    // The fork action, over the same fakes — wired so a test can walk the
+    // submit itself, not only the render (the same reason createAgent is).
+    forkStrategy: new ForkStrategyCommand(strategies),
     watchArena: new WatchArenaQuery(grid),
     readGameRules: new ReadGameRulesQuery(grid),
     openGridSession: new OpenGridSessionQuery(grid),

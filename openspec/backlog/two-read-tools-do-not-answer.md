@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: battlegrid-connection
 github: "114"
@@ -216,3 +216,14 @@ The item re-measured the *platform* five times and never re-measured the
 `get_open_orders` against the live server; none re-ran `grep get_open_orders
 src/`. A claim about our own code aged out precisely because it looked like the
 settled half.
+
+## 2026-08-14 — seventh measurement, unchanged
+
+    get_market_context({}) → {"code":"VALIDATION_ERROR",
+                              "message":"Provide sessionId or primaryTimeframe"}
+
+The tool description still carries the precondition in prose ("exactly one of
+the two"); the input schema still declares no `required`, no `anyOf`, no
+`oneOf`. The item's own recommendation stands: keep open as the standing rule —
+nothing may build a call to this tool from `required` alone — and re-read only
+when the description changes.

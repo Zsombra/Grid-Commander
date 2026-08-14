@@ -113,6 +113,21 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
               value={detail.tradeLevelPolicy.minRiskRewardRatio}
             />
           </dl>
+          {/* Claimed no wider than the payload backs: the platform *declares*
+              the multiple; whether live trades are held to it has never been
+              observed, and the fleet's realized record argues against assuming
+              it. Enforcement language here would be a claim no read supports.
+              The measured half is named, not computed — a strategy binds
+              several agents, and each agent's trading record already derives
+              its realized moves from its own closed fills. */}
+          <p className="text-base text-text-primary">
+            The floor is the platform&rsquo;s own reading of where noise ends: by its
+            declaration, a stop closer than{' '}
+            {detail.tradeLevelPolicy.minStopLossAtrMultiple}&times; the ATR sits inside
+            ordinary market movement. That is what the platform declares, not what it
+            has been observed to hold live trades to. How far trades actually move is
+            measured on each agent&rsquo;s trading record, from its own closed trades.
+          </p>
           <p role="note" className="text-sm text-text-secondary">
             These values are set by the platform. The compiler does not yet
             process changes to them, so they cannot be edited through this

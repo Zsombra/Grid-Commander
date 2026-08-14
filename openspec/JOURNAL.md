@@ -1,5 +1,210 @@
 # Journal
 
+## 2026-08-14 (wrap) — the oldest-first session hands off: two changes, three closures, one PR
+
+**Did**: closed out the day's six rounds. **PR #258 opened** carrying all
+seven commits: `the-floor-is-the-platforms-own-noise-answer` (#85) and
+`a-taken-name-is-refused-before-it-is-sent` (#102) both archived; #100,
+#102, #204 closed; the upstream report retired unsent (operator decision);
+Vanguard live in `APPROVAL_REQUIRED` (#101 step 1); the three 2026-07-29
+watches refreshed. At handoff, one deferral that had survived two sessions
+unrecorded was finally filed: **#259**
+`the-design-round-staled-what-it-designed-against` — seven stale surface
+manifests with no item (the roads round's banner mounts plus this session's
+fork edit), agent-roster's #237 deliberately not duplicated.
+
+**State**: 0 active changes, 27 open items, no p1. Everything is on the
+branch and pushed; `validate --all` 0 errors / 20 warnings; gates green at
+both archives (2401 vitest / 188 files at the second).
+
+**Next**: operator merges **PR #258**. First move of the next working
+session: `/verify`-style caution applies to nothing in flight — the board's
+computed next is #94 (`recorded-signals-are-not-yet-evidence`), but check
+its gate first (record depth needs a `DATABASE_URL` this environment lacks);
+otherwise #255 or the ten-minute #257.
+
+**Watch out**: after the merge, `validate --all` on a fresh main — this
+branch archived two changes, and the squash-resurrection trap from the
+2026-08-14 (merge) entry (a sibling branch's squash re-adding an archived
+change folder) is exactly the shape to check for. And the (ourselves)
+entry's "Next" names a change that was stood down the same day — read
+(stand-down) before acting on anything below it.
+
+## 2026-08-14 (stand-down) — the token change died on contact with its own item, and #204 closed anyway
+
+**Did**: went to build `a-dead-token-stops-looking-like-an-outage` and
+**stood down before proposing**: the first code read
+(`resolve-authority.query.ts:93-100`) showed every refresh failure already
+surfaces the reconnect remedy — and #204's own 2026-08-13 middle section
+had already established it, called the behaviour self-healing, and
+concluded "no product change is proposed". The bounded-retry design
+recorded on the item an hour earlier was written from the item's head and
+tail without that middle, and would have made the first N−1 failures read
+as an outage — reintroducing the exact failure mode the item feared, on a
+path proven correct. The wrong re-scope is kept folded in the item per the
+correction rule; issue #204 carries the correction and is **closed**:
+product half needs nothing, platform half deliberately unreported (operator
+decision), measurement record in the unsent report. All three report
+tickets are now closed — #100 (fixed upstream), #102 (mitigated in
+product), #204 (verified already-correct).
+
+**State**: 0 active changes, 26 open items. `validate --all` 0 errors / 20
+warnings. Branch about to be pushed; PR next.
+
+**Next**: operator review of the PR. On merge, the sharpest small items are
+#257 (re-date the gate-blocks fallback comments) and #255 (agent editor's
+hand-rolled refusal banner). Watch `list_pending_approvals` when Radar
+unpauses (#101, Vanguard is the producer).
+
+**Watch out**: today's cleanest lesson — **read the middle of a long item
+before designing from it.** Twice this session an argument written at an
+item's ends was falsified by evidence recorded in its own body (#204's
+bounded retry; the report's gate-blocks section). The items are doing their
+job; the failure mode is reading them as head+tail summaries. Also: do not
+"fix" `resolve-authority`'s catch-all into distinguishing outage from
+revocation — the response carries no information to distinguish them
+(platform answers 500 for both), and the catch-all + self-healing retry is
+the correct design until the platform ever answers `invalid_grant`.
+
+## 2026-08-14 (ourselves) — the report closes unsent, and the product answers what it can
+
+**Did**: operator decision — the upstream report will **not** be sent
+("they're not gonna be able to do anything for us"); its header now records
+the decision and it stays as the measurement record. The three report
+tickets resolved accordingly: **#100 closed** (defect fixed upstream,
+verified); **#102 closed** — proposed, executed, verified and archived
+**`a-taken-name-is-refused-before-it-is-sent`** (standard): the fork action
+pre-flights the resulting name (chosen or `"<parent> (fork)"`) against the
+PRIVATE names in the listing it already re-reads at submit time and refuses
+before sending — naming the collision, keeping the typed name, claiming
+only the measured fact, never diagnosing a response. SYSTEM-name matches
+deliberately not pre-refused (unmeasured); platform backstop untouched.
+`tests/rendering/fork-preflight.test.ts` (4 invocation tests; the fake's
+call record is the "nothing was sent" property; `fake-acting.ts` gained the
+`forkStrategy` wiring). **#204 re-scoped, open**: closes when
+`a-dead-token-stops-looking-like-an-outage` lands — bounded retry then
+reconnect, design recorded in the item. Also this session's live
+demonstration: fork of Bastogne rev 6 named "Alesia" → INTERNAL_ERROR,
+quota unmoved (eighth measurement; on #102).
+
+**State**: gates at archive: typecheck, lint, **2401 vitest / 188 files**
+(+4), build, drizzle no-op; test:db skipped (no local DATABASE_URL).
+`validate --all` 0 errors / 21 warnings. 27 open items.
+
+**Next**: `/propose a-dead-token-stops-looking-like-an-outage` from #204's
+recorded design. Then #257 (comment re-dating) and #255 remain the sharpest
+small items. Branch still unpushed — operator says when.
+
+**Watch out**: the fork pre-flight matches **exact PRIVATE names only** —
+that scoping is load-bearing, not lazy. Widening it to SYSTEM names or
+case-insensitive matches would refuse forks the platform has never been
+measured to refuse; #102's closing note names that as a reopen trigger. And
+the pre-flight's message states the platform's answer as a *measured fact
+before sending* — do not let a future edit move that sentence into the
+CarriedProblem path, where it would become the re-diagnosis #102 ruled out
+three times.
+
+## 2026-08-14 (re-verify) — the operator asked "is it still true", and one of three was not
+
+**Did**: re-verified the upstream report's three claims live before sending,
+at the operator's request. **Gate-blocks (#100): FIXED upstream** — clean
+reads at head, depth, and 100-row width on both agents; the poisoned
+`EVALUATION` class now returns structured `reasonDetail`, and the envelope
+gained a `summary` roll-up. **Token-500 (#204): still reproduces** — fresh
+public client, two invalid refresh tokens, two 500s; new evidence that the
+4xx path exists (no-client_id → clean `400 invalid_request`). **Fork-500
+(#102)**: already re-confirmed today, both arms. Report re-scoped to the two
+live issues with gate-blocks as a withdrawn-confirmed-fixed note; items #100
+and #204 updated; new item [[the-read-around-outlived-the-poison]] (#257)
+for the fallback comments that now describe a healed defect in present
+tense. Issues #100, #204 commented.
+
+**State**: report ready for operator review at
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md`, still unsent. 29 open items.
+
+**Next**: operator — pick BattleGrid's channel and send, or decline and the
+three source items get re-scoped accordingly.
+
+**Watch out**: the fleet's own silence has a second cause besides the Radar
+pause — recent gate blocks on both trading agents are dominated by
+`EVALUATION / LLM_UNAVAILABLE, providerMetadata.openrouter missing` (139 +
+52 rows through 2026-08-13T18:01Z). The platform's model calls were faulting
+for ~2 days. If trading stays dead after Radar unpauses, that is where to
+look — and it is upstream, not this product.
+
+## 2026-08-14 (vanguard) — the operator named the agent, and approvals have a producer
+
+**Did**: operator decision executed on the live account (#101 step 1):
+**Vanguard → `APPROVAL_REQUIRED`**, `signalTimeoutMinutes` 5 → 15,
+via `update_intelligence_agent` at `expectedRevision: 10`, complete config
+sent verbatim otherwise; read-back revision 11, both values landed, nothing
+else moved. Conditions recorded in the item: balance $38.63 (> the $35
+threshold), Vanguard on duty on five Radar coins, `list_pending_approvals`
+baselined empty after the flip. Item #101 and its issue carry the full
+audit entry.
+
+**State**: no approval can arrive yet — **the entire Radar fleet reads
+`PLATFORM_PAUSED`** (all 20 policies, `radarPaused: true`, nothing fired
+since 2026-08-13 evening). That is the platform's pause, not ours.
+
+**Next**: when Radar fires again, read `list_pending_approvals` inside a
+candidate's 15-minute window; the first Vanguard row is the shape #101
+needs observed before anything is modelled. Then /propose the full-track
+answer surface, cancel before accept.
+
+**Watch out**: do not read an empty queue as "the flip did not work" — the
+producer chain is mode ✓, deployment ✓, balance ✓, platform pause ✗, and
+the pause is the only red light. And the flip is reversible with one write
+at `expectedRevision: 11`; flipping back silently would erase the only
+producer #101 has, so it goes through the operator either way.
+
+## 2026-08-14 (elders) — the oldest items got their reads, and the oldest workable one landed
+
+**Did**: worked the backlog oldest-first per operator direction. The three
+2026-07-29 watches re-read live, read-only: **#107** still untestable — the
+account is flat, and `get_agent_fund_allocation` was deliberately *not*
+called, because a zero/zero pair is agreement the item has already ruled
+non-evidence; **#110** unmoved — `provider` null on a fourth consecutive
+probe, the cost split untestable while the fleet has been idle since
+2026-08-12 (list and detail both 0); **#114** refused identically a seventh
+time (`get_market_context({})` → VALIDATION_ERROR, schema still declares
+nothing required). Walked the age order past them and recorded why each next
+item was not workable: #116 (no question asks for its six reads), #101
+(blocked twice over, needs the operator), #104 (blocked on the platform
+having players anywhere), #97 (upstream ask), #94 (gated on record depth; no
+local DATABASE_URL to even measure it). Oldest workable was **#85 option
+(3)** → proposed, executed, verified and archived
+**`the-floor-is-the-platforms-own-noise-answer`** (standard): the strategy
+detail's trade-level policy panel now reads the declared stop-loss floor as
+the platform's own volatility-relative statement of where noise ends, at the
+payload's multiple, claiming declaration only — never enforcement — and
+names the agent's trading record as the measured half.
+`tests/rendering/noise-floor.test.ts` (4 tests, non-default-multiple 2.5
+guard against hard-coding). #85 re-scoped open p2→p3 as the upstream watch;
+issues #107, #110, #114, #85 all commented.
+
+**State**: 0 active changes, 28 open items, no p1. Gates at archive:
+typecheck, lint, **2397 vitest** (2393 before), build, drizzle no-op;
+test:db skipped (no db surface, no local DATABASE_URL). `validate --all`
+0 errors / 21 warnings — the same set as session start; the change added
+none and staled no surface manifest (strategy-detail has none). Branch
+`claude/older-issues-backlog-e67bb3` carries probes + change + archive.
+
+**Next**: operator — the two oldest p2 remainders are yours: send
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` (#100), and decide whether an
+agent goes `APPROVAL_REQUIRED` (#101's named question). For the next working
+session: #255 is the board's sharpest workable p2 (agent editor's hand-rolled
+refusal banner, widening `HAND_ROLLED` with it).
+
+**Watch out**: the oldest three items are watches, not work — each now states
+the exact condition under which a re-read means anything, and a read before
+that condition arrives adds noise, not evidence (#107 says it in its own
+words: agreement is not an answer). And the noise-floor copy claims
+declaration only: `noise-floor.test.ts` asserts the absence of enforcement
+vocabulary (`/enforc|guarantee|prevent|protect/i`) over the whole strategy
+detail page text, so any future sentence using "protects" anywhere on that
+page fails the test — widen the assertion deliberately, never by deleting it.
+
 ## 2026-08-14 (roads) — every refusal road arrives, and the property is checked from now on
 
 **Did**: proposed, executed, verified and archived

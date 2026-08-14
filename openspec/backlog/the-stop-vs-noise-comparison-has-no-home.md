@@ -3,9 +3,9 @@ id: the-stop-vs-noise-comparison-has-no-home
 title: The stop-versus-noise comparison belongs to the strategy now, and the platform ignores it there
 type: question
 status: open
-priority: p2
+priority: p3
 created: 2026-08-10
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: strategy-authoring
 github: "85"
@@ -134,3 +134,28 @@ measured adverse excursion. That is a smaller and much better-defined ask than
 
 Take (3) first. It is the only one of the three that is not waiting on someone
 else.
+
+## Taken, 2026-08-14 — option (3) is a change
+
+Promoted to `the-floor-is-the-platforms-own-noise-answer` (standard):
+present the declared floor as the platform's own volatility-relative noise
+reading on the existing panel, claiming declaration only — never enforcement.
+What this item keeps after that change lands: blockers (1) and (2), both
+upstream — it remains the only open record that the platform parses and
+discards strategy-authored trade-level policy values (confirmed at v18.2.0,
+four majors running). Do not close it when the change archives; re-scope it
+to the upstream watch.
+
+## Re-scoped 2026-08-14 — the change landed; what stays open is the upstream watch
+
+`the-floor-is-the-platforms-own-noise-answer` archived: the strategy detail's
+trade-level policy panel now reads the declared floor as the platform's own
+volatility-relative statement of where noise ends, claims declaration only,
+and names the agent's trading record as the measured half. Option (3) is
+done. The `change:` link is cleared because the archived change's scope was
+option (3) alone — this item continues as the standing record of the
+platform discarding strategy-authored trade-level policy values, and of the
+rule that nothing may be built on those fields *as applied* until a compile
+carrying changed values provably changes `derive_strategy_rule_view` output
+or a trade's stop provably comes from the strategy value. Re-priced p2 → p3:
+what remained buildable shipped; the rest waits on BattleGrid.

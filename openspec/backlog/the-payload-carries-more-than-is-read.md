@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-12
+updated: 2026-08-14
 change: ""
 capability: agent-understanding
 github: "110"
@@ -191,4 +191,18 @@ full `behavior` block. So `CUSTOM` is at least a *readable* preset value on a
 live agent, which is more than the item had. It still does not establish what
 `create_intelligence_agent` does with `{kind:"PRESET", preset:"CUSTOM"}` — that
 needs a write, and this sweep was read-only.
+
+## Re-checked 2026-08-14 — nothing moved, and the cost split is untestable today
+
+Read-only, list + detail on Undertow in the same minute. Both reads answer
+`last24hCostUsd: 0` — agreement, but the fleet has been idle since 2026-08-12
+(no trades, no games), so zero is plausibly the true 24h spend; a zero/zero
+pair cannot exercise the list-vs-detail split either way. The read-from-the-list
+decision stands untouched.
+
+`provider: null` on all three agents — fourth consecutive probe, fourth major.
+`activeGameCount: 0` and `hasActiveAssignments: false` on all three — still
+falsy observations only, still unexplained. The four deliberately unmapped
+fields stay unmapped; nothing has asked for them and nothing has been observed
+that would let them be mapped honestly.
 

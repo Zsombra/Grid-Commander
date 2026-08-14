@@ -2,7 +2,7 @@
 id: refresh-rejection-is-indistinguishable-from-an-outage
 title: Every rejected refresh token returns 500, so reconnect and retry-later look identical
 type: risk
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-14
@@ -121,3 +121,58 @@ proposed. The item stays open as the product-side record of an upstream defect,
 and closes when the report is sent.
 
 **Upstream report drafted 2026-08-14**: `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — bundles #102, #100, #204; awaiting operator review, nothing sent.
+
+## Re-confirmed 2026-08-14 — still a 500, and the 4xx machinery provably exists
+
+Re-probed before sending, with a fresh public client registered via
+`/register` (201, `token_endpoint_auth_method: none`, no secret involved):
+
+| call | answer |
+|---|---|
+| `refresh_token=nope`, valid client_id | **500 server_error** |
+| random 64-hex refresh, valid client_id | **500 server_error** |
+| no client_id at all | **400 invalid_request**, structured detail |
+
+The third row is new and sharpens the finding: the endpoint classifies
+request-shape errors into well-formed RFC 6749 4xx responses — only the
+invalid-*grant* case falls through to 500. Added to the report. The
+gate-blocks issue in the same report healed upstream between 2026-08-13 and
+2026-08-14; this one did not.
+
+<details>
+<summary><b>Re-scoped 2026-08-14 — WRONG, corrected the same day.</b> A
+bounded-retry-then-reconnect change was designed here. It was written from
+this item's opening argument and its tail, without the 2026-08-13
+re-verification in the middle — which had already falsified the premise. The
+product does not lean toward "outage" on a refresh failure; it already says
+"reconnect" on the first one (`resolve-authority.query.ts:96-100`), nothing
+is torn down, and the behaviour is self-healing. "N failures → flip to
+reconnect" would have made the first N−1 failures read as an outage —
+reintroducing exactly the failure mode this item originally feared, on a
+path already proven correct. Kept folded per the correction rule: the
+mistake was reachable because a long item was read at its ends, and this
+repository's recurring defect is exactly an argument outliving the evidence
+recorded beside it.</summary>
+
+The withdrawn design proposed: N consecutive refresh 500s → surface the
+reconnect remedy; counter reset on success; tradeoff documented at the
+mapping site; change name `a-dead-token-stops-looking-like-an-outage`.
+
+</details>
+
+## Closed 2026-08-14 — unreported by decision, and the product half needs nothing
+
+**Why closed**: both halves are resolved. The **product half** was
+re-verified correct on 2026-08-13 and re-read today: every refresh failure
+already surfaces the reconnect remedy, nothing is deleted, and a recovered
+platform heals the connection on the next request without help. No product
+change is warranted; the one residue — outage-time wording that says
+"reconnect" when waiting would do — is cosmetic, priced no-harm, and belongs
+to [[the-authority-page-names-a-remedy-and-offers-no-target]] (#182). The
+**platform half** (500 where RFC 6749 §5.2 requires `invalid_grant`, six
+probes across 2026-08-13/14) will not be reported: the operator decided so,
+and `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` — closed unsent — holds the
+full measurement record. Reopen only if the mapping in
+`resolve-authority.query.ts` changes, or the platform starts answering
+`invalid_grant` (at which point the catch-all could distinguish what it
+today cannot).
