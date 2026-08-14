@@ -164,7 +164,15 @@ describe('a submit that performs something', () => {
     // production list narrows the rule without breaking the machinery. Floored
     // through the scan's own file walk — never through an independent count,
     // which is the defect this file's old floor had.
-    expect(filesUnder(PRODUCTION_ROOTS).length).toBeGreaterThan(40);
+    //
+    // Calibrated to the failure it guards, per the lesson pinned in
+    // `a-refusal-reaches-the-person`: the failure grain here is a whole root,
+    // so the floor sits *above either root alone* (50 and 41 at time of
+    // writing) and below their union (91). Losing a root cannot pass; retiring
+    // a page or two is not an edit here. The first version said `> 40`, which
+    // either root cleared by itself — a floor that could not fail on the one
+    // thing it existed to catch, found by measuring rather than reading.
+    expect(filesUnder(PRODUCTION_ROOTS).length).toBeGreaterThan(60);
   });
 
   it('always carries a progressive label, because the label is the state', () => {

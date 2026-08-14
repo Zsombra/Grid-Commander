@@ -109,6 +109,16 @@ red-run requirement itself surfaced (M0), which is the section's real yield.
   green. This is the walk's real boundary: a multi-line open tag is invisible
   to a line walk. Prettier keeps production tags on one line; the fixture
   header now pins the shape and names this measurement.
+- **M5 — the new walk floor, measured against its own numbers** (verifier
+  finding, fixed same-hour): the floor's first version said `> 40`, and its
+  comment claimed it would catch a root dropped from the production list —
+  but `app/` alone holds 50 `.tsx` files and `src/presentation/` 41, so
+  either root *alone* cleared 40 and the floor could not fail on the one
+  thing it existed to catch. The `a-refusal-reaches-the-person` lesson,
+  reappearing in the guard written to honour it. Re-floored at `> 60`: above
+  either root alone, below the 91-file union — losing a root cannot pass,
+  retiring a page or two forces no edit. Found by measuring the tree rather
+  than reading the test.
 
 ## 4. Verification
 
