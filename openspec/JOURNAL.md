@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-14 (ourselves) — the report closes unsent, and the product answers what it can
+
+**Did**: operator decision — the upstream report will **not** be sent
+("they're not gonna be able to do anything for us"); its header now records
+the decision and it stays as the measurement record. The three report
+tickets resolved accordingly: **#100 closed** (defect fixed upstream,
+verified); **#102 closed** — proposed, executed, verified and archived
+**`a-taken-name-is-refused-before-it-is-sent`** (standard): the fork action
+pre-flights the resulting name (chosen or `"<parent> (fork)"`) against the
+PRIVATE names in the listing it already re-reads at submit time and refuses
+before sending — naming the collision, keeping the typed name, claiming
+only the measured fact, never diagnosing a response. SYSTEM-name matches
+deliberately not pre-refused (unmeasured); platform backstop untouched.
+`tests/rendering/fork-preflight.test.ts` (4 invocation tests; the fake's
+call record is the "nothing was sent" property; `fake-acting.ts` gained the
+`forkStrategy` wiring). **#204 re-scoped, open**: closes when
+`a-dead-token-stops-looking-like-an-outage` lands — bounded retry then
+reconnect, design recorded in the item. Also this session's live
+demonstration: fork of Bastogne rev 6 named "Alesia" → INTERNAL_ERROR,
+quota unmoved (eighth measurement; on #102).
+
+**State**: gates at archive: typecheck, lint, **2401 vitest / 188 files**
+(+4), build, drizzle no-op; test:db skipped (no local DATABASE_URL).
+`validate --all` 0 errors / 21 warnings. 27 open items.
+
+**Next**: `/propose a-dead-token-stops-looking-like-an-outage` from #204's
+recorded design. Then #257 (comment re-dating) and #255 remain the sharpest
+small items. Branch still unpushed — operator says when.
+
+**Watch out**: the fork pre-flight matches **exact PRIVATE names only** —
+that scoping is load-bearing, not lazy. Widening it to SYSTEM names or
+case-insensitive matches would refuse forks the platform has never been
+measured to refuse; #102's closing note names that as a reopen trigger. And
+the pre-flight's message states the platform's answer as a *measured fact
+before sending* — do not let a future edit move that sentence into the
+CarriedProblem path, where it would become the re-diagnosis #102 ruled out
+three times.
+
 ## 2026-08-14 (re-verify) — the operator asked "is it still true", and one of three was not
 
 **Did**: re-verified the upstream report's three claims live before sending,

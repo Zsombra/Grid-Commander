@@ -1,12 +1,14 @@
-# DRAFT — Two deterministic INTERNAL_ERRORs on the BattleGrid MCP surface
+# NOT SENT — Two deterministic INTERNAL_ERRORs on the BattleGrid MCP surface
 
-> **Status: draft for operator review, re-verified live 2026-08-14. Not sent.**
-> Intended recipient: BattleGrid (battlegrid.trade) — whichever channel the
-> operator chooses. Sources: backlog items #102
-> (`forking-a-name-that-exists-is-a-500`) and #204
-> (`refresh-rejection-is-indistinguishable-from-an-outage`).
-> Every claim below is a live measurement with dates; nothing is inferred from
-> documentation.
+> **Status: closed unsent, by operator decision, 2026-08-14.** The operator
+> judged that reporting upstream would not produce a fix and directed the
+> effort at client-side mitigations instead. This document stays as the
+> historical record of the measurements — every claim was re-verified live on
+> 2026-08-14 — and as the evidence base for the mitigations. Sources: backlog
+> items #102 (`forking-a-name-that-exists-is-a-500`) and #204
+> (`refresh-rejection-is-indistinguishable-from-an-outage`); both items
+> re-scoped the same day from "closes when the report is sent" to their
+> client-side answers.
 >
 > **A third issue was drafted here and withdrawn.** The `list_gate_blocks`
 > row-level 500s (#100) were re-tested on 2026-08-14 and found **fixed** —

@@ -138,3 +138,30 @@ request-shape errors into well-formed RFC 6749 4xx responses — only the
 invalid-*grant* case falls through to 500. Added to the report. The
 gate-blocks issue in the same report healed upstream between 2026-08-13 and
 2026-08-14; this one did not.
+
+## Re-scoped 2026-08-14 — not reported, so the product answers it itself
+
+The operator decided the report will not be sent (its header records the
+decision), which voids this item's closing condition ("closes when the
+report is sent"). The item now closes when the client-side mitigation lands,
+and the mitigation is chosen: **option 2, bounded retry then reconnect**,
+with option 1's comment written in the same change.
+
+Design, recorded now so the change starts from it:
+
+- N consecutive refresh failures with 500 → treat the connection as revoked
+  and surface the reconnect remedy, instead of reporting a platform outage
+  forever. The threshold guesses, but it converges on the right answer in
+  both worlds: a real outage clears before N in practice, and a dead token
+  never does.
+- The tradeoff stays stated at the mapping site (`mcp-adapter.ts:415`
+  territory): a 500 here is ambiguous *by platform behaviour* — measured,
+  RFC-violating, and deliberately unreported — and the outage-leaning single
+  failure stays the safer read. The counter must reset on any success.
+- The wrong-way cost is bounded and honest: if it really was an N-minute
+  outage, the user is offered a reconnect they did not need — a wasted OAuth
+  round trip, which [[the-authority-page-names-a-remedy-and-offers-no-target]]
+  (#182) already prices as no-harm.
+
+Next: `/propose` `a-dead-token-stops-looking-like-an-outage` (standard) from
+this design.
