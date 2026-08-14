@@ -20,6 +20,18 @@ amendment to a binding standard.
       > control that stops accepting presses is a mitigation, not a guarantee,
       > and must not be relied on alone.
 
+      **Do not run this wording as written — one clause is measured false.**
+      "The platform honours an idempotency key" was falsified during PR #235's
+      review (#239): the key never reaches BattleGrid. It goes to the local
+      audit ledger, whose unique index does refuse the duplicate write — so the
+      *outcome* this requirement states still holds — but the refusal is a raw
+      Postgres error, and the mechanism is local, not the platform's. Either
+      fix #239 first (preferred: then the clause becomes true as intended) or
+      reword the clause to what ships ("a local dedupe refuses the duplicate").
+      Note that task 3.3 would NOT catch this: it verifies the key is minted,
+      carried and read — the plumbing — not where the key ends up. The review
+      caught it by tracing the adapter; no gate re-checks it.
+
 - [ ] 1.2 **Decide the scope of the regeneration before running it.** The
       generator rewrites the whole file, and the file has other defects (#233):
       a `Based On` header naming shadcn and Zustand, three sections governing
@@ -52,7 +64,11 @@ group still holds rather than trusting this proposal's table.
       never the shape.
 - [ ] 3.3 Create: `idempotencyKey` minted per render, carried as a hidden input,
       read by the action. Guarded by
-      `tests/architecture/a-create-carries-a-dedupe-key.test.ts`.
+      `tests/architecture/a-create-carries-a-dedupe-key.test.ts`. **This checks
+      the plumbing only.** Where the key lands is #239's finding: it reaches the
+      local audit ledger, never BattleGrid, and the duplicate is refused by a
+      unique index that throws rather than returning the original result. Verify
+      #239's state before signing this row off.
 - [ ] 3.4 Restore is idempotent; connect mints a fresh OAuth state and only
       redirects to consent.
 - [ ] 3.5 The refusal reaches the person — `spending()` on ten of the eleven
