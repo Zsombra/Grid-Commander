@@ -2,7 +2,7 @@
 id: three-actions-live-outside-the-form-field-cross-check
 title: Unexported server actions are invisible to the form-field cross-check
 type: risk
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-15
 updated: 2026-08-15
@@ -63,3 +63,22 @@ the three into `actions.ts` modules so the existing scanners see them, or
 teach both scanners the unexported module-level shape. The first is smaller
 and makes the convention total; the second guards the shape wherever it
 regrows.
+
+## Closed 2026-08-15 — both repairs, in the only combination that holds
+
+`the-hidden-actions-move-where-the-scanners-look` (archived 2026-08-15).
+The choice between the item's two options dissolved on a spec fact: a page
+module cannot *export* an action without violating the page contract the
+build gate enforces, so the unexported in-page shape can never be made
+scanner-visible where it sits — teaching the scanners that shape would
+enshrine a permanent blind alley. Instead the three moved to colocated
+`actions.ts` modules (option 1), their reads converted to `requiredText` so
+the field cross-check extracts their required sets (without that, moving
+alone left them discovered-but-empty and filtered out), and a matcher-proven
+guard now bans function-level `'use server'` directives in UI source so the
+shape cannot regrow (option 2's intent, as a ban rather than a parser).
+Proven falsifiable both ways: a planted inline action failed the guard
+naming it, and deleting the `confirmationToken` input produced the
+RebindConfirm-class failure on `agree`. Two more checks had pinned the old
+page path (`proposals-are-inert`, `agreeing-to-a-limit`) and were carried
+along.

@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-08-15 (census) — the record reads two days deep, and the hidden actions join the convention
+
+**Did**: reconciled clean (main `1c8e8b0`, all of yesterday's PRs in). Fourth
+tripwire sweep, all four **cold** — positions flat (`marginedUsd: 0`, paired
+allocation read untaken per #107), Radar 20/20 `PLATFORM_PAUSED` with nothing
+fired since 08-13 18:01Z (approvals read untaken per #101), #104 seventh
+confirmation (50 rows, `playersNeeded == minimumPlayers == 5` everywhere,
+no row below minimum). **#94's environment half is HOT** — `DATABASE_URL` in
+the persistent user environment (verified present without printing it) — and
+the depth half was measured **from the db, read-only, in UTC**: 49 runs, one
+user, `first_run 2026-08-12T19:46:14Z`, span 1.98 days, recorder current to
+the half-hour. Two days < a week; both halves hold from **~2026-08-19T19:46Z
+(~Aug 20 02:46 local)**. Then **#263** →
+`the-hidden-actions-move-where-the-scanners-look` (standard, verified,
+archived): `agree`/`decline` and `startAuthorization` moved from their pages
+into colocated `actions.ts` modules, reads converted to `requiredText` (the
+move alone would have left them discovered-but-empty — the field cross-check
+extracts only `requiredText`/`requiredInteger`), discovery floor 14 → 16, and
+a matcher-proven guard now bans function-level `'use server'` directives in
+UI source. Both proofs observed failing first: a planted inline action
+(guard named it), a deleted `confirmationToken` input (RebindConfirm-class
+failure on `agree`). `harness-integrity` gained the requirement. Surfaces
+`pending-proposal` + `connect` re-pinned at `106ddf7` with the actions.ts
+sources added. #263 closed both sides.
+
+**State**: 0 active changes, 21 open items, one p2
+(`recorded-signals-are-not-yet-evidence`, gated on depth until ~Aug 20
+local). Gates at archive: typecheck, lint, **2419 vitest / 190 files**,
+build, drizzle no-op; `test:db` skipped deliberately — with `DATABASE_URL`
+now live, the db suite's disposable-database guard must refuse it, and that
+refusal is correct. `validate --all` 0 errors / 14 deliberate warnings /
+2 info after this entry. Branch `claude/tripwire-checks-board-d9d536`; PR is
+this handoff's last act.
+
+**Next**: tripwires first, from their items. #94 is the one expected to
+fire: from ~Aug 20 02:46 local both halves hold — verify depth from the db
+again (`min(started_at)`, UTC), then `/propose` the analysis layer per the
+item's What/Notes (forward returns per signal state, sample sizes beside
+every figure). If all cold: no unconditional p2 remains — triage the p3
+lane and pick by consequence, reading items in full.
+
+**Watch out**: the item's census of "both scanners" was two short — beyond
+the two anchored scanners, `proposals-are-inert.test.ts` and
+`agreeing-to-a-limit.test.ts` had the page path as a **string literal**, and
+only the gates found them. When relocating code, grep the test tree for the
+file's *path*, not just for scanner anchors. And in the new `agree`, the
+`requiredText(formData, 'changes')` read is hoisted **above** the JSON.parse
+try/catch on purpose: inside it, a missing-field `FormError` would be
+swallowed and re-told as "unreadable values". A tidy-minded inliner would
+reintroduce that bug. Last: at ~03:00 local the UTC calendar is still
+yesterday — the db read said age 2.00 days on what the desk calls Aug 15;
+depth arithmetic stays in UTC or it gains a phantom day.
+
 ## 2026-08-15 (refill) — the third sweep stays cold, and the money boxes keep what was typed
 
 **Did**: merged **PR #264** (main `8a06b7f`; `validate --all` clean after, no
