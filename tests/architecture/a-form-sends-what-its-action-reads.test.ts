@@ -190,10 +190,12 @@ describe('a form sends what its action reads', () => {
   it('finds the actions and their forms', () => {
     // Vacuous-pass insurance, and the reason the first version of this file was
     // useless: a check that resolves nothing reports nothing wrong.
-    // 14 is the count at `the-build-checks-what-next-generates`: every
-    // ceremony action, discovered in its actions.ts. A drop below it means
-    // discovery broke, not that the product shrank.
-    expect(pairs.length).toBeGreaterThanOrEqual(14);
+    // 16 is the count at `the-hidden-actions-move-where-the-scanners-look`:
+    // the fourteen ceremony actions from `the-build-checks-what-next-generates`
+    // plus `agree` and `decline`, discovered once they moved into actions.ts
+    // and read through `requiredText`. A drop below it means discovery broke,
+    // not that the product shrank.
+    expect(pairs.length).toBeGreaterThanOrEqual(16);
     expect(
       pairs.filter((p) => p.form === null).map((p) => `${p.page} :: ${p.action}`),
       'no form resolved for these — the resolver drifted, not the product. A pair whose form ' +

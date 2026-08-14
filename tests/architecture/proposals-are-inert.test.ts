@@ -147,12 +147,14 @@ describe('nothing performs a proposal without a person', () => {
   it('closes a proposal only after the write, never before', () => {
     // Closing first would leave one marked agreed against a change that never
     // happened — a record that says a person approved something the account
-    // never saw.
-    const page = read('app/(app)/pending/[id]/page.tsx');
-    const performAt = page.indexOf('app.updateAgent.execute');
-    const closeAt = page.indexOf("status: 'agreed'");
-    expect(performAt, 'the page performs the write').toBeGreaterThan(-1);
-    expect(closeAt, 'the page closes the proposal').toBeGreaterThan(-1);
+    // never saw. The ordering lives in the page's colocated action module —
+    // `the-hidden-actions-move-where-the-scanners-look` moved `agree` there so
+    // the action scanners could see it.
+    const action = read('app/(app)/pending/[id]/actions.ts');
+    const performAt = action.indexOf('app.updateAgent.execute');
+    const closeAt = action.indexOf("status: 'agreed'");
+    expect(performAt, 'the action performs the write').toBeGreaterThan(-1);
+    expect(closeAt, 'the action closes the proposal').toBeGreaterThan(-1);
     expect(closeAt, 'the close follows the write').toBeGreaterThan(performAt);
   });
 });
