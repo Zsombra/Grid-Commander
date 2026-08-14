@@ -4,7 +4,7 @@
   "route": "/agents/[id]/reactivate",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "6441015",
+  "generated_at_commit": "d782154",
   "source_files": [
     "app/(app)/agents/[id]/reactivate/actions.ts",
     "app/(app)/agents/[id]/reactivate/page.tsx",
@@ -317,7 +317,7 @@
   "source_digest": {
     "app/(app)/agents/[id]/reactivate/actions.ts": "sha256:2d436371cc4e830a5950b315dd1badece080827a5f32caaf7b5d3de1481431a4",
     "app/(app)/agents/[id]/reactivate/page.tsx": "sha256:c0ef7b1b5bce3c37aa1a05910cace75eb01697d040c2f49a71a73e907ab263ff",
-    "src/presentation/components/agent-edit.tsx": "sha256:357ebb646fba2b537ab5104e2a0209c4e205834cad232e24ac70889661a7d8af",
+    "src/presentation/components/agent-edit.tsx": "sha256:364bf406a60aa01b49b1ca27934e97c5113259babb98e195b92b51882d1cf2ea",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",

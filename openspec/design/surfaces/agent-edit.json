@@ -4,7 +4,7 @@
   "route": "/agents/[id]/edit",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "6441015",
+  "generated_at_commit": "d782154",
   "source_files": [
     "app/(app)/agents/[id]/edit/actions.ts",
     "app/(app)/agents/[id]/edit/page.tsx",
@@ -72,7 +72,7 @@
         "query"
       ],
       "actions": [],
-      "current_implementation": "max-w-3xl centered column in the form branch, max-w-2xl in the review branch, space-y-6/4, p-6. The two branches are one route split on ?review=1 — submitting the form is a GET that navigates back here, and this page then proposes the change and renders the consequence the confirmation was issued against. Since `a-bounced-reason-survives-the-agent-editor` (#255) all seven render branches mount the shared `<CarriedProblem problem={query['problem']} />` unconditionally under their h1 (the confirm branch at the top of its main), so every `-with-problem` pairing above is a real rendering; the page owns the bounced reason and no longer forwards it into the form. refused-proposal and preset-unresolvable re-render the form with THEIR OWN reason as its `problem` prop — a branch-local refusal, rendered inside the form through the same shared component, distinct from and stackable with the page-level carried banner. Typed values survive a bounce for the name and the twelve pm.* fields (`composed` wins over stored values — `the-round-trip-keeps-what-the-person-needs`); the six money boxes still prefill from the agent's stored values because AgentEditForm does not pass `composed` into MoneyLimits — recorded as backlog `the-edit-bounce-carries-money-nothing-refills`. catalog-unreadable renders h1 + carried banner + role=alert reason + a plain underlined link back; no-such-agent renders h1 + carried banner + underlined link to /agents.",
+      "current_implementation": "max-w-3xl centered column in the form branch, max-w-2xl in the review branch, space-y-6/4, p-6. The two branches are one route split on ?review=1 — submitting the form is a GET that navigates back here, and this page then proposes the change and renders the consequence the confirmation was issued against. Since `a-bounced-reason-survives-the-agent-editor` (#255) all seven render branches mount the shared `<CarriedProblem problem={query['problem']} />` unconditionally under their h1 (the confirm branch at the top of its main), so every `-with-problem` pairing above is a real rendering; the page owns the bounced reason and no longer forwards it into the form. refused-proposal and preset-unresolvable re-render the form with THEIR OWN reason as its `problem` prop — a branch-local refusal, rendered inside the form through the same shared component, distinct from and stackable with the page-level carried banner. Typed values survive a bounce for the name, the twelve pm.* fields, and the six money boxes (`composed` wins over stored values per field — `the-round-trip-keeps-what-the-person-needs`; the money half closed by `the-bounced-money-refills-the-boxes`, whose merge reads both spellings the bounce can carry: bare names from the GET review's query, `tc.`-prefixed from the apply's backTo). catalog-unreadable renders h1 + carried banner + role=alert reason + a plain underlined link back; no-such-agent renders h1 + carried banner + underlined link to /agents.",
       "constraints": [
         "The two-request split is spec, not layout: 'the consequence is shown and the change is not yet made / it is made only on a further request the user initiated' — openspec/specs/agent-authoring/spec.md:520-523. A design that merges form and confirmation into one submission changes behavior and is requires-spec-change.",
         "Every state change is a full navigation — the page renders whole from one server round trip and holds no client state. The only client code is `PerformButton` (`'use client'`, `useFormStatus`), which reports that a submit is in flight and nothing else; it is the exception the rule is stated around, not a contradiction of it. A design may not introduce client state, optimistic rendering, or a partial update.",
@@ -153,16 +153,17 @@
     {
       "id": "money-limits",
       "role": "input",
-      "purpose": "The six questions BattleGrid will not answer for you — spending limits the platform declines to default, prefilled with the agent's current values.",
+      "purpose": "The six questions BattleGrid will not answer for you — spending limits the platform declines to default, prefilled with the agent's current values, or with what the operator typed when a refusal bounced them back.",
       "states": [
         "default"
       ],
       "data": [
         "agent",
-        "catalog"
+        "catalog",
+        "query"
       ],
       "actions": [],
-      "current_implementation": "A fieldset wearing the consequence tokens (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4) with a legend and an explanatory paragraph; money fields in a 1-col/sm:2-col grid, each with LABEL, CONTROL, and an aria-describedby hint. Which fields render is driven by undefaultableFields(catalog) — a field the platform starts defaulting stops being asked, with no release. tradingMode renders OFF first and selected, with a stated caveat that APPROVAL_REQUIRED cannot be answered in this product yet.",
+      "current_implementation": "A fieldset wearing the consequence tokens (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4) with a legend and an explanatory paragraph; money fields in a 1-col/sm:2-col grid, each with LABEL, CONTROL, and an aria-describedby hint. Which fields render is driven by undefaultableFields(catalog) — a field the platform starts defaulting stops being asked, with no release. tradingMode renders OFF first and selected, with a stated caveat that APPROVAL_REQUIRED cannot be answered in this product yet. The `current` prop arrives pre-merged from AgentEditForm: the bounced composition wins per field (either spelling), the agent's stored tradingConfig fills the rest — the component itself stays one prefill input for both the create and edit screens.",
       "constraints": [
         "Where 0 removes a limit, the warning MUST stay beside the box it is typed into — openspec/specs/agent-authoring/spec.md:366-367 ('Grid-Commander SHALL say so where that value is entered') and :391-394. The strong-tagged sentence inside the hint is that warning.",
         "Current values MUST stay prefilled — openspec/specs/agent-authoring/spec.md:386-389: an empty box submitted is a limit removed, because tradingConfig is all-or-nothing (:370-372).",
@@ -389,7 +390,7 @@
         "submit the confirm form",
         "platform or product refuses (rejected fields, invalid values, revision moved)",
         "redirected back to the form branch with ?problem= and every submitted value except the confirmation binding",
-        "the page-level banner states every reason; the typed name and pm.* values are back in their fields (money boxes prefill from stored values — see backlog `the-edit-bounce-carries-money-nothing-refills`)"
+        "the page-level banner states every reason; the typed name, the pm.* values, and the money values are back in their fields — the money merge reads the apply's tc.-prefixed spelling"
       ]
     },
     {
@@ -405,7 +406,7 @@
       "steps": [
         "submit 'Review the change'",
         "describeEdit refuses a field or the preset cannot be resolved",
-        "the form re-renders with that reason as its own banner, typed name and pm.* values preserved"
+        "the form re-renders with that reason as its own banner, typed name, pm.* and money values preserved"
       ]
     },
     {
@@ -432,7 +433,7 @@
   "source_digest": {
     "app/(app)/agents/[id]/edit/actions.ts": "sha256:056846fd2993b6fae9a9b50b2f4927656047af9d0bc55081c311c93d117764a7",
     "app/(app)/agents/[id]/edit/page.tsx": "sha256:9d1fd8a77ec80c0b5b0a22a8951e3e3a8ffc304679909a5cedf2145ab2e417f7",
-    "src/presentation/components/agent-edit.tsx": "sha256:357ebb646fba2b537ab5104e2a0209c4e205834cad232e24ac70889661a7d8af",
+    "src/presentation/components/agent-edit.tsx": "sha256:364bf406a60aa01b49b1ca27934e97c5113259babb98e195b92b51882d1cf2ea",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/money-limits.tsx": "sha256:e1ef88575cafd94eedb18e098bfe51eaa5e5391e4edec685ca5f241acfc6d842",
