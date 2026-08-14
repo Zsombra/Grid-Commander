@@ -523,6 +523,15 @@ def _(p, t):
     p.surface(status="functional")
 
 
+@case("design_routes_uncovered", "info")
+def _(p, t):
+    # One covered route, one not: the diagnostic is about the difference, so
+    # the fixture carries both and the covered one must not be what fires.
+    p.surface(status="functional", route="/covered")
+    p.write("app/covered/page.tsx", "export default function P() { return null; }\n")
+    p.write("app/things/page.tsx", "export default function P() { return null; }\n")
+
+
 # --------------------------------------------------------------------------
 # Archive
 # --------------------------------------------------------------------------

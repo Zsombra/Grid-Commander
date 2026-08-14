@@ -8,6 +8,7 @@
   "source_files": [
     "app/(app)/strategies/[id]/conditions/save/actions.ts",
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/perform-button.tsx",
     "src/presentation/components/strategy-conditions.tsx",
@@ -437,6 +438,7 @@
     "src/presentation/components/strategy-conditions.tsx": "sha256:e9614fb32ac281064d2192fa6c774831fdb76189ec4cc358a333205ac533eefc",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

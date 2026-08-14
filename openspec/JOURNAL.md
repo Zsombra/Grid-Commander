@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-08-15 (spellings) — two p2s land: the sentence tells the truth, and the check that matched nothing fires
+
+**Did**: second tripwire sweep of the day, all four still cold (no
+`DATABASE_URL`, account flat, Radar 20/20 platform-paused, market grid
+unchanged) — the items' morning lines stand. Then both remaining p2s.
+**#234** → `the-connection-is-never-called-read-only` (lite, archived): the
+wager panel's "it connects read-only" replaced with the missing scope stated
+beside the held write authority; the finding was sharper than filed — the
+spec already forbade the sentence, but its guard scanned only the grant
+flow. New mutation-proven UI-wide guard
+`access-is-described-honestly.test.ts` (negated forms legal); requirement
+gained the standing-connection scenario. **#230** →
+`the-import-cross-check-stops-matching-nothing` (standard, archived): the
+check was blind TWICE — the relative-only regex the item measured, plus an
+extension hole (`.js` specifiers naming `.ts` files resolved to nothing,
+even relative ones). Resolver now reads tsconfig `paths` (JSONC-stripped,
+nothing hard-coded) + the toolchain's extension rewrite; eleven new Python
+fixtures prove firing and degradation; honest run named six omissions across
+five manifests (five of them `carried-problem.tsx`) — fixed, agent-roster's
+deliberate staleness (#237) preserved through its correction. Second blind
+spot landed as `design_routes_uncovered` (aggregate INFO, 22 of 46 routes;
+full list in `openspec.py design`), silence directions in
+`tests/test_route_coverage.py`. Issues #230, #234 closed.
+
+**State**: 0 active changes, 23 open items, one p2 left
+(`recorded-signals-are-not-yet-evidence`, gated until ~2026-08-18). Gates at
+both archives: typecheck, lint, 2414 vitest / 190 files, build, drizzle
+no-op, **267 Python harness tests**; test:db skipped (no `DATABASE_URL`).
+`validate --all` 0 errors / 14 deliberate warnings / 2 info (orphan surface
++ the new route-coverage info). All on `claude/board-tripwire-checks-8750a8`
+extending **PR #264**.
+
+**Next**: operator — merge PR #264 (now three changes deep). Next working
+session: tripwires from their items first; with every unconditional p2 done,
+the sharpest p3s are #260 (`the-edit-bounce-carries-money-nothing-refills`,
+fix shape written down) and #263 (three actions outside the form-field
+cross-check, fresh from yesterday's gate change).
+
+**Watch out**: the first prototype of #230's fix reported "zero missing"
+**vacuously** — it was measuring with the same broken resolver class it was
+meant to replace, and only a negative control (remove a listed file, expect
+it named) caught it; measure a checker's fix with a planted defect before
+believing its clean answer. The alias map is cached per root in
+`_ALIAS_CACHE` and never invalidated — a long-lived process that edits
+tsconfig `paths` mid-run reads stale aliases (validate runs are one-shot, so
+this is latent, not live). And `design_routes_uncovered` is deliberately ONE
+aggregate INFO, not 22 warnings — turning it into per-route warnings would
+bury the 14-deliberate-warning baseline the board tracks.
+
 ## 2026-08-15 (gate) — the discarded check comes back on, and six pages had become fourteen
 
 **Did**: four tripwires checked **cold** first (#107 flat account, #101 Radar

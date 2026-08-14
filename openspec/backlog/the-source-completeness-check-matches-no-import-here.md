@@ -2,11 +2,11 @@
 id: the-source-completeness-check-matches-no-import-here
 title: The check that keeps surface source lists complete matches no import in this codebase
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
-updated: 2026-08-14
-change: ""
+updated: 2026-08-15
+change: "the-import-cross-check-stops-matching-nothing"
 capability: harness-integrity
 github: "230"
 blocked_by: []
@@ -130,3 +130,31 @@ Found while re-surveying the manifests DT-0027 staled, by asking why
 `perform-button.tsx` appeared in no `source_files` when fifteen surfaces render
 it. Related to [[a-manifest-pins-to-what-it-described]] (#192), which fixed the
 digest half of the same guarantee.
+
+## Taken 2026-08-15 — and the check was blind twice, not once
+
+Measured before proposing, with a negative control (remove a listed file,
+expect the prototype to name it — the first prototype passed the "zero
+missing" answer back vacuously and the control caught it). The second hole:
+this project imports with `.js` specifiers that resolve to `.ts` files (the
+`extensionAlias` convention next.config.ts documents), and `_resolve_import`
+appends extensions to the full name — `perform-button.js.tsx` — so even
+relative `./actions.js` imports resolve to nothing. The check's own fixtures
+use extension-less specs, which is why the suite never noticed.
+
+The honest run, both holes fixed: **six omissions across five manifests**,
+five of them `carried-problem.tsx` — the shared refusal banner. Taken as
+`the-import-cross-check-stops-matching-nothing` (standard track), which also
+adds the route-coverage half (22 of 46 routes have no manifest today).
+
+## Closed 2026-08-15 — the check fires, provably, and the second question got its answer
+
+Archived as `2026-08-15-the-import-cross-check-stops-matching-nothing`.
+`_resolve_import` reads aliases from tsconfig's `paths` (JSONC-stripped,
+nothing hard-coded) and applies the toolchain's extension rewrite, so both
+blindnesses are closed; eleven Python fixtures prove firing, degradation and
+the negatives. The honest run named six omissions across five manifests
+(five of them `carried-problem.tsx`) — fixed, with agent-roster's deliberate
+staleness (#237) preserved through its correction. The route question landed
+as `design_routes_uncovered` (aggregate INFO, 22 of 46 today) with
+`openspec.py design` listing them, both directions fixture-proven.

@@ -10,6 +10,7 @@
     "app/(app)/agents/[id]/edit/page.tsx",
     "src/presentation/components/agent-edit.tsx",
     "src/presentation/components/binding.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/money-limits.tsx",
     "src/presentation/components/perform-button.tsx",
@@ -437,6 +438,7 @@
     "src/presentation/components/money-limits.tsx": "sha256:e1ef88575cafd94eedb18e098bfe51eaa5e5391e4edec685ca5f241acfc6d842",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

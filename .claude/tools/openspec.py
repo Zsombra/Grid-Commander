@@ -768,10 +768,14 @@ VIEW_LOGIC_RE = re.compile(
     r"^use[A-Z]|view|model|store|context|state|hook|provider|reducer|controller",
     re.IGNORECASE,
 )
+# Captures ANY specifier; classification happens at resolution. This regex
+# used to capture only `./`-relative specs, and in a codebase importing
+# through the `@/` alias (337 alias vs 23 relative imports) the cross-check
+# built on it matched nothing at all, for its whole life (#230).
 IMPORT_RE = re.compile(
-    r"""(?:^|\s)(?:import|export)\s[^;\n]*?from\s*['"](\.{1,2}/[^'"]+)['"]"""
-    r"""|(?:^|\s)import\s*['"](\.{1,2}/[^'"]+)['"]"""
-    r"""|require\(\s*['"](\.{1,2}/[^'"]+)['"]\s*\)""",
+    r"""(?:^|\s)(?:import|export)\s[^;\n]*?from\s*['"]([^'"]+)['"]"""
+    r"""|(?:^|\s)import\s*['"]([^'"]+)['"]"""
+    r"""|require\(\s*['"]([^'"]+)['"]\s*\)""",
     re.MULTILINE,
 )
 TYPE_IMPORT_RE = re.compile(r"^\s*(?:import|export)\s+type\s")
@@ -790,19 +794,115 @@ def _is_ui_file(path: Path) -> bool:
     return path.suffix in LOGIC_EXTS and bool(VIEW_LOGIC_RE.search(path.stem))
 
 
-def _resolve_import(importer: Path, spec: str):
-    """Resolve a relative import to a file on disk, or None."""
-    base = (importer.parent / spec).resolve()
-    if base.is_file():
-        return base
-    for ext in RESOLVE_EXTS:
-        candidate = base.with_name(base.name + ext)
-        if candidate.is_file():
-            return candidate
-    for ext in UI_EXTS:
-        candidate = base / ("index" + ext)
-        if candidate.is_file():
-            return candidate
+# The toolchain rewrites these on resolution: a `.js` specifier names the
+# `.ts`/`.tsx` file that emitted it (`moduleResolution: "bundler"`;
+# next.config.ts carries the same map for webpack). A resolver that only
+# appends extensions tries `perform-button.js.tsx` and finds nothing — the
+# second blindness #230's measurement surfaced, hidden by fixtures that all
+# used extension-less specifiers.
+_EXTENSION_ALIAS = {
+    ".js": (".ts", ".tsx", ".js"),
+    ".jsx": (".tsx", ".jsx"),
+    ".mjs": (".mts", ".mjs"),
+}
+
+
+def _strip_jsonc(text: str):
+    """tsconfig.json is JSONC. String-aware, because a `//` in a path is a path."""
+    out, i, in_string = [], 0, False
+    while i < len(text):
+        c = text[i]
+        if in_string:
+            out.append(c)
+            if c == "\\" and i + 1 < len(text):
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == '"':
+                in_string = False
+            i += 1
+            continue
+        if c == '"':
+            in_string = True
+            out.append(c)
+            i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "/":
+            while i < len(text) and text[i] != "\n":
+                i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "*":
+            i += 2
+            while i + 1 < len(text) and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+_ALIAS_CACHE: dict = {}
+
+
+def _alias_map(root: Path) -> dict:
+    """`compilerOptions.paths` from tsconfig.json — read, never assumed.
+
+    Hard-coding `@/` here would be the same one-step-behind assumption the
+    relative-only regex was. Unreadable or absent configuration degrades the
+    check to relative imports; it never disables it.
+    """
+    key = str(root)
+    if key not in _ALIAS_CACHE:
+        aliases = {}
+        ts = root / "tsconfig.json"
+        if ts.is_file():
+            try:
+                config = json.loads(_strip_jsonc(ts.read_text(encoding="utf-8")))
+                paths = (config.get("compilerOptions") or {}).get("paths") or {}
+                for pattern, targets in paths.items():
+                    if pattern.endswith("*") and isinstance(targets, list):
+                        aliases[pattern[:-1]] = [t[:-1] if t.endswith("*") else t
+                                                 for t in targets if isinstance(t, str)]
+            except (OSError, ValueError):
+                pass
+        _ALIAS_CACHE[key] = aliases
+    return _ALIAS_CACHE[key]
+
+
+def _resolve_import(importer: Path, spec: str, root: Path = None):
+    """Resolve an import the way the project's toolchain would, or None.
+
+    Relative specs resolve against the importer; alias specs through the
+    tsconfig `paths` map; bare package specs resolve to nothing on purpose.
+    """
+    if spec.startswith("."):
+        bases = [(importer.parent / spec).resolve()]
+    elif root is not None:
+        bases = []
+        for prefix, targets in _alias_map(root).items():
+            if spec.startswith(prefix):
+                rest = spec[len(prefix):]
+                bases.extend((root / t / rest).resolve() for t in targets)
+        if not bases:
+            return None
+    else:
+        return None
+    for base in bases:
+        if base.is_file():
+            return base
+        for ext in _EXTENSION_ALIAS.get(base.suffix, ()):
+            candidate = base.with_suffix(ext)
+            if candidate.is_file():
+                return candidate
+        for ext in RESOLVE_EXTS:
+            candidate = base.with_name(base.name + ext)
+            if candidate.is_file():
+                return candidate
+        for ext in UI_EXTS:
+            candidate = base / ("index" + ext)
+            if candidate.is_file():
+                return candidate
     return None
 
 
@@ -811,7 +911,7 @@ def local_ui_imports(root: Path, source_files: list) -> set:
     transitive closure. Adding a missing file makes it a root on the next run,
     so the tree is walked a layer at a time instead of dragging in every util.
 
-    Silently returns nothing for stacks without JS-style relative imports.
+    Silently returns nothing for stacks without JS-style imports.
     """
     found = set()
     for rel in source_files:
@@ -829,7 +929,7 @@ def local_ui_imports(root: Path, source_files: list) -> set:
                 spec = next((g for g in match.groups() if g), None)
                 if not spec:
                     continue
-                target = _resolve_import(path, spec)
+                target = _resolve_import(path, spec, root)
                 if target and _is_ui_file(target):
                     try:
                         found.add(repo_path(target, root))
@@ -875,6 +975,20 @@ def _walk_strings(node, path="") -> list:
             out.extend(_walk_strings(value, f"{path}[{i}]"))
     elif isinstance(node, str):
         out.append((path, node))
+    return out
+
+
+def app_routes(root: Path) -> set:
+    """Routes served by `app/**/page.*`, route-group segments stripped."""
+    app = root / "app"
+    out = set()
+    if not app.is_dir():
+        return out
+    for name in ("page.tsx", "page.jsx", "page.js"):
+        for page in app.rglob(name):
+            parts = [s for s in page.parent.relative_to(app).parts
+                     if not (s.startswith("(") and s.endswith(")"))]
+            out.add("/" + "/".join(parts))
     return out
 
 
@@ -1003,6 +1117,27 @@ def validate_design(root: Path, strict: bool) -> list:
                                   f"was surveyed — {', '.join(changed[:3])}", rel(path),
                                   "re-run the ui-surveyor skill before designing against it"))
 
+    # -- route coverage ----------------------------------------------------
+    # A diagnostic can only attach to a manifest that exists, so a route
+    # nobody surveyed is invisible to every per-surface check above — the
+    # import cross-check was the only mechanism that could have wandered into
+    # one, and #230 measured it matching nothing. One aggregate info row: at
+    # 22 uncovered routes today, a per-route warning would drown the health
+    # count and teach people to skip the class.
+    routes = app_routes(root)
+    if routes:
+        covered = {s.get("route") for s in surfaces.values() if s.get("route")}
+        uncovered = sorted(routes - covered)
+        if uncovered:
+            head = ", ".join(uncovered[:3])
+            more = f" (+{len(uncovered) - 3} more)" if len(uncovered) > 3 else ""
+            found.append(diag(
+                "info", "design_routes_uncovered",
+                f"{len(uncovered)} of {len(routes)} app route(s) have no surface "
+                f"manifest — {head}{more}", "app",
+                "`design` lists them all; a route with no manifest is invisible to "
+                "staleness detection — /surface the ones the design lane should see"))
+
     # -- tickets -----------------------------------------------------------
     ticketed_surfaces = set()
     active = set(list_changes(root))
@@ -1109,7 +1244,16 @@ def design_summary(root: Path) -> dict:
     tickets.sort(key=lambda t: (PRIORITY_ORDER.get(t["priority"], 9), t["id"]))
     system_path = design_dir(root) / "system.json"
     system, _ = load_json(system_path) if system_path.is_file() else (None, None)
+    routes = app_routes(root)
+    covered = set()
+    for path, data, _err in load_design(root, "surfaces"):
+        r = (data or {}).get("route")
+        if r:
+            covered.add(r)
     return {"surfaces": surfaces, "tickets": tickets,
+            "routes": {"total": len(routes),
+                       "covered": len(routes & covered),
+                       "uncovered": sorted(routes - covered)},
             "system": {"status": (system or {}).get("status", "missing"),
                        "placeholderGroups": (system or {}).get("placeholder_groups", [])}}
 
@@ -2047,6 +2191,12 @@ def main(argv: list) -> int:
             if not summary["surfaces"]:
                 print("  (none — run /surface after building a UI)")
             print("")
+            routes = summary.get("routes") or {}
+            if routes.get("total"):
+                print(f"ROUTES   {routes['covered']} of {routes['total']} covered by a surface")
+                for r in routes.get("uncovered", []):
+                    print(f"  {r}")
+                print("")
         print(f"TICKETS   {len(tickets)}")
         if not tickets:
             print("  (none)")
