@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-14 (close) — #235 merged, and the order the next round must run in
+
+**Did**: squash-merged PR #235 as `dfa15af` — closed #227, #231, #232. The
+review that preceded it is the previous entry; nothing was found after it.
+Annotated the active change's tasks 1.1 and 3.3 with the one post-merge
+discovery: the proposed checklist wording's clause *"the platform honours an
+idempotency key"* is falsified by #239, and task 3.3 as written checks the
+key's plumbing, not where the key lands, so it would not catch that.
+
+**State**: main = `dfa15af`, gates green as verified pre-merge (typecheck,
+lint, 2352 tests / 183 files, build, drizzle, `validate --all` 0/14). One
+active change, 0/14, blocked on the operator at task 1 by design. 33 open
+backlog items, #239 the only p1.
+
+**Next**: **#239 before the active change's task 1** — not as a preference but
+as a dependency: running checklist-generator first writes a measured falsehood
+into a binding standard, and no gate catches it (see the 3.3 annotation).
+`/propose` #239 as standard; the one operator decision inside it is whether a
+*failed* attempt's key dedupes, or only a `succeeded` one (recommended: only
+succeeded, so a failed create can be retried from the same form). Then #229
+task 1 together with #233, one generator pass.
+
+**Watch out**: the review pattern that keeps paying — every guard in this repo
+that scans text encodes a *spelling*, and the mutation that matters is the
+synonym that changes nothing semantically (`confirmationToken,` for
+`confirmationToken:` is how the eleventh spender hid). When adding a scan,
+mutate the idiom, not only the behaviour. And when citing a guard as evidence
+in a record, first check what the guard actually reads — 3.3 cited a test as
+guarding a claim the test never looks at.
+
 ## 2026-08-14 (review) — PR #235 reviewed, three defects amended, two findings refuted
 
 **Did**: reviewed PR #235 against the merged tree, found three defects, fixed
