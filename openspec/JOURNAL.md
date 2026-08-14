@@ -36,6 +36,17 @@ depth half can first hold ~2026-08-18 and still needs a `DATABASE_URL`). If
 all cold, the sharpest unconditional is **#263**
 (`three-actions-live-outside-the-form-field-cross-check`) — the item records
 both repair options; read it in full before choosing between them.
+*(Addendum, post-merge: the operator surfaced the database — native
+`postgresql-x64-18`, not the Docker pair, which died ~2026-08-07 — and the
+record was measured read-only for the first time. Two corrections to the
+sentence above: the depth half holds earliest **~2026-08-19/20**, because
+the genuine record starts 2026-08-12T19:46Z, not the 08-11 stand-up date;
+and the `DATABASE_URL` lives in `~/grid-commander/record.ps1`, with the
+operator handed a `setx` one-liner, so the environment half should be hot
+next session. The measurement also found three fixture-shaped runs in the
+live table — filed as #266, `sr-5` the one that matters (it sits under
+`owner` and fabricates a six-day hole). #94 carries the full re-anchor;
+read it before trusting any earlier date arithmetic.)*
 
 **Watch out**: a source file can stale a manifest you think of as another
 surface's — `agent-edit.tsx` hosts both `AgentEditForm` and
