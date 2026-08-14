@@ -1,5 +1,36 @@
 # Journal
 
+## 2026-08-14 (wrap) — the vacuity sweep is proposed, and the pipeline has a handle
+
+**Did**: proposed **`a-floor-fails-when-its-scan-goes-blind`** (#241,
+standard; proposal + app-access delta + design + tasks, validation clean,
+item `in-progress`) — the sweep making every offender-style scan in
+`tests/architecture/` fail when its own machinery goes blind: inventory and
+classify every floor first ((a) rule's-own-intermediate, (b) independent
+pattern, (c) none), convert only (b)/(c), positive fixtures preferred, each
+converted guard mutation-tested red-then-green. **Deliberately not executed**
+— it is the fresh session's first task. Also wrote
+`docs/PIPELINE_HANDLE.md`, the one-page grab of every binding pipeline
+requirement (session bookends, item↔issue mirroring, delta discipline,
+gates, lanes, the house lessons that gate work).
+
+**State**: one active change (`a-floor-fails-when-its-scan-goes-blind`, 0/7,
+proposed only). PR #251 carries the whole day. `validate --all` 0 errors.
+
+**Next**: new session — `/board`, then **executor** on
+`a-floor-fails-when-its-scan-goes-blind`. Operator: merge PR #251, and
+review/send `docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` (still a draft,
+still unsent).
+
+**Watch out**: the proposal's load-bearing part is the fixture mechanics in
+`design.md` — the scan runs **twice** (production roots expect zero, fixture
+root expects exactly the planted set), and fixtures live under
+`tests/architecture/fixtures/` outside every production scan root. An
+executor who merges the roots and filters by path has rebuilt the
+independent-mechanism defect the change exists to remove. And (a)-class
+floors are left alone on purpose: `write-results`' floor already counts
+`executeSites()` — converting it is churn wearing the change's clothes.
+
 ## 2026-08-14 (arms) — the create action reads all five arms, and a chosen fork name collides the same way
 
 **Did**: two threads. **(1)** #245 as
