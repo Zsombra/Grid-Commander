@@ -457,9 +457,10 @@ export class McpAgentAdapter implements AgentsPort {
    *
    * **One call is the happy path and stays the happy path.** The fallback below
    * engages only when the ordinary read comes back `unreadable`, so a platform
-   * that answers costs exactly what it always did and this whole workaround
-   * retires itself the day #100 is fixed — rather than becoming permanent
-   * machinery nobody dares remove.
+   * that answers costs exactly what it always did. The defect it was built for
+   * (#100) healed upstream by 2026-08-14; the fallback stays as dormant
+   * defense, because it costs nothing while the platform answers and this
+   * platform has regressed before.
    */
   async readGateBlocks(params: {
     userId: string;
@@ -477,10 +478,13 @@ export class McpAgentAdapter implements AgentsPort {
    * The same history, in windows small enough that one poisoned row does not
    * take the rest with it.
    *
-   * `list_gate_blocks` refuses on **specific rows**, deterministically, and the
-   * refusals cluster at the head of the history (#100, re-bisected 2026-08-13).
-   * A single call for a hundred rows therefore fails whenever any one of the
-   * hundred is poisoned, while rows 151-250 on the same agent read perfectly.
+   * Dated history, not live status: from 2026-08-12 to 2026-08-13,
+   * `list_gate_blocks` refused on **specific rows**, deterministically, with
+   * the refusals clustered at the head of the history (#100, re-bisected
+   * 2026-08-13) — a single call for a hundred rows failed whenever any one of
+   * the hundred was poisoned, while rows 151-250 on the same agent read
+   * perfectly. Healed upstream by 2026-08-14: re-probed read-only, both
+   * affected agents answered every window, zero refusals.
    *
    * Bounded on purpose. The account carries an agent with 5,483 blocks, and
    * walking those to summarise a reason obvious from the first hundred would

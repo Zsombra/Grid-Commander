@@ -2,11 +2,11 @@
 id: the-read-around-outlived-the-poison
 title: The gate-blocks read-around outlived the poison it reads around
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-healed-defect-reads-as-dated-history"
 capability: agent-understanding
 github: "257"
 blocked_by: []
@@ -49,6 +49,17 @@ Separately, when something asks for it: the new `summary` envelope key
 answers per-reason counts the product currently derives by hand from windowed
 rows. Reading it is new modelling of a now-observed shape — its own small
 change, not this one.
+
+## Resolution (2026-08-14)
+
+Done by change `a-healed-defect-reads-as-dated-history` (lite): both named
+comments plus the `readGateBlocks` header clause ("retires itself the day
+#100 is fixed", which contradicted the keep-the-fallback decision) re-worded
+into dated history — refused 2026-08-12→13, healed by 2026-08-14, fallback
+kept as dormant defense. Comment-only, verified by diff (no executable line
+changed), typecheck and lint green. The `summary`-envelope observation stays
+recorded above, unfiled by design, until something asks for per-reason
+counts.
 
 ## Related
 
