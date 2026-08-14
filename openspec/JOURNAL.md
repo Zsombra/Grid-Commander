@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-08-15 (refill) — the third sweep stays cold, and the money boxes keep what was typed
+
+**Did**: merged **PR #264** (main `8a06b7f`; `validate --all` clean after, no
+resurrected change folders). Third tripwire sweep of the day, post-merge —
+all four **cold**: positions flat (`marginedUsd: 0`, the paired allocation
+read deliberately untaken per #107's zero/zero rule), Radar 20/20
+`PLATFORM_PAUSED` with `radarPaused: true` and nothing fired since 2026-08-13
+(#101's approvals read deliberately untaken), no `DATABASE_URL` and the
+record at 4 days (#94, earliest hold ~2026-08-18), and 50 sessions with
+`playersNeeded == minimumPlayers == 5` and `playerCount: 0` on every row
+(#104, sixth confirmation). Then **#260** →
+`the-bounced-money-refills-the-boxes` (standard, verified, archived):
+`AgentEditForm` merges the bounced composition over storage for
+`MoneyLimits`, reading both spellings the bounce carries — bare from the GET
+review's query, `tc.`-prefixed from the apply's `backTo`. Three pins on
+`r.values` (typed `'325'` present, stored `'300'` absent; both bounce pins
+proven failing against the unfixed code first, plus a first-visit
+storage-prefill guard). The spec requirement gained a money-naming scenario;
+`agent-edit` **and** `agent-reactivate-confirm` manifests re-surveyed and
+re-pinned at `d782154`. #260 closed on both sides.
+
+**State**: 0 active changes, 22 open items, no p1. Gates at archive:
+typecheck, lint, **2417 vitest / 190 files**, build, drizzle no-op; test:db
+skipped (no `DATABASE_URL`). Branch
+`claude/tripwire-checks-p3-backlog-a1bd54` carries three commits
+(`d782154`, `b466944`, `e95b0e6`); PR is this handoff's last act.
+`validate --all` 0 errors / 14 warnings after this entry — the known set:
+the assistant-capability seven, agent-roster (#237, deliberate), and the
+DT-0003/0004/0014 state-coverage six.
+
+**Next**: operator — merge this PR. Next working session: the four tripwires
+first (each item carries its condition and fire-time instructions; #94's
+depth half can first hold ~2026-08-18 and still needs a `DATABASE_URL`). If
+all cold, the sharpest unconditional is **#263**
+(`three-actions-live-outside-the-form-field-cross-check`) — the item records
+both repair options; read it in full before choosing between them.
+
+**Watch out**: a source file can stale a manifest you think of as another
+surface's — `agent-edit.tsx` hosts both `AgentEditForm` and
+`ReactivatePrompt`, so the edit-form fix staled `agent-reactivate-confirm`
+too; grep the manifests' `source_digest` keys for the file you touched
+before assuming one re-survey covers it. And the two bounce spellings are
+load-bearing: a money merge reading only one spelling passes one of the two
+pins and fails the other — that is why there are two, and why a future
+"simplification" collapsing them should be treated as a regression.
+
 ## 2026-08-15 (spellings) — two p2s land: the sentence tells the truth, and the check that matched nothing fires
 
 **Did**: second tripwire sweep of the day, all four still cold (no
