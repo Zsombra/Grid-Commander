@@ -4,8 +4,9 @@
   "route": "/strategies/[id]/restore",
   "capability": "strategy-authoring",
   "status": "designed",
-  "generated_at_commit": "7cc042b",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/strategies/[id]/restore/actions.ts",
     "app/(app)/strategies/[id]/restore/page.tsx",
     "src/application/use-cases/strategy-lifecycle.command.ts",
     "src/presentation/components/carried-problem.tsx",
@@ -311,7 +312,8 @@
     "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/restore/page.tsx": "sha256:49076339758876941c31f558fe0111a382ea7a0732f2307f142c0f709bf9543f",
+    "app/(app)/strategies/[id]/restore/actions.ts": "sha256:f57b18ce0af925e78f4cca9a3658bc9eb3235a49636471baa04db236c4098c86",
+    "app/(app)/strategies/[id]/restore/page.tsx": "sha256:ed9edaf9b0e9cdf94d2d4e8e4b178be294d80992fcff8aa1a141a91a1b3de3ed",
     "src/application/use-cases/strategy-lifecycle.command.ts": "sha256:c302d00af84f9d4a6b4c3d0d15930f3df2bf37ef8f5b1326515574011d5bc380",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",

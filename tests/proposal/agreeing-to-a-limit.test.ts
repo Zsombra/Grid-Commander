@@ -126,7 +126,9 @@ describe('what a proposal hands to the write', () => {
  */
 describe('every action that performs an edit uses the shared split', () => {
   const ACTIONS = [
-    'app/(app)/agents/[id]/edit/page.tsx',
+    // The edit action lives beside its page since
+    // `the-build-checks-what-next-generates`; pending's is still in-page.
+    'app/(app)/agents/[id]/edit/actions.ts',
     'app/(app)/pending/[id]/page.tsx',
   ] as const;
 

@@ -452,3 +452,91 @@ is noticed.
 - **WHEN** the guard runs
 - **THEN** it confirms it found the writers it is checking
 - **AND** a scan that matched nothing fails rather than passing
+
+### Requirement: The Build Gate Type-Checks The Route Types Next Generates
+The `npm run build` quality gate SHALL type-check the per-route validation
+files Next generates, and a route module that violates the framework's page
+contract SHALL fail the build. The TypeScript configuration SHALL NOT exclude
+a path that its own include list names — a check that is generated on every
+build and discarded by configuration reports nothing, while the gate that runs
+it reports green.
+
+#### Scenario: A page exports a symbol the page contract does not allow
+- **GIVEN** a page module exporting a function beside its `default` that
+  Next's page contract does not name
+- **WHEN** `npm run build` runs
+- **THEN** the build fails
+- **AND** the error names the offending route
+
+#### Scenario: A page's props violate the generated PageProps contract
+- **GIVEN** a page whose props type does not satisfy the `PageProps` shape
+  Next generates for its route
+- **WHEN** `npm run build` runs
+- **THEN** the build fails naming that route
+
+#### Scenario: The exclusion drifts back
+- **GIVEN** a tsconfig change that makes an `exclude` entry swallow a path
+  the `include` list names
+- **WHEN** the test suite runs
+- **THEN** an architecture guard fails, naming the include entry that was
+  silently discarded
+
+#### Scenario: A clean tree passes
+- **GIVEN** route modules that satisfy the page contract
+- **WHEN** `npm run build` runs
+- **THEN** the generated route types are checked and the build passes
+
+### Requirement: The Surface Import Cross-Check Resolves The Project's Import Conventions
+The check that verifies a surface manifest's source list against the code
+SHALL resolve imports the way the project's own toolchain does: path aliases
+SHALL be read from the TypeScript configuration's `paths` mapping, and
+extension-rewritten specifiers (a `.js` specifier naming a `.ts` or `.tsx`
+file) SHALL resolve to the file the toolchain would load. The conventions
+SHALL be read from the project's configuration, never compiled into the
+check.
+
+#### Scenario: An alias import is missing from the source list
+- **GIVEN** a listed source file importing a UI file through a configured
+  path alias
+- **WHEN** validation runs and the imported file is not in `source_files`
+- **THEN** the incomplete-sources diagnostic fires, naming the file
+
+#### Scenario: An extension-rewritten specifier resolves
+- **GIVEN** a listed source file importing a UI file with a `.js` specifier
+  that names a `.ts` or `.tsx` file on disk
+- **WHEN** validation runs and the imported file is not in `source_files`
+- **THEN** the incomplete-sources diagnostic fires, naming the file
+
+#### Scenario: The conventions cannot be read
+- **GIVEN** a project with no readable TypeScript configuration or no
+  `paths` mapping
+- **WHEN** validation runs
+- **THEN** relative imports are still resolved and checked
+- **AND** the check degrades rather than disappearing
+
+#### Scenario: Bare package imports stay outside the surface
+- **WHEN** a listed source file imports from a package specifier no alias
+  covers
+- **THEN** no diagnostic fires for it
+
+### Requirement: Routes Without A Surface Manifest Are Named
+Validation SHALL report the routes the application serves that no surface
+manifest's `route` field covers, as a single informational diagnostic
+carrying the count, and the design overview SHALL list the uncovered routes
+individually. A route nobody surveyed is invisible to staleness detection,
+and naming it is the only mechanism that can say so — a diagnostic can only
+attach to a manifest that exists.
+
+#### Scenario: A route has no manifest
+- **GIVEN** an application route whose path no manifest's `route` covers
+- **WHEN** validation runs
+- **THEN** the informational diagnostic reports it, with the total count
+
+#### Scenario: A new route appears
+- **WHEN** a page is added at a route no manifest covers
+- **THEN** the reported count and route set change on the next run
+
+#### Scenario: Coverage is complete
+- **GIVEN** every application route covered by a manifest
+- **WHEN** validation runs
+- **THEN** the diagnostic does not fire

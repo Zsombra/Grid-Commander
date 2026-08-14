@@ -59,7 +59,7 @@ const form = (fields: Record<string, string>): FormData => {
 };
 
 const action = async () =>
-  (await import('../../app/(app)/strategies/[id]/fork/page.js')).forkStrategy;
+  (await import('../../app/(app)/strategies/[id]/fork/actions.js')).forkStrategy;
 
 const forkCalls = () => strategies.calls.filter((c) => c.op === 'fork');
 

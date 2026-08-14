@@ -4,9 +4,11 @@
   "route": "/strategies/[id]/conditions/save",
   "capability": "strategy-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "28bbb27",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/strategies/[id]/conditions/save/actions.ts",
     "app/(app)/strategies/[id]/conditions/save/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/perform-button.tsx",
     "src/presentation/components/strategy-conditions.tsx",
@@ -429,12 +431,14 @@
     "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert — so most branches announce two alerts when a reason rides in, the carried one first; since #240 that includes `strategy-missing` and `unreadable`, which mount the carried banner directly. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation; the draft travels as a query string an operator can keep, share, or edit by hand."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:4803b69e334fbcc4c2b3e8004591d2351fc1594d6d5d1b648d9fd98df06fd6e1",
+    "app/(app)/strategies/[id]/conditions/save/actions.ts": "sha256:9a8190da580ee65e4b365c7945f497f26ea24af5025e83f404d30022d29f6c3e",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:2e6273df4dabcd51406d0f3dea2db6f17425f5fc06f7de7383eb517e5a1d42d2",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/strategy-conditions.tsx": "sha256:e9614fb32ac281064d2192fa6c774831fdb76189ec4cc358a333205ac533eefc",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

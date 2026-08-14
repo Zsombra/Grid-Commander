@@ -4,10 +4,12 @@
   "route": "/strategies/[id]/rules/[signalId]",
   "capability": "strategy-authoring",
   "status": "needs-redesign",
-  "generated_at_commit": "28bbb27",
+  "generated_at_commit": "6441015",
   "source_files": [
+    "app/(app)/strategies/[id]/rules/[signalId]/actions.ts",
     "app/(app)/strategies/[id]/rules/[signalId]/page.tsx",
     "src/presentation/components/authority-lost.tsx",
+    "src/presentation/components/carried-problem.tsx",
     "src/presentation/components/control.ts",
     "src/presentation/components/perform-button.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -478,11 +480,13 @@
     "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). No client JS: the compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation."
   },
   "source_digest": {
-    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:6edd5b7395352aad42f04647be6df72df9edf18424c6a39956f04f2bd71769eb",
+    "app/(app)/strategies/[id]/rules/[signalId]/actions.ts": "sha256:ae338a50d069cbb30d98da74bd428670ebfc436bd154fa4069d7dd5df88b49aa",
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:2980b0710f48805a29e8decb5d6dd5a5493223c982398e3969ff363cd766a8f2",
     "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
   }
 }

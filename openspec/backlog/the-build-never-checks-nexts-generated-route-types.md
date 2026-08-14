@@ -2,11 +2,11 @@
 id: the-build-never-checks-nexts-generated-route-types
 title: The build's type check silently skips every route type Next generates
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-13
-updated: 2026-08-13
-change: ""
+updated: 2026-08-15
+change: "the-build-checks-what-next-generates"
 capability: harness-integrity
 github: "216"
 blocked_by: []
@@ -113,3 +113,28 @@ Found while running the `build` gate for
 `the-stoppage-summary-reads-around-a-refusal`, with a `next start` server
 running that a normal build would have disturbed. The workaround that avoided
 the server is what exposed the exclusion.
+
+## Taken 2026-08-15 — and the six are fourteen
+
+Re-measured before proposing (same probe: build into a distDir outside
+`.next`, then `tsc --noEmit` over the generated types to enumerate past the
+first failure `next build` stops at). **Fourteen pages now fail, fifteen
+errors** — every ceremony page exporting its server action beside `default`,
+plus a second, distinct violation on `agents/new`: the `= {}` parameter
+default widens its props to `| undefined`, which the generated `PageProps`
+check refuses. The item's six were the 2026-08-13 count; two more days of
+sessions added eight, which is the gate's absence measured directly.
+
+Taken as `the-build-checks-what-next-generates` (standard track). The change
+carries the full list.
+
+## Closed 2026-08-15 — the gate is real and proven both ways
+
+Archived as `2026-08-15-the-build-checks-what-next-generates`. All fourteen
+actions moved to colocated `actions.ts` modules, `agents/new` satisfies
+`PageProps`, and `exclude` no longer swallows `.next/types`. Proven in both
+directions: a planted forbidden export failed `npm run build` naming the
+route; the clean tree passes; `tests/architecture/tsconfig-coherence.test.ts`
+pins the include/exclude coherence generally and was mutation-checked
+(match-nothing and match-everything both KILLED). `next build` left the fixed
+tsconfig unrewritten.

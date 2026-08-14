@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-14
+updated: 2026-08-15
 change: ""
 capability: market-grid
 github: "104"
@@ -238,6 +238,14 @@ session with players now has three reads of evidence against it, and this item
 should not send a fourth reader to run it. The condition to watch for is stated
 in its place — a row where `playersNeeded` falls below `minimumPlayers` — along
 with the fact that no amount of polling makes it arrive sooner.
+
+---
+
+# Re-checked 2026-08-15 — fifth confirmation, same shape
+
+Tripwire sweep, one shared listing read: 50 rows, PENDING 2 / CANCELLED 48,
+`playersNeeded == minimumPlayers == 5` and `playerCount: 0` on every row.
+The watch condition and follow-up order below stand unchanged.
 
 ---
 

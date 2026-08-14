@@ -1,5 +1,105 @@
 # Journal
 
+## 2026-08-15 (spellings) — two p2s land: the sentence tells the truth, and the check that matched nothing fires
+
+**Did**: second tripwire sweep of the day, all four still cold (no
+`DATABASE_URL`, account flat, Radar 20/20 platform-paused, market grid
+unchanged) — the items' morning lines stand. Then both remaining p2s.
+**#234** → `the-connection-is-never-called-read-only` (lite, archived): the
+wager panel's "it connects read-only" replaced with the missing scope stated
+beside the held write authority; the finding was sharper than filed — the
+spec already forbade the sentence, but its guard scanned only the grant
+flow. New mutation-proven UI-wide guard
+`access-is-described-honestly.test.ts` (negated forms legal); requirement
+gained the standing-connection scenario. **#230** →
+`the-import-cross-check-stops-matching-nothing` (standard, archived): the
+check was blind TWICE — the relative-only regex the item measured, plus an
+extension hole (`.js` specifiers naming `.ts` files resolved to nothing,
+even relative ones). Resolver now reads tsconfig `paths` (JSONC-stripped,
+nothing hard-coded) + the toolchain's extension rewrite; eleven new Python
+fixtures prove firing and degradation; honest run named six omissions across
+five manifests (five of them `carried-problem.tsx`) — fixed, agent-roster's
+deliberate staleness (#237) preserved through its correction. Second blind
+spot landed as `design_routes_uncovered` (aggregate INFO, 22 of 46 routes;
+full list in `openspec.py design`), silence directions in
+`tests/test_route_coverage.py`. Issues #230, #234 closed.
+
+**State**: 0 active changes, 23 open items, one p2 left
+(`recorded-signals-are-not-yet-evidence`, gated until ~2026-08-18). Gates at
+both archives: typecheck, lint, 2414 vitest / 190 files, build, drizzle
+no-op, **267 Python harness tests**; test:db skipped (no `DATABASE_URL`).
+`validate --all` 0 errors / 14 deliberate warnings / 2 info (orphan surface
++ the new route-coverage info). All on `claude/board-tripwire-checks-8750a8`
+extending **PR #264**.
+
+**Next**: operator — merge PR #264 (now three changes deep). Next working
+session: tripwires from their items first; with every unconditional p2 done,
+the sharpest p3s are #260 (`the-edit-bounce-carries-money-nothing-refills`,
+fix shape written down) and #263 (three actions outside the form-field
+cross-check, fresh from yesterday's gate change).
+
+**Watch out**: the first prototype of #230's fix reported "zero missing"
+**vacuously** — it was measuring with the same broken resolver class it was
+meant to replace, and only a negative control (remove a listed file, expect
+it named) caught it; measure a checker's fix with a planted defect before
+believing its clean answer. The alias map is cached per root in
+`_ALIAS_CACHE` and never invalidated — a long-lived process that edits
+tsconfig `paths` mid-run reads stale aliases (validate runs are one-shot, so
+this is latent, not live). And `design_routes_uncovered` is deliberately ONE
+aggregate INFO, not 22 warnings — turning it into per-route warnings would
+bury the 14-deliberate-warning baseline the board tracks.
+
+## 2026-08-15 (gate) — the discarded check comes back on, and six pages had become fourteen
+
+**Did**: four tripwires checked **cold** first (#107 flat account, #101 Radar
+still 20/20 `PLATFORM_PAUSED`, #94 no `DATABASE_URL` + record at 4 days, #104
+fifth confirmation of `playersNeeded == minimumPlayers` on all 50) — each item
+carries its dated line. Then the three unblocked p2s read in full and **#216**
+taken as `the-build-checks-what-next-generates` (standard, verified,
+archived). The item's six failing pages had become **fourteen** in two days —
+measured by building into a non-excluded distDir, then `tsc --noEmit` to
+enumerate past the first error. All fourteen server actions moved to
+colocated `actions.ts` modules; `agents/new` lost the `= {}` default that
+broke `PageProps`; `exclude: [".next"]` dropped so `.next/types` is really
+checked; gate proven both ways (planted export → build fails naming the
+route; clean tree passes; Next did not rewrite the fixed tsconfig). New
+mutation-proven guard `tsconfig-coherence.test.ts` (both blind directions
+KILLED via `mutate-guard.mjs`). Eleven scanner test files re-pointed, walks
+taught `actions.ts`, floors raised to true counts (form cross-check ≥14),
+and every re-pointed absence assertion mutation-checked — four for four
+caught. Thirteen surface manifests re-pinned at `6441015` with `actions.ts`
+added to `source_files` (prose read; every "server action" mention is
+behavioral and survives). #216 closed on GitHub; **#263 filed**
+(`three-actions-live-outside-the-form-field-cross-check` — pending/connect's
+unexported actions are invisible to both action scanners).
+
+**State**: 0 active changes, 25 open items, no p1. Gates at archive:
+typecheck, lint, **2410 vitest / 189 files**, build, drizzle no-op; test:db
+skipped (no `DATABASE_URL`). `validate --all` 0 errors / 14 deliberate
+warnings (the assistant-capability seven, agent-roster #237, DT-0003/0004/0014
+state coverage). Branch `claude/board-tripwire-checks-8750a8`; PR is this
+handoff's last act.
+
+**Next**: operator — merge the PR. Next working session: re-check the four
+tripwires from their items first (each carries its condition and fire-time
+instruction), then the two remaining p2s — read
+`the-source-completeness-check-matches-no-import-here` (#230) and
+`the-wager-sentence-offers-scope-as-a-safety-boundary` (#234) in full before
+choosing. #260 (bounced edits refill money boxes) stays the well-scoped
+fallback.
+
+**Watch out**: `git checkout <page>` to undo a probe edit restores the
+COMMITTED page — it silently reverted the whole action-move on the archive
+page mid-proof, not just the planted line; re-apply and re-build before
+trusting any "reverted" state. The scanner ecosystem defines a server action
+as `export async function X(formData: FormData)` — three walks were taught
+`actions.ts` this session (`a-refusal-reaches-the-person`, `write-results`,
+`a-problem-redirect-…`), and any NEW scanner that walks only `.tsx` will
+report a product whose writes all vanished, and pass; `write-results` was
+exactly that blind for one commit's span. And `spending` vs *carrying* a
+confirmation token now splits by `formData`: the strategy edit page writes
+`confirmationToken:` into the confirm panel's props and is not a spender.
+
 ## 2026-08-14 (trirequire) — four tripwires checked cold, three items closed, one gap found
 
 **Did**: merged **PR #258** (main `ff5220d`; `validate --all` clean after —

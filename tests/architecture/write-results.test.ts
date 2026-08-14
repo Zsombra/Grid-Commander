@@ -32,7 +32,12 @@ function tsxFilesUnder(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return tsxFilesUnder(path);
-    return entry.name.endsWith('.tsx') ? [slashed(path)] : [];
+    // The colocated actions.ts modules hold every write this file scans
+    // for, since `the-build-checks-what-next-generates` — a .tsx-only walk
+    // would report a product whose writes all vanished, and pass.
+    return entry.name.endsWith('.tsx') || entry.name.endsWith('actions.ts')
+      ? [slashed(path)]
+      : [];
   });
 }
 
@@ -148,13 +153,13 @@ const KNOWN_DROPPED: ReadonlyArray<{ file: string; tool: string; verdict: string
   // the page reads it — exactly the "benign today" expiry the old verdict
   // predicted.
   {
-    file: 'app/(app)/strategies/[id]/edit/page.tsx',
+    file: 'app/(app)/strategies/[id]/edit/actions.ts',
     tool: 'applyPlan',
     verdict:
       'benign today: ApplyPlanResult is {applied} with no refusal arm; refusals throw. The applied payload goes unread by design — the page re-reads',
   },
   {
-    file: 'app/(app)/strategies/[id]/conditions/save/page.tsx',
+    file: 'app/(app)/strategies/[id]/conditions/save/actions.ts',
     tool: 'applyPlan',
     verdict:
       'benign today, and for the same reason as its sibling above: ApplyPlanResult is {applied} with no refusal arm. This action does not discard the refusal — it catches the throw and returns to a fresh describe over the same edit with ?problem=, which is the outcome reaching the person. What goes unread is the success payload, whose shape apply has never published; the proof is the strategy page re-read',
@@ -184,7 +189,7 @@ describe('the outcome of a write reaches the person who asked for it', () => {
     // the exact blindness this file exists to remove. 33 at time of writing.
     expect(sites.length).toBeGreaterThanOrEqual(30);
     expect(
-      sites.some((s) => s.file.endsWith('agents/[id]/edit/page.tsx') && !s.dropped),
+      sites.some((s) => s.file.endsWith('agents/[id]/edit/actions.ts') && !s.dropped),
       'the fixed rename/edit action should register as reading its result',
     ).toBe(true);
   });

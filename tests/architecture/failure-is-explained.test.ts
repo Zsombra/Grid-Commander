@@ -307,9 +307,11 @@ describe('every unreadable branch explains itself', () => {
     // argued about, not absorbed silently.
     const removed = unreadableBranches().filter(rendersNothing).map(key);
     expect([...new Set(removed)].sort()).toEqual([
-      'app/(app)/strategies/[id]/archive/page.tsx  (reread)',
-      'app/(app)/strategies/[id]/fork/page.tsx  (reread)',
-      'app/(app)/strategies/[id]/restore/page.tsx  (reread)',
+      // In `actions.ts` since `the-build-checks-what-next-generates` moved
+      // every page-exported action beside its page.
+      'app/(app)/strategies/[id]/archive/actions.ts  (reread)',
+      'app/(app)/strategies/[id]/fork/actions.ts  (reread)',
+      'app/(app)/strategies/[id]/restore/actions.ts  (reread)',
     ]);
   });
 

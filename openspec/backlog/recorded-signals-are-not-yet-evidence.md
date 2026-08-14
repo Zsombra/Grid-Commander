@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-07
-updated: 2026-08-14
+updated: 2026-08-15
 change: ""
 capability: signal-recording
 github: "94"
@@ -79,6 +79,7 @@ tripwires:
    2026-08-11, so the earliest the depth half can hold is ~2026-08-18.
 
 Checked 2026-08-14: no `DATABASE_URL` in the environment, record at 3 days —
-both halves cold. When both hold, start the analysis layer per this item's
+both halves cold. Checked 2026-08-15: still no `DATABASE_URL`, record at 4
+days — both halves cold (earliest the depth half can hold stays ~2026-08-18). When both hold, start the analysis layer per this item's
 What/Notes (forward returns per signal state, sample sizes beside every
 figure), `/propose`d as its own change.

@@ -9,6 +9,7 @@
     "app/(app)/agents/page.tsx",
     "src/presentation/components/agent-actions.tsx",
     "src/presentation/components/agent-roster.tsx",
+    "src/presentation/components/binding.tsx",
     "src/presentation/components/fleet-spend.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
@@ -231,6 +232,7 @@
     "src/presentation/components/agent-roster.tsx": "sha256:6fb7b3ce8b967e647630d88e9926cc3b074e3f0c188b0dae865e8532906be249",
     "src/presentation/components/fleet-spend.tsx": "sha256:443f0edc2d3e16fdec4948ccc682708eddeddf2ec79c0fbfb21d24ea83fee0f0",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074"
   }
 }

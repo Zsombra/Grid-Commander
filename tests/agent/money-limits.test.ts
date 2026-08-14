@@ -280,11 +280,14 @@ describe('the safe answer is the default answer', () => {
 describe('the route stays out of the domain', () => {
   it('passes answers and lets the use case assemble the config', () => {
     // Architecture policy: no file under app/ imports the domain. Assembling a
-    // config needs the catalog, and the command already has it.
+    // config needs the catalog, and the command already has it. The action
+    // lives beside the page since `the-build-checks-what-next-generates`.
     const page = readFileSync('app/(app)/agents/new/page.tsx', 'utf8');
+    const action = readFileSync('app/(app)/agents/new/actions.ts', 'utf8');
     expect(page).not.toMatch(/@\/domain\//);
-    expect(page).toMatch(/money: moneyAnswers\(formData\)/);
-    expect(page, 'the defect, stated directly').not.toMatch(/tradingConfig: null/);
+    expect(action).not.toMatch(/@\/domain\//);
+    expect(action).toMatch(/money: moneyAnswers\(formData\)/);
+    expect(action, 'the defect, stated directly').not.toMatch(/tradingConfig: null/);
   });
 });
 
