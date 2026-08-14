@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-08-14 (floors) — the sweep found one blind floor, and the discipline caught two more in the fix itself
+
+**Did**: executed, verified and archived **`a-floor-fails-when-its-scan-goes-blind`**
+(#241, standard). The proposal was stranded at the tip of the fork-500 branch —
+this worktree forked from main before PR #251 merged — so it was cherry-picked
+in (`8689a15` → `a45962c`, one JOURNAL.md conflict resolved by keeping all
+entries). The inventory read all 28 files under `tests/architecture/`:
+**exactly one (b)** — the named `every-perform-says-it-is-working` — and **no
+(c)**; 24 (a)-class guards left alone, the rest pinned/not-scans, table in the
+archived tasks.md. Both of that file's scanners are now functions of their
+roots, run twice — production roots expect zero,
+`tests/architecture/fixtures/every-perform/` expects exactly the two plants —
+and the independent `<PerformButton` count floor is gone. Four mutations, four
+**KILLED** (inAction latch, tag matcher, submit regex, multi-line form tag by
+hand). Verifier passed after one CRITICAL fixed same-hour (M5, below).
+Deferral filed: `the-lf-floor-covers-the-selector-not-the-predicate` (#252,
+p3). The requirement merged into `app-access` (verified landed, 3 scenarios);
+item and issue #241 closed.
+
+**State**: 0 active changes, 28 open items, no p1. Gates green at archive:
+typecheck, lint, **2373 vitest / 185 files** (+2), build, drizzle no-op;
+test:db skipped — no db surface, no local `DATABASE_URL`. Branch
+`claude/floor-scan-blindness-241-9c5500` carries propose (cherry-pick) +
+execute + verifier fix + archive; PR next. It shares the cherry-picked
+proposal content with PR #251's branch — whichever merges second conflicts on
+**JOURNAL.md only**; every other overlapping file is byte-identical.
+
+**Next**: operator — merge **PR #251** first if still open, then this branch's
+PR (JOURNAL.md is the only overlap). Then the board's top p2s: the fork-name
+500, or the INTERNAL_ERRORs thread. The upstream report draft
+(`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md`) stays unsent and untouched —
+operator's to review, per instruction.
+
+**Watch out**: two things the mutation discipline caught *in the guard being
+built*, both worth carrying. (1) **A fixture must not spell the idiom it
+plants.** The scanner reads comments; the first fixture header quoted the
+form-open idiom in prose, the walk latched on its own documentation, and the
+plant was "found" through a form the comment had opened. What exposed it was a
+mutation staying **green** — a mutation that fails to go red indicts the
+fixture, not the scanner. (2) **Calibrate a floor against the failure grain,
+measured.** The first walk floor (`> 40`) sat below either production root
+alone (50 and 41), so a dropped root — the one failure it claimed to catch —
+could not fail it. A floor guarding root-loss must sit above every root alone;
+found by counting the tree, not by reading the test.
+
 ## 2026-08-14 (wrap) — the vacuity sweep is proposed, and the pipeline has a handle
 
 **Did**: proposed **`a-floor-fails-when-its-scan-goes-blind`** (#241,
