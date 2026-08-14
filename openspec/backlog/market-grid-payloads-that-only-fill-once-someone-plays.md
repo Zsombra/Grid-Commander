@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-13
+updated: 2026-08-14
 change: ""
 capability: market-grid
 github: "104"
@@ -238,3 +238,18 @@ session with players now has three reads of evidence against it, and this item
 should not send a fourth reader to run it. The condition to watch for is stated
 in its place — a row where `playersNeeded` falls below `minimumPlayers` — along
 with the fact that no amount of polling makes it arrive sooner.
+
+---
+
+# Re-checked 2026-08-14 — fourth confirmation, as a tripwire not a poll
+
+Read as part of the operator-directed session-start tripwire sweep (one
+listing read shared with the other tripwires, not a dedicated poll — the
+2026-08-13 advice against sending a fourth reader stands for dedicated
+reads). 50 rows: PENDING 2, CANCELLED 48, `playersNeeded == minimumPlayers
+== 5` and `playerCount: 0` on every row. Four reads across eight days and
+four platform states, no player anywhere this listing reaches. The watch
+condition is unchanged: a row where `playersNeeded < minimumPlayers` is the
+first sign of life, and the follow-up order stands (re-read that row's
+`coinPicks.top` and crowd percentages, then follow the same session through
+`LIVE → RESOLVING → SETTLED`).

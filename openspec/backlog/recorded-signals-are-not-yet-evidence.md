@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-07
-updated: 2026-08-11
+updated: 2026-08-14
 change: ""
 capability: signal-recording
 github: "94"
@@ -63,3 +63,22 @@ starts 2026-08-11; the 2026-08-07 → 2026-08-11 gap is permanent. This
 item now waits only for depth: at hourly captures the record needs days
 before per-signal forward returns mean anything, and every figure still
 needs its sample size beside it.
+
+## Tripwire, stated by the operator (2026-08-14 brief)
+
+Two conditions, both required, checked at session start alongside the other
+tripwires:
+
+1. **A `DATABASE_URL` is available to the session** — the record lives in the
+   operator's Postgres, and without the connection string the analysis layer
+   has nothing to read. Working sessions to date have run without one
+   (`test:db` skipped every round); its presence is the operator handing this
+   item its data.
+2. **The record spans a week or more** — the operator's threshold, tighter
+   than the "needs days" above and the one that governs. The record started
+   2026-08-11, so the earliest the depth half can hold is ~2026-08-18.
+
+Checked 2026-08-14: no `DATABASE_URL` in the environment, record at 3 days —
+both halves cold. When both hold, start the analysis layer per this item's
+What/Notes (forward returns per signal state, sample sizes beside every
+figure), `/propose`d as its own change.
