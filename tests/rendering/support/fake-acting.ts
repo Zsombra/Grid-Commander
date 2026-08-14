@@ -1,4 +1,5 @@
 import type { Remedy } from '@/domain/connection/remedy.js';
+import { CreateAgentCommand } from '@/application/use-cases/create-agent.command.js';
 import { DescribeArchiveQuery } from '@/application/use-cases/lifecycle.command.js';
 import { DescribeArchiveStrategyQuery } from '@/application/use-cases/strategy-lifecycle.command.js';
 import {
@@ -150,6 +151,9 @@ export function actingWith({
     // The edit and create forms both refuse to render without it — a form
     // whose submission is certain to fail is worse than none.
     readCatalog: new ReadCatalogQuery(agents),
+    // The create action, over the same fakes — wired so a test can walk the
+    // submit itself, not only the render (the #177 lesson, applied forward).
+    createAgent: new CreateAgentCommand(agents),
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readTradeStory: new ReadTradeStoryQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),

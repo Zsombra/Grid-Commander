@@ -213,6 +213,15 @@ describe('idempotency', () => {
     expect(live?.outcome).toBe('succeeded');
   });
 
+  it('a different key is a different create — the dedupe binds a form, not the operator', async () => {
+    const { repo: r } = repo();
+    const first = await r.begin(attempt({ idempotencyKey: 'k1' }));
+    await r.complete(first, 'succeeded');
+    // A fresh form mints a fresh key; a deliberate second agent proceeds.
+    await r.begin(attempt({ idempotencyKey: 'k2' }));
+    expect(await r.listForUser('u1', 10)).toHaveLength(2);
+  });
+
   it('finds nothing when every attempt under the key failed', async () => {
     const { repo: r } = repo();
     const only = await r.begin(attempt({ idempotencyKey: 'k1' }));
