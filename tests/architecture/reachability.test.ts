@@ -102,6 +102,23 @@ const submitsTo = (src: string, name: string): boolean =>
   new RegExp(`action=\\{\\s*${name}\\b`).test(src);
 
 /**
+ * Function-level `'use server'` directives — an action declared inside a
+ * function body rather than at module level. Legal to Next, invisible to
+ * `serverActionsIn` above and to the form-field cross-check: both enumerate
+ * actions by exported declaration, and a page module cannot export an action
+ * without violating the page contract the build gate enforces. So an action
+ * in this shape is unscannable permanently — three shipped that way and were
+ * covered by nothing (#263). The convention is a colocated `actions.ts` with
+ * the directive at module level, which is the shape every scanner reads.
+ */
+const inlineDirectives = (src: string): string[] =>
+  [
+    ...src.matchAll(
+      /(?:function\s+(\w+)\s*\([^)]*\)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>)\s*\{\s*['"]use server['"]/g,
+    ),
+  ].map((m) => (m[1] ?? m[2]) as string);
+
+/**
  * Hrefs inside a fragment, as written — relative ones included. The leading-`/`
  * scans elsewhere in this file could not see `href=".."`, which is how a
  * decline landed on the roster.
@@ -221,6 +238,21 @@ describe('every form the interface renders can be submitted', () => {
     }
 
     expect(orphans, 'these operations exist and no rendered form reaches them').toEqual([]);
+  });
+
+  it('declares no action inside a function body, where no scanner can see it', () => {
+    const hidden: string[] = [];
+
+    for (const file of uiFiles) {
+      for (const name of inlineDirectives(read(file))) hidden.push(`${file}: ${name}`);
+    }
+
+    expect(
+      hidden,
+      "a function-level 'use server' directive hides the action from every scanner in this " +
+        'suite and from the form-field cross-check — declare it exported in a colocated ' +
+        'actions.ts instead',
+    ).toEqual([]);
   });
 });
 
@@ -1093,6 +1125,30 @@ describe('the form and action matchers catch what they were written for', () => 
     // them would report every ordinary async export as an orphan.
     expect(serverActionsIn('export async function saveAgent() {}')).toEqual([]);
     expect(serverActionsIn("'use server';\nconst x = 1;")).toEqual([]);
+  });
+
+  it('sees a directive inside a function body, which is the shape no other scanner can', () => {
+    // The exact shape the three hidden actions shipped in — a page-level
+    // function, unexported because the page contract forbids exporting it.
+    // The rule has nothing to find in the live tree, so this fixture is the
+    // proof it can find anything at all.
+    expect(
+      inlineDirectives("async function agree(formData: FormData) {\n  'use server';\n  const x = 1;\n}"),
+    ).toEqual(['agree']);
+    expect(inlineDirectives("function startAuthorization() { 'use server'; }")).toEqual([
+      'startAuthorization',
+    ]);
+    // The arrow spelling of the same hiding place.
+    expect(
+      inlineDirectives("const decline = async (formData: FormData) => {\n  'use server';\n}"),
+    ).toEqual(['decline']);
+    // The convention: module-level directive, exported declarations. Reporting
+    // this would report every actions.ts in the product.
+    expect(
+      inlineDirectives("'use server';\nexport async function saveAgent(f: FormData) {}"),
+    ).toEqual([]);
+    // An ordinary function is not an action, whatever its body does.
+    expect(inlineDirectives('async function helper() {\n  return 1;\n}')).toEqual([]);
   });
 
   it('finds the form that submits to an action, and not a name that merely extends it', () => {

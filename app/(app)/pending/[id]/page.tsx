@@ -1,12 +1,10 @@
 import { PerformButton } from '@/presentation/components/perform-button.js';
-import { redirect } from 'next/navigation';
-import { acting, requestApp } from '@/presentation/session.js';
+import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { ProposalDifference } from '@/presentation/components/proposal-difference.js';
-import { editArguments } from '@/presentation/form.js';
-import { spending } from '@/presentation/confirmation-refusal.js';
 import { OPERATIONS } from '@/ports/proposals.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { agree, decline } from './actions.js';
 
 /**
  * One proposal, described against the account as it is right now.
@@ -170,91 +168,4 @@ function Shell({
       {children}
     </main>
   );
-}
-
-const text = (form: FormData, key: string): string => {
-  const v = form.get(key);
-  return typeof v === 'string' ? v : '';
-};
-
-async function agree(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const id = text(formData, 'id');
-  let changes: Record<string, unknown> = {};
-  try {
-    changes = JSON.parse(text(formData, 'changes')) as Record<string, unknown>;
-  } catch {
-    redirect(`/pending/${id}?problem=${encodeURIComponent('the proposed values were unreadable')}`);
-  }
-
-  // The ordinary perform, with the ordinary confirmation. Nothing about this
-  // path is special because a model suggested it — including the split, which
-  // is the difference between merging a proposed limit onto the agent's config
-  // and replacing all twenty with the one that was proposed.
-  const { changes: rest, tradingConfigChanges } = editArguments(changes);
-
-  const result = await spending(
-    () =>
-      app.updateAgent.execute({
-        ...user.authority,
-        agentId: text(formData, 'agentId'),
-        changes: rest,
-        ...(tradingConfigChanges ? { tradingConfigChanges } : {}),
-        confirmationToken: text(formData, 'confirmationToken'),
-      }),
-    // Back to this proposal, where the Shell renders the reason on every branch
-    // — including the one that now describes a world where the change landed.
-    // The double-submit note below is the *other* half of the same story: that
-    // one is a write that succeeded against a closed proposal, this one is a
-    // confirmation already spent.
-    (problem) => redirect(`/pending/${id}?problem=${encodeURIComponent(problem)}`),
-  );
-
-  if (result.kind !== 'updated') {
-    const reason =
-      result.kind === 'rejected'
-        ? result.rejected.map((r) => `${r.field}: ${r.reason}`).join(' · ')
-        : result.kind === 'invalid'
-          ? result.issues.map((i) => `${i.field}: ${i.reason}`).join(' · ')
-          : result.reason;
-    redirect(`/pending/${id}?problem=${encodeURIComponent(reason)}`);
-  }
-
-  // Closed only after the write succeeded. Closing first would leave a
-  // proposal marked agreed against a change that never happened.
-  const closed = await app.resolveProposal.execute({
-    userId: user.authority.userId,
-    id,
-    status: 'agreed',
-  });
-  if (!closed.closed) {
-    // The change happened and the proposal was already resolved — a double
-    // submit, most likely. Said rather than swallowed: the account moved, and
-    // an operator seeing a silent redirect would not know it had.
-    redirect(
-      `/pending?problem=${encodeURIComponent(
-        'The change was made, but this proposal had already been closed. Check the activity log.',
-      )}`,
-    );
-  }
-  redirect('/pending');
-}
-
-async function decline(formData: FormData) {
-  'use server';
-  const { user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-  const app = await requestApp();
-  const closed = await app.resolveProposal.execute({
-    userId: user.authority.userId,
-    id: text(formData, 'id'),
-    status: 'declined',
-  });
-  // Nothing was written to the account either way, so a proposal that was
-  // already resolved is not an error worth interrupting anyone over — but it
-  // is not silence either.
-  redirect(closed.closed ? '/pending' : '/pending?note=already-resolved');
 }

@@ -1,6 +1,6 @@
 import { PerformButton } from '@/presentation/components/perform-button.js';
-import { redirect } from 'next/navigation';
 import { requestApp } from '@/presentation/session.js';
+import { startAuthorization } from './actions.js';
 import { ConsentSummary } from '@/presentation/components/consent-summary.js';
 import { NothingToConnect } from '@/presentation/components/nothing-to-connect.js';
 import { DescribeGrantQuery } from '@/application/use-cases/describe-grant.query.js';
@@ -105,11 +105,4 @@ export default async function ConnectPage({
       </form>
     </main>
   );
-}
-
-async function startAuthorization() {
-  'use server';
-  const app = await requestApp();
-  const { authorizationUrl } = await app.startConnection.execute();
-  redirect(authorizationUrl);
 }

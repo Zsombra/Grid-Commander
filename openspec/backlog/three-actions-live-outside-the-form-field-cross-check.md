@@ -2,11 +2,11 @@
 id: three-actions-live-outside-the-form-field-cross-check
 title: Unexported server actions are invisible to the form-field cross-check
 type: risk
-status: open
+status: in-progress
 priority: p3
 created: 2026-08-15
 updated: 2026-08-15
-change: ""
+change: "the-hidden-actions-move-where-the-scanners-look"
 capability: harness-integrity
 github: "263"
 blocked_by: []
