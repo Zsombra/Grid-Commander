@@ -57,6 +57,20 @@ the wording they got was "the server broke".
 in either of those shapes would be complete. Accepting an `idempotencyKey` on
 `fork_strategy` would close the lost-response case as well.
 
+Your own `rebind_intelligence_agent` is the model here: its description warns
+that the operation is destructive and not a merge, it demands `confirm: true`,
+and it accepts an `idempotencyKey` for safe retries. `fork_strategy` — the
+tool that deterministically 500s on a name collision — carries none of that:
+no name rules in the description, no collision behavior documented, no retry
+key. We are not asking for new machinery; we are asking for this tool to get
+the same care its sibling already has.
+
+(Re-reproduced 2026-08-14, second time that day: fork of `Bastogne` rev 6
+with `name` set to an existing strategy's name → `INTERNAL_ERROR`; the
+strategy list re-read immediately after confirms no artifact was created and
+the quota count did not move — so the failure is clean, it is only *named*
+as a crash.)
+
 ## 2. OAuth token endpoint: every rejected refresh is a 500
 
 **Observed** (2026-08-13, re-confirmed 2026-08-14): `POST /token` with
