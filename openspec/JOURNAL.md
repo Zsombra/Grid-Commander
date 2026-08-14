@@ -1,5 +1,35 @@
 # Journal
 
+## 2026-08-14 (wrap) — the oldest-first session hands off: two changes, three closures, one PR
+
+**Did**: closed out the day's six rounds. **PR #258 opened** carrying all
+seven commits: `the-floor-is-the-platforms-own-noise-answer` (#85) and
+`a-taken-name-is-refused-before-it-is-sent` (#102) both archived; #100,
+#102, #204 closed; the upstream report retired unsent (operator decision);
+Vanguard live in `APPROVAL_REQUIRED` (#101 step 1); the three 2026-07-29
+watches refreshed. At handoff, one deferral that had survived two sessions
+unrecorded was finally filed: **#259**
+`the-design-round-staled-what-it-designed-against` — seven stale surface
+manifests with no item (the roads round's banner mounts plus this session's
+fork edit), agent-roster's #237 deliberately not duplicated.
+
+**State**: 0 active changes, 27 open items, no p1. Everything is on the
+branch and pushed; `validate --all` 0 errors / 20 warnings; gates green at
+both archives (2401 vitest / 188 files at the second).
+
+**Next**: operator merges **PR #258**. First move of the next working
+session: `/verify`-style caution applies to nothing in flight — the board's
+computed next is #94 (`recorded-signals-are-not-yet-evidence`), but check
+its gate first (record depth needs a `DATABASE_URL` this environment lacks);
+otherwise #255 or the ten-minute #257.
+
+**Watch out**: after the merge, `validate --all` on a fresh main — this
+branch archived two changes, and the squash-resurrection trap from the
+2026-08-14 (merge) entry (a sibling branch's squash re-adding an archived
+change folder) is exactly the shape to check for. And the (ourselves)
+entry's "Next" names a change that was stood down the same day — read
+(stand-down) before acting on anything below it.
+
 ## 2026-08-14 (stand-down) — the token change died on contact with its own item, and #204 closed anyway
 
 **Did**: went to build `a-dead-token-stops-looking-like-an-outage` and
