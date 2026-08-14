@@ -569,6 +569,16 @@ change landed is worse than silence.
 - **THEN** it is a surface that can act on it, carrying the reason
 - **AND** the reason survives whichever state that surface now describes
 
+#### Scenario: The landing surface is a checked property, not a remembered one
+- **WHEN** any surface sends a refusal's reason onward as a `problem`
+  parameter
+- **THEN** a check that gates a change derives the destination from the
+  redirect itself and fails unless the page serving it reads the parameter
+  and renders it on every branch that page can take
+- **AND** the check's derivation is exercised against a planted offender it
+  must report, so the two roads this scenario was written for cannot go
+  silently dark again by the check itself going blind
+
 ### Requirement: An Unanticipated Failure Lands On The Product's Own Page
 Where a render or a submitted action fails in a way no handler anticipated,
 Grid-Commander SHALL show the operator its own page, in its own words. It MUST

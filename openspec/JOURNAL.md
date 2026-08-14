@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-08-14 (roads) — every refusal road arrives, and the property is checked from now on
+
+**Did**: proposed, executed, verified and archived
+**`a-refusal-lands-where-someone-reads-it`** (#240, standard, operator
+pre-approved the chain). The two known roads: the strategy editor reads
+`?problem=` on all seven branches and a refused apply lands on a
+**recompiled review** — `PlanReviewPanel` gained `carry` (hidden
+tagline/sections), the action rebuilds `compile=1&…&problem=` — and the
+agent-archive refusal mounts on the non-proposal branch it lands on by
+construction. The guard is **derived, never pinned**
+(`a-problem-redirect-is-read-where-it-lands.test.ts`): every `problem=`
+mint — template literals and URLSearchParams alike, comments stripped —
+resolved to the page serving its route, which must carry the reason on
+every `<main` region, directly or via a local fragment; fail-closed on
+unresolvable destinations; run twice per the vacuity requirement, fixture
+plant exact; four mutations, four KILLED. **Its first honest run earned its
+keep**: `conditions/save` (two early branches) and `rules/[signalId]` (six
+branches) fixed in-change; `agents/[id]/edit` filed as
+`the-agent-editor-reads-a-refusal-its-own-way` (**#255**) and carried as the
+scan's one two-way-asserted `KNOWN_SILENT` ledger row. The `app-access`
+requirement gained its fourth scenario (landing surface = checked property).
+Item + issue #240 closed.
+
+**State**: 0 active changes, 28 open items, no p1. Gates at archive:
+typecheck, lint, **2393 vitest** (2373 before), build, drizzle no-op,
+architecture 352/352 with both fixture trees, `refusals-reach-the-operator`
+49/49 untouched; test:db skipped (no db surface, no local DATABASE_URL).
+Branch `fix/a-refusal-lands-where-someone-reads-it`, PR next. **Eight
+`design_surface_stale` warnings** are this round's — real banner mounts on
+surveyed surfaces (rule editor, conditions-save, archive confirm, plan
+review among them); the design lane should re-pin, or the next ticket aims
+at stale manifests.
+
+**Next**: operator — merge this PR, and #255 is the board's sharpest new p2
+(the agent editor's hand-rolled banner also evades `HAND_ROLLED`'s ternary
+matcher — the widening belongs to that change). The upstream INTERNAL_ERRORs
+report stays drafted, unsent, yours.
+
+**Watch out**: two lessons from the scan's first honest run. **A textual
+count punishes shared fragments** — `conditions/save` mounts its banner
+through a `const head` rendered on seven branches, and `<main` vs
+`<CarriedProblem` counting read that as six bare branches; the honest
+property is per-region with fragment resolution, and any future guard
+counting mounts should assume pages factor them. And **a page can carry the
+banner on the branch a bounce *usually* takes and drop it on the rest** —
+the archive page mounted it only under `proposal`, rules only under
+`composing` — so "does the page use CarriedProblem" greps prove nothing;
+the branch set is the property. Also: `HAND_ROLLED` in
+`refusals-reach-the-operator.test.ts` matches `{problem ? (` and not
+`{problem && <p` — one page writes the second spelling (recorded in #255);
+do not widen it separately from that change or the ledger row's verdict
+goes stale.
+
 ## 2026-08-14 (merge) — both PRs landed in order, and the fork-500 propose stood down
 
 **Did**: squash-merged **PR #251** (`4ed7231`, the arms-and-fork session) then

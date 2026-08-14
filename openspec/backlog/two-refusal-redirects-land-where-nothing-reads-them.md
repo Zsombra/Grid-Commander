@@ -2,11 +2,11 @@
 id: two-refusal-redirects-land-where-nothing-reads-them
 title: Two confirmation refusals redirect to a page or branch that never shows the reason
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-refusal-lands-where-someone-reads-it"
 capability: app-access
 github: "240"
 blocked_by: []

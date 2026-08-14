@@ -83,10 +83,16 @@ export default async function SaveConditionPage({
             : null,
   });
 
+  // Read before the earliest branch, because a bounced refusal can land on
+  // any of them: a save refused while the strategy went unreadable is two
+  // facts, and the operator is owed both (#240).
+  const problem = one(q, 'problem');
+
   if (result.kind === 'strategy-missing') {
     return (
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to strategies</a>
         </p>
@@ -98,6 +104,7 @@ export default async function SaveConditionPage({
     return (
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <h1 className="text-xl font-medium">The strategy could not be read</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">{result.reason}</p>
         {/* The strategy, not the edit: a condition list is submitted whole, so
             without a fresh read of what the strategy defines there is nothing
@@ -112,7 +119,6 @@ export default async function SaveConditionPage({
 
   const { strategy, existing } = result;
   const composer = `/strategies/${strategy.id}/conditions`;
-  const problem = one(q, 'problem');
 
   const list = (
     <section className="space-y-2">
