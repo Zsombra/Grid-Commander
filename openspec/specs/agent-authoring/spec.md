@@ -738,6 +738,15 @@ else that was typed.
 - **THEN** the reason arrives with them
 - **AND** so do the values they submitted
 
+#### Scenario: A money limit survives the bounce
+- **WHEN** an edit that changes a money limit is refused on any road back to
+  the form — the describe, an unresolvable preset, or the submitted apply
+- **THEN** every money box holds the value the person typed, not the agent's
+  stored value
+- **AND** this is pinned on what the field holds, not on the page's text —
+  every money box is `required` and so is never empty, only silently wrong,
+  which is how this group's regression stayed invisible once before
+
 ### Requirement: A Create Submitted Twice Is One Create
 Where a create is submitted carrying the same idempotency key as an earlier
 submission, Grid-Commander SHALL NOT create a second agent and SHALL NOT show a

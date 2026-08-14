@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Agent } from '@/domain/agent/agent.js';
-import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
+import { anAgent, FakeAgentsPort, liveTradingConfig } from '../support/agent-fakes.js';
 import { actingWith } from './support/fake-acting.js';
 import { rendered } from './support/render.js';
 
@@ -304,5 +304,49 @@ describe('a refused edit keeps what was entered', () => {
     expect(r.text).toContain('The revision moved since the consequence was read.');
     // Both through the one shared treatment, which names what they are.
     expect(r.text).toContain('Refused:');
+  });
+
+  /**
+   * The money half of the same property. Every money box is `required`, so a
+   * bounce that loses one is never an empty field — it is a full field showing
+   * the stored value instead of the typed one, which is why #162's closure
+   * held for the name while the money silently refilled. Asserted on `values`
+   * with a typed figure that differs from storage; the stored figure absent is
+   * what "the box was not refilled" looks like from the tree.
+   *
+   * The two spellings are the two roads back: the GET review bounces the
+   * form's own query (bare names), the apply's backTo carries the confirm
+   * form's hidden inputs (`tc.`-prefixed).
+   */
+  const FUNDED = anAgent({ status: 'ACTIVE', tradingConfig: liveTradingConfig() });
+
+  it('a review refusal keeps the typed money value, bare spelling', async () => {
+    const r = await editWith(FUNDED, {
+      review: '1',
+      displayName: FUNDED.displayName,
+      pmPreset: 'NOT_A_PRESET',
+      maxDailyLossUsd: '325',
+    });
+    expect(r.text).toContain('does not carry a configuration');
+    expect(r.values).toContain('325');
+    // liveTradingConfig's stored maxDailyLossUsd — refilling from storage is
+    // exactly the defect, so its figure must not be in any box.
+    expect(r.values).not.toContain('300');
+  });
+
+  it('a bounced apply keeps the typed money value, tc. spelling', async () => {
+    const r = await editWith(FUNDED, {
+      problem: 'maxDailyLossUsd: the platform refused it.',
+      'tc.maxDailyLossUsd': '325',
+    });
+    expect(r.text).toContain('the platform refused it');
+    expect(r.values).toContain('325');
+    expect(r.values).not.toContain('300');
+  });
+
+  it('a first visit still prefills the money boxes from the agent', async () => {
+    const r = await editWith(FUNDED, {});
+    expect(r.values).toContain('300');
+    expect(r.values).not.toContain('325');
   });
 });

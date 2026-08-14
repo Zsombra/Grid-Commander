@@ -7,6 +7,7 @@ import {
   positionDrift,
   positionFieldKind,
 } from '@/domain/agent/trading-config.js';
+import { MONEY_FIELDS } from '@/presentation/form.js';
 import { BindingInheritance, BindingSummary } from './binding.js';
 import { CarriedProblem } from './carried-problem.js';
 import { BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
@@ -113,6 +114,20 @@ export function AgentEditForm({
   composed?: Readonly<Record<string, string | undefined>> | undefined;
 }) {
   const entered = (name: string): string | undefined => composed?.[name];
+  /**
+   * The money boxes' prefill: what was entered wins, storage fills the rest —
+   * the same precedence the position section applies. A bounce spells a money
+   * field two ways: the GET review bounces the form's own query (bare names),
+   * the apply's backTo carries the confirm form's hidden inputs
+   * (`tc.`-prefixed). Reading only one spelling is how a refusal on the apply
+   * road silently refilled every money box from storage while the name and
+   * position values survived.
+   */
+  const moneyCurrent: Record<string, unknown> = { ...(agent.tradingConfig?.fields ?? {}) };
+  for (const field of MONEY_FIELDS) {
+    const typed = entered(field) ?? entered(`tc.${field}`);
+    if (typed !== undefined) moneyCurrent[field] = typed;
+  }
   if (!isEditable(agent)) {
     return (
       <div className="space-y-4">
@@ -156,7 +171,7 @@ export function AgentEditForm({
          * removed, not a limit left alone. An empty box would make an edit to
          * one number silently reset the other five.
          */}
-        <MoneyLimits catalog={catalog} current={agent.tradingConfig?.fields} />
+        <MoneyLimits catalog={catalog} current={moneyCurrent} />
 
         <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} composed={composed} />
 

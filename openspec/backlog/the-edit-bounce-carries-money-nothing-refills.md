@@ -2,11 +2,11 @@
 id: the-edit-bounce-carries-money-nothing-refills
 title: A bounced edit carries the money values home, and the boxes refill from storage
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-14
-updated: 2026-08-14
-change: ""
+updated: 2026-08-15
+change: "the-bounced-money-refills-the-boxes"
 capability: agent-authoring
 github: "260"
 blocked_by: []
@@ -61,6 +61,21 @@ bounce carries `tc.`-prefixed names from the apply and bare names from the
 GET review, so the merge must read both spellings (or normalise in the page
 the way `editIntent` already does). Pin it the way #162's fix was pinned: on
 `r.values`, not `r.text`, with a typed money value that differs from storage.
+
+## Landed 2026-08-15 — `the-bounced-money-refills-the-boxes` (archived same day)
+
+`AgentEditForm` now merges the bounced composition over storage for
+`MoneyLimits`, reading both spellings the bounce carries (bare from the GET
+review's query, `tc.`-prefixed from the apply's `backTo`), with the same
+per-field precedence `PositionManagement` already applied. What the pin now
+asserts — deliberately more than #162's closure did: on `r.values`, not
+`r.text`, a typed `maxDailyLossUsd` of `'325'` present and the stored `'300'`
+absent, on **both** bounce spellings, plus a first-visit pin that storage
+still prefills. Both bounce pins were run against the unfixed code first and
+failed. The spec requirement gained a money-naming scenario so the group can
+no longer be the unwritten half of a closure. Both surface manifests sharing
+`agent-edit.tsx` (`agent-edit`, `agent-reactivate-confirm`) re-surveyed and
+re-pinned at `d782154`.
 
 ## Related
 
