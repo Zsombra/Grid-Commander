@@ -282,4 +282,27 @@ describe('a refused edit keeps what was entered', () => {
     const r = await editWith(EDITABLE, {});
     expect(r.values).toContain(EDITABLE.displayName);
   });
+
+  it('a fresher refusal does not replace a carried one', async () => {
+    /**
+     * The two facts at once: a bounced apply's reason in the URL *and* a
+     * branch that forms a refusal of its own. Before
+     * `a-bounced-reason-survives-the-agent-editor` this branch passed its
+     * fresher sentence into the form's banner and the bounced reason was
+     * simply gone — "your apply was refused" and "what you are composing has
+     * a problem" earn different next actions, and the operator was owed both.
+     */
+    const r = await editWith(EDITABLE, {
+      review: '1',
+      displayName: 'Renamed while composing',
+      pmPreset: 'NOT_A_PRESET',
+      problem: 'The revision moved since the consequence was read.',
+    });
+    // The branch's own refusal...
+    expect(r.text).toContain('does not carry a configuration');
+    // ...and the carried one, not replaced by it.
+    expect(r.text).toContain('The revision moved since the consequence was read.');
+    // Both through the one shared treatment, which names what they are.
+    expect(r.text).toContain('Refused:');
+  });
 });

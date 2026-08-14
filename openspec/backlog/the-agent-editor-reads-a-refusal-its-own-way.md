@@ -2,11 +2,11 @@
 id: the-agent-editor-reads-a-refusal-its-own-way
 title: The agent editor renders refusals through a hand-rolled banner, and four branches drop a bounced one
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-bounced-reason-survives-the-agent-editor"
 capability: app-access
 github: "255"
 blocked_by: []
@@ -47,3 +47,16 @@ Not swept into #240's change deliberately: mounting `CarriedProblem`
 page-wide would double-render beside the form's own banner on three
 branches — the reconciliation is a design decision, not a mechanical mount.
 Related: [[two-refusal-redirects-land-where-nothing-reads-them]] (#240).
+
+## Resolution (2026-08-14)
+
+Done by change `a-bounced-reason-survives-the-agent-editor` (standard,
+archived): all seven branches mount `CarriedProblem` for the bounced reason;
+the form's `problem` prop narrowed to branch-local refusals and its
+hand-rolled banner became the shared component (the double-render trap the
+Notes named is resolved by that split, not by dropping either fact — the
+`app-access` requirement gained the scenario "a fresher refusal does not
+replace a carried one", with a rendering test). `KNOWN_SILENT` is empty and
+its deletion enforced both ways; `HAND_ROLLED` widened to the `&&` spelling
+in both matcher copies, in the same change per the roads entry's ordering.
+Mutation-tested: the restored `&&` banner and a dropped mount both go red.
