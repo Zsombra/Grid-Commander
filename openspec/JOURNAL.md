@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-14 (probe) — the platform honours the key, measured at full capacity
+
+**Did**: merged **PR #246** (squash, `9a2cb7d`) — #239 closed. Then ran the
+#238 probe with operator authorisation: archived **Vanguard** (chosen by the
+operator — idle, 0 trades) to free the slot, created "Probe 238 Dedupe"
+(`tradingMode: OFF`) carrying `idempotencyKey: gc-probe-238-key-alpha`,
+repeated the call byte-identically. **The same agent came back** — same id,
+same `createdAt` to the millisecond, revision 1, no error — with slots at
+3/3, so the dedupe outranks the capacity check. Cleaned up: probe agent
+archived, Vanguard reactivated (revision 10, config intact). Closed **#238**;
+annotated `create_intelligence_agent` in `docs/BATTLEGRID_MCP_REFERENCE.md`.
+
+**State**: main carries the whole dedupe round. Account restored: Vanguard,
+Undertow, Breakwater active, 3/3 slots, no probe litter. 30 open items, no p1.
+
+**Next**: nothing urgent from this thread. The board's top open items are the
+p2s: the error boundary (#236), the fork 500, and #245 (the create action's
+three silent arms — now the only gap left on that route).
+
+**Watch out**:
+
+- **Both dedupe layers are now measured, and they answer different presses.**
+  The platform's key dedupe replays the original result — but only for a
+  request that reaches it. The local ledger refuses the repeat before any
+  request is built, and that is the layer that catches a double press when
+  BattleGrid is down or slow. Neither subsumes the other; records citing one
+  should not imply the other is redundant.
+- **The platform deduped at full capacity** — the key check runs before the
+  slot check. A future probe that sees a capacity refusal on a keyed retry is
+  therefore looking at a *platform change*, not at expected behaviour.
+- **The raw create schema wants what the app assembles**: the `brain` union
+  and the full twelve-value `positionManagement`, even when disabled. The
+  first probe call bounced on exactly the completeness rules the specs
+  record; the app's own assembly path is what makes this invisible in
+  production.
+- The name-collision-without-key half of #238 stays unmeasured, deliberately
+  — needs two free slots and changes nothing this product does.
+
 ## 2026-08-14 (dedupe) — the key does both halves of its job, and the falsehood is out of every record
 
 **Did**: implemented **#239** as `a-duplicate-create-returns-the-original`

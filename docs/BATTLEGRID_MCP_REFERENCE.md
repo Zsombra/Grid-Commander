@@ -494,6 +494,17 @@ Returns: `agent`
 
 *Create Intelligence Agent* — **writes** · non-idempotent
 
+> **Measured 2026-08-14 (#238), platform at the v18.2.0-era surface**: the
+> `idempotencyKey` contract is honoured. Two byte-identical creates with the
+> same key returned the **same agent** — identical id, identical `createdAt`,
+> revision 1, no error — with the account at full slot capacity, so the
+> dedupe is consulted before any capacity refusal. "Non-idempotent" above is
+> the declared default; with a key supplied, a retry replays the original
+> result. Unmeasured half: whether a duplicate `displayName` **without** a
+> key is refused (needs two free slots; does not affect this product, which
+> always sends a key and dedupes locally besides). Like every fact here,
+> re-probe after a platform deployment.
+
 Create an intelligence agent by selecting a strategy and approved LLM model, then optionally
 supplying one complete agent-owned trading configuration. Strategy-owned context, report,
 rules, prose, and timeframe are materialized from strategyId. Agent slots are limited by
