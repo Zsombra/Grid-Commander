@@ -1,5 +1,42 @@
 # Journal
 
+## 2026-08-14 (merge) — both PRs landed in order, and the fork-500 propose stood down
+
+**Did**: squash-merged **PR #251** (`4ed7231`, the arms-and-fork session) then
+**PR #253** (`71da854`, the floors session), in that order per the floors
+entry's Next. Between them, merged main into #253's branch and resolved the
+predicted conflicts — JOURNAL.md (kept all entries; also restored the `##
+(close)` header #251's squash had dropped) and the #241 item (`done` wins).
+One surprise: the merge **resurrected the archived change folder** — main
+gained `openspec/changes/a-floor-fails-when-its-scan-goes-blind/` via #251's
+squash while the branch had already archived it, git kept the one-sided add,
+and `validate` refused with `added_already_exists`. Removed; the archive copy
+is canonical. Then read `forking-a-name-that-exists-is-a-500` in full before
+proposing on it, and **stood down**: the product halves are landed and
+re-affirmed (a refused fork renders in the platform's words; the copy is
+measured right), and authoring a cause for the opaque 500 is the re-diagnosis
+the item rules out three times. No change proposed.
+
+**State**: main at `71da854` carries the whole line. 0 active changes, 28 open
+items, no p1. `validate --all` 0 errors / 18 warnings — three arrived with
+#251's content (two `backlog_capability_not_found` for capabilities with no
+spec yet, one `backlog_change_archived` on the INTERNAL_ERRORs item, whose
+remaining work is the upstream report).
+
+**Next**: operator — review and send
+`docs/UPSTREAM_REPORT_INTERNAL_ERRORS.md` (drafted, unsent; bundles
+#102/#100/#204, and closing those threads closes the drift warning too).
+For the next working session: the board's remaining p2s, none blocked.
+
+**Watch out**: two merge-shaped traps proven today. A squash-merge of a branch
+that *proposed* a change will resurrect the change folder in any sibling
+branch that already *archived* it — the merge sees a one-sided add and
+validation is what catches it; check `validate --all` immediately after any
+merge that crosses an archive. And a journal conflict resolved by "take the
+incoming entries" can silently drop the entry *header* on the HEAD side —
+both branches of this repo did it within a day; re-read the merged journal's
+headers, not just its markers.
+
 ## 2026-08-14 (floors) — the sweep found one blind floor, and the discipline caught two more in the fix itself
 
 **Did**: executed, verified and archived **`a-floor-fails-when-its-scan-goes-blind`**
