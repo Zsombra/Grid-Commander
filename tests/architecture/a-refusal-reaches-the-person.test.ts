@@ -47,7 +47,11 @@ function walk(dir: string): string[] {
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
     if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.tsx')) out.push(p);
+    // Colocated action modules joined the tree with
+    // `the-build-checks-what-next-generates`: every page-exported server
+    // action now lives in an `actions.ts` beside its page, and a walk that
+    // sees only .tsx reports a product with almost no spenders in it.
+    else if (p.endsWith('.tsx') || p.endsWith('actions.ts')) out.push(p);
   }
   return out;
 }
@@ -81,7 +85,13 @@ const SPENDS = /\bconfirmationToken\s*[,:]/;
 const spenders = (): string[] =>
   uiFiles.filter((f) => {
     const src = read(f);
-    return SPENDS.test(src) && src.includes('.execute(');
+    // `formData` is what separates spending from carrying now that the
+    // actions live apart: a spender is a request handler reading the
+    // submitted token, while a page that writes `confirmationToken:` into
+    // a confirm component's props is handing a freshly minted one to the
+    // form that will come back and spend it (strategy edit does exactly
+    // this, with describe `.execute(` calls in the same file).
+    return SPENDS.test(src) && src.includes('.execute(') && src.includes('formData');
   });
 
 describe('a refusal reaches the person', () => {

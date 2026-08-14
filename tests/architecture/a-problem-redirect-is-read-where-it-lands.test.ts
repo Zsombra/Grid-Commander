@@ -54,7 +54,10 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (full.endsWith('.tsx')) out.push(slashed(full));
+    // The colocated actions.ts modules are where the mints live now —
+    // `the-build-checks-what-next-generates` moved every page-exported
+    // action out of its page, and a .tsx-only walk loses every emitter.
+    else if (full.endsWith('.tsx') || full.endsWith('actions.ts')) out.push(slashed(full));
   }
   return out;
 }

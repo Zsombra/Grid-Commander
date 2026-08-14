@@ -348,13 +348,20 @@ describe('the two requests agree on what was submitted', () => {
      * through `editIntent` and nowhere else. It had a `pick` for the query and a
      * `numberish` for the form; both are gone, and their absence is the check.
      */
+    // One reader per request, and the requests live in two modules now: the
+    // review branch on the page, the apply in the colocated actions.ts
+    // (`the-build-checks-what-next-generates`).
     const page = readFileSync('app/(app)/agents/[id]/edit/page.tsx', 'utf8');
-    expect(page.match(/editIntent\(/g) ?? [], 'both requests, one reader').toHaveLength(2);
-    expect(page, 'the form-side coercion is gone').not.toMatch(/function numberish/);
-    expect(page, 'the query-side filter is gone').not.toMatch(/function pick/);
-    expect(page, 'Number\\(\\) on a money field would be a second coercion').not.toMatch(
-      /Number\(/,
-    );
+    const action = readFileSync('app/(app)/agents/[id]/edit/actions.ts', 'utf8');
+    expect(page.match(/editIntent\(/g) ?? [], 'the review request, one reader').toHaveLength(1);
+    expect(action.match(/editIntent\(/g) ?? [], 'the apply request, one reader').toHaveLength(1);
+    for (const [where, source] of [['page', page], ['action', action]] as const) {
+      expect(source, `the form-side coercion is gone (${where})`).not.toMatch(/function numberish/);
+      expect(source, `the query-side filter is gone (${where})`).not.toMatch(/function pick/);
+      expect(source, `Number() on a money field would be a second coercion (${where})`).not.toMatch(
+        /Number\(/,
+      );
+    }
   });
 
   it('digests differently for different amounts', () => {

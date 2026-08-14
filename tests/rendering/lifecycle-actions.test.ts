@@ -56,19 +56,19 @@ const form = (fields: Record<string, string>): FormData => {
 const actions = [
   {
     name: 'archive',
-    load: async () => (await import('../../app/(app)/strategies/[id]/archive/page.js')).archiveStrategy,
+    load: async () => (await import('../../app/(app)/strategies/[id]/archive/actions.js')).archiveStrategy,
     fields: { strategyId: 's-1', confirmationToken: 't' },
     page: '/strategies/s-1/archive',
   },
   {
     name: 'restore',
-    load: async () => (await import('../../app/(app)/strategies/[id]/restore/page.js')).restoreStrategy,
+    load: async () => (await import('../../app/(app)/strategies/[id]/restore/actions.js')).restoreStrategy,
     fields: { strategyId: 's-1' },
     page: '/strategies/s-1/restore',
   },
   {
     name: 'fork',
-    load: async () => (await import('../../app/(app)/strategies/[id]/fork/page.js')).forkStrategy,
+    load: async () => (await import('../../app/(app)/strategies/[id]/fork/actions.js')).forkStrategy,
     // `sourceRevision` is required, not defaulted: the revision the page named
     // is the one that gets copied, and an action that quietly substituted the
     // re-read's revision is the defect this field exists to close.

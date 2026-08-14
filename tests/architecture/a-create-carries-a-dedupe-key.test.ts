@@ -30,6 +30,10 @@ import { describe, expect, it } from 'vitest';
 
 const FORM = 'src/presentation/components/agent-form.tsx';
 const PAGE = 'app/(app)/agents/new/page.tsx';
+// The action module the page imports its create from, since
+// `the-build-checks-what-next-generates` — the split is the point here:
+// the page mints, the action only reads.
+const ACTION = 'app/(app)/agents/new/actions.ts';
 
 const read = (p: string): string => readFileSync(p, 'utf8');
 
@@ -58,7 +62,7 @@ describe('a create carries a dedupe key', () => {
     expect(page).toMatch(/import\s*\{\s*randomUUID\s*\}\s*from\s*'node:crypto'/);
     expect(page).toMatch(/idempotencyKey=\{randomUUID\(\)\}/);
 
-    const action = page.slice(page.indexOf('export async function create'));
+    const action = read(ACTION);
     expect(action, 'the action must read the key, never mint one').not.toMatch(/randomUUID\(/);
     expect(action).toMatch(/idempotencyKey:\s*optionalText\(formData,\s*'idempotencyKey'\)/);
   });
@@ -68,5 +72,6 @@ describe('a create carries a dedupe key', () => {
     // nothing at all, which is the failure mode this repo has hit twice.
     expect(read(FORM).length).toBeGreaterThan(0);
     expect(read(PAGE)).toContain('<AgentForm');
+    expect(read(ACTION)).toContain('createAgent.execute');
   });
 });

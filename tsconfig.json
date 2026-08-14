@@ -23,5 +23,9 @@
     "allowJs": true
   },
   "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next"]
+  // `.next` must NOT be excluded: exclude filters include, so excluding it
+  // silently discards the `.next/types` route checks named one line up — the
+  // build gate then reports on a check it throws away (#216). The guard in
+  // tests/architecture/tsconfig-coherence.test.ts enforces this.
+  "exclude": ["node_modules"]
 }

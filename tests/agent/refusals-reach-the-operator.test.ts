@@ -31,24 +31,32 @@ import { describe, expect, it } from 'vitest';
 const reads = (tool: string): RegExp =>
   new RegExp(`const result = await (?:spending\\([\\s\\S]{0,80})?app\\.${tool}\\.execute`);
 
+// Each surface is a pair since `the-build-checks-what-next-generates`: the
+// action lives in a colocated `actions.ts` (Next's page contract forbids the
+// page module exporting it), the rendering stays on the page. The read and
+// the bounce are the action's property; the banner is the page's.
 const SURFACES = [
   {
     page: 'app/(app)/agents/[id]/reactivate/page.tsx',
+    action: 'app/(app)/agents/[id]/reactivate/actions.ts',
     call: reads('setLifecycle'),
     refusal: /result\.kind === 'not-permitted'/,
   },
   {
     page: 'app/(app)/agents/[id]/archive/page.tsx',
+    action: 'app/(app)/agents/[id]/archive/actions.ts',
     call: reads('setLifecycle'),
     refusal: /result\.kind === 'not-permitted'/,
   },
   {
     page: 'app/(app)/strategies/[id]/archive/page.tsx',
+    action: 'app/(app)/strategies/[id]/archive/actions.ts',
     call: reads('setStrategyActive'),
     refusal: /result\.kind === 'refused' \|\| result\.kind === 'repair-required'/,
   },
   {
     page: 'app/(app)/strategies/[id]/restore/page.tsx',
+    action: 'app/(app)/strategies/[id]/restore/actions.ts',
     call: reads('setStrategyActive'),
     refusal: /result\.kind === 'refused'/,
   },
@@ -58,6 +66,7 @@ const SURFACES = [
     // cannot see: the call site reads its result perfectly and still rendered
     // a framework error page. The refused arm is what makes it an outcome.
     page: 'app/(app)/agents/[id]/rebind/page.tsx',
+    action: 'app/(app)/agents/[id]/rebind/actions.ts',
     call: reads('rebindAgent'),
     refusal: /result\.kind === 'destination-moved' \|\| result\.kind === 'refused'/,
   },
@@ -183,9 +192,9 @@ describe('a carried reason survives the branch that renders next', () => {
 
 describe('an action that could not attempt the operation says so', () => {
   const LIFECYCLE = [
-    'app/(app)/strategies/[id]/archive/page.tsx',
-    'app/(app)/strategies/[id]/restore/page.tsx',
-    'app/(app)/strategies/[id]/fork/page.tsx',
+    'app/(app)/strategies/[id]/archive/actions.ts',
+    'app/(app)/strategies/[id]/restore/actions.ts',
+    'app/(app)/strategies/[id]/fork/actions.ts',
   ] as const;
 
   for (const page of LIFECYCLE) {
@@ -204,11 +213,12 @@ describe('an action that could not attempt the operation says so', () => {
 
 for (const surface of SURFACES) {
   describe(surface.page, () => {
-    const source = readFileSync(surface.page, 'utf8');
+    const action = readFileSync(surface.action, 'utf8');
+    const page = readFileSync(surface.page, 'utf8');
 
     it('reads the result of the write instead of discarding it', () => {
-      expect(source).toMatch(surface.call);
-      expect(source).toMatch(surface.refusal);
+      expect(action).toMatch(surface.call);
+      expect(action).toMatch(surface.refusal);
     });
 
     it('carries the reason the operation returned, not a rewording of it', () => {
@@ -217,7 +227,7 @@ for (const surface of SURFACES) {
       // with it (rebind carries `to=` as well). What matters is that
       // `result.reason` is what goes into `problem`, unglossed — a rewording
       // would fail both.
-      expect(source).toMatch(
+      expect(action).toMatch(
         /problem=\$\{encodeURIComponent\(result\.reason\)\}|problem: result\.reason/,
       );
     });
@@ -227,12 +237,13 @@ for (const surface of SURFACES) {
       // it carries the role=alert and the "Refused:" prefix that used to be
       // hand-rolled per branch. Pages that mint a `?problem=` but render
       // their own surface a different way are matched by the second arm.
-      expect(source).toMatch(/<CarriedProblem[\s/>]|\{problem \?\s*[(<]/);
-      expect(source).toMatch(/role="alert"|<CarriedProblem[\s/>]/);
+      expect(page).toMatch(/<CarriedProblem[\s/>]|\{problem \?\s*[(<]/);
+      expect(page).toMatch(/role="alert"|<CarriedProblem[\s/>]/);
     });
 
     it('stays out of the domain', () => {
-      expect(source, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
+      expect(action, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
+      expect(page, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
     });
   });
 }
@@ -251,7 +262,7 @@ describe('the create action reads every arm the union carries', () => {
    * tail in the action makes a *new* arm a typecheck failure rather than a
    * fourth silent one.
    */
-  const source = readFileSync('app/(app)/agents/new/page.tsx', 'utf8');
+  const source = readFileSync('app/(app)/agents/new/actions.ts', 'utf8');
 
   it('reads the result of the create at all', () => {
     expect(source).toMatch(/const result = await app\.createAgent\.execute/);

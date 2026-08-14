@@ -83,7 +83,7 @@ describe('the new-agent form asks what the operation requires', () => {
 
   it('offers every strategy the platform lists, its own and the operator’s', async () => {
     const Page = await newAgentPage();
-    const r = await rendered(await Page());
+    const r = await rendered(await Page({}));
     expect(r.text).toContain('Berlin');
     expect(r.text).toContain('Cannae');
     // Scope is on the option: it decides whether the strategy can later be
@@ -109,7 +109,7 @@ describe('when there is nothing to bind to, there is no form', () => {
     world(strategies);
 
     const Page = await newAgentPage();
-    const tree = await Page();
+    const tree = await Page({});
     const r = await rendered(tree);
 
     expect(elementNamed(tree, 'select', 'strategyId')).toBeNull();
@@ -123,7 +123,7 @@ describe('when there is nothing to bind to, there is no form', () => {
     world(new FakeStrategiesPort([]));
 
     const Page = await newAgentPage();
-    const tree = await Page();
+    const tree = await Page({});
     const r = await rendered(tree);
 
     expect(elementNamed(tree, 'select', 'strategyId')).toBeNull();
@@ -208,7 +208,7 @@ describe('the create action bounces a duplicate to the surface acted from', () =
     agents.duplicateOf = outcome;
     current = actingWith({ agents, strategies: new FakeStrategiesPort([BERLIN, CANNAE]) });
 
-    const { create } = await import('../../app/(app)/agents/new/page.js');
+    const { create } = await import('../../app/(app)/agents/new/actions.js');
     try {
       await create(duplicateSubmit());
     } catch (err) {
@@ -267,7 +267,7 @@ describe('a refused create bounces back with what was composed', () => {
     prepare(agents);
     current = actingWith({ agents, strategies: new FakeStrategiesPort([BERLIN, CANNAE]) });
 
-    const { create } = await import('../../app/(app)/agents/new/page.js');
+    const { create } = await import('../../app/(app)/agents/new/actions.js');
     try {
       await create(form);
     } catch (err) {

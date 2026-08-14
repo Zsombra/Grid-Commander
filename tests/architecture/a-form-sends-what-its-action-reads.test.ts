@@ -59,15 +59,23 @@ function resolve(file: string, spec: string): string | null {
   const base = spec.startsWith('@/')
     ? `src/${spec.slice(2)}`
     : `${file.split('/').slice(0, -1).join('/')}/${spec}`;
-  const norm = base.replace(/\.jsx?$/, '');
+  // `./actions.js` arrives with its dot segment intact, and `uiFiles`
+  // holds clean paths — an unnormalized candidate matches nothing.
+  const segments: string[] = [];
+  for (const s of base.split('/')) {
+    if (s === '.') continue;
+    if (s === '..') segments.pop();
+    else segments.push(s);
+  }
+  const norm = segments.join('/').replace(/\.jsx?$/, '');
   for (const candidate of [`${norm}.tsx`, `${norm}.ts`]) {
     if (uiFiles.includes(slashed(candidate))) return slashed(candidate);
   }
   return null;
 }
 
-/** The form that carries `action`, wherever it lives. */
-function formFor(file: string, action: string): { where: string; fields: Set<string> } | null {
+/** The two in-file strategies: a form bound directly, or handed to a component. */
+function formIn(file: string, action: string): { where: string; fields: Set<string> } | null {
   const src = read(file);
 
   // Bound directly: <form action={performX} ...> … </form>
@@ -115,6 +123,33 @@ function formFor(file: string, action: string): { where: string; fields: Set<str
   return null;
 }
 
+/**
+ * The form that carries `action`, wherever it lives.
+ *
+ * Since `the-build-checks-what-next-generates` every page-exported action
+ * lives in a colocated `actions.ts` — the declaring file never renders the
+ * form. So when neither in-file strategy resolves, the form is looked for
+ * in the file that imports the action, with the same two strategies. The
+ * importer walk deliberately calls `formIn`, not itself: one hop is the
+ * product's shape, and an unbounded chain would let the resolver wander.
+ */
+function formFor(file: string, action: string): { where: string; fields: Set<string> } | null {
+  const direct = formIn(file, action);
+  if (direct) return direct;
+  for (const importer of uiFiles) {
+    if (importer === file) continue;
+    const src = read(importer);
+    const imported = new RegExp(
+      `import\\s*\\{[^}]*\\b${action}\\b[^}]*\\}\\s*from\\s*'([^']+)'`,
+    ).exec(src);
+    if (!imported) continue;
+    if (resolve(importer, imported[1] as string) !== file) continue;
+    const found = formIn(importer, action);
+    if (found) return found;
+  }
+  return null;
+}
+
 interface Pair {
   readonly page: string;
   readonly action: string;
@@ -155,7 +190,10 @@ describe('a form sends what its action reads', () => {
   it('finds the actions and their forms', () => {
     // Vacuous-pass insurance, and the reason the first version of this file was
     // useless: a check that resolves nothing reports nothing wrong.
-    expect(pairs.length).toBeGreaterThanOrEqual(8);
+    // 14 is the count at `the-build-checks-what-next-generates`: every
+    // ceremony action, discovered in its actions.ts. A drop below it means
+    // discovery broke, not that the product shrank.
+    expect(pairs.length).toBeGreaterThanOrEqual(14);
     expect(
       pairs.filter((p) => p.form === null).map((p) => `${p.page} :: ${p.action}`),
       'no form resolved for these — the resolver drifted, not the product. A pair whose form ' +
