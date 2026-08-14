@@ -2,11 +2,11 @@
 id: the-wager-sentence-offers-scope-as-a-safety-boundary
 title: A surface tells the operator the connection is read-only, which it is not
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-14
-updated: 2026-08-14
-change: ""
+updated: 2026-08-15
+change: "the-connection-is-never-called-read-only"
 capability: battlegrid-connection
 github: "234"
 blocked_by: []
@@ -74,3 +74,16 @@ read-only, full stop — a headline safety defect. Reading the source shows the
 sentence is scoped to wagers and its operative claim is correct. What remains is
 a genuinely misleading clause in a safety-relevant place, which is worth fixing
 and is not an emergency.
+
+## Closed 2026-08-15 — the sentence says what is true, and a guard covers the surfaces
+
+Archived as `2026-08-15-the-connection-is-never-called-read-only`. The
+`accountAllowsMcpWagers` branch now states the missing wager scope beside the
+held write authority ("can create and change your agents and strategies —
+each change confirmed with you first"), and "connects read-only" is gone. The
+requirement "Configuration Authority Is Described Honestly" gained the
+standing-connection scenario, and the new guard
+`tests/architecture/access-is-described-honestly.test.ts` scans rendered UI
+copy for un-negated read-only/view-only claims — the coverage the original
+consent guard lacked, which is how the sentence shipped. Mutation-proven both
+directions (match-nothing and negation-removal both KILLED).

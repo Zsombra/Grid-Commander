@@ -35,10 +35,19 @@ export function WagerAuthority({ wager }: { wager: WagerAuthorityResult }) {
   }
 
   if (wager.accountAllowsMcpWagers) {
+    /*
+     * Not "it connects read-only" — that was this sentence's first form, and
+     * it is the exact inference "Configuration Authority Is Described
+     * Honestly" forbids: the scope this product holds can create, rebind and
+     * archive agents. What stands between it and a stake is the scope it
+     * never requests, and the confirmation every change asks for first (#234).
+     */
     return (
       <p className="text-sm">
         BattleGrid would allow MCP-signed wagers on this account. Grid-Commander still
-        cannot place one: it connects read-only and never requests the wager scope.
+        cannot place one: it never requests the wager scope. The access it does hold can
+        create and change your agents and strategies — each change confirmed with you
+        first — and none of it can commit your funds.
       </p>
     );
   }
