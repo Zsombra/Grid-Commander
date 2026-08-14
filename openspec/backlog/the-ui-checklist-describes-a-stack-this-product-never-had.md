@@ -2,7 +2,7 @@
 id: the-ui-checklist-describes-a-stack-this-product-never-had
 title: A quarter of the UI checklist governs libraries this product has never used
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
@@ -14,6 +14,12 @@ tags: [checklists, tooling, vacuity]
 ---
 
 # A quarter of the UI checklist governs libraries this product has never used
+
+> **Closed 2026-08-14** — fixed in the same operator-approved generator pass as
+> the #229 amendment (checklist v2.0.0), exactly as "What would settle it"
+> asked: header corrected, dead sections replaced by "Deliberately Absent"
+> with a regenerate-first rule, Tailwind item 3 now names `control.ts` and its
+> enforcing scan. GitHub #233 closed.
 
 ## What
 

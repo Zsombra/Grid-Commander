@@ -1,7 +1,8 @@
-import { and, desc, eq, gt, isNull } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { AuditEntry, AuditOutcome } from '@/domain/audit/audit-entry.js';
 import type { AuditReader, AuditWriter, NewAuditEntry } from '@/domain/audit/audit-repository.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type {
   ConfirmationRefusalCause,
   ConfirmationStore,
@@ -29,16 +30,36 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
 
   async begin(entry: NewAuditEntry): Promise<string> {
     const id = this.newId();
-    await this.db.insert(auditEntries).values({
-      id,
-      userId: entry.userId,
-      actor: entry.actor,
-      tool: entry.tool,
-      destructive: entry.destructive,
-      outcome: 'attempted' satisfies AuditOutcome,
-      createdAt: this.clock.now(),
-      idempotencyKey: entry.idempotencyKey,
-    });
+    try {
+      await this.db.insert(auditEntries).values({
+        id,
+        userId: entry.userId,
+        actor: entry.actor,
+        tool: entry.tool,
+        destructive: entry.destructive,
+        outcome: 'attempted' satisfies AuditOutcome,
+        createdAt: this.clock.now(),
+        idempotencyKey: entry.idempotencyKey,
+      });
+    } catch (err) {
+      // The partial unique index refusing a second live attempt for this key.
+      // Catching the violation, rather than pre-reading and branching, makes
+      // the race path and the sequential path the same path: two presses both
+      // INSERT, the loser lands here. Anything else that goes wrong with the
+      // insert is not this refusal and is rethrown untouched.
+      if (entry.idempotencyKey !== null && isIdempotencyCollision(err)) {
+        const live = await this.findByIdempotencyKey(entry.userId, entry.idempotencyKey);
+        // The colliding row can only be non-failed — the index ignores failed
+        // rows — but it may have completed between the collision and this
+        // read. A vanished or since-failed row reads as `attempted`: the
+        // honest unknown, same as the outcome mapper below.
+        throw new DuplicateIdempotencyKeyError(
+          entry.tool,
+          live?.outcome === 'succeeded' ? 'succeeded' : 'attempted',
+        );
+      }
+      throw err;
+    }
     return id;
   }
 
@@ -80,12 +101,35 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
   }
 
   async findByIdempotencyKey(userId: string, key: string): Promise<AuditEntry | null> {
+    // The live entry — the one that holds the key. With retries there can be
+    // several rows per (user, key); the failed ones released it, and the
+    // partial index guarantees at most one row here.
     const [row] = await this.db
       .select()
       .from(auditEntries)
-      .where(and(eq(auditEntries.userId, userId), eq(auditEntries.idempotencyKey, key)));
+      .where(
+        and(
+          eq(auditEntries.userId, userId),
+          eq(auditEntries.idempotencyKey, key),
+          ne(auditEntries.outcome, 'failed'),
+        ),
+      );
     return row ? toDomain(row) : null;
   }
+}
+
+/**
+ * The unique-violation shape node-postgres raises for our partial index,
+ * wherever drizzle put it. Checked by SQLSTATE and constraint name rather than
+ * message text — a spelling in a message is exactly the kind of guard that
+ * breaks silently.
+ */
+function isIdempotencyCollision(err: unknown): boolean {
+  for (let e = err; typeof e === 'object' && e !== null; e = (e as { cause?: unknown }).cause) {
+    const { code, constraint } = e as { code?: unknown; constraint?: unknown };
+    if (code === '23505' && constraint === 'audit_entries_user_idempotency_idx') return true;
+  }
+  return false;
 }
 
 function toDomain(row: typeof auditEntries.$inferSelect): AuditEntry {

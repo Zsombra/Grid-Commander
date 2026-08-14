@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { AgentForm } from '@/presentation/components/agent-form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
@@ -14,16 +15,31 @@ import { moneyAnswers } from '@/presentation/form.js';
  * Capacity and the catalog are both resolved before the form renders, because
  * the requirement is that a user is told *before* composing an agent that cannot
  * be created — not after submitting one.
+ *
+ * `?problem=` is the aftermath of a bounced submit, and it mounts on EVERY
+ * branch: a duplicate press whose first press succeeded arrives here at
+ * capacity by construction, so the branch a bounce lands on is exactly the one
+ * that must not drop it (#240's lesson, learned on archive).
  */
-export default async function NewAgentPage() {
+export default async function NewAgentPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
+
+  const q = (await searchParams) ?? {};
+  const raw = q['problem'];
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  const problem = first && first.length > 0 ? first : null;
 
   const { creation } = await app.listAgents.execute(user.authority);
   if (creation.kind === 'at-capacity') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No agent slots available</h1>
+        <CarriedProblem problem={problem} />
         <p role="status" className="text-sm">{creation.explanation}</p>
         <p className="text-sm"><a href="/agents" className="underline">Back to your agents</a></p>
       </main>
@@ -39,6 +55,7 @@ export default async function NewAgentPage() {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot create an agent right now</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="text-sm">
           The choices this form needs come from BattleGrid: {catalog.reason}
         </p>
@@ -59,6 +76,7 @@ export default async function NewAgentPage() {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Cannot create an agent right now</h1>
+        <CarriedProblem problem={problem} />
         <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
           An agent reads a strategy, and the list of them could not be read:{' '}
           {strategies.reason}
@@ -79,6 +97,7 @@ export default async function NewAgentPage() {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Nothing to bind an agent to</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm text-text-primary">
           An agent reads a strategy, and no strategies are listed — not even
           BattleGrid&rsquo;s own. Your account is connected and nothing here has
@@ -94,9 +113,12 @@ export default async function NewAgentPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-xl font-medium">New agent</h1>
+      <CarriedProblem problem={problem} />
       {/* Minted here, per render, and carried through the form — see the note
           on the hidden input in AgentForm. A key minted inside `create` would
-          be a new key per press and would dedupe nothing. */}
+          be a new key per press and would dedupe nothing. The re-rendered form
+          carries a FRESH key, so a deliberate second agent stays one press
+          away — the dedupe binds a form instance, not the operator. */}
       <AgentForm
         catalog={catalog.catalog}
         strategies={listings}
@@ -146,4 +168,14 @@ export async function create(formData: FormData) {
   });
 
   if (result.kind === 'created') redirect(`/agents/${result.agent.id}`);
+  if (result.kind === 'duplicate') {
+    // A second press of the same form. Which sentence depends on what the
+    // first press did — carried as a field, never parsed from a message. The
+    // wording reads after CarriedProblem's "Refused:" prefix.
+    const sentence =
+      result.originalOutcome === 'succeeded'
+        ? 'this form was already submitted and the agent was created — the earlier press worked. It is on your agents page.'
+        : 'this form was already submitted and the outcome is not yet recorded — it may have landed. Check your agents page before pressing again.';
+    redirect(`/agents/new?problem=${encodeURIComponent(sentence)}`);
+  }
 }

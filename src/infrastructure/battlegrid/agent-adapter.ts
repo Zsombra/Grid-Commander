@@ -260,6 +260,13 @@ export class McpAgentAdapter implements AgentsPort {
         brain: brainToArgument(params.brain),
         strategyId: params.strategyId,
         ...(params.tradingConfig ? { tradingConfig: params.tradingConfig.fields } : {}),
+        // On the wire, not only in the audit record. The create tool declares
+        // this field itself — "a retry with the same key returns the original
+        // result" — so the platform's contract is offered, not merely quoted.
+        // Per-tool rather than in `call()`, because an operation that does not
+        // declare the field rejects the whole payload for it
+        // (additionalProperties: false is how every update failed, once).
+        ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
       },
       { idempotencyKey: params.idempotencyKey },
     );

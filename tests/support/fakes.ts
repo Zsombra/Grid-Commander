@@ -14,6 +14,7 @@ import type {
   OAuthTransactionStore,
   ResolvedConnection,
 } from '@/domain/connection/connection-repository.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type { Clock } from '@/ports/clock.js';
 
 /**
@@ -46,6 +47,17 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
   constructor(private readonly clock: Clock) {}
 
   async begin(entry: NewAuditEntry): Promise<string> {
+    // Mirrors the real repository's partial unique index: at most one
+    // non-failed entry per (user, key). A failed attempt released its key.
+    if (entry.idempotencyKey !== null) {
+      const live = await this.findByIdempotencyKey(entry.userId, entry.idempotencyKey);
+      if (live) {
+        throw new DuplicateIdempotencyKeyError(
+          entry.tool,
+          live.outcome === 'succeeded' ? 'succeeded' : 'attempted',
+        );
+      }
+    }
     const id = `audit-${++this.seq}`;
     this.entries.push({
       id,
@@ -90,7 +102,12 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
   }
 
   async findByIdempotencyKey(userId: string, key: string): Promise<AuditEntry | null> {
-    return this.entries.find((e) => e.userId === userId && e.idempotencyKey === key) ?? null;
+    // The live entry, per the port contract: failed attempts released the key.
+    return (
+      this.entries.find(
+        (e) => e.userId === userId && e.idempotencyKey === key && e.outcome !== 'failed',
+      ) ?? null
+    );
   }
 }
 

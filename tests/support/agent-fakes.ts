@@ -32,6 +32,7 @@ import type {
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 
 /**
  * An in-memory agent platform.
@@ -99,14 +100,26 @@ export class FakeAgentsPort implements AgentsPort {
     brain: Brain;
     strategyId: string;
     tradingConfig: TradingConfig | null;
+    idempotencyKey?: string | undefined;
   }> = [];
+
+  /**
+   * When set, the next create refuses as a duplicate of an attempt with this
+   * outcome — the shape the real path raises from the audit layer when the
+   * key already has a live attempt.
+   */
+  duplicateOf: 'succeeded' | 'attempted' | null = null;
 
   async createAgent(params: {
     displayName: string;
     brain: Brain;
     strategyId: string;
     tradingConfig: TradingConfig | null;
+    idempotencyKey?: string | undefined;
   }): Promise<Agent> {
+    if (this.duplicateOf) {
+      throw new DuplicateIdempotencyKeyError('create_intelligence_agent', this.duplicateOf);
+    }
     this.calls.push({ op: 'create' });
     // The whole payload, kept. `tradingConfig` was `null` on every create for
     // the life of the product and nothing recorded it, so nothing could assert

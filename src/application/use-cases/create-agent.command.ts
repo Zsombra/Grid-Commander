@@ -9,6 +9,7 @@ import {
   positionSizePresetsFrom,
   validateTradingConfig,
 } from '@/domain/agent/trading-config.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type { AgentsPort } from '@/ports/agents.js';
 
 export interface CreateAgentRequest {
@@ -36,7 +37,14 @@ export type CreateAgentResult =
   | { readonly kind: 'created'; readonly agent: Agent }
   | { readonly kind: 'at-capacity'; readonly explanation: string }
   | { readonly kind: 'invalid'; readonly issues: readonly ValidationIssue[] }
-  | { readonly kind: 'no-catalog'; readonly reason: string };
+  | { readonly kind: 'no-catalog'; readonly reason: string }
+  /**
+   * This key already has a live attempt. `succeeded` means the agent exists —
+   * the earlier press worked. `attempted` means the earlier press has no
+   * recorded outcome, so it may have landed; the caller should say to check
+   * the roster rather than either crashing or quietly trying again.
+   */
+  | { readonly kind: 'duplicate'; readonly originalOutcome: 'succeeded' | 'attempted' };
 
 /**
  * Create an agent, refusing before the platform has to.
@@ -170,15 +178,27 @@ export class CreateAgentCommand {
     // Narrowed by the guard above: `incomplete` always produced an issue.
     if (built.kind !== 'config') return { kind: 'invalid', issues };
 
-    const agent = await this.agents.createAgent({
-      userId: req.userId,
-      accessToken: req.accessToken,
-      displayName: req.displayName,
-      brain: req.brain,
-      strategyId: req.strategyId,
-      tradingConfig: built.config,
-      idempotencyKey: req.idempotencyKey,
-    });
-    return { kind: 'created', agent };
+    try {
+      const agent = await this.agents.createAgent({
+        userId: req.userId,
+        accessToken: req.accessToken,
+        displayName: req.displayName,
+        brain: req.brain,
+        strategyId: req.strategyId,
+        tradingConfig: built.config,
+        idempotencyKey: req.idempotencyKey,
+      });
+      return { kind: 'created', agent };
+    } catch (err) {
+      // Only the duplicate, and only from the create itself. A second press of
+      // the same form is a refusal with a next step, not an exception — the
+      // outcome travels as a field so nothing downstream parses a message.
+      // Everything else still propagates: this catch must not become the place
+      // where unrelated failures go quiet.
+      if (err instanceof DuplicateIdempotencyKeyError) {
+        return { kind: 'duplicate', originalOutcome: err.originalOutcome };
+      }
+      throw err;
+    }
   }
 }

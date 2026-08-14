@@ -1,6 +1,65 @@
 # Journal
 
-## 2026-08-14 (close) — #235 merged, and the order the next round must run in
+## 2026-08-14 (dedupe) — the key does both halves of its job, and the falsehood is out of every record
+
+**Did**: implemented **#239** as `a-duplicate-create-returns-the-original`
+(proposed, executed, verified, **PR #246**): the unique index on
+`(user_id, idempotency_key)` is now partial (`WHERE outcome != 'failed'`), so
+only a `succeeded`/undecided attempt dedupes — operator decision — and a
+failed create retries from the same form; Postgres `23505` converts to a typed
+`DuplicateIdempotencyKeyError` (race path = sequential path); the key rides
+inside `create_intelligence_agent`'s own `arguments`; the refusal reaches the
+operator via `?problem=` with `CarriedProblem` on **every** branch of
+`/agents/new`. Then ran checklist-generator UPDATE (operator-approved):
+**UI checklist v2.0.0** — item 4 restated as the outcome, #233's dead sections
+replaced by "Deliberately Absent" with a regenerate-first rule. Archived
+`a-duplicate-submit-cannot-duplicate-a-write` (delta into `app-access`,
+principle 14 settled). Closed **#228, #229, #233**; opened **#245** (the
+create action's three silent arms, found while proposing, deliberately
+unbundled). Verifier ran on the #239 change: passed, two warnings, both fixed
+same-hour (the action seam walked; different-key db test).
+
+**State**: PR #246 open, three commits. 2364 vitest / 185 files, typecheck,
+lint, build, drizzle clean; `validate --all` 0 errors. One active change left
+(`a-duplicate-create-returns-the-original`, 15/15, awaiting CI). 31 open items,
+no p1 once #239's item closes with its change.
+
+**Next**: **merge PR #246** — everything on it is proven. The db suite could
+not wait for CI (Actions are billing-blocked, manual dispatch only — the
+2026-08-01 decision; this session rediscovered it the hard way), so the local
+policy gate ran instead: disposable postgres:16 in Docker, migrations applied
+twice, **96/96 `test:db` green** including all new idempotency tests. Both
+changes are archived; #239's item is closed. After the merge, #238 (does the
+platform honour the key it now receives) is the natural next probe. Two
+side-fixes from the db run rode along: `validate.yml` now points `test:db` at
+`gridcommander_test`, because the suite's own disposability guard (2026-08-13)
+refuses the name CI had been using — a latent first-dispatch failure; and
+Docker Desktop on this machine was crash-looping on corrupt AF_UNIX socket
+files under `%LOCALAPPDATA%` (`Docker\run`, `docker-secrets-engine`) — remedy
+was renaming the parent dirs aside; the `.stale.*` leftovers there are inert
+and deletable after a reboot.
+
+**Watch out**:
+
+- **The falsified clause lived in two records, and the annotation pointed at
+  only one.** Task 1.1 flagged the checklist's "the platform honours an
+  idempotency key"; the active change's own delta carried the same clause in
+  its MAY-list, and archiving would have written into `openspec/specs/` the
+  sentence the checklist edit removed. Caught only because the delta was
+  reread at archive time. When a sentence is falsified, grep for its
+  *siblings* — the same claim spelled differently in every record that quotes
+  it — before amending any one of them.
+- **"Honoured" and "offered" are different claims and the wording now keeps
+  them apart.** The key reaching the platform's declared field is measured
+  (wire test asserts `arguments`, not the request envelope); the platform
+  honouring it is #238 and stays unclaimed everywhere.
+- **The dedupe semantics live in the index, not in code**: at most one
+  non-failed row per (user, key). No pre-read — the collision IS the race
+  loser's path. If a future migration touches
+  `audit_entries_user_idempotency_idx`, the WHERE clause is load-bearing;
+  a plain unique index re-burns failed keys and re-breaks the retry.
+- **db tests that have never run are still a claim, not evidence.** tasks.md
+  carries the annotation: do not archive the #239 change on an unrun db suite.
 
 **Did**: squash-merged PR #235 as `dfa15af` — closed #227, #231, #232. The
 review that preceded it is the previous entry; nothing was found after it.

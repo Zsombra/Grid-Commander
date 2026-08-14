@@ -2,7 +2,7 @@
 id: may-a-submit-disable-itself-while-it-is-in-flight
 title: Nobody has decided whether a perform submit may disable itself while working
 type: question
-status: in-progress
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-14
@@ -14,6 +14,11 @@ tags: [confirmation, pending-state, dt-0022, behaviour]
 ---
 
 # Nobody has decided whether a perform submit may disable itself while working
+
+> **Closed 2026-08-14** — superseded by `a-duplicate-submit-cannot-duplicate-a-write`:
+> the answer is **no**, as settled policy. The three arguments below are the
+> record of the trade; the third (focus is the announcement channel) is the
+> one that survived scrutiny. GitHub #228 closed.
 
 ## What
 

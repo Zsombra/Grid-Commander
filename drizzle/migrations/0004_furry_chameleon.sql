@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS "audit_entries_user_idempotency_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "audit_entries_user_idempotency_idx" ON "audit_entries" USING btree ("user_id","idempotency_key") WHERE "audit_entries"."outcome" != 'failed';

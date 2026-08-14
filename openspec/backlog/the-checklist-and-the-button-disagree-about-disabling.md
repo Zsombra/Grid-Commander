@@ -2,7 +2,7 @@
 id: the-checklist-and-the-button-disagree-about-disabling
 title: The UI checklist requires submits to disable in flight and fourteen of them do not
 type: risk
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-14
 updated: 2026-08-14
@@ -14,6 +14,11 @@ tags: [confirmation, pending-state, dt-0022, checklist, process]
 ---
 
 # The UI checklist requires submits to disable in flight and fourteen of them do not
+
+> **Closed 2026-08-14** — reconciled by `a-duplicate-submit-cannot-duplicate-a-write`:
+> checklist v2.0.0 states the outcome, `app-access` gains the requirement,
+> principle 14 states the settled position. GitHub #229 closed with the
+> decision and the argument that decided it (the announcement channel).
 
 ## What
 

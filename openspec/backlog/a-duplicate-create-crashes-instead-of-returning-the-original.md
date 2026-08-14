@@ -2,16 +2,25 @@
 id: a-duplicate-create-crashes-instead-of-returning-the-original
 title: The idempotency key never reaches BattleGrid, and a duplicate create is a raw Postgres error
 type: risk
-status: open
+status: done
 priority: p1
 created: 2026-08-14
 updated: 2026-08-14
-change: ""
+change: "a-duplicate-create-returns-the-original"
 capability: agent-authoring
 github: "239"
 blocked_by: []
 tags: [idempotency, create, error-handling, operator-facing]
 ---
+
+> **Closed 2026-08-14** — fixed by `a-duplicate-create-returns-the-original`
+> (archived; PR #246, closes GitHub #239 on merge). Both halves now hold and
+> are proven: the local ledger dedupes only a non-failed attempt (partial
+> unique index; 96/96 `test:db` on real Postgres 16), and the key is sent in
+> the create tool's own `arguments`. Fix shape (1) **and** (2) from below —
+> (1) is the guarantee, (2) offers the platform its contract; honour stays
+> #238. The operator decision landed as recommended: only `succeeded`
+> (or undecided) dedupes, so a failed create retries from the same form.
 
 #231 shipped an `idempotencyKey` on `/agents/new`, minted per render and carried
 as a hidden input. The per-render minting is correct and **measured**:

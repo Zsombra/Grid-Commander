@@ -132,3 +132,101 @@ describe('when there is nothing to bind to, there is no form', () => {
     expect(r.text).toMatch(/nothing here has\s+failed|nothing here has failed/);
   });
 });
+
+/**
+ * The aftermath of a bounced submit. A duplicate press redirects back here
+ * with `?problem=`, and the sentence must render on whatever branch the
+ * re-render takes — a duplicate whose first press succeeded arrives at
+ * capacity by construction, which is exactly the branch that historically
+ * dropped a carried reason (#240).
+ */
+describe('a carried problem renders on every branch', () => {
+  const PROBLEM = 'this form was already submitted and the agent was created';
+  const withProblem = { searchParams: Promise.resolve({ problem: PROBLEM }) };
+
+  it('renders the sentence above the form', async () => {
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.text).toContain('Refused:');
+    expect(r.text).toContain(PROBLEM);
+    // The form is still there, with a fresh key — a deliberate second agent
+    // stays one press away.
+    expect(r.text).toContain('New agent');
+  });
+
+  it('renders the sentence on the no-strategies branch too', async () => {
+    world(new FakeStrategiesPort([]));
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.headings[0]).toBe('Nothing to bind an agent to');
+    expect(r.text).toContain(PROBLEM);
+  });
+
+  it('renders the sentence on the unreadable-strategies branch too', async () => {
+    const strategies = new FakeStrategiesPort([BERLIN]);
+    strategies.readable = false;
+    world(strategies);
+    const Page = await newAgentPage();
+    const r = await rendered(await Page(withProblem));
+    expect(r.text).toContain('Cannot create an agent right now');
+    expect(r.text).toContain(PROBLEM);
+  });
+
+  it('renders nothing extra when no problem is carried', async () => {
+    const Page = await newAgentPage();
+    const r = await rendered(await Page({ searchParams: Promise.resolve({}) }));
+    expect(r.text).not.toContain('Refused:');
+  });
+});
+
+/**
+ * The action itself, walked. The command mapping and the rendered sentence
+ * are each tested elsewhere; this covers the seam between them — which
+ * sentence each outcome picks, and where the bounce lands. A swapped ternary
+ * would pass every other test.
+ */
+describe('the create action bounces a duplicate to the surface acted from', () => {
+  function duplicateSubmit() {
+    const form = new FormData();
+    form.set('displayName', 'Dup');
+    form.set('brainPreset', 'ROMMEL');
+    form.set('strategyId', 'own-1');
+    form.set('tradingMode', 'OFF');
+    form.set('minAllocationUsd', '10');
+    form.set('balanceThresholdUsd', '10');
+    form.set('maxConcurrentExposureUsd', '100');
+    form.set('maxCumulativeDrawdownUsd', '100');
+    form.set('maxDailyLossUsd', '50');
+    form.set('idempotencyKey', 'k-dup');
+    return form;
+  }
+
+  async function bounceOf(outcome: 'succeeded' | 'attempted'): Promise<string> {
+    const { FakeAgentsPort } = await import('../support/agent-fakes.js');
+    const { actingWith } = await import('./support/fake-acting.js');
+    const agents = new FakeAgentsPort([]);
+    agents.duplicateOf = outcome;
+    current = actingWith({ agents, strategies: new FakeStrategiesPort([BERLIN, CANNAE]) });
+
+    const { create } = await import('../../app/(app)/agents/new/page.js');
+    try {
+      await create(duplicateSubmit());
+    } catch (err) {
+      // `redirect()` works by throwing; the destination rides in the digest.
+      return String((err as { digest?: string }).digest ?? '');
+    }
+    throw new Error('the action neither redirected nor threw — the refusal went nowhere');
+  }
+
+  it('a duplicate of a succeeded create says the press worked, on /agents/new', async () => {
+    const digest = decodeURIComponent(await bounceOf('succeeded'));
+    expect(digest).toContain('/agents/new?problem=');
+    expect(digest).toContain('the agent was created');
+  });
+
+  it('a duplicate of an undecided create says to check the roster first', async () => {
+    const digest = decodeURIComponent(await bounceOf('attempted'));
+    expect(digest).toContain('/agents/new?problem=');
+    expect(digest).toContain('may have landed');
+  });
+});
