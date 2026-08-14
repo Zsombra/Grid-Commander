@@ -41,7 +41,13 @@ unblocked p2s — `the-build-never-checks-nexts-generated-route-types`,
 `the-source-completeness-check-matches-no-import-here`,
 `the-wager-sentence-offers-scope-as-a-safety-boundary` — read in full before
 choosing. `recorded-signals-are-not-yet-evidence` stays #94-blocked despite
-being the board's computed NEXT.
+being the board's computed NEXT. *(Addendum, post-merge: each tripwire's
+condition AND its fire-time instruction now live on the item itself — #94
+gained the operator's two-part gate (DATABASE_URL present + record ≥ a week,
+earliest ~2026-08-18) and #104 logged today's read as its fourth
+confirmation; #107 and #101 already carried theirs. A next session needs
+only: read the four items, check their conditions, act on the one that
+fires.)*
 
 **Watch out**: a manifest's digest can be refreshed without its prose —
 agent-reactivate-confirm passed staleness while still describing
