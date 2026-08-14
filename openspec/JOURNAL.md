@@ -1,6 +1,32 @@
 # Journal
 
-## 2026-08-14 (floor) — the unanticipated failure gets the product's own words
+## 2026-08-14 (close) — three merges, two archives, and both dedupe layers measured
+
+**Did**: closed out the session. **PR #246** (the #239 dedupe fix + checklist
+v2.0.0 + the `a-duplicate-submit` archive), **PR #247** (the #238 probe
+record), and **PR #248** (the #236 error boundaries + its archive) are all
+squash-merged to main. Issues closed this session: **#228, #229, #233, #236,
+#238, #239**. Opened: **#245**. The account is restored exactly — Vanguard,
+Undertow, Breakwater active, no probe litter.
+
+**State**: 0 active changes, 28 open backlog items, **no p1**. 2371 vitest /
+185 files, all gates green, `validate --all` 0 errors / 14 warnings, and the
+db suite has now actually executed (96/96, local Docker postgres — CI remains
+billing-blocked, manual dispatch only).
+
+**Next**: the fork-name 500 (`forking-a-name-that-exists-is-a-500`) — the
+sharpest remaining operator-facing crash; the new boundary is a floor under
+it, not a fix. Then #245 (the create action's three silent arms) finishes the
+create route. Neither blocks the other.
+
+**Watch out**: three things this session proved worth re-checking elsewhere.
+A falsified sentence has *siblings* — the same claim spelled differently in
+every record that quotes it; grep for the claim, not the wording, before
+amending any one copy. "CI provides X" is a claim about configuration, not
+about runs — the billing block meant the db gate had *never* executed and the
+workflow itself carried a refusal (wrong database name) nobody had seen fire.
+And the platform's key-dedupe outranks its capacity check — measured, so a
+future capacity refusal on a keyed retry means the platform changed.
 
 **Did**: merged the #238 probe record (PR #247), then implemented, verified
 and archived **`an-unanticipated-failure-has-a-floor`** (#236, operator-
