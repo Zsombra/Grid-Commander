@@ -8,7 +8,7 @@ created: 2026-08-15
 updated: 2026-08-15
 change: ""
 capability: strategy-authoring
-github: "TBD"
+github: "285"
 blocked_by: []
 tags: [battlegrid, dead-write-path, conformance, live]
 ---
