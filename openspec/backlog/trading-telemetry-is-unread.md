@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-13
+updated: 2026-08-15
 change: ""
 capability: agent-understanding
 github: "116"
@@ -14,6 +14,23 @@ tags: [battlegrid, reporting, expected-value]
 ---
 
 # The market context around a trade is unread
+
+> **Taken in part, 2026-08-15 — and that part archived the same day.** The
+> regime pair — `get_regime_snapshot` + `get_regime_history` — went first, as
+> one surface: `the-regime-the-record-was-taken-in` (archived 2026-08-15;
+> `/recorder/regime`, regime context for the record's window, beside the
+> forward-returns analysis). The item is re-scoped to the remaining four
+> reads and stays open. The regime pair went first
+> because an existing surface already begs its question: the forward returns
+> state their window and nothing about what kind of market that window was
+> (#282's claims-attachment gate is exactly this caveat), and the account's
+> first required condition (Salamis `RANGING_TAPE`, #147) makes "when is the
+> tape ranging" operational. The other four reads stay here, each still
+> waiting for a surface that asks its question: `get_coin_candles` (the
+> stop-vs-noise item deliberately walked away from needing candles — #85 took
+> the platform's own ATR answer instead), `get_coin_metadata`,
+> `get_macd_heatmap`, `get_coin_performance_history`. Do not close this item
+> when that change archives — re-scope it to the remaining four.
 
 > **Narrowed a third time, 2026-08-13.** The open-orders slice this item still
 > listed as *"blocked on observation — probe while a position is open"*

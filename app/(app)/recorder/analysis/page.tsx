@@ -27,6 +27,10 @@ export default async function RecorderAnalysisPage() {
       </p>
       <ForwardReturnsPanel result={result} />
       <p className="text-sm">
+        <a href="/recorder/regime" className="underline">
+          The regime this window sat in
+        </a>{' '}
+        — the platform&rsquo;s own classification, read beside these figures.{' '}
         <a href="/recorder" className="underline">
           Back to the record
         </a>{' '}

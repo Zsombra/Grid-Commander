@@ -4,7 +4,7 @@
   "route": "/recorder/analysis",
   "capability": "signal-recording",
   "status": "functional",
-  "generated_at_commit": "3bcfa6b",
+  "generated_at_commit": "eac9afb",
   "source_files": [
     "app/(app)/recorder/analysis/page.tsx",
     "src/presentation/components/forward-returns.tsx",
@@ -89,12 +89,13 @@
     ],
     "focus_order": [
       "page heading",
+      "regime-context link",
       "back-to-record link"
     ],
     "notes": "The depth line carries role=status; the unreadable arm carries role=alert. Tables are native <table> elements with header cells; wide tables scroll inside their own container rather than the page."
   },
   "source_digest": {
-    "app/(app)/recorder/analysis/page.tsx": "sha256:d6e0f9be915914c31c1586cb400e7f26eaa5ba6ef309aaac6ceb6fecc6e96b0c",
+    "app/(app)/recorder/analysis/page.tsx": "sha256:c17ae2cbfdc005725094e90990a8c78e1303685daa0bf21af8d5af5efe263abd",
     "src/presentation/components/forward-returns.tsx": "sha256:216b11f7c18f0935e8e1140f709d6f5652e7a0f6c47a451683c7c44428ad45ca",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }

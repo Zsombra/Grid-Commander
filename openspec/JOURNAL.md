@@ -1,5 +1,66 @@
 # Journal
 
+## 2026-08-15 (regime) — the record learns what regime it was taken in
+
+**Did**: #116's first market-context read shipped — **two tools as one
+surface**. `the-regime-the-record-was-taken-in` (standard, archived):
+`/recorder/regime` composes the platform's per-bar regime classification
+over each recorded series' own window (subjects and window from the
+product's record, answers live from `get_regime_history`, current state
+from `get_regime_snapshot`), linked both ways with `/recorder/analysis`.
+Chosen over the other four reads because an existing surface begged this
+question — the forward returns state their window and nothing about the
+market it sat in (#282's caveat), and Salamis's required `RANGING_TAPE`
+(#147) makes "when is the tape ranging" operational. Shapes live-probed
+before modelling (BTC 1h, SOL 4h, null snapshot on an unknown ticker);
+look-back depth read from the declared schema at runtime; labels and
+context axes travel verbatim as data. #116 re-scoped to the remaining
+four reads (issue comment posted); the deliberate cut — regime joined
+into per-pair attribution — filed as
+`forward-returns-are-not-regime-conditioned` (#297). Two new surfaces
+worth of manifests: `recorder-regime` pinned, `recorder-analysis`
+re-pinned (its page gained the link).
+
+**State**: 0 active changes, 21 open items, P2 #289 still untouched at
+the top. Gates at archive: tsc, eslint, **2491 vitest / 200 files** (was
+2461/196), `validate --all` 0 errors / 13 standing warnings; `test:db`
+deliberately skipped (no schema change; operator's standing instruction).
+Branch `claude/trading-telemetry-unread-reads-787c9d`; PR is this
+handoff's last act.
+
+**Next**: unchanged from the last two sessions and still right: P2 #289
+(`a-completed-change-set-is-stranded-on-a-draft-pr`) is the sharpest
+item. On this lane: the regime surface deepens as the record does, free;
+the #147 watch (platform unpause → read `conditionEvaluation` under the
+required condition) remains the sharpest read-only follow-up.
+
+*(Addendum, close-out: the operator said wrap up. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite,
+2491/2491 — then **#298 squash-merged to main** as this close-out's act.
+The branch tip was archive-tagged
+(`archive/claude/trading-telemetry-unread-reads-787c9d`) and pushed
+before the remote branch was deleted, per the (prune) convention; the
+local branch and worktree stay on disk, held by this session, and go
+when it exits. The change was already archived mid-session, so the
+spec layer carries nothing forward. The p3-lane-queue memory was
+corrected to the end-of-day lane: 21 open, P2 #289 on top.)*
+
+**Watch out**: `structure.test.ts` bans `momentum` (and other platform
+vocabulary) in src outside the adapter boundary — the snapshot's context
+travels as verbatim `{axis, value}` pairs for that reason; re-introducing
+named axis fields will fail the guard, and renaming to dodge it would be
+worse. — The rendering harness joins adjacent JSX text nodes with spaces,
+so any sentence with interpolations must be a single template literal or
+its test asserts across an invisible seam ("3 capture s"); the regime
+panel is written that way deliberately. — `failure-is-explained`'s
+exemption cap is now `<9` and the list is full again at 8: the next
+own-store surface owes the same argument, or a shared store-failure
+component (three branches now carry near-identical survival sentences —
+extraction is becoming worth it). — The regime page makes 2 platform
+reads per recorded series per load (~40 today), parallel and per-series
+isolated; a rate-limited row fails visibly with the platform's reason —
+designed behavior, not a bug.
+
 ## 2026-08-15 (floor) — the depth gate held, and the claims stay unattached
 
 **Did**: #282's depth check, run before proposing as instructed — and it

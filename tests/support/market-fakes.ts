@@ -1,4 +1,10 @@
-import type { MarketPort, RankedCoinsResult, RankingVocabulary } from '@/ports/market.js';
+import type {
+  MarketPort,
+  RankedCoinsResult,
+  RankingVocabulary,
+  RegimeHistoryResult,
+  RegimeSnapshotResult,
+} from '@/ports/market.js';
 
 /**
  * The platform's market data, in memory.
@@ -43,5 +49,33 @@ export class FakeMarketPort implements MarketPort {
 
   async platformVersion(): Promise<string | null> {
     return null;
+  }
+
+  /**
+   * The regime pair, scripted per symbol. `'none'` / `'unclassified'` by
+   * default — the platform's own empty answers — so a test that has not
+   * scripted a coin renders the honest empty arms rather than throwing, and
+   * `regimeReads` records what was asked so a test can assert the record's
+   * own coins and intervals were the subjects.
+   */
+  regimeHistoryBySymbol: Record<string, RegimeHistoryResult> = {};
+  regimeSnapshotBySymbol: Record<string, RegimeSnapshotResult> = {};
+  readonly regimeReads: Array<{ tool: 'history' | 'snapshot'; symbol: string; timeframe: string }> =
+    [];
+
+  async regimeHistory(params: {
+    symbol: string;
+    timeframe: string;
+  }): Promise<RegimeHistoryResult> {
+    this.regimeReads.push({ tool: 'history', symbol: params.symbol, timeframe: params.timeframe });
+    return this.regimeHistoryBySymbol[params.symbol] ?? { kind: 'none' };
+  }
+
+  async regimeSnapshot(params: {
+    symbol: string;
+    timeframe: string;
+  }): Promise<RegimeSnapshotResult> {
+    this.regimeReads.push({ tool: 'snapshot', symbol: params.symbol, timeframe: params.timeframe });
+    return this.regimeSnapshotBySymbol[params.symbol] ?? { kind: 'unclassified' };
   }
 }
