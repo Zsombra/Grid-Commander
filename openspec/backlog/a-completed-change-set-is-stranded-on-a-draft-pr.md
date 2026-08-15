@@ -2,7 +2,7 @@
 id: a-completed-change-set-is-stranded-on-a-draft-pr
 title: Three archived changes and seven requirements live only on draft PR #82 — reconcile them against main
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-15
 updated: 2026-08-15
@@ -97,3 +97,56 @@ pruning and chose to give this its own session.
   mirrored issue) or declined.
 - PR #82 is closed or merged — it should not remain open as a draft holding the
   only copy of anything.
+
+## Reconciled 2026-08-15 — every requirement declined with a reason, four items carry the residue
+
+All three archived changes read in full against `main` and the known platform
+state (two deployments have passed since they were written). **No requirement
+merged; all seven declined**, on two distinct grounds:
+
+| Requirement | Disposition |
+|---|---|
+| The Authoring Vocabulary's Values Are Recorded | **Superseded** — `main`'s "The Vocabulary's Values Are Recorded Verbatim" (`platform-mapping/spec.md:329`) carries the same substance via `docs/battlegrid-vocabulary.json` + `tools/probe_vocabulary.py` |
+| Vocabulary Drift Fails The Live Freshness Guard | **Superseded** — "A Values-Only Deployment Fails A Named Gate" (`platform-mapping/spec.md:366`); the live gate compares values directly, per category |
+| The Record Carries Every Surface The Server Declares | **Declined as unbuilt** — `main`'s dump carries instructions verbatim but prompt/resource *lists* only; a spec must not claim unbuilt behavior. Residue → [[the-prose-record-carries-lists-where-the-platform-declares-bodies]] (#294) |
+| Prose Surface Drift Fails The Live Freshness Guard | **Declined as unbuilt** — no live prose comparison exists on `main`. Residue → #294 |
+| The Reference Renders What The Record Carries | **Declined as unbuilt** — `generate_mcp_reference.py:14` still loads-and-discards instructions; no bodies rendered. Residue → #294 |
+| The Platform's Declared Request Budget Is Read | **Declined as unbuilt** — zero budget code on `main`. Residue → [[the-request-budget-is-published-and-discarded]] (#292) |
+| A Rate-Limited Request Names The Wait | **Declined as unbuilt** — same. Residue → #292 |
+
+The third change (`the-probes-catch-up-to-v17`) carried no requirements
+(`skip_specs`); its three assertion repairs were checked individually against
+`main`'s rebuilt 31-file probe suite — two of the three stale assertions no
+longer exist, one survives (below).
+
+**Request budget**: filed as its own item and dropped from this one
+([[the-request-budget-is-published-and-discarded]], #292, full scope — the
+branch's reading half never reached `main`; the tag holds it as reference).
+
+**The seven branch-only backlog items**: three re-filed (still true on
+`main`), four declined (the problem no longer exists here):
+
+| Branch item | Disposition |
+|---|---|
+| the-feasibility-advisory-is-unread | **Re-filed** (#291) — still no reader in `src/`; re-priced p2 → p3 because the v15 dials item that lent it urgency is done on `main` |
+| the-request-budget-is-published-and-discarded | **Re-filed** (#292) — full scope |
+| write-probe-thinking-pagination-assertion-too-strict | **Re-filed** (#293) — the exact assertion still lives at `tests/live/write-probe.test.ts:575` |
+| three-quarters-of-the-mcp-surface-is-unrecorded | **Declined, residue consolidated** into #294 — instructions + lists landed on `main` independently (capture_mcp_dump + version-agreement sweep) |
+| create-probes-assert-a-pre-v17-config-width | **Declined** — the `>20`/`>19` width literals no longer exist in `main`'s probes |
+| radar-first-deployment-refusal-drifted | **Declined, doubly obsolete** — the platform now *accepts* first deployments via `expectedRevision: null` (`main`'s radar-probe establishes it live, slot-shuffle test), and the describe-step refusal in `deploy-agent.command.ts` is gone with it |
+| the-probe-failure-path-is-untested | **Declined** — it describes `fetch_prompts`/`fetch_resources` in `probe_mcp_surface.py`, code that exists only on the branch; `main`'s probe never fetches prose surfaces |
+
+**PR #82**: annotated tag `archive/claude/agent-creation-data-strategies-fw6av8`
+created at its head (`9c60e93`) and pushed — the prune session's convention;
+the branch was the only one it deliberately did not tag. PR closed with the
+disposition; remote branch deleted after tagging. The archived change folders
+remain readable on the tag; they were deliberately **not** imported into
+`main`'s archive, because their delta specs claim requirements this
+reconciliation declined, and an archive folder whose deltas never merged here
+would read as though they had.
+
+One observation recorded, not filed: `main`'s live vocabulary gate compares
+three value classes of the ~8 keys each category carries (`metrics`/`templates`
+drift under an unchanged version would pass); the spec scopes it with "at
+least" deliberately. Noted inside #294, whose digest mechanism would close
+both if built.

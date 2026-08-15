@@ -143,6 +143,12 @@ agent is evaluated, read a few evaluations and record what
 `conditionEvaluation.verdict` and `decidedBy` say — for a capture where
 ADX ≤ 20 held and one where it did not. That observation closes this item.
 
+Checked 2026-08-15, later the same day (after an MCP-backend outage — 502
+at the endpoint for 30+ minutes, site root 200 throughout, then recovered):
+the fleet is still `PLATFORM_PAUSED` 20/20, `radarPaused: true`, nothing
+fired since 2026-08-13T18:01:18Z. No evaluation under revision 4 can exist
+yet; the watch stays armed and nothing here is observable.
+
 **The apply itself produced a separate p2 finding**: the live server
 rejected `regimeAutoDerive` and `regimeTimeframe` as *unrecognized keys* on
 the plan — the same server's schema declared them required at session
