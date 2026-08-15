@@ -290,6 +290,13 @@ class StubMarket implements MarketPort {
   async platformVersion(): Promise<string | null> {
     return null;
   }
+  // The regime pair belongs to the record's context surface, never here.
+  async regimeHistory(): Promise<never> {
+    throw new Error('the qualification screen never reads the regime history');
+  }
+  async regimeSnapshot(): Promise<never> {
+    throw new Error('the qualification screen never reads the regime snapshot');
+  }
 }
 
 function deployedOn(tickers: readonly string[]): RadarReadResult {

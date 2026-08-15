@@ -131,6 +131,14 @@ export class ScriptedMarket implements MarketPort {
   async rankingVocabulary(): Promise<never> {
     throw new Error('the recorder never reads the ranking vocabulary');
   }
+
+  async regimeHistory(): Promise<never> {
+    throw new Error('the recorder never reads the regime history');
+  }
+
+  async regimeSnapshot(): Promise<never> {
+    throw new Error('the recorder never reads the regime snapshot');
+  }
 }
 
 type StoredCapture = SignalCapture & { raw: Readonly<Record<string, unknown>> };

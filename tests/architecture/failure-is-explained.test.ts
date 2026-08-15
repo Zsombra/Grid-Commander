@@ -258,6 +258,17 @@ const EXEMPT: ReadonlyArray<{ file: string; reads: string; because: string }> = 
       'terms: the read failing says nothing about what is recorded.',
   },
   {
+    file: 'src/presentation/components/regime-context.tsx',
+    reads: 'result',
+    because:
+      'The store arm of the regime context reads the product’s own record store — ' +
+      'the same ground as the coverage and forward-returns entries above. The page’s ' +
+      'BattleGrid halves (per-series regime history and snapshot) DO carry the shared ' +
+      'sentence, cause and all; only the branch whose cause is the product’s own ' +
+      'database carries the record’s survival sentence instead, because naming ' +
+      'BattleGrid there would send someone to wait out an outage that is not happening.',
+  },
+  {
     file: 'app/(app)/strategies/metrics/[metric]/page.tsx',
     reads: 'check?',
     because:
@@ -454,8 +465,10 @@ describe('an exemption is a claim, and is checked', () => {
   it('stays small enough to read', () => {
     // Not a limit for its own sake: an exemption list long enough to skim is
     // one nobody reads, and this guard's whole value is that every entry in it
-    // has been argued for.
-    expect(EXEMPT.length).toBeLessThan(8);
+    // has been argued for. Raised 8 → 9 by the-regime-the-record-was-taken-in,
+    // whose store branch stands on the same own-store ground as entries 3–5;
+    // the next raise deserves the same argument, not a habit.
+    expect(EXEMPT.length).toBeLessThan(9);
   });
 });
 
