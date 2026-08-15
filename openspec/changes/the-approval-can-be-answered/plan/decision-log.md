@@ -232,6 +232,44 @@ and stands.
 
 ---
 
+## Where a fresh session picks this up
+
+**Read first**: this log top to bottom, then
+`openspec/backlog/approvals-have-no-write-side.md` for every observed payload.
+Nothing below the UI needs re-deriving — it is built and tested.
+
+**Built and green (19/40)**: the binding (`src/domain/agent/pending-decision.ts`),
+the confirmation target, the read query, the port method, the adapter, and
+`AnswerDecisionCommand`. 34 tests. `npm test` → 2505 across 199 files.
+
+**The next task is 1.4b — the queue surface**, then 3.3/3.4 (the cancel
+confirmation). Everything needed is already behind the query:
+`ReadPendingDecisionsQuery` returns `waiting` / `none` / `unreadable` as distinct
+kinds, and each view carries exactly `{decision, msRemaining}`.
+
+**Three constraints the surface must honour, all already decided:**
+
+1. **No currency amount** anywhere (PE-2). Size renders as the proportion the
+   platform sent. The formula that would produce an amount is known and exact —
+   that is why the rule exists, not why it can be broken.
+2. **Gate by not rendering.** Accept must not exist on any surface where cancel
+   is unavailable, and a disabled-but-present control is forbidden twice over
+   (UI checklist item 5, `system.json` principle 10).
+3. **`executedAt` is not "when the trade opened."** It is set at creation, and
+   was observed set on a decision that had executed nothing.
+
+**Then 4.5, which is the live gate**: perform a cancel *through the product* and
+confirm the audit row. Vanguard produces decisions on its own now, so this needs
+no setup writes — wait for one and answer it. **No accept surface may be built
+until this passes** (DL-11).
+
+**Do not**: start a polling watch (the operator asked for none); name a
+fund-committing tool outside `src/infrastructure/battlegrid/` (A10 checks);
+compose a confirmation target inline (`edit-binding.test.ts` checks); or add a
+retry anywhere (P4 item 3 is not excepted).
+
+---
+
 ## Executor handoff notes
 
 1. **Start with `closedAt`.** The liveness half of DL-1 is unimplementable until

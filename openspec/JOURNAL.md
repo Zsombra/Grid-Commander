@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-15 (built) — the answer exists in code, and the accept path rewrote a field
+
+**Did**: took `the-approval-can-be-answered` from proposal to **19/40**, all of
+it below the UI. Planned it (full track, five artifacts), then built: `closedAt`
+onto `EntryDecision`; `pending-decision.ts` holding the five-condition binding;
+`confirmationTarget.decisionAnswer` with the **verb bound first**;
+`ReadPendingDecisionsQuery`; `answerEntryDecision` on the port and in the
+adapter; `AnswerDecisionCommand`. **34 new tests, 2505 across 199 files, all
+green.** Amended the **A10 wager guard** deliberately (DL-7/DL-10). Rebound
+**Vanguard** off Trafalgar onto Cannae and matched its bar to Undertow's
+(0.6 → 0.55) — it produced its **first trade in its existence** within the hour.
+The operator accepted it in BattleGrid's UI, which handed us the **accept-path
+payload** we had never seen.
+
+**State**: clean, 12 commits on `claude/approvals-write-side-fd4863`, all pushed,
+[PR #307](https://github.com/Zsombra/Grid-Commander/pull/307). `validate --all`
+0 errors. Undertow restored to the operator's settings (rev 10, `FULL_EXECUTION`);
+**Vanguard is live at rev 13 in `APPROVAL_REQUIRED`** and is now the standing
+source of approval rows — it holds a real AVAX long ($21.56 notional, $5.39
+margin, 4×). Board: 23 open items, three p2 (#289, #299, #304).
+
+**Next**: the **queue surface (1.4b)** and the **cancel confirmation (3.3/3.4)**.
+That is the shortest path to **task 4.5** — a cancel performed *through the
+product* and confirmed in the audit — which is the half of the Phase D gate that
+still stands. Start a fresh session for it: the remaining work is React, tokens
+and a `/surface` refresh, a different mode from everything above.
+
+**Watch out**: **I crossed the Phase D gate.** `accept_entry_decision` went in
+alongside cancel because DL-3 had already made answering one verb-parameterised
+operation, and splitting it would have created two paths where the design wants
+one. Purpose held — 5.2/5.3 are unbuilt so **no surface reaches accept** — but
+the sequence did not, and DL-11 says so. **No accept surface may be built until
+4.5 passes.** — **The plan was wrong and the codebase was right** about auditing:
+P3 item 5 asked for binding refusals to be audited; `call-path.ts` and
+`wager.test.ts` already establish that a refusal writes **no** row, because it
+never left the process. An attempt that *failed* is audited; a refusal *before*
+the attempt is not (DL-9). — **`expiresAt` is rewritten on accept**: created
+18:05:54 with a 15-minute window, it reads 18:34:00 = `executedAt` + 15m. So
+decision fields **do** mutate, which retires DL-1's N=1 caveat *in the direction
+that vindicates keeping the price levels in the binding*. Treat no decision field
+as immutable. — **`status` and `tradeStatus` diverge** (`EXECUTED`/`LIVE`) though
+they moved together on the cancel; never derive one from the other. — **`closedAt`
+is null on an EXECUTED decision**, so it is not a liveness test on its own —
+`status === 'PENDING'` carries real weight in the pair. — The **sizing formula
+reproduced a third time** on a second agent, preset and leverage
+(45 × 0.12 × 4 → floor 3.32 → 21.561408, exact). Still must not be displayed
+(PE-2). — Skill paths lie twice: checklists are in **`docs/checklists/`** not
+`docs/specs/`, and plan artifacts belong in **`openspec/changes/<id>/plan/`** not
+`docs/plan/` — the board could not see the plan until they were moved. CLAUDE.md
+is authoritative over both skills.
+
 ## 2026-08-15 (answered) — the queue answers, and the declaration was wrong twice
 
 **Did**: #101's precondition is met and the change is proposed. The operator
