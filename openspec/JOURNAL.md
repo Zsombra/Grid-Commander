@@ -52,6 +52,21 @@ two live required signal rules in historical evaluations. #282 waits on
 depth and the operator's choice of first claim; #283 is a lite change any
 session can take.
 
+*(Addendum, seventh leg: the operator authorized #147's write ("FINISH UP
+THE 147") and it landed through the platform's own ceremony — Salamis
+revision 3 → 4, `changedAxes: ["CONDITIONS"]` only, `RANGING_TAPE` now
+`required: true`, one bound agent reconfigured. The account holds its
+first required condition; the deciding-branch watch is armed for the
+platform's unpause. The apply also caught the platform mid-drift:
+`regimeAutoDerive`/`regimeTimeframe` are now unrecognized keys on the
+plan while the session's own loaded schema declared them required and
+`toApplyPlan` still sends them — every product-composed strategy apply is
+currently refused; filed as **#285**, p2, the board's new sharpest item.
+The write here succeeded only by dropping the two keys by hand. A
+self-inflicted lesson rides along: a `git reset --hard` mid-flow discarded
+an uncommitted item edit that had to be reproduced from context — never
+reset with records in flight.)*
+
 **Watch out**: the analysis's unreadable arm is deliberately NOT
 `WhyNotLoaded` — this surface reads only the product's own store, the
 shared sentence would name a false cause, and the exemption in

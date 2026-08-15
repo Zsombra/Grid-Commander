@@ -126,6 +126,31 @@ of them not the one this item predicted:
    SYSTEM conditions read null). The *evaluation*-side `decidedBy` remains
    the unobserved half.
 
+## The write landed, 2026-08-15 ~08:19Z — the account holds its first required condition
+
+Authorized by the operator ("FINISH UP THE 147") and performed through the
+platform's own compile→review→apply ceremony over MCP:
+
+- Fresh read: Salamis revision 3, `RANGING_TAPE` `required: false`.
+- Compile: `changedAxes: ["CONDITIONS"]` and nothing else — the diff shows
+  exactly `required: false → true`; viability viable; `bindingImpact.
+  boundAgentCount: 1`; proposedRevision 4; token bound to revision 3.
+- Apply: `committedRevision: 4`, `propagatedAgentCount: 1`, read-back
+  byte-identical everywhere but the one flag.
+
+**The watch this arms**: once the platform unpauses and Salamis's bound
+agent is evaluated, read a few evaluations and record what
+`conditionEvaluation.verdict` and `decidedBy` say — for a capture where
+ADX ≤ 20 held and one where it did not. That observation closes this item.
+
+**The apply itself produced a separate p2 finding**: the live server
+rejected `regimeAutoDerive` and `regimeTimeframe` as *unrecognized keys* on
+the plan — the same server's schema declared them required at session
+start, and the product's own `toApplyPlan` still sends both, so every
+strategy apply the product's UI composes is currently refused. The write
+here succeeded only by dropping the two keys by hand. Filed as
+[[every-apply-the-product-composes-is-refused]] (#285).
+
 **The write, if taken, has a better shape than a test fixture.** Flipping
 Salamis's own `RANGING_TAPE` (or Trafalgar's `TRENDING_TAPE`) to
 `required: true` is not an artificial probe — it is the strategy becoming
