@@ -522,32 +522,48 @@ filed and closed the same session by `the-agent-write-follows-v14`.)
 
 ## Start Here — Where The Next Session Picks Up
 
-**After 2026-08-13 the sharpest pick is one thread, not a list.** The secondary
-pending treatment: `/pending/[id]`'s **Decline** mutates, has no undo, and still
-gives no sign it is working. It wears `BUTTON_SECONDARY` and `PerformButton`
-wears primary, so sweeping it in would promote a deliberately secondary control
-to the page's main weight. It needs a design ticket, and that same round should
-settle `may-a-submit-disable-itself-while-it-is-in-flight` — DT-0022 defined what
-`disabled` looks like and **deliberately refused to authorise entering it**,
-because that removes an affordance and confirmation tokens are single-use. Both
-items are filed; neither has a GitHub issue yet.
+**Run `/board` first — it prints live counts, and everything in this file is
+prose that rots between sessions.** Then, with a key, `./scripts/ci.sh`: if
+`freshness` is red, BattleGrid has deployed and the map needs re-probing before
+any other work is trustworthy. That gate reads one file. The thirty live probes
+are their own gate, opt-in on **`CI_LIVE=1`**, serial, about nine minutes —
+until 2026-08-10 this instruction fired all thirty in parallel at the real
+account; see the journal entry for that day.
 
-Then: **#94** once the recorder has depth (hourly since 2026-08-11), and **#216**
-— the build's type check silently skips every route type Next generates, because
-`tsconfig` excludes `.next`, which is where they are written. Six pages fail that
-check and nobody has decided whether they are defects.
+### The current thread (2026-08-16)
 
-*Stale, kept for the record*: the 2026-08-12 note pointed at #153 (closed
-2026-08-13), #146 (measured — the churn fell 27x to 3.75/hour, still running, and
-one of its three candidate causes is falsified) and #157.
+**#301's residue** — the standing `Next` for three journal entries running.
+v19.1.0's output survey found three declared reads the product still discards:
+`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`, and
+`debriefVerdict` on five signal-log reads. **Take gate-blocks first**:
+`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
+admits at length, and the platform's is whole-population — so adopting it may
+retire the caveat rather than merely save arithmetic.
 
-Run `/board` first; it prints live counts. Then **run `./scripts/ci.sh` with a
-key** — if `freshness` is red, BattleGrid has deployed and the map needs
-re-probing before any other work is trustworthy. That is fast: the freshness
-gate reads one file, and the thirty live probes no longer ride along inside the
-`vitest` gate. They are their own gate now, opt-in on **`CI_LIVE=1`**, serial,
-about nine minutes. Until 2026-08-10 this instruction fired all thirty of them
-in parallel at the real account — see the journal entry for that day.
+**State**: 24 open items, **all p3 — no p1, no p2.** Nothing is urgent, so the
+pick is genuinely yours. Four PRs are open (**#321** this session's;
+**#319**, **#313**, **#307** from parallel sessions), which is exactly why a
+`Next` written here can be stale before it lands: read
+`git show origin/main:openspec/JOURNAL.md`, never the local copy, before
+trusting one.
+
+### Everything below this line is a dated snapshot, not instructions
+
+**Audited 2026-08-16 and kept for its reasoning, not its direction.** Of the
+twelve backlog items the 2026-08-13 text below names as the sharpest things to
+pick up, **eleven are now `done`** and one never existed under that id — the
+lone survivor is `approvals-have-no-write-side`. Both **#94** and **#216**,
+named there as what comes "then", are **closed**. And its claim that the two
+pending-treatment items have no GitHub issue yet is false: they are **#228** and
+**#229**.
+
+The counts in it are equally of their moment — it says 161 archived changes and
+25 open items against today's **202** and **24**, and calls
+`v15-trade-level-policy-is-declared-but-inert` "the one P1" when no p1 or p2 has
+been open for days.
+
+Read what follows for **why** things were decided. Do not read it for what to do
+next; the section above is that.
 
 ### Everything proposed is built. Most of the backlog waits on other people.
 

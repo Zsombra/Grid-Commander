@@ -68,6 +68,39 @@ values inside 2026-08-14 alone** (129/130/132) and is 139 today. Figures in
 records now carry the commit they were measured on; the checklist carries the
 grep instead of a number.
 
+*(Addendum, close-out. The operator asked for the pipeline left in a state the
+next session could start from, so the wrap-up was audited rather than asserted —
+and **the audit found the worst record in the repo**. `CLAUDE.md` advertises
+`HANDOFF.md` as current state, and its **§ Start Here** was pinned to
+2026-08-13: of the twelve backlog items it named as the sharpest things to pick
+up, **eleven are `done`** and one never existed under that id; both #94 and #216
+that it names as what comes "then" are **closed**; and it claimed two items had
+no GitHub issue when they are #228 and #229. A session trusting it opens a
+change against closed work and finds out after reading the code.
+
+Repaired: Start Here now leads with the live thread (#301's residue, 24 open,
+no p1/p2, four open PRs) and everything older is fenced as a dated snapshot
+kept for its reasoning, not its direction — the reasoning is good, only the
+direction rotted. **The mechanism is untouched and filed as #322**, because
+`HANDOFF.md` is the one artifact here with no producer and no check: the journal
+is append-only and cannot rot, the backlog has `validate`, and this file is
+narrative, cumulative and hand-edited. The previous session repaired its Current
+State table — recording it as "four days stale" — and did not notice Start Here
+immediately below it. The eleven dead items are a ready-made fixture for the
+`validate` rule that would catch the general case.
+
+Also checked and **owed nothing**: `CHANGELOG.md` is the pipeline's own dev
+notes, not a per-change log — untouched since project init, correctly. No design
+re-survey is owed either: DT-0014's record changed, no UI did, and its `design`
+block is byte-identical.
+
+Final: **0 active changes, 25 open items** (four closed this session, three
+filed: #320, #322, plus the #309 instances recorded), still **no p1 and no p2**.
+205 files / 2576 vitest, `validate --all` 0 errors / 13 warnings, 202 archived
+changes. PR **#321**, one commit, branched cleanly off `main`'s tip — checked
+explicitly, because the last session's #315 was cut from another branch and
+merged two changes under one body.)*
+
 
 ## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
 
