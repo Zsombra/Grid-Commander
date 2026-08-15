@@ -27,6 +27,13 @@ export default async function RecorderPage() {
       </p>
       <RecordCoverage result={coverage} />
       <p className="text-sm">
+        <a href="/recorder/analysis" className="underline">
+          Forward returns
+        </a>{' '}
+        — what price did by the next capture, per signal state, with every figure carrying
+        its sample size.
+      </p>
+      <p className="text-sm">
         <a href="/recorder/trim" className="underline">
           Trim the record
         </a>{' '}

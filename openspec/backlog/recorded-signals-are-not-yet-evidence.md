@@ -2,11 +2,11 @@
 id: recorded-signals-are-not-yet-evidence
 title: Grade strategy claims against the accumulating signal record
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-08-07
 updated: 2026-08-15
-change: ""
+change: "the-record-answers-forward"
 capability: signal-recording
 github: "94"
 blocked_by: []
@@ -83,6 +83,19 @@ both halves cold. Checked 2026-08-15: still no `DATABASE_URL`, record at 4
 days — both halves cold (earliest the depth half can hold stays ~2026-08-18). When both hold, start the analysis layer per this item's
 What/Notes (forward returns per signal state, sample sizes beside every
 figure), `/propose`d as its own change.
+
+## The gate opened 2026-08-15 — by the operator's own hand
+
+The depth threshold was always the operator's rule, and on 2026-08-15
+(midday session) they relaxed it to **now**: "let's get it done now." Both
+halves therefore hold — the environment half was verified hot twice today
+(user registry), and the depth half is governed by the operator's explicit
+decision at ~2.4 days of record rather than the week. The statistical
+consequence is accepted and carried, not hidden: every figure the analysis
+layer produces ships with its sample size beside it, and at hourly captures
+over ~2.4 days the per-state samples will be small — that is what the
+sample-size rule exists to say out loud. The analysis layer proceeds as
+this item's What/Notes specify.
 
 Checked 2026-08-15, second sweep (2026-08-14T21:52Z / 04:52 local):
 **environment half HOT, depth half cold — measured from the db itself.**

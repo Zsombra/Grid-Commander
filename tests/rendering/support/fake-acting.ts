@@ -14,6 +14,7 @@ import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
 import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
+import { ReadForwardReturnsQuery } from '@/application/use-cases/read-forward-returns.query.js';
 import { ReadRecordCoverageQuery } from '@/application/use-cases/read-record-coverage.query.js';
 import { ReadSignalHistoryQuery } from '@/application/use-cases/read-signal-history.query.js';
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
@@ -206,6 +207,7 @@ export function actingWith({
     describeTrimRecord: new DescribeTrimRecordQuery(signalRecord, confirmations, random, clock),
     trimRecord: new TrimRecordCommand(signalRecord, confirmations),
     readRecordCoverage: new ReadRecordCoverageQuery(signalRecord, clock),
+    readForwardReturns: new ReadForwardReturnsQuery(signalRecord),
   };
 
   const user: CurrentUserResult = {
