@@ -34,6 +34,17 @@ item. On this lane: the regime surface deepens as the record does, free;
 the #147 watch (platform unpause → read `conditionEvaluation` under the
 required condition) remains the sharpest read-only follow-up.
 
+*(Addendum, close-out: the operator said wrap up. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite,
+2491/2491 — then **#298 squash-merged to main** as this close-out's act.
+The branch tip was archive-tagged
+(`archive/claude/trading-telemetry-unread-reads-787c9d`) and pushed
+before the remote branch was deleted, per the (prune) convention; the
+local branch and worktree stay on disk, held by this session, and go
+when it exits. The change was already archived mid-session, so the
+spec layer carries nothing forward. The p3-lane-queue memory was
+corrected to the end-of-day lane: 21 open, P2 #289 on top.)*
+
 **Watch out**: `structure.test.ts` bans `momentum` (and other platform
 vocabulary) in src outside the adapter boundary — the snapshot's context
 travels as verbatim `{axis, value}` pairs for that reason; re-introducing
