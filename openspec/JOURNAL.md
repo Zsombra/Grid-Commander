@@ -1,5 +1,97 @@
 # Journal
 
+## 2026-08-16 (reconcile) — three PRs blocked on one file, and the branch that kept nothing
+
+**Did**: reconciled 11 branches and 11 worktrees down to 2, and closed the open
+lane. **All three open PRs were `CONFLICTING`, and every one of them conflicted
+on exactly one file — `openspec/JOURNAL.md` — and nothing else.** Checked for
+code collision across the three: 47 non-journal files, **no file touched by
+more than one PR.** They were never in conflict over the work; they were
+queued behind the log that records it.
+
+Merged in order, each rebuilt against the main the previous one produced:
+**#307** (approvals write-side, 29 files, 19/40 of `the-approval-can-be-answered`),
+**#313** (`read_forward_returns` on the MCP surface, #283), **#319** (the shared
+`ConditionCard` and the 191 role claims, #167 + #270, both auto-closed by its
+body as intended).
+
+**Merged `main` into each branch rather than rebasing.** A rebase replays the
+conflict once per journal-touching commit — #307 has 13 commits — and the repo
+squash-merges, so the merge commit never reaches `main` anyway. Resolution was
+mechanical and verified, never hand-edited: take `main`'s file verbatim, insert
+the branch's block at the top of its own date group, then assert
+**(1)** every `## ` header from base, `main` and branch survives, **(2)** the
+section count is exactly `main + new`, **(3)** the diff against `main` is
+**additions only**. 259 → 260 → 261 sections, `0` deletions at every step.
+
+**The five `[gone]` branches had all genuinely merged** (#295, #308, #303, #298,
+#296) — `[gone]` was telling the truth, but their large diffs against `main`
+were the squash-merge artifact, not stranded work. What could still have
+stranded is the close-out addendum each one commits *after* its PR merges, so
+those were checked line by line: four landed whole (6/6, 13/13 + 48/48 HANDOFF,
+10/10, 8/8). **The fifth kept 13 lines that are on no branch but its own** —
+`feasibility-advisory-dial-ui-dffc62`, a `**Next**: rebase and merge PR #295`
+written 18:17Z, 22 minutes before #295 merged at 18:39Z. Its one substantive
+claim — that #289's issue was closed while its item read `open`/p2 — is also
+already settled, item `done`. Nothing to recover; recorded here because "not in
+`main`" and "lost" were not the same answer, and only the line-by-line check
+could tell them apart.
+
+**The mirror drifted the unchecked way again, twice.** Two items read
+`status: open` while their GitHub issue was `CLOSED/COMPLETED` — the direction
+`the-mirror-is-checked-one-way` says nothing checks, now with two more
+instances. **#283** self-corrected when #313 landed (the PR carried its own item
+update), which is the mechanism working. **#294** did not, so it was verified
+against code rather than against its closed issue: `capture_mcp_dump.py:101,105`
+now fetch `prompts/get` and `resources/read`, `generate_mcp_reference.py:271`
+emits `## Server instructions` (`BATTLEGRID_MCP_REFERENCE.md:109`), and
+`surface-freshness.test.ts:317` digests the instructions against the live
+server — all three residual gaps closed, delivering change 6/6. Marked `done`
+against `the-prose-record-carries-bodies`. Mirror is now clean **both**
+directions: 0 open-item/closed-issue, 0 done-item/open-issue.
+
+**One self-inflicted defect, found and fixed.** The #307 resolution left a
+double blank line before its inserted section — runs of 3+ newlines went
+19 → 20. The resolver was corrected to normalize both seams before #313 and
+#319 used it, and the stray line on `main` is removed here. Back to 19.
+
+Retired 9 landed branches and 9 worktrees — 11 and 11 down to 2 — every tip
+recorded first, and each deleted SHA matched what was recorded.
+
+**The cleanup cost this worktree its `node_modules`, and that is the lesson.**
+`rm -rf` over the retired trees followed the junctions the worktrees share for
+their install, so the shared store went with them and this checkout lost
+`vitest`, `tsx` and `typescript` *mid-gate* — 6 tests failing on a docs-only
+change, every failure a `Cannot find module`. **No tracked file was touched**
+(main checkout `git status` clean, two intended files here) and the main repo's
+own `node_modules` survived, so the blast radius was regenerable; `npm ci`
+restored it. That was scope luck, not care. **`git worktree remove` already
+deletes the contents — let it fail on the directory handle rather than chasing
+it with `rm -rf`, which is what turned a stuck unlink into a wiped install.**
+Eight emptied directories would not unlink on Windows (`Permission denied` on
+the handle, contents already gone); they are deregistered from git and harmless,
+still on disk.
+
+**State**: 13 capabilities, **1 active change** (`the-approval-can-be-answered`,
+19/40), **26 open — and 2 of them P2**, arriving with #307 and ending the "no
+p2" the last entry recorded: `an-approval-expires-while-nobody-is-looking` and
+`the-exposure-cap-starves-silently-and-we-say-it-wrong`. 236 closed.
+Gates run per PR before each merge: `tsc`, `npm run lint`, vitest
+(**2620 / 2625 / 2625**, 208 files), plus `db:generate` parity on #307 —
+`drizzle/` clean. `npm run build` was **not** run on the PR branches, and
+`test:db` / `test:live` were run nowhere. On this tree, after the `npm ci`:
+`tsc`, `npm run lint`, **208 files / 2625 vitest**, `npm run build`, and
+`validate --all` **0 errors / 15 warnings** — the standing count is 15, not the
+13 the last entry recorded, the two added by the surfaces #307 and #319 brought
+with them.
+
+**Next**: **`the-approval-can-be-answered`, the remaining 21 of 40 tasks** — it
+is the only active change and #307 stopped at the UI boundary, so the write
+path exists in code and nothing in the product can reach it. The two new P2s
+are both approval-lifecycle and may fold into it rather than queue behind it;
+decide that before opening the next change. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line.**
+
 ## 2026-08-16 (cards) — one card is drawn once, and 191 claims are checked to zero
 
 **Did**: two half-session items, both closed.
@@ -495,7 +587,6 @@ item *has* a `github:` number and never that the two agree on state.
 
 Board after: **0 active changes, 26 open, all p3, 0 errors / 13 standing
 warnings** — no p2 for the first time since the 15th.)*
-
 
 ## 2026-08-15 (built) — the answer exists in code, and the accept path rewrote a field
 

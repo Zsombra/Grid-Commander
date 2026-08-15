@@ -2,11 +2,11 @@
 id: the-prose-record-carries-lists-where-the-platform-declares-bodies
 title: Prompt bodies and resource contents are unrecorded, instructions are recorded but rendered nowhere, and prose drift under an unchanged version is invisible
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
-change: ""
+updated: 2026-08-16
+change: the-prose-record-carries-bodies
 capability: platform-mapping
 github: "294"
 blocked_by: []
