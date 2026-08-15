@@ -2,10 +2,10 @@
 id: the-new-agent-form-has-no-surface
 title: The new-agent form is invisible to the design layer — no surface manifest covers it
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-15
 change: ""
 capability: agent-authoring
 github: "250"
@@ -48,3 +48,20 @@ Two costs, both quiet:
 One `/surface` run over the new-agent page and form, producing the manifest
 with the states named above. No design round required — the point is coverage,
 not a restyle.
+
+## Closed 2026-08-15 — surveyed as `agent-new`
+
+`openspec/design/surfaces/agent-new.json`, pinned at `042266a` over nine
+sources (the page, its actions module, the form, CarriedProblem,
+MoneyLimits, PerformButton, control, WhyNotLoaded, require-connection).
+Six components; the states this item named are all carried — the four gates
+(at-capacity, catalog-unreadable, strategies-unreadable, strategies-empty),
+the carried problem mounting on every branch, and the prefilled bounce —
+plus the ones the code held that the item did not name (no-presets-declared,
+the zero-unbounded warning, the approval-mode note). The import cross-check
+was quiet on the first pass. Status `functional`; the expected
+`design_orphan_surface` info row is the system noting no tickets exist yet,
+which is coverage doing its job — exactly what this item asked for.
+Staleness detection now sees the create form: the blind spot the
+2026-08-14 evidence demonstrated (a real change to this form tripping
+nothing while comment-only edits elsewhere fired) is closed.

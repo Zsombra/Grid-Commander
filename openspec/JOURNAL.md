@@ -1,5 +1,49 @@
 # Journal
 
+## 2026-08-15 (pins) — the roster tells the truth again, and the create form joins the map
+
+**Did**: merged #273 (main `042266a`). Surveyor lane, per the triage
+ranking. **#237** — the ui-surveyor re-ran against committed
+`agent-roster.tsx`: the four-round drift was the deployment-standing
+vocabulary (`holding-position`, `slot-held-not-scanning`), the
+unscanned-market line, and the resolution-note family; the manifest is
+re-pinned at `042266a` with eight new states, three new constraints
+(platform tokens verbatim; an unrecognised section is named, never
+interpreted; a null resolution renders nothing) and the `deployments` data
+source. The standing stale warning is gone, and the item's own prediction
+held: DT-0011 now fires `design_state_not_covered` **eight times** — filed
+once as **#274** (`dt-0011-no-longer-covers-the-row-it-styled`) instead of
+becoming scenery. **#250** — the create form surveyed as **`agent-new`**
+(nine sources, six components, pinned `042266a`): the four gates
+(at-capacity, catalog-unreadable, strategies-unreadable, strategies-empty),
+the carried problem mounting on every branch, the prefilled bounce,
+no-presets-declared, the zero-unbounded warnings, the approval-mode note.
+The import cross-check was quiet on the first pass; `/agents/new` is now
+visible to staleness detection. Both items closed both sides.
+
+**State**: 0 active changes, **20 open items**, one p2 (#94, gated until
+~Aug 20 02:46 local). `validate --all` 0 errors / **21 deliberate
+warnings** / 3 info — the baseline moved by design: the assistant seven,
+DT-0003/0004/0014's six, and DT-0011's new eight (#274); agent-roster
+stale is gone; the new info row is `agent-new` as an orphan surface (no
+tickets yet — correct for coverage-only). No production code touched this
+leg, so `validate` is the gate that applies to record edits and it is
+clean; CI runs the code gates on the PR. Branch
+`claude/surveyor-lane-roster-and-form`; PR is this handoff's last act.
+
+**Next**: tripwires first, from their items — #94 from ~Aug 20 02:46 local
+(the analysis layer). If all cold: the sharpest small items are **#274**'s
+design round (`/design agent-roster` — eight states, pure restyle inside
+the refreshed manifest's constraints) and **#272** (the loss shape on
+`read_agent_limits`, likely lite). Either fits beside a tripwire sweep.
+
+**Watch out**: the deliberate-warning set changed size for the first time
+since it formed — **21 is the new clean**, and anyone still reading 14 as
+clean will conclude seven new things broke; the composition is itemised
+above on purpose. And `control` is `control.ts`, not `.tsx` — the digest
+helper answers the string `missing` for a wrong filename rather than
+erroring, so read the tool's answer before recording it.
+
 ## 2026-08-15 (arrival) — the loss tells how it arrived
 
 **Did**: continued in-session after #271 merged (main `2af91bd`). Sixth

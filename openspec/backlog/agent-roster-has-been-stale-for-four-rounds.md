@@ -2,10 +2,10 @@
 id: agent-roster-has-been-stale-for-four-rounds
 title: The agent-roster manifest has been knowingly stale across four rounds and was never filed
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-15
 change: ""
 capability: harness-integrity
 github: "237"
@@ -75,3 +75,20 @@ if the drift that staled it added a state, the ticket is now incomplete and
 Filed at session close 2026-08-14, on noticing that the deferral had been made
 four times and recorded zero times. The decision was never wrong; the filing was
 missing.
+
+## Closed 2026-08-15 — re-surveyed, re-pinned, and the prediction came true
+
+The ui-surveyor ran against the committed `agent-roster.tsx` at `042266a`:
+the drift that staled it was the deployment-standing vocabulary
+(`holding-position`, `slot-held-not-scanning`), the unscanned-market line,
+and the whole resolution-note family (not-qualifying with the platform's
+verbatim block token, cooldown, regime, unrecognised-section). The manifest
+now carries eight new states, three new constraints (verbatim tokens; an
+unrecognised section named, never interpreted; a null resolution renders
+nothing), the `deployments` data source, and a digest of the file as it
+stands. The standing stale warning is gone.
+
+The item's own prediction held: DT-0011 is now visibly incomplete —
+`design_state_not_covered` fires eight times. That deferral is filed once,
+as [[dt-0011-no-longer-covers-the-row-it-styled]] (#274), not left as
+scenery.
