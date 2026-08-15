@@ -1,5 +1,57 @@
 # Journal
 
+## 2026-08-15 (keyed) — the record catches up two majors, and the prose comes home
+
+**Did**: the keyed session three items were waiting for. **#287**: re-probed
+and found BattleGrid at **v19.1.0**, two majors past the recorded v18.2.0.
+All four records regenerated; the four named stale rows deleted and the apply
+case asserts `[]` again — #285's self-expiring guard expiring as designed.
+**#294** (`the-prose-record-carries-bodies`, standard, archived): the capture
+now fetches `prompts/get` and `resources/read`, the reference gained a Server
+instructions section and every body (+552 lines), and a live per-surface digest
+gate compares prose against the running server with the account greeting
+normalised out. **#293**: the thinking-log probe no longer demands a second
+page. **#292 step 1**: the `RateLimit-*` headers survived v19 (120/119/1),
+answered on the issue. The refreshed record then caught a live defect before
+the platform did — `preview_strategy_report` dropped the regime pair from an
+input that keeps `additionalProperties: false`, so every preview the product
+composes would have been refused whole (`the-preview-matches-the-live-contract`,
+lite, archived). Filed #300 (1m/1d retired from every authorable category),
+#301 (34 output schemas moved, read by nothing), #302 (preview's new
+market-read inputs).
+
+**State**: 0 active changes, 23 open items, P2 #289 still on top and untouched.
+Gates: tsc, eslint, **200 files / 2498 vitest**, `validate --all` 0 errors / 13
+standing warnings; `test:db` skipped per standing instruction. Live: full probe
+suite 23 files / 55 tests green, prose gate 23/23, #293 proven at
+`decisions 20 of 157`. Branch `claude/battlegrid-api-capabilities-6a479a`,
+three commits; PR is this handoff's last act.
+
+**Next**: unchanged and still right — **P2 #289**
+(`a-completed-change-set-is-stranded-on-a-draft-pr`). On this lane, #301's
+survey is the cheapest follow-up: it is entirely offline against a record that
+is now current, and the four signal-log reads growing by the same +15/+17
+suggests one shared block landing on four surfaces at once.
+
+**Watch out**: **declared and observed now disagree in both directions on the
+same pair** — v19 deleted `regimeAutoDerive` from all fifteen output schemas
+*and* from the live response, while `regimeTimeframe` is still returned though
+nothing declares it. The mapper's `=== true` was turning that silence into a
+confident `false`; it is `boolean | null` now, and any similar `=== true` on a
+v19 read deserves the same suspicion. — **`prompts/get` refuses `-32602`
+without an `arguments` key even though every argument is optional**: optional
+arguments, mandatory container. Found because the named-failure path recorded
+five refusals instead of aborting, which is the whole argument for that
+design. — `rpc` **raises** on transport failure and `urllib.error.HTTPError`
+is an `OSError`, so anything looping over it must catch, or one 429 discards
+every entry already fetched. — The capture tool's old `next:` line told you to
+redirect the generator's stdout over the reference, which would have replaced
+it with five lines of coverage counts; it never generated the reference that
+way. — `npm run typecheck` read through a pipe reports **`tail`'s** exit
+status, not tsc's; a real type error hid behind a green-looking check for
+several steps. — CLAUDE.md is **CRLF** while HANDOFF.md and the docs are LF, so
+Python string replacement with `\n` silently no-ops on it; use the editor.
+
 ## 2026-08-15 (regime) — the record learns what regime it was taken in
 
 **Did**: #116's first market-context read shipped — **two tools as one

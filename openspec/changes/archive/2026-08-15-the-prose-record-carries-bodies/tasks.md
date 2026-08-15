@@ -20,7 +20,16 @@
       record carries the prose surfaces (body xor named failure per
       entry); reference renders what the record carries. Both refusal
       paths driven by fixture.
-- [ ] 1.5 Live prose digest gate in `tests/live/surface-freshness.test.ts`,
+- [x] 1.5 Live prose digest gate in `tests/live/surface-freshness.test.ts`,
       normalising the account greeting before digesting; skips without a
-      key; proven in this session's keyed run.
-- [ ] 1.6 Gates: tsc, lint, vitest, validate.
+      key. **Proven live against v19.1.0: 23/23**, the ten new cases
+      covering the instructions, all five prompt bodies and all three
+      resource contents. A recorded refusal does not exempt a surface
+      forever — the fetch is retried and a body arriving where the record
+      says refused is the finding.
+- [x] 1.6 Gates: tsc, lint, 200 files / 2498 tests, validate 0 errors.
+      An adversarial review of this change found four defects in it,
+      fixed in `98b01ec` — the serious one being that a transport-level
+      refusal (a 429 arrives as an `OSError`, not an error envelope)
+      would have aborted the harvest and lost every entry already
+      fetched, contradicting this change's own contract.
