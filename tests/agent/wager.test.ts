@@ -56,12 +56,29 @@ describe('refused_and_recorded_as_refusal', () => {
 });
 
 describe('no wager tool is reachable from any path', () => {
-  /** Every `mcp:wager` tool in the surface map that touches an agent. */
+  /**
+   * Every `mcp:wager` tool that touches an agent, minus the two this product
+   * now deliberately performs.
+   *
+   * **This list was every one of them until 2026-08-15**, and the assertion
+   * below was this product's standing claim that it could not spend anyone's
+   * money. `the-approval-can-be-answered` is the change that makes the claim
+   * narrower rather than false: answering a proposed trade is the whole point
+   * of the human-in-the-loop surface, and it cannot be done without these two.
+   *
+   * Two tools were released, not the category. Everything else here — closing
+   * a position, overriding protection, halting an agent, submitting a grid —
+   * remains unreachable, and adding to this list is the cheap direction. If a
+   * later change needs one of them, it removes it here **on purpose**, the way
+   * this one did, and says why in its decision log (DL-7).
+   *
+   * The behavioural half above is untouched and does the real work: a call
+   * requiring authority the connection does not hold is refused before it is
+   * attempted, and a refusal is never recorded as an attempt.
+   */
   const WAGER_TOOLS = [
     'submit_agent_grid',
     'submit_market_grid',
-    'accept_entry_decision',
-    'cancel_entry_decision',
     'close_agent_position',
     'override_agent_protection',
     'set_agent_per_trade_push',
@@ -70,7 +87,13 @@ describe('no wager tool is reachable from any path', () => {
     'resume_intelligence_agent',
   ];
 
-  it('names none of them in src/ or app/', () => {
+  /**
+   * The two released to `the-approval-can-be-answered`, named here so the
+   * release is legible in the guard itself rather than only in a git blame.
+   */
+  const ANSWER_TOOLS = ['accept_entry_decision', 'cancel_entry_decision'];
+
+  it('names none of the still-forbidden ones in src/ or app/', () => {
     const offenders: string[] = [];
     for (const file of [...filesUnder('src'), ...filesUnder('app')]) {
       const text = readFileSync(file, 'utf8');
@@ -78,7 +101,28 @@ describe('no wager tool is reachable from any path', () => {
         if (text.includes(tool)) offenders.push(`${file}: ${tool}`);
       }
     }
-    expect(offenders, 'no MVP code may name a wager tool').toEqual([]);
+    expect(offenders, 'no MVP code may name a still-forbidden wager tool').toEqual([]);
+  });
+
+  /**
+   * The released pair is confined to the adapter.
+   *
+   * A tool name in the domain or the application layer would mean the port had
+   * been bypassed (architecture policy P6, "one way in"), and every guarantee
+   * built on top of the port — the binding, the audit, the scope refusal —
+   * would become advisory. The guard that used to say "nowhere" now says
+   * "one place", which is a weaker claim but still a checkable one.
+   */
+  it('confines the two released tools to the BattleGrid adapter', () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder('src'), ...filesUnder('app')]) {
+      if (file.replace(/\\/g, '/').includes('src/infrastructure/battlegrid/')) continue;
+      const text = readFileSync(file, 'utf8');
+      for (const tool of ANSWER_TOOLS) {
+        if (text.includes(tool)) offenders.push(`${file}: ${tool}`);
+      }
+    }
+    expect(offenders, 'answering tools belong only to the adapter').toEqual([]);
   });
 
   it('still requests only read scope', () => {

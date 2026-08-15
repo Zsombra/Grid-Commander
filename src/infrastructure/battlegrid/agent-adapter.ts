@@ -7,6 +7,7 @@ import type {
   BudgetResult,
   PerformanceResult,
   CatalogResult,
+  DecisionAnswerVerb,
   EntryDecision,
   GateBlock,
   GateBlocksResult,
@@ -84,6 +85,11 @@ const TOOLS = {
   gateBlocks: 'list_gate_blocks',
   signalLogs: 'list_signal_logs',
   entryDecisions: 'list_entry_decisions',
+  // The only two fund-committing tools this product performs. `wager.test.ts`
+  // confines these names to this directory — naming either one outside the
+  // adapter means the port has been bypassed.
+  acceptDecision: 'accept_entry_decision',
+  cancelDecision: 'cancel_entry_decision',
   signalLogDetail: 'get_signal_log',
   signalPerformance: 'get_signal_performance',
   coinQualification: 'get_agent_coin_qualification',
@@ -803,6 +809,36 @@ export class McpAgentAdapter implements AgentsPort {
       entries: raw.map(map),
       total: typeof payload['total'] === 'number' ? payload['total'] : null,
     };
+  }
+
+  /**
+   * Answer a proposed trade. The full guard sequence runs inside `call`:
+   * classification, then scope, then the confirmation consume, then the audit
+   * row — all before the platform is asked anything.
+   *
+   * Both tools take `decisionId` alone; ownership is enforced from the stored
+   * decision, so no agent id travels. The response is discarded deliberately —
+   * two keys with no status and no timestamp are not an outcome, and the caller
+   * re-reads.
+   */
+  async answerEntryDecision(params: {
+    userId: string;
+    accessToken: string;
+    decisionId: string;
+    verb: DecisionAnswerVerb;
+    confirmation: Confirmation;
+    idempotencyKey?: string | undefined;
+  }): Promise<void> {
+    const tool = params.verb === 'accept' ? TOOLS.acceptDecision : TOOLS.cancelDecision;
+    await this.call(
+      params,
+      tool,
+      { decisionId: params.decisionId },
+      {
+        confirmation: params.confirmation,
+        idempotencyKey: params.idempotencyKey,
+      },
+    );
   }
 
   // -- internals ---------------------------------------------------------

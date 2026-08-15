@@ -371,6 +371,108 @@ item *has* a `github:` number and never that the two agree on state.
 Board after: **0 active changes, 26 open, all p3, 0 errors / 13 standing
 warnings** — no p2 for the first time since the 15th.)*
 
+
+## 2026-08-15 (built) — the answer exists in code, and the accept path rewrote a field
+
+**Did**: took `the-approval-can-be-answered` from proposal to **19/40**, all of
+it below the UI. Planned it (full track, five artifacts), then built: `closedAt`
+onto `EntryDecision`; `pending-decision.ts` holding the five-condition binding;
+`confirmationTarget.decisionAnswer` with the **verb bound first**;
+`ReadPendingDecisionsQuery`; `answerEntryDecision` on the port and in the
+adapter; `AnswerDecisionCommand`. **34 new tests, 2505 across 199 files, all
+green.** Amended the **A10 wager guard** deliberately (DL-7/DL-10). Rebound
+**Vanguard** off Trafalgar onto Cannae and matched its bar to Undertow's
+(0.6 → 0.55) — it produced its **first trade in its existence** within the hour.
+The operator accepted it in BattleGrid's UI, which handed us the **accept-path
+payload** we had never seen.
+
+**State**: clean, 12 commits on `claude/approvals-write-side-fd4863`, all pushed,
+[PR #307](https://github.com/Zsombra/Grid-Commander/pull/307). `validate --all`
+0 errors. Undertow restored to the operator's settings (rev 10, `FULL_EXECUTION`);
+**Vanguard is live at rev 13 in `APPROVAL_REQUIRED`** and is now the standing
+source of approval rows — it holds a real AVAX long ($21.56 notional, $5.39
+margin, 4×). Board: 23 open items, three p2 (#289, #299, #304).
+
+**Next**: the **queue surface (1.4b)** and the **cancel confirmation (3.3/3.4)**.
+That is the shortest path to **task 4.5** — a cancel performed *through the
+product* and confirmed in the audit — which is the half of the Phase D gate that
+still stands. Start a fresh session for it: the remaining work is React, tokens
+and a `/surface` refresh, a different mode from everything above.
+
+**Watch out**: **I crossed the Phase D gate.** `accept_entry_decision` went in
+alongside cancel because DL-3 had already made answering one verb-parameterised
+operation, and splitting it would have created two paths where the design wants
+one. Purpose held — 5.2/5.3 are unbuilt so **no surface reaches accept** — but
+the sequence did not, and DL-11 says so. **No accept surface may be built until
+4.5 passes.** — **The plan was wrong and the codebase was right** about auditing:
+P3 item 5 asked for binding refusals to be audited; `call-path.ts` and
+`wager.test.ts` already establish that a refusal writes **no** row, because it
+never left the process. An attempt that *failed* is audited; a refusal *before*
+the attempt is not (DL-9). — **`expiresAt` is rewritten on accept**: created
+18:05:54 with a 15-minute window, it reads 18:34:00 = `executedAt` + 15m. So
+decision fields **do** mutate, which retires DL-1's N=1 caveat *in the direction
+that vindicates keeping the price levels in the binding*. Treat no decision field
+as immutable. — **`status` and `tradeStatus` diverge** (`EXECUTED`/`LIVE`) though
+they moved together on the cancel; never derive one from the other. — **`closedAt`
+is null on an EXECUTED decision**, so it is not a liveness test on its own —
+`status === 'PENDING'` carries real weight in the pair. — The **sizing formula
+reproduced a third time** on a second agent, preset and leverage
+(45 × 0.12 × 4 → floor 3.32 → 21.561408, exact). Still must not be displayed
+(PE-2). — Skill paths lie twice: checklists are in **`docs/checklists/`** not
+`docs/specs/`, and plan artifacts belong in **`openspec/changes/<id>/plan/`** not
+`docs/plan/` — the board could not see the plan until they were moved. CLAUDE.md
+is authoritative over both skills.
+
+## 2026-08-15 (answered) — the queue answers, and the declaration was wrong twice
+
+**Did**: #101's precondition is met and the change is proposed. The operator
+put **Undertow** into `APPROVAL_REQUIRED` to manufacture a row (Vanguard, the
+designated agent since 2026-08-14, fires ~4×/6d and never qualified all day).
+The first row was **produced and missed** — HYPE at 13:18:03Z, expired 13:33Z,
+because a 6-agent Workflow was occupying the REPL and **cron only fires while
+the REPL is idle**; the queued ticks all discharged after expiry. Recovered its
+shape anyway from `list_entry_decisions(status: EXPIRED)`. The second row was
+caught **live** at 17:01:39Z, and the operator authorized the **first
+`mcp:wager` write in this product's history** — `cancel_entry_decision`, chosen
+because it commits no money. Cancelled 17:05:44Z, eleven minutes before expiry,
+read back `CANCELLED` with `closedAt` set. Proposed
+`the-approval-can-be-answered` (full, 38 tasks, validation clean). Filed **#299**
+(p2), **#304** (p2), **#305** (p3). Undertow fully restored at 17:08:11Z.
+
+**State**: 1 active change at `tasks`, needing `plan`. 23 open items, three p2.
+`validate --all` 0 errors. Four commits on `claude/approvals-write-side-fd4863`;
+no product code touched, no tests run beyond `npm ci`. **Undertow is back to the
+operator's settings (revision 10) — nothing outstanding on it.** Vanguard stays
+in `APPROVAL_REQUIRED` deliberately.
+
+**Next**: the operator must rule on **task 0.1** — the binding. Everything else
+in the change is blocked behind it. Then `planner`.
+
+**Watch out**: **The tool description lied twice, and both would have shipped.**
+`list_pending_approvals` declares rows "enriched with execution and outcome
+context" — called in the *same second* as `list_entry_decisions(status:
+PENDING)` it returned a **byte-identical row**, same 35 keys; there is no
+enrichment, and the change now uses `list_entry_decisions` because it paginates
+and filters. And the declared status `AWAITING_APPROVAL` **does not exist** —
+the live payload says `PENDING`. Matching on it would have matched nothing.
+— **A decision carries no revision.** No `revision`/`version`/`updatedAt`/ETag
+across 35 keys; `accept_entry_decision` takes `decisionId` alone. This is the
+one place BattleGrid abandons the `expectedRevision` pattern, so the operator's
+"bind the revision" instruction is unsatisfiable and the proposal substitutes
+the three price levels. — `cancel_entry_decision` returns **two keys**
+(`decisionId`, `cancelled`). No echo, no status, no timestamp; a UI must
+re-read. — **`maxConcurrentExposureUsd` is metered on MARGIN, not notional**
+(`capitalAtRiskUsd` 12.2 vs `marginedUsd` 12.176704 vs notional 36.54), and it
+is **not a gate — it is the sizing base**: `size = headroom × pct × leverage`,
+reconstructed to the cent on three positions. It starves entries under the $10
+exchange minimum while every gauge reads `breached: false`, which is #299. —
+**`timeHorizon: "1h"` is a label, not a clock**; positions ran 77 minutes. —
+The pipeline sweeps every **~60s**, not hourly. — A staleness finding has a
+half-life: a verifier called `OPEN_POSITION_CONFLICT` "three days stale" and it
+was firing every minute twenty minutes later. — **Never run a Workflow while a
+cron watch is what you are relying on.** That one cost the first row and
+returned nothing, because all four agents died on a subagent session limit.
+
 ## 2026-08-15 (reconcile) — the stranded branch comes home as four items and zero requirements
 
 **Did**: worked the board's only p2, #289 — draft PR #82's stranded content
