@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-15 (arrival) — the loss tells how it arrived
+
+**Did**: continued in-session after #271 merged (main `2af91bd`). Sixth
+tripwire sweep, all four **cold** — positions flat, Radar 20/20
+`PLATFORM_PAUSED` (latest `lastFireAt` still 2026-08-13T18:01Z), #104 ninth
+confirmation (0 rows below minimum), #94 environment half hot via the user
+registry / depth **2.40 days** from the db (59 runs, recorder current to
+8 minutes). Then the triage-ranked pick: **#202** →
+`how-it-got-here-is-readable` (standard, verified, archived).
+`/agents/[id]/limits` gains **"How it got here"** directly below the
+gauges: realized P&L since the budget baseline plus the per-settlement
+curve as a hand-scaled SVG sparkline, from `get_agent_performance` — the
+product's first consumer of that tool and its second chart (TradeChartSvg's
+decisions inherited). New port read `readPerformance`,
+`mapPerformanceReading` (envelope and bare payloads tolerated; the curve
+keeps only finite numbers), `ReadLossShapeQuery`, `LossShapePanel`. One
+deviation from the item's cheap route, recorded in design.md: `mapBudget`
+untouched — the figure and the curve come whole from one payload at one
+instant. `agent-understanding` gained the requirement (four scenarios, each
+pinned by a rendering test). #202 closed both sides; the MCP-parity residue
+filed as **#272** (`the-loss-shape-is-not-on-the-assistants-limits-read`).
+
+**State**: 0 active changes, 21 open items (closed #202, filed #272), one
+p2 (#94, gated until ~Aug 20 02:46 local). Gates at archive: typecheck,
+lint, **2433 vitest / 192 files** (was 2419/190), build, drizzle no-op;
+`test:db` skipped deliberately — the disposable-database guard must refuse
+the live record db. `validate --all` 0 errors / 14 deliberate warnings /
+2 info after this entry. Branch `claude/realized-pnl-against-its-stop`; PR
+is this handoff's last act.
+
+**Next**: tripwires first, from their items — #94's both halves hold from
+~2026-08-19T19:46Z (~Aug 20 02:46 local), and the analysis layer is that
+session's main work per the item's What/Notes. If a session runs before
+then and all four are cold: the 08-15 triage ranking continues — next by
+consequence is the surveyor-lane pair, #237 (re-survey `agent-roster`,
+which retires the one standing stale warning) and #250 (surface the
+new-agent form), either a contained session.
+
+**Watch out**: the mapper now holds two performance functions on purpose —
+`mapPerformance` (the roster block → the domain record) and
+`mapPerformanceReading` (the tool's baseline reading). tsc caught the
+near-collision because the suite imports the former; do not "unify" them —
+their separation is the no-conflation requirement in code. The rendering
+resolver joins adjacent JSX text nodes with a space, so a plural built as
+`settlement{cond ? '' : 's'}` renders as "settlement s" in test text —
+build whole words in one expression. And the fake port's default
+performance result is the live Vanguard shape (zero total, empty curve), so
+every limits-page rendering test now also renders the "nothing has settled"
+sentence — additions to that page's copy should mind the `not.toContain`
+assertions in `risk-reading.test.ts`.
+
 ## 2026-08-15 (claims) — the manifests stop denying their client code
 
 **Did**: reconciled clean (main `6ebfbcc`, #269 in). Fifth tripwire sweep —
