@@ -1,5 +1,6 @@
 # Journal
 
+<<<<<<< HEAD
 ## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
 
 **Did**: closed the session's own loose end. `lint-ignores-nested-worktrees`
@@ -43,6 +44,8 @@ is `git add --renormalize .` in that checkout, not a commit here — and any swe
 that does it by hand **must exclude binaries**, because one that trusted
 `git check-attr eol` stripped CR-LF pairs out of 20 PNGs and corrupted them.
 
+=======
+>>>>>>> 4535875 (fix: a paused radar says so, instead of reporting agents as scanning (#311))
 ## 2026-08-16 (pause) — the radar says whether anything is running
 
 **Did**: #311, the p2 the schema survey turned up. `a-paused-radar-says-so`
