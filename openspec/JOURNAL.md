@@ -1,5 +1,50 @@
 # Journal
 
+## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
+
+**Did**: reconciled every branch in the repo and pruned it down. **52 local +
+60 remote branches → 2 and 2**; `main` untouched at `8821b5a`. 65 branch names
+(109 refs) deleted, each cleared first by one of three independent proofs —
+ancestry, `git merge-tree --write-tree` yielding a tree identical to `main`, or
+"PR merged and tip contained in the merged head". **68 annotated `archive/*`
+tags** created and pushed to origin before any deletion; a recovery drill
+restored `claude/verify-issues-edbc3f` from its tag and reproduced PR #199's
+head and all 30 commits. 8 stale worktrees removed. Filed
+`a-completed-change-set-is-stranded-on-a-draft-pr` (p2, issue #289). No product
+code touched; no tests run.
+
+**State**: clean. `validate --all` reports 0 errors / 13 warnings — the same 13
+the board showed at session start, all pre-existing design-ticket warnings.
+Draft PR #82 (`claude/agent-creation-data-strategies-fw6av8`) is deliberately
+kept: it was the **only** branch in the repo carrying content not in `main` —
+3 archived changes, 7 requirements across `platform-mapping` and
+`battlegrid-connection`, 7 backlog items, all branch-only.
+
+**Next**: work issue #289 — read the three archived changes on PR #82 against
+`main` and merge or decline each requirement. It is the only p2 in a backlog of
+p3s.
+
+**Watch out**: **`git branch --merged` is worthless in this repo** — everything
+squash-merges, so a fully-landed branch is never an ancestor and the command
+reported only 9 of 52. Same for "ahead by N":
+`claude/app-breakdown-status-osed7j` read *37 ahead* and merging it changed
+nothing, because all 37 were merge commits pulling `main` *in*. Use the
+merge-tree test. — PR #2's head SHA is **already garbage-collected on GitHub**,
+so its PR page can no longer show it; `archive/claude/harness-openspec-merge-smkspq`
+is now the only handle on that history, which is the case that justified tagging
+everything rather than trusting the PRs. — **Python `print()` emits CRLF on
+Windows**: branch names piped into a bash loop carried a trailing `\r` and all
+50 `git branch -D` calls failed *silently* under `2>&1 >/dev/null`. Pipe through
+`tr -d '\r'`, and never swallow stderr on a bulk mutation. — `git worktree
+remove` reported `FAILED` while actually removing the registration, leaving
+orphaned directories; two of them (`secondary-treatment-variant-19160e`,
+`verify-issues-edbc3f`) are still on disk under `.claude/worktrees/`, locked by
+a live process. Harmless to git — they are no longer worktrees — but they need
+deleting once the holding process exits. — #289's absence finding rests on exact
+requirement-title match; if those requirements were re-landed under rewritten
+titles they would read as missing when they are not. The request-budget half is
+corroborated by an implementation search and does not rest on titles.
+
 ## 2026-08-15 (forward) — the record answers, because the operator said now
 
 **Did**: the day's sixth leg, and the one the whole tripwire machinery
