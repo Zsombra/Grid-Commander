@@ -110,7 +110,28 @@ export async function applyEdit(formData: FormData) {
     backTo,
   );
 
-  if (result.kind === 'updated') redirect(`/agents/${agentId}`);
+  if (result.kind === 'updated') {
+    /**
+     * The other half of what BattleGrid just said.
+     *
+     * `update_intelligence_agent` answers with the agent **and** a feasibility
+     * advisory — which of this agent's armed coins its strategy can still build
+     * a stop for today, and which dial is stopping the rest. It is the only
+     * place on the platform that answers it, it arrives on this write and on no
+     * read, and it was discarded at the adapter for the life of the product
+     * (#291).
+     *
+     * Issued here rather than collected by the page it renders on, because a
+     * Next.js page render may not write cookies — only an action or a route
+     * handler may. Signed, agent-keyed, and stale in two minutes:
+     * `FeasibilityReplyCookie` carries the reasoning, and `null` is left alone
+     * rather than issued as an empty answer.
+     */
+    if (result.feasibility) {
+      app.feasibilityReply.issue({ agentId, advisory: result.feasibility });
+    }
+    redirect(`/agents/${agentId}`);
+  }
 
   const reasons =
     result.kind === 'rejected'

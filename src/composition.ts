@@ -115,6 +115,8 @@ import {
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
 import { CookieSession } from './infrastructure/http/cookie-session.js';
+import { ReadFeasibilityReplyQuery } from './application/use-cases/read-feasibility-reply.query.js';
+import { FeasibilityReplyCookie } from './infrastructure/http/feasibility-reply-cookie.js';
 import { systemClock } from './ports/clock.js';
 
 /**
@@ -255,6 +257,19 @@ export function app(cookies: CookieStore) {
     secure: i.secureCookies,
   });
 
+  /**
+   * The reply an agent edit comes back with, on its way to the page that shows
+   * it. Same secret and same signing idiom as the session above — see
+   * `FeasibilityReplyCookie` for why it is signed at all when it carries no
+   * credential.
+   */
+  const feasibilityReply = new FeasibilityReplyCookie({
+    cookies,
+    secret: i.sessionSecret,
+    clock: systemClock,
+    secure: i.secureCookies,
+  });
+
   const authority = new ResolveAuthorityQuery(i.connections, i.connections, i.battlegrid, systemClock);
 
   /**
@@ -283,6 +298,7 @@ export function app(cookies: CookieStore) {
   return {
     sessions,
     currentUser,
+    feasibilityReply,
     // Null on a delegated deployment. The surface uses it to disclose that a
     // deployment authenticates nobody, which is true only of the personal one.
     personal: i.personal ?? null,
@@ -315,6 +331,10 @@ export function app(cookies: CookieStore) {
     createAgent: new CreateAgentCommand(i.agents),
     readCatalog: new ReadCatalogQuery(i.agents),
     updateAgent: new UpdateAgentCommand(i.agents),
+    // What the platform said, in the same breath as that update, about which of
+    // the agent's armed coins its strategy can still build a stop for. Reads no
+    // platform tool — it collects the reply the apply action set down (#291).
+    readFeasibilityReply: new ReadFeasibilityReplyQuery(feasibilityReply, systemClock),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
     // How the distance on the drawdown gauge arrived — same port, its own

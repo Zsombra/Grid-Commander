@@ -10,6 +10,8 @@ import {
   DescribeUndeployQuery,
 } from '@/application/use-cases/deploy-agent.command.js';
 import { ReadFleetSpendQuery } from '@/application/use-cases/read-fleet-spend.query.js';
+import { ReadFeasibilityReplyQuery } from '@/application/use-cases/read-feasibility-reply.query.js';
+import { InMemoryFeasibilityReplies } from '../../support/feasibility-fakes.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
 import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
@@ -122,6 +124,17 @@ export function actingWith({
    * pass by never being rendered.
    */
   remedy = 'reconnect' as Remedy,
+  /**
+   * The reply an agent edit came back with, waiting to be shown once.
+   *
+   * Empty by default: the advisory arrives only on a write, so *nothing* is
+   * the state every ordinary page load is in, and a fake that always held one
+   * would make the panel look like a permanent fixture of the page. Declared
+   * after `clock` so it can stamp its replies from the same one the read
+   * measures their age against — two clocks here would make every planted
+   * reply stale at an hour nobody chose.
+   */
+  feasibilityReply = new InMemoryFeasibilityReplies(clock),
 }: {
   agents?: FakeAgentsPort;
   accountState?: FakeAccountStatePort;
@@ -133,6 +146,7 @@ export function actingWith({
   market?: FakeMarketPort;
   positions?: FakePositionsPort;
   signalRecord?: InMemorySignalRecordStore;
+  feasibilityReply?: InMemoryFeasibilityReplies;
   clock?: FakeClock;
   remedy?: Remedy;
 } = {}) {
@@ -166,6 +180,11 @@ export function actingWith({
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
+    // No platform read behind it — it collects what the apply action set down
+    // a redirect ago (#291). Wired beside the port itself so a test can walk
+    // the write and the render, not only one of them.
+    feasibilityReply,
+    readFeasibilityReply: new ReadFeasibilityReplyQuery(feasibilityReply, clock),
     readExposure: new ReadExposureQuery(positions, agents, clock),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
