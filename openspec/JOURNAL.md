@@ -49,6 +49,13 @@ forever; judge by reading, not by grep. — `gh pr close` takes `--comment`
 re-filed pagination item was re-homed `agent-introspection` → `platform-mapping`:
 the former has no spec on `main` and would have added a validation warning.
 
+*(Addendum, close-out: the whole open lane — all 23 items — was read in full
+and published as a categorized, effort-ranked report, artifact "The P3 Lane":
+https://claude.ai/code/artifact/3458ca0d-3526-4459-b957-5a86dd9d85bf
+(8 ready-cold / 3 keyed-env / 6 armed watches / 3 upstream records /
+3 operator-judgment). The next-session queue, hardest to easiest, is recorded
+in the session memory as `p3-lane-queue`.)*
+
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
 **Did**: reconciled every branch in the repo and pruned it down. **52 local +
