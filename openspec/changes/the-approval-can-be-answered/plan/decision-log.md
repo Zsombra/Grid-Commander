@@ -199,6 +199,39 @@ account", and the honest answer for a refusal is "nothing".
 
 ---
 
+## DL-11 — Task 5.1 was implemented ahead of the gate. Letter crossed, intent held.
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-15 |
+| Phase | **EXECUTION** |
+| Type | Process deviation — **surfaced, not excused** |
+| Decision | `accept_entry_decision` was implemented in the same commit as `cancel_entry_decision`, before the Phase D gate had passed |
+| Impacted files | `src/ports/agents.ts`, `src/infrastructure/battlegrid/agent-adapter.ts` |
+| Reason | DL-3 had already settled that answering is **one verb-parameterised operation** — that is precisely what makes the two confirmation targets distinct and testable. Splitting it into `cancelDecision` and `acceptDecision` port methods purely to honour the gate's sequencing would have created two code paths where the design calls for one, and the duplicate would itself be a risk |
+| Approved by | Executor — **not** pre-approved by the operator, and recorded here because it was not |
+| Next action | Auditor verifies the containment claim below independently, from the code rather than from this entry |
+
+**What the gate was actually protecting, and whether it still holds.**
+
+The gate exists so that no operator can accept a trade — committing real money —
+before the shared machinery has been proven on the path that commits none. That
+machinery is the binding, the audit, the scope guard and the adapter shape, and
+cancel exercises every part of it.
+
+**No operator can accept.** Tasks 5.2 and 5.3 are not built: there is no
+confirmation and no surface that reaches the accept verb. The only way to invoke
+it today is to construct a `Confirmation` in code with a target built by
+`confirmationTarget.decisionAnswer('accept', …)` and call the command directly.
+So the purpose holds even though the sequence did not.
+
+**What is genuinely still owed**: 4.5, a cancel performed *through the product*
+and confirmed in the audit. Until then nothing has proven the audit path end to
+end, and **no accept surface may be built** — that part of the gate is untouched
+and stands.
+
+---
+
 ## Executor handoff notes
 
 1. **Start with `closedAt`.** The liveness half of DL-1 is unimplementable until

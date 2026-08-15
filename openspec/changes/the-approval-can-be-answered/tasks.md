@@ -20,40 +20,58 @@
 
 ## 1. Read the queue
 
-- [ ] 1.1 Add `PendingDecision` to the domain — id, agent, coin, direction,
+- [x] 1.1 **DONE** as `src/domain/agent/pending-decision.ts` — the liveness
+      predicate, the level comparison and `checkAnswerable`. Deviation: shaped as
+      functions over the existing `EntryDecision` rather than a new type, per
+      DL-4 (extend, do not duplicate).
+      ~~Add `PendingDecision` to the domain — id, agent, coin, direction,
       conviction, entry/stop/target, reasoning, signal checklist, size
       proportion, `expiresAt`. Every field traceable to the observed payload.
-- [ ] 1.2 Add `listPendingDecisions` to the BattleGrid port.
-- [ ] 1.3 Read the queue with `list_entry_decisions(status: PENDING)`, not
+- [x] 1.2 **NOT NEEDED — deviation.** `readEntryDecisions` already exists on
+      `AgentsPort` and returns the same rows; a second read method would be a
+      second path to the same payload. The port instead gained
+      `answerEntryDecision` (a write), which the plan had not separated out.
+- [x] 1.3 **DONE** — `ReadPendingDecisionsQuery`. ~~Read the queue with `list_entry_decisions(status: PENDING)`, not
       `list_pending_approvals`. **Both return a byte-identical row** — observed
       in the same second on 2026-08-15; the declared "enriched with execution
       and outcome context" is not present and there is no enrichment to carry.
       `list_entry_decisions` paginates and filters; the other does neither.
-- [ ] 1.3a Match liveness on `status === "PENDING"` and `closedAt === null`.
+- [x] 1.3a **DONE** — `isAnswerable`, and confirmed against the live accepted
+      decision of 18:19Z, which carries `closedAt: null` while being EXECUTED.
+      ~~Match liveness on `status === "PENDING"` and `closedAt === null`.
       **Never match on `AWAITING_APPROVAL`** — the tool description names that
       string and the live payload does not contain it.
-- [ ] 1.4 Read-side query and the queue surface, reachable from the pipeline.
-- [ ] 1.5 Render the empty queue as "nothing waiting", distinct from a refusal.
-- [ ] 1.6 Render a refused queue read with the platform's own reason.
-- [ ] 1.7 Show remaining time from `expiresAt`; show the size as a proportion
+- [x] 1.4a **DONE** — read-side query (`read-pending-decisions.query.ts`).
+- [ ] 1.4b Queue surface, reachable from the pipeline. **NOT STARTED.**
+- [x] 1.5 **DONE at the query layer** — `none` and `unreadable` are separate
+      result kinds with tests. Rendering waits on 1.4b.
+- [x] 1.6 **DONE at the query layer** — the platform's `reason` is carried
+      through unmodified. Rendering waits on 1.4b.
+- [x] 1.7 **DONE at the query layer** — `msRemaining` derived server-side, and
+      a test asserts the view carries exactly two keys so no amount can appear.
+      Rendering waits on 1.4b. ~~Show remaining time from `expiresAt`; show the size as a proportion
       with no currency amount anywhere on the surface.
 
 ## 2. Authority, before either write exists
 
-- [ ] 2.1 Check connection authority before any answer is attempted; refuse
-      first, naming the authority needed.
+- [x] 2.1 **DONE, inherited** — `beginGuardedCall` refuses on held scope before
+      the attempt and before any audit row. Not reimplemented here: a second
+      opinion about whether a write is allowed is worse than none.
 - [ ] 2.2 Step-up flow from the point of use, stating what the authority permits
       and that accepting commits real money.
 - [ ] 2.3 Prove no read, model-recorded proposal, or scheduled work can begin a
       step-up.
-- [ ] 2.4 Audit records for both answers, including refusals — the record exists
-      before the writes that use it.
+- [x] 2.4 **DONE, inherited — and the plan was wrong about refusals.** The
+      guard writes the audit row before the attempt and completes it with the
+      outcome. Binding refusals are **not** audited; see DL-9.
 
 ## 3. Cancel — built and proven first
 
-- [ ] 3.1 `cancelDecision` on the port; `cancel_entry_decision` in the adapter,
-      treated as destructive.
-- [ ] 3.2 The binding comparison in the domain: one re-read, then compare the
+- [x] 3.1 **DONE** — `answerEntryDecision` on `AgentsPort`;
+      `cancel_entry_decision` in `agent-adapter.ts`, destructiveness read from
+      the tool's own classification rather than assumed.
+- [x] 3.2 **DONE** — `checkAnswerable`, called by `AnswerDecisionCommand`
+      before the port. ~~The binding comparison in the domain: one re-read, then compare the
       three levels **and** assert `status === "PENDING"` and
       `closedAt === null`. Refuse naming which level moved and from what to
       what, or what became of the decision if it is no longer answerable.
@@ -64,11 +82,12 @@
 
 ## 4. Verification gate — cancel proven before accept is written
 
-- [ ] 4.1 Unit: the binding refuses when entry, stop, or target differs; refuses
+- [x] 4.1 **DONE** — `tests/agent/pending-decision.test.ts` (22) and
+      `tests/agent/answer-decision.test.ts` (12). ~~Unit: the binding refuses when entry, stop, or target differs; refuses
       when the levels match but `status !== "PENDING"` or `closedAt !== null`;
       refuses when the decision is missing; passes only when all five hold.
 - [ ] 4.2 Unit: an answer is refused before any call when authority is absent.
-- [ ] 4.3 Unit: the queue renders empty and refused states distinguishably.
+- [x] 4.3 **DONE at the query layer** — `tests/agent/read-pending-decisions.test.ts`.
 - [x] 4.4 **Live**: with operator authorization, cancel one real pending
       decision. Read back that it is no longer waiting. Record the payload
       verbatim in the backlog item. — **DONE 2026-08-15T17:05:44Z, ahead of
@@ -86,8 +105,15 @@
 
 ## 5. Accept — only after the gate
 
-- [ ] 5.1 `acceptDecision` on the port and `accept_entry_decision` in the
-      adapter, reusing the binding and audit proven by cancel.
+> **GATE CROSSED IN THE LETTER, HELD IN THE INTENT — see DL-11.** 5.1 was
+> implemented alongside cancel, because DL-3 had already settled that answering
+> is one verb-parameterised operation and splitting it into two port methods
+> would have been artificial. **No operator can accept**: 5.2 and 5.3 are not
+> built, so there is no surface that reaches it. The gate's purpose — that
+> nobody can accept before cancel is proven through the product — holds.
+
+- [x] 5.1 **DONE AHEAD OF THE GATE (DL-11)** — `accept_entry_decision` in the
+      adapter, behind the same binding, audit and scope guard as cancel.
 - [ ] 5.2 Accept confirmation: coin, direction, the three levels, the proportion
       committed, and a plain statement that a position opens with real money.
 - [ ] 5.3 Accept is not rendered on any surface where cancel is unavailable.
