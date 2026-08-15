@@ -154,7 +154,7 @@
           "effect": "Underlined link per condition to the composer seeded from that condition (?try=1&from=<key>…), carrying its key, name and verdict so a bare click does not demote a directional call to a building block"
         }
       ],
-      "current_implementation": "h2 'What <name> defines now'. Empty: a text-sm text-text-secondary sentence — 'This strategy defines no conditions. Anything saved here would be its first.' Populated: a ul of rounded-gc-2 border cards, each with the condition's name, its key in text-xs uppercase with either '· a named building block' or '· calls <verdict>', the definition drawn by ConditionStructure, and the two links. This markup is inline in the page and near-duplicates ConditionCard in strategy-conditions.tsx rather than reusing it.",
+      "current_implementation": "h2 'What <name> defines now'. Empty: a text-sm text-text-secondary sentence — 'This strategy defines no conditions. Anything saved here would be its first.' Populated: a ul of rounded-gc-2 border cards, each with the condition's name, its key in text-xs uppercase with either '· a named building block' or '· calls <verdict>', the definition drawn by ConditionStructure, and the two links. Since 2026-08-16 (#167) these rows are the shared ConditionCard from strategy-conditions.tsx rather than a second copy of it — `blockNote` asks for the annotation, `actions` carries the two links — so a condition whose definition uses a form the product does not model now also draws that component's 'What is shown is incomplete' caveat beneath the structure.",
       "constraints": [
         "Empty must stay distinguishable from unreadable — spec.md:318-321 ('the strategy is shown as having no conditions … distinguished from a strategy whose conditions could not be read'); the empty sentence must not be dropped for whitespace.",
         "A null verdict is a named building block, not an absence — spec.md:760-762 ('MUST NOT be presented as a way the strategy calls direction'); the '· a named building block' annotation must survive.",
@@ -432,10 +432,10 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/conditions/save/actions.ts": "sha256:9a8190da580ee65e4b365c7945f497f26ea24af5025e83f404d30022d29f6c3e",
-    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:2e6273df4dabcd51406d0f3dea2db6f17425f5fc06f7de7383eb517e5a1d42d2",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:a5faf7efd4a0a5e6eebfdd6479651cc0f858431a5bdcff377aea1e9ea5f4ab0b",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
-    "src/presentation/components/strategy-conditions.tsx": "sha256:e9614fb32ac281064d2192fa6c774831fdb76189ec4cc358a333205ac533eefc",
+    "src/presentation/components/strategy-conditions.tsx": "sha256:0182476630a84224f09a0e383557ca9d37d0d4c5a5912bcc89aba90afbdf8af8",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",

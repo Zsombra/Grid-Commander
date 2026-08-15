@@ -145,12 +145,33 @@ export function ConditionStructure({
   );
 }
 
-function ConditionCard({
+/**
+ * One saved condition, drawn as a card.
+ *
+ * Exported since 2026-08-16 because the condition-save surface had grown its
+ * own copy of this markup and the two had already begun to differ (#167). A
+ * second card is a second answer to "what does a condition look like", and the
+ * one below is the answer this component's two decisions are written against.
+ *
+ * **`blockNote` is the encoding, not a style.** `spec.md:758-762` requires a
+ * null verdict be shown as a named building block rather than a way the
+ * strategy calls direction — and there are two honest ways to satisfy it.
+ * `StrategyConditions` satisfies it by *position*: it lists the calls and the
+ * blocks apart, under a heading that names the second group, so a card inside
+ * that group need not repeat what the heading above it just said. A flat list
+ * has no such heading, so the card itself has to say it. The save surface
+ * lists flat; it passes `blockNote`. Anything else listing flat must too.
+ */
+export function ConditionCard({
   condition,
   defined,
+  blockNote = false,
+  actions,
 }: {
   condition: StrategyCondition;
   defined: ReadonlySet<string>;
+  blockNote?: boolean;
+  actions?: React.ReactNode;
 }) {
   return (
     <li className="space-y-1 rounded-gc-2 border border-border-default p-3">
@@ -158,7 +179,11 @@ function ConditionCard({
         <span className="text-sm font-medium text-text-primary">{condition.name}</span>
         <span className="text-xs uppercase text-text-secondary">
           {condition.conditionKey}
-          {condition.verdict === null ? '' : ` · calls ${condition.verdict}`}
+          {condition.verdict === null
+            ? blockNote
+              ? ' · a named building block'
+              : ''
+            : ` · calls ${condition.verdict}`}
         </span>
       </div>
       <div className="text-sm">
@@ -170,6 +195,10 @@ function ConditionCard({
           incomplete.
         </p>
       )}
+      {/* Padding rather than a margin: the card sets `space-y-1`, whose sibling
+          selector outranks a plain `mt-*` on the child, so a caller asking for
+          more room than the stack gives would silently not get it. */}
+      {actions === undefined ? null : <div className="pt-1 text-sm">{actions}</div>}
     </li>
   );
 }

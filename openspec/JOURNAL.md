@@ -1,5 +1,77 @@
 # Journal
 
+## 2026-08-16 (cards) — one card is drawn once, and 191 claims are checked to zero
+
+**Did**: two half-session items, both closed.
+
+**#167**, its last finding. `the-save-page-draws-the-shared-card` (lite,
+archived): the conditions-save listing state's inline card is gone and the
+rows are the shared `ConditionCard`, now exported from `strategy-conditions.tsx`
+with two seams — `blockNote` for the annotation and `actions` for the
+per-condition links. **The difference the item called drift was not drift.**
+`spec.md:758-762` (a null verdict is a named building block, never a
+directional call) is satisfied by *position* on the strategy page, which lists
+calls and blocks apart under a heading, and has to be satisfied by *text* on
+the save page, which lists flat. Both encodings are correct; the parameter is
+which one a caller needs, and `strategy-conditions-save.json:160` records the
+annotation as a design constraint. Manifest re-pinned — its
+`current_implementation` said the markup "near-duplicates ConditionCard …
+rather than reusing it", which the change makes false.
+
+**#270**, measured. A throwaway cross-check scored every `role=` mention in
+all 29 manifests' prose against the roles actually carried by the files each
+manifest's own `source_digest` pins — #243's evidence, granularity and
+absent-file rule. **191 claims across 28 manifests (144 alert, 47 status),
+0 unreadable sources, 0 false.** #243 was false in 14 of 20; this is false in
+none of 191, so the base rate does not carry across and the item closed as
+measured-and-holding — the guard #243 shipped stays the only one.
+
+Filed the residue rather than dropping it with the closed items:
+`a-repeated-draft-param-is-truncated-on-round-trip` (317) and
+`the-focus-ring-and-element-claims-are-unmeasured` (318).
+
+**State**: 0 active changes, **27 open, all p3, no p2** (2 closed, 2 filed),
+230 closed, 202 archived changes. Gates on this tree: tsc, `npm run lint`
+**exit 0 from the repo root**, **205 files / 2575 vitest**, **274 unittest**,
+`npm run build`, `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped — no schema change. Branch
+`claude/conditions-refactor-aria-check-e784e6`.
+
+**Next**: **#301's residue**, unchanged and now two sessions deep —
+`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads. The gate-block one first:
+`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
+admits at length, and the platform's is whole-population, so adopting it may
+retire the caveat rather than save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line.**
+
+**Watch out**: **the throwaway passed while measuring nothing, on its first
+run.** The render dump wrote `{}` because `rendered()` is async and was not
+awaited — `JSON.stringify(Promise)` is `{}`, and vitest reported a pass. This
+is the exact vacuity `tests/rendering/support/render.ts` warns about in its own
+header, met by the harness's own reader. **A dump-and-compare is only evidence
+if it fails when it collects nothing**; it now throws on an empty walk, and the
+identical before/after is real. — **A refactor's "identical output" proves
+nothing unless the fixture exercises the branch that differs.** The compared
+render is byte-identical *and* Berlin's `REGIME_DOWN` carries `verdict: null`,
+so `· a named building block` is inside the compared text rather than absent
+from both sides. Check that before believing a diff of zero. — The save page
+gained exactly one sentence: a condition using a form the product does not
+model now also draws the shared card's "What is shown is incomplete" caveat.
+**Additive, not a repair** — `Not understood by Grid-Commander:` was already
+rendered on both sides by `ConditionStructure`, so `spec.md:750-756` was
+satisfied before and after. — **#270's four hits were the check's own false
+positives**, and this is the finding to keep from it: a manifest pins *files*,
+not *elements*, so a component-scoped negative ("role=status, never
+role=alert") cannot be resolved at manifest granularity, and the page carries
+the other role on other elements perfectly legitimately. A guard of this shape
+would be noisy on the four most carefully-reasoned accessibility notes in the
+design record. Verified by hand: `radar-pause.tsx:41,53`, the feasibility
+caveats and `restore/page.tsx:95` are all `role="status"`. — **`npm test` is
+not the whole gate.** `python3 -m unittest discover -s tests` is a second
+suite of **274** that CI runs and that vitest does not touch; a manifest edit
+is exactly the kind of change only it can catch.
+
 ## 2026-08-16 (parity) — the analysis reaches the model, disciplines and all
 
 **Did**: #283. `/recorder/analysis` had no counterpart on the MCP surface, so a
