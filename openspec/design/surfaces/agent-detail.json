@@ -12,6 +12,7 @@
     "src/presentation/components/exposure.tsx",
     "src/presentation/components/feasibility.tsx",
     "src/presentation/components/money-summary.tsx",
+    "src/presentation/components/radar-pause.tsx",
     "src/presentation/components/record.tsx",
     "src/presentation/components/stoppages.tsx",
     "src/presentation/components/why-not-loaded.tsx",
@@ -239,6 +240,7 @@
       "states": [
         "deployed",
         "not-deployed",
+        "radar-paused",
         "unreadable"
       ],
       "data": [
@@ -253,9 +255,12 @@
       "constraints": [
         "ACTIVE means configured; only a radar deployment means scanning. A design must not merge the lifecycle badge and the deployment standing into one indicator",
         "'Deployed and unscanned' is a distinct fact from 'on duty' and must remain readable as one",
-        "An unreadable radar must never dress up as 'not deployed'"
+        "An unreadable radar must never dress up as 'not deployed'",
+        "A paused radar is stated above the rows and no row claims to be scanning under it. The standing sentences themselves are unchanged — they report what BattleGrid says about each row (spec: A Paused Radar Is Stated Wherever Standing Is Rendered)"
       ],
-      "children": []
+      "children": [
+        "radar-pause"
+      ]
     },
     {
       "id": "agent-actions",
@@ -280,6 +285,32 @@
       "current_implementation": "Links only. No bound form on this route.",
       "constraints": [
         "Every one is a navigation to a route that states the consequence and issues a confirmation. A design must not turn any of them into an in-place control that acts on press"
+      ],
+      "children": []
+    },
+    {
+      "id": "radar-pause",
+      "role": "display",
+      "purpose": "Say whether anything is scanning at all — the correction to every standing sentence on the page, since standing names the agent the radar would resolve to and stays true while nothing runs.",
+      "states": [
+        "pause-unknown",
+        "radar-paused",
+        "platform-paused-count",
+        "both",
+        "platform-contradicts-itself",
+        "running-says-nothing"
+      ],
+      "data": [
+        "pause"
+      ],
+      "actions": [],
+      "current_implementation": "A space-y-1 stack of role=status <p> above the deployment rows. Renders NOTHING when the pause is unknown (all four fields null) and nothing when the radar runs with no platform-paused coins. The radar's own pause and the platform's count are separate sentences; the count is stated against coinsDeployed, or says the denominator was not given. A fourth line appears only when BattleGrid reports a paused radar and a non-zero scanning count, showing both as returned.",
+      "constraints": [
+        "`pause-unknown` renders NOTHING and must never render as reassurance. A missing pause is a read that did not answer, and a 'radar: running' badge built on it would assert liveness the platform never stated (spec: An Unreadable Pause Is Not A Running Radar)",
+        "The radar's pause and the platform's count are never reduced to one claim or one badge — they are different shapes with different remedies, and an operator told only 'paused' cannot tell whether their own radar is off or the platform stopped some coins (spec: The Radar's Pause And The Platform's Are Reported Apart)",
+        "role=status, never role=alert. A paused radar is a state of the platform being reported, not a failure of the page; the alert treatment on these surfaces belongs to reads that broke",
+        "It sits ABOVE the rows and must not be moved into them. The platform reports the pause once for the fleet and carries no per-deployment pause, so a row cannot own it — and rewriting each row's standing from it would make the row say something BattleGrid did not (spec: A Resolution State The Product Does Not Recognise Is Named, Never Interpreted)",
+        "Counts are always stated against the whole they were counted over, or the surface says the whole was not given"
       ],
       "children": []
     }
@@ -319,12 +350,13 @@
     "notes": "The feasibility panel is display-only and takes no focus. Its two conditional caveats — the counts disagreement and the not-carried notice — are role=status, not role=alert: neither is a failure, and both describe the reading rather than interrupting it. Failed reads elsewhere on the page carry role=status with the reason. The panel's absence is silent by design, so no live region announces it."
   },
   "source_digest": {
-    "app/(app)/agents/[id]/page.tsx": "sha256:5f509c16624172499367c2220e593d2c0a28417bc3b9bfbd3305d06f8cac97c8",
+    "app/(app)/agents/[id]/page.tsx": "sha256:b9a0a7b267a29bb7c8293968c64fbda28f8cd51cd19f00e62f2d59e63dfe7af5",
     "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/exposure.tsx": "sha256:db1ac5d837006765f361221834f52681fd1af595c53eb4ee8e65b0002ad7ae81",
     "src/presentation/components/feasibility.tsx": "sha256:96abd078b31fb74cc2f9c446d1f62cbbc546df8209a05bf2c1f8216db1fb1f1d",
     "src/presentation/components/money-summary.tsx": "sha256:b87bbb3e5cd375cafd3d8f0b59a0146935320787ac4bdbfa8922e690cc3758be",
+    "src/presentation/components/radar-pause.tsx": "sha256:8fd8527f2cff642a016eacfff98f79773696821c963ba7e69b4fa1356a620a34",
     "src/presentation/components/record.tsx": "sha256:aed02502176243d7b8a64942d4ca6247f154952a19f2d1825bb5aab05ae7cd62",
     "src/presentation/components/stoppages.tsx": "sha256:8fb20be2f01f372e17d3cbe668123dceab523f507051bd5a3db51953f4ab7460",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",

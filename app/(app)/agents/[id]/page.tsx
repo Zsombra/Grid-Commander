@@ -3,6 +3,7 @@ import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { BindingInheritance, BindingSummary } from '@/presentation/components/binding.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
 import { FeasibilityPanel } from '@/presentation/components/feasibility.js';
+import { RadarPauseNote } from '@/presentation/components/radar-pause.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { Stoppages } from '@/presentation/components/stoppages.js';
 import { Exposure } from '@/presentation/components/exposure.js';
@@ -216,6 +217,19 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
         <h2 className="font-medium">Deployment</h2>
         {radar.kind === 'deployed' ? (
           <>
+            {/**
+             * Whether anything is scanning at all, above the rows rather than
+             * inside them.
+             *
+             * The platform reports the pause once for the fleet and carries no
+             * per-deployment pause field, so a row cannot know it — and every
+             * row below says "on duty: scanning" regardless. Rewriting each
+             * row's standing from this flag would make the row say something
+             * BattleGrid did not say about it, which is what `A Resolution
+             * State The Product Does Not Recognise Is Named, Never
+             * Interpreted` forbids. So the fact sits here and qualifies them.
+             */}
+            <RadarPauseNote pause={radar.pause} />
             <ul className="space-y-1 text-sm">
               {radar.deployments.map((d) => (
                 <li key={`${d.coinTicker}-${d.timeframe}`}>

@@ -10,7 +10,7 @@ import type { RadarDeployment } from '@/domain/agent/deployment.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
-import { FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { FakeClock, FakeConfirmationStore, NO_PAUSE_REPORTED } from '../support/fakes.js';
 
 /**
  * Deploying and undeploying through the product's own commands.
@@ -41,7 +41,7 @@ function deployment(over: Partial<RadarDeployment> = {}): RadarDeployment {
 
 class FakeRadarPort implements RadarPort {
   timeframes: readonly string[] = ['15m', '1h', '4h'];
-  result: RadarReadResult = { kind: 'deployments', deployments: [] };
+  result: RadarReadResult = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [] };
   readonly upserts: Array<{
     coinId: string;
     timeframe: string;
@@ -133,7 +133,7 @@ describe('the target binds the pair and the verb', () => {
 /** A radar whose HYPE policy is occupied by another agent — the replace case. */
 function occupiedRadar(): FakeRadarPort {
   const radar = new FakeRadarPort();
-  radar.result = { kind: 'deployments', deployments: [deployment()] };
+  radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] };
   return radar;
 }
 
@@ -279,7 +279,7 @@ describe('describing an undeploy', () => {
 
   it('binds the token to the pair with the undeploy verb', async () => {
     const radar = new FakeRadarPort();
-    radar.result = { kind: 'deployments', deployments: [deployment()] };
+    radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] };
     const h = harness(radar);
     const res = await h.describeUndeploy.execute(undeployReq);
     if (res.kind !== 'proposal') throw new Error('expected a proposal');
@@ -300,7 +300,7 @@ describe('describing an undeploy', () => {
 
   it('refuses when the agent is not part of that deployment', async () => {
     const radar = new FakeRadarPort();
-    radar.result = { kind: 'deployments', deployments: [deployment()] };
+    radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] };
     const h = harness(radar);
     const res = await h.describeUndeploy.execute({ ...undeployReq, agentId: 'a-other' });
     expect(res.kind === 'refused' && res.reason).toContain('not deployed on HYPE');
@@ -309,7 +309,7 @@ describe('describing an undeploy', () => {
 
   it('says the agent survives its undeployment', async () => {
     const radar = new FakeRadarPort();
-    radar.result = { kind: 'deployments', deployments: [deployment()] };
+    radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] };
     const h = harness(radar);
     const res = await h.describeUndeploy.execute(undeployReq);
     if (res.kind !== 'proposal') throw new Error('expected a proposal');

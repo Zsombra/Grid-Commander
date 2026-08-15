@@ -19,6 +19,18 @@ export default tseslint.config(
       // passes on a fresh checkout and fails afterwards, which is a worse
       // property for a gate than simply failing.
       'next-env.d.ts',
+      // Git worktrees live *inside* the repository here, so a worktree is a
+      // second full checkout — its own `src/`, its own `node_modules`, its own
+      // `.next` — sitting under the root eslint is pointed at. Linting from the
+      // root with one open reported **63,337 errors across 1,208 files**, all
+      // of them someone else's checkout, and took long enough to time out a
+      // two-minute run.
+      //
+      // This is the `next-env.d.ts` reason above, with a different trigger:
+      // lint's result depended on whether a worktree existed. A gate whose
+      // answer changes with the state of an unrelated directory is not a gate.
+      // The sessions that hit it both concluded the failures were theirs.
+      '.claude/worktrees/**',
     ],
   },
   js.configs.recommended,

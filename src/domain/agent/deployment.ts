@@ -313,3 +313,70 @@ export function deploymentsByAgent(
   for (const agent of roster) byAgent[agent.id] = deploymentsFor(deployments, agent, roster, now);
   return byAgent;
 }
+
+/**
+ * Whether the radar is running at all, and how much of it the platform has
+ * stopped.
+ *
+ * BattleGrid reports this **once for the fleet**, in `list_radar_deployments`'s
+ * `summary` — there is no per-deployment pause field, so a row's standing
+ * cannot know it. That asymmetry is the whole reason this type exists
+ * separately from `AgentDeployment`: standing is a claim about which agent the
+ * radar *would* resolve to, and it stays true while nothing is scanning. The
+ * pause is a claim about whether anything is happening at all, and it belongs
+ * beside standing rather than inside it.
+ *
+ * ## Two facts, not one
+ *
+ * `radarPaused` is a boolean about the radar. `platformPaused` is a **count**
+ * of deployed coins the platform has stopped. They are different shapes with
+ * different remedies, and an operator told only "paused" cannot tell whether
+ * their own radar is off or the platform has stopped some of their coins — so
+ * they are never reduced to one claim.
+ *
+ * ## Every field is nullable, and that is the point
+ *
+ * A radar answer that carries no summary is a read that did not answer, not a
+ * running radar. Mapping absence to `false` would state, on this product's
+ * authority, that automation is running. That substitution has already been
+ * made here once — `regimeAutoDerive`'s `=== true` turned platform silence into
+ * a confident `false` at v19 — and it is the same shape.
+ */
+export interface RadarPause {
+  /** `null` where the platform did not say. Never defaulted to `false`. */
+  readonly radarPaused: boolean | null;
+  /** Deployed coins the platform has paused. `null` where it did not say. */
+  readonly platformPaused: number | null;
+  /** What the counts above are counted over. */
+  readonly coinsDeployed: number | null;
+  /** Deployed coins the platform reports as actually scanning. */
+  readonly scanning: number | null;
+}
+
+/** Nothing was reported. Distinct from a radar reported as running. */
+export function pauseIsUnknown(pause: RadarPause): boolean {
+  return (
+    pause.radarPaused === null &&
+    pause.platformPaused === null &&
+    pause.coinsDeployed === null &&
+    pause.scanning === null
+  );
+}
+
+/**
+ * Whether the radar is stopped.
+ *
+ * `=== true` deliberately, so `null` is never truthy — and, just as
+ * deliberately, this has no negative twin. "Is the radar running" is a question
+ * this product cannot answer from an absent field, and offering a
+ * `radarIsRunning()` would invite exactly the `!paused` that the nullability
+ * above exists to prevent.
+ */
+export function radarIsPaused(pause: RadarPause): boolean {
+  return pause.radarPaused === true;
+}
+
+/** Deployments the platform stopped, where it said so and the number is real. */
+export function platformStopped(pause: RadarPause): number | null {
+  return pause.platformPaused !== null && pause.platformPaused > 0 ? pause.platformPaused : null;
+}

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { describe, expect, it } from 'vitest';
 import { deploymentsFor, deploymentsNaming } from '@/domain/agent/deployment.js';
 import type { AgentLifecycle, RadarDeployment } from '@/domain/agent/deployment.js';
@@ -256,7 +257,7 @@ describe('the query answers with one of three distinct states', () => {
   it('deployed, with each market and standing', async () => {
     const q = new ReadDeploymentsQuery(
       new FakeRadarPort({
-        kind: 'deployments',
+        kind: 'deployments', pause: NO_PAUSE_REPORTED,
         deployments: [deployment(), deployment({ policyId: 'p2', coinTicker: 'PURR', slotAgentIds: ['a1'], onDutyAgentId: 'a9' })],
       }),
       { now: () => NOW },
@@ -272,7 +273,7 @@ describe('the query answers with one of three distinct states', () => {
 
   it('not-deployed when the radar answered and this agent is nowhere', async () => {
     const q = new ReadDeploymentsQuery(
-      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      new FakeRadarPort({ kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] }),
       { now: () => NOW },
     );
     expect(
@@ -287,7 +288,7 @@ describe('the query answers with one of three distinct states', () => {
      * sentence with another.
      */
     const q = new ReadDeploymentsQuery(
-      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      new FakeRadarPort({ kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] }),
       { now: () => NOW },
     );
     const res = await q.execute({ ...who, agent: archived('a1'), roster: [archived('a1')] });
@@ -407,7 +408,7 @@ describe('the roster asks for everyone at once', () => {
 
   it('summary answers with the map, or carries unreadable through', async () => {
     const ok = await new ReadDeploymentsQuery(
-      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      new FakeRadarPort({ kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] }),
       { now: () => NOW },
     ).summary({ ...who, roster: [active('a1')] });
     expect(ok.kind).toBe('summary');
@@ -423,7 +424,7 @@ describe('the roster asks for everyone at once', () => {
   it('the same agent archived reads as holding its slot in the summary too', async () => {
     // The roster and the detail page must not disagree within one account.
     const summary = await new ReadDeploymentsQuery(
-      new FakeRadarPort({ kind: 'deployments', deployments: [deployment()] }),
+      new FakeRadarPort({ kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [deployment()] }),
       { now: () => NOW },
     ).summary({ ...who, roster: [archived('a1')] });
     expect(summary.kind === 'summary' && summary.byAgent['a1']?.[0]?.standing).toBe(

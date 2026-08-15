@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
@@ -301,7 +302,7 @@ class StubMarket implements MarketPort {
 
 function deployedOn(tickers: readonly string[]): RadarReadResult {
   return {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: tickers.map((coinTicker, i) => ({
       policyId: `p${i}`,
       coinTicker,

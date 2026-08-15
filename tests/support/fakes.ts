@@ -16,6 +16,7 @@ import type {
 } from '@/domain/connection/connection-repository.js';
 import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type { Clock } from '@/ports/clock.js';
+import type { RadarPause } from '@/domain/agent/deployment.js';
 
 /**
  * In-memory doubles for every port.
@@ -253,3 +254,41 @@ export class FakeTransactionStore implements OAuthTransactionStore {
     return tx;
   }
 }
+
+/**
+ * A radar answer that reports no pause at all.
+ *
+ * The default for every fixture that is not about the pause. All four fields
+ * null, which is what `RadarPause` means by "the platform did not say" — and
+ * `RadarPauseNote` renders nothing for it, so a fixture written before the
+ * pause existed keeps exactly the meaning it had.
+ *
+ * Deliberately not a *running* radar. `{ radarPaused: false }` would be a
+ * fixture asserting the platform said something it did not, and the whole
+ * contract here is that absence and "not paused" are different answers. A test
+ * that wants a running radar says so, with `radarRunning()`.
+ */
+export const NO_PAUSE_REPORTED: RadarPause = {
+  radarPaused: null,
+  platformPaused: null,
+  coinsDeployed: null,
+  scanning: null,
+};
+
+/** A radar the platform reports as running, with its counts. */
+export const radarRunning = (over: Partial<RadarPause> = {}): RadarPause => ({
+  radarPaused: false,
+  platformPaused: 0,
+  coinsDeployed: 3,
+  scanning: 3,
+  ...over,
+});
+
+/** A radar the platform reports as paused, with every coin platform-paused. */
+export const radarPausedFleet = (over: Partial<RadarPause> = {}): RadarPause => ({
+  radarPaused: true,
+  platformPaused: 3,
+  coinsDeployed: 3,
+  scanning: 0,
+  ...over,
+});
