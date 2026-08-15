@@ -4,7 +4,7 @@
   "route": "/agents",
   "capability": "agent-authoring",
   "status": "designed",
-  "generated_at_commit": "a047e42",
+  "generated_at_commit": "042266a",
   "source_files": [
     "app/(app)/agents/page.tsx",
     "src/presentation/components/agent-actions.tsx",
@@ -28,6 +28,11 @@
       "name": "creation",
       "shape": "CreationAvailability ('available' with remaining | 'at-capacity' | 'unknown')",
       "source": "app.listAgents.execute()"
+    },
+    {
+      "name": "deployments",
+      "shape": "DeploymentSummaryResult ('summary' with byAgent | 'unreadable')",
+      "source": "app.readDeployments.execute()"
     }
   ],
   "components": [
@@ -47,6 +52,14 @@
         "agent-row:overflow-long-name",
         "agent-row:deployment-acting",
         "agent-row:deployment-waiting",
+        "agent-row:deployment-holding-position",
+        "agent-row:deployment-slot-held-not-scanning",
+        "agent-row:deployment-unscanned-market",
+        "agent-row:resolution-not-qualifying",
+        "agent-row:resolution-not-qualifying-no-reason",
+        "agent-row:resolution-cooldown",
+        "agent-row:resolution-regime",
+        "agent-row:resolution-unrecognised-section",
         "deployment-unavailable"
       ],
       "data": [
@@ -60,7 +73,7 @@
           "effect": "The agent's name links to /agents/<id> — the detail page holding the binding, the brain, the money summary and the rename form"
         }
       ],
-      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). Three top-level branches rendered separately — agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name (an underlined link to the agent detail page) and status on one baseline row, then the binding sentence. No truncation handling. | deployment line (added 4ea8f4b): each row states the agent's radar deployments (market, timeframe, standing) or 'Not deployed — scanning no market'; when the radar is unreadable, one role=status notice covers the list and rows carry no deployment line.",
+      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). Three top-level branches rendered separately — agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name (an underlined link to the agent detail page) and status on one baseline row, then the binding sentence. No truncation handling. | deployment line: each row states the agent's radar deployments in a four-arm standing vocabulary — 'Holding the position on X', 'Scanning X', 'Holds the X slot and is not scanning it — this agent is not active', 'In the rotation for X' — joined with ' · ', or 'Not deployed — scanning no market'; when the radar is unreadable, one role=status notice covers the list and rows carry no deployment line. | resolution notes (one text-text-secondary line per deployment that has any): what the platform is letting happen — an unrecognised section named verbatim as unrecognised, 'not qualifying — the platform gives <block token>' or 'not qualifying, and the platform did not say why', 'sitting out a cooldown until <ISO>', 'regime <name> (<conviction>)' — joined with ' · '; a null resolution renders nothing. | unscanned markets: one plain line per deployment whose slots hold no active agent — 'No active agent holds the X deployment — that market is deployed and unscanned.'",
       "constraints": [
         "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own — or concludes something deleted it",
         "`unreadable` must keep stating what is unavailable as its own condition, not as a pronoun pointing at the sentence above it. It read 'nothing can be created or changed until it can' while the preceding clause was always 'could not reach BattleGrid'; once that clause started varying by cause, the antecedent disappeared. It is a capability statement, not only an error",
@@ -71,7 +84,10 @@
         "[agent-row] Long display names must not push the status out of view",
         "[agent-row] The name must remain the link to the agent itself. The row once offered six sub-pages and no way to open /agents/<id> — the only live route to an agent was the cancel link on its own archive page. The name holds the noun; the actions list holds the verbs",
         "[agent-row] The deployment line uses the same words as the detail page's Deployment section — the two surfaces must not disagree about what an agent is doing",
-        "An unreadable radar renders as one notice for the whole list and NO per-row claim. A hiccup must never relabel a scanning agent as idle, nor an idle one as scanning"
+        "An unreadable radar renders as one notice for the whole list and NO per-row claim. A hiccup must never relabel a scanning agent as idle, nor an idle one as scanning",
+        "[agent-row] Platform tokens in the resolution notes render verbatim — AGGREGATE_BELOW_MIN stays AGGREGATE_BELOW_MIN. Two observed values from twenty rows are not a vocabulary, and a design may restyle the line but not translate the token into a sentence of ours",
+        "[agent-row] A section this product does not recognise is named as unrecognised, never restyled into scanning or idle — the naming is the honesty, not a missing label",
+        "[agent-row] A deployment whose resolution is null supports no claim in either direction and renders nothing — a design must not fill that silence with a neutral-looking placeholder"
       ],
       "children": [
         "agent-actions",
@@ -229,7 +245,7 @@
   "source_digest": {
     "app/(app)/agents/page.tsx": "sha256:9e1ec53d79c18b58191e37daa39b658893dff2ccd70c0359f4b7551686d57a09",
     "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
-    "src/presentation/components/agent-roster.tsx": "sha256:6fb7b3ce8b967e647630d88e9926cc3b074e3f0c188b0dae865e8532906be249",
+    "src/presentation/components/agent-roster.tsx": "sha256:0b30f31f5aaa2ebba98b34aa75edf243516e014f81ecf86cacead29f092cc9fe",
     "src/presentation/components/fleet-spend.tsx": "sha256:443f0edc2d3e16fdec4948ccc682708eddeddf2ec79c0fbfb21d24ea83fee0f0",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
