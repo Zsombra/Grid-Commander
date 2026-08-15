@@ -33,7 +33,16 @@ survey is the cheapest follow-up: it is entirely offline against a record that
 is now current, and the four signal-log reads growing by the same +15/+17
 suggests one shared block landing on four surfaces at once.
 
-**Watch out**: **declared and observed now disagree in both directions on the
+**Watch out**: **the live run was read-only, so nine write probes have never
+seen v19** — `apply`, `condition-write`, `custom-table`, `proposal`, `radar`,
+`recorder`, `restore`, `retune`, and `write-probe`'s write half, all gated
+behind `BATTLEGRID_LIVE_WRITES=1`. Every write path is conformant against the
+refreshed record and unobserved against the running server, which is the
+weaker of the two given the next paragraph. Filed as #306; it needs a keyed
+env *and* a named go-ahead, because those probes fork strategies and create
+agents on the live account. Cheapest useful subset is `custom-table-probe`
+(the only live exercise of this session's preview fix) plus `apply-probe`. —
+**declared and observed now disagree in both directions on the
 same pair** — v19 deleted `regimeAutoDerive` from all fifteen output schemas
 *and* from the live response, while `regimeTimeframe` is still returned though
 nothing declares it. The mapper's `=== true` was turning that silence into a
