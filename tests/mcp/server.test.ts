@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { buildServer } from '@/mcp/server.js';
@@ -240,7 +241,7 @@ describe('the MCP server, over a real client', () => {
 
     function radarWorld(agents: FakeAgentsPort) {
       const radar = new RenderRadarPort();
-      radar.result = { kind: 'deployments', deployments: [sp500] };
+      radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [sp500] };
       return { app: actingWith({ agents, radar }).app as unknown as App, agents };
     }
 

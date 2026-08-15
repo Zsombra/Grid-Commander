@@ -1,4 +1,4 @@
-import type { RadarDeployment, RadarResolution } from '@/domain/agent/deployment.js';
+import type { RadarDeployment, RadarPause, RadarResolution } from '@/domain/agent/deployment.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { RadarPort, RadarReadResult } from '@/ports/radar.js';
 import type { McpBattleGridAdapter } from './mcp-adapter.js';
@@ -32,7 +32,14 @@ export class McpRadarAdapter implements RadarPort {
         args: {},
       });
       const payload = result.content as Record<string, unknown>;
-      return { kind: 'deployments', deployments: mapDeployments(payload['policies']) };
+      return {
+        kind: 'deployments',
+        deployments: mapDeployments(payload['policies']),
+        // The other declared output. It was discarded here for the life of the
+        // product, and the agent page said "on duty: scanning" through a
+        // three-day platform pause because of it (#311).
+        pause: mapPause(payload['summary']),
+      };
     } catch (err) {
       return unreadable(err);
     }
@@ -176,6 +183,37 @@ export function mapDeployments(raw: unknown): readonly RadarDeployment[] {
     };
   });
 }
+
+/**
+ * Whether the radar is running, off the fleet summary.
+ *
+ * Non-fatal at every field, and **nullable at every field**, which is the whole
+ * contract. `summary` is declared required beside `policies` and all fourteen
+ * of its fields are required within it — but a declaration is not an
+ * observation on this platform, and the one substitution this mapper must never
+ * make is absence into `false`. A radar answer without a summary is a read that
+ * did not answer; rendering it as a running radar would state, on this
+ * product's authority, that automation is live. `regimeAutoDerive` cost that
+ * lesson at v19 and it is the same shape here.
+ *
+ * Note the asymmetry the platform itself draws: `radarPaused` is a boolean
+ * about the radar, `platformPaused` a **count** of deployed coins it has
+ * stopped. Two facts, carried apart, because their remedies differ.
+ */
+function mapPause(raw: unknown): RadarPause {
+  const s = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const paused = s['radarPaused'];
+  return {
+    radarPaused: typeof paused === 'boolean' ? paused : null,
+    platformPaused: count(s['platformPaused']),
+    coinsDeployed: count(s['coinsDeployed']),
+    scanning: count(s['scanning']),
+  };
+}
+
+/** A count the platform sent. A non-number is not a zero. */
+const count = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : null;
 
 /**
  * What the platform resolved, carried rather than interpreted.

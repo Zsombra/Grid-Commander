@@ -763,6 +763,10 @@ export function mapEntryDecision(raw: unknown): EntryDecision {
     timeHorizon: text(d['timeHorizon']),
     atrPct: num(d['atrPct']) ?? null,
     expiresAt: text(d['expiresAt']),
+    // Null while the decision is still answerable; set by the platform on
+    // cancel and on expiry alike (both observed 2026-08-15). Half of the
+    // liveness test — `status` is the other half.
+    closedAt: text(d['closedAt']),
     executedAt: text(d['executedAt']),
     executedOrderId: text(d['executedOrderId']),
     stopLossOrderId: text(d['stopLossOrderId']),

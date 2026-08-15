@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { buildServer } from '@/mcp/server.js';
@@ -47,7 +48,7 @@ const VERDICTS: QualificationResult = { kind: 'verdicts', verdicts: [HYPE] };
 
 function deployedOn(tickers: readonly string[]): RadarReadResult {
   return {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: tickers.map((coinTicker, i) => ({
       policyId: `p${String(i)}`,
       coinTicker,

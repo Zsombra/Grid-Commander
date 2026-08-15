@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
 import { FakeMarketPort } from '../support/market-fakes.js';
 import { actingWith, notConnected, RenderRadarPort } from './support/fake-acting.js';
@@ -71,7 +72,7 @@ async function page(search: Record<string, string> = {}) {
 function deployedOnHype() {
   const radar = new RenderRadarPort();
   radar.result = {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: [
       {
         policyId: 'p1',

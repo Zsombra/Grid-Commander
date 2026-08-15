@@ -52,6 +52,231 @@ rather than left claiming the file that was not touched. — In a worktree `.git
 a **file, not a directory**, so `--body-file .git/whatever` fails; the scratchpad
 is the place for gh comment bodies. — `npm ci` was needed: a fresh worktree has no
 `node_modules`, and nothing warns before the first gate fails.
+
+## 2026-08-16 (records) — four claims that outran their proof
+
+**Did**: `the-record-says-what-was-actually-checked` (lite, archived) — four p3
+items that are one defect in four costumes: **a claim nothing checked.**
+
+- **#193** — `DT-0014.json` carries a supersession note *and* both expired
+  acceptance lines annotated in place, because a reader checking acceptance
+  top-down never reaches `references`. Neither line deleted: deleting them
+  erases the evidence the supersession happened. `design` verified
+  **byte-identical**; only `acceptance`, `references`, `updated` moved.
+- **#242** — the ruling: a live region is `aria-live`, `role="status"` **or**
+  `role="alert"`; the last two are implicit live regions by ARIA definition.
+  19 was the `role="status"` count alone, and the `JOURNAL` sentence *named
+  both roles while carrying the status-only number*. Written into
+  `UI_COMPONENT_REVIEW_CHECKLIST.md` row 8. Three records corrected using the
+  repo's own `**Corrected <date>**` convention; the 2026-08-14 entry annotated,
+  not rewritten.
+- **#252** — `namesNewline`/`namesEncoding` extracted out of the rule loops and
+  composed through one `unpinned()`, then proved. **Extraction first is the
+  point**: a proof that re-typed the regex asserts against a copy and leaves
+  the live predicate unexercised — the same vacuity in a test's clothes.
+- **#293** — **nothing was changed.** The fix landed in `0c10bc4` (#303) on
+  2026-08-15 and the issue closed the same day; only the item stayed open.
+
+Deferred and filed: **#320**, the design-contract rule (a restyle ticket's
+acceptance describes treatment, not content) — a contract change, not smuggled
+into a bookkeeping pass.
+
+**State**: 0 active changes, **24 open items** (was 27), still no p2. Gates in
+this worktree: tsc, eslint exit 0, **205 files / 2576 vitest** (was 2575 — the
+one new case), `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped, no schema change. Branch `claude/four-ticket-items-board-89d446`.
+
+**Next**: unchanged for the third entry running — **#301's residue**:
+`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads. Gate-blocks first;
+`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
+admits at length, and the platform's is whole-population, so adopting it may
+retire the caveat rather than save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line.**
+
+**Watch out**: **four, and two of them cost real time.**
+
+1. **`git checkout -- <file>` deleted this session's own work.** Restoring a
+   file after a mutation test, while the change was still uncommitted, reverted
+   it to `HEAD` and took the whole #252 edit with it. Only that one file was
+   hit and it was rebuilt from the script. **Mutation-test by copying the file
+   aside and restoring from the copy — never from git — until the work is
+   committed.**
+2. **Backslashes collapse somewhere between here and Python.** `\\\\`
+   inside a quoted heredoc arrived as **one** backslash. Building the literal
+   from `chr(92)` sidesteps the layer entirely and is the only form that
+   survived. Same family as the CRLF and PS-encoding traps: **do not trust a
+   text pipeline on this box; assert the bytes you wrote.**
+3. **That produced a test that would have passed for the wrong reason.** The
+   pinned fixture is a TS string holding `newline="\n"`; a single backslash
+   makes `\n` an escape, so `textWrites` splits the fixture into two lines and
+   every assertion goes green against nonsense. Caught by reading the bytes.
+   The case now asserts `textWrites(PINNED)` has length 1.
+4. **A closed issue does not close its item.** #293's fix shipped, its issue
+   closed, and the canonical record sat open for a day on the board. #309 is
+   the mirror checked item→issue; **this is the direction nobody checks.**
+
+Also: the live-region count is not a fact about the product. It took **three
+values inside 2026-08-14 alone** (129/130/132) and is 139 today. Figures in
+records now carry the commit they were measured on; the checklist carries the
+grep instead of a number.
+
+*(Addendum, close-out. The operator asked for the pipeline left in a state the
+next session could start from, so the wrap-up was audited rather than asserted —
+and **the audit found the worst record in the repo**. `CLAUDE.md` advertises
+`HANDOFF.md` as current state, and its **§ Start Here** was pinned to
+2026-08-13: of the twelve backlog items it named as the sharpest things to pick
+up, **eleven are `done`** and one never existed under that id; both #94 and #216
+that it names as what comes "then" are **closed**; and it claimed two items had
+no GitHub issue when they are #228 and #229. A session trusting it opens a
+change against closed work and finds out after reading the code.
+
+Repaired: Start Here now leads with the live thread (#301's residue, 24 open,
+no p1/p2, four open PRs) and everything older is fenced as a dated snapshot
+kept for its reasoning, not its direction — the reasoning is good, only the
+direction rotted. **The mechanism is untouched and filed as #322**, because
+`HANDOFF.md` is the one artifact here with no producer and no check: the journal
+is append-only and cannot rot, the backlog has `validate`, and this file is
+narrative, cumulative and hand-edited. The previous session repaired its Current
+State table — recording it as "four days stale" — and did not notice Start Here
+immediately below it. The eleven dead items are a ready-made fixture for the
+`validate` rule that would catch the general case.
+
+Also checked and **owed nothing**: `CHANGELOG.md` is the pipeline's own dev
+notes, not a per-change log — untouched since project init, correctly. No design
+re-survey is owed either: DT-0014's record changed, no UI did, and its `design`
+block is byte-identical.
+
+Final: **0 active changes, 25 open items** (four closed this session, three
+filed: #320, #322, plus the #309 instances recorded), still **no p1 and no p2**.
+205 files / 2576 vitest, `validate --all` 0 errors / 13 warnings, 202 archived
+changes. PR **#321**, one commit, branched cleanly off `main`'s tip — checked
+explicitly, because the last session's #315 was cut from another branch and
+merged two changes under one body.)*
+
+
+## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
+
+**Did**: closed the session's own loose end. `lint-ignores-nested-worktrees`
+(lite, archived): `.claude/worktrees/**` added to `eslint.config.mjs`'s ignores.
+Git worktrees live *inside* this repository, so an open one is a second full
+checkout — its own `src/`, `node_modules`, `.next` — under the directory
+`eslint .` is pointed at. **Before: 63,337 errors across 1,208 files, timing out
+a two-minute run. After: exit 0 in 20.6 seconds.** The reasoning was already in
+that file, three lines up, about `next-env.d.ts`: a gate whose answer changes
+with the state of an unrelated directory is not a gate.
+
+**Fed the violation it must still catch**, per `boundaries.test.ts`'s own rule
+about its matchers: an unused `const` planted in `src/domain/agent/feasibility.ts`
+still fails lint by name, and lint returns green when it is removed. The ignore
+is exact, not a blanket.
+
+Also corrected the shared `p3-lane-queue` memory, which a parallel session had
+left asserting a p2 that #314 resolves.
+
+**State**: 0 active changes, 27 open items, **no p2**. Gates: tsc, eslint (now
+green from the repo root), **205 files / 2575 vitest**, `validate --all` 0 errors
+/ 13 standing warnings. Branch `fix/lint-ignores-nested-worktrees`.
+
+**Next**: **#301's residue** — `list_gate_blocks.summary[]`,
+`budget.blockedReason`/`blockedSince`, `debriefVerdict` on five signal-log reads.
+The gate-block one first: `blocks.ts:118-163` derives that aggregate from a
+*window* whose partiality it admits at length, and the platform's is
+whole-population, so adopting it may retire the caveat rather than save
+arithmetic. **Read `git show origin/main:openspec/JOURNAL.md` before trusting
+this line** — parallel sessions are live (PRs #313, #314, #307 all open).
+
+**Watch out**: the other half of that environment trap is **not fixed and is not
+fixable in the repo**: 324 tracked files sit CRLF in the primary checkout from
+`core.autocrlf=true`, despite `.gitattributes` declaring `eol=lf`. It broke
+`npm test` with a `SyntaxError` on `tests/tools/mutate-guard.test.ts` while
+`git status` reported the file unmodified — because git normalises on read, so
+the working copy can be wrong and clean at the same time. Worktrees check out LF
+and are unaffected, which is the tell: **if a gate fails in the root checkout
+and passes in a worktree, suspect the checkout before the change.** Repairing it
+is `git add --renormalize .` in that checkout, not a commit here — and any sweep
+that does it by hand **must exclude binaries**, because one that trusted
+`git check-attr eol` stripped CR-LF pairs out of 20 PNGs and corrupted them.
+
+*(Addendum, close-out: the operator asked for a proper wrap-up. **#315 merged**
+(`170f31c`) — and it carried more than its body said: `fix/lint-ignores-nested-worktrees`
+had been branched off `claude/paused-radar-is-not-on-duty` rather than `main`,
+so one PR merged **34 files and both changes**. Nothing merged unreviewed —
+both were separately proposed, archived and fully gated first — but the record
+was wrong, so #315 carries a correcting comment, **#314 was closed as empty**
+(`git commit --amend` refused its remainder, which is the proof nothing was
+dropped), and **#311 was closed by hand** because #315's body had no closing
+keyword for it. Branches pruned, tips archive-tagged. `HANDOFF.md` gained this
+session's header and the 2026-08-15 (keyed) one is marked superseded; its
+Current State table was four days stale (2443 vitest / 193 files / 18 items
+against today's **2575 / 205 / 27**).
+
+**A second mistake worth recording, because it nearly shipped.** Resolving the
+rebase, a Python heredoc asserted its way out *before writing the file*, and the
+`git add … && rebase --continue` chained after it committed **three conflict
+markers into `openspec/JOURNAL.md`**. Caught by grepping the committed file
+rather than trusting the rebase's success message. The lesson is the shape, not
+the language: **a resolution script must write-then-verify, and the verify must
+be its own command** — chaining `git add` behind a script that can fail silently
+turns a failed resolution into a committed one. `main` is clean: four entries,
+right order, no markers.
+
+Final state: 0 active changes, **27 open, all p3, no p2**, 2575/205 vitest,
+`validate --all` 0 errors / 13 standing warnings, 201 archived changes. The two
+open PRs (#313, #307) are the parallel session's.)*
+
+## 2026-08-16 (pause) — the radar says whether anything is running
+
+**Did**: #311, the p2 the schema survey turned up. `a-paused-radar-says-so`
+(standard, archived): `list_radar_deployments`'s `summary` is mapped at the
+adapter, the pause rides `RadarReadResult` → `ReadDeploymentsQuery` to **all
+three** consumers, and a shared `RadarPauseNote` states it above the rows on the
+agent page and the roster. The MCP surface gets it without a change —
+`src/mcp/tools.ts` returns the query's result whole, so a model reading standing
+now reads the pause with it. Three requirements added to `agent-deployment` and
+`An Agent's Standing Is Read Against Its Lifecycle` modified to say standing is a
+claim about configuration, not activity. 24 new tests.
+
+**Two things the item had wrong**, both caught by reading the declaration before
+building and corrected on the issue: `platformPaused` is a **number** (deployed
+coins the platform stopped), not a flag — `radarPaused` is the only boolean; and
+`policies[].resolvesNow` carries **no** per-deployment pause, so the pause is
+knowable only at fleet level and "which pause wins the sentence" was the wrong
+question. It sits above the rows and qualifies them; no row's standing is
+rewritten from it.
+
+**State**: 0 active changes, 27 open items, **no p2**. Gates on this tree: tsc,
+eslint (scoped — see below), **205 files / 2575 vitest** (was 203/2551),
+`npm run build`, `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped — no schema change. Branch `claude/paused-radar-is-not-on-duty`.
+
+**Next**: **#301's residue** — the three adoptable reads the survey left
+(`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads). The gate-block one is the most
+interesting: `blocks.ts:118-163` derives that aggregate from a *window* whose
+partiality it admits at length, and the platform's is whole-population, so
+adopting it may retire the caveat rather than just save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line** — a
+parallel session is live (PR #313).
+
+**Watch out**: **the main checkout is a bad place to run gates, and both
+failures look like your change.** (1) `npm run lint` from the repo root reports
+**63,337 errors across 1,208 files** — every one under `.claude/worktrees/`,
+because the nested worktree copies (with their own `node_modules` and `.next`)
+are not ignored by the eslint config. Scope it: `npx eslint src app tests tools`.
+(2) `npm test` failed `tests/tools/mutate-guard.test.ts` with a *SyntaxError*
+while `git status` showed the file unmodified — the main checkout had **324
+tracked files sitting CRLF** from `core.autocrlf=true`, despite `.gitattributes`
+saying `eol=lf`. The worktrees are LF and unaffected, which is why the same
+suite passed there. — **Renormalising line endings must exclude binaries.** A
+sweep that trusted `git check-attr eol` stripped CR-LF byte pairs from **20
+PNGs** under `docs/merge/proof/` and corrupted them; caught because
+`git diff --numstat` showed them as `-  -` (binary) among the text changes, and
+restored with `git checkout --`. Check the file list before writing, not after.
+— A test double's default must be the *unreported* pause, not a running radar:
+`{ radarPaused: false }` asserts the platform said something it did not, and
+every fixture predating this change would then carry a claim nobody made.
+
 ## 2026-08-16 (schemas) — the survey found a defect, and it is live
 
 **Did**: #301, surveyed. Leaf-diffed the v19.1.0 capabilities record against the
@@ -198,6 +423,108 @@ item *has* a `github:` number and never that the two agree on state.
 
 Board after: **0 active changes, 26 open, all p3, 0 errors / 13 standing
 warnings** — no p2 for the first time since the 15th.)*
+
+
+## 2026-08-15 (built) — the answer exists in code, and the accept path rewrote a field
+
+**Did**: took `the-approval-can-be-answered` from proposal to **19/40**, all of
+it below the UI. Planned it (full track, five artifacts), then built: `closedAt`
+onto `EntryDecision`; `pending-decision.ts` holding the five-condition binding;
+`confirmationTarget.decisionAnswer` with the **verb bound first**;
+`ReadPendingDecisionsQuery`; `answerEntryDecision` on the port and in the
+adapter; `AnswerDecisionCommand`. **34 new tests, 2505 across 199 files, all
+green.** Amended the **A10 wager guard** deliberately (DL-7/DL-10). Rebound
+**Vanguard** off Trafalgar onto Cannae and matched its bar to Undertow's
+(0.6 → 0.55) — it produced its **first trade in its existence** within the hour.
+The operator accepted it in BattleGrid's UI, which handed us the **accept-path
+payload** we had never seen.
+
+**State**: clean, 12 commits on `claude/approvals-write-side-fd4863`, all pushed,
+[PR #307](https://github.com/Zsombra/Grid-Commander/pull/307). `validate --all`
+0 errors. Undertow restored to the operator's settings (rev 10, `FULL_EXECUTION`);
+**Vanguard is live at rev 13 in `APPROVAL_REQUIRED`** and is now the standing
+source of approval rows — it holds a real AVAX long ($21.56 notional, $5.39
+margin, 4×). Board: 23 open items, three p2 (#289, #299, #304).
+
+**Next**: the **queue surface (1.4b)** and the **cancel confirmation (3.3/3.4)**.
+That is the shortest path to **task 4.5** — a cancel performed *through the
+product* and confirmed in the audit — which is the half of the Phase D gate that
+still stands. Start a fresh session for it: the remaining work is React, tokens
+and a `/surface` refresh, a different mode from everything above.
+
+**Watch out**: **I crossed the Phase D gate.** `accept_entry_decision` went in
+alongside cancel because DL-3 had already made answering one verb-parameterised
+operation, and splitting it would have created two paths where the design wants
+one. Purpose held — 5.2/5.3 are unbuilt so **no surface reaches accept** — but
+the sequence did not, and DL-11 says so. **No accept surface may be built until
+4.5 passes.** — **The plan was wrong and the codebase was right** about auditing:
+P3 item 5 asked for binding refusals to be audited; `call-path.ts` and
+`wager.test.ts` already establish that a refusal writes **no** row, because it
+never left the process. An attempt that *failed* is audited; a refusal *before*
+the attempt is not (DL-9). — **`expiresAt` is rewritten on accept**: created
+18:05:54 with a 15-minute window, it reads 18:34:00 = `executedAt` + 15m. So
+decision fields **do** mutate, which retires DL-1's N=1 caveat *in the direction
+that vindicates keeping the price levels in the binding*. Treat no decision field
+as immutable. — **`status` and `tradeStatus` diverge** (`EXECUTED`/`LIVE`) though
+they moved together on the cancel; never derive one from the other. — **`closedAt`
+is null on an EXECUTED decision**, so it is not a liveness test on its own —
+`status === 'PENDING'` carries real weight in the pair. — The **sizing formula
+reproduced a third time** on a second agent, preset and leverage
+(45 × 0.12 × 4 → floor 3.32 → 21.561408, exact). Still must not be displayed
+(PE-2). — Skill paths lie twice: checklists are in **`docs/checklists/`** not
+`docs/specs/`, and plan artifacts belong in **`openspec/changes/<id>/plan/`** not
+`docs/plan/` — the board could not see the plan until they were moved. CLAUDE.md
+is authoritative over both skills.
+
+## 2026-08-15 (answered) — the queue answers, and the declaration was wrong twice
+
+**Did**: #101's precondition is met and the change is proposed. The operator
+put **Undertow** into `APPROVAL_REQUIRED` to manufacture a row (Vanguard, the
+designated agent since 2026-08-14, fires ~4×/6d and never qualified all day).
+The first row was **produced and missed** — HYPE at 13:18:03Z, expired 13:33Z,
+because a 6-agent Workflow was occupying the REPL and **cron only fires while
+the REPL is idle**; the queued ticks all discharged after expiry. Recovered its
+shape anyway from `list_entry_decisions(status: EXPIRED)`. The second row was
+caught **live** at 17:01:39Z, and the operator authorized the **first
+`mcp:wager` write in this product's history** — `cancel_entry_decision`, chosen
+because it commits no money. Cancelled 17:05:44Z, eleven minutes before expiry,
+read back `CANCELLED` with `closedAt` set. Proposed
+`the-approval-can-be-answered` (full, 38 tasks, validation clean). Filed **#299**
+(p2), **#304** (p2), **#305** (p3). Undertow fully restored at 17:08:11Z.
+
+**State**: 1 active change at `tasks`, needing `plan`. 23 open items, three p2.
+`validate --all` 0 errors. Four commits on `claude/approvals-write-side-fd4863`;
+no product code touched, no tests run beyond `npm ci`. **Undertow is back to the
+operator's settings (revision 10) — nothing outstanding on it.** Vanguard stays
+in `APPROVAL_REQUIRED` deliberately.
+
+**Next**: the operator must rule on **task 0.1** — the binding. Everything else
+in the change is blocked behind it. Then `planner`.
+
+**Watch out**: **The tool description lied twice, and both would have shipped.**
+`list_pending_approvals` declares rows "enriched with execution and outcome
+context" — called in the *same second* as `list_entry_decisions(status:
+PENDING)` it returned a **byte-identical row**, same 35 keys; there is no
+enrichment, and the change now uses `list_entry_decisions` because it paginates
+and filters. And the declared status `AWAITING_APPROVAL` **does not exist** —
+the live payload says `PENDING`. Matching on it would have matched nothing.
+— **A decision carries no revision.** No `revision`/`version`/`updatedAt`/ETag
+across 35 keys; `accept_entry_decision` takes `decisionId` alone. This is the
+one place BattleGrid abandons the `expectedRevision` pattern, so the operator's
+"bind the revision" instruction is unsatisfiable and the proposal substitutes
+the three price levels. — `cancel_entry_decision` returns **two keys**
+(`decisionId`, `cancelled`). No echo, no status, no timestamp; a UI must
+re-read. — **`maxConcurrentExposureUsd` is metered on MARGIN, not notional**
+(`capitalAtRiskUsd` 12.2 vs `marginedUsd` 12.176704 vs notional 36.54), and it
+is **not a gate — it is the sizing base**: `size = headroom × pct × leverage`,
+reconstructed to the cent on three positions. It starves entries under the $10
+exchange minimum while every gauge reads `breached: false`, which is #299. —
+**`timeHorizon: "1h"` is a label, not a clock**; positions ran 77 minutes. —
+The pipeline sweeps every **~60s**, not hourly. — A staleness finding has a
+half-life: a verifier called `OPEN_POSITION_CONFLICT` "three days stale" and it
+was firing every minute twenty minutes later. — **Never run a Workflow while a
+cron watch is what you are relying on.** That one cost the first row and
+returned nothing, because all four agents died on a subagent session limit.
 
 ## 2026-08-15 (reconcile) — the stranded branch comes home as four items and zero requirements
 
@@ -1936,12 +2263,20 @@ argues against fixing it.
   focusable* with *unreachable*: `disabled` leaves the tab order, not the
   accessibility tree. The accurate argument is narrower and rests on this
   codebase — `perform-button.tsx` has no live region, so the progressive label
-  is announced only because the pressed control holds focus. There are 19
-  `role="status"`/`role="alert"` regions in the product and none on the pending
-  state. Corrected in both items and both issues.
+  is announced only because the pressed control holds focus. There are ~~19~~
+  **130** `role="status"`/`role="alert"` regions in the product and none on the
+  pending state. Corrected in both items and both issues.
+  *(Corrected again 2026-08-16, #242: this sentence names both roles while
+  carrying the `role="status"`-only count. `role="alert"` is an implicit live
+  region — ARIA defines it as `aria-live="assertive"` — so the figure on this
+  entry's commit is 130, and 139 on 2026-08-16. The count is a fact about a
+  commit; the definition is the durable part and now lives in the UI review
+  checklist, row 8. The absence on the pending state is unchanged and was
+  re-checked.)*
 
 - **Two agents overstated findings in the same sweep; both were checkable in a
-  minute.** "grep aria-live returns 0" — there are 19 live regions, just none on
+  minute.** "grep aria-live returns 0" — there are ~~19~~ 130 live regions
+  (corrected 2026-08-16, #242 — see the bullet above), just none on
   the pending state. "The UI tells users the connection is read-only" — the
   sentence is wager-scoped and its operative claim is true. Filed both at the
   size they actually are. Agent findings are leads, not conclusions.

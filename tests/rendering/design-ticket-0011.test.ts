@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { AgentRoster } from '@/presentation/components/agent-roster.js';
 import type { AgentDeployment } from '@/domain/agent/deployment.js';
 import type { DeploymentSummaryResult } from '@/application/use-cases/read-deployments.query.js';
@@ -64,7 +65,7 @@ const unrecognised: AgentDeployment = {
 
 function roster(deployments: readonly AgentDeployment[]) {
   const summary: DeploymentSummaryResult = {
-    kind: 'summary',
+    kind: 'summary', pause: NO_PAUSE_REPORTED,
     byAgent: { [AGENT.id]: deployments },
   };
   return AgentRoster({

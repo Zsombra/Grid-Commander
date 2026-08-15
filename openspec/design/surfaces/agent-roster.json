@@ -11,6 +11,7 @@
     "src/presentation/components/agent-roster.tsx",
     "src/presentation/components/binding.tsx",
     "src/presentation/components/fleet-spend.tsx",
+    "src/presentation/components/radar-pause.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -210,6 +211,32 @@
         "A null total must not render as $0 — the platform answering with no figure and the fleet spending nothing are different facts.",
         "Spend is read from list_intelligence_agents, not the detail read: the two disagree, and the list is the one that answers (see the-cost-of-an-agent-reads-differently-from-two-tools)."
       ]
+    },
+    {
+      "id": "radar-pause",
+      "role": "display",
+      "purpose": "Say whether anything is scanning at all — the correction to every standing sentence on the page, since standing names the agent the radar would resolve to and stays true while nothing runs.",
+      "states": [
+        "pause-unknown",
+        "radar-paused",
+        "platform-paused-count",
+        "both",
+        "platform-contradicts-itself",
+        "running-says-nothing"
+      ],
+      "data": [
+        "pause"
+      ],
+      "actions": [],
+      "current_implementation": "A space-y-1 stack of role=status <p> above the deployment rows. Renders NOTHING when the pause is unknown (all four fields null) and nothing when the radar runs with no platform-paused coins. The radar's own pause and the platform's count are separate sentences; the count is stated against coinsDeployed, or says the denominator was not given. A fourth line appears only when BattleGrid reports a paused radar and a non-zero scanning count, showing both as returned.",
+      "constraints": [
+        "`pause-unknown` renders NOTHING and must never render as reassurance. A missing pause is a read that did not answer, and a 'radar: running' badge built on it would assert liveness the platform never stated (spec: An Unreadable Pause Is Not A Running Radar)",
+        "The radar's pause and the platform's count are never reduced to one claim or one badge — they are different shapes with different remedies, and an operator told only 'paused' cannot tell whether their own radar is off or the platform stopped some coins (spec: The Radar's Pause And The Platform's Are Reported Apart)",
+        "role=status, never role=alert. A paused radar is a state of the platform being reported, not a failure of the page; the alert treatment on these surfaces belongs to reads that broke",
+        "It sits ABOVE the rows and must not be moved into them. The platform reports the pause once for the fleet and carries no per-deployment pause, so a row cannot own it — and rewriting each row's standing from it would make the row say something BattleGrid did not (spec: A Resolution State The Product Does Not Recognise Is Named, Never Interpreted)",
+        "Counts are always stated against the whole they were counted over, or the surface says the whole was not given"
+      ],
+      "children": []
     }
   ],
   "flows": [
@@ -245,10 +272,11 @@
   "source_digest": {
     "app/(app)/agents/page.tsx": "sha256:9e1ec53d79c18b58191e37daa39b658893dff2ccd70c0359f4b7551686d57a09",
     "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
-    "src/presentation/components/agent-roster.tsx": "sha256:4751fd6fb0c325e852ce0281860684694f0729762e86fc17b92bffb4d35314a7",
+    "src/presentation/components/agent-roster.tsx": "sha256:458c5b4b9ff8209b242c25a734a340e018991de475d803fbe879ff0c98b17994",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/fleet-spend.tsx": "sha256:443f0edc2d3e16fdec4948ccc682708eddeddf2ec79c0fbfb21d24ea83fee0f0",
+    "src/presentation/components/radar-pause.tsx": "sha256:8fd8527f2cff642a016eacfff98f79773696821c963ba7e69b4fa1356a620a34",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
-    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
-    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074"
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

@@ -69,7 +69,7 @@ import { FakeMarketPort } from '../../support/market-fakes.js';
 import { FakePositionsPort } from '../../support/position-fakes.js';
 import { FakeExplorerPort } from '../../support/explorer-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
-import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
+import { FakeClock, FakeConfirmationStore, NO_PAUSE_REPORTED } from '../../support/fakes.js';
 
 /**
  * The `{ app, user }` shape `acting()` returns, assembled from the real
@@ -83,7 +83,7 @@ import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
 
 export class RenderRadarPort implements RadarPort {
   timeframes: readonly string[] = ['15m', '1h'];
-  result: RadarReadResult = { kind: 'deployments', deployments: [] };
+  result: RadarReadResult = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [] };
   async listDeployments(): Promise<RadarReadResult> {
     return this.result;
   }
