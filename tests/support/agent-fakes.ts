@@ -10,6 +10,7 @@ import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
   BudgetResult,
+  FeasibilityAdvisory,
   CatalogResult,
   EntryDecision,
   EvaluationResult,
@@ -29,6 +30,7 @@ import type {
   TradeChart,
   AuditEvent,
   FleetSpendResult,
+  UpdatedAgent,
 } from '@/ports/agents.js';
 import type { Budget } from '@/domain/agent/budget.js';
 import type { ThoughtEntry } from '@/domain/agent/thought.js';
@@ -154,7 +156,7 @@ export class FakeAgentsPort implements AgentsPort {
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
     confirmation: Confirmation;
-  }): Promise<Agent> {
+  }): Promise<UpdatedAgent> {
     this.calls.push({
       op: 'update',
       agentId: params.agentId,
@@ -178,8 +180,21 @@ export class FakeAgentsPort implements AgentsPort {
         : {}),
     };
     this.agents.set(next.id, next);
-    return next;
+    /**
+     * `null` by default, deliberately.
+     *
+     * The platform does not promise an advisory — it is absent from the output
+     * schema's `required` list — so the shape a caller must cope with by
+     * default is the one where nothing came back. A fake that always answered
+     * would model a platform that always answers, which is the
+     * fixture-modelling-an-impossible-platform mistake this file already warns
+     * about two methods up. Tests that want one set `feasibility` first.
+     */
+    return { agent: next, feasibility: this.feasibility };
   }
+
+  /** Seeded by tests that exercise the advisory. See `updateAgent`. */
+  feasibility: FeasibilityAdvisory | null = null;
 
   async rebindAgent(params: {
     agentId: string;

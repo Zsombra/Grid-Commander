@@ -1,5 +1,67 @@
 # Journal
 
+## 2026-08-16 (feasibility) — the edit answers with what can still be built
+
+**Did**: #291. `update_intelligence_agent` returns two things and this product
+read one — `agent-adapter.ts:300` was `return mapAgent(payload['agent'])`, and
+`grep -rn feasibilityAdvisory src/ app/ tests/` returned **0** on a tree at
+v19.1.0. `the-edit-answers-what-can-be-built` (standard, archived): the advisory
+is mapped through its declared two-arm union, carried on the update result from
+port through command to action, and rendered on `/agents/[id]` as opportunity
+language — BattleGrid's own `counts.buildable` of `counts.total` for the
+headline, the responsible dial named per blocked coin, unpriced coins named
+separately as a gap in the reading rather than a verdict, a ceiling curve marked
+as this product's arithmetic, and the dial-direction sentence the item asked for
+(*Max Stop Loss limits opportunity when turned down, not up*). No new platform
+call and no new call of any kind. Three requirements added to `agent-authoring`.
+New surface `agent-detail` (9 components, pinned); `agent-edit` re-pinned.
+The canonical backlog item **did not exist on `main`** — stranded on PR #295 —
+so it was recovered from `cd4b5a1`, landed here, and closed done.
+
+**State**: 0 active changes. Gates on this exact tree: tsc, eslint, **203 files /
+2551 vitest** (was 200/2498), 274 python, `npm run build`, `db:generate` clean,
+`validate --all` 0 errors / 13 standing warnings. `test:db` skipped — no schema
+change. Branch `claude/feasibility-advisory-dial-ui-dffc62`; PR is this
+handoff's last act.
+
+**Next**: **P2 #289** — but not `/propose` it, as the board still says. It is
+already worked on PR #295 (`cd4b5a1`); it needs a **rebase and merge**. Expect
+one conflict on `openspec/backlog/the-feasibility-advisory-is-unread.md` — take
+this branch's copy, the other three items on #295 are untouched.
+
+**Watch out**: **the panel has never rendered from a real payload.**
+`update_intelligence_agent` is classified destructive, so the surface record
+carries `"observed": null` and every fixture here is built from the *declared*
+v19.1.0 schema. Proving it live means a real agent edit on the operator's
+account — that is #306's territory and needs a named go-ahead. — **`counts` and
+`coins[]` can disagree**, and that was a live defect in my own first cut: the
+headline is the platform's count while the blocked sentence is counted off
+`coins[]`, so a payload saying 9-of-12 buildable with two structural-only coins
+printed "9 of 12 can construct" above "2 coins cannot". `countsAgree` now
+reconciles both directions, and `curveIsFaithful` withholds the derived curve
+entirely unless counting `coins[]` at the platform's *current* ceiling
+reproduces its own `buildable` — a derivation that cannot reproduce the present
+has no business extrapolating below it. — **The reply rides a signed cookie, not
+the URL.** Every write here redirects and the edit surface holds no client
+state (both are manifest constraints), so the reply had to survive a redirect;
+a query parameter would let anyone type `?buildable=12` and have the product
+render invented figures as BattleGrid's. Signed with the session secret,
+agent-keyed, 120s. **Next.js cannot set or delete a cookie during a page
+render**, which is why the apply action issues it and the page only reads —
+there is no read-and-clear, so the TTL is what expires it. — A cookie over
+~4096 bytes is **dropped whole and silently**, not truncated: the overflow is
+handled at 3600 by dropping `coins[]` and keeping the platform's counts with
+`coinsCarried: false`, so a 40-coin fleet says the detail is missing rather than
+rendering short. — `design_component_not_found` is a **substring match on the
+component id** (`_pascal`, underscore and squashed variants, case-insensitive):
+six invented ids like `exposure-panel` warned until renamed to names that
+actually exist in the source. Six new warnings would have shipped past a check
+that only reads the error count. — Bash **heredocs failed repeatedly** on this
+content and wrote nothing while reporting a shell parse error; the Write tool
+and `python3 io.open(..., encoding='utf-8')` are what worked. Python's default
+encoding on Windows is cp1252, so every read *and* write needs the explicit
+encoding or the em-dashes mojibake silently.
+
 ## 2026-08-15 (keyed) — the record catches up two majors, and the prose comes home
 
 **Did**: the keyed session three items were waiting for. **#287**: re-probed

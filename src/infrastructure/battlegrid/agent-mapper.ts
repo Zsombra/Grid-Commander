@@ -3,6 +3,12 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
 import type { Budget, Gauge } from '@/domain/agent/budget.js';
+import type {
+  AdvisoryCoin,
+  BlockingDial,
+  FeasibilityAdvisory,
+  FeasibilityCounts,
+} from '@/domain/agent/feasibility.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
@@ -870,6 +876,156 @@ function mapDirectionQualification(raw: unknown): DirectionQualification {
           : null,
     },
   };
+}
+
+/**
+ * The feasibility advisory `update_intelligence_agent` returns beside the agent.
+ *
+ * **Absent is not zero.** `feasibilityAdvisory` is not in the output schema's
+ * `required` list — only `agent` is — and the tool is classified destructive,
+ * so the surface record has never observed one (`"observed": null`). The
+ * standing warning applies exactly here: declared and observed disagree in both
+ * directions on this platform, and a `=== true` on a v19 read has already
+ * turned platform silence into a confident `false` once. Anything that is not
+ * a well-formed advisory returns `null`, and `null` means *the platform did not
+ * answer* — never *nothing can be built*.
+ *
+ * **All or nothing.** A partial object is refused rather than filled in. Half
+ * an advisory rendered as opportunity language is a count over a denominator
+ * nobody returned.
+ *
+ * This is the only place the platform's spelling for any of it exists —
+ * `FEASIBLE`, `ATR_UNAVAILABLE`, `MIN_STOP_LOSS_PCT`. The domain says
+ * `feasible`, `unpriced`, `floor`.
+ */
+export function mapFeasibilityAdvisory(raw: unknown): FeasibilityAdvisory | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const a = raw as Record<string, unknown>;
+
+  const minStopLossAtrMultiple = num(a['minStopLossAtrMultiple']);
+  const maxStopLossPct = num(a['maxStopLossPct']);
+  const minRiskRewardRatio = num(a['minRiskRewardRatio']);
+  if (
+    minStopLossAtrMultiple === undefined ||
+    maxStopLossPct === undefined ||
+    minRiskRewardRatio === undefined
+  ) {
+    return null;
+  }
+
+  const counts = mapFeasibilityCounts(a['counts']);
+  if (counts === null) return null;
+
+  // `coins` absent is not an empty fleet. The field is declared required, so a
+  // payload without it is a payload this product does not recognise.
+  if (!Array.isArray(a['coins'])) return null;
+
+  const coins: AdvisoryCoin[] = [];
+  for (const entry of a['coins']) {
+    const coin = mapAdvisoryCoin(entry);
+    // One unrecognised member makes the whole advisory unreadable rather than
+    // silently shorter. A fleet of twelve reported as eleven is a false count,
+    // and a false count is the one thing this panel must never render.
+    if (coin === null) return null;
+    coins.push(coin);
+  }
+
+  return {
+    dials: { minStopLossAtrMultiple, maxStopLossPct, minRiskRewardRatio },
+    counts,
+    coins,
+  };
+}
+
+function mapFeasibilityCounts(raw: unknown): FeasibilityCounts | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const c = raw as Record<string, unknown>;
+  const total = num(c['total']);
+  const evaluated = num(c['evaluated']);
+  const buildable = num(c['buildable']);
+  const volatilityUnavailable = num(c['volatilityUnavailable']);
+  if (
+    total === undefined ||
+    evaluated === undefined ||
+    buildable === undefined ||
+    volatilityUnavailable === undefined
+  ) {
+    return null;
+  }
+  return { total, evaluated, buildable, volatilityUnavailable };
+}
+
+/**
+ * One coin, off the declared two-arm union.
+ *
+ * The arms are told apart by `status`, and a status matching neither returns
+ * `null` — not a coin with defaults. The unpriced arm is `additionalProperties:
+ * false` over `{ coinTicker, status }`, so reading numbers off it would be
+ * reading fields the platform states it will never send.
+ */
+function mapAdvisoryCoin(raw: unknown): AdvisoryCoin | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const c = raw as Record<string, unknown>;
+
+  const ticker = str(c['coinTicker']);
+  if (ticker === null) return null;
+
+  if (c['status'] === 'ATR_UNAVAILABLE') return { kind: 'unpriced', ticker };
+
+  const status =
+    c['status'] === 'FEASIBLE'
+      ? ('feasible' as const)
+      : c['status'] === 'STRUCTURAL_ONLY'
+        ? ('structural-only' as const)
+        : null;
+  if (status === null) return null;
+
+  const atrPct = num(c['atrPct']);
+  const reachableMinPct = num(c['reachableMinPct']);
+  const reachableMaxPct = num(c['reachableMaxPct']);
+  const requestedMinAtrMultiple = num(c['requestedMinAtrMultiple']);
+  const requestedMinPct = num(c['requestedMinPct']);
+  const requestedMaxPct = num(c['requestedMaxPct']);
+  if (
+    atrPct === undefined ||
+    reachableMinPct === undefined ||
+    reachableMaxPct === undefined ||
+    requestedMinAtrMultiple === undefined ||
+    requestedMinPct === undefined ||
+    requestedMaxPct === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    kind: 'priced',
+    ticker,
+    status,
+    atrPct,
+    reachableMinPct,
+    reachableMaxPct,
+    requestedMinAtrMultiple,
+    requestedMinPct,
+    requestedMaxPct,
+    blockedBy: mapBlockingDial(c['responsibleBound']),
+    // Declared `number | null`. `null` is the platform declining to quantify the
+    // shortfall, which `?? null` preserves and a `?? 0` would report as none.
+    shortfallPct: num(c['shortfallPct']) ?? null,
+  };
+}
+
+/**
+ * The platform's `responsibleBound` → the dial an operator can point at.
+ *
+ * `null` covers both the platform's own `null` and any value it starts sending
+ * that this product does not know. Both mean the same thing to a reader — no
+ * dial has been named — and inventing `ceiling` for an unrecognised bound would
+ * point someone at the wrong control.
+ */
+function mapBlockingDial(raw: unknown): BlockingDial | null {
+  if (raw === 'MIN_STOP_LOSS_PCT') return 'floor';
+  if (raw === 'MAX_STOP_LOSS_PCT') return 'ceiling';
+  return null;
 }
 
 /** One row of the platform's ranked coin list. */
