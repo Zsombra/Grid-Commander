@@ -46,6 +46,17 @@ re-derived token-ness by matching text (ALL_CAPS, say) would dress words
 the platform never quoted — the kind is decided where the sentence is
 composed, and the derived string keeps the wording pins alive.
 
+*(Addendum, close-out: #276 and #277 merged (`9fdb501`, `43fdf38`); the
+day ends with main carrying all five legs and PR #82 the only open PR,
+another session's draft as ever. `HANDOFF.md`'s current-state sections
+were refreshed against measured numbers — the header block, the
+Current State table (193 archived, 2443/193 vitest, 274 harness, 18 open
+items, 25 surfaces, DT-0027, 26 MCP tools), and the mcp-control capability
+row — while the superseded dated blocks keep their historical figures,
+because 24 surfaces was true on 08-13 and rewriting history is how a
+record stops being one. Verified 18 open = 217 done + 4 wontfix against
+the start-of-day 215-closed footnote before writing any of it down.)*
+
 ## 2026-08-15 (sibling) — the loss shape reaches the model
 
 **Did**: merged #275 (main `05c8d80`). Radar freshness check before the

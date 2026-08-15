@@ -1,5 +1,48 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-15 (five legs in one session)
+
+**State**: green — **2443 vitest / 193 files + 274 harness**, typecheck, lint
+and build clean, `validate --all` at 0 errors / **13 deliberate warnings** —
+one *below* where the week started, because both agent-roster warnings were
+genuinely retired rather than repainted. **18 backlog items open** (217 done,
+4 wontfix), **0 active changes**, **193 archived**, 25 surfaces, 27 design
+tickets all implemented, `system.json` at v3, **the product's MCP surface at
+26 tools**. BattleGrid v18.2.0 throughout.
+
+**One session ran the whole pipeline five times** — five PRs, each proposed,
+gated, verified, archived, and merged before the next began (#271, #273,
+#275, #276, #277). The first was a records fix with a permanent guard:
+fourteen of twenty-four surface manifests claimed "No client JS" while their
+own `source_digest` listed `perform-button.tsx`, and `openspec.py` now fires
+`design_surface_denies_client_js` on the claim-plus-declaration pair —
+observed failing on exactly the fourteen before any correction. The second
+and fourth built the loss shape: `/agents/[id]/limits` answers **"how did it
+get here"** (realized P&L since the budget baseline plus the per-settlement
+curve, `get_agent_performance`'s first consumer, the product's second chart),
+and `read_loss_shape` gives a model the same answer with the span stated in
+the contract itself. The third re-surveyed `agent-roster` (four rounds
+stale; the drift was real feature growth) and gave the create form its first
+manifest. The fifth ran the design round the re-survey exposed: DT-0011
+revised — *revised, not duplicated, because `design_state_not_covered` is
+computed per ticket* — with two real treatments (holding-position takes
+weight; quoted platform identifiers wear mono) and six deliberate no-ops.
+
+**The lane was triaged whole before any of it** — all 21 then-open items
+read in full, no drifted statuses found — and the tripwires were swept three
+times across the day, all cold every time. **#94 is the one that will fire**:
+the record was measured from the db read-only (2.40 days deep at the last
+read, first_run 2026-08-12T19:46:14Z), both halves hold from
+**~2026-08-19T19:46Z (~Aug 20 02:46 local)**, and the environment half lives
+in the **user registry** — `setx` does not reach an already-running process
+tree, so check `[Environment]::GetEnvironmentVariable('DATABASE_URL','User')`
+before declaring it cold. **The board is quiet on purpose**: everything left
+is a watch, an upstream block, or an operator decision. Next session:
+tripwires first; from Aug 20 ~03:00 local the analysis layer (forward
+returns per signal state, sample sizes beside every figure) is the main work.
+
+**Superseded header from 2026-08-13 follows.**
+
 **Date**: 2026-08-13 (third session)
 
 **State**: green — **2328 vitest + 90 db**, typecheck, lint and build clean,
@@ -64,15 +107,15 @@ All development branches have been merged. `main` is the single source of truth.
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **160** |
-| Vitest tests | **2207** (+ key-gated live) + 85 db |
-| Harness tests (Python) | 243 |
+| Changes (archived) | **193** |
+| Vitest tests | **2443 / 193 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
+| Harness tests (Python) | 274 |
 | Active changes | none |
-| Open backlog items | **30** |
-| Design | 24 surfaces (17 designed, 3 needs-redesign, 4 functional); DT-0001–DT-0021 all implemented |
-| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #190 merged |
-| Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** — the two found on 2026-08-12 were fixed the same day (#177 create, and the rebind form's missing `agentId`) |
-| BattleGrid | **v18.2.0**, re-probed 2026-08-12 |
+| Open backlog items | **18** (one p2, gated until ~2026-08-20 02:46 local; the rest watches, upstream, or operator-gated) |
+| Design | 25 surfaces (15 designed, 7 needs-redesign, 3 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
+| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #277 merged |
+| Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
+| BattleGrid | **v18.2.0**; the surface record is level with live (the two-records comparison of #198 holds) |
 
 ### Read this before anything else
 
@@ -153,7 +196,7 @@ its neighbours.
 | `agent-understanding` | Agent journal (thought log), budget limits + spend, account-level capacity, **the trading record**, **each trade's story — frozen chart + the audit trail of every stop move**, **the decision pipeline**, **one evaluation's full scorecard and what it cost**, what has been stopping it, open positions, and the prospective **qualification screen** |
 | `strategy-authoring` | Fork (nameable), compile, review, apply; archive, restore; score a re-weighting before saving it; **the condition layer — composed, tried live, and saved through the full ceremony**; the section library and column editor |
 | `app-access` | Multi-tenant session, route protection, OAuth callback, build gate |
-| `mcp-control` | Grid-Commander exposed as an MCP server — 25 tools (24 reads + one proposal recorder), no writes to BattleGrid, any client |
+| `mcp-control` | Grid-Commander exposed as an MCP server — 26 tools (25 reads + one proposal recorder), no writes to BattleGrid, any client |
 | `agent-comparison` | The public field — other people's agents, the leaderboard, where this account stands, one competitor's whole public record, and any one evaluation's full scorecard |
 | `platform-mapping` | The recorded model of BattleGrid's MCP surface, and the guarantee that it announces its own age |
 | `signal-recording` | The forward record of what the signals said — capture (CLI, cron-owned schedule), the raw answer kept whole, coverage with gaps stated as gaps, history per coin and per signal, readable by the web and by a model |
