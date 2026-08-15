@@ -2,7 +2,7 @@
 id: wager-authority-has-a-second-gate-we-do-not-model
 title: The daily wager cap is enforced by the platform and published nowhere on its own API
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-13
 updated: 2026-08-15
@@ -179,3 +179,49 @@ facts, none of them readable over MCP:
 Also confirmed in passing: one active API key per account ("creating a new
 key revokes all previous keys"), the active key created 07-29 and last used
 08-15 — this product's own reads.
+
+## Closed 2026-08-15 — the flip proved the identity
+
+The operator ran the experiment the item said only they could run, from the
+**Wallet tab** (the switch turned out to be a plain two-way toggle there,
+not a ceremony — the TEE-policy attach is what the toggle drives). Three
+`get_account_state` reads, minutes apart:
+
+```
+Agent Wagers ON  (baseline)     mcpWagerEnabled: true
+Agent Wagers OFF                mcpWagerEnabled: false
+Agent Wagers ON  (restoration)  mcpWagerEnabled: true
+tradingWalletProvisioned        true / true / true — never moved
+```
+
+**`mcpWagerEnabled` IS the Agent Wagers signer-consent switch.** The only
+candidate field on the surface is the right one; the boolean followed the
+toggle in both directions within seconds, and every other payload field was
+byte-identical throughout. The non-movement of `tradingWalletProvisioned`
+separated the two permissions in the same measurement.
+
+Facts recorded from the Wallet tab, for whoever next touches consent copy:
+
+- The Agent Wagers permission covers **more than wagers**: "wager entries
+  … plus consolidation of your balances into your perps account". Any
+  future consent sentence about wager scope must name consolidation too —
+  though this product still never requests wager scope, per the standing
+  requirement.
+- Mechanism: Agent Wagers attaches a **TEE signer policy to the Privy
+  wallet** — the account shows PRIVY and SIGNER addresses; the signer
+  matches the profile identity.
+- **Agent Trading is a separate permission** ("free-trade agent wallet …
+  builder fee approval", its own agent wallet address) whose UI state
+  (ENABLED) matches `tradingWalletProvisioned: true`. That pairing is
+  observed correlation, not proven identity — it was not flipped, and
+  nothing in the product currently renders a claim that would need it. If
+  a surface ever asserts what `tradingWalletProvisioned` means, prove it
+  the same way first.
+
+Both halves of the item are now answered: the daily cap is real, live,
+per-account, editable, and absent from the wire (measured 08-13, pictured
+08-15); and the account-level gate the product already models is confirmed
+to be the signer consent itself. `read_wager_authority`'s
+`accountAllowsMcpWagers` now stands on a proven identity. No product
+change needed — the modelling was already right; what it lacked was proof,
+and this is it.
