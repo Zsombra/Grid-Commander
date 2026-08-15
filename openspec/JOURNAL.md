@@ -24,20 +24,12 @@ so it was recovered from `cd4b5a1`, landed here, and closed done.
 change. Branch `claude/feasibility-advisory-dial-ui-dffc62`; PR is this
 handoff's last act.
 
-**Next**: **rebase and merge PR #295.** The board says "P2 #289 — /propose it"
-and that is wrong three ways, found while opening this PR. (1) #289 is already
-*worked*, on `cd4b5a1`. (2) **Issue #289 is CLOSED** — manually, COMPLETED,
-2026-08-15T10:15:34Z, right after the four re-files were cut — while its backlog
-item still reads `status: open, priority: p2` on `main`. The item and its mirror
-have disagreed for a day and nothing checks that direction. (3) #295 carries
-more than the four items: **6 backlog files** (4 new, 2 appended — including the
-third `approvals-have-no-write-side` sweep and the 502-outage observation) plus a
-49-line JOURNAL entry. Merging it is the whole remaining act; deciding whether
-the item follows its issue to done is the operator's call, and is the reason
-this session did not touch it.
-
-Expect one conflict on `openspec/backlog/the-feasibility-advisory-is-unread.md`
-— take this branch's copy; the other five files on #295 are untouched here.
+**Next**: **#301** (`v19-moved-thirty-four-output-schemas`) — offline against a
+record that is current, needs no keyed env, and is the same shape as this
+session's work: #291 was one declared output nothing read, #301 is the survey of
+the other 188 schema leaves across 11 tools. The reader pattern is built now.
+The board's own `NEXT:` is merely alphabetical from here — 26 items, all p3, no
+ordering signal left in it.
 
 **Watch out**: **the panel has never rendered from a real payload.**
 `update_intelligence_agent` is classified destructive, so the surface record
@@ -71,6 +63,32 @@ content and wrote nothing while reporting a shell parse error; the Write tool
 and `python3 io.open(..., encoding='utf-8')` are what worked. Python's default
 encoding on Windows is cp1252, so every read *and* write needs the explicit
 encoding or the em-dashes mojibake silently.
+
+*(Addendum, close-out: the operator said follow the recommendation, so the merge
+order in the superseded Next above was executed. Gates re-run on the exact tree
+first — tsc, eslint, **2551/2551 vitest**, `validate --all` 0 errors. **#308
+squash-merged to `main`** (`2e59622`), then **PR #295 rebased and merged**
+(`fe6d2f6`), which is the #289 reconciliation finally landing. Both conflicts
+were the two predicted: the backlog item took `main`'s done copy, and
+`JOURNAL.md` needed a real merge across *both* of #295's commits — its entry
+slotted under this one in date order, its close-out addendum placed inside its
+own entry rather than this one, asserted by position rather than eye. Both
+branches archive-tagged and pruned; #295's **pre-rebase** tip is tagged
+separately (`archive/claude/board-watch-items-30541f-prerebase`) because the
+rebase rewrote it. Only `claude/approvals-write-side-fd4863` (PR #307, the other
+session's lane, CONFLICTING) is left on origin.
+
+**The P2 needed no judgment call after all.** This entry said deciding whether
+`a-completed-change-set-is-stranded-on-a-draft-pr` follows its closed issue to
+done was the operator's call — wrong. Its `status: done` was **already written
+in `cd4b5a1`**, on the unmerged branch, alongside everything else that was
+stranded. Landing #295 made the item and issue #289 agree on their own. The
+tracking gap that let them disagree for a day is real and unaddressed, and is
+filed as `the-mirror-is-checked-one-way` / **#309**: `validate` enforces that an
+item *has* a `github:` number and never that the two agree on state.
+
+Board after: **0 active changes, 26 open, all p3, 0 errors / 13 standing
+warnings** — no p2 for the first time since the 15th.)*
 
 ## 2026-08-15 (reconcile) — the stranded branch comes home as four items and zero requirements
 
