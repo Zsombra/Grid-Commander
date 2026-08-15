@@ -148,6 +148,13 @@ identically: 20/20 `platformPaused`, `radarPaused: true`, latest
 `lastFireAt` still 2026-08-13T18:01:18Z (MOODENG); approvals read again
 deliberately untaken.
 
+A third sweep later the same day (2026-08-15, after an MCP-backend outage —
+`mcp.battlegrid.trade/mcp` answered 502 for 30+ minutes while the site root
+stayed 200, then recovered): still 20/20 `platformPaused`,
+`summary.radarPaused: true`, latest `lastFireAt` unchanged at
+2026-08-13T18:01:18Z (MOODENG). The backend redeploy-or-outage did **not**
+come with an unpause. Approvals read again deliberately untaken.
+
 **What to watch**: when Radar shows fired rows again, read
 `list_pending_approvals` within a candidate's 15-minute window. The first
 Vanguard candidate that clears its gates lands in the queue instead of

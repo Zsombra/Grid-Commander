@@ -24,10 +24,15 @@
 
 Grid-Commander is a **third-party multi-tenant client** for BattleGrid
 (battlegrid.trade), reached over MCP at `https://mcp.battlegrid.trade/mcp`.
-The surface is fully mapped — **114 tools at v18.2.0** — in
-`docs/BATTLEGRID_MCP_REFERENCE.md`,
-with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation and
-`tools/generate_mcp_reference.py` to regenerate both.
+The surface is fully mapped — **114 tools at v19.1.0** — in
+`docs/BATTLEGRID_MCP_REFERENCE.md`, which also carries the server
+instructions and every prompt and resource body verbatim,
+with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation.
+`tools/capture_mcp_dump.py` captures, `tools/generate_mcp_reference.py`
+renders, and `tools/probe_mcp_surface.py` writes the surface record.
+`tools/diff_output_schemas.py` compares two capability records' **output**
+schemas — run it after every re-probe, because the count and the inputs have
+now twice stayed still while the outputs moved underneath (#198, #301).
 
 Three facts that shape almost every decision:
 
@@ -39,10 +44,14 @@ Three facts that shape almost every decision:
    held at 110 across six major versions while enums and semantics changed
    underneath — then **v14 moved it to 114**, so a count that has not moved
    proves nothing and a count that has says only that something changed.
-   **v18.2.0 is the sharpest case**: a whole major version arrived between two
-   probes a day apart, and *nothing* a count could see moved — 114 tools, none
-   added or removed, no **input** schema changed, the read/write/destructive
-   split identical. Probe the version, never the shape.
+   **v18.2.0 was the sharpest case, and v19.1.0 sharpened it again**: at v18 a
+   whole major version arrived between two probes a day apart and *nothing* a
+   count could see moved — 114 tools, none added or removed, no **input**
+   schema changed, the read/write/destructive split identical. At v19 the
+   count, every description, every annotation and the split were identical
+   again, while **5 input and 34 output schemas moved underneath** — including
+   the one that would have refused every strategy preview the product composes.
+   Probe the version, never the shape.
 
    That sentence is exactly true and was read as more general than it is. It is
    scoped to *inputs*, and **outputs grew by 188 schema leaves across 11 tools**

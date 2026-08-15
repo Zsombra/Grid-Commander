@@ -2,11 +2,11 @@
 id: the-surface-record-is-a-deployment-behind
 title: The recorded capabilities artifact predates the 2026-08-15 deployment — re-probe when a keyed environment runs
 type: chore
-status: open
+status: done
 priority: p3
 created: 2026-08-15
 updated: 2026-08-15
-change: ""
+change: "the-preview-matches-the-live-contract"
 capability: platform-mapping
 github: "287"
 blocked_by: []
@@ -53,3 +53,27 @@ carrier for that re-probe.
   and the apply case asserts `[]` again.
 - `tests/strategy/compiled-plan.test.ts` and the conformance suite pass
   clean.
+
+## Done — 2026-08-15, keyed session
+
+Re-probed. BattleGrid was at **v19.1.0**, two majors past the recorded
+v18.2.0, not one deployment. All four records regenerated (surface,
+capabilities, vocabulary, reference) and the four named stale rows
+deleted; the apply case asserts `[]` again and the conformance suite
+passes clean.
+
+What the diff held, against v18.2.0:
+
+- **114 tools, none added or removed; no description and no annotation
+  changed.** The count proved nothing for the third time.
+- 5 input schemas shrank. Two of them mattered: `apply_strategy_plan`
+  lost the regime keys (already handled by #285) and
+  **`preview_strategy_report` lost them too** — a live defect the
+  refreshed record caught before the platform did, fixed by
+  `the-preview-matches-the-live-contract`.
+- **34 output schemas changed**, eleven of them growing. Unread by
+  anything; filed as #301.
+- The vocabulary retired `1m` and `1d` from every authorable category;
+  filed as #300.
+- v19 gave preview two new market-read inputs the product does not
+  offer; filed as #302.

@@ -70,7 +70,23 @@ Three things pull in different directions:
   > has no `role="status"` or `aria-live`, so the progressive label is announced
   > today only because the pressed control still holds focus. Disabling would
   > remove the only channel that announcement travels on. (The product does have
-  > 19 live regions elsewhere; none is on the pending state.)
+  > ~~19~~ **130** live regions elsewhere; none is on the pending state.)
+  >
+  > **Corrected again 2026-08-16 (#242).** 19 was the `role="status"` count
+  > alone. `role="alert"` is an implicit live region — ARIA defines it as
+  > `aria-live="assertive"` — so it counts too. On the commit this passage was
+  > written against (`ff5220d`) the product had **130**: 0 `aria-live`, 19
+  > `role="status"`, 111 `role="alert"`. **The argument does not move and the
+  > denominator moves in the direction that makes the absence starker.** The
+  > absence itself was re-checked directly on 2026-08-16 and still holds —
+  > `perform-button.tsx` and `app/(app)/pending/[id]/page.tsx` carry no
+  > `aria-live`, no `role="status"` and no `role="alert"`.
+  >
+  > **The figure is dated on purpose.** The same greps return **139** on
+  > 2026-08-16, and the count moved three times *within* 2026-08-14 alone
+  > (129 → 130 → 132 → 130 → 129). A bare live-region count is a fact about a
+  > commit, not about the product. The durable statement is the definition,
+  > which now lives in `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` row 8.
 
 ## Why it stays open rather than being guessed
 

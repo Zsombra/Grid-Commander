@@ -363,8 +363,6 @@ export class McpStrategyAdapter implements StrategiesPort {
     userId: string;
     accessToken: string;
     timeframe: string;
-    regimeAutoDerive: boolean;
-    regimeTimeframe?: string | null | undefined;
     sections: readonly StrategySection[];
     coinSelection: CoinSelection;
     conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
@@ -372,8 +370,6 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.preview, {
         timeframe: params.timeframe,
-        regimeAutoDerive: params.regimeAutoDerive,
-        ...(params.regimeTimeframe !== undefined ? { regimeTimeframe: params.regimeTimeframe } : {}),
         // Sent only when there is something to resolve. A strategy defining no
         // conditions sends the payload it has always sent — the argument is new
         // and the outer object is closed, so the empty case stays byte-identical
@@ -871,7 +867,14 @@ function mapStrategyDetail(raw: unknown): StrategyDetail {
     // an unknown is inviting a change nobody priced.
     openPositionCount: typeof s['openPositionCount'] === 'number' ? s['openPositionCount'] : 0,
     cadence: typeof s['cadence'] === 'string' ? s['cadence'] : null,
-    regimeAutoDerive: s['regimeAutoDerive'] === true,
+    // `null` because v19.1.0 stopped publishing it — deleted from all fifteen
+    // output schemas that declared it, and absent from the live response
+    // (measured 2026-08-15). `=== true` collapsed that silence into `false`,
+    // which reads as "the platform says this strategy does not auto-derive"
+    // when the platform now says nothing at all.
+    regimeAutoDerive: typeof s['regimeAutoDerive'] === 'boolean' ? s['regimeAutoDerive'] : null,
+    // Still arrives at v19.1.0 (observed '4h') though no schema declares it —
+    // declared and observed disagree in both directions on this pair.
     regimeTimeframe: typeof s['regimeTimeframe'] === 'string' ? s['regimeTimeframe'] : null,
   };
 }

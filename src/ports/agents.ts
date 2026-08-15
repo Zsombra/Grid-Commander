@@ -24,7 +24,38 @@ export type {
   ScoreAttribution,
   ThinkingCost,
 } from '@/domain/agent/scorecard.js';
+export type {
+  AdvisoryCoin,
+  BlockedCoin,
+  BlockingDial,
+  FeasibilityAdvisory,
+  Opportunity,
+  PricedCoin,
+  UnpricedCoin,
+} from '@/domain/agent/feasibility.js';
+import type { FeasibilityAdvisory } from '@/domain/agent/feasibility.js';
 import type { FailureCause } from './failure.js';
+
+/**
+ * What an update returns: the agent, and what the platform said about what that
+ * agent can still build a trade on.
+ *
+ * A pair rather than a widened `Agent`, and the distinction is load-bearing.
+ * The agent is stored state that will read back the same in an hour. The
+ * advisory is a reading of *today's volatility* against the bound strategy's
+ * dials, computed at the instant of the write and stale within minutes — it
+ * describes the market as much as the agent. Hanging it off `Agent` would put a
+ * perishable market reading on the object every roster row is built from, and
+ * the first surface to render it from a cached agent would be stating a fact
+ * about volatility from an unknown time.
+ *
+ * `feasibility` is `null` where the platform returned none. It is never `null`
+ * to mean "nothing can be built" — see `mapFeasibilityAdvisory`.
+ */
+export interface UpdatedAgent {
+  readonly agent: Agent;
+  readonly feasibility: FeasibilityAdvisory | null;
+}
 
 /**
  * Everything the product does to agents.
@@ -87,7 +118,7 @@ export interface AgentsPort {
      * agreed to.
      */
     confirmation: Confirmation;
-  }): Promise<Agent>;
+  }): Promise<UpdatedAgent>;
 
   rebindAgent(params: {
     userId: string;

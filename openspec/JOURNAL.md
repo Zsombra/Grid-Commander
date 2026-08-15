@@ -1,5 +1,377 @@
 # Journal
 
+## 2026-08-16 (records) — four claims that outran their proof
+
+**Did**: `the-record-says-what-was-actually-checked` (lite, archived) — four p3
+items that are one defect in four costumes: **a claim nothing checked.**
+
+- **#193** — `DT-0014.json` carries a supersession note *and* both expired
+  acceptance lines annotated in place, because a reader checking acceptance
+  top-down never reaches `references`. Neither line deleted: deleting them
+  erases the evidence the supersession happened. `design` verified
+  **byte-identical**; only `acceptance`, `references`, `updated` moved.
+- **#242** — the ruling: a live region is `aria-live`, `role="status"` **or**
+  `role="alert"`; the last two are implicit live regions by ARIA definition.
+  19 was the `role="status"` count alone, and the `JOURNAL` sentence *named
+  both roles while carrying the status-only number*. Written into
+  `UI_COMPONENT_REVIEW_CHECKLIST.md` row 8. Three records corrected using the
+  repo's own `**Corrected <date>**` convention; the 2026-08-14 entry annotated,
+  not rewritten.
+- **#252** — `namesNewline`/`namesEncoding` extracted out of the rule loops and
+  composed through one `unpinned()`, then proved. **Extraction first is the
+  point**: a proof that re-typed the regex asserts against a copy and leaves
+  the live predicate unexercised — the same vacuity in a test's clothes.
+- **#293** — **nothing was changed.** The fix landed in `0c10bc4` (#303) on
+  2026-08-15 and the issue closed the same day; only the item stayed open.
+
+Deferred and filed: **#320**, the design-contract rule (a restyle ticket's
+acceptance describes treatment, not content) — a contract change, not smuggled
+into a bookkeeping pass.
+
+**State**: 0 active changes, **24 open items** (was 27), still no p2. Gates in
+this worktree: tsc, eslint exit 0, **205 files / 2576 vitest** (was 2575 — the
+one new case), `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped, no schema change. Branch `claude/four-ticket-items-board-89d446`.
+
+**Next**: unchanged for the third entry running — **#301's residue**:
+`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads. Gate-blocks first;
+`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
+admits at length, and the platform's is whole-population, so adopting it may
+retire the caveat rather than save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line.**
+
+**Watch out**: **four, and two of them cost real time.**
+
+1. **`git checkout -- <file>` deleted this session's own work.** Restoring a
+   file after a mutation test, while the change was still uncommitted, reverted
+   it to `HEAD` and took the whole #252 edit with it. Only that one file was
+   hit and it was rebuilt from the script. **Mutation-test by copying the file
+   aside and restoring from the copy — never from git — until the work is
+   committed.**
+2. **Backslashes collapse somewhere between here and Python.** `\\\\`
+   inside a quoted heredoc arrived as **one** backslash. Building the literal
+   from `chr(92)` sidesteps the layer entirely and is the only form that
+   survived. Same family as the CRLF and PS-encoding traps: **do not trust a
+   text pipeline on this box; assert the bytes you wrote.**
+3. **That produced a test that would have passed for the wrong reason.** The
+   pinned fixture is a TS string holding `newline="\n"`; a single backslash
+   makes `\n` an escape, so `textWrites` splits the fixture into two lines and
+   every assertion goes green against nonsense. Caught by reading the bytes.
+   The case now asserts `textWrites(PINNED)` has length 1.
+4. **A closed issue does not close its item.** #293's fix shipped, its issue
+   closed, and the canonical record sat open for a day on the board. #309 is
+   the mirror checked item→issue; **this is the direction nobody checks.**
+
+Also: the live-region count is not a fact about the product. It took **three
+values inside 2026-08-14 alone** (129/130/132) and is 139 today. Figures in
+records now carry the commit they were measured on; the checklist carries the
+grep instead of a number.
+
+*(Addendum, close-out. The operator asked for the pipeline left in a state the
+next session could start from, so the wrap-up was audited rather than asserted —
+and **the audit found the worst record in the repo**. `CLAUDE.md` advertises
+`HANDOFF.md` as current state, and its **§ Start Here** was pinned to
+2026-08-13: of the twelve backlog items it named as the sharpest things to pick
+up, **eleven are `done`** and one never existed under that id; both #94 and #216
+that it names as what comes "then" are **closed**; and it claimed two items had
+no GitHub issue when they are #228 and #229. A session trusting it opens a
+change against closed work and finds out after reading the code.
+
+Repaired: Start Here now leads with the live thread (#301's residue, 24 open,
+no p1/p2, four open PRs) and everything older is fenced as a dated snapshot
+kept for its reasoning, not its direction — the reasoning is good, only the
+direction rotted. **The mechanism is untouched and filed as #322**, because
+`HANDOFF.md` is the one artifact here with no producer and no check: the journal
+is append-only and cannot rot, the backlog has `validate`, and this file is
+narrative, cumulative and hand-edited. The previous session repaired its Current
+State table — recording it as "four days stale" — and did not notice Start Here
+immediately below it. The eleven dead items are a ready-made fixture for the
+`validate` rule that would catch the general case.
+
+Also checked and **owed nothing**: `CHANGELOG.md` is the pipeline's own dev
+notes, not a per-change log — untouched since project init, correctly. No design
+re-survey is owed either: DT-0014's record changed, no UI did, and its `design`
+block is byte-identical.
+
+Final: **0 active changes, 25 open items** (four closed this session, three
+filed: #320, #322, plus the #309 instances recorded), still **no p1 and no p2**.
+205 files / 2576 vitest, `validate --all` 0 errors / 13 warnings, 202 archived
+changes. PR **#321**, one commit, branched cleanly off `main`'s tip — checked
+explicitly, because the last session's #315 was cut from another branch and
+merged two changes under one body.)*
+
+
+## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
+
+**Did**: closed the session's own loose end. `lint-ignores-nested-worktrees`
+(lite, archived): `.claude/worktrees/**` added to `eslint.config.mjs`'s ignores.
+Git worktrees live *inside* this repository, so an open one is a second full
+checkout — its own `src/`, `node_modules`, `.next` — under the directory
+`eslint .` is pointed at. **Before: 63,337 errors across 1,208 files, timing out
+a two-minute run. After: exit 0 in 20.6 seconds.** The reasoning was already in
+that file, three lines up, about `next-env.d.ts`: a gate whose answer changes
+with the state of an unrelated directory is not a gate.
+
+**Fed the violation it must still catch**, per `boundaries.test.ts`'s own rule
+about its matchers: an unused `const` planted in `src/domain/agent/feasibility.ts`
+still fails lint by name, and lint returns green when it is removed. The ignore
+is exact, not a blanket.
+
+Also corrected the shared `p3-lane-queue` memory, which a parallel session had
+left asserting a p2 that #314 resolves.
+
+**State**: 0 active changes, 27 open items, **no p2**. Gates: tsc, eslint (now
+green from the repo root), **205 files / 2575 vitest**, `validate --all` 0 errors
+/ 13 standing warnings. Branch `fix/lint-ignores-nested-worktrees`.
+
+**Next**: **#301's residue** — `list_gate_blocks.summary[]`,
+`budget.blockedReason`/`blockedSince`, `debriefVerdict` on five signal-log reads.
+The gate-block one first: `blocks.ts:118-163` derives that aggregate from a
+*window* whose partiality it admits at length, and the platform's is
+whole-population, so adopting it may retire the caveat rather than save
+arithmetic. **Read `git show origin/main:openspec/JOURNAL.md` before trusting
+this line** — parallel sessions are live (PRs #313, #314, #307 all open).
+
+**Watch out**: the other half of that environment trap is **not fixed and is not
+fixable in the repo**: 324 tracked files sit CRLF in the primary checkout from
+`core.autocrlf=true`, despite `.gitattributes` declaring `eol=lf`. It broke
+`npm test` with a `SyntaxError` on `tests/tools/mutate-guard.test.ts` while
+`git status` reported the file unmodified — because git normalises on read, so
+the working copy can be wrong and clean at the same time. Worktrees check out LF
+and are unaffected, which is the tell: **if a gate fails in the root checkout
+and passes in a worktree, suspect the checkout before the change.** Repairing it
+is `git add --renormalize .` in that checkout, not a commit here — and any sweep
+that does it by hand **must exclude binaries**, because one that trusted
+`git check-attr eol` stripped CR-LF pairs out of 20 PNGs and corrupted them.
+
+*(Addendum, close-out: the operator asked for a proper wrap-up. **#315 merged**
+(`170f31c`) — and it carried more than its body said: `fix/lint-ignores-nested-worktrees`
+had been branched off `claude/paused-radar-is-not-on-duty` rather than `main`,
+so one PR merged **34 files and both changes**. Nothing merged unreviewed —
+both were separately proposed, archived and fully gated first — but the record
+was wrong, so #315 carries a correcting comment, **#314 was closed as empty**
+(`git commit --amend` refused its remainder, which is the proof nothing was
+dropped), and **#311 was closed by hand** because #315's body had no closing
+keyword for it. Branches pruned, tips archive-tagged. `HANDOFF.md` gained this
+session's header and the 2026-08-15 (keyed) one is marked superseded; its
+Current State table was four days stale (2443 vitest / 193 files / 18 items
+against today's **2575 / 205 / 27**).
+
+**A second mistake worth recording, because it nearly shipped.** Resolving the
+rebase, a Python heredoc asserted its way out *before writing the file*, and the
+`git add … && rebase --continue` chained after it committed **three conflict
+markers into `openspec/JOURNAL.md`**. Caught by grepping the committed file
+rather than trusting the rebase's success message. The lesson is the shape, not
+the language: **a resolution script must write-then-verify, and the verify must
+be its own command** — chaining `git add` behind a script that can fail silently
+turns a failed resolution into a committed one. `main` is clean: four entries,
+right order, no markers.
+
+Final state: 0 active changes, **27 open, all p3, no p2**, 2575/205 vitest,
+`validate --all` 0 errors / 13 standing warnings, 201 archived changes. The two
+open PRs (#313, #307) are the parallel session's.)*
+
+## 2026-08-16 (pause) — the radar says whether anything is running
+
+**Did**: #311, the p2 the schema survey turned up. `a-paused-radar-says-so`
+(standard, archived): `list_radar_deployments`'s `summary` is mapped at the
+adapter, the pause rides `RadarReadResult` → `ReadDeploymentsQuery` to **all
+three** consumers, and a shared `RadarPauseNote` states it above the rows on the
+agent page and the roster. The MCP surface gets it without a change —
+`src/mcp/tools.ts` returns the query's result whole, so a model reading standing
+now reads the pause with it. Three requirements added to `agent-deployment` and
+`An Agent's Standing Is Read Against Its Lifecycle` modified to say standing is a
+claim about configuration, not activity. 24 new tests.
+
+**Two things the item had wrong**, both caught by reading the declaration before
+building and corrected on the issue: `platformPaused` is a **number** (deployed
+coins the platform stopped), not a flag — `radarPaused` is the only boolean; and
+`policies[].resolvesNow` carries **no** per-deployment pause, so the pause is
+knowable only at fleet level and "which pause wins the sentence" was the wrong
+question. It sits above the rows and qualifies them; no row's standing is
+rewritten from it.
+
+**State**: 0 active changes, 27 open items, **no p2**. Gates on this tree: tsc,
+eslint (scoped — see below), **205 files / 2575 vitest** (was 203/2551),
+`npm run build`, `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped — no schema change. Branch `claude/paused-radar-is-not-on-duty`.
+
+**Next**: **#301's residue** — the three adoptable reads the survey left
+(`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads). The gate-block one is the most
+interesting: `blocks.ts:118-163` derives that aggregate from a *window* whose
+partiality it admits at length, and the platform's is whole-population, so
+adopting it may retire the caveat rather than just save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line** — a
+parallel session is live (PR #313).
+
+**Watch out**: **the main checkout is a bad place to run gates, and both
+failures look like your change.** (1) `npm run lint` from the repo root reports
+**63,337 errors across 1,208 files** — every one under `.claude/worktrees/`,
+because the nested worktree copies (with their own `node_modules` and `.next`)
+are not ignored by the eslint config. Scope it: `npx eslint src app tests tools`.
+(2) `npm test` failed `tests/tools/mutate-guard.test.ts` with a *SyntaxError*
+while `git status` showed the file unmodified — the main checkout had **324
+tracked files sitting CRLF** from `core.autocrlf=true`, despite `.gitattributes`
+saying `eol=lf`. The worktrees are LF and unaffected, which is why the same
+suite passed there. — **Renormalising line endings must exclude binaries.** A
+sweep that trusted `git check-attr eol` stripped CR-LF byte pairs from **20
+PNGs** under `docs/merge/proof/` and corrupted them; caught because
+`git diff --numstat` showed them as `-  -` (binary) among the text changes, and
+restored with `git checkout --`. Check the file list before writing, not after.
+— A test double's default must be the *unreported* pause, not a running radar:
+`{ radarPaused: false }` asserts the platform said something it did not, and
+every fixture predating this change would then carry a claim nobody made.
+
+## 2026-08-16 (schemas) — the survey found a defect, and it is live
+
+**Did**: #301, surveyed. Leaf-diffed the v19.1.0 capabilities record against the
+v18.2.0 generation (`fbe0aa2`) and grepped every addition for a reader.
+**The item's own numbers reproduce exactly and measure the wrong thing for its
+own question**: `+66/+60/+39/…` are raw JSON nodes (34 schemas), while readable
+property paths give **27 schemas, 57 leaves added, 18 removed**. Most of the
+delta is `type`/`required`/`description`. `preview_strategy_report` is +66 nodes
+and **+19 readable fields** — sizing work off the node count overestimates it
+threefold. All 18 removals are the known `regimeAutoDerive` deletion, none with
+a reader. The 57 additions are five families, and family 2 is a **live defect**:
+`list_radar_deployments.summary.{platformPaused,radarPaused}` is unread
+(`radar-adapter.ts:36` maps `policies` and nothing else; `grep -rn paused src/
+app/` is empty) while `/agents/[id]` renders "On duty: scanning …" regardless —
+on an account three sessions have recorded as 20/20 `platformPaused`,
+`radarPaused: true`, `lastFireAt` frozen since 2026-08-13. Filed
+`a-paused-radar-is-rendered-as-on-duty` / **#311, p2**. Residue: gate-block
+`summary[]` (the platform now publishes the aggregate `blocks.ts:118-163`
+derives from a *window*), `budget.blockedReason`/`blockedSince`, and
+`debriefVerdict` on five signal-log reads — #301 stays open, narrowed to those
+three. Market-read markers (38 of 57) noted on #302; `rankedTimeframes` on #300.
+Landed `tools/diff_output_schemas.py` so the next re-probe does not hand-roll
+this again — #198's lesson was that nothing compared the records, and nothing
+still did.
+
+Also closed out the previous chapter: **#308 and #295 merged** (`2e59622`,
+`fe6d2f6`), #295 rebased through two conflicts, both branches archive-tagged and
+pruned; **#310 merged** (`2c9fbb6`) carrying the corrected journal `Next` and
+`the-mirror-is-checked-one-way` / #309.
+
+**State**: 0 active changes, 28 open items, **one p2** (#311). No source code
+touched by the survey. `validate --all` 0 errors / 13 standing warnings; python
+harness 274 green. vitest/build not re-run — nothing under `src/` or `app/`
+changed on this branch.
+
+**Next**: **#311.** It is the only p2, it is wrong on the live account right
+now, and it is small — map `summary` in the radar adapter, carry the pair
+through `RadarPort` → `ReadDeploymentsQuery`, give the four standing sentences a
+paused arm. No new platform call; `list_radar_deployments` is already read on
+that page.
+
+**Watch out**: **`platformPaused` and `radarPaused` are two fields and may
+disagree** — collapsing them would leave the surface unable to say whether the
+operator's own radar is off or the whole platform is. Read both. — **Absent must
+not map to `false`** on either: a radar read that omits `summary` is a read that
+did not answer, not a running radar. That is the `=== true` mistake #285/#287
+already paid for on `regimeAutoDerive`, and it is the same shape here. — The
+pause fields were **observable before they were declared**: sessions have
+hand-polled `summary.radarPaused` since 2026-08-13 while v18.2.0 declared
+neither. Declared-vs-observed disagreeing in the harmless direction, but it
+means the v18 record was never evidence of absence. — **The gate-block summary
+is not a like-for-like swap.** `blocks.ts` admits its window's partiality at
+length; a platform summary is whole-population, so adopting it may retire that
+caveat rather than just save arithmetic — read what it actually spans before
+deleting anything. — CLAUDE.md is **LF on `main`** despite the earlier entry
+recording it as CRLF; check before assuming either.
+
+## 2026-08-16 (feasibility) — the edit answers with what can still be built
+
+**Did**: #291. `update_intelligence_agent` returns two things and this product
+read one — `agent-adapter.ts:300` was `return mapAgent(payload['agent'])`, and
+`grep -rn feasibilityAdvisory src/ app/ tests/` returned **0** on a tree at
+v19.1.0. `the-edit-answers-what-can-be-built` (standard, archived): the advisory
+is mapped through its declared two-arm union, carried on the update result from
+port through command to action, and rendered on `/agents/[id]` as opportunity
+language — BattleGrid's own `counts.buildable` of `counts.total` for the
+headline, the responsible dial named per blocked coin, unpriced coins named
+separately as a gap in the reading rather than a verdict, a ceiling curve marked
+as this product's arithmetic, and the dial-direction sentence the item asked for
+(*Max Stop Loss limits opportunity when turned down, not up*). No new platform
+call and no new call of any kind. Three requirements added to `agent-authoring`.
+New surface `agent-detail` (9 components, pinned); `agent-edit` re-pinned.
+The canonical backlog item **did not exist on `main`** — stranded on PR #295 —
+so it was recovered from `cd4b5a1`, landed here, and closed done.
+
+**State**: 0 active changes. Gates on this exact tree: tsc, eslint, **203 files /
+2551 vitest** (was 200/2498), 274 python, `npm run build`, `db:generate` clean,
+`validate --all` 0 errors / 13 standing warnings. `test:db` skipped — no schema
+change. Branch `claude/feasibility-advisory-dial-ui-dffc62`; PR is this
+handoff's last act.
+
+**Next**: **#301** (`v19-moved-thirty-four-output-schemas`) — offline against a
+record that is current, needs no keyed env, and is the same shape as this
+session's work: #291 was one declared output nothing read, #301 is the survey of
+the other 188 schema leaves across 11 tools. The reader pattern is built now.
+The board's own `NEXT:` is merely alphabetical from here — 26 items, all p3, no
+ordering signal left in it.
+
+**Watch out**: **the panel has never rendered from a real payload.**
+`update_intelligence_agent` is classified destructive, so the surface record
+carries `"observed": null` and every fixture here is built from the *declared*
+v19.1.0 schema. Proving it live means a real agent edit on the operator's
+account — that is #306's territory and needs a named go-ahead. — **`counts` and
+`coins[]` can disagree**, and that was a live defect in my own first cut: the
+headline is the platform's count while the blocked sentence is counted off
+`coins[]`, so a payload saying 9-of-12 buildable with two structural-only coins
+printed "9 of 12 can construct" above "2 coins cannot". `countsAgree` now
+reconciles both directions, and `curveIsFaithful` withholds the derived curve
+entirely unless counting `coins[]` at the platform's *current* ceiling
+reproduces its own `buildable` — a derivation that cannot reproduce the present
+has no business extrapolating below it. — **The reply rides a signed cookie, not
+the URL.** Every write here redirects and the edit surface holds no client
+state (both are manifest constraints), so the reply had to survive a redirect;
+a query parameter would let anyone type `?buildable=12` and have the product
+render invented figures as BattleGrid's. Signed with the session secret,
+agent-keyed, 120s. **Next.js cannot set or delete a cookie during a page
+render**, which is why the apply action issues it and the page only reads —
+there is no read-and-clear, so the TTL is what expires it. — A cookie over
+~4096 bytes is **dropped whole and silently**, not truncated: the overflow is
+handled at 3600 by dropping `coins[]` and keeping the platform's counts with
+`coinsCarried: false`, so a 40-coin fleet says the detail is missing rather than
+rendering short. — `design_component_not_found` is a **substring match on the
+component id** (`_pascal`, underscore and squashed variants, case-insensitive):
+six invented ids like `exposure-panel` warned until renamed to names that
+actually exist in the source. Six new warnings would have shipped past a check
+that only reads the error count. — Bash **heredocs failed repeatedly** on this
+content and wrote nothing while reporting a shell parse error; the Write tool
+and `python3 io.open(..., encoding='utf-8')` are what worked. Python's default
+encoding on Windows is cp1252, so every read *and* write needs the explicit
+encoding or the em-dashes mojibake silently.
+
+*(Addendum, close-out: the operator said follow the recommendation, so the merge
+order in the superseded Next above was executed. Gates re-run on the exact tree
+first — tsc, eslint, **2551/2551 vitest**, `validate --all` 0 errors. **#308
+squash-merged to `main`** (`2e59622`), then **PR #295 rebased and merged**
+(`fe6d2f6`), which is the #289 reconciliation finally landing. Both conflicts
+were the two predicted: the backlog item took `main`'s done copy, and
+`JOURNAL.md` needed a real merge across *both* of #295's commits — its entry
+slotted under this one in date order, its close-out addendum placed inside its
+own entry rather than this one, asserted by position rather than eye. Both
+branches archive-tagged and pruned; #295's **pre-rebase** tip is tagged
+separately (`archive/claude/board-watch-items-30541f-prerebase`) because the
+rebase rewrote it. Only `claude/approvals-write-side-fd4863` (PR #307, the other
+session's lane, CONFLICTING) is left on origin.
+
+**The P2 needed no judgment call after all.** This entry said deciding whether
+`a-completed-change-set-is-stranded-on-a-draft-pr` follows its closed issue to
+done was the operator's call — wrong. Its `status: done` was **already written
+in `cd4b5a1`**, on the unmerged branch, alongside everything else that was
+stranded. Landing #295 made the item and issue #289 agree on their own. The
+tracking gap that let them disagree for a day is real and unaddressed, and is
+filed as `the-mirror-is-checked-one-way` / **#309**: `validate` enforces that an
+item *has* a `github:` number and never that the two agree on state.
+
+Board after: **0 active changes, 26 open, all p3, 0 errors / 13 standing
+warnings** — no p2 for the first time since the 15th.)*
+
+
 ## 2026-08-15 (built) — the answer exists in code, and the accept path rewrote a field
 
 **Did**: took `the-approval-can-be-answered` from proposal to **19/40**, all of
@@ -100,6 +472,241 @@ half-life: a verifier called `OPEN_POSITION_CONFLICT` "three days stale" and it
 was firing every minute twenty minutes later. — **Never run a Workflow while a
 cron watch is what you are relying on.** That one cost the first row and
 returned nothing, because all four agents died on a subagent session limit.
+
+## 2026-08-15 (reconcile) — the stranded branch comes home as four items and zero requirements
+
+**Did**: worked the board's only p2, #289 — draft PR #82's stranded content
+reconciled against `main`. **All seven stranded requirements declined, none
+merged**: two superseded by requirements `main` grew independently (the
+vocabulary pair, `platform-mapping/spec.md:329` and `:366`), five declined as
+unbuilt — the spec must not claim behavior `main` does not have (prose bodies
+unfetched, instructions loaded-and-discarded at `generate_mcp_reference.py:14`,
+no live prose gate, zero request-budget code). Residue re-filed as four items
+with mirrored issues: **#291** feasibility-advisory (still unread in `src/`,
+re-priced p2→p3 — the v15 dials item that lent it urgency is done), **#292**
+request-budget (full scope; the branch's reading half preserved as reference),
+**#293** thinking-pagination (`write-probe.test.ts:575` — the only one of the
+branch's three probe repairs whose defect survives on `main`), **#294** prose
+record/reference/live-gate residue, consolidated. Four branch items declined:
+config-width and radar-refusal assertions no longer exist in the rebuilt probe
+suite — the radar first-deploy restriction was *reversed* by the platform —
+and probe-failure-path describes branch-only code. Annotated tag
+`archive/claude/agent-creation-data-strategies-fw6av8` pushed at `9c60e93`,
+then PR #82 commented + closed, remote branch deleted, issue #289 closed.
+The three archived change folders were deliberately **not** imported into
+`main`'s archive — their deltas claim requirements this session declined.
+Also: the three armed watches checked first. #287 skipped (no
+`BATTLEGRID_API_KEY` here, presence verified without printing). #147/#101
+**cold**: the MCP backend went down mid-session (502 at the endpoint 30+
+minutes, site root 200 throughout, recovered to 401-alive) and after recovery
+the fleet is **still** `PLATFORM_PAUSED` 20/20, `lastFireAt` unchanged at
+2026-08-13T18:01:18Z — both items carry the sweep; approvals deliberately
+unread while paused.
+
+**State**: 0 active changes; 23 open items, **all p3 again**. `validate --all`
+0 errors / 13 pre-existing warnings / 4 info. No source code touched (backlog
++ journal only; `npm ci` ran but no gates were owed). Origin now holds `main`
+and tags only.
+
+**Next**: the watches stay armed on the platform's unpause — #147's
+evaluations under Salamis revision 4 and #101's 15-minute approval window are
+the same moment. Cold pick: #283, the `read_forward_returns` lite change.
+
+**Watch out**: **an MCP-backend outage is not the unpause signal** — the
+backend redeployed or recovered without the fleet unpausing; check
+`summary.radarPaused`, never reachability. — The vocabulary supersessions are
+the exact case #289's own caveat predicted: the same substance re-landed on
+`main` under rewritten requirement titles, so title search reads it as missing
+forever; judge by reading, not by grep. — `gh pr close` takes `--comment`
+(string) only, no `--comment-file`; comment first, close second. — The
+re-filed pagination item was re-homed `agent-introspection` → `platform-mapping`:
+the former has no spec on `main` and would have added a validation warning.
+
+*(Addendum, close-out: the whole open lane — all 23 items — was read in full
+and published as a categorized, effort-ranked report, artifact "The P3 Lane":
+https://claude.ai/code/artifact/3458ca0d-3526-4459-b957-5a86dd9d85bf
+(8 ready-cold / 3 keyed-env / 6 armed watches / 3 upstream records /
+3 operator-judgment). The next-session queue, hardest to easiest, is recorded
+in the session memory as `p3-lane-queue`.)*
+
+## 2026-08-15 (keyed) — the record catches up two majors, and the prose comes home
+
+**Did**: the keyed session three items were waiting for. **#287**: re-probed
+and found BattleGrid at **v19.1.0**, two majors past the recorded v18.2.0.
+All four records regenerated; the four named stale rows deleted and the apply
+case asserts `[]` again — #285's self-expiring guard expiring as designed.
+**#294** (`the-prose-record-carries-bodies`, standard, archived): the capture
+now fetches `prompts/get` and `resources/read`, the reference gained a Server
+instructions section and every body (+552 lines), and a live per-surface digest
+gate compares prose against the running server with the account greeting
+normalised out. **#293**: the thinking-log probe no longer demands a second
+page. **#292 step 1**: the `RateLimit-*` headers survived v19 (120/119/1),
+answered on the issue. The refreshed record then caught a live defect before
+the platform did — `preview_strategy_report` dropped the regime pair from an
+input that keeps `additionalProperties: false`, so every preview the product
+composes would have been refused whole (`the-preview-matches-the-live-contract`,
+lite, archived). Filed #300 (1m/1d retired from every authorable category),
+#301 (34 output schemas moved, read by nothing), #302 (preview's new
+market-read inputs).
+
+**State**: 0 active changes, 23 open items, P2 #289 still on top and untouched.
+Gates: tsc, eslint, **200 files / 2498 vitest**, `validate --all` 0 errors / 13
+standing warnings; `test:db` skipped per standing instruction. Live: full probe
+suite 23 files / 55 tests green, prose gate 23/23, #293 proven at
+`decisions 20 of 157`. Branch `claude/battlegrid-api-capabilities-6a479a`,
+three commits; PR is this handoff's last act.
+
+**Next**: unchanged and still right — **P2 #289**
+(`a-completed-change-set-is-stranded-on-a-draft-pr`). On this lane, #301's
+survey is the cheapest follow-up: it is entirely offline against a record that
+is now current, and the four signal-log reads growing by the same +15/+17
+suggests one shared block landing on four surfaces at once.
+
+*(Addendum, close-out: the operator said merge and wrap. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite,
+**2498/2498**, `validate --all` 0 errors — then **#303 squash-merged to main**
+as this close-out's act. The branch tip was archive-tagged
+(`archive/claude/battlegrid-api-capabilities-6a479a`) and pushed before the
+remote branch was deleted, per the (prune) convention; the local branch and
+worktree stay on disk, held by this session, and go when it exits. Both
+changes were archived mid-session, so the spec layer carries nothing forward.
+`HANDOFF.md` gained this session's header and the previous one is marked
+superseded. **A second session was live on this repo concurrently** — the
+approvals lane, PR #307 — and both other open PRs (#307, #295) were already
+`CONFLICTING` against main before this merge; they will need a rebase, and
+`openspec/JOURNAL.md`'s top is the likely collision.)*
+
+**Watch out**: **the live run was read-only, so nine write probes have never
+seen v19** — `apply`, `condition-write`, `custom-table`, `proposal`, `radar`,
+`recorder`, `restore`, `retune`, and `write-probe`'s write half, all gated
+behind `BATTLEGRID_LIVE_WRITES=1`. Every write path is conformant against the
+refreshed record and unobserved against the running server, which is the
+weaker of the two given the next paragraph. Filed as #306; it needs a keyed
+env *and* a named go-ahead, because those probes fork strategies and create
+agents on the live account. Cheapest useful subset is `custom-table-probe`
+(the only live exercise of this session's preview fix) plus `apply-probe`. —
+**declared and observed now disagree in both directions on the
+same pair** — v19 deleted `regimeAutoDerive` from all fifteen output schemas
+*and* from the live response, while `regimeTimeframe` is still returned though
+nothing declares it. The mapper's `=== true` was turning that silence into a
+confident `false`; it is `boolean | null` now, and any similar `=== true` on a
+v19 read deserves the same suspicion. — **`prompts/get` refuses `-32602`
+without an `arguments` key even though every argument is optional**: optional
+arguments, mandatory container. Found because the named-failure path recorded
+five refusals instead of aborting, which is the whole argument for that
+design. — `rpc` **raises** on transport failure and `urllib.error.HTTPError`
+is an `OSError`, so anything looping over it must catch, or one 429 discards
+every entry already fetched. — The capture tool's old `next:` line told you to
+redirect the generator's stdout over the reference, which would have replaced
+it with five lines of coverage counts; it never generated the reference that
+way. — `npm run typecheck` read through a pipe reports **`tail`'s** exit
+status, not tsc's; a real type error hid behind a green-looking check for
+several steps. — CLAUDE.md is **CRLF** while HANDOFF.md and the docs are LF, so
+Python string replacement with `\n` silently no-ops on it; use the editor.
+
+## 2026-08-15 (regime) — the record learns what regime it was taken in
+
+**Did**: #116's first market-context read shipped — **two tools as one
+surface**. `the-regime-the-record-was-taken-in` (standard, archived):
+`/recorder/regime` composes the platform's per-bar regime classification
+over each recorded series' own window (subjects and window from the
+product's record, answers live from `get_regime_history`, current state
+from `get_regime_snapshot`), linked both ways with `/recorder/analysis`.
+Chosen over the other four reads because an existing surface begged this
+question — the forward returns state their window and nothing about the
+market it sat in (#282's caveat), and Salamis's required `RANGING_TAPE`
+(#147) makes "when is the tape ranging" operational. Shapes live-probed
+before modelling (BTC 1h, SOL 4h, null snapshot on an unknown ticker);
+look-back depth read from the declared schema at runtime; labels and
+context axes travel verbatim as data. #116 re-scoped to the remaining
+four reads (issue comment posted); the deliberate cut — regime joined
+into per-pair attribution — filed as
+`forward-returns-are-not-regime-conditioned` (#297). Two new surfaces
+worth of manifests: `recorder-regime` pinned, `recorder-analysis`
+re-pinned (its page gained the link).
+
+**State**: 0 active changes, 21 open items, P2 #289 still untouched at
+the top. Gates at archive: tsc, eslint, **2491 vitest / 200 files** (was
+2461/196), `validate --all` 0 errors / 13 standing warnings; `test:db`
+deliberately skipped (no schema change; operator's standing instruction).
+Branch `claude/trading-telemetry-unread-reads-787c9d`; PR is this
+handoff's last act.
+
+**Next**: unchanged from the last two sessions and still right: P2 #289
+(`a-completed-change-set-is-stranded-on-a-draft-pr`) is the sharpest
+item. On this lane: the regime surface deepens as the record does, free;
+the #147 watch (platform unpause → read `conditionEvaluation` under the
+required condition) remains the sharpest read-only follow-up.
+
+*(Addendum, close-out: the operator said wrap up. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite,
+2491/2491 — then **#298 squash-merged to main** as this close-out's act.
+The branch tip was archive-tagged
+(`archive/claude/trading-telemetry-unread-reads-787c9d`) and pushed
+before the remote branch was deleted, per the (prune) convention; the
+local branch and worktree stay on disk, held by this session, and go
+when it exits. The change was already archived mid-session, so the
+spec layer carries nothing forward. The p3-lane-queue memory was
+corrected to the end-of-day lane: 21 open, P2 #289 on top.)*
+
+**Watch out**: `structure.test.ts` bans `momentum` (and other platform
+vocabulary) in src outside the adapter boundary — the snapshot's context
+travels as verbatim `{axis, value}` pairs for that reason; re-introducing
+named axis fields will fail the guard, and renaming to dodge it would be
+worse. — The rendering harness joins adjacent JSX text nodes with spaces,
+so any sentence with interpolations must be a single template literal or
+its test asserts across an invisible seam ("3 capture s"); the regime
+panel is written that way deliberately. — `failure-is-explained`'s
+exemption cap is now `<9` and the list is full again at 8: the next
+own-store surface owes the same argument, or a shared store-failure
+component (three branches now carry near-identical survival sentences —
+extraction is becoming worth it). — The regime page makes 2 platform
+reads per recorded series per load (~40 today), parallel and per-series
+isolated; a rate-limited row fails visibly with the platform's reason —
+designed behavior, not a bug.
+
+## 2026-08-15 (floor) — the depth gate held, and the claims stay unattached
+
+**Did**: #282's depth check, run before proposing as instructed — and it
+stopped the change. Measured the record read-only (arithmetic in UTC inside
+the query; the db client renders UTC+7): 1,203 recorded captures,
+2026-08-12 19:46Z → 2026-08-15 10:18Z (2.61 days), 20 series at 1h; the
+product's own pairing rule replicated in SQL gives 1,130 valid pairs
+(baseline +0.0036%). Per-signal n for the funding-fade family:
+`funding_rate_flipping` **113** (mean +0.0714%, sd 0.75% → se 0.071%,
+mean ~1 se from zero; 14 coins over 55 distinct hours, so effective
+n < 113), `funding_extreme_positive` **2**, `funding_extreme_negative`
+**0**. The family's tier-moving claims rest on the extremes; n = 2/0
+after 2.6 days is §D.6's "nothing to harvest" confirmed, and calendar
+depth will not fix it — the tripwire is trigger count. No change
+proposed; evidence written into the item and mirrored to issue #282.
+
+**State**: 0 active changes, 20 open items, P2 #289 untouched at the top.
+No product code touched; `npm ci` ran clean in the worktree; no tests run
+(nothing to test). `validate --all` 0 errors / 13 pre-existing warnings /
+4 info, unchanged.
+
+**Next**: #282 sleeps until `funding_extreme_*` triggered captures reach
+~30 (one query, in the item) or the operator names a different first
+family. The board's answer is unchanged: P2 #289
+(`a-completed-change-set-is-stranded-on-a-draft-pr`) is the sharpest item.
+
+**Watch out**: the recorder's real environment lives in the scheduled
+task's `record.ps1` under `%USERPROFILE%\grid-commander` — DATABASE_URL,
+key, secrets — not in any repo `.env`; a session needing the db finds it
+there. And the per-signal n on `/recorder/analysis` overstates
+independence for cross-sectionally clustered signals: flipping's 113
+pairs sit in 55 hours, so any floor should be read against effective
+sample, not raw n.
+
+*(Addendum, close-out: the operator said wrap up. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite —
+then #296 squash-merged to main as this close-out's act. The branch tip
+was archive-tagged (`archive/claude/forward-returns-claims-attachment-8f2d69`)
+and pushed before the remote branch was deleted, per the (prune)
+convention; the local branch and worktree stay on disk, held by this
+session, and go when it exits. No change folder existed, so there is
+nothing to archive — the depth check was tracker work, not a change.)*
 
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
@@ -1603,12 +2210,20 @@ argues against fixing it.
   focusable* with *unreachable*: `disabled` leaves the tab order, not the
   accessibility tree. The accurate argument is narrower and rests on this
   codebase — `perform-button.tsx` has no live region, so the progressive label
-  is announced only because the pressed control holds focus. There are 19
-  `role="status"`/`role="alert"` regions in the product and none on the pending
-  state. Corrected in both items and both issues.
+  is announced only because the pressed control holds focus. There are ~~19~~
+  **130** `role="status"`/`role="alert"` regions in the product and none on the
+  pending state. Corrected in both items and both issues.
+  *(Corrected again 2026-08-16, #242: this sentence names both roles while
+  carrying the `role="status"`-only count. `role="alert"` is an implicit live
+  region — ARIA defines it as `aria-live="assertive"` — so the figure on this
+  entry's commit is 130, and 139 on 2026-08-16. The count is a fact about a
+  commit; the definition is the durable part and now lives in the UI review
+  checklist, row 8. The absence on the pending state is unchanged and was
+  re-checked.)*
 
 - **Two agents overstated findings in the same sweep; both were checkable in a
-  minute.** "grep aria-live returns 0" — there are 19 live regions, just none on
+  minute.** "grep aria-live returns 0" — there are ~~19~~ 130 live regions
+  (corrected 2026-08-16, #242 — see the bullet above), just none on
   the pending state. "The UI tells users the connection is read-only" — the
   sentence is wager-scoped and its operative claim is true. Filed both at the
   size they actually are. Agent findings are leads, not conclusions.

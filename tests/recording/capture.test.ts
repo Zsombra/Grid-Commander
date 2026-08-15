@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import {
   CaptureSignalsCommand,
   exitCodeFor,
@@ -186,7 +187,7 @@ describe('the platform being down is a recorded attempt, not silence', () => {
 
 describe('the deployments choose when nothing is named', () => {
   const deployments: RadarReadResult = {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: [
       { policyId: 'p1', coinTicker: 'HYPE', revision: 3, timeframe: '15m', enabled: true, slotAgentIds: ['a1'], onDutyAgentId: 'a1', openPositionAgentId: null, resolution: null },
       { policyId: 'p2', coinTicker: 'BTC', revision: 1, timeframe: '4h', enabled: true, slotAgentIds: ['a2'], onDutyAgentId: null, openPositionAgentId: null, resolution: null },
@@ -243,7 +244,7 @@ describe('the deployments choose when nothing is named', () => {
     const store = new InMemorySignalRecordStore();
     const command = new CaptureSignalsCommand(
       new ScriptedMarket({}),
-      radarWith({ kind: 'deployments', deployments: [] }),
+      radarWith({ kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [] }),
       store,
       tickingClock(),
     );

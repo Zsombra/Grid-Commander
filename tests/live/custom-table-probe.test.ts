@@ -230,10 +230,8 @@ live('a custom table can be created and modified on a real strategy', () => {
         const preview = await strategies.previewReport({
           ...who,
           timeframe: afterCreate.detail.summary.timeframe,
-          // Auto-derive, explicitly: `regimeTimeframe` is REQUIRED when
-          // `regimeAutoDerive` is false (live, 2026-08-01), and a preview
-          // is not the place to re-litigate the strategy's regime setting.
-          regimeAutoDerive: true,
+          // No regime arguments since v19.1.0 dropped them from a closed
+          // schema (`the-preview-matches-the-live-contract`).
           // The minted key, so the preview describes the table as saved.
           sections: [{ ...tableV1, sectionKey: tableKey }],
           coinSelection: { mode: 'explicit', tickers: ['BTC'] },

@@ -23,6 +23,7 @@ import type {
   TradeChartResult,
   PositionAuditResult,
   FleetSpendResult,
+  UpdatedAgent,
 } from '@/ports/agents.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import type { FailureCause } from '@/ports/failure.js';
@@ -34,6 +35,7 @@ import {
   mapCatalog,
   mapCoinQualification,
   mapEntryDecision,
+  mapFeasibilityAdvisory,
   mapGateBlock,
   mapRecord,
   mapRosterAgent,
@@ -289,7 +291,7 @@ export class McpAgentAdapter implements AgentsPort {
     expectedRevision: number;
     changes: Readonly<Record<string, unknown>>;
     confirmation: Confirmation;
-  }): Promise<Agent> {
+  }): Promise<UpdatedAgent> {
     const payload = await this.call(
       params,
       TOOLS.update,
@@ -303,7 +305,18 @@ export class McpAgentAdapter implements AgentsPort {
       // agent id, which is what let an agreement about $25 authorise $25,000.
       { confirmation: params.confirmation },
     );
-    return mapAgent(payload['agent']);
+    /**
+     * Both declared outputs, not one.
+     *
+     * This line was `return mapAgent(payload['agent'])` for the life of the
+     * product, and `feasibilityAdvisory` — the only answer the platform gives
+     * to "which of my armed coins can this strategy build a stop for today" —
+     * fell off the end of it every time anyone edited an agent (#291).
+     */
+    return {
+      agent: mapAgent(payload['agent']),
+      feasibility: mapFeasibilityAdvisory(payload['feasibilityAdvisory']),
+    };
   }
 
   async rebindAgent(params: {

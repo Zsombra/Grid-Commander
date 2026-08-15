@@ -10,11 +10,14 @@ import {
   DescribeUndeployQuery,
 } from '@/application/use-cases/deploy-agent.command.js';
 import { ReadFleetSpendQuery } from '@/application/use-cases/read-fleet-spend.query.js';
+import { ReadFeasibilityReplyQuery } from '@/application/use-cases/read-feasibility-reply.query.js';
+import { InMemoryFeasibilityReplies } from '../../support/feasibility-fakes.js';
 import { ListAgentsQuery } from '@/application/use-cases/list-agents.query.js';
 import { ReadProposalsQuery } from '@/application/use-cases/read-proposals.query.js';
 import { OpenProposalQuery } from '@/application/use-cases/open-proposal.query.js';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { ReadForwardReturnsQuery } from '@/application/use-cases/read-forward-returns.query.js';
+import { ReadRegimeContextQuery } from '@/application/use-cases/read-regime-context.query.js';
 import { ReadRecordCoverageQuery } from '@/application/use-cases/read-record-coverage.query.js';
 import { ReadSignalHistoryQuery } from '@/application/use-cases/read-signal-history.query.js';
 import { FakeProposalStore } from '../../support/proposal-fakes.js';
@@ -66,7 +69,7 @@ import { FakeMarketPort } from '../../support/market-fakes.js';
 import { FakePositionsPort } from '../../support/position-fakes.js';
 import { FakeExplorerPort } from '../../support/explorer-fakes.js';
 import { FakeStrategiesPort } from '../../support/strategy-fakes.js';
-import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
+import { FakeClock, FakeConfirmationStore, NO_PAUSE_REPORTED } from '../../support/fakes.js';
 
 /**
  * The `{ app, user }` shape `acting()` returns, assembled from the real
@@ -80,7 +83,7 @@ import { FakeClock, FakeConfirmationStore } from '../../support/fakes.js';
 
 export class RenderRadarPort implements RadarPort {
   timeframes: readonly string[] = ['15m', '1h'];
-  result: RadarReadResult = { kind: 'deployments', deployments: [] };
+  result: RadarReadResult = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [] };
   async listDeployments(): Promise<RadarReadResult> {
     return this.result;
   }
@@ -121,6 +124,17 @@ export function actingWith({
    * pass by never being rendered.
    */
   remedy = 'reconnect' as Remedy,
+  /**
+   * The reply an agent edit came back with, waiting to be shown once.
+   *
+   * Empty by default: the advisory arrives only on a write, so *nothing* is
+   * the state every ordinary page load is in, and a fake that always held one
+   * would make the panel look like a permanent fixture of the page. Declared
+   * after `clock` so it can stamp its replies from the same one the read
+   * measures their age against — two clocks here would make every planted
+   * reply stale at an hour nobody chose.
+   */
+  feasibilityReply = new InMemoryFeasibilityReplies(clock),
 }: {
   agents?: FakeAgentsPort;
   accountState?: FakeAccountStatePort;
@@ -132,6 +146,7 @@ export function actingWith({
   market?: FakeMarketPort;
   positions?: FakePositionsPort;
   signalRecord?: InMemorySignalRecordStore;
+  feasibilityReply?: InMemoryFeasibilityReplies;
   clock?: FakeClock;
   remedy?: Remedy;
 } = {}) {
@@ -165,6 +180,11 @@ export function actingWith({
     readPipeline: new ReadPipelineQuery(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
+    // No platform read behind it — it collects what the apply action set down
+    // a redirect ago (#291). Wired beside the port itself so a test can walk
+    // the write and the render, not only one of them.
+    feasibilityReply,
+    readFeasibilityReply: new ReadFeasibilityReplyQuery(feasibilityReply, clock),
     readExposure: new ReadExposureQuery(positions, agents, clock),
     readOwnEvaluation: new ReadOwnEvaluationQuery(agents),
     describeArchive: new DescribeArchiveQuery(agents, confirmations, random, clock),
@@ -208,6 +228,7 @@ export function actingWith({
     trimRecord: new TrimRecordCommand(signalRecord, confirmations),
     readRecordCoverage: new ReadRecordCoverageQuery(signalRecord, clock),
     readForwardReturns: new ReadForwardReturnsQuery(signalRecord),
+    readRegimeContext: new ReadRegimeContextQuery(signalRecord, market),
   };
 
   const user: CurrentUserResult = {

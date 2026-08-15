@@ -536,7 +536,8 @@ live('an agent can be read thinking', () => {
     const target = roster.agents.find((a) => a.status === 'ACTIVE') ?? roster.agents[0];
     if (!target) return;
 
-    const log = await read.execute({ ...who, agentId: target.id, limit: 20 });
+    const PAGE = 20;
+    const log = await read.execute({ ...who, agentId: target.id, limit: PAGE });
     // eslint-disable-next-line no-console
     console.log(`  thinking: ${log.kind}${log.kind === 'decisions' ? ` ${log.decisions.length} of ${log.total}` : ''}`);
     if (log.kind === 'none') {
@@ -572,7 +573,18 @@ live('an agent can be read thinking', () => {
     for (const d of silent) {
       expect(d.entry.outcome, 'only a failed cycle writes nothing').toBe('ERROR');
     }
-    expect(log.total, 'the server reports more than one page holds').toBeGreaterThan(
+    /**
+     * A healthy agent may hold exactly one page of history. The 2026-08-11
+     * keyed run failed here with `expected 17 to be greater than 17`: the
+     * agent had decided seventeen times and the server returned all
+     * seventeen (#293). "There is a second page" is a fact about the
+     * account, not about the product — the properties worth keeping are
+     * that the page honours the requested bound and that the reported
+     * total never undercounts what arrived, so the product cannot invent
+     * decisions beyond what the server reports.
+     */
+    expect(log.decisions.length, 'the page honours the requested limit').toBeLessThanOrEqual(PAGE);
+    expect(log.total, 'the total covers everything the page returned').toBeGreaterThanOrEqual(
       log.decisions.length,
     );
 

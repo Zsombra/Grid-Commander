@@ -2,6 +2,8 @@ import { acting } from '@/presentation/session.js';
 import { AgentActions } from '@/presentation/components/agent-actions.js';
 import { BindingInheritance, BindingSummary } from '@/presentation/components/binding.js';
 import { MoneySummary } from '@/presentation/components/money-summary.js';
+import { FeasibilityPanel } from '@/presentation/components/feasibility.js';
+import { RadarPauseNote } from '@/presentation/components/radar-pause.js';
 import { AgentRecord } from '@/presentation/components/record.js';
 import { Stoppages } from '@/presentation/components/stoppages.js';
 import { Exposure } from '@/presentation/components/exposure.js';
@@ -77,6 +79,17 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
     app.readExposure.execute({ ...user.authority, agentId: agent.id }),
   ]);
 
+  /**
+   * What BattleGrid said about this agent's tradeable coins on the way here.
+   *
+   * Not a read — no tool answers this. `update_intelligence_agent` returns a
+   * feasibility advisory beside the agent, and an edit is the only thing that
+   * produces one, so what this collects is the reply the apply action set down
+   * a redirect ago. Absent, tampered, about another agent, or older than its
+   * window all arrive here as `null` (#291).
+   */
+  const feasibility = app.readFeasibilityReply.execute({ agentId: agent.id });
+
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
@@ -91,6 +104,21 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
        * reports a record full of zeroes and says so in its own words.
        */}
       {agent.performance && <AgentRecord performance={agent.performance} />}
+
+      {/**
+       * What it can build a trade on, when an edit just told us.
+       *
+       * High on the page and directly under the record, because it is the
+       * answer to the question the operator was holding when they pressed
+       * apply — and because it expires: two minutes from the write, it stops
+       * rendering, so burying it would mean burying it past its own life.
+       *
+       * Nothing renders on any ordinary visit. That is the design, not a gap:
+       * the platform answers this on a write and never on a read, and a page
+       * that showed a remembered answer would be stating something about live
+       * volatility from an unknown moment.
+       */}
+      {feasibility && <FeasibilityPanel reply={feasibility} />}
 
       {/**
        * Money at stake right now, above everything retrospective. Every other
@@ -189,6 +217,19 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
         <h2 className="font-medium">Deployment</h2>
         {radar.kind === 'deployed' ? (
           <>
+            {/**
+             * Whether anything is scanning at all, above the rows rather than
+             * inside them.
+             *
+             * The platform reports the pause once for the fleet and carries no
+             * per-deployment pause field, so a row cannot know it — and every
+             * row below says "on duty: scanning" regardless. Rewriting each
+             * row's standing from this flag would make the row say something
+             * BattleGrid did not say about it, which is what `A Resolution
+             * State The Product Does Not Recognise Is Named, Never
+             * Interpreted` forbids. So the fact sits here and qualifies them.
+             */}
+            <RadarPauseNote pause={radar.pause} />
             <ul className="space-y-1 text-sm">
               {radar.deployments.map((d) => (
                 <li key={`${d.coinTicker}-${d.timeframe}`}>

@@ -1,4 +1,5 @@
 import type { SignalReading } from '@/domain/recording/capture.js';
+import type { RegimePoint, RegimeSnapshot } from '@/domain/recording/regime.js';
 import type { FailureCause } from './failure.js';
 
 /**
@@ -65,7 +66,59 @@ export interface MarketPort {
     userId: string;
     accessToken: string;
   }): Promise<RankingVocabulary>;
+
+  /**
+   * The platform's per-bar regime classification for one coin at one
+   * timeframe — the deepest look-back the tool's own declaration offers,
+   * read at call time rather than compiled in. Whether that depth reaches
+   * any particular window is the caller's question, answered from the
+   * points themselves.
+   *
+   * Zero points is an answer (`'none'`): the platform says a cold cache or
+   * an un-enriched timeframe returns few or zero points, and telling that
+   * apart from a failed read is the whole reason the kind exists.
+   */
+  regimeHistory(params: {
+    userId: string;
+    accessToken: string;
+    symbol: string;
+    timeframe: string;
+  }): Promise<RegimeHistoryResult>;
+
+  /**
+   * The platform's current classified regime for one coin at one timeframe.
+   * A null snapshot is an answer (`'unclassified'`, observed live) — the
+   * platform classifies no regime there — and never a failure.
+   */
+  regimeSnapshot(params: {
+    userId: string;
+    accessToken: string;
+    symbol: string;
+    timeframe: string;
+  }): Promise<RegimeSnapshotResult>;
 }
+
+export type RegimeHistoryResult =
+  | {
+      readonly kind: 'history';
+      readonly points: readonly RegimePoint[];
+      /**
+       * Rows the platform sent that could not be read (no timestamp, no
+       * regime). Dropped rather than invented, counted rather than silent —
+       * a composition that quietly lost bars would claim a coverage it does
+       * not have.
+       */
+      readonly droppedPoints: number;
+    }
+  /** The platform answered, and holds no points at this timeframe. */
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+export type RegimeSnapshotResult =
+  | { readonly kind: 'snapshot'; readonly snapshot: RegimeSnapshot }
+  /** The platform answered `snapshot: null` — no regime classified. */
+  | { readonly kind: 'unclassified' }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 export interface RankingVocabulary {
   readonly metrics: readonly string[];

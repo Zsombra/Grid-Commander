@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
@@ -290,11 +291,18 @@ class StubMarket implements MarketPort {
   async platformVersion(): Promise<string | null> {
     return null;
   }
+  // The regime pair belongs to the record's context surface, never here.
+  async regimeHistory(): Promise<never> {
+    throw new Error('the qualification screen never reads the regime history');
+  }
+  async regimeSnapshot(): Promise<never> {
+    throw new Error('the qualification screen never reads the regime snapshot');
+  }
 }
 
 function deployedOn(tickers: readonly string[]): RadarReadResult {
   return {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: tickers.map((coinTicker, i) => ({
       policyId: `p${i}`,
       coinTicker,

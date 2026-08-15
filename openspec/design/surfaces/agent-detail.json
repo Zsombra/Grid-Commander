@@ -1,0 +1,365 @@
+{
+  "id": "agent-detail",
+  "title": "One agent — what it is, what stops it, and what it can build a trade on",
+  "route": "/agents/[id]",
+  "capability": "agent-understanding",
+  "status": "functional",
+  "generated_at_commit": "0c10bc4",
+  "source_files": [
+    "app/(app)/agents/[id]/page.tsx",
+    "src/presentation/components/agent-actions.tsx",
+    "src/presentation/components/binding.tsx",
+    "src/presentation/components/exposure.tsx",
+    "src/presentation/components/feasibility.tsx",
+    "src/presentation/components/money-summary.tsx",
+    "src/presentation/components/radar-pause.tsx",
+    "src/presentation/components/record.tsx",
+    "src/presentation/components/stoppages.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "agent",
+      "shape": "Agent — displayName, status, revision, binding, brain, modelDisplayName, tradingConfig, performance, permissions",
+      "source": "app.listAgents.execute, the row matching the route id"
+    },
+    {
+      "name": "radar",
+      "shape": "ReadDeploymentsResult ('deployed' | 'not-deployed' | unreadable) — per deployment: coinTicker, timeframe, standing, occupancy",
+      "source": "app.readDeployments.execute — takes the whole agent and the rest of the roster, because standing needs the lifecycle and occupancy needs everyone else's"
+    },
+    {
+      "name": "stoppages",
+      "shape": "('summary' | 'none' | unreadable)",
+      "source": "app.readStoppages.execute"
+    },
+    {
+      "name": "exposure",
+      "shape": "{ exposure, fills } — money at stake right now",
+      "source": "app.readExposure.execute"
+    },
+    {
+      "name": "feasibility",
+      "shape": "FeasibilityReply | null — { agentId, issuedAt, advisory: { dials, counts, coins[] }, coinsCarried }. `coins[]` is a two-arm union: priced (band, requested, blocking dial, shortfall) or unpriced (ticker only, no numbers).",
+      "source": "app.readFeasibilityReply.execute — NOT a platform read. `update_intelligence_agent` returns the advisory beside the agent and no read tool answers it, so this collects the signed reply the edit action set down a redirect ago. null on absent, tampered, another agent's, or older than 120s."
+    }
+  ],
+  "components": [
+    {
+      "id": "agent-page",
+      "role": "container",
+      "purpose": "Read one agent: how it has done, what it can trade on right now, what money is at stake, what keeps stopping it, what it inherits, where it is deployed, and what may be done to it.",
+      "states": [
+        "agent",
+        "agent-with-feasibility",
+        "roster-unreadable",
+        "no-such-agent",
+        "not-connected"
+      ],
+      "data": [
+        "agent",
+        "radar",
+        "stoppages",
+        "exposure",
+        "feasibility"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centered column, space-y-6, p-6. Order is deliberate and argued in the source: record, then feasibility, then exposure (money at stake now, above everything retrospective), then stoppages (the answer to every other question on the page), then binding, owned fields, deployment, actions. `roster-unreadable` and `no-such-agent` are max-w-2xl short pages. The page reads no `?problem=` — the rename form that minted one moved to /agents/[id]/edit, and an unreachable branch was removed rather than restyled. The brain line is inline in the page rather than a component: it prefers the platform's own modelDisplayName and falls back to the preset name or the model id, never to an invented one.",
+      "constraints": [
+        "Each read renders independently and one failing hides none of the others — an unreadable radar must never render as 'not deployed', and an unreadable stoppage history must never render as an agent nothing has stopped",
+        "This route holds no bound form. It stopped being a mutation route when the rename moved to /agents/[id]/edit, and `only-mcp-control`'s corridor guard depends on that; a design must not reintroduce a form here",
+        "Every state change is a full navigation. No client state, no optimistic rendering, no partial update",
+        "The inline brain line must never invent a name the platform did not report — the read-back flattens the request's two-branch brain union into one field, so it cannot say whether a brain is a preset or a named model, and the line claims neither"
+      ],
+      "children": [
+        "agent-record",
+        "feasibility-panel",
+        "exposure",
+        "stoppages",
+        "binding-summary",
+        "binding-inheritance",
+        "money-summary",
+        "deployment",
+        "agent-actions"
+      ]
+    },
+    {
+      "id": "feasibility-panel",
+      "role": "display",
+      "purpose": "Turn BattleGrid's per-coin stop bands into the sentence an operator reads: how many of this agent's armed coins its strategy can build a stop for at today's volatility, which dial is stopping the rest, and which way the ceiling costs them.",
+      "states": [
+        "absent",
+        "opportunity",
+        "opportunity-with-blocked",
+        "opportunity-with-unpriced",
+        "counts-disagree",
+        "ceiling-curve",
+        "no-candidate-ceiling",
+        "coins-not-carried",
+        "says-nothing"
+      ],
+      "data": [
+        "feasibility"
+      ],
+      "actions": [],
+      "current_implementation": "A section with an h2 and a stack of <p> at space-y-2 — prose, no table, no chart. `absent` is the default and renders NOTHING at all: the platform answers feasibility on a write and never on a read, so an ordinary page load has no answer to show. `says-nothing` (an advisory over zero armed coins) also renders nothing. The headline pairs BattleGrid's own counts.buildable/counts.total with counts.evaluated. Blocked coins are grouped by responsible dial into one sentence, with an unattributed group of its own. Unpriced coins get a separate sentence naming them. The ceiling curve is up to three candidate ceilings read off the returned bands, highest first, followed by a text-text-secondary line marking it as this product's arithmetic. `counts-disagree` and `coins-not-carried` are role=status lines. A provenance line closes the panel. Every sentence with an interpolation is a single template literal.",
+      "constraints": [
+        "The platform's counts and this product's ceiling curve are DIFFERENT CLAIMS and must stay visually and verbally distinguishable. A design that unifies them into one figure group, one stat row, or one chart is requires-spec-change (spec: A Ceiling Is Shown Against The Opportunity It Costs — 'SHALL be presented as derived rather than as a platform claim')",
+        "An unpriced coin is never rendered among the blocked. It is a gap in the reading, not a verdict on the coin, and the two must not share a group, a colour, or a count (spec: A Coin Whose Volatility Could Not Be Read)",
+        "`absent` renders nothing — not an empty state, not a placeholder, not a zero. A design that gives this panel a resting appearance would put a permanent frame around an answer that exists for two minutes after an edit and never otherwise, and 'no advisory' must never read as 'no coin can construct' (spec: The Platform Returns No Advisory)",
+        "The provenance line and the dial-direction line are load-bearing copy, not chrome. Without provenance the figures read as a standing property of the agent rather than one moment's reading of live volatility; without the direction line an operator cannot learn that only a LOWER ceiling costs opportunity. Neither may be moved behind a disclosure, a tooltip, or a hover",
+        "No sorting, ranking, or emphasis that implies one coin is a better trade than another. This panel says what can be constructed, never what should be",
+        "Copy may not be re-split into JSX fragments around interpolations — the rendering harness joins adjacent text nodes with a space and the tests assert whole sentences"
+      ],
+      "children": []
+    },
+    {
+      "id": "agent-record",
+      "role": "display",
+      "purpose": "How the agent has done, from the performance block the roster payload already carried.",
+      "states": [
+        "record",
+        "absent"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "Rendered only when agent.performance is non-null. An agent that has played nothing reports a record full of zeroes and says so in its own words, so the component never sees a null.",
+      "constraints": [
+        "A record of zeroes is a real record and must not be styled as an empty state"
+      ],
+      "children": []
+    },
+    {
+      "id": "exposure",
+      "role": "display",
+      "purpose": "Money at stake right now — open positions, their fills, and the stop that stands.",
+      "states": [
+        "exposure",
+        "no-exposure",
+        "unreadable"
+      ],
+      "data": [
+        "exposure"
+      ],
+      "actions": [
+        "undeploy link per position"
+      ],
+      "current_implementation": "Own component with its own WhyNotLoaded branch. Sits above everything retrospective on this page.",
+      "constraints": [
+        "Stays above the backward-looking sections: an agent can be holding a leveraged position with a moved stop, and that is the one fact on this page that is about now"
+      ],
+      "children": []
+    },
+    {
+      "id": "stoppages",
+      "role": "display",
+      "purpose": "What keeps stopping this agent, before anything about how it is configured.",
+      "states": [
+        "summary",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "stoppages"
+      ],
+      "actions": [],
+      "current_implementation": "Three arms rendered distinctly; the unreadable arm is a role=status paragraph carrying the reason.",
+      "constraints": [
+        "A history that could not be read must never dress up as an agent nothing has stopped"
+      ],
+      "children": []
+    },
+    {
+      "id": "binding-summary",
+      "role": "display",
+      "purpose": "State the agent's strategy binding as BattleGrid reports it.",
+      "states": [
+        "bound",
+        "orphaned",
+        "unbound"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "One <p> inside the 'Its strategy binding' section (h2 + two <p>).",
+      "constraints": [
+        "The binding state is BattleGrid's word for it and is not re-derived here"
+      ],
+      "children": []
+    },
+    {
+      "id": "binding-inheritance",
+      "role": "display",
+      "purpose": "Say what the agent inherits from the strategy it is bound to — where inheritance is true at all.",
+      "states": [
+        "bound",
+        "orphaned",
+        "unbound"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "The second <p> of the binding section. Its own component because the heading once read 'Inherited from its strategy' over a sentence asserted for every binding, including an ORPHANED one whose strategy cannot be read.",
+      "constraints": [
+        "The inheritance claim must not be asserted for an ORPHANED binding — there is no strategy to inherit from, and saying otherwise is a false statement about where the agent's rules come from"
+      ],
+      "children": []
+    },
+    {
+      "id": "money-summary",
+      "role": "display",
+      "purpose": "Say whether this agent's money limits are actually set — not merely that a configuration object exists.",
+      "states": [
+        "limits-set",
+        "unbounded-caps",
+        "no-config"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "One <p> inside the 'Owned by the agent' section, beside the inline brain line.",
+      "constraints": [
+        "A present tradingConfig object is not a set limit. The live account's active agent carries a full twenty-field config in which two of three caps are zero, which BattleGrid reads as no cap — a design must not render 'configured' as a satisfied state"
+      ],
+      "children": []
+    },
+    {
+      "id": "deployment",
+      "role": "display",
+      "purpose": "Whether this agent is actually doing anything — the fact its lifecycle status hides.",
+      "states": [
+        "deployed",
+        "not-deployed",
+        "radar-paused",
+        "unreadable"
+      ],
+      "data": [
+        "radar",
+        "agent"
+      ],
+      "actions": [
+        "Undeploy per deployment",
+        "Deploy to another market"
+      ],
+      "current_implementation": "A <ul> of deployments, each a standing sentence plus an optional occupancy sentence plus an Undeploy link; then a Deploy link. Keyed by `${coinTicker}-${timeframe}`.",
+      "constraints": [
+        "ACTIVE means configured; only a radar deployment means scanning. A design must not merge the lifecycle badge and the deployment standing into one indicator",
+        "'Deployed and unscanned' is a distinct fact from 'on duty' and must remain readable as one",
+        "An unreadable radar must never dress up as 'not deployed'",
+        "A paused radar is stated above the rows and no row claims to be scanning under it. The standing sentences themselves are unchanged — they report what BattleGrid says about each row (spec: A Paused Radar Is Stated Wherever Standing Is Rendered)"
+      ],
+      "children": [
+        "radar-pause"
+      ]
+    },
+    {
+      "id": "agent-actions",
+      "role": "action",
+      "purpose": "What may be done to this agent — each a link to its own confirmation route.",
+      "states": [
+        "editable",
+        "archivable",
+        "archived",
+        "platform-owned"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [
+        "Edit",
+        "Rebind",
+        "Deploy",
+        "Archive",
+        "Reactivate"
+      ],
+      "current_implementation": "Links only. No bound form on this route.",
+      "constraints": [
+        "Every one is a navigation to a route that states the consequence and issues a confirmation. A design must not turn any of them into an in-place control that acts on press"
+      ],
+      "children": []
+    },
+    {
+      "id": "radar-pause",
+      "role": "display",
+      "purpose": "Say whether anything is scanning at all — the correction to every standing sentence on the page, since standing names the agent the radar would resolve to and stays true while nothing runs.",
+      "states": [
+        "pause-unknown",
+        "radar-paused",
+        "platform-paused-count",
+        "both",
+        "platform-contradicts-itself",
+        "running-says-nothing"
+      ],
+      "data": [
+        "pause"
+      ],
+      "actions": [],
+      "current_implementation": "A space-y-1 stack of role=status <p> above the deployment rows. Renders NOTHING when the pause is unknown (all four fields null) and nothing when the radar runs with no platform-paused coins. The radar's own pause and the platform's count are separate sentences; the count is stated against coinsDeployed, or says the denominator was not given. A fourth line appears only when BattleGrid reports a paused radar and a non-zero scanning count, showing both as returned.",
+      "constraints": [
+        "`pause-unknown` renders NOTHING and must never render as reassurance. A missing pause is a read that did not answer, and a 'radar: running' badge built on it would assert liveness the platform never stated (spec: An Unreadable Pause Is Not A Running Radar)",
+        "The radar's pause and the platform's count are never reduced to one claim or one badge — they are different shapes with different remedies, and an operator told only 'paused' cannot tell whether their own radar is off or the platform stopped some coins (spec: The Radar's Pause And The Platform's Are Reported Apart)",
+        "role=status, never role=alert. A paused radar is a state of the platform being reported, not a failure of the page; the alert treatment on these surfaces belongs to reads that broke",
+        "It sits ABOVE the rows and must not be moved into them. The platform reports the pause once for the fleet and carries no per-deployment pause, so a row cannot own it — and rewriting each row's standing from it would make the row say something BattleGrid did not (spec: A Resolution State The Product Does Not Recognise Is Named, Never Interpreted)",
+        "Counts are always stated against the whole they were counted over, or the surface says the whole was not given"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Edit an agent and learn what it can still trade",
+      "steps": [
+        "open /agents/[id] and read the agent",
+        "follow Edit to /agents/[id]/edit, type the change, review the stated consequence",
+        "apply — the action performs the write and sets down BattleGrid's feasibility reply",
+        "land back on /agents/[id], where the feasibility panel states how many armed coins can construct and which dial holds the rest",
+        "the panel stops rendering two minutes later; editing again is what asks anew"
+      ]
+    },
+    {
+      "name": "Read one agent",
+      "steps": [
+        "open /agents/[id]",
+        "read the record, then money at stake now, then what keeps stopping it",
+        "read the binding and what it inherits",
+        "read whether it is deployed and scanning, which its ACTIVE status does not say"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "page heading",
+      "exposure undeploy links",
+      "deployment undeploy links",
+      "deploy link",
+      "agent action links"
+    ],
+    "notes": "The feasibility panel is display-only and takes no focus. Its two conditional caveats — the counts disagreement and the not-carried notice — are role=status, not role=alert: neither is a failure, and both describe the reading rather than interrupting it. Failed reads elsewhere on the page carry role=status with the reason. The panel's absence is silent by design, so no live region announces it."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/page.tsx": "sha256:b9a0a7b267a29bb7c8293968c64fbda28f8cd51cd19f00e62f2d59e63dfe7af5",
+    "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/exposure.tsx": "sha256:db1ac5d837006765f361221834f52681fd1af595c53eb4ee8e65b0002ad7ae81",
+    "src/presentation/components/feasibility.tsx": "sha256:96abd078b31fb74cc2f9c446d1f62cbbc546df8209a05bf2c1f8216db1fb1f1d",
+    "src/presentation/components/money-summary.tsx": "sha256:b87bbb3e5cd375cafd3d8f0b59a0146935320787ac4bdbfa8922e690cc3758be",
+    "src/presentation/components/radar-pause.tsx": "sha256:8fd8527f2cff642a016eacfff98f79773696821c963ba7e69b4fa1356a620a34",
+    "src/presentation/components/record.tsx": "sha256:aed02502176243d7b8a64942d4ca6247f154952a19f2d1825bb5aab05ae7cd62",
+    "src/presentation/components/stoppages.tsx": "sha256:8fb20be2f01f372e17d3cbe668123dceab523f507051bd5a3db51953f4ab7460",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}
