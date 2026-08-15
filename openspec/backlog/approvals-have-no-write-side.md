@@ -533,10 +533,53 @@ the session began). The cap raise turned out to be unnecessary in the end:
 MOODENG closed on its own at −0.08, taking headroom to 41.45, which clears the
 $10 sizing floor at the original cap of 45.
 
-**Vanguard is deliberately left in `APPROVAL_REQUIRED`** (revision 11, set
-2026-08-14). That is a prior session's intentional state and the standing
-source of future approval rows; it costs nothing, because Vanguard has never
-traded. Do not "fix" it.
+**Vanguard is deliberately left in `APPROVAL_REQUIRED`** and is now the standing
+source of approval rows. It costs nothing, because Vanguard has never traded.
+Do not "fix" it.
+
+## Vanguard rebound to Cannae, 2026-08-15 18:04Z — operator-authorized by name
+
+Undertow is finished with; Vanguard becomes the test agent. Two writes:
+
+```
+rebind_intelligence_agent(Vanguard c8f20b9e…, expectedRevision: 11, confirm: true)
+    strategy  Trafalgar (3a354541…) → Cannae (f901a336…, revision 3)
+  read-back: revision 12. Context modules replaced with Undertow's exact set —
+  fundingRates, openInterest, supportResistance, structureZones, cvd,
+  perpSpotFlow on; volume, volatility, movingAverages, trendStrength,
+  mtfConfluence off.
+
+update_intelligence_agent(Vanguard c8f20b9e…, expectedRevision: 12)
+    minTradeConviction  0.6 → 0.55   (to match Undertow)
+  read-back: revision 13, every other field identical.
+```
+
+**The rebind preserved the trading config, exactly as the tool declares.**
+`tradingMode: APPROVAL_REQUIRED` and `signalTimeoutMinutes: 15` both survived —
+which is why this was the cheap move: no second flip, and Undertow stays in
+`FULL_EXECUTION` untouched.
+
+**Confirmed propagation**: all five Vanguard deployments (BTC, ETH, SOL, XRP,
+AVAX) now read `resolvedConviction: {value: 0.55, provenance: "AGENT"}`, down
+from 0.6. The agent-level bar reaches the deployment resolution.
+
+### What it did NOT fix, measured in the same minute
+
+All five Vanguard coins still read `qualified: false`,
+`qualificationBlock: "AGGREGATE_BELOW_MIN"`. The strategy swap did not flip them.
+
+**Do not read that as the rebind having failed.** The aggregate is a live,
+per-sweep computation: in the same read, Undertow's WIF and HYPE were *also*
+`AGGREGATE_BELOW_MIN` while its TRUMP, MOODENG, AIXBT, FARTCOIN and MELANIA
+qualified. One snapshot proves nothing either way; the honest test is several
+sweeps.
+
+**The residual hypothesis stands**: Vanguard's coins are majors (BTC/ETH/SOL/
+XRP/AVAX) and Undertow's are memecoins. Undertow may fire more because its
+instruments move more, not only because of Cannae. If Vanguard stays
+`AGGREGATE_BELOW_MIN` across several hourly sweeps while Undertow keeps firing,
+the coin set is the cause and the next lever is deploying Vanguard onto
+higher-ATR coins — which touches Radar policies and needs its own decision.
 
 ### Catching the next one
 
