@@ -1,5 +1,58 @@
 # Journal
 
+## 2026-08-16 (parity) — the analysis reaches the model, disciplines and all
+
+**Did**: #283. `/recorder/analysis` had no counterpart on the MCP surface, so a
+model could re-derive forward returns and skip exactly what the product
+enforces. `the-analysis-reaches-the-model` (lite, archived): `read_forward_returns`
+wrapping the existing `ReadForwardReturnsQuery` — `src/mcp/tools.ts:553`, no new
+query, no new port, no new platform call of any kind. Takes no arguments, because
+the query takes only a user id and a `coinTicker` filter here would be a
+derivation living at the boundary. One ADDED requirement on `mcp-control`, four
+scenarios. Five tests in `tests/mcp/recorder-tools.test.ts`; probe pin 26 → 27
+with an unconditional call at `mcp-full-surface-probe.test.ts:169`. Backlog item
+done, issue #283 commented and closed.
+
+**State**: 0 active changes, 26 open, all p3. Gates on this exact tree: tsc,
+eslint, **203 files / 2556 vitest** (was 2551), `npm run build`, `db:generate`
+clean, `validate --all` 0 errors / 13 standing warnings. `test:db` skipped — no
+schema change. Branch `claude/read-forward-returns-mcp-tool-ce9099`; PR is this
+handoff's last act.
+
+**Next**: **#311** (`a-paused-radar-is-rendered-as-on-duty`). This entry first
+named #301 — written before the rebase, and wrong by the time it landed: the
+schemas survey below **shipped in parallel** and filed #311 out of it. That is
+now the only p2, it is wrong on the live account right now, and it is the same
+unread-declared-field shape as #291. The board's `NEXT:` is alphabetical and
+still carries no ordering signal; take the p2.
+
+**Watch out**: **the discipline had to move from code into prose, and that is the
+whole change.** On the web, `ForwardReturnsPanel` renders the query's order and
+cannot re-sort — "never by the return" is guaranteed structurally. Over MCP the
+model *is* the renderer, so the same requirement needed a different enforcement
+mechanism: the description states both disciplines in the imperative ("keep that
+order", "do not re-rank"), and `states both disciplines in the contract a model
+actually receives` asserts the exact substrings. Reword the description and that
+test breaks — intended. It is the only thing standing between a model and a
+two-sample fluke at the top of the table. — **A passing ordering test proves
+nothing unless the fixture punishes the wrong sort.** The first shape I reached
+for had every group at the same `n`, where sort-by-`n` and sort-by-return are
+indistinguishable. The landed fixture is three BULLISH pairs at ~1% against one
+BEARISH pair at ~10%, so the leading row is deliberately the *worse* figure and
+any rank-by-return flips it. — **The gap fixture already existed and was not
+obvious**: `seededStore()` in `recorder-tools.test.ts` records days 1–5 then day
+8, a spacing coverage already calls a gap — six captures, four pairs, one
+excluded. Worth reusing rather than building a second one that might disagree
+with `deriveSeriesCoverage` about what a gap is. — **The tests were first written
+into `server.test.ts`, following the loss-shape precedent, and that was the wrong
+file**: `recorder-tools.test.ts` is the record's own boundary test and already
+holds the seeding helpers, so the first cut duplicated three imports and a
+fixture. Reverted and moved; `proposal.md` and `tasks.md` were corrected to match
+rather than left claiming the file that was not touched. — In a worktree `.git` is
+a **file, not a directory**, so `--body-file .git/whatever` fails; the scratchpad
+is the place for gh comment bodies. — `npm ci` was needed: a fresh worktree has no
+`node_modules`, and nothing warns before the first gate fails.
+
 ## 2026-08-16 (records) — four claims that outran their proof
 
 **Did**: `the-record-says-what-was-actually-checked` (lite, archived) — four p3

@@ -473,10 +473,11 @@ export const TOOLS: readonly ToolDefinition[] = [
   /**
    * The signal record.
    *
-   * Both tools read this product's own store, not BattleGrid — the record the
-   * capture CLI grows. They are the boundary the coverage requirement crosses
-   * for a model: a gap must arrive as a gap, because a model reading a hole in
-   * the data and calling it a quiet market would be manufacturing evidence.
+   * All three tools read this product's own store, not BattleGrid — the record
+   * the capture CLI grows. They are the boundary the coverage requirement
+   * crosses for a model: a gap must arrive as a gap, because a model reading a
+   * hole in the data and calling it a quiet market would be manufacturing
+   * evidence.
    */
   {
     name: 'read_signal_history',
@@ -529,6 +530,48 @@ export const TOOLS: readonly ToolDefinition[] = [
     useCase: 'readRecordCoverage',
     input: {},
     call: (app, who) => app.readRecordCoverage.execute({ userId: who.userId }),
+  },
+  /**
+   * The record's first analytical question, and the one tool here whose
+   * contract has to carry a method rather than a caveat.
+   *
+   * A model holding `read_signal_history` can already derive forward returns
+   * itself — that was the argument for leaving this off the surface, and it is
+   * exactly the risk. The two disciplines are what a re-derivation drops:
+   * pairing across a recording gap answers "by whenever the recorder came
+   * back", and sorting by the interesting column puts a two-sample fluke on
+   * top. So the description states both, in the imperative, because the model
+   * is the renderer here — there is no `ForwardReturnsPanel` between these
+   * figures and the operator to keep the order honest.
+   *
+   * Takes no arguments, deliberately. `ReadForwardReturnsQuery` is scoped to a
+   * user and nothing else; a `coinTicker` filter here would be a derivation
+   * living at the boundary rather than in the use-case, and the page and the
+   * tool would start answering different questions.
+   */
+  {
+    name: 'read_forward_returns',
+    description:
+      "What price did after a state held, derived from Grid-Commander's own signal record — " +
+      'not a live BattleGrid read, and not a stored summary: it is computed from the rows ' +
+      'every time you ask. Each pair of consecutive captures of one series is one forward ' +
+      'return, attributed to the states at the EARLIER capture — every signal that triggered ' +
+      'there, the dominant bias, and whether signals conflicted — reported beside the ' +
+      'unconditional baseline over the same pairs, which is what the groups are read ' +
+      'against rather than zero. Two disciplines are part of the answer and must survive ' +
+      'into anything you say about it. First, a pair spanning a recording gap is excluded ' +
+      'and counted, never paired: a return across a hole is not a return over one cadence ' +
+      'step, and excludedOverGaps is how many were dropped that way. Second, the figures ' +
+      'are ordered by sample size and never by the return — keep that order and do not ' +
+      're-rank by mean, median or share positive, because sorting by the interesting column ' +
+      'is how a two-sample fluke tops the table. Every figure carries the pair count it ' +
+      'stands on; quote the count with the figure. `not-deep-enough` means the record ' +
+      'cannot pair anything yet and says how deep it is, `never-recorded` means recording ' +
+      'has not started and says how to start it, and `unreadable` means the record did not ' +
+      'answer — which says nothing about what it holds.',
+    useCase: 'readForwardReturns',
+    input: {},
+    call: (app, who) => app.readForwardReturns.execute({ userId: who.userId }),
   },
   {
     name: 'read_field',

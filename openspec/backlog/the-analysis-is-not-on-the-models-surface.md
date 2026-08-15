@@ -2,11 +2,11 @@
 id: the-analysis-is-not-on-the-models-surface
 title: A model can read the record but must re-derive the forward returns itself
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
-change: ""
+updated: 2026-08-16
+change: the-analysis-reaches-the-model
 capability: mcp-control
 github: "283"
 blocked_by: []
