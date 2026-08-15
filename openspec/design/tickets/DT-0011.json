@@ -6,7 +6,7 @@
   ],
   "type": "restyle",
   "priority": "p3",
-  "status": "open",
+  "status": "implemented",
   "behavior_impact": "none",
   "spec_change": "",
   "intent": "The roster's message blocks stop wearing the anonymous border: an unreadable roster speaks in danger, the two advisory banners speak in notice, and empty stays prose. The first ruling on the unreadable role, stated here and reused by DT-0013. Revised 2026-08-15 to cover the eight row states the re-survey surfaced: the one standing with money behind it takes weight, quoted platform identifiers wear mono, and everything else is ruled unchanged on purpose.",
