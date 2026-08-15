@@ -115,9 +115,11 @@ export interface StrategiesPort {
   previewReport(params: {
     userId: string;
     accessToken: string;
+    // No regime arguments: v19.1.0 removed `regimeAutoDerive` (required at
+    // v18) and `regimeTimeframe` from a schema that keeps
+    // `additionalProperties: false`, so sending either refuses the whole
+    // payload (re-probed 2026-08-15, `the-preview-matches-the-live-contract`).
     timeframe: string;
-    regimeAutoDerive: boolean;
-    regimeTimeframe?: string | null | undefined;
     sections: readonly StrategySection[];
     coinSelection: CoinSelection;
     /**

@@ -128,7 +128,6 @@ describe('mapping the preview payload', () => {
     const outcome = await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: true,
       sections: SECTIONS,
       coinSelection: { mode: 'ranked', limit: 2 },
     });
@@ -152,7 +151,6 @@ describe('mapping the preview payload', () => {
     expect(tokens?.cap).toBe(16000);
     expect(calls[0]?.args).toMatchObject({
       timeframe: '1h',
-      regimeAutoDerive: true,
       coinSelection: { mode: 'ranked', limit: 2 },
     });
   });
@@ -167,7 +165,6 @@ describe('mapping the preview payload', () => {
     const outcome = await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: false,
       sections: SECTIONS,
       coinSelection: { mode: 'explicit', tickers: ['BTC'] },
     });
@@ -184,7 +181,6 @@ describe('mapping the preview payload', () => {
     const outcome = await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: true,
       sections: SECTIONS,
       coinSelection: { mode: 'explicit', tickers: ['BTC'] },
       conditions: [LIVE_CONDITION],
@@ -205,7 +201,6 @@ describe('mapping the preview payload', () => {
     await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: true,
       sections: SECTIONS,
       coinSelection: { mode: 'ranked', limit: 2 },
       conditions: [LIVE_CONDITION],
@@ -221,7 +216,6 @@ describe('mapping the preview payload', () => {
     await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: true,
       sections: SECTIONS,
       coinSelection: { mode: 'ranked', limit: 2 },
       conditions: [],
@@ -241,8 +235,7 @@ describe('mapping the preview payload', () => {
       adapter.previewReport({
         ...who,
         timeframe: '1h',
-        regimeAutoDerive: false,
-        sections: SECTIONS,
+          sections: SECTIONS,
         coinSelection: { mode: 'ranked', limit: 1 },
       }),
     ).rejects.toThrow('sectionKey');
@@ -408,7 +401,6 @@ describe('a custom table survives the round trip', () => {
     await adapter.previewReport({
       ...who,
       timeframe: '1h',
-      regimeAutoDerive: true,
       sections: [
         {
           kind: 'custom',

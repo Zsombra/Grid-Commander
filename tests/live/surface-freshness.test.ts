@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -73,6 +74,28 @@ async function serverInfo(): Promise<{ name: string; version: string }> {
   const info = (JSON.parse(frame) as { result?: { serverInfo?: Record<string, string> } }).result
     ?.serverInfo;
   return { name: info?.name ?? '', version: info?.version ?? '' };
+}
+
+/** One JSON-RPC call, unwrapped to its `result` — plain or SSE-framed. */
+async function rpc(method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const response = await fetch(MCP_URL, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${KEY as string}`,
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const raw = await response.text();
+  const frame = raw.startsWith('event:')
+    ? (raw.split('\n').find((l) => l.startsWith('data: ')) ?? '').slice('data: '.length)
+    : raw;
+  const parsed = JSON.parse(frame) as { result?: Record<string, unknown>; error?: unknown };
+  if (parsed.result === undefined) {
+    throw new Error(`${method} answered no result: ${JSON.stringify(parsed.error).slice(0, 200)}`);
+  }
+  return parsed.result;
 }
 
 /** One `tools/call`, unwrapped to its payload — plain or SSE-framed. */
@@ -199,6 +222,129 @@ live('the recorded vocabulary still describes the platform', () => {
         ids(now),
         `the ${category} transform ids moved under the record — ${REPROBE_VOCAB}`,
       ).toEqual(ids(recorded));
+    });
+  }
+});
+
+/**
+ * The platform's prose, against the platform that is running right now.
+ *
+ * The version gate above catches a deployment. The vocabulary gate catches
+ * values moving under an unchanged version. Neither can see the third class:
+ * **prose moving under an unchanged version** — and the prose is where
+ * BattleGrid states the constraints no schema expresses (scope semantics,
+ * copy-don't-construct, per-tool pagination, authoring deadlines), each of
+ * which this project has already paid for at least once (#294).
+ *
+ * Digests rather than whole texts, so a failure names the surface that moved
+ * instead of printing 25,000 characters at whoever ran it.
+ */
+live('the recorded prose still describes the platform', () => {
+  const RECAPTURE = 'BATTLEGRID_API_KEY=… python3 tools/capture_mcp_dump.py build_log/dump';
+
+  interface Entry {
+    name?: string;
+    uri?: string;
+    result?: { messages?: { content?: { text?: string } }[]; contents?: { text?: string }[] };
+    failure?: unknown;
+  }
+  interface Capabilities {
+    instructions?: string;
+    promptBodies?: Entry[];
+    resourceContents?: Entry[];
+  }
+
+  const cap = JSON.parse(
+    readFileSync('docs/battlegrid-mcp-capabilities.json', 'utf8'),
+  ) as Capabilities;
+
+  /**
+   * The instructions with the addressee removed.
+   *
+   * BattleGrid greets the connected account by name — "You are connected to
+   * BattleGrid as Fibonacci —" — so the raw text differs per operator and a
+   * digest over it would fail for everyone who did not take the record. That
+   * would make this gate a report on whose key is in the environment, which is
+   * not a fact about the platform. The greeting is the only account-derived
+   * span in the text (verified 2026-08-15 at v19.1.0: one occurrence).
+   */
+  const normalise = (text: string): string =>
+    text.replace(/(connected to BattleGrid as ).*?( —)/u, '$1<account>$2');
+
+  const digest = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
+
+  /**
+   * Every text a prompt or resource result carries, concatenated.
+   *
+   * Takes the `result` rather than the entry so the same function reads a
+   * recorded body and a live response — the comparison is only honest if both
+   * sides are flattened by one implementation.
+   */
+  const textOf = (result: Entry['result'] | undefined): string =>
+    [
+      ...(result?.messages ?? []).map((m) => m.content?.text ?? ''),
+      ...(result?.contents ?? []).map((c) => c.text ?? ''),
+    ].join('');
+
+  it('the greeting is normalised away, and nothing else is', () => {
+    /**
+     * The normalisation, held to its own terms. A rule that erased more than
+     * the greeting would hide exactly the drift this gate exists to catch, so
+     * both directions are asserted: two accounts agree, and a real edit still
+     * separates them.
+     */
+    const mine = 'You are connected to BattleGrid as Fibonacci — a platform.\nRule: copy, do not construct.';
+    const theirs = 'You are connected to BattleGrid as Archimedes — a platform.\nRule: copy, do not construct.';
+    const edited = 'You are connected to BattleGrid as Fibonacci — a platform.\nRule: construct freely.';
+    expect(digest(normalise(mine))).toBe(digest(normalise(theirs)));
+    expect(digest(normalise(mine))).not.toBe(digest(normalise(edited)));
+  });
+
+  it('the instructions have not moved', { timeout: 120_000 }, async () => {
+    const now = await rpc('initialize', {
+      protocolVersion: '2025-06-18',
+      capabilities: {},
+      clientInfo: { name: 'grid-commander-freshness', version: '1.0.0' },
+    });
+    const liveText = String(now['instructions'] ?? '');
+    expect(liveText, 'the live server sent no instructions').toBeTruthy();
+    expect(cap.instructions, `no instructions recorded — ${RECAPTURE}`).toBeTruthy();
+    expect(
+      digest(normalise(liveText)),
+      `the server instructions moved under the record — ${RECAPTURE}`,
+    ).toBe(digest(normalise(cap.instructions ?? '')));
+  });
+
+  for (const entry of cap.promptBodies ?? []) {
+    it(`prompt ${String(entry.name)} has not moved`, { timeout: 120_000 }, async () => {
+      if (entry.failure !== undefined) {
+        // A recorded refusal is a recorded fact. Re-asserting it live would
+        // fail this gate for a reason the record already states, so the
+        // comparison is skipped and the refusal stays visible in the record.
+        expect(entry.failure, 'a refused entry names its reason').toBeTruthy();
+        return;
+      }
+      const now = await rpc('prompts/get', { name: entry.name, arguments: {} });
+      const liveText = textOf(now as Entry['result']);
+      expect(
+        digest(liveText),
+        `the ${String(entry.name)} prompt body moved under the record — ${RECAPTURE}`,
+      ).toBe(digest(textOf(entry.result)));
+    });
+  }
+
+  for (const entry of cap.resourceContents ?? []) {
+    it(`resource ${String(entry.uri)} has not moved`, { timeout: 120_000 }, async () => {
+      if (entry.failure !== undefined) {
+        expect(entry.failure, 'a refused entry names its reason').toBeTruthy();
+        return;
+      }
+      const now = await rpc('resources/read', { uri: entry.uri });
+      const liveText = textOf(now as Entry['result']);
+      expect(
+        digest(liveText),
+        `the ${String(entry.uri)} resource content moved under the record — ${RECAPTURE}`,
+      ).toBe(digest(textOf(entry.result)));
     });
   }
 });

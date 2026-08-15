@@ -3,6 +3,25 @@ import json, re, textwrap, sys, time
 
 SP = sys.argv[1]
 init = json.load(open(f"{SP}/init.txt", encoding="utf-8"))["result"]
+
+
+def bodies(filename):
+    """Prose bodies from the capture, or a loud failure naming the fix.
+
+    A dump taken before `capture_mcp_dump.py` learned to fetch bodies has no
+    such file. Defaulting to empty here would emit a record that silently
+    describes the platform's prose as absent — the exact shape of #294, where
+    a surface nothing recorded read as a surface with nothing in it.
+    """
+    try:
+        return json.load(open(f"{SP}/{filename}", encoding="utf-8"))["entries"]
+    except FileNotFoundError:
+        raise SystemExit(
+            f"{SP}/{filename} is missing — this dump predates prose capture.\n"
+            f"Re-capture: BATTLEGRID_API_KEY=… python3 tools/capture_mcp_dump.py {SP}"
+        )
+
+
 cap = {
     "tools": json.load(open(f"{SP}/tools.json", encoding="utf-8"))["result"]["tools"],
     "prompts": json.load(open(f"{SP}/prompts.json", encoding="utf-8"))["result"]["prompts"],
@@ -12,8 +31,51 @@ cap = {
     "protocolVersion": init["protocolVersion"],
     "capabilities": init.get("capabilities", {}),
     "instructions": init.get("instructions", ""),
+    # The prose the lists could only name. Verbatim, and a refused fetch
+    # travels as `failure` on its own entry rather than as absence — see
+    # `harvest_bodies` in the capture tool (#294).
+    "promptBodies": bodies("promptbodies.json"),
+    "resourceContents": bodies("resourcebodies.json"),
 }
 tools = {t["name"]: t for t in cap["tools"]}
+
+
+def fenced(text):
+    """`text` in a code fence long enough to survive whatever it contains.
+
+    The bodies are markdown carrying their own fences and `##` headings. Left
+    bare they would fold into this document's heading structure and break its
+    contents list; fenced with three backticks they would end early at the
+    first fence of their own.
+    """
+    longest = 0
+    run = 0
+    for ch in text:
+        run = run + 1 if ch == "`" else 0
+        longest = max(longest, run)
+    fence = "`" * max(3, longest + 1)
+    return fence + "text\n" + text + "\n" + fence
+
+
+def prompt_text(entry):
+    """Every message of a fetched prompt, flattened to the text it carries."""
+    result = entry.get("result") or {}
+    out = []
+    for message in result.get("messages") or []:
+        content = message.get("content") or {}
+        text = content.get("text")
+        if text is not None:
+            out.append((message.get("role", "?"), text))
+    return out
+
+
+def resource_text(entry):
+    result = entry.get("result") or {}
+    return [
+        (c.get("mimeType", "?"), c.get("text", ""))
+        for c in (result.get("contents") or [])
+        if c.get("text") is not None
+    ]
 
 CATS = [
  ("Market Grid — playing the game", ["list_market_grid_sessions","get_market_grid_session","check_market_grid_submission","submit_market_grid","update_market_grid","random_submit_market_grid","get_market_grid_results","get_market_grid_player_grid","get_mcp_reasoning_journal","list_game_presets"]),
@@ -194,11 +256,23 @@ w("strategy (replacing their configuration wholesale), archive them, author and 
 w("plans, and edit signal rules that propagate immediately to every bound agent. It cannot move")
 w("money. Scope `mcp:read` accordingly — it is configuration authority, not view access.\n")
 w("## Contents\n")
+w("- [Server instructions](#server-instructions)")
 for title, _ in CATS:
     anchor = re.sub(r"[^a-z0-9 -]", "", title.lower()).replace(" ", "-")
     w("- [" + title + "](#" + anchor + ")")
 w("- [Prompts](#prompts)")
 w("- [Resources](#resources)")
+w("")
+
+# The prose contract, in the repository rather than only over a live
+# connection. It carries constraints no schema expresses — scope semantics,
+# copy-don't-construct rules, per-tool pagination, authoring deadlines — and
+# was loaded by this generator and written nowhere until #294.
+w("\n## Server instructions\n")
+w("What the server tells every connecting client, verbatim from the")
+w("`initialize` handshake. It addresses the connected account by name, so the")
+w("greeting differs per operator and nothing else here should.\n")
+w(fenced(cap["instructions"]) if cap["instructions"] else "_The server sent no instructions._\n")
 w("")
 
 for title, names in CATS:
@@ -229,13 +303,30 @@ for title, names in CATS:
         else:
             w("_No parameters._\n")
 
+by_prompt = {e.get("name"): e for e in cap["promptBodies"]}
+by_resource = {e.get("uri"): e for e in cap["resourceContents"]}
+
 w("\n## Prompts\n")
+w("Bodies as the server renders them with no argument values supplied — every")
+w("declared argument is optional, but the `arguments` key is not: omitting it")
+w("entirely is refused `-32602`.\n")
 for p in cap["prompts"]:
     args = p.get("arguments") or []
     a = ", ".join("`" + str(x.get("name")) + "`" + ("" if x.get("required") else "?") for x in args) or "—"
     w("### `" + str(p.get("name")) + "`\n")
     w((p.get("description") or "").strip() + "\n")
     w("Arguments: " + a + "  \n_(`?` marks optional)_\n")
+    entry = by_prompt.get(p.get("name"))
+    if entry is None:
+        w("_No body recorded._\n")
+    elif "failure" in entry:
+        w("**The server refused this body:** `"
+          + clean(json.dumps(entry["failure"]), 300) + "`\n")
+    else:
+        for role, text in prompt_text(entry):
+            w("*" + role + ":*\n")
+            w(fenced(text))
+            w("")
 
 w("\n## Resources\n")
 w("| Name | URI | Description |")
@@ -243,6 +334,20 @@ w("|---|---|---|")
 for r in cap["resources"]:
     w("| `" + str(r.get("name")) + "` | `" + str(r.get("uri")) + "` | " + clean(r.get("description")) + " |")
 w("")
+for r in cap["resources"]:
+    uri = str(r.get("uri"))
+    w("### `" + uri + "`\n")
+    entry = by_resource.get(uri)
+    if entry is None:
+        w("_No content recorded._\n")
+    elif "failure" in entry:
+        w("**The server refused this content:** `"
+          + clean(json.dumps(entry["failure"]), 300) + "`\n")
+    else:
+        for mime, text in resource_text(entry):
+            w("*" + mime + "*\n")
+            w(fenced(text))
+            w("")
 
 # encoding pinned: the reference contains arrows and em-dashes, and Windows
 # hands Python a cp1252 default that cannot encode them — so this script

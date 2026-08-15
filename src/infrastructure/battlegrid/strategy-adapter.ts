@@ -363,8 +363,6 @@ export class McpStrategyAdapter implements StrategiesPort {
     userId: string;
     accessToken: string;
     timeframe: string;
-    regimeAutoDerive: boolean;
-    regimeTimeframe?: string | null | undefined;
     sections: readonly StrategySection[];
     coinSelection: CoinSelection;
     conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
@@ -372,8 +370,6 @@ export class McpStrategyAdapter implements StrategiesPort {
     try {
       const payload = await this.call(params, TOOLS.preview, {
         timeframe: params.timeframe,
-        regimeAutoDerive: params.regimeAutoDerive,
-        ...(params.regimeTimeframe !== undefined ? { regimeTimeframe: params.regimeTimeframe } : {}),
         // Sent only when there is something to resolve. A strategy defining no
         // conditions sends the payload it has always sent — the argument is new
         // and the outer object is closed, so the empty case stays byte-identical

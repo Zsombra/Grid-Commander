@@ -157,6 +157,168 @@ describe('the vocabulary record carries values it can be compared by', () => {
 });
 
 /**
+ * The prose surfaces, offline: recorded at all, and rendered where a human reads.
+ *
+ * The tool schemas are half the contract. The other half is prose — scope
+ * semantics, copy-don't-construct rules, per-tool pagination, authoring
+ * deadlines — and until #294 the record carried the *lists* (five prompt
+ * names, three resource URIs) while the bodies existed nowhere in the
+ * repository, and the instructions were loaded by the generator and written
+ * out by nothing.
+ *
+ * A list is not a body, and this is where that stops being confusable. The
+ * live comparison is in `tests/live/surface-freshness.test.ts`; same offline /
+ * live split as everything else in this file.
+ */
+describe('the capabilities record carries the platform’s prose', () => {
+  const RECAPTURE = 'BATTLEGRID_API_KEY=… python3 tools/capture_mcp_dump.py build_log/dump';
+
+  interface Entry {
+    name?: string;
+    uri?: string;
+    result?: { messages?: unknown[]; contents?: unknown[] };
+    failure?: unknown;
+  }
+  interface Capabilities {
+    instructions?: string;
+    prompts?: { name?: string }[];
+    resources?: { uri?: string }[];
+    promptBodies?: Entry[];
+    resourceContents?: Entry[];
+  }
+
+  const cap = JSON.parse(
+    readFileSync('docs/battlegrid-mcp-capabilities.json', 'utf8'),
+  ) as Capabilities;
+  const reference = readFileSync('docs/BATTLEGRID_MCP_REFERENCE.md', 'utf8');
+
+  /** The text an entry holds, or null when it holds a named failure instead. */
+  function textOf(entry: Entry): string | null {
+    if (entry.failure !== undefined) return null;
+    const messages = (entry.result?.messages ?? []) as { content?: { text?: string } }[];
+    const contents = (entry.result?.contents ?? []) as { text?: string }[];
+    return [
+      ...messages.map((m) => m.content?.text ?? ''),
+      ...contents.map((c) => c.text ?? ''),
+    ].join('');
+  }
+
+  it('carries the server instructions', () => {
+    expect(cap.instructions, `no instructions recorded — re-capture: ${RECAPTURE}`).toBeTruthy();
+    expect((cap.instructions ?? '').length).toBeGreaterThan(1000);
+  });
+
+  it('carries a body or a named failure for every prompt it lists', () => {
+    const listed = (cap.prompts ?? []).map((p) => p.name);
+    expect(listed.length, `no prompts listed — re-capture: ${RECAPTURE}`).toBeGreaterThan(0);
+    const captured = new Map((cap.promptBodies ?? []).map((e) => [e.name, e]));
+    for (const name of listed) {
+      const entry = captured.get(name);
+      expect(entry, `${String(name)} was listed and never fetched — ${RECAPTURE}`).toBeDefined();
+      // Absent is the one state that may not be recorded: a body the server
+      // refused and a body nobody asked for are different facts, and only one
+      // of them is a finding.
+      const text = textOf(entry as Entry);
+      if (text === null) {
+        expect((entry as Entry).failure, `${String(name)} failed with no reason`).toBeTruthy();
+      } else {
+        expect(text.length, `${String(name)} recorded an empty body`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('carries a content or a named failure for every resource it lists', () => {
+    const listed = (cap.resources ?? []).map((r) => r.uri);
+    expect(listed.length, `no resources listed — re-capture: ${RECAPTURE}`).toBeGreaterThan(0);
+    const captured = new Map((cap.resourceContents ?? []).map((e) => [e.uri, e]));
+    for (const uri of listed) {
+      const entry = captured.get(uri);
+      expect(entry, `${String(uri)} was listed and never fetched — ${RECAPTURE}`).toBeDefined();
+      const text = textOf(entry as Entry);
+      if (text === null) {
+        expect((entry as Entry).failure, `${String(uri)} failed with no reason`).toBeTruthy();
+      } else {
+        expect(text.length, `${String(uri)} recorded empty content`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('the reference renders the instructions and every recorded body', () => {
+    /**
+     * The record and the reference are written by the same command, so this
+     * cannot drift by accident — but it could drift by edit, and the whole
+     * point of the reference is that the prose is readable without a live
+     * connection. Matched on a distinctive slice rather than the whole text:
+     * the reference fences the bodies, so it holds them verbatim but not
+     * byte-adjacent.
+     */
+    const slice = (text: string): string => text.trim().split('\n')[0]?.slice(0, 60) ?? '';
+    expect(reference).toContain('## Server instructions');
+    expect(reference).toContain(slice(cap.instructions ?? ''));
+    for (const entry of [...(cap.promptBodies ?? []), ...(cap.resourceContents ?? [])]) {
+      const label = entry.name ?? entry.uri ?? '?';
+      const text = textOf(entry);
+      if (text === null) continue;
+      expect(reference, `the reference dropped ${label}`).toContain(slice(text));
+    }
+  });
+
+  it('a capture that learned no prose at all does not read as a capture', () => {
+    /**
+     * The anti-vacuity pass, and it is not hypothetical: the first run of
+     * `harvest_bodies` recorded **five refusals out of five** — every prompt
+     * rejected `-32602` because `prompts/get` demands an `arguments` key even
+     * when every argument in it is optional.
+     *
+     * That record was honest and every assertion above passed on it, because a
+     * named failure is a recorded fact rather than a gap. But the reference it
+     * generated contained no prose, which is the state #294 exists to end, and
+     * the rendering check below would have iterated zero bodies and asserted
+     * nothing. Honest and useless are not the same, so the floor is stated: a
+     * capture must come back with *some* prose or say so here.
+     */
+    const withText = (entries: Entry[]): Entry[] =>
+      entries.filter((e) => e.failure === undefined && textOf(e).length > 0);
+    expect(
+      withText(cap.promptBodies ?? []).length,
+      `every prompt body is a refusal — the reference carries no prose. ${RECAPTURE}`,
+    ).toBeGreaterThan(0);
+    expect(
+      withText(cap.resourceContents ?? []).length,
+      `every resource content is a refusal — the reference carries no prose. ${RECAPTURE}`,
+    ).toBeGreaterThan(0);
+  });
+
+  it('a record missing a body is not a record that passes', () => {
+    /**
+     * The refusal, driven. Every assertion above runs against the real record,
+     * which is complete — so on their own they prove only the passing path,
+     * and a check whose failure nobody has seen fire is the condition #198 and
+     * #294 were both born in.
+     */
+    const incomplete: Capabilities = {
+      instructions: 'x'.repeat(1001),
+      prompts: [{ name: 'author-strategy' }, { name: 'strategy-guide' }],
+      promptBodies: [{ name: 'author-strategy', result: { messages: [] } }],
+    };
+    const captured = new Map((incomplete.promptBodies ?? []).map((e) => [e.name, e]));
+    const unfetched = (incomplete.prompts ?? [])
+      .map((p) => p.name)
+      .filter((name) => !captured.has(name));
+    expect(unfetched, 'a listed prompt with no entry must be visible').toEqual(['strategy-guide']);
+  });
+
+  it('a named failure is a recorded fact, not a gap', () => {
+    // The other half of the same rule: an entry carrying a refusal is
+    // complete. Recording it as absence would make a platform that stopped
+    // answering look like a capture nobody ran.
+    const refused: Entry = { name: 'author-strategy', failure: { code: -32602 } };
+    expect(textOf(refused)).toBeNull();
+    expect(refused.failure).toBeTruthy();
+  });
+});
+
+/**
  * Every committed record of the BattleGrid surface names one server.
  *
  * Three artifacts in `docs/` describe the same MCP server, written by three

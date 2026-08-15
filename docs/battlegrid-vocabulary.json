@@ -2,9 +2,9 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "18.2.0"
+    "version": "19.1.0"
   },
-  "probed_at": "2026-08-12T16:28:38Z",
+  "probed_at": "2026-08-15T12:33:07Z",
   "note": "The vocabulary payloads verbatim \u2014 values, not shapes. This is the stated carve-out from the shape-only rule: the vocabulary is platform-owned and account-independent, so nothing in it is anyone's private data. `categories_declared` is the schema's own enum for the `category` argument at probe time; `vocabulary` is keyed by what `list_strategy_categories` actually answered, so a divergence between the two is visible here rather than hidden. Compared against the live platform by tests/live/surface-freshness.test.ts; regenerate with BATTLEGRID_API_KEY=\u2026 python3 tools/probe_vocabulary.py",
   "categories_declared": [
     "price",
@@ -287,45 +287,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -343,6 +326,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -1085,35 +1074,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -1829,45 +1818,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -1885,6 +1857,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -2627,35 +2605,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -3251,45 +3229,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -3307,6 +3268,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -4049,35 +4016,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -4601,45 +4568,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -4657,6 +4607,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -5399,35 +5355,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -6109,45 +6065,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -6165,6 +6104,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -6907,35 +6852,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -7480,45 +7425,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -7536,6 +7464,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -8278,35 +8212,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -8862,45 +8796,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -8918,6 +8835,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -9660,35 +9583,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -10162,45 +10085,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -10218,6 +10124,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -10960,35 +10872,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -11577,45 +11489,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -11633,6 +11528,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -12375,35 +12276,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
@@ -12938,45 +12839,28 @@
         {
           "rel": "anchor",
           "resolvedByAnchor": {
-            "1m": "1m",
             "5m": "5m",
             "15m": "15m",
             "1h": "1h",
-            "4h": "4h",
-            "1d": "1d"
+            "4h": "4h"
           }
         },
         {
           "rel": "lower",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": "1m",
             "15m": "5m",
             "1h": "15m",
-            "4h": "1h",
-            "1d": "4h"
-          }
-        },
-        {
-          "rel": "higher",
-          "resolvedByAnchor": {
-            "1m": "5m",
-            "5m": "15m",
-            "15m": "1h",
-            "1h": "4h",
-            "4h": "1d",
-            "1d": "1w"
+            "4h": "1h"
           }
         },
         {
           "rel": "regime",
           "resolvedByAnchor": {
-            "1m": null,
             "5m": null,
             "15m": null,
             "1h": null,
-            "4h": null,
-            "1d": null
+            "4h": null
           }
         }
       ],
@@ -12994,6 +12878,12 @@
         "deadlineMs": 15000
       },
       "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "rankedTimeframes": [
         "1m",
         "5m",
         "15m",
@@ -13736,35 +13626,35 @@
               "metric": "ADX",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "ADX",
               "transformId": "classifyState",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "RSI14",
               "transformId": "classifyZone",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             },
             {
               "metric": "MA_ALIGN",
               "transformId": "value",
               "timeframe": {
-                "rel": "higher"
+                "rel": "regime"
               }
             }
           ]
