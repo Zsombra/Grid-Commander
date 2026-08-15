@@ -1,5 +1,76 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-16 (four legs — the advisory, the survey, the pause, the gate)
+
+**State**: green — **2575 vitest / 205 files**, 274 Python harness, typecheck,
+lint and `npm run build` clean, `validate --all` at **0 errors / 13 warnings**
+(the same 13 design-ticket warnings, unchanged all day). **13 capabilities, 201
+archived changes, 27 backlog items open** (226 done), **0 active changes**, 28
+surfaces, 27 design tickets. **No p2 and no p1.** BattleGrid is **v19.1.0**.
+`test:db` skipped throughout: no schema changed.
+
+**Two declared outputs were being read by nothing, and one of them was making
+the product lie.** `update_intelligence_agent` returns a `feasibilityAdvisory`
+beside the agent — the only place on the platform that answers *"given today's
+volatility, which of my armed coins can this strategy build a stop for, and
+which dial is stopping the rest"* — and the adapter dropped it on the line that
+returned the agent (#291). It now renders as opportunity language on
+`/agents/[id]`, carried across the post-write redirect on a signed, agent-keyed,
+two-minute cookie, because every write here redirects and the edit surface holds
+no client state.
+
+**Then the same question asked at scale found a live defect.** #301's survey
+leaf-diffed v19.1.0's outputs against v18.2.0: 27 schemas carry readable
+changes, 57 leaves added, 18 removed. All 18 removals are the known
+`regimeAutoDerive` deletion and **none has a reader**. Of the 57 additions,
+`list_radar_deployments.summary.{platformPaused,radarPaused}` was unread while
+`/agents/[id]` rendered *"On duty: scanning …"* — on an account three sessions
+had recorded as radar-paused with `lastFireAt` frozen since 2026-08-13. Filed
+p2 and built the same day (#311): **standing is a claim about configuration, not
+activity**, so the pause is stated beside it and no row claims to be scanning
+under one.
+
+**The item's own headline numbers measured the wrong thing.** `+66/+60/+39` are
+raw JSON nodes — `type`, `required`, `description` included. Readable property
+paths give roughly a third of that: `preview_strategy_report` is **+66 nodes and
++19 readable fields**. Both metrics are now printed by
+`tools/diff_output_schemas.py`, which exists because #198's recorded lesson was
+that nothing compared the two records — and nothing still did, which is why v19
+repeated it while every input-facing check stayed green. **Run it after every
+re-probe.**
+
+**A leaf-diff names fields, not their types.** #311 was filed calling
+`platformPaused` a flag; it is a *count* of deployed coins, and `radarPaused` is
+the only boolean. `resolvesNow` carries no per-deployment pause at all, so the
+item's "which pause wins the sentence" was the wrong question — the pause is
+fleet-level and qualifies the rows from above. Both were caught by reading the
+declared shape before designing against the item's prose, and the corrections
+are on the issue.
+
+**Two environment traps cost real time, and both looked like the change under
+test.** `npm run lint` from the repository root returned **63,337 errors across
+1,208 files**, every one under `.claude/worktrees/` — nested worktrees are
+second full checkouts and were not ignored. Fixed (`170f31c`); the gate is now
+exit 0 in 20.6s. The other is **not** fixed and is not fixable in the repo: the
+primary checkout has **324 tracked files sitting CRLF** from
+`core.autocrlf=true` despite `.gitattributes` declaring `eol=lf`, which broke
+`npm test` with a `SyntaxError` on a file `git status` called unmodified.
+**If a gate fails in the root checkout and passes in a worktree, suspect the
+checkout.** Repair is `git add --renormalize .` there — and any hand-rolled
+sweep **must exclude binaries**: one that trusted `git check-attr eol` stripped
+CR-LF pairs out of 20 PNGs and corrupted them.
+
+**Bookkeeping defect, recorded rather than buried.** `fix/lint-ignores-nested-worktrees`
+was branched off the paused-radar branch instead of `main`, so **PR #315 merged
+34 files and both changes** under a description covering only the eslint
+one-liner. Nothing merged unreviewed — both changes were separately proposed,
+archived and fully gated first — but #315's body understates it, so it carries a
+correcting comment, #314 is closed as empty, and #311 was closed by hand because
+#315's body had no closing keyword for it.
+
+**Superseded header from 2026-08-15 (keyed — the v19.1.0 re-probe and the
+platform's prose) follows.**
+
 **Date**: 2026-08-15 (keyed — the v19.1.0 re-probe and the platform's prose)
 
 **State**: green — **2498 vitest / 200 files**, typecheck and lint clean,
@@ -215,18 +286,22 @@ The idea brief is at `_IDEA/Grid-Commander_Idea_Brief.md`. The MVP feature spec 
 
 ## Current State of `main`
 
-All development branches have been merged. `main` is the single source of truth.
+This session's branches are merged and pruned. **Two PRs are open and neither is
+this session's** — parallel sessions run on this repo, which is why a `Next`
+written into `JOURNAL.md` can be stale before its PR lands. Read
+`git show origin/main:openspec/JOURNAL.md`, never the local copy, before
+trusting one.
 
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **193** |
-| Vitest tests | **2443 / 193 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
+| Changes (archived) | **201** |
+| Vitest tests | **2575 / 205 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
 | Harness tests (Python) | 274 |
 | Active changes | none |
-| Open backlog items | **18** (one p2, gated until ~2026-08-20 02:46 local; the rest watches, upstream, or operator-gated) |
-| Design | 25 surfaces (15 designed, 7 needs-redesign, 3 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
-| Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #277 merged |
+| Open backlog items | **27**, **all p3 — no p1, no p2.** Mirrored 1:1 with 27 open issues |
+| Design | 28 surfaces (15 designed, 7 needs-redesign, 6 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
+| Open PRs | **#313** and **#307**, both another session's; everything of this session's is merged through `170f31c` |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
 | BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
 
