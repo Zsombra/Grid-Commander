@@ -1,6 +1,68 @@
 # Journal
 
-## 2026-08-15 (dress) — the row's densest lines get their ruling
+## 2026-08-15 (forward) — the record answers, because the operator said now
+
+**Did**: the day's sixth leg, and the one the whole tripwire machinery
+existed for. The operator worked their decision list live: **#205 closed by
+experiment** — the Wallet-tab Agent Wagers toggle flipped off and on with
+`get_account_state` read at each step; `mcpWagerEnabled` followed both
+directions within seconds while `tradingWalletProvisioned` never moved, so
+the identity is proven and the two permissions separated in one
+measurement (plus three Settings-screen facts banked: live daily-limit
+counters are UI-only, the 10/$500 caps are editable per-account defaults,
+Agent Wagers covers balance consolidation via a TEE signer policy). **#147's
+Move 1 ran** — all nine unread strategies read; account-wide measurement:
+zero required conditions in 35 authored ones, but **two required:true
+signal rules were live all along** (Salamis `trend_adx_ranging`, Trafalgar
+`trend_adx_trending`, both `minRequiredCount: 0`) and historical
+evaluations under them are readable now; strategy-side verdict vocabulary
+observed (null/NEITHER/UP/DOWN). Then **the operator relaxed #94's depth
+threshold to now** and the p2 fired: `the-record-answers-forward`
+(standard, archived). Forward returns derived at read time — per triggered
+signal, per bias, per conflict flag, beside the baseline — pairing reuses
+`deriveSeriesCoverage`'s single gap definition, every figure carries its
+n, no table sorts by return. New `/recorder/analysis` (+ manifest, pinned
+`3bcfa6b`). `failure-is-explained` caught the hand-rolled unreadable arm
+and it joined the store-backed exemptions with its stated reason — the
+guard working. **Verified read-only against the live record**: 20 series,
+**1,104 pairs**, 36 gap-excluded; 1,160 captures reconcile exactly
+(1,104+36+20); independent SQL baseline agrees (1,080 pairs at a flat 2h
+bound, +0.0040% vs +0.0047%, difference explained by the per-series
+bound). First reading: `hasConflictingSignals` is on for 1,087 of 1,104
+pairs — its 17-pair complement is the row the sample-size rule keeps at
+the bottom. #94 closed both sides; residues filed as **#282**
+(claims-attachment) and **#283** (MCP exposure).
+
+**State**: 0 active changes, **17 open items, no p2 for the first time**
+— the lane is now entirely p3 watches, upstream blocks, and
+operator-gated questions. Gates at archive: typecheck, lint, **2461
+vitest / 196 files**, build, drizzle no-op; `test:db` skipped
+deliberately. `validate --all` 0 errors / 13 deliberate warnings / 4 info
+(the new info is `recorder-analysis` as an orphan surface — correct for
+coverage-first). Branch `claude/the-record-answers-forward`; PR is this
+handoff's last act.
+
+**Next**: the record deepens on its own — the analysis page gains value
+every hour without another line of code. The sharpest follow-ups are the
+operator-gated pair still on their decision list: #147's write
+(recommended target now named in the item: flip Salamis's own
+RANGING_TAPE to required — the strategy becoming more itself) and the
+read-only precursor a session can take cold: how the platform reports the
+two live required signal rules in historical evaluations. #282 waits on
+depth and the operator's choice of first claim; #283 is a lite change any
+session can take.
+
+**Watch out**: the analysis's unreadable arm is deliberately NOT
+`WhyNotLoaded` — this surface reads only the product's own store, the
+shared sentence would name a false cause, and the exemption in
+`failure-is-explained.test.ts` states that; wiring it back in would be a
+correctness regression wearing a consistency costume. The query passes
+`history` an explicit per-series limit (count + 8) because the store
+defaults to its newest 50 rows — at hourly cadence the default silently
+truncates after two days, which would have poisoned every figure while
+looking exactly like working code. And a digest typo fabricates permanent
+staleness: one mistyped hex character in the new manifest was caught only
+by re-reading the tool's output — record digests by paste, never by hand.
 
 **Did**: merged #276 (main `9fdb501`). The day's fifth leg: **#274**'s
 design round, run whole — design-director, executor, re-pin. **DT-0011

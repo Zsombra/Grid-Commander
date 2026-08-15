@@ -1,0 +1,101 @@
+{
+  "id": "recorder-analysis",
+  "title": "Forward returns — the record's first analytical answer",
+  "route": "/recorder/analysis",
+  "capability": "signal-recording",
+  "status": "functional",
+  "generated_at_commit": "3bcfa6b",
+  "source_files": [
+    "app/(app)/recorder/analysis/page.tsx",
+    "src/presentation/components/forward-returns.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "ReadForwardReturnsResult ('analysis' | 'not-deep-enough' | 'never-recorded' | 'unreadable')",
+      "source": "app.readForwardReturns.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "forward-returns-panel",
+      "role": "display",
+      "purpose": "Say what price did by the next capture when each state held — with the depth the figures stand on stated before any of them.",
+      "states": [
+        "analysis",
+        "analysis-with-gap-exclusions",
+        "analysis-with-unpriceable-exclusions",
+        "not-deep-enough",
+        "never-recorded",
+        "unreadable"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Four arms. `analysis`: a role=status notice-tinted depth line (pair count, series count, window, exclusions with the cadence-step sentence, and the small-samples honesty line), then a Baseline section in prose (n, mean, median, share positive, 'read against this, not against zero'), then three plain tables (By triggered signal / By dominant bias / By conflicting signals) each in an overflow-x-auto wrapper with columns key, Pairs, Mean, Median, Positive — rows arrive in the query's order (sample size descending, key ascending) and are rendered as given. `not-deep-enough`: one paragraph stating capture count, series count and window, naming itself a fact about depth rather than a failure. `never-recorded`: the how-recording-starts sentence, shared with the coverage surface. `unreadable`: role=alert danger-tinted block with the reason and the does-not-mean-empty survival sentence in the record's own terms. Signed percents render with a real minus sign at three decimals; shares as whole percents; timestamps as UTC minutes.",
+      "constraints": [
+        "The depth line renders BEFORE any figure — the reader learns what the numbers stand on before reading them (spec: Forward Returns Are Derived From The Record, With Their Sample Sizes)",
+        "Every figure carries the pair count it is computed from; a design may restyle the tables but may not detach a figure from its n",
+        "Row order is the query's — sample size descending — and a design MUST NOT reorder by the return column: sorting by the interesting column is how a two-sample fluke tops the table (spec-pinned)",
+        "The four arms stay distinct: not-deep-enough is a fact about depth, never-recorded is about the recorder, unreadable is about the read — each sends the operator somewhere different and none may borrow another's words",
+        "The unreadable arm deliberately does NOT use the shared WhyNotLoaded sentence: this surface reads the product's own store and never BattleGrid, so the shared cause vocabulary would be false here (exempted with the stated reason in failure-is-explained.test.ts). A design must not wire it back in",
+        "Percent signs use the real minus (U+2212); a hyphen-minus regression is a legibility change, not a neutral one"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request with no authority.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment.",
+      "constraints": [
+        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Read the analysis against its depth",
+      "steps": [
+        "open /recorder/analysis (linked from /recorder)",
+        "read the depth line first — pairs, window, exclusions",
+        "read the baseline",
+        "read the tables against the baseline, best-attested rows first"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "page heading",
+      "back-to-record link"
+    ],
+    "notes": "The depth line carries role=status; the unreadable arm carries role=alert. Tables are native <table> elements with header cells; wide tables scroll inside their own container rather than the page."
+  },
+  "source_digest": {
+    "app/(app)/recorder/analysis/page.tsx": "sha256:d6e0f9be915914c31c1586cb400e7f26eaa5ba6ef309aaac6ceb6fecc6e96b0c",
+    "src/presentation/components/forward-returns.tsx": "sha256:216b11f7c18f0935e8e1140f709d6f5652e7a0f6c47a451683c7c44428ad45ca",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -2,7 +2,7 @@
 id: recorded-signals-are-not-yet-evidence
 title: Grade strategy claims against the accumulating signal record
 type: feature
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-07
 updated: 2026-08-15

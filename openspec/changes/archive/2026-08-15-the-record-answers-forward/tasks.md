@@ -39,7 +39,7 @@
       operator's record (tsx one-off, DATABASE_URL from the user registry),
       and verify the baseline pair count and one signal's n against
       independent SQL aggregates. Record the figures in the journal.
-- [ ] 4.3 Survey `/recorder/analysis` into a surface manifest (last task,
+- [x] 4.3 Survey `/recorder/analysis` into a surface manifest (last task,
       pinned at the implementation commit).
-- [ ] 4.4 At archive: #94 → done both sides; file the two residues
+- [x] 4.4 At archive: #94 → done both sides; file the two residues
       (claims-attachment; MCP exposure of the analysis).
