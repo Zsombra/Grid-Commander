@@ -1,5 +1,48 @@
 # Journal
 
+## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
+
+**Did**: closed the session's own loose end. `lint-ignores-nested-worktrees`
+(lite, archived): `.claude/worktrees/**` added to `eslint.config.mjs`'s ignores.
+Git worktrees live *inside* this repository, so an open one is a second full
+checkout — its own `src/`, `node_modules`, `.next` — under the directory
+`eslint .` is pointed at. **Before: 63,337 errors across 1,208 files, timing out
+a two-minute run. After: exit 0 in 20.6 seconds.** The reasoning was already in
+that file, three lines up, about `next-env.d.ts`: a gate whose answer changes
+with the state of an unrelated directory is not a gate.
+
+**Fed the violation it must still catch**, per `boundaries.test.ts`'s own rule
+about its matchers: an unused `const` planted in `src/domain/agent/feasibility.ts`
+still fails lint by name, and lint returns green when it is removed. The ignore
+is exact, not a blanket.
+
+Also corrected the shared `p3-lane-queue` memory, which a parallel session had
+left asserting a p2 that #314 resolves.
+
+**State**: 0 active changes, 27 open items, **no p2**. Gates: tsc, eslint (now
+green from the repo root), **205 files / 2575 vitest**, `validate --all` 0 errors
+/ 13 standing warnings. Branch `fix/lint-ignores-nested-worktrees`.
+
+**Next**: **#301's residue** — `list_gate_blocks.summary[]`,
+`budget.blockedReason`/`blockedSince`, `debriefVerdict` on five signal-log reads.
+The gate-block one first: `blocks.ts:118-163` derives that aggregate from a
+*window* whose partiality it admits at length, and the platform's is
+whole-population, so adopting it may retire the caveat rather than save
+arithmetic. **Read `git show origin/main:openspec/JOURNAL.md` before trusting
+this line** — parallel sessions are live (PRs #313, #314, #307 all open).
+
+**Watch out**: the other half of that environment trap is **not fixed and is not
+fixable in the repo**: 324 tracked files sit CRLF in the primary checkout from
+`core.autocrlf=true`, despite `.gitattributes` declaring `eol=lf`. It broke
+`npm test` with a `SyntaxError` on `tests/tools/mutate-guard.test.ts` while
+`git status` reported the file unmodified — because git normalises on read, so
+the working copy can be wrong and clean at the same time. Worktrees check out LF
+and are unaffected, which is the tell: **if a gate fails in the root checkout
+and passes in a worktree, suspect the checkout before the change.** Repairing it
+is `git add --renormalize .` in that checkout, not a commit here — and any sweep
+that does it by hand **must exclude binaries**, because one that trusted
+`git check-attr eol` stripped CR-LF pairs out of 20 PNGs and corrupted them.
+
 ## 2026-08-16 (pause) — the radar says whether anything is running
 
 **Did**: #311, the p2 the schema survey turned up. `a-paused-radar-says-so`
