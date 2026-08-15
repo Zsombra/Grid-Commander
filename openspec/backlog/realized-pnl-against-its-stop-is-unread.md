@@ -2,11 +2,11 @@
 id: realized-pnl-against-its-stop-is-unread
 title: get_agent_performance carries curve, realized P&L, drawdown, the stop and the halt — /limits renders the stop, the distance and the halt; the curve and the realized figure render nowhere
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
-change: ""
+updated: 2026-08-15
+change: "how-it-got-here-is-readable"
 capability: agent-understanding
 github: "202"
 blocked_by: []

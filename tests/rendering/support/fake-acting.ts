@@ -20,6 +20,7 @@ import { FakeProposalStore } from '../../support/proposal-fakes.js';
 import { InMemorySignalRecordStore } from '../../support/recording-fakes.js';
 import { ListStrategiesQuery } from '@/application/use-cases/list-strategies.query.js';
 import { ReadBudgetQuery } from '@/application/use-cases/read-budget.query.js';
+import { ReadLossShapeQuery } from '@/application/use-cases/read-loss-shape.query.js';
 import { ReadRiskReadingQuery } from '@/application/use-cases/read-risk-reading.query.js';
 import { ReadWagerAuthorityQuery } from '@/application/use-cases/read-wager-authority.query.js';
 import { DescribeTrimRecordQuery, TrimRecordCommand } from '@/application/use-cases/trim-record.command.js';
@@ -149,6 +150,7 @@ export function actingWith({
     ),
     readDeployments: new ReadDeploymentsQuery(radar, clock),
     readBudget: new ReadBudgetQuery(agents),
+    readLossShape: new ReadLossShapeQuery(agents),
     readRiskReading: new ReadRiskReadingQuery(agents, accountState),
     readWagerAuthority: new ReadWagerAuthorityQuery(accountState),
     // The edit and create forms both refuse to render without it — a form

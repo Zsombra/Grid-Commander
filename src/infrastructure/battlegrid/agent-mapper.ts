@@ -11,6 +11,7 @@ import type {
   DirectionQualification,
   EntryDecision,
   GateBlock,
+  PerformanceReading,
   SignalEvaluation,
   SignalVerdict,
   TradeOutcome,
@@ -453,6 +454,33 @@ const GAUGE_CEILINGS: Readonly<Record<string, string>> = {
 function ceilingFor(gauge: string, budget: Record<string, unknown>): number | null {
   const key = GAUGE_CEILINGS[gauge];
   return key === undefined ? null : (num(budget[key]) ?? null);
+}
+
+/**
+ * The performance read, from the payload `get_agent_performance` returns.
+ *
+ * Not `mapPerformance` below, which maps the roster row's own performance
+ * block into the domain record — this maps the tool's baseline reading, the
+ * measure #189 settled as answering a different question.
+ *
+ * The response has arrived both under a `performance` envelope (the recorded
+ * fixture, `tests/support/performance-payloads.ts`) and bare (the 2026-08-12
+ * v18 read), so both are accepted — the same tolerance `mapBudget` has for
+ * its envelope. The curve keeps only finite numbers: a junk entry must not
+ * stretch the shape, and the caption counts settlements from what is kept.
+ */
+export function mapPerformanceReading(raw: unknown): PerformanceReading {
+  const p = ((raw ?? {}) as Record<string, unknown>);
+  const inner = (typeof p['performance'] === 'object' && p['performance'] !== null
+    ? p['performance']
+    : p) as Record<string, unknown>;
+  const rawCurve = inner['pnlCurveUsd'];
+  return {
+    realizedPnlUsd: num(inner['realizedPnlUsd']) ?? null,
+    curve: Array.isArray(rawCurve)
+      ? rawCurve.filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+      : [],
+  };
 }
 
 /**

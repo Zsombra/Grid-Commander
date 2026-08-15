@@ -2,6 +2,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentPageHeading } from '@/presentation/components/agent-page-heading.js';
 import { Ceilings } from '@/presentation/components/ceilings.js';
+import { LossShapePanel } from '@/presentation/components/loss-shape.js';
 import { RiskReadingPanel } from '@/presentation/components/risk-reading.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
 
@@ -32,13 +33,17 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const [budget, roster, reading] = await Promise.all([
+  const [budget, roster, reading, lossShape] = await Promise.all([
     app.readBudget.execute({ ...user.authority, agentId: id }),
     app.listAgents.execute(user.authority),
     // What each setting is *against*. A fourth read rather than a wider one:
     // the gauges answer "how close is it to being stopped", this answers "was
     // the ceiling a sensible place to put one", and they fail independently.
     app.readRiskReading.execute({ ...user.authority, agentId: id }),
+    // How the distance on the drawdown gauge arrived. Its own read because
+    // the figure and the curve come from one payload at one instant, and it
+    // fails independently of the gauges it sits under.
+    app.readLossShape.execute({ ...user.authority, agentId: id }),
   ]);
   const agent =
     roster.roster.kind === 'agents' ? roster.roster.agents.find((a) => a.id === id) : undefined;
@@ -64,6 +69,14 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
           halted={budget.halted}
         />
       )}
+
+      {/**
+       * How the distance above arrived. Directly below the gauges because it
+       * answers the question they raise; before the risk reading because
+       * "was the ceiling sensible" is only worth asking once both are known.
+       */}
+      <LossShapePanel shape={lossShape} />
+
 
       {/**
        * Each setting against the thing that makes it safe or unsafe.

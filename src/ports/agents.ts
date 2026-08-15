@@ -130,6 +130,18 @@ export interface AgentsPort {
     agentId: string;
   }): Promise<BudgetResult>;
 
+  /**
+   * How the loss behind the stop arrived — realized P&L against the budget
+   * baseline and its per-settlement curve. Not the trading record: that is
+   * `readTradeOutcomes`, which measures lifetime and stays the record's
+   * source (see the note on it below).
+   */
+  readPerformance(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PerformanceResult>;
+
   readJournal(params: {
     userId: string;
     accessToken: string;
@@ -688,6 +700,28 @@ export type RosterResult =
 
 export type BudgetResult =
   | { readonly kind: 'budget'; readonly budget: Budget }
+  | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
+
+/**
+ * The platform's account of how the loss behind the stop arrived: cumulative
+ * realized P&L measured since the agent's budget baseline, and one curve
+ * point per settlement, oldest first.
+ *
+ * A different span from the trading record — `readTradeOutcomes` measures
+ * lifetime from the trades themselves — and the two are never combined; the
+ * surface that renders this names its span. An empty curve is a legitimate
+ * state: the platform's own description says it means no settlements yet,
+ * not missing data.
+ */
+export interface PerformanceReading {
+  /** Signed dollars since the budget baseline, or null when unreported. */
+  readonly realizedPnlUsd: number | null;
+  /** One point per settlement, oldest first. Empty means nothing settled. */
+  readonly curve: readonly number[];
+}
+
+export type PerformanceResult =
+  | { readonly kind: 'performance'; readonly reading: PerformanceReading }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };
 
 /**

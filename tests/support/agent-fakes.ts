@@ -21,6 +21,7 @@ import type {
   StageResult,
   ThoughtLogResult,
   QualificationResult,
+  PerformanceResult,
   TradeOutcome,
   TradeOutcomesResult,
   TradeChartResult,
@@ -230,6 +231,19 @@ export class FakeAgentsPort implements AgentsPort {
 
   async readBudget(): Promise<BudgetResult> {
     return this.budgetResult;
+  }
+
+  /**
+   * Seeded per test. Defaults to the live Vanguard shape — a zero total and
+   * an empty curve, which the platform defines as "no settlements yet".
+   */
+  performanceResult: PerformanceResult = {
+    kind: 'performance',
+    reading: { realizedPnlUsd: 0, curve: [] },
+  };
+
+  async readPerformance(): Promise<PerformanceResult> {
+    return this.performanceResult;
   }
 
   /** Seeded per test. `empty` by default — an agent that has not reasoned yet. */
