@@ -1,5 +1,61 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-15 (repo hygiene — branch reconciliation)
+
+**State**: **13 capabilities, 195 archived changes, 20 backlog items open, 0
+active changes, 26 surfaces, 27 design tickets**, `validate --all` at **0
+errors / 13 warnings** (the same 13 as the previous header — all design-ticket
+warnings). **No product code changed this session and no tests, typecheck,
+lint or build were run**, so the build status above the diff is inherited from
+the previous header rather than re-verified. BattleGrid v18.2.0.
+
+**The repo went from 52 local + 60 remote branches to 2 and 2.** `main` is
+untouched at `8821b5a`. 65 branch names (109 refs) were deleted, and none on a
+guess: every ref cleared one of three independent proofs first — ancestry,
+`git merge-tree --write-tree` yielding a tree byte-identical to `main`, or "PR
+merged and tip contained in the merged head" (53 passed on the third, 12 on the
+first, 3 on the second). **68 annotated `archive/*` tags** were created and
+pushed to origin *before* any deletion, and a recovery drill restored
+`claude/verify-issues-edbc3f` from its tag, reproducing PR #199's exact head and
+all 30 commits. Any pruned branch returns with:
+
+```
+git branch <name> archive/<name>
+```
+
+**Two measurement lessons that will recur.** `git branch --merged` is worthless
+here — everything squash-merges, so a landed branch is never an ancestor and the
+command reported only **9 of 52**. "Ahead by N" is equally misleading:
+`claude/app-breakdown-status-osed7j` read **37 ahead** while merging it changed
+nothing, because all 37 were merge commits pulling `main` *in*. Topology
+measures neither content nor value; the merge-tree test does.
+
+**One branch was kept, and it is the session's real finding.** Draft PR #82
+(`claude/agent-creation-data-strategies-fw6av8`) was the **only** branch in the
+repo carrying content not in `main`: 3 **archived** changes — the archiver ran,
+so their requirements were declared merged into the source of truth on that
+branch only — **7 requirements absent from `openspec/specs/`** across
+`platform-mapping` and `battlegrid-connection`, and 7 branch-only backlog items.
+Filed as `a-completed-change-set-is-stranded-on-a-draft-pr` (**p2**, issue
+**#289**), now the only p2 in the lane and what `board` computes as next. **Do
+not blind-merge that branch**: `main` is 87 commits ahead and the
+prose/vocabulary half appears partially re-landed under other requirement names,
+while the request-budget half is absent from `src/` and `tests/` outright. The
+absence finding rests on exact title match and says so.
+
+**Also note**: PR #2's head SHA is already garbage-collected on GitHub, so its
+PR page can no longer show that history —
+`archive/claude/harness-openspec-merge-smkspq` is now the only handle on it.
+Two orphaned directories (`secondary-treatment-variant-19160e`,
+`verify-issues-edbc3f`) remain under `.claude/worktrees/`, locked by a live
+process; git no longer tracks them and they can be deleted once it exits.
+
+**This header skips three legs** — #284, #286 and #288 landed after the previous
+header was written and are not summarized here; their detail is in
+`openspec/JOURNAL.md`. Next session: **issue #289**.
+
+**Superseded header from 2026-08-15 (five legs) follows.**
+
 **Date**: 2026-08-15 (five legs in one session)
 
 **State**: green — **2443 vitest / 193 files + 274 harness**, typecheck, lint
