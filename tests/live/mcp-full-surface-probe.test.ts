@@ -97,7 +97,7 @@ live('every MCP tool answers', () => {
       const names = tools.map((t) => t.name).sort();
       // eslint-disable-next-line no-console
       console.log(`  registry: ${tools.length} tools`);
-      expect(tools.length, 'the registry must not shrink unnoticed').toBe(26);
+      expect(tools.length, 'the registry must not shrink unnoticed').toBe(27);
 
       // --- discovery: ids the rest of the sweep needs ------------------------
       const roster = await call('list_agents', {});
@@ -166,6 +166,7 @@ live('every MCP tool answers', () => {
       // --- recorder, field, arena, audit ------------------------------------
       await call('read_signal_history', { coinTicker: 'BTC', interval: '1h' });
       await call('read_record_coverage', {});
+      await call('read_forward_returns', {});
       const field = await call('read_field', {});
       const competitorId = /\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/.exec(
         field ?? '',
