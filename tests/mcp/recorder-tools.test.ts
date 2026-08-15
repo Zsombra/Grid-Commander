@@ -144,7 +144,7 @@ describe('recording has not started', () => {
 });
 
 describe('an unreadable store crosses as data naming itself', () => {
-  it('is not a tool failure, and not empty, on both tools', async () => {
+  it('is not a tool failure, and not empty, on any of the three tools', async () => {
     const store = new InMemorySignalRecordStore();
     store.broken = 'connection refused';
     const client = await connected(store);
@@ -157,5 +157,173 @@ describe('an unreadable store crosses as data naming itself', () => {
     const history = await call(client, 'read_signal_history', { coinTicker: 'BTC' });
     expect(history.isError).toBe(false);
     expect(history.parsed['kind']).toBe('unreadable');
+
+    const forward = await call(client, 'read_forward_returns');
+    expect(forward.isError).toBe(false);
+    expect(forward.parsed['kind']).toBe('unreadable');
+    expect(forward.parsed['reason']).toBe('connection refused');
+  });
+});
+
+/**
+ * The analysis, crossed to a model — and the half of it that has no
+ * enforcement on this side.
+ *
+ * On the web, `ForwardReturnsPanel` renders the query's order and cannot
+ * re-sort, so "never by the return" is guaranteed by code. Over MCP the model
+ * IS the renderer: it can sort by whatever column it likes and will, unless
+ * the contract tells it not to. So the description is tested as carefully as
+ * the figures, and the ordering is asserted on a fixture built to punish a
+ * sort by return.
+ */
+describe('the forward analysis crosses with its disciplines', () => {
+  type Group = { key: string; n: number; meanPct: number };
+  type Analysis = {
+    baseline: Group;
+    perSignal: Group[];
+    perBias: Group[];
+    perConflict: Group[];
+  };
+
+  /**
+   * Four pairs over five evenly-spaced captures, with the biases laid out so
+   * the group holding the FEWEST pairs has by far the highest mean — the exact
+   * arrangement that "sort by the interesting column" inverts.
+   */
+  async function unevenStore(): Promise<InMemorySignalRecordStore> {
+    const store = new InMemorySignalRecordStore();
+    const runId = await store.recordRun({
+      userId: 'owner',
+      startedAt: day(1),
+      platformVersion: 'v19.1.0',
+      provenance: { kind: 'named', interval: '4h', coins: ['ETH'] },
+    });
+    const preview = mapSignalPreview(aPreviewPayload());
+    const plan = [
+      { n: 1, price: 100, bias: 'BULLISH' },
+      { n: 2, price: 101, bias: 'BULLISH' },
+      { n: 3, price: 102, bias: 'BULLISH' },
+      { n: 4, price: 103, bias: 'BEARISH' },
+      { n: 5, price: 113, bias: 'NEUTRAL' },
+    ];
+    for (const p of plan) {
+      await store.appendCapture({
+        runId,
+        userId: 'owner',
+        coinTicker: 'ETH',
+        interval: '4h',
+        capturedAt: day(p.n),
+        currentPrice: p.price,
+        priceChangePercent: 0,
+        dominantBias: p.bias,
+        aggregateScorePercent: 50,
+        hasConflictingSignals: false,
+        readings: preview.readings,
+        raw: preview.raw,
+      });
+    }
+    return store;
+  }
+
+  it('carries every figure with the pair count it stands on', async () => {
+    const client = await connected(await unevenStore());
+    const { parsed, isError } = await call(client, 'read_forward_returns');
+
+    expect(isError).toBe(false);
+    expect(parsed['kind']).toBe('analysis');
+    expect(parsed['pairCount']).toBe(4);
+    expect(parsed['seriesCount']).toBe(1);
+
+    const a = parsed['aggregate'] as Analysis;
+    expect(a.baseline.n).toBe(4);
+    // Only the signal that fired earns pairs — the attribution rule, as a
+    // figure a model can check rather than a sentence it must trust.
+    expect(a.perSignal.map((s) => s.key)).toEqual(['macd_bear_cross']);
+    expect(a.perSignal[0]?.n).toBe(4);
+    for (const row of [...a.perBias, ...a.perConflict]) {
+      expect(row.n, row.key).toBeGreaterThan(0);
+    }
+  });
+
+  it('orders by sample size even when the smallest sample has the best return', async () => {
+    const client = await connected(await unevenStore());
+    const { parsed } = await call(client, 'read_forward_returns');
+    const a = parsed['aggregate'] as Analysis;
+
+    // Three pairs held BULLISH at the earlier capture; one held BEARISH and
+    // was followed by a ~10% move.
+    expect(a.perBias.map((s) => [s.key, s.n])).toEqual([
+      ['BULLISH', 3],
+      ['BEARISH', 1],
+    ]);
+    // The assertion that matters: the leading row is the WORSE figure. If
+    // anything ever ranks this by return, this flips.
+    expect(a.perBias[0]?.meanPct).toBeLessThan(a.perBias[1]?.meanPct ?? 0);
+  });
+
+  it('excludes the pair that spans the gap, and says how many it dropped', async () => {
+    // `seededStore` records days 1–5 and then day 8: five spacings, one of
+    // which coverage already calls a gap. The pair across it is not a forward
+    // return, and a model must be told it was dropped rather than left to
+    // wonder why six captures made four pairs.
+    const client = await connected(await seededStore());
+    const { parsed } = await call(client, 'read_forward_returns');
+
+    expect(parsed['kind']).toBe('analysis');
+    expect(parsed['pairCount']).toBe(4);
+    expect(parsed['excludedOverGaps']).toBe(1);
+    expect((parsed['aggregate'] as Analysis).baseline.n).toBe(4);
+  });
+
+  it('says too-shallow as a fact about depth, apart from never-recorded', async () => {
+    const shallow = new InMemorySignalRecordStore();
+    const runId = await shallow.recordRun({
+      userId: 'owner',
+      startedAt: day(1),
+      platformVersion: 'v19.1.0',
+      provenance: { kind: 'named', interval: '4h', coins: ['BTC'] },
+    });
+    const preview = mapSignalPreview(aPreviewPayload());
+    await shallow.appendCapture({
+      runId,
+      userId: 'owner',
+      coinTicker: 'BTC',
+      interval: '4h',
+      capturedAt: day(1),
+      currentPrice: 100,
+      priceChangePercent: 0,
+      dominantBias: 'NEUTRAL',
+      aggregateScorePercent: 50,
+      hasConflictingSignals: false,
+      readings: preview.readings,
+      raw: preview.raw,
+    });
+
+    const thin = await call(await connected(shallow), 'read_forward_returns');
+    expect(thin.isError).toBe(false);
+    expect(thin.parsed['kind']).toBe('not-deep-enough');
+    expect(thin.parsed['captureCount']).toBe(1);
+
+    const virgin = await call(await connected(new InMemorySignalRecordStore()), 'read_forward_returns');
+    expect(virgin.parsed['kind']).toBe('never-recorded');
+    expect(String(virgin.parsed['howToStart'])).toContain('grid-commander-record');
+
+    // A record that holds something but cannot pair it, and a record that was
+    // never written, send an operator somewhere different.
+    expect(thin.parsed['kind']).not.toBe(virgin.parsed['kind']);
+  });
+
+  it('states both disciplines in the contract a model actually receives', async () => {
+    const { tools } = await (await connected(new InMemorySignalRecordStore())).listTools();
+    const tool = tools.find((t) => t.name === 'read_forward_returns');
+
+    // Gap-pairing: excluded and counted, with the reason a model can repeat.
+    expect(tool?.description).toContain('recording gap is excluded');
+    expect(tool?.description).toContain('excludedOverGaps');
+    // Ordering: stated as an instruction, because the model is the renderer.
+    expect(tool?.description).toContain('never by the return');
+    expect(tool?.description).toContain('do not re-rank');
+    // And that this is the product's own store, not a BattleGrid read.
+    expect(tool?.description).toContain('not a live BattleGrid read');
   });
 });

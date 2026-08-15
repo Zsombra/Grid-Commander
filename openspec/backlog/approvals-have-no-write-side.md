@@ -2,8 +2,9 @@
 id: approvals-have-no-write-side
 title: The human-in-the-loop can be read but not answered — accept/cancel are unbuilt
 type: feature
-status: open
+status: in-progress
 priority: p3
+change: the-approval-can-be-answered
 created: 2026-08-03
 updated: 2026-08-15
 capability: agent-understanding
@@ -159,3 +160,567 @@ come with an unpause. Approvals read again deliberately untaken.
 Vanguard candidate that clears its gates lands in the queue instead of
 auto-executing — that is the row this item needs observed before anything
 is modelled. Steps 2–4 above unchanged.
+
+## Step 2 in motion, 2026-08-15 — Radar unpaused; Undertow flipped too (TEMPORARY)
+
+The platform unpaused (~10:52Z first fires; `radarPaused: false`, 0/20 paused).
+A 5-minute `list_pending_approvals` watch is running. Vanguard read
+`AGGREGATE_BELOW_MIN` on all five coins at the 11:00Z sweep and its historical
+fire rate is ~4 fires/6 days, so the operator named a second row source:
+
+```
+update_intelligence_agent(Undertow d0f6829f…, expectedRevision: 7)
+  tradingConfig sent complete and verbatim except:
+    tradingMode           FULL_EXECUTION → APPROVAL_REQUIRED
+    signalTimeoutMinutes  5 → 15
+  read-back: revision 8, both values landed, every other field identical;
+  strategyTimeframe / regimeTimeframe (not in the write schema) preserved.
+```
+
+**Standing obligation: this flip is temporary.** Undertow is the account's
+active trader (fired at both 10:52Z and 11:00Z sweeps, 3 open positions —
+their protections are platform-managed and unaffected). While flipped it does
+not auto-trade; its fires become approvals that expire unanswered. **Flip it
+back to `FULL_EXECUTION` (restoring `signalTimeoutMinutes: 5`) immediately
+after the first row is captured** — or immediately, if the capture attempt is
+abandoned. If you are reading this after a session died: check
+`get_intelligence_agent(d0f6829f…)` and restore revision-8 values yourself.
+
+## Why the queue stayed empty after the flip — measured, 2026-08-15 ~11:57Z
+
+A seven-agent read-only sweep (4 angles → synthesis → 2 adversarial lenses)
+answered a question that had been guessed at twice in this repo, both times
+wrongly. **Nothing was written; every finding below is from a live read.**
+
+**`maxConcurrentExposureUsd` is metered on MARGIN, not notional.** Both
+adversarial lenses tried to refute this and both conceded. `get_agent_budget`
+publishes it outright:
+
+```
+maxConcurrentExposureUsd: 45     capitalAtRiskUsd: 12.2   headroomUsd: 32.8
+gauges.exposure: { fill: 12.2, remaining: 32.8, configured: true, breached: false }
+```
+
+against `list_user_active_positions` totals `marginedUsd: 12.176704` /
+`currentNotionalUsd: 36.54` at the same moment. The gauge matches margin and
+misses notional by 24.36. A third candidate reading — "capital at risk" as
+stop-loss risk — computes to $0.27 across the three positions and is excluded.
+
+**But exposure is not a gate that trips; it is the SIZING BASE.** This is why
+zero of 5,521 lifetime gate blocks names exposure. It enforces itself by
+starving order size geometrically. The platform's own formula, reconstructed
+EXACTLY (three for three, to the cent, once integer quantity flooring is
+applied):
+
+```
+size_notional = headroom x sizePct x effectiveLeverage
+AIXBT  (1st): 45.000000 x 0.10 x 3 = 13.500 -> /0.017684 = 763.40 -> floor 763 -> 13.492892 ✓
+MELANIA(2nd): 40.502369 x 0.30       = 12.151 -> /0.07057   = 172.18 -> floor 172 -> 12.138040 ✓
+MOODENG(3rd): 36.456356 x 0.30       = 10.937 -> /0.03609   = 302.99 -> floor 302 -> 10.899180 ✓
+```
+A NOTIONAL basis predicts MELANIA at 9.386 (−29%); a wallet-balance basis
+predicts AIXBT at 11.557. Both refuted on observed integers.
+
+**Consequence — the row cannot arrive at current headroom.** A SMALL entry
+now sizes to `32.823296 x 0.10 x 3 = $9.847`, under the **$10 exchange
+minimum** that has already killed 77 of this agent's evaluations
+(`EXCHANGE_MIN_NOTIONAL_UNREACHABLE`, TOKEN stage, pre-model). The headroom
+floor is `10/(0.10x3) = $33.333`. **Undertow is $0.51 short.** The burst
+stopped at exactly three positions because the third was the last that fit.
+All 8 of 8 ENTER decisions in visible history are `positionSizePreset: SMALL`,
+so the MEDIUM (11.82) and LARGE (14.77) escape hatches are empirically unlikely.
+
+**It self-clears on the first close.** Any one position closing frees ≥3.633
+margin → headroom ≥36.456 → next size ≥10.94, above the floor.
+
+**CORRECTION, 12:19Z — `timeHorizon: "1h"` is NOT a time-based exit.** This was
+assumed on first writing and is wrong. All three positions read `status: OPEN`
+at `ageMs` 4,388,061–4,643,641 — **73 to 77 minutes**, well past their nominal
+"1h" horizon. `timeHorizon` is a strategy label, not a clock. With
+`timeDecayEnabled: false` on this agent there is no time-based tightening
+either, so the only exits are stop-loss, take-profit, or the trailing stop.
+
+And all three are close to flat — combined `unrealizedPnlUsd` +$0.055,
+`roePct` 0.45%, each sitting mid-range between its stop and its target:
+
+```
+MOODENG SHORT  mark 0.03606  entry 0.03609  TP 0.035298 (-2.1%)  SL 0.03633528
+MELANIA SHORT  mark 0.07056  entry 0.07057  TP 0.06872735 (-2.6%) SL 0.07103755
+AIXBT   LONG   mark 0.017742 entry 0.017684 TP 0.01810948 (+2.1%) SL 0.01755
+```
+`breakEvenStatus: ACTIVE` but `armed: false` on all three (closest is AIXBT at
+`distanceToArmPct` 0.559%). **So "wait for a close" is open-ended — hours or
+days, not minutes.** Raising `maxConcurrentExposureUsd` is the only
+deterministic unblock: the cap must reach ≥45.51 for a SMALL entry to clear the
+$10 floor (headroom = cap − 12.176704, and headroom × 0.10 × 3 ≥ 10).
+
+### The unblock write, 12:24Z — operator-authorized by name (TEMPORARY)
+
+```
+update_intelligence_agent(Undertow d0f6829f…, expectedRevision: 8)
+  tradingConfig sent complete and verbatim except:
+    maxConcurrentExposureUsd   45 → 50
+  read-back: revision 9, value landed, every other field identical;
+  strategyTimeframe / regimeTimeframe (not in the write schema) preserved.
+```
+
+**The starvation model was confirmed by this write.** `get_agent_budget`
+immediately after: `maxConcurrentExposureUsd: 50`, `capitalAtRiskUsd: 12.2`,
+`headroomUsd: 37.8`, `gauges.exposure {fill 12.2, remaining 37.8}`. Headroom
+moved exactly +5.0 with the cap while capital-at-risk held at 12.2 — an
+independent re-confirmation that the ledger is margin (under a notional reading
+headroom would have gone 13.47, not 37.8). Next SMALL entry now sizes to
+`37.8 × 0.10 × 3 = $11.34`, clearing the $10 exchange floor with $1.34 of slack.
+
+**Second standing obligation: restore `maxConcurrentExposureUsd` to 45** at the
+same time the `tradingMode` flip is reverted. Undertow's max capital at risk is
+$5 higher than the operator set it until then.
+
+### What the gate-block feed showed at 12:25Z — three corrections
+
+`list_gate_blocks` is the sharpest detector on this surface and was underused.
+Five fresh rows in five minutes corrected three separate beliefs:
+
+1. **The pipeline sweeps roughly every 60 seconds, not hourly.** Rows at
+   12:20:58, 12:21:57, 12:22:57, 12:23:57, 12:24:56. Every "wait for the hourly
+   candle" statement earlier in this item's history was wrong; evaluations run
+   continuously and the hourly candle only governs the *strategy* timeframe.
+2. **`OPEN_POSITION_CONFLICT` is live, not stale.** The adversarial verifier
+   read it as "three days stale, zero today" at ~11:57Z — true then, false
+   twenty minutes later. Total moved 5,282 → 5,287, `latestAt` now
+   2026-08-15T12:24:56Z. A staleness finding has a half-life; this one's was
+   under half an hour.
+3. **THE STARVATION PREDICTION WAS NEVER TESTED — and the cap raise may have
+   been unnecessary.** `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` still reads
+   `latestAt: 2026-08-12T06:00:20Z`, count unchanged at 77. No row has carried
+   `minEquityUsd: 33.333333`. Nothing reached the sizing stage, so the $10-floor
+   theory is neither confirmed nor refuted by the pipeline itself. (It *is*
+   independently corroborated by the cap write: headroom tracked the cap +5.0
+   while `capitalAtRiskUsd` held at 12.2.)
+
+**The actual live blocker is narrower than either theory.** Every one of the
+five new rows is **AIXBT** — the one coin Undertow both holds and has a live
+edge on, so it self-blocks at the TOKEN stage every minute. The four coins it
+does *not* hold (WIF, TRUMP, FARTCOIN, HYPE) produce **no rows at all**, and a
+gate block is only written when a candidate reaches a gate. So they are not
+being blocked — they are not producing candidates. `qualified: true` on the
+radar means the coin cleared its deployment gates, not that the agent reached a
+directional verdict.
+
+**So the pending condition is: an edge on a coin Undertow does not already
+hold.** Watch `list_gate_blocks` alongside the approvals queue — at ~60s
+granularity it will show the moment a free coin reaches a gate, and if the
+starvation theory is right the row that appears will be
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` carrying the `minEquityUsd` figure that
+settles it.
+
+## THE ROW HAPPENED — 13:18:03Z on HYPE — and the watch missed it
+
+**The precondition is met.** Undertow reached an ENTER verdict on HYPE, a coin
+it does not hold, at **2026-08-15T13:18:03.199Z**. Because it is in
+`APPROVAL_REQUIRED`, that decision went to the approval queue instead of
+executing. It sat for its full 15-minute window and **expired unanswered** at
+13:33:10.729Z. Recovered from `list_entry_decisions(status: EXPIRED)` — the
+shape is observed, from a decision that actually travelled the approval path.
+
+**Why it was missed, and the lesson.** The `/loop` cron (`ed90a0ff`, 5-minute)
+was armed and correct — but cron jobs only fire **while the REPL is idle**, and
+a 6-agent Workflow was occupying the session across exactly that window. The
+watch prompts queued and all ~30 discharged in a burst *after* the workflow
+returned, by which time the row had expired. **Never run a long Workflow while
+a cron watch is the thing you are relying on.** The workflow also returned
+nothing — all four agents died on a subagent session limit — so it cost the
+observation and bought nothing.
+
+**How the approval-expiry row is distinguished from an ordinary expiry.** Both
+carry `status: EXPIRED`. The discriminator is `executedOrderId`:
+
+```
+HYPE 2026-08-15 (expired AWAITING APPROVAL)   executedOrderId: null
+WIF  2026-08-12 (resting entry order unfilled) executedOrderId: "515054038166"
+```
+The HYPE decision never reached the exchange at all; the WIF one did and the
+order simply did not fill. `llmDurationMs: 45972` on HYPE confirms the model ran.
+
+### The observed row, verbatim (approval-path decision, HYPE)
+
+```json
+{"id":"c82fcde2-9b87-4e8f-8112-b2606c3c6869",
+ "signalLogId":"fa3fd10f-2b7c-4ff5-bc44-7930a0a2a284",
+ "agentId":"d0f6829f-96f8-468d-8797-4a04e8dc8e37",
+ "userId":"0eccbf37-d90b-4933-88f2-d120627b23f7",
+ "coinTicker":"HYPE","decision":"ENTER","direction":"SHORT",
+ "conviction":0.55,"convictionPercent":55,
+ "entryPrice":56.377,"stopLoss":56.72250463,"takeProfit":55.302,
+ "positionSizePct":10,"positionSizePreset":"SMALL",
+ "reasoning":"Dominant bearish bias at 79% with no conflicting signals. …",
+ "signalChecklist":[{"signalId":"cvd_bearish","label":"CVD Bearish",
+    "verdict":"CONFIRM","interpretation":"…"}, … 4 entries …],
+ "signalModulesUsed":["CVD","SUPPORT_RESISTANCE","BOLLINGER",
+    "FLOW_DIVERGENCE","OPEN_INTEREST"],
+ "timeHorizon":"1h","riskRewardRatio":3.111,
+ "status":"EXPIRED",
+ "executedOrderId":null,"stopLossOrderId":null,"takeProfitOrderId":null,
+ "llmDurationMs":45972,"usageEventId":"f77255cb-…",
+ "createdAt":"2026-08-15T13:18:03.199Z",
+ "expiresAt":"2026-08-15T13:33:03.199Z",
+ "executedAt":"2026-08-15T13:18:03.199Z",
+ "entryFillPrice":null,"entryFillQuantity":null,"entryFee":null,
+ "closedAt":"2026-08-15T13:33:10.729Z",
+ "atrPct":0.6128,"tradeStatus":"EXPIRED","challenge":null}
+```
+
+### What this settles for the change
+
+- **The price levels ARE on the row**: `entryPrice`, `stopLoss`, `takeProfit`.
+  The agreed confirmation binding is buildable.
+- **THERE IS NO REVISION FIELD.** No `revision`, `version`, `updatedAt`, or
+  ETag anywhere on the decision. The operator's requirement — bind decision id,
+  **revision**, and price levels — **cannot be met as stated**. The available
+  substitutes are (a) the three price levels themselves as the change-detector,
+  and (b) `expiresAt`, which is fixed at creation. This needs an explicit
+  decision in the proposal; it is a contract gap, not an oversight.
+- **Size is a percent, never a number**: `positionSizePct: 10`,
+  `positionSizePreset: "SMALL"`, with `entryFillPrice`/`entryFillQuantity`/
+  `entryFee` all null. Confirms sizing happens at accept time; the confirmation
+  cannot show a dollar amount.
+- **`status` is derived, and the actionable value is `PENDING`** — per
+  `list_entry_decisions`' own filter description, *"PENDING (proposed or
+  submitting — the actionable set for accept/cancel)"*. So `list_entry_decisions
+  (status: PENDING)` is a **second, pollable path to a live approval row**,
+  independent of `list_pending_approvals`.
+- **`executedAt` is set at creation, not at fill** (13:18:03.199Z, identical to
+  `createdAt`, on a decision that never executed). Do not render it as "when the
+  trade opened" — that would be a false statement on an unexecuted decision.
+- **Still unobserved**: the enrichment `list_pending_approvals` adds over this
+  row ("enriched with execution and outcome context"), and the literal
+  `AWAITING_APPROVAL` status string in a live payload.
+
+## THE LIVE ROW — captured 2026-08-15T17:0x Z, inside its window
+
+**`list_pending_approvals` returned a populated row for the first time in this
+product's history.** HYPE again, created 17:01:39.869Z, expiring 17:16:39.869Z.
+Captured verbatim below. **Both remaining unknowns are resolved, and both
+resolve AGAINST the declaration** — the exact failure mode this item exists to
+prevent.
+
+### Finding 1: there is no enrichment. The two tools return the identical row.
+
+`list_pending_approvals` declares it returns decisions *"enriched with execution
+and outcome context"*. Read in the same second,
+`list_entry_decisions(status: PENDING)` returned a **byte-identical object** —
+same 35 keys, same values, no wrapper, no extra field. The only difference is
+the envelope: `{approvals: [...]}` versus `{entries: [...], total: 1}`.
+
+Consequence for the change: `design.md`'s "unknown enrichment envelope" is not
+unknown and not an envelope. Task 1.3's instruction to carry unknown enrichment
+through unread has nothing to carry. **The two tools are interchangeable for
+reading the queue**, and `list_entry_decisions` is strictly better because it
+paginates and filters.
+
+### Finding 2: the status string is `PENDING`, not `AWAITING_APPROVAL`.
+
+The tool description says it returns decisions *"awaiting your approval (status
+AWAITING_APPROVAL)"*. The live payload says `"status":"PENDING"` and
+`"tradeStatus":"PENDING"`. **`AWAITING_APPROVAL` does not appear anywhere in the
+response.** Anything matching on that string would have matched nothing. This is
+the eighth dead path, caught before it was written.
+
+### The payload, verbatim
+
+```json
+{"id":"6c11b3dc-28ea-4648-ab83-b4d5f14522e1",
+ "signalLogId":"89fb3b22-3f17-4ff8-90d8-6f19f53812bc",
+ "agentId":"d0f6829f-96f8-468d-8797-4a04e8dc8e37",
+ "userId":"0eccbf37-d90b-4933-88f2-d120627b23f7",
+ "coinTicker":"HYPE","decision":"ENTER","direction":"SHORT",
+ "conviction":0.55,"convictionPercent":55,
+ "entryPrice":57.176,"stopLoss":57.73495777,"takeProfit":55.5,
+ "positionSizePct":10,"positionSizePreset":"SMALL",
+ "reasoning":"HYPE is pinned at its swing high ($57.18, -0.01% away) with
+   perp-led fragile flow … Setup [6] gives a 1.5X ATR stop at $57.7350 with TP
+   at swing low $55.50 for R:R 3.0 …",
+ "signalChecklist":[
+   {"signalId":"sr_at_resistance","label":"At Resistance","verdict":"CONFIRM","interpretation":"…"},
+   {"signalId":"flow_perp_spot_bear_divergence","label":"Perp-Led Bear Divergence","verdict":"CONFIRM","interpretation":"…"},
+   {"signalId":"cvd_bullish","label":"CVD Bullish","verdict":"WARN","interpretation":"…"},
+   {"signalId":"oi_surge","label":"OI Surge","verdict":"CONFIRM","interpretation":"…"}],
+ "signalModulesUsed":["SUPPORT_RESISTANCE","FLOW_DIVERGENCE","CVD","OPEN_INTEREST"],
+ "timeHorizon":"1h","riskRewardRatio":2.998,
+ "status":"PENDING",
+ "executedOrderId":null,"stopLossOrderId":null,"takeProfitOrderId":null,
+ "llmDurationMs":58422,"usageEventId":"f92b23cc-e802-4bd4-8d84-7849950fd14d",
+ "createdAt":"2026-08-15T17:01:39.869Z",
+ "expiresAt":"2026-08-15T17:16:39.869Z",
+ "executedAt":"2026-08-15T17:01:39.869Z",
+ "entryFillPrice":null,"entryFillQuantity":null,"entryFee":null,
+ "closedAt":null,
+ "atrPct":0.6517,"tradeStatus":"PENDING","challenge":null}
+```
+Envelope: `{"approvals":[ … ]}` — no `total`, no cursor, unpaginated as declared.
+
+### What else the live row confirms
+
+- **`closedAt: null`** is the live/settled discriminator. The expired HYPE row
+  carried `closedAt: "2026-08-15T13:33:10.729Z"`; this one is null while
+  actionable. Combined with `status`, that is a reliable liveness test.
+- **`executedAt` is set at creation on a decision that has not executed** —
+  17:01:39.869Z, identical to `createdAt`, with every fill field null. The
+  earlier warning stands and is now confirmed on a *live* row: never render it
+  as "when the trade opened".
+- **Still no revision field.** 35 keys, no `revision`, `version`, `updatedAt`,
+  or ETag. The binding gap in `the-approval-can-be-answered` is confirmed
+  against a live payload, not just an expired one.
+- The size is `positionSizePct: 10` with all fill fields null — accept-time
+  sizing confirmed live. At the current headroom of 41.45 this would size to
+  about $12.44, above the $10 floor.
+
+## THE FIRST mcp:wager WRITE — cancel performed 17:05:44Z, operator-authorized by name
+
+The operator authorized the cancel by name while the row was live. **This is the
+first time Grid-Commander's session has exercised `mcp:wager` in this product's
+history**, and it was deliberately the write that commits no money.
+
+```
+cancel_entry_decision(decisionId: "6c11b3dc-28ea-4648-ab83-b4d5f14522e1")
+→ {"decisionId":"6c11b3dc-28ea-4648-ab83-b4d5f14522e1","cancelled":true}
+```
+
+**The response is two keys.** No decision echo, no status, no timestamp, no
+error envelope. A UI cannot render the outcome from the response — it must
+re-read. Do not model a richer return.
+
+Read-back confirms it, and settles the last of the lifecycle vocabulary:
+
+```
+list_pending_approvals            → {"approvals":[]}          (gone from the queue)
+list_entry_decisions(CANCELLED)   → total 1, the same decision with:
+  status:      "PENDING" → "CANCELLED"
+  tradeStatus: "PENDING" → "CANCELLED"
+  closedAt:    null      → "2026-08-15T17:05:44.219Z"
+  everything else byte-identical — entryPrice, stopLoss, takeProfit,
+  positionSizePct, reasoning, signalChecklist all preserved unchanged
+```
+
+**Cancelled at 17:05:44Z against an `expiresAt` of 17:16:39Z** — eleven minutes
+early, so this is a genuine cancel and not an expiry racing us. The decision was
+declined; nothing was bought or sold; `capitalAtRiskUsd` is unchanged.
+
+### What this settles for the change
+
+- **`closedAt` is set by the cancel**, and `status`/`tradeStatus` move together.
+  The pair (`status`, `closedAt`) is the complete liveness/outcome test.
+- **The observed status vocabulary is now**: `PENDING` (live, actionable),
+  `CANCELLED`, `EXPIRED`, plus `SKIPPED`/`EXECUTED`/`FAILED` from the filter
+  enum. **`AWAITING_APPROVAL` is not among them** despite the tool description.
+- **The decision is preserved, not consumed.** Every field survives the cancel,
+  so a cancelled decision remains fully readable — the queue surface can show
+  what was declined and why, which the spec's audit requirement needs.
+- **Task 4.4 is effectively pre-satisfied**: a real cancel has been performed
+  against the live platform and read back. The implementation now has an
+  expected response to assert against rather than one to discover.
+
+## Both obligations discharged — Undertow restored 17:08:11Z
+
+The operator called the stand-down. **Every setting this session changed on
+Undertow is back to what they set**, in one write:
+
+```
+update_intelligence_agent(Undertow d0f6829f…, expectedRevision: 9)
+    tradingMode               APPROVAL_REQUIRED → FULL_EXECUTION
+    signalTimeoutMinutes      15 → 5
+    maxConcurrentExposureUsd  50 → 45
+  read-back: revision 10, all three landed, every other field identical;
+  strategyTimeframe / regimeTimeframe (not in the write schema) preserved.
+```
+
+**Nothing is outstanding on this agent.** It is trading autonomously again, with
+one position open (43 lifetime trades, `avgPnl` −0.0141, up from −0.0203 when
+the session began). The cap raise turned out to be unnecessary in the end:
+MOODENG closed on its own at −0.08, taking headroom to 41.45, which clears the
+$10 sizing floor at the original cap of 45.
+
+**Vanguard is deliberately left in `APPROVAL_REQUIRED`** and is now the standing
+source of approval rows. It costs nothing, because Vanguard has never traded.
+Do not "fix" it.
+
+## Vanguard rebound to Cannae, 2026-08-15 18:04Z — operator-authorized by name
+
+Undertow is finished with; Vanguard becomes the test agent. Two writes:
+
+```
+rebind_intelligence_agent(Vanguard c8f20b9e…, expectedRevision: 11, confirm: true)
+    strategy  Trafalgar (3a354541…) → Cannae (f901a336…, revision 3)
+  read-back: revision 12. Context modules replaced with Undertow's exact set —
+  fundingRates, openInterest, supportResistance, structureZones, cvd,
+  perpSpotFlow on; volume, volatility, movingAverages, trendStrength,
+  mtfConfluence off.
+
+update_intelligence_agent(Vanguard c8f20b9e…, expectedRevision: 12)
+    minTradeConviction  0.6 → 0.55   (to match Undertow)
+  read-back: revision 13, every other field identical.
+```
+
+**The rebind preserved the trading config, exactly as the tool declares.**
+`tradingMode: APPROVAL_REQUIRED` and `signalTimeoutMinutes: 15` both survived —
+which is why this was the cheap move: no second flip, and Undertow stays in
+`FULL_EXECUTION` untouched.
+
+**Confirmed propagation**: all five Vanguard deployments (BTC, ETH, SOL, XRP,
+AVAX) now read `resolvedConviction: {value: 0.55, provenance: "AGENT"}`, down
+from 0.6. The agent-level bar reaches the deployment resolution.
+
+### What it did NOT fix, measured in the same minute
+
+All five Vanguard coins still read `qualified: false`,
+`qualificationBlock: "AGGREGATE_BELOW_MIN"`. The strategy swap did not flip them.
+
+**Do not read that as the rebind having failed.** The aggregate is a live,
+per-sweep computation: in the same read, Undertow's WIF and HYPE were *also*
+`AGGREGATE_BELOW_MIN` while its TRUMP, MOODENG, AIXBT, FARTCOIN and MELANIA
+qualified. One snapshot proves nothing either way; the honest test is several
+sweeps.
+
+**The residual hypothesis stands**: Vanguard's coins are majors (BTC/ETH/SOL/
+XRP/AVAX) and Undertow's are memecoins. Undertow may fire more because its
+instruments move more, not only because of Cannae. If Vanguard stays
+`AGGREGATE_BELOW_MIN` across several hourly sweeps while Undertow keeps firing,
+the coin set is the cause and the next lever is deploying Vanguard onto
+higher-ATR coins — which touches Radar policies and needs its own decision.
+
+## THE ACCEPT PATH, OBSERVED — Vanguard AVAX, 2026-08-15 18:19:00Z
+
+The operator accepted a decision in BattleGrid's own UI. **This is the last
+unobserved arm of the lifecycle**, and it falsifies two things this item
+previously recorded as safe assumptions.
+
+Decision `ec5d1d33-0164-48c1-b02f-8f086058ed46` — Vanguard, AVAX, ENTER LONG,
+conviction 0.55, `positionSizePct: 12` / `positionSizePreset: "MEDIUM"`.
+
+```
+created   2026-08-15T18:05:54.293Z
+executed  2026-08-15T18:19:00.258Z
+expires   2026-08-15T18:34:00.258Z      ← see below
+status              "EXECUTED"
+tradeStatus         "LIVE"
+closedAt            null
+entryFillPrice      6.4944
+entryFillQuantity   3.32
+entryFee            0.008624
+executedOrderId     "517280812849"
+stopLossOrderId     "517280812851"
+takeProfitOrderId   "517280812850"
+```
+
+### Finding 1: `expiresAt` IS REWRITTEN on accept. Decisions mutate.
+
+`createdAt` 18:05:54 with a 15-minute window should expire at **18:20:54**. The
+row reads **18:34:00.258** — which is `executedAt` + exactly 15 minutes.
+
+So `expiresAt` means two different things either side of acceptance: the
+approval window before, and how long the entry order rests after. **A field on a
+decision was rewritten by a lifecycle transition.**
+
+**This retires the N=1 caveat in DL-1.** That caveat said one observed
+transition was "not proof a PENDING decision can never be re-priced". It is now
+positively established that decision fields *do* change — so keeping the three
+price levels in the binding was the right call, and dropping them for liveness
+alone would have been wrong. Do not treat any decision field as immutable.
+
+### Finding 2: `status` and `tradeStatus` DIVERGE.
+
+On the cancel they moved together, both `CANCELLED`, and it was tempting to
+treat them as one fact. Here `status: "EXECUTED"` while `tradeStatus: "LIVE"` —
+one describes the decision, the other the trade it produced. **Never derive one
+from the other.**
+
+### Finding 3: `closedAt` stays null on an EXECUTED decision.
+
+An accepted decision is not answerable, yet `closedAt` is null. So `closedAt`
+alone is **not** a liveness test — `status === "PENDING"` is doing real work in
+the pair, and a `closedAt`-only check would treat a live position's decision as
+still answerable.
+
+This validates the implementation as written:
+`isAnswerable = status === 'PENDING' && closedAt === null`
+(`src/domain/agent/pending-decision.ts`), and the test
+*"filters out an EXECUTED decision even when nothing closed it"* was covering
+exactly this case before the platform confirmed it.
+
+### Finding 4: the sizing model reproduces exactly, on a second agent
+
+Vanguard's cap is 45 with nothing else open, so headroom is 45:
+
+```
+45 × 0.12 (MEDIUM) × 4 (leverage) = 21.600
+21.600 / 6.4944 = 3.3259 → floor 3.32 → 3.32 × 6.4944 = 21.561408 ✓ observed
+```
+
+`entryNotionalUsd` is **21.561408**, to the cent. That is the third independent
+confirmation of `headroom × pct × leverage` with integer-quantity flooring —
+now across two agents, two presets (SMALL and MEDIUM) and two leverages (3 and
+4). The formula is solid; **it still must not be used to display an amount**
+(PE-2), because it remains our arithmetic rather than the platform's statement.
+
+### The position this opened
+
+AVAX LONG, 3.32 units at 6.4944 — **$21.56 notional on $5.39 margin at 4×**,
+stop 6.40037561, target 6.8771, R:R 4.07. Live and unremarkable at −$0.002.
+Vanguard's first trade in its existence.
+
+### Catching the next one
+
+Undertow produced this at 13:18Z having produced nothing at 12:00Z, so the rate
+is roughly one unheld-coin ENTER per hour or two. `total: 12` EXPIRED decisions
+exist across its history. The next window is ~15 minutes wide. **Poll
+`list_pending_approvals` AND `list_entry_decisions(status: PENDING)`, keep the
+session idle so the cron can actually fire, and do not start any long-running
+job while waiting.**
+
+**Free falsifiable test, no write required.** At the next evaluation either
+(a) a fresh `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row appears at TOKEN stage with
+`reasonDetail ≈ {equityUsd: 32.8, minEquityUsd: 33.333333, smallPct: 10,
+maxLeverage: 3}` — starvation confirmed, queue structurally blocked until a
+close; or (b) an approval row appears, and its size should be ≈9.85 if the
+model holds. **The string `minEquityUsd: 33.333333` settles it.** Either
+reading also re-confirms MARGIN, since under NOTIONAL that field would read
+≈8.47. NOT DETERMINED and untestable without a fresh sweep: whether that
+TOKEN-stage floor test reads live headroom (32.8, fails) or the static cap
+(45, passes).
+
+### Three facts that change how this change must be built
+
+1. **Size does not exist at decision time.** The decision row stores
+   `positionSizePct` and `positionSizePreset` and **no notional and no
+   quantity**; `entryFillQuantity` is null until `executedAt`. Sizing consults
+   the exposure ledger at **ACCEPT time**. So the confirmation cannot bind a
+   dollar amount — it does not exist yet — and approving a stale row sizes off
+   *then-current* headroom. Binding decision id + revision + price levels (the
+   agreed design) remains correct and is now also the *only* thing bindable.
+   Two rows approved back-to-back size 10% apart.
+2. **The row lives ~15 minutes.** `signalTimeoutMinutes: 15` explains
+   `expiresAt = createdAt + 15min` on executed decisions and two EXPIRED rows
+   closing exactly 15 minutes after creation. `AGENT_APPROVAL_EXPIRED` is in
+   the vocabulary. **Poll at ≤7-minute intervals.**
+3. **`OPEN_POSITION_CONFLICT` is historical, not live.** It is 5,282 of 5,521
+   blocks but its `latestAt` is 2026-08-12T09:29Z — three days stale, zero
+   today despite three held tickers. Do not use it to predict today's
+   behaviour (this corrects the read in `open-position-conflict-churn-tripled`).
+
+### Gauges closer to binding than exposure
+
+`drawdown` fill 1.9 / remaining 4.1 of 6; `maxDailyLossUsd` 1.5 with
+`dailyRealizedPnlUsd` 0; and `balanceThresholdUsd` 35 against a 38.67 balance —
+**$3.67 of room**, with `TRADING_BALANCE_BELOW_THRESHOLD` in the vocabulary and
+realized P&L at −0.84. If anything budget-side stops Undertow it is one of
+these, not exposure.
+
+### Two unresolved anomalies (do not touch the verdict)
+
+- `effectiveNotionalUsd` reads 32.8 — identical to `headroomUsd`, not
+  `headroom x leverage` (131.2 at the configured 4x) — despite a description
+  promising "the effective notional the current headroom authorizes".
+- `get_agent_activity_feed` is useless as a detector: `total: 1` (AGENT_CREATED)
+  against 41 lifetime trades. (`accountEquityUsd: 0` is **resolved, not
+  anomalous** — `lifetimeAllocatedUsd` is 0 across 41 trades, so fund-allocation
+  is simply not this agent's funding path.)

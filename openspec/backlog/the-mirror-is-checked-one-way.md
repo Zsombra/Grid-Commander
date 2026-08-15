@@ -99,3 +99,38 @@ disagreements. One call, no per-item round trip.
 - Related: [[a-completed-change-set-is-stranded-on-a-draft-pr]] is the incident,
   now done. The item→issue link rule it exercised is §7 of
   `.claude/references/tracking.md`.
+
+---
+
+## Three live instances, measured 2026-08-16
+
+Found while settling #293, which was itself one of them. Diffing every open
+item's `github:` against `gh issue list --state open`:
+
+| issue | state | item | item state |
+|---|---|---|---|
+| #293 | closed 2026-08-15 | `write-probe-thinking-pagination-assertion-too-strict` | **was open** — reconciled 2026-08-16 |
+| #283 | closed | `the-analysis-is-not-on-the-models-surface` | **still open** |
+| #294 | closed | `the-prose-record-carries-lists-where-the-platform-declares-bodies` | **still open** |
+
+All three are the same direction: **the issue closed and the canonical record
+did not.** That is the direction this item names, and it is the one that costs
+board time — #293 sat on the board for a day as work that was already done, and
+a session picking the next item off it would have opened a change against a
+fixed defect.
+
+`#283` and `#294` are **left as found, deliberately.** Whether each is a stale
+item or a prematurely closed issue needs the work checked, not the states
+compared, and doing that inside a bookkeeping pass is how a wrong close gets
+laundered into a right one. They are recorded here so the fix this item
+eventually gets has real cases to run against.
+
+**The other direction is noisier and mostly not drift.** Five issues are open
+with no item on `main` (#299, #304, #305, #317, #318) — but three PRs are open
+(#307, #313, #319) and an item filed on an unmerged branch is invisible here.
+**Any check this item produces has to be run against `origin/main` plus open
+branches, or it will report every parallel session as drift.** That is probably
+the hardest part of building it.
+
+Reproduction: compare `github:` in every `openspec/backlog/*.md` with
+`status: open|in-progress` against `gh issue list --state open`, both ways.
