@@ -1,5 +1,55 @@
 # Journal
 
+## 2026-08-15 (answered) — the queue answers, and the declaration was wrong twice
+
+**Did**: #101's precondition is met and the change is proposed. The operator
+put **Undertow** into `APPROVAL_REQUIRED` to manufacture a row (Vanguard, the
+designated agent since 2026-08-14, fires ~4×/6d and never qualified all day).
+The first row was **produced and missed** — HYPE at 13:18:03Z, expired 13:33Z,
+because a 6-agent Workflow was occupying the REPL and **cron only fires while
+the REPL is idle**; the queued ticks all discharged after expiry. Recovered its
+shape anyway from `list_entry_decisions(status: EXPIRED)`. The second row was
+caught **live** at 17:01:39Z, and the operator authorized the **first
+`mcp:wager` write in this product's history** — `cancel_entry_decision`, chosen
+because it commits no money. Cancelled 17:05:44Z, eleven minutes before expiry,
+read back `CANCELLED` with `closedAt` set. Proposed
+`the-approval-can-be-answered` (full, 38 tasks, validation clean). Filed **#299**
+(p2), **#304** (p2), **#305** (p3). Undertow fully restored at 17:08:11Z.
+
+**State**: 1 active change at `tasks`, needing `plan`. 23 open items, three p2.
+`validate --all` 0 errors. Four commits on `claude/approvals-write-side-fd4863`;
+no product code touched, no tests run beyond `npm ci`. **Undertow is back to the
+operator's settings (revision 10) — nothing outstanding on it.** Vanguard stays
+in `APPROVAL_REQUIRED` deliberately.
+
+**Next**: the operator must rule on **task 0.1** — the binding. Everything else
+in the change is blocked behind it. Then `planner`.
+
+**Watch out**: **The tool description lied twice, and both would have shipped.**
+`list_pending_approvals` declares rows "enriched with execution and outcome
+context" — called in the *same second* as `list_entry_decisions(status:
+PENDING)` it returned a **byte-identical row**, same 35 keys; there is no
+enrichment, and the change now uses `list_entry_decisions` because it paginates
+and filters. And the declared status `AWAITING_APPROVAL` **does not exist** —
+the live payload says `PENDING`. Matching on it would have matched nothing.
+— **A decision carries no revision.** No `revision`/`version`/`updatedAt`/ETag
+across 35 keys; `accept_entry_decision` takes `decisionId` alone. This is the
+one place BattleGrid abandons the `expectedRevision` pattern, so the operator's
+"bind the revision" instruction is unsatisfiable and the proposal substitutes
+the three price levels. — `cancel_entry_decision` returns **two keys**
+(`decisionId`, `cancelled`). No echo, no status, no timestamp; a UI must
+re-read. — **`maxConcurrentExposureUsd` is metered on MARGIN, not notional**
+(`capitalAtRiskUsd` 12.2 vs `marginedUsd` 12.176704 vs notional 36.54), and it
+is **not a gate — it is the sizing base**: `size = headroom × pct × leverage`,
+reconstructed to the cent on three positions. It starves entries under the $10
+exchange minimum while every gauge reads `breached: false`, which is #299. —
+**`timeHorizon: "1h"` is a label, not a clock**; positions ran 77 minutes. —
+The pipeline sweeps every **~60s**, not hourly. — A staleness finding has a
+half-life: a verifier called `OPEN_POSITION_CONFLICT` "three days stale" and it
+was firing every minute twenty minutes later. — **Never run a Workflow while a
+cron watch is what you are relying on.** That one cost the first row and
+returned nothing, because all four agents died on a subagent session limit.
+
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
 **Did**: reconciled every branch in the repo and pruned it down. **52 local +

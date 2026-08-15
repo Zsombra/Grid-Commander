@@ -513,6 +513,31 @@ declined; nothing was bought or sold; `capitalAtRiskUsd` is unchanged.
   against the live platform and read back. The implementation now has an
   expected response to assert against rather than one to discover.
 
+## Both obligations discharged — Undertow restored 17:08:11Z
+
+The operator called the stand-down. **Every setting this session changed on
+Undertow is back to what they set**, in one write:
+
+```
+update_intelligence_agent(Undertow d0f6829f…, expectedRevision: 9)
+    tradingMode               APPROVAL_REQUIRED → FULL_EXECUTION
+    signalTimeoutMinutes      15 → 5
+    maxConcurrentExposureUsd  50 → 45
+  read-back: revision 10, all three landed, every other field identical;
+  strategyTimeframe / regimeTimeframe (not in the write schema) preserved.
+```
+
+**Nothing is outstanding on this agent.** It is trading autonomously again, with
+one position open (43 lifetime trades, `avgPnl` −0.0141, up from −0.0203 when
+the session began). The cap raise turned out to be unnecessary in the end:
+MOODENG closed on its own at −0.08, taking headroom to 41.45, which clears the
+$10 sizing floor at the original cap of 45.
+
+**Vanguard is deliberately left in `APPROVAL_REQUIRED`** (revision 11, set
+2026-08-14). That is a prior session's intentional state and the standing
+source of future approval rows; it costs nothing, because Vanguard has never
+traded. Do not "fix" it.
+
 ### Catching the next one
 
 Undertow produced this at 13:18Z having produced nothing at 12:00Z, so the rate
