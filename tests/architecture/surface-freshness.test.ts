@@ -284,7 +284,7 @@ describe('the capabilities record carries the platform’s prose', () => {
      * That record was honest and every assertion above passed on it, because a
      * named failure is a recorded fact rather than a gap. But the reference it
      * generated contained no prose, which is the state #294 exists to end, and
-     * the rendering check below would have iterated zero bodies and asserted
+     * the rendering check above would have iterated zero bodies and asserted
      * nothing. Honest and useless are not the same, so the floor is stated: a
      * capture must come back with *some* prose or say so here.
      */

@@ -867,7 +867,14 @@ function mapStrategyDetail(raw: unknown): StrategyDetail {
     // an unknown is inviting a change nobody priced.
     openPositionCount: typeof s['openPositionCount'] === 'number' ? s['openPositionCount'] : 0,
     cadence: typeof s['cadence'] === 'string' ? s['cadence'] : null,
-    regimeAutoDerive: s['regimeAutoDerive'] === true,
+    // `null` because v19.1.0 stopped publishing it — deleted from all fifteen
+    // output schemas that declared it, and absent from the live response
+    // (measured 2026-08-15). `=== true` collapsed that silence into `false`,
+    // which reads as "the platform says this strategy does not auto-derive"
+    // when the platform now says nothing at all.
+    regimeAutoDerive: typeof s['regimeAutoDerive'] === 'boolean' ? s['regimeAutoDerive'] : null,
+    // Still arrives at v19.1.0 (observed '4h') though no schema declares it —
+    // declared and observed disagree in both directions on this pair.
     regimeTimeframe: typeof s['regimeTimeframe'] === 'string' ? s['regimeTimeframe'] : null,
   };
 }

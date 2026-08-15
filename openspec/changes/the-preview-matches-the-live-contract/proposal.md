@@ -18,9 +18,17 @@ by a live refusal.
 - `previewReport` stops carrying the two regime keys: the port signature,
   the adapter payload, and the two use-case call sites
   (`preview-composition.query`, `try-condition.query`).
-- The strategy *read* side is untouched — the platform still reports
-  `regimeAutoDerive`/`regimeTimeframe` on `get_strategy`, and the detail
-  page still renders them.
+- The strategy *read* side needed a correction of its own, and the first
+  draft of this proposal got it wrong. v19.1.0 deleted `regimeAutoDerive`
+  from **all fifteen output schemas** that declared it, and a live
+  `get_strategy` confirms it is absent from the response (measured
+  2026-08-15). The mapper's `s['regimeAutoDerive'] === true` therefore
+  turned the platform's silence into a confident `false`. It now records
+  `boolean | null`, and the domain type says why.
+  `regimeTimeframe` is the mirror case: **still returned** (`'4h'`
+  observed) though no schema declares it any more. Declared and observed
+  disagree in both directions on the same pair, which is why the read is
+  measured here rather than inferred from the record.
 - Test mirrors and fakes follow: `payload-conformance`'s `previewPayload`
   mirror, the preview unit tests, the fake port, and the live
   custom-table probe's preview call.

@@ -7,7 +7,7 @@ active changes, 26 surfaces, 27 design tickets**, `validate --all` at **0
 errors / 13 warnings** (the same 13 as the previous header — all design-ticket
 warnings). **No product code changed this session and no tests, typecheck,
 lint or build were run**, so the build status above the diff is inherited from
-the previous header rather than re-verified. BattleGrid v18.2.0.
+the previous header rather than re-verified. BattleGrid v18.2.0 at the time; **re-probed to v19.1.0 on 2026-08-15**.
 
 **The repo went from 52 local + 60 remote branches to 2 and 2.** `main` is
 untouched at `8821b5a`. 65 branch names (109 refs) were deleted, and none on a
@@ -171,7 +171,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Design | 25 surfaces (15 designed, 7 needs-redesign, 3 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
 | Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #277 merged |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
-| BattleGrid | **v18.2.0**; the surface record is level with live (the two-records comparison of #198 holds) |
+| BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
 
 ### Read this before anything else
 
@@ -181,13 +181,16 @@ v5.1.0 — and all three reported exactly **110 tools** while enums, required
 arguments and semantics changed underneath. **v14 then moved it to 114**, the
 first change in six major versions. So a count that has not moved proves
 nothing, and one that has says only that *something* changed — neither is a
-freshness check. **v18.2.0 is the current record** (2026-08-12), and it is the
-best example this project has of why the count is not the check: a whole major
-version arrived between two probes a day apart and **nothing structural moved
-at all** — 114 tools, none added or removed, no **input** schema changed on any
-tool, the read/write/destructive split identical, the vocabulary's values
-byte-identical. What moved was one tool's *meaning* (`list_gate_blocks`; see
-#185).
+freshness check. **v19.1.0 is the current record** (2026-08-15, #287), and the
+last two deployments are the best examples this project has of why the count is
+not the check. At **v18.2.0** a whole major version arrived between two probes a
+day apart and **nothing structural moved at all** — 114 tools, no **input**
+schema changed, the split identical, the vocabulary byte-identical; what moved
+was one tool's *meaning* (`list_gate_blocks`; see #185). At **v19.1.0** the
+count, every description, every annotation and the split were identical *again*
+— while 5 input and 34 output schemas moved underneath, one of which
+(`preview_strategy_report` dropping the regime pair from a closed input) would
+have refused every strategy preview the product composes.
 
 **That paragraph was scoped to inputs and read as general, and the scoping cost
 something.** Outputs grew by **188 schema leaves across 11 tools** at v18 —

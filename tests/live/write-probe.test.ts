@@ -536,7 +536,8 @@ live('an agent can be read thinking', () => {
     const target = roster.agents.find((a) => a.status === 'ACTIVE') ?? roster.agents[0];
     if (!target) return;
 
-    const log = await read.execute({ ...who, agentId: target.id, limit: 20 });
+    const PAGE = 20;
+    const log = await read.execute({ ...who, agentId: target.id, limit: PAGE });
     // eslint-disable-next-line no-console
     console.log(`  thinking: ${log.kind}${log.kind === 'decisions' ? ` ${log.decisions.length} of ${log.total}` : ''}`);
     if (log.kind === 'none') {
@@ -582,7 +583,7 @@ live('an agent can be read thinking', () => {
      * total never undercounts what arrived, so the product cannot invent
      * decisions beyond what the server reports.
      */
-    expect(log.decisions.length, 'the page honours the requested limit').toBeLessThanOrEqual(20);
+    expect(log.decisions.length, 'the page honours the requested limit').toBeLessThanOrEqual(PAGE);
     expect(log.total, 'the total covers everything the page returned').toBeGreaterThanOrEqual(
       log.decisions.length,
     );

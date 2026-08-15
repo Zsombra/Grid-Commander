@@ -50,6 +50,13 @@ is unclaimed capability, not a defect.
 
 ## Notes
 
+**A live read already answered part of question 1.** `get_strategy` at
+v19.1.0 returns a top-level **`marketReadText`** on the strategy itself
+(observed 2026-08-15), so the market read is a persisted property of the
+strategy rather than a per-preview argument — the preview input is most
+likely the *override* for it. That also means the strategy detail read is
+carrying a field this product does not map.
+
 Two questions before any UI work, both answerable read-only against the live
 platform:
 
