@@ -43,6 +43,33 @@ is `git add --renormalize .` in that checkout, not a commit here — and any swe
 that does it by hand **must exclude binaries**, because one that trusted
 `git check-attr eol` stripped CR-LF pairs out of 20 PNGs and corrupted them.
 
+*(Addendum, close-out: the operator asked for a proper wrap-up. **#315 merged**
+(`170f31c`) — and it carried more than its body said: `fix/lint-ignores-nested-worktrees`
+had been branched off `claude/paused-radar-is-not-on-duty` rather than `main`,
+so one PR merged **34 files and both changes**. Nothing merged unreviewed —
+both were separately proposed, archived and fully gated first — but the record
+was wrong, so #315 carries a correcting comment, **#314 was closed as empty**
+(`git commit --amend` refused its remainder, which is the proof nothing was
+dropped), and **#311 was closed by hand** because #315's body had no closing
+keyword for it. Branches pruned, tips archive-tagged. `HANDOFF.md` gained this
+session's header and the 2026-08-15 (keyed) one is marked superseded; its
+Current State table was four days stale (2443 vitest / 193 files / 18 items
+against today's **2575 / 205 / 27**).
+
+**A second mistake worth recording, because it nearly shipped.** Resolving the
+rebase, a Python heredoc asserted its way out *before writing the file*, and the
+`git add … && rebase --continue` chained after it committed **three conflict
+markers into `openspec/JOURNAL.md`**. Caught by grepping the committed file
+rather than trusting the rebase's success message. The lesson is the shape, not
+the language: **a resolution script must write-then-verify, and the verify must
+be its own command** — chaining `git add` behind a script that can fail silently
+turns a failed resolution into a committed one. `main` is clean: four entries,
+right order, no markers.
+
+Final state: 0 active changes, **27 open, all p3, no p2**, 2575/205 vitest,
+`validate --all` 0 errors / 13 standing warnings, 201 archived changes. The two
+open PRs (#313, #307) are the parallel session's.)*
+
 ## 2026-08-16 (pause) — the radar says whether anything is running
 
 **Did**: #311, the p2 the schema survey turned up. `a-paused-radar-says-so`
