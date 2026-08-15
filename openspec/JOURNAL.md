@@ -34,6 +34,15 @@ independence for cross-sectionally clustered signals: flipping's 113
 pairs sit in 55 hours, so any floor should be read against effective
 sample, not raw n.
 
+*(Addendum, close-out: the operator said wrap up. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite —
+then #296 squash-merged to main as this close-out's act. The branch tip
+was archive-tagged (`archive/claude/forward-returns-claims-attachment-8f2d69`)
+and pushed before the remote branch was deleted, per the (prune)
+convention; the local branch and worktree stay on disk, held by this
+session, and go when it exits. No change folder existed, so there is
+nothing to archive — the depth check was tracker work, not a change.)*
+
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
 **Did**: reconciled every branch in the repo and pruned it down. **52 local +
