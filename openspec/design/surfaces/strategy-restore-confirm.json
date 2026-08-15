@@ -72,7 +72,7 @@
         "The unreadable reason keeps role=alert and the danger treatment DT-0020 landed; the 'is not archived' sentence and the repair-required guidance were deliberately left out of that sweep and must stay out of it — one is a fact about the strategy, the other is the platform declining and saying what would work. Tinting either as danger reverses a decided ruling.",
         "WhyNotLoaded's reassurance must survive verbatim wherever it renders relative to the danger block — on this page above all, because an archived strategy is the one a user most readily believes deleted.",
         "Restoring MUST NOT be presented as guaranteed — openspec/specs/strategy-authoring/spec.md:238 ('Restoring MUST NOT be presented as guaranteed where the platform may refuse it'). The paragraph saying BattleGrid may decline is spec-required content, not filler.",
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
         "'Absence of effect is stated, not implied' (system.json principle) — the sentence that nothing is reconfigured by restoring must keep visual commitment."
       ],
       "children": [
@@ -309,7 +309,7 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation, so these are read in document order rather than as live-region updates."
+    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight — so these are read in document order rather than as live-region updates."
   },
   "source_digest": {
     "app/(app)/strategies/[id]/restore/actions.ts": "sha256:f57b18ce0af925e78f4cca9a3658bc9eb3235a49636471baa04db236c4098c86",

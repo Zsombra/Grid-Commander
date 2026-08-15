@@ -62,7 +62,7 @@
       "actions": [],
       "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. h1 'Reactivate <name>?', `<CarriedProblem>`, then the shared ReactivatePrompt. Deliberately a route of its own rather than archive?to=ACTIVE (DL-104: two consequences behind one URL is how someone confirms wording written for the other operation), and deliberately without a confirmation token — reactivating restores a state the user chose before and commits nothing. All three post-connection branches mount `<CarriedProblem>` unconditionally under their h1 — roster-unreadable and no-such-agent included (the post-round re-survey closed what an earlier survey recorded as one-branch-only mounting, and this page has been in `tests/agent/refusals-reach-the-operator.test.ts`'s CARRY_PROBLEM list since: one CarriedProblem per `<main>` is asserted).",
       "constraints": [
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
         "No confirmation token exists on this page by decision (DL-104's sibling reasoning in the route comment) — a design must not add ceremony that implies one, and must not merge this page back into the archive route.",
         "Reactivation returns the agent in its previous configuration — openspec/specs/agent-authoring/spec.md:211-213 ('it returns to the roster in its previous configuration'); the copy stating that is spec-bearing.",
         "This page has no `?authority=` branch. The sibling ceremony pages gained one in `a-lost-authority-is-not-a-refusal`; `reactivate` calls `setLifecycle`, whose only failure arm here is `not-permitted`, so a lost authority still arrives dressed as a refusal of this reactivation. That asymmetry is behavior — a design must not paper over it by styling the problem banner as if it could be either."
@@ -312,7 +312,7 @@
       "button-primary",
       "button-secondary"
     ],
-    "notes": "Problem banner, capacity notice and the not-archived refusal carry role=alert; the problem banner and the capacity notice can be on screen together. Focus ring is global (focus-visible, 2px). No client JS: every state change is a full navigation."
+    "notes": "Problem banner, capacity notice and the not-archived refusal carry role=alert; the problem banner and the capacity notice can be on screen together. Focus ring is global (focus-visible, 2px). Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
   },
   "source_digest": {
     "app/(app)/agents/[id]/reactivate/actions.ts": "sha256:2d436371cc4e830a5950b315dd1badece080827a5f32caaf7b5d3de1481431a4",

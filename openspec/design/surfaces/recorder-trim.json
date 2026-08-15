@@ -62,12 +62,12 @@
         "coverage"
       ],
       "actions": [],
-      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server component, no client JS; every state change is a full navigation. Which of the four bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date, with or without a rejected one to report), nothing-to-trim, then describe-confirm. DT-0014 has landed: every message block on this page now wears a house role rather than the anonymous border it was built with — consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim — so the page no longer states four different kinds of fact in one voice.",
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server-rendered page whose only client code is PerformButton (submit-in-flight); every state change is a full navigation. Which of the four bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date, with or without a rejected one to report), nothing-to-trim, then describe-confirm. DT-0014 has landed: every message block on this page now wears a house role rather than the anonymous border it was built with — consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim — so the page no longer states four different kinds of fact in one voice.",
       "constraints": [
         "The trim is a describe→confirm→perform ceremony — openspec/specs/signal-recording/spec.md:203-209 ('through the same describe→confirm→perform ceremony as its other destructive acts'). A design must not collapse choosing, confirming, and performing into fewer steps.",
         "The description renders before anything is offered — openspec/specs/signal-recording/spec.md:219-224 ('WHEN an operator chooses a boundary date THEN the page states the runs, captures, failed attempts, coins and date span that would go'). The consequence must stay readable before the button that performs.",
         "Rendering the description deletes nothing however many times it renders — openspec/specs/signal-recording/spec.md:243-245. Choosing a boundary must remain a GET navigation, never a POST.",
-        "The page renders whole from one server round trip — no client JS, no hydration. A design requiring client-side interactivity changes behavior and is requires-spec-change.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
         "This page has no `?authority=` branch and needs none: the trim is a local record operation keyed on userId, and `TrimRecordResult` is `trimmed | refused` with no authority-lost arm. The `<AuthorityLost>` page the three agent ceremonies gained in `a-lost-authority-is-not-a-refusal` does not apply here — a design must not invent one for symmetry.",
         "DT-0014's four roles are the page's grammar and all four are implemented: consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim. A ticket that gives two of them the same treatment reverts the ticket."
       ],
@@ -284,7 +284,7 @@
       "constraints": [
         "No figure on this page may come from the query string. The ?trimmed= parameter is a marker only — it carries no counts, and rendering one from it would restore the forgeable receipt that `the-receipt-states-what-remains` removed.",
         "The three arms of RecordCoverage may not borrow each other's wording: 'could not be read' must never render as 'nothing is recorded'.",
-        "Server-rendered with no client JS; every state change is a full navigation."
+        "Server-rendered and holds no client state; every state change is a full navigation."
       ],
       "children": []
     },
@@ -358,7 +358,7 @@
       "(after describe) trim button",
       "keep-whole link"
     ],
-    "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. No client JS: every state change is a full navigation, so each state is reached in normal document order rather than a live region."
+    "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight — so each state is reached in normal document order rather than a live region."
   },
   "source_digest": {
     "app/(app)/recorder/trim/actions.ts": "sha256:6010a94d3db12924a50f496f24d669f81b9ec1decd8b49bc7e628da7765620ae",

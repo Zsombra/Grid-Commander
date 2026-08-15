@@ -142,6 +142,10 @@ Conditions at the time of the write, all read in the same minutes:
 `PLATFORM_PAUSED` — all 20 policies, `summary.radarPaused: true`, nothing
 fired since 2026-08-13 evening. No candidate can reach Vanguard, so no
 approval can exist and `list_pending_approvals` was deliberately not read.
+A second sweep the same local day (2026-08-14T21:51Z / 04:51 local) read
+identically: 20/20 `platformPaused`, `radarPaused: true`, latest
+`lastFireAt` still 2026-08-13T18:01:18Z (MOODENG); approvals read again
+deliberately untaken.
 
 **What to watch**: when Radar shows fired rows again, read
 `list_pending_approvals` within a candidate's 15-minute window. The first

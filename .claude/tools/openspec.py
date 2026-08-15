@@ -751,6 +751,30 @@ def changed_against_digest(root: Path, recorded: dict, files: list) -> list:
     return sorted(p for p in files if now.get(p) != recorded.get(p))
 
 
+# A manifest's prose claims are invisible to the digest comparison — the text
+# travels with every re-pin, unread. This pair backs the one claim measured
+# false at scale (14 of 24 manifests, #243): a manifest saying "no client JS"
+# while a file it lists opens with 'use client'. The corrected wording names
+# the exception ("the only client code is …") and does not match the claim.
+
+NO_CLIENT_JS_CLAIM = re.compile(r"no client js", re.IGNORECASE)
+USE_CLIENT_DIRECTIVE = re.compile(r"""^\s*(['"])use client\1\s*;?\s*$""")
+
+
+def declares_use_client(path: Path) -> bool:
+    """True when the head of `path` carries a 'use client' directive line.
+
+    A directive is only a directive before the first statement, so only the
+    first few lines are read. A file that cannot be read declares nothing —
+    a listed file's absence is the staleness check's finding, not this one's.
+    """
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]
+    except OSError:
+        return False
+    return any(USE_CLIENT_DIRECTIVE.match(line) for line in head)
+
+
 # A surface's `source_files` is hand-assembled by an agent reading code, so an
 # incomplete list is the one drift the commit check cannot see: the manifest
 # looks fresh while describing only part of the surface. These close that gap.
@@ -1116,6 +1140,23 @@ def validate_design(root: Path, strict: bool) -> list:
                                   f"{path.stem}: {len(changed)} source file(s) differ from what "
                                   f"was surveyed — {', '.join(changed[:3])}", rel(path),
                                   "re-run the ui-surveyor skill before designing against it"))
+
+        # A constraint is what the design agent must not break, and prose is
+        # what the digest comparison cannot see: fourteen manifests carried
+        # "No client JS" across re-pins while their own recorded sources
+        # opened with 'use client' (#243). The corrected wording names the
+        # exception instead of denying it, so it does not match the claim.
+        if sources and NO_CLIENT_JS_CLAIM.search(
+                path.read_text(encoding="utf-8", errors="replace")):
+            declaring = sorted(s for s in sources if declares_use_client(root / s))
+            if declaring:
+                found.append(diag(
+                    "warning", "design_surface_denies_client_js",
+                    f"{path.stem}: claims \"no client JS\" while its recorded "
+                    f"source(s) declare 'use client' — {', '.join(declaring[:3])}",
+                    rel(path),
+                    "state the exception instead of denying it — name the client "
+                    "component and what it may do, keeping the design veto"))
 
     # -- route coverage ----------------------------------------------------
     # A diagnostic can only attach to a manifest that exists, so a route

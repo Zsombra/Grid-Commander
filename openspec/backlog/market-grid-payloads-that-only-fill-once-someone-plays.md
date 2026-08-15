@@ -247,6 +247,12 @@ Tripwire sweep, one shared listing read: 50 rows, PENDING 2 / CANCELLED 48,
 `playersNeeded == minimumPlayers == 5` and `playerCount: 0` on every row.
 The watch condition and follow-up order below stand unchanged.
 
+Later sweeps the same local day repeated the read with the identical shape
+on every row — sixth and seventh confirmations in the refill and census
+sessions (recorded in their journal entries), and an eighth at
+2026-08-14T21:51Z (04:51 local Aug 15): 50 rows, 0 with
+`playersNeeded < minimumPlayers`.
+
 ---
 
 # Re-checked 2026-08-14 — fourth confirmation, as a tripwire not a poll

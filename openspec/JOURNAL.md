@@ -1,5 +1,63 @@
 # Journal
 
+## 2026-08-15 (claims) — the manifests stop denying their client code
+
+**Did**: reconciled clean (main `6ebfbcc`, #269 in). Fifth tripwire sweep —
+all four **cold**: positions flat (`marginedUsd: 0`, paired allocation read
+untaken per #107), Radar 20/20 `PLATFORM_PAUSED` with latest `lastFireAt`
+2026-08-13T18:01Z (approvals read untaken per #101), #104 eighth confirmation
+(50 rows, `playersNeeded == minimumPlayers == 5`, zero below minimum). **#94
+measured from the db**: environment half HOT — `DATABASE_URL` in the
+persistent user registry, verified without printing, but **not inherited by
+this process** — and depth half cold: 51 runs, one user, `first_run
+2026-08-12T19:46:14Z`, age **2.09 days** at 2026-08-14T21:52Z; both halves
+hold from **2026-08-19T19:46Z (~Aug 20 02:46 local)**. Then the first full
+triage pass (tracker Mode C) over all 21 open items, each read in full: no
+drifted statuses, no duplicates; #146 advanced (the automation-status read
+answers game presets, not evaluation — struck from its next-read list; radar
+fires through 08-13 18:01Z weaken its cause 2), and #243's class was
+**measured at fourteen manifests, not two** — 20 of 24 claim "No client JS"
+somewhere, 14 of those list `perform-button.tsx` (`'use client'`). Promoted
+#243 → `the-manifests-admit-their-client-code` (standard, verified,
+archived): all 29 claim sites in the fourteen corrected on the agent-edit
+template (full navigation and no client state asserted, PerformButton the
+named exception, design veto kept; no digest or pin moved), and `openspec.py`
+gained **`design_surface_denies_client_js`** (warning) — manifest text
+matching `/no client js/i` while a `source_digest` file opens with
+`'use client'`. Proof observed failing first: the diagnostic fired on exactly
+the fourteen before any correction, silent on the six truthful.
+`harness-integrity` gained the requirement; #243 closed both sides; the
+wider question (other asserted claims that could be derived) filed as #270.
+
+**State**: 0 active changes, 21 open items, one p2 (#94, gated until ~Aug 20
+02:46 local). Gates at archive: typecheck, lint, **2419 vitest / 190 files**,
+build, drizzle no-op, Python harness suite **274 tests** (the
+fixture-coverage meta-test now enforces the new code's fixture forever);
+`test:db` skipped deliberately — the disposable-database guard must refuse
+the live record db. `validate --all` 0 errors / 14 deliberate warnings /
+2 info after this entry. Branch `claude/grid-commander-tripwires-ddc36d`;
+PR is this handoff's last act.
+
+**Next**: tripwires first, from their items. #94 is the one expected to
+fire: from ~Aug 20 02:46 local both halves hold — verify depth from the db
+again (`min(started_at)` where `user_id = 'owner'`, arithmetic in UTC), then
+`/propose` the analysis layer per the item's What/Notes (forward returns per
+signal state, sample sizes beside every figure). If all cold: this session's
+triage ranking stands — the sharpest unconditional is **#202**
+(`realized-pnl-against-its-stop-is-unread`), the one immediately-actionable
+feature; read it in full first, its First step names the cheap route.
+
+**Watch out**: `setx` does not reach an already-running process tree — this
+session found `DATABASE_URL` absent from `$env:` while present in the user
+registry; check `[Environment]::GetEnvironmentVariable('DATABASE_URL','User')`
+before declaring #94's environment half cold. The new claim guard matches
+prose (`/no client js/i`): corrected wording must keep avoiding that phrase —
+"holds no client state" is the sanctioned spelling — while the six truthful
+manifests (explorer-*, pending-queue, pipeline-*) keep the phrase
+legitimately. And PowerShell 5.1 `Get-Content -Raw` without `-Encoding utf8`
+mojibakes UTF-8 punctuation on round-trip — tasks.md had to be rewritten for
+that once; edit repo files with the file tools, not PS text pipelines.
+
 ## 2026-08-15 (census) — the record reads two days deep, and the hidden actions join the convention
 
 **Did**: reconciled clean (main `1c8e8b0`, all of yesterday's PRs in). Fourth
