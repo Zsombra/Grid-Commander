@@ -208,6 +208,28 @@ export class FakeAgentsPort implements AgentsPort {
     return next;
   }
 
+  /**
+   * Answering a proposed trade. Records the verb in `op` so a test can prove
+   * an accept was never sent where a cancel was agreed to, and the target so
+   * the two are distinguishable in the record.
+   */
+  answerFails: Error | null = null;
+
+  async answerEntryDecision(params: {
+    decisionId: string;
+    verb: 'accept' | 'cancel';
+    confirmation: Confirmation;
+    idempotencyKey?: string | undefined;
+  }): Promise<void> {
+    this.calls.push({
+      op: `answer:${params.verb}`,
+      agentId: params.decisionId,
+      token: params.confirmation?.token,
+      target: params.confirmation?.target,
+    });
+    if (this.answerFails) throw this.answerFails;
+  }
+
   async setLifecycle(params: {
     agentId: string;
     expectedRevision: number;

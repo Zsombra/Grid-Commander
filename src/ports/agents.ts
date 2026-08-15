@@ -110,6 +110,39 @@ export interface AgentsPort {
   }): Promise<Agent>;
 
   /**
+   * Answer a trade the agent proposed: accept it, or cancel it.
+   *
+   * The two operations this product performs that require authority to commit
+   * funds. Cancelling commits nothing; **accepting opens a position at real
+   * size**, sized by the platform at this moment rather than when the decision
+   * was written.
+   *
+   * There is no `expectedRevision`, because a decision carries none — the one
+   * BattleGrid mutation that departs from the pattern. What stands in for it is
+   * the confirmation's target, which binds the verb, the decision and the three
+   * price levels that were on screen, checked against a fresh read by
+   * `checkAnswerable` before this is ever called.
+   *
+   * **Returns nothing on purpose.** The platform's answer is two keys —
+   * the decision id and a boolean — with no status, no timestamp and no echo of
+   * what changed. A caller cannot render an outcome from that and must re-read,
+   * so returning the ack would only invite someone to trust it. Failure throws.
+   */
+  answerEntryDecision(params: {
+    userId: string;
+    accessToken: string;
+    decisionId: string;
+    verb: DecisionAnswerVerb;
+    /**
+     * Issued against `confirmationTarget.decisionAnswer(verb, id, levels)`.
+     * Accept and cancel produce different targets deliberately, so a token
+     * agreeing to decline a trade can never be spent buying it.
+     */
+    confirmation: Confirmation;
+    idempotencyKey?: string | undefined;
+  }): Promise<void>;
+
+  /**
    * An agent's decision cycles, newest first.
    *
    * `agentId` omitted reads the account-wide log — BattleGrid exposes those as
@@ -513,6 +546,15 @@ export interface SignalVerdict {
   /** What this signal saw, in the platform's own words. */
   readonly interpretation: string | null;
 }
+
+/**
+ * The two ways to answer a proposed trade.
+ *
+ * Kept as a union rather than a boolean because the pair is asymmetric in a way
+ * a boolean hides: one declines, the other spends. It is also what makes the
+ * two confirmation targets distinct.
+ */
+export type DecisionAnswerVerb = 'accept' | 'cancel';
 
 /** A decision the agent reached, in its own words. */
 export interface EntryDecision {

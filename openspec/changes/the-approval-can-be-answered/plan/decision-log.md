@@ -53,7 +53,7 @@ the code but not by design:
 | Phase | 1 — Planning |
 | Type | Policy exception |
 | Decision | This change cannot satisfy architecture policy **P4 item 1** ("every mutation carries `expectedRevision` from a fresh read"). Recorded as **PE-1** in the master plan |
-| Impacted files | `src/application/use-cases/answer-decision.command.ts`, `docs/plan/…-architecture-review.md` |
+| Impacted files | `src/application/use-cases/answer-decision.command.ts`, `plan/architecture-review.md` |
 | Reason | The platform publishes no revision on a decision. P4's *intent* — never apply an intent formed against a state that no longer exists — is preserved by DL-1's five-condition binding. P4's *mechanism* is unavailable |
 | Approved by | Operator (implied by the DL-1 ruling); **auditor must verify the limitation is real, not convenient** |
 | Next action | Auditor re-reads a decision and confirms no revision field before passing the gate |
@@ -161,6 +161,41 @@ already requires, so the guard and the spec agree. Keep them agreeing.
 | Reason | Liveness is half the binding (DL-1) and an optional field would let a construction site omit it silently, which is the failure the binding exists to prevent. Making it required turned the compiler into the guard: `npm run typecheck` named all seven construction sites immediately, and each was given a value that reflects what that fixture actually represents rather than a blanket null |
 | Approved by | Executor |
 | Next action | None — done and typechecking clean |
+
+---
+
+## DL-9 — A binding refusal is NOT audited. The plan asked for the opposite.
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-15 |
+| Phase | **EXECUTION** |
+| Type | Plan error / correction |
+| Decision | A refused binding writes no audit row. `AnswerDecisionCommand` returns a typed refusal before the port is touched |
+| Impacted files | `src/application/use-cases/answer-decision.command.ts`, `plan/architecture-review.md` (P3 item 5) |
+| Reason | The plan's P3 row said *"a binding refusal is audited too — a refusal is a thing that happened."* That contradicts the codebase's existing, tested position. `call-path.ts` states it directly — a refused call throws **before** any audit row, because *"a refused operation was never attempted, and recording it as attempted would be a lie in the other direction"* — and `wager.test.ts` asserts `audit.entries` is empty after a refused wager call. A binding refusal never reaches BattleGrid, so it is the same class of event. Following the plan here would have put operations in the user's audit log that never left this process, and broken an existing test's premise |
+| Approved by | Executor, on the codebase's tested position over the plan's assertion |
+| Next action | None. Every refusal path in `answer-decision.test.ts` asserts `agents.calls` is empty |
+
+**The distinction worth keeping**: an *attempt that failed* is audited by the
+guard path (`audit.complete(id, 'failed')`). A *refusal before the attempt* is
+not audited at all. The audit answers "what did this product do to your
+account", and the honest answer for a refusal is "nothing".
+
+---
+
+## DL-10 — The two released tools are confined to the adapter, and A10 says so
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-15 |
+| Phase | **EXECUTION** |
+| Type | Safety / guard amendment |
+| Decision | `tests/agent/wager.test.ts` A10 amended as DL-7 planned: `accept_entry_decision` and `cancel_entry_decision` removed from `WAGER_TOOLS`, and a **new** assertion added confining them to `src/infrastructure/battlegrid/` |
+| Impacted files | `tests/agent/wager.test.ts`, `src/infrastructure/battlegrid/agent-adapter.ts` |
+| Reason | The old guard said "nowhere in `src/` or `app/`". Deleting the two names outright would have weakened it to "nowhere except wherever anyone puts them". The replacement says "one place", which is a weaker claim than the original but still a checkable one — and it enforces P6 mechanically: a tool name outside the adapter means the port was bypassed, and every guarantee resting on the port becomes advisory. Eight tools remain fully forbidden; the category was not released, two members of it were |
+| Approved by | Executor, per DL-7's planned amendment |
+| Next action | Adding to `WAGER_TOOLS` stays the cheap direction. Any future release removes a name **on purpose** and says why here |
 
 ---
 

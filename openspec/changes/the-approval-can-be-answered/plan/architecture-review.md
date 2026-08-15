@@ -52,7 +52,7 @@ audit repository are **extended, not replaced** (DL-4).
 | 2 | Row updated with the outcome | | ☐ |
 | 3 | Interrupted answer reads as attempted, outcome unknown — never absent | | ☐ |
 | 4 | No mutating path reaches BattleGrid without a row | | ☐ |
-| 5 | **A binding refusal is audited too** — a refusal is a thing that happened | | ☐ |
+| 5 | ~~A binding refusal is audited too~~ **PLAN ERROR, CORRECTED IN EXECUTION.** A binding refusal is **not** audited: it never reached BattleGrid, and `call-path.ts` already establishes that a refused call writes no row because "recording it as attempted would be a lie in the other direction". `wager.test.ts` asserts exactly that for a scope refusal. The plan asked for the opposite of the codebase's tested position. See DL-9 | `src/application/use-cases/answer-decision.command.ts` — returns a typed refusal before touching the port; `tests/agent/answer-decision.test.ts` asserts `agents.calls` is empty on every refusal path | ☑ |
 
 ### P4 — Optimistic Concurrency — **EXCEPTED, SEE PE-1 / DL-2**
 

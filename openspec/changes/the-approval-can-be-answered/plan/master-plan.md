@@ -212,11 +212,11 @@ committing no money.
 
 | File | Purpose |
 |---|---|
-| `docs/plan/the-approval-can-be-answered-master-plan.md` | This plan |
-| `docs/plan/the-approval-can-be-answered-architecture-review.md` | Executor evidence — architecture |
-| `docs/plan/the-approval-can-be-answered-data-review.md` | Executor evidence — data pipeline |
-| `docs/plan/the-approval-can-be-answered-uiux-review.md` | Executor evidence — UI |
-| `docs/plan/the-approval-can-be-answered-decision-log.md` | Decisions across all phases |
+| `openspec/changes/the-approval-can-be-answered/plan/master-plan.md` | This plan |
+| `openspec/changes/the-approval-can-be-answered/plan/architecture-review.md` | Executor evidence — architecture |
+| `openspec/changes/the-approval-can-be-answered/plan/data-review.md` | Executor evidence — data pipeline |
+| `openspec/changes/the-approval-can-be-answered/plan/uiux-review.md` | Executor evidence — UI |
+| `openspec/changes/the-approval-can-be-answered/plan/decision-log.md` | Decisions across all phases |
 | `openspec/changes/the-approval-can-be-answered/` | Proposal, deltas, design, tasks |
 | `openspec/backlog/approvals-have-no-write-side.md` | The observed evidence everything rests on |
 
