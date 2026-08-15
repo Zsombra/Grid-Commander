@@ -24,10 +24,20 @@ so it was recovered from `cd4b5a1`, landed here, and closed done.
 change. Branch `claude/feasibility-advisory-dial-ui-dffc62`; PR is this
 handoff's last act.
 
-**Next**: **P2 #289** — but not `/propose` it, as the board still says. It is
-already worked on PR #295 (`cd4b5a1`); it needs a **rebase and merge**. Expect
-one conflict on `openspec/backlog/the-feasibility-advisory-is-unread.md` — take
-this branch's copy, the other three items on #295 are untouched.
+**Next**: **rebase and merge PR #295.** The board says "P2 #289 — /propose it"
+and that is wrong three ways, found while opening this PR. (1) #289 is already
+*worked*, on `cd4b5a1`. (2) **Issue #289 is CLOSED** — manually, COMPLETED,
+2026-08-15T10:15:34Z, right after the four re-files were cut — while its backlog
+item still reads `status: open, priority: p2` on `main`. The item and its mirror
+have disagreed for a day and nothing checks that direction. (3) #295 carries
+more than the four items: **6 backlog files** (4 new, 2 appended — including the
+third `approvals-have-no-write-side` sweep and the 502-outage observation) plus a
+49-line JOURNAL entry. Merging it is the whole remaining act; deciding whether
+the item follows its issue to done is the operator's call, and is the reason
+this session did not touch it.
+
+Expect one conflict on `openspec/backlog/the-feasibility-advisory-is-unread.md`
+— take this branch's copy; the other five files on #295 are untouched here.
 
 **Watch out**: **the panel has never rendered from a real payload.**
 `update_intelligence_agent` is classified destructive, so the surface record
