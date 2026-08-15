@@ -561,7 +561,29 @@ describe('every payload the product constructs can succeed', () => {
         confirm: true,
       },
     };
-    expect(violations(toolOrThrow('apply_strategy_plan'), payload)).toEqual([]);
+    /**
+     * The recorded artifact is one deployment behind the live server on
+     * exactly two keys, and this expectation says so BY NAME rather than
+     * loosening the guard.
+     *
+     * 2026-08-15: the platform deployed mid-session and the live apply began
+     * rejecting `regimeAutoDerive`/`regimeTimeframe` as `unrecognized_keys`
+     * — observed both ways in one minute (the plan with the keys refused,
+     * the identical plan without them accepted; Salamis revision 3 → 4,
+     * #285). The projection now omits them, so validating against the
+     * pre-deployment artifact reports exactly these four missing-required
+     * rows and nothing else. Any OTHER violation still fails this test —
+     * and so does the artifact being re-probed: the four rows disappear,
+     * this assertion fails, and whoever refreshes the record deletes this
+     * block (`the-surface-record-is-a-deployment-behind` carries the
+     * re-probe).
+     */
+    expect(violations(toolOrThrow('apply_strategy_plan'), payload)).toEqual([
+      'request.plan.regimeAutoDerive is required and missing',
+      'request.plan.regimeTimeframe is required and missing',
+      'request.plan.regimeAutoDerive is required by the matched variant and missing',
+      'request.plan.regimeTimeframe is required by the matched variant and missing',
+    ]);
   });
 });
 

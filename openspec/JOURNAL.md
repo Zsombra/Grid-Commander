@@ -67,6 +67,25 @@ self-inflicted lesson rides along: a `git reset --hard` mid-flow discarded
 an uncommitted item edit that had to be reproduced from context — never
 reset with records in flight.)*
 
+*(Addendum, eighth leg: the operator said "FIX IT" and **#285 is closed**
+— lite change `the-plan-matches-the-live-contract`, archived. The two
+keys moved from `PLAN_FIELDS_FROM_POST_STATE` into `FIELDS_APPLY_REJECTS`
+— absence now asserted by name, dated comment carrying the two-way live
+observation. And the guard question from #285 is answered: the
+conformance guard never fired because its artifact
+`docs/battlegrid-mcp-capabilities.json` predates the deployment — the
+record it validates against is yesterday's contract. The apply case now
+expects **exactly the four stale rows by name**, so any *other* drift
+still fails, and the expectation self-destructs on re-probe: the rows
+vanish, the assertion fails, the block gets deleted. The re-probe needs
+`BATTLEGRID_API_KEY` (verified absent here; scheduled-task environment
+only) and is carried by **#287**
+(`the-surface-record-is-a-deployment-behind`, p3). Gates at archive:
+2461 vitest / 196 files, 274 python, validate 0 errors, tsc + lint
+clean. The strategy-apply surface is live again in the code exactly as
+the 08:18Z hand-fixed write proved it must be — 19 open items, still no
+p2.)*
+
 **Watch out**: the analysis's unreadable arm is deliberately NOT
 `WhyNotLoaded` — this surface reads only the product's own store, the
 shared sentence would name a false cause, and the exemption in
