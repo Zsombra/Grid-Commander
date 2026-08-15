@@ -643,6 +643,9 @@ export function anEntryDecision(overrides: Partial<EntryDecision> = {}): EntryDe
     timeHorizon: '1h',
     atrPct: null,
     expiresAt: null,
+    // An EXECUTED decision the platform has finished with. Override to null
+    // for a decision that is still answerable.
+    closedAt: '2026-08-06T17:10:18.262Z',
     executedAt: '2026-08-06T17:10:18.262Z',
     executedOrderId: null,
     stopLossOrderId: null,

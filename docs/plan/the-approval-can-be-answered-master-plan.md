@@ -6,7 +6,7 @@
 |---|---|
 | Slug | `the-approval-can-be-answered` |
 | Change | `openspec/changes/the-approval-can-be-answered/` |
-| Phase | **1 — Planning** |
+| Phase | **2 — Execution (Phase A complete; B–G open)** |
 | Base ref | `origin/main` |
 | Track | `full` |
 | Last updated | 2026-08-15 |
@@ -102,6 +102,9 @@ already carries `entryPrice`, `stopLoss`, `takeProfit`, `status`,
 | 8 | connection step-up surface | modify | presentation | Offer wager authority from point of use |
 | 9 | `tests/agent/edit-binding.test.ts` | modify | test | Extend the guard so the new target cannot be composed inline |
 | 10 | `tests/agent/pending-decision.test.ts` | create | test | The five-condition binding, both refusal causes |
+| 11 | `tests/agent/wager.test.ts` | **modify (Phase C)** | test | **Added during execution — not in the original plan.** A10 asserts no fund-committing tool name appears in `src/` or `app/`. Phase C must narrow the structural half deliberately and keep the behavioural half. See DL-7 |
+| 12 | `tests/support/agent-fakes.ts` | modify | test | **Added during execution.** `anEntryDecision` gains `closedAt` |
+| 13 | `tests/rendering/pipeline.test.ts` | modify | test | **Added during execution.** Two decision fixtures gain `closedAt` |
 
 ## Dependency / Call-Tree Sketch
 
@@ -160,7 +163,7 @@ Task detail lives in `openspec/changes/the-approval-can-be-answered/tasks.md`
 
 | Plan phase | tasks.md sections | Exit condition |
 |---|---|---|
-| A — Read | 1 | Queue renders; empty and refused states distinguishable |
+| **A — Read** | 1 | **PARTIALLY COMPLETE 2026-08-15.** Done: `closedAt` on the port type and mapper, the `PendingDecision` domain module, the `decisionAnswer` confirmation target, 19 tests. **Not done: the read query and the queue surface** |
 | B — Authority & audit | 2 | No write path can reach BattleGrid without an audit row |
 | C — Cancel | 3 | Cancel works end to end through the product |
 | D — **GATE** | 4 | **A cancel performed through the product, audited, read back. Section 5 is not begun until this passes.** |

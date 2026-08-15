@@ -544,6 +544,20 @@ export interface EntryDecision {
   /** The volatility it sized the stop against, as a percent. */
   readonly atrPct: number | null;
   readonly expiresAt: string | null;
+  /**
+   * When it stopped being answerable — null while it still is.
+   *
+   * Set by the platform on cancel and on expiry alike, observed 2026-08-15 on
+   * both paths. With `status` it is the whole liveness test: a decision whose
+   * levels still match can already have been answered elsewhere, and this is
+   * the only field that says so.
+   */
+  readonly closedAt: string | null;
+  /**
+   * Set at creation, **not at fill** — observed identical to `createdAt` on a
+   * live decision that had executed nothing. Never render it as "when the
+   * trade opened".
+   */
   readonly executedAt: string | null;
   /**
    * What the exchange was actually told, when it was told anything.

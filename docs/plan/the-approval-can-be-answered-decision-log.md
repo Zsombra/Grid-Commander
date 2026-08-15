@@ -110,6 +110,42 @@ cancel made *through the product*.
 
 ---
 
+## DL-7 — A10's wager guard was not in the plan inventory, and Phase C must amend it deliberately
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-15 |
+| Phase | **EXECUTION** |
+| Type | Plan deviation / safety |
+| Decision | Keep `src/` free of fund-committing tool names for the whole of Phase A. The two tools are described in `pending-decision.ts` without being named. `tests/agent/wager.test.ts` is added to the master plan file inventory as a **Phase C** modification |
+| Impacted files | `src/domain/agent/pending-decision.ts`, `tests/agent/wager.test.ts` (Phase C), master plan inventory |
+| Reason | Phase A's first `npm test` failed on a guard the plan had not accounted for: **A10, "agent operations that commit funds are not reachable"**, which asserts structurally that no `mcp:wager` tool name appears anywhere in `src/` or `app/`. A doc comment naming the two answer tools tripped it. The comment made nothing reachable — but the guard is deliberately blunt because a name is the first step toward a call, and this codebase's own stated position is that *"a guard with an exception is a guard that gets exceptions added instead of defects fixed."* Weakening it for a comment, in the phase that performs no writes, would spend the guard for nothing |
+| Approved by | Executor, on the guard's own documented rationale |
+| Next action | **Phase C amends A10 deliberately**: narrow the structural half to the tools that remain unreachable, keep the behavioural half (a wager call arriving without the scope is still refused, and still not audited as an attempt), and log the amendment. Do not delete the test |
+
+**A10's second assertion is also now a Phase C item**: it reads
+`REQUESTED_SCOPES` from `src/domain/connection/scope.ts` and requires it to
+contain no wager scope. The step-up in Phase B/C must not widen the scopes
+requested *at connect* — which is exactly what the `battlegrid-connection` delta
+already requires, so the guard and the spec agree. Keep them agreeing.
+
+---
+
+## DL-8 — `EntryDecision.closedAt` is required, not optional
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-15 |
+| Phase | **EXECUTION** |
+| Type | Contract |
+| Decision | `closedAt` added to `EntryDecision` as a required `string \| null`, not an optional field |
+| Impacted files | `src/ports/agents.ts`, `src/infrastructure/battlegrid/agent-mapper.ts`, `tests/support/agent-fakes.ts`, `tests/rendering/pipeline.test.ts` |
+| Reason | Liveness is half the binding (DL-1) and an optional field would let a construction site omit it silently, which is the failure the binding exists to prevent. Making it required turned the compiler into the guard: `npm run typecheck` named all seven construction sites immediately, and each was given a value that reflects what that fixture actually represents rather than a blanket null |
+| Approved by | Executor |
+| Next action | None — done and typechecking clean |
+
+---
+
 ## Executor handoff notes
 
 1. **Start with `closedAt`.** The liveness half of DL-1 is unimplementable until

@@ -121,6 +121,38 @@ export const confirmationTarget = {
   agentUndeploy: (agentId: string, coinId: string): string =>
     `agent:${agentId}=/=coin:${coinId}`,
 
+  /**
+   * Answering a proposed trade: bound to the verb, the decision, and the three
+   * price levels that were on screen.
+   *
+   * **The verb is first because it is the part that must never be shared.**
+   * `agentDeploy`/`agentUndeploy` are separate for exactly this reason — a
+   * token agreeing to stop an agent must not start one — and here the asymmetry
+   * is far worse than that pair. Cancelling commits nothing; accepting opens a
+   * position at real size. A shared target would let an agreement to *decline* a
+   * trade authorise *buying* it.
+   *
+   * The levels are in the target because BattleGrid publishes no revision on a
+   * decision (PE-1), so there is no version to bind and the values are all
+   * there is. `consume` matches the target, not the values, so values that are
+   * not in the target are values nobody agreed to — the `agentEdit` precedent,
+   * and the reason this whole module exists.
+   *
+   * Liveness is deliberately **not** bound here: `status` and `closedAt` move
+   * on their own, so a token carrying them would refuse for the wrong reason
+   * and at the wrong layer. `checkAnswerable` tests those against the re-read.
+   */
+  decisionAnswer: (
+    verb: 'accept' | 'cancel',
+    decisionId: string,
+    levels: Readonly<{ entryPrice: number | null; stopLoss: number | null; takeProfit: number | null }>,
+  ): string =>
+    `decision:${decisionId}/${verb}#${digestOf({
+      entryPrice: levels.entryPrice,
+      stopLoss: levels.stopLoss,
+      takeProfit: levels.takeProfit,
+    })}`,
+
   /** Archive, restore. The revision comes from a re-read, not from the form. */
   strategy: (strategyId: string): string => strategyId,
 
