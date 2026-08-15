@@ -1,5 +1,54 @@
 # Journal
 
+## 2026-08-15 (reconcile) — the stranded branch comes home as four items and zero requirements
+
+**Did**: worked the board's only p2, #289 — draft PR #82's stranded content
+reconciled against `main`. **All seven stranded requirements declined, none
+merged**: two superseded by requirements `main` grew independently (the
+vocabulary pair, `platform-mapping/spec.md:329` and `:366`), five declined as
+unbuilt — the spec must not claim behavior `main` does not have (prose bodies
+unfetched, instructions loaded-and-discarded at `generate_mcp_reference.py:14`,
+no live prose gate, zero request-budget code). Residue re-filed as four items
+with mirrored issues: **#291** feasibility-advisory (still unread in `src/`,
+re-priced p2→p3 — the v15 dials item that lent it urgency is done), **#292**
+request-budget (full scope; the branch's reading half preserved as reference),
+**#293** thinking-pagination (`write-probe.test.ts:575` — the only one of the
+branch's three probe repairs whose defect survives on `main`), **#294** prose
+record/reference/live-gate residue, consolidated. Four branch items declined:
+config-width and radar-refusal assertions no longer exist in the rebuilt probe
+suite — the radar first-deploy restriction was *reversed* by the platform —
+and probe-failure-path describes branch-only code. Annotated tag
+`archive/claude/agent-creation-data-strategies-fw6av8` pushed at `9c60e93`,
+then PR #82 commented + closed, remote branch deleted, issue #289 closed.
+The three archived change folders were deliberately **not** imported into
+`main`'s archive — their deltas claim requirements this session declined.
+Also: the three armed watches checked first. #287 skipped (no
+`BATTLEGRID_API_KEY` here, presence verified without printing). #147/#101
+**cold**: the MCP backend went down mid-session (502 at the endpoint 30+
+minutes, site root 200 throughout, recovered to 401-alive) and after recovery
+the fleet is **still** `PLATFORM_PAUSED` 20/20, `lastFireAt` unchanged at
+2026-08-13T18:01:18Z — both items carry the sweep; approvals deliberately
+unread while paused.
+
+**State**: 0 active changes; 23 open items, **all p3 again**. `validate --all`
+0 errors / 13 pre-existing warnings / 4 info. No source code touched (backlog
++ journal only; `npm ci` ran but no gates were owed). Origin now holds `main`
+and tags only.
+
+**Next**: the watches stay armed on the platform's unpause — #147's
+evaluations under Salamis revision 4 and #101's 15-minute approval window are
+the same moment. Cold pick: #283, the `read_forward_returns` lite change.
+
+**Watch out**: **an MCP-backend outage is not the unpause signal** — the
+backend redeployed or recovered without the fleet unpausing; check
+`summary.radarPaused`, never reachability. — The vocabulary supersessions are
+the exact case #289's own caveat predicted: the same substance re-landed on
+`main` under rewritten requirement titles, so title search reads it as missing
+forever; judge by reading, not by grep. — `gh pr close` takes `--comment`
+(string) only, no `--comment-file`; comment first, close second. — The
+re-filed pagination item was re-homed `agent-introspection` → `platform-mapping`:
+the former has no spec on `main` and would have added a validation warning.
+
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
 **Did**: reconciled every branch in the repo and pruned it down. **52 local +
