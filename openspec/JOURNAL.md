@@ -1,5 +1,39 @@
 # Journal
 
+## 2026-08-15 (floor) — the depth gate held, and the claims stay unattached
+
+**Did**: #282's depth check, run before proposing as instructed — and it
+stopped the change. Measured the record read-only (arithmetic in UTC inside
+the query; the db client renders UTC+7): 1,203 recorded captures,
+2026-08-12 19:46Z → 2026-08-15 10:18Z (2.61 days), 20 series at 1h; the
+product's own pairing rule replicated in SQL gives 1,130 valid pairs
+(baseline +0.0036%). Per-signal n for the funding-fade family:
+`funding_rate_flipping` **113** (mean +0.0714%, sd 0.75% → se 0.071%,
+mean ~1 se from zero; 14 coins over 55 distinct hours, so effective
+n < 113), `funding_extreme_positive` **2**, `funding_extreme_negative`
+**0**. The family's tier-moving claims rest on the extremes; n = 2/0
+after 2.6 days is §D.6's "nothing to harvest" confirmed, and calendar
+depth will not fix it — the tripwire is trigger count. No change
+proposed; evidence written into the item and mirrored to issue #282.
+
+**State**: 0 active changes, 20 open items, P2 #289 untouched at the top.
+No product code touched; `npm ci` ran clean in the worktree; no tests run
+(nothing to test). `validate --all` 0 errors / 13 pre-existing warnings /
+4 info, unchanged.
+
+**Next**: #282 sleeps until `funding_extreme_*` triggered captures reach
+~30 (one query, in the item) or the operator names a different first
+family. The board's answer is unchanged: P2 #289
+(`a-completed-change-set-is-stranded-on-a-draft-pr`) is the sharpest item.
+
+**Watch out**: the recorder's real environment lives in the scheduled
+task's `record.ps1` under `%USERPROFILE%\grid-commander` — DATABASE_URL,
+key, secrets — not in any repo `.env`; a session needing the db finds it
+there. And the per-signal n on `/recorder/analysis` overstates
+independence for cross-sectionally clustered signals: flipping's 113
+pairs sit in 55 hours, so any floor should be read against effective
+sample, not raw n.
+
 ## 2026-08-15 (prune) — the branches reconcile, and one of them was holding something
 
 **Did**: reconciled every branch in the repo and pruned it down. **52 local +
