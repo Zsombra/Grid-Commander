@@ -1,5 +1,51 @@
 # Journal
 
+## 2026-08-15 (dress) — the row's densest lines get their ruling
+
+**Did**: merged #276 (main `9fdb501`). The day's fifth leg: **#274**'s
+design round, run whole — design-director, executor, re-pin. **DT-0011
+revised** rather than a new ticket, because `design_state_not_covered` is
+computed per ticket and only a revision clears it honestly: two real
+treatments and six deliberate no-ops, all eight states styled. The
+rulings: the **holding-position** standing takes `type.weight.medium`
+(money live behind the row; words carry the fact; colour alone forbidden);
+**quoted platform identifiers** — the qualification block token and an
+unrecognised section value — wear `type.family.mono` at `type.size.xs` as
+`<code>` (quoted evidence wears quoting dress), while regime names and
+timestamps stay in the sentence face. The zero-copy acceptance line was
+rescoped to the ticket's own edits, the DT-0014 lesson applied. Implemented
+at `c0e741a` with the wording keeping its single source —
+`resolutionNote` now derives from `resolutionNoteSegments` (segments
+classified where the sentence is composed, never by the renderer matching
+text), so `radar-resolution.test.ts`'s string pins held unchanged.
+Structural tests per the DT-0022/0027 local-walker pattern. The manifest
+was **re-pinned as the round's last task** (design-contract §8). #274
+closed both sides — filed and resolved the same day.
+
+**State**: 0 active changes, **18 open items**, one p2 (#94, gated until
+~Aug 20 02:46 local). Gates: typecheck, lint, **2443 vitest / 193 files**,
+build, drizzle no-op; `test:db` skipped deliberately. `validate --all`
+0 errors / **13 deliberate warnings** / 3 info after this entry — below
+where the week started: the assistant seven and DT-0003/0004/0014's six;
+both agent-roster warnings (the stale one and the coverage eight) are
+genuinely retired. Branch `claude/agent-roster-design-round`; PR is this
+handoff's last act.
+
+**Next**: tripwires first — #94 from ~Aug 20 02:46 local, the analysis
+layer. Nothing pre-ranked remains: the lane is 18 items of watches,
+upstream blocks, and operator-gated questions. A session arriving cold
+before Aug 20 should re-run triage-by-consequence only if something in the
+lane has moved; otherwise the honest answer is that the board is quiet.
+
+**Watch out**: `design_state_not_covered` is per-ticket — a NEW ticket
+covering only new states would have fired its own warnings for the states
+it left to the old one; revision is the only shape that clears coverage,
+which is worth knowing before splitting tickets by round. And the segment
+classifier lives in `resolutionNoteSegments` on purpose: a renderer that
+re-derived token-ness by matching text (ALL_CAPS, say) would dress words
+the platform never quoted — the kind is decided where the sentence is
+composed, and the derived string keeps the wording pins alive.
+
 ## 2026-08-15 (sibling) — the loss shape reaches the model
 
 **Did**: merged #275 (main `05c8d80`). Radar freshness check before the
