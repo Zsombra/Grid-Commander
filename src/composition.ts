@@ -59,6 +59,7 @@ import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
+import { ReadLossShapeQuery } from './application/use-cases/read-loss-shape.query.js';
 import { ReadRiskReadingQuery } from './application/use-cases/read-risk-reading.query.js';
 import { ReadWagerAuthorityQuery } from './application/use-cases/read-wager-authority.query.js';
 import { DescribeTrimRecordQuery, TrimRecordCommand } from './application/use-cases/trim-record.command.js';
@@ -314,6 +315,9 @@ export function app(cookies: CookieStore) {
     updateAgent: new UpdateAgentCommand(i.agents),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
+    // How the distance on the drawdown gauge arrived — same port, its own
+    // read, because the figure and the curve come from one payload.
+    readLossShape: new ReadLossShapeQuery(i.agents),
     // The same agent, asked what its settings are *against*. Two ports: three
     // readings come from the agents surface, and the fourth — the account
     // balance an exposure cap is measured against — is an account-level fact

@@ -5,6 +5,7 @@ import type { TradingConfig } from '@/domain/agent/trading-config.js';
 import type {
   AgentsPort,
   BudgetResult,
+  PerformanceResult,
   CatalogResult,
   EntryDecision,
   GateBlock,
@@ -28,6 +29,7 @@ import { isSilent } from '@/domain/agent/journal.js';
 import {
   mapAgent,
   mapBudget,
+  mapPerformanceReading,
   mapCatalog,
   mapCoinQualification,
   mapEntryDecision,
@@ -75,6 +77,7 @@ const TOOLS = {
   thoughts: 'get_agent_thought_log',
   allThoughts: 'get_user_thought_log',
   budget: 'get_agent_budget',
+  performance: 'get_agent_performance',
   tradeOutcomes: 'list_trade_outcomes',
   gateBlocks: 'list_gate_blocks',
   signalLogs: 'list_signal_logs',
@@ -393,6 +396,21 @@ export class McpAgentAdapter implements AgentsPort {
     } catch (err) {
       // A budget that failed to load is not an agent with no limits, and the
       // difference is the whole subject of this surface.
+      return unreadable(err);
+    }
+  }
+
+  async readPerformance(params: {
+    userId: string;
+    accessToken: string;
+    agentId: string;
+  }): Promise<PerformanceResult> {
+    try {
+      const payload = await this.call(params, TOOLS.performance, { agentId: params.agentId });
+      return { kind: 'performance', reading: mapPerformanceReading(payload) };
+    } catch (err) {
+      // A curve that failed to load is not an agent that settled nothing —
+      // the platform itself distinguishes the two, and so must this read.
       return unreadable(err);
     }
   }
