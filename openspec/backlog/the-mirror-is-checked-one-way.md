@@ -134,3 +134,41 @@ the hardest part of building it.
 
 Reproduction: compare `github:` in every `openspec/backlog/*.md` with
 `status: open|in-progress` against `gh issue list --state open`, both ways.
+
+## All three settled 2026-08-16 (reconcile), and the noise was noise
+
+The two left as found are resolved — each by checking the work rather than
+comparing the states, which is what this item asked for:
+
+- **#283 self-corrected.** PR #313 carried the item update in the same commit
+  that shipped `read_forward_returns`, so the item read `done` the moment the
+  work landed. **That is the cheapest fix this item could get**: the PR that
+  settles the issue also moves the item, and no separate sweep is needed.
+- **#294 did not**, and was verified against code rather than its closed issue —
+  `capture_mcp_dump.py:101,105` fetch `prompts/get` / `resources/read`,
+  `generate_mcp_reference.py:271` emits `## Server instructions`
+  (`BATTLEGRID_MCP_REFERENCE.md:109`), `surface-freshness.test.ts:317` digests
+  the instructions against the live server. All three residual gaps genuinely
+  closed, delivering change 6/6. Marked `done` against
+  `the-prose-record-carries-bodies`.
+
+**This item now has no live cases.** A fix built after today has to reconstruct
+one from the table above rather than run against the board.
+
+**The part called hardest got easier.** The caveat was that any check must run
+against `origin/main` *plus open branches*, or every parallel session reads as
+drift. Those three PRs merged (#307, #313, #319), and the check ran clean for
+the first time, on `8e9e4c2`:
+
+| direction | count |
+|---|---|
+| item `open`/`in-progress` + issue `CLOSED` | 0 |
+| item `done` + issue `OPEN` | 0 |
+| issue `OPEN` with no item on `main` | 0 |
+
+26 open issues, 26 matching items. **The five "open issue, no item" entries
+named above were exactly the branch-invisibility artifact predicted, and none
+was drift** — #299, #304, #305 arrived with #307; #317, #318 with #319; all five
+now sit on `main` as `status: open` against open issues. So the noisy direction
+is worth building after all, provided the check tolerates in-flight branches —
+and there is now a measured zero-state on a known SHA to regress against.
