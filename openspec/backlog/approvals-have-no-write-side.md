@@ -389,6 +389,130 @@ order simply did not fill. `llmDurationMs: 45972` on HYPE confirms the model ran
   row ("enriched with execution and outcome context"), and the literal
   `AWAITING_APPROVAL` status string in a live payload.
 
+## THE LIVE ROW — captured 2026-08-15T17:0x Z, inside its window
+
+**`list_pending_approvals` returned a populated row for the first time in this
+product's history.** HYPE again, created 17:01:39.869Z, expiring 17:16:39.869Z.
+Captured verbatim below. **Both remaining unknowns are resolved, and both
+resolve AGAINST the declaration** — the exact failure mode this item exists to
+prevent.
+
+### Finding 1: there is no enrichment. The two tools return the identical row.
+
+`list_pending_approvals` declares it returns decisions *"enriched with execution
+and outcome context"*. Read in the same second,
+`list_entry_decisions(status: PENDING)` returned a **byte-identical object** —
+same 35 keys, same values, no wrapper, no extra field. The only difference is
+the envelope: `{approvals: [...]}` versus `{entries: [...], total: 1}`.
+
+Consequence for the change: `design.md`'s "unknown enrichment envelope" is not
+unknown and not an envelope. Task 1.3's instruction to carry unknown enrichment
+through unread has nothing to carry. **The two tools are interchangeable for
+reading the queue**, and `list_entry_decisions` is strictly better because it
+paginates and filters.
+
+### Finding 2: the status string is `PENDING`, not `AWAITING_APPROVAL`.
+
+The tool description says it returns decisions *"awaiting your approval (status
+AWAITING_APPROVAL)"*. The live payload says `"status":"PENDING"` and
+`"tradeStatus":"PENDING"`. **`AWAITING_APPROVAL` does not appear anywhere in the
+response.** Anything matching on that string would have matched nothing. This is
+the eighth dead path, caught before it was written.
+
+### The payload, verbatim
+
+```json
+{"id":"6c11b3dc-28ea-4648-ab83-b4d5f14522e1",
+ "signalLogId":"89fb3b22-3f17-4ff8-90d8-6f19f53812bc",
+ "agentId":"d0f6829f-96f8-468d-8797-4a04e8dc8e37",
+ "userId":"0eccbf37-d90b-4933-88f2-d120627b23f7",
+ "coinTicker":"HYPE","decision":"ENTER","direction":"SHORT",
+ "conviction":0.55,"convictionPercent":55,
+ "entryPrice":57.176,"stopLoss":57.73495777,"takeProfit":55.5,
+ "positionSizePct":10,"positionSizePreset":"SMALL",
+ "reasoning":"HYPE is pinned at its swing high ($57.18, -0.01% away) with
+   perp-led fragile flow … Setup [6] gives a 1.5X ATR stop at $57.7350 with TP
+   at swing low $55.50 for R:R 3.0 …",
+ "signalChecklist":[
+   {"signalId":"sr_at_resistance","label":"At Resistance","verdict":"CONFIRM","interpretation":"…"},
+   {"signalId":"flow_perp_spot_bear_divergence","label":"Perp-Led Bear Divergence","verdict":"CONFIRM","interpretation":"…"},
+   {"signalId":"cvd_bullish","label":"CVD Bullish","verdict":"WARN","interpretation":"…"},
+   {"signalId":"oi_surge","label":"OI Surge","verdict":"CONFIRM","interpretation":"…"}],
+ "signalModulesUsed":["SUPPORT_RESISTANCE","FLOW_DIVERGENCE","CVD","OPEN_INTEREST"],
+ "timeHorizon":"1h","riskRewardRatio":2.998,
+ "status":"PENDING",
+ "executedOrderId":null,"stopLossOrderId":null,"takeProfitOrderId":null,
+ "llmDurationMs":58422,"usageEventId":"f92b23cc-e802-4bd4-8d84-7849950fd14d",
+ "createdAt":"2026-08-15T17:01:39.869Z",
+ "expiresAt":"2026-08-15T17:16:39.869Z",
+ "executedAt":"2026-08-15T17:01:39.869Z",
+ "entryFillPrice":null,"entryFillQuantity":null,"entryFee":null,
+ "closedAt":null,
+ "atrPct":0.6517,"tradeStatus":"PENDING","challenge":null}
+```
+Envelope: `{"approvals":[ … ]}` — no `total`, no cursor, unpaginated as declared.
+
+### What else the live row confirms
+
+- **`closedAt: null`** is the live/settled discriminator. The expired HYPE row
+  carried `closedAt: "2026-08-15T13:33:10.729Z"`; this one is null while
+  actionable. Combined with `status`, that is a reliable liveness test.
+- **`executedAt` is set at creation on a decision that has not executed** —
+  17:01:39.869Z, identical to `createdAt`, with every fill field null. The
+  earlier warning stands and is now confirmed on a *live* row: never render it
+  as "when the trade opened".
+- **Still no revision field.** 35 keys, no `revision`, `version`, `updatedAt`,
+  or ETag. The binding gap in `the-approval-can-be-answered` is confirmed
+  against a live payload, not just an expired one.
+- The size is `positionSizePct: 10` with all fill fields null — accept-time
+  sizing confirmed live. At the current headroom of 41.45 this would size to
+  about $12.44, above the $10 floor.
+
+## THE FIRST mcp:wager WRITE — cancel performed 17:05:44Z, operator-authorized by name
+
+The operator authorized the cancel by name while the row was live. **This is the
+first time Grid-Commander's session has exercised `mcp:wager` in this product's
+history**, and it was deliberately the write that commits no money.
+
+```
+cancel_entry_decision(decisionId: "6c11b3dc-28ea-4648-ab83-b4d5f14522e1")
+→ {"decisionId":"6c11b3dc-28ea-4648-ab83-b4d5f14522e1","cancelled":true}
+```
+
+**The response is two keys.** No decision echo, no status, no timestamp, no
+error envelope. A UI cannot render the outcome from the response — it must
+re-read. Do not model a richer return.
+
+Read-back confirms it, and settles the last of the lifecycle vocabulary:
+
+```
+list_pending_approvals            → {"approvals":[]}          (gone from the queue)
+list_entry_decisions(CANCELLED)   → total 1, the same decision with:
+  status:      "PENDING" → "CANCELLED"
+  tradeStatus: "PENDING" → "CANCELLED"
+  closedAt:    null      → "2026-08-15T17:05:44.219Z"
+  everything else byte-identical — entryPrice, stopLoss, takeProfit,
+  positionSizePct, reasoning, signalChecklist all preserved unchanged
+```
+
+**Cancelled at 17:05:44Z against an `expiresAt` of 17:16:39Z** — eleven minutes
+early, so this is a genuine cancel and not an expiry racing us. The decision was
+declined; nothing was bought or sold; `capitalAtRiskUsd` is unchanged.
+
+### What this settles for the change
+
+- **`closedAt` is set by the cancel**, and `status`/`tradeStatus` move together.
+  The pair (`status`, `closedAt`) is the complete liveness/outcome test.
+- **The observed status vocabulary is now**: `PENDING` (live, actionable),
+  `CANCELLED`, `EXPIRED`, plus `SKIPPED`/`EXECUTED`/`FAILED` from the filter
+  enum. **`AWAITING_APPROVAL` is not among them** despite the tool description.
+- **The decision is preserved, not consumed.** Every field survives the cancel,
+  so a cancelled decision remains fully readable — the queue surface can show
+  what was declined and why, which the spec's audit requirement needs.
+- **Task 4.4 is effectively pre-satisfied**: a real cancel has been performed
+  against the live platform and read back. The implementation now has an
+  expected response to assert against rather than one to discover.
+
 ### Catching the next one
 
 Undertow produced this at 13:18Z having produced nothing at 12:00Z, so the rate

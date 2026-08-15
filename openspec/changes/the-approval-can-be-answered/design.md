@@ -42,6 +42,25 @@ Rejected: **binding the whole payload by digest** — `reasoning` is model-autho
 prose and any incidental re-render would refuse every answer, training the
 operator to retry through a safety check.
 
+### Decision: The queue is read with `list_entry_decisions`, not `list_pending_approvals`
+
+Chosen because on 2026-08-15 both were called in the same second against a live
+pending decision and returned a **byte-identical row** — the same 35 keys, the
+same values. `list_pending_approvals` declares it returns decisions "enriched
+with execution and outcome context"; no enrichment exists. The only difference
+is the envelope, `{approvals: […]}` versus `{entries: […], total}`.
+
+Given identical payloads, `list_entry_decisions` wins on capability: it
+paginates, filters by status, coin, direction and verdict, and returns a total.
+`list_pending_approvals` does none of that and is documented as unpaginated.
+
+This also retires the "unknown enrichment envelope" that an earlier draft of
+this design named as a bounded unknown. It is neither unknown nor an envelope.
+
+**Liveness is `status === "PENDING"` and `closedAt === null`.** The tool
+description names `AWAITING_APPROVAL`; that string does not appear anywhere in
+the live payload, and code matching it would match nothing.
+
 ### Decision: Cancel ships and is proven before accept is written
 
 Chosen because cancelling commits no money and accepting opens a position at

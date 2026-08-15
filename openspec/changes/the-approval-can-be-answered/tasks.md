@@ -16,9 +16,14 @@
       conviction, entry/stop/target, reasoning, signal checklist, size
       proportion, `expiresAt`. Every field traceable to the observed payload.
 - [ ] 1.2 Add `listPendingDecisions` to the BattleGrid port.
-- [ ] 1.3 Map `list_pending_approvals` in the adapter. Where the enrichment it
-      adds over a plain decision row is unknown, carry it through unread rather
-      than guessing at it.
+- [ ] 1.3 Read the queue with `list_entry_decisions(status: PENDING)`, not
+      `list_pending_approvals`. **Both return a byte-identical row** — observed
+      in the same second on 2026-08-15; the declared "enriched with execution
+      and outcome context" is not present and there is no enrichment to carry.
+      `list_entry_decisions` paginates and filters; the other does neither.
+- [ ] 1.3a Match liveness on `status === "PENDING"` and `closedAt === null`.
+      **Never match on `AWAITING_APPROVAL`** — the tool description names that
+      string and the live payload does not contain it.
 - [ ] 1.4 Read-side query and the queue surface, reachable from the pipeline.
 - [ ] 1.5 Render the empty queue as "nothing waiting", distinct from a refusal.
 - [ ] 1.6 Render a refused queue read with the platform's own reason.
@@ -53,13 +58,19 @@
       when all three match; refuses when the decision is missing.
 - [ ] 4.2 Unit: an answer is refused before any call when authority is absent.
 - [ ] 4.3 Unit: the queue renders empty and refused states distinguishably.
-- [ ] 4.4 **Live**: with operator authorization, cancel one real pending
+- [x] 4.4 **Live**: with operator authorization, cancel one real pending
       decision. Read back that it is no longer waiting. Record the payload
-      verbatim in the backlog item.
+      verbatim in the backlog item. — **DONE 2026-08-15T17:05:44Z, ahead of
+      implementation.** `cancel_entry_decision` on decision `6c11b3dc` returned
+      `{"decisionId":"…","cancelled":true}` and nothing else; read-back shows
+      `status`/`tradeStatus` → `CANCELLED`, `closedAt` set, every other field
+      preserved. Assert against that response; do not model a richer one.
 - [ ] 4.5 **Live**: confirm the audit recorded the cancel as a fund-committing
-      write with its bound levels.
-- [ ] 4.6 Record what the live cancel taught about the enrichment envelope that
-      the empty queue could not show.
+      write with its bound levels. **Note**: the 4.4 cancel was made directly
+      over MCP before the audit path existed, so it is not in the audit. This
+      task still needs a cancel made *through the product*.
+- [ ] 4.6 Assert the two-key response shape in a test — a UI cannot render the
+      outcome from it and must re-read. Regression-guard that re-read.
 - [ ] **GATE — do not begin section 5 until 4.4 and 4.5 have passed.**
 
 ## 5. Accept — only after the gate
