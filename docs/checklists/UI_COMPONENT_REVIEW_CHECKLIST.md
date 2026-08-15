@@ -176,6 +176,28 @@ always owned it).
 user who cannot distinguish red from grey must still be able to tell an archive
 from a refresh.
 
+**What counts as a live region (8)**: `aria-live`, `role="status"` **and**
+`role="alert"`. The last two are implicit live regions — ARIA defines `status`
+as `aria-live="polite"` and `alert` as `aria-live="assertive"` — so a component
+that carries either already announces, and one that carries none does not,
+whatever it looks like. Settled 2026-08-16 (#242) because three binding records
+had counted `role="status"` alone and reported the product's total as 19; on the
+same commit it was 130.
+
+**Count it, don't quote it.** The number moves with every surface added — 130 on
+2026-08-14, 139 on 2026-08-16, and three different values within 2026-08-14
+alone. A live-region count is a fact about a commit, so a review that needs one
+measures it:
+
+```bash
+grep -rnE 'aria-live|role="status"|role="alert"' app src --include=*.tsx --include=*.ts | wc -l
+```
+
+That grep misses roles built from expressions — `app/(app)/arena/page.tsx:130`
+carries `role={s.entered === null ? 'status' : undefined}` — so it is a floor,
+not a total. What it is reliable for is the question this checklist actually
+asks: **does this component announce, or not.**
+
 ---
 
 ## Responsive Layout Checklist

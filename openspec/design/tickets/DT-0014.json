@@ -52,19 +52,23 @@
   "acceptance": [
     "The what-would-go block renders on color.consequence.subtle with a 1px color.consequence.border border and keeps role=alert and the verbatim sentence",
     "The unreadable-date paragraph renders on color.danger.subtle with a 1px color.danger.default border and keeps role=alert",
-    "The receipt block renders on color.notice.subtle with a 1px color.notice.border border and keeps role=status with its counts intact",
+    "The receipt block renders on color.notice.subtle with a 1px color.notice.border border and keeps role=status. SUPERSEDED IN PART 2026-08-13 (see references): 'with its counts intact' no longer holds — the approved change the-receipt-states-what-remains removed the counts from the receipt on purpose (#168). Check the tokens and the role; do not restore the counts",
     "The nothing-to-trim reason renders on color.quiet.subtle with a 1px color.quiet.border border and keeps role=status",
     "The problem banner, both buttons, and the date control are unchanged",
-    "Zero copy changes anywhere on the page",
+    "Zero copy changes anywhere on the page — as a constraint on THIS restyle, which introduced none. SUPERSEDED 2026-08-13 as a standing rule: the-receipt-states-what-remains changed the receipt copy by approved behaviour change. This line never froze the page's copy against future work",
     "No raw color, spacing, or size literal is introduced"
   ],
   "references": [
+    {
+      "kind": "note",
+      "value": "SUPERSESSION, 2026-08-13. The change `the-receipt-states-what-remains` (#168, approved and implemented) removed the counts from the trim receipt: figures carried in an editable address were a claim nobody could check, on a receipt for a permanent act. The surviving coverage is derived from the record instead. That retires the CONTENT half of two acceptance lines here — 'with its counts intact' and 'zero copy changes' — and nothing else. THE TOKEN RULING IS LIVE AND UNCHANGED: the paragraph still wears role=status and `rounded-gc-2 border border-notice-border bg-notice-subtle` at app/(app)/recorder/trim/page.tsx:48, and every treatment in `design` remains the ticket's standing decision. A design round that read the acceptance at face value and restored the counts would re-introduce exactly the defect #168 was filed for. Recorded per backlog item dt-0014-acceptance-outlived-the-receipt-it-described (#193); this is bookkeeping, not a new design decision."
+    },
     {
       "kind": "note",
       "value": "Backlog 157 (the design lane's tail) — the survey found this page missed the role sweeps (it was built after them). Every treatment restates a decided ruling: DT-0004 (consequence/danger), the pending pages' notice for redirect notes, and the system principle on absence for quiet."
     }
   ],
   "created": "2026-08-12",
-  "updated": "2026-08-12",
+  "updated": "2026-08-16",
   "github_issue": null
 }
