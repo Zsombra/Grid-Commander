@@ -1,0 +1,90 @@
+# Tasks
+
+## 0. Decide the binding before anything is built
+
+- [ ] 0.1 Operator decides: the confirmation binds decision id + entry + stop +
+      target, in place of the revision the platform does not publish. Record the
+      answer in `design.md` under the existing decision. **Nothing below starts
+      until this is answered** — it is the change's load-bearing contract.
+- [ ] 0.2 Confirm the platform still publishes no revision on a decision by
+      re-reading one live row. If a revision has appeared, stop and revise the
+      binding to use it.
+
+## 1. Read the queue
+
+- [ ] 1.1 Add `PendingDecision` to the domain — id, agent, coin, direction,
+      conviction, entry/stop/target, reasoning, signal checklist, size
+      proportion, `expiresAt`. Every field traceable to the observed payload.
+- [ ] 1.2 Add `listPendingDecisions` to the BattleGrid port.
+- [ ] 1.3 Map `list_pending_approvals` in the adapter. Where the enrichment it
+      adds over a plain decision row is unknown, carry it through unread rather
+      than guessing at it.
+- [ ] 1.4 Read-side query and the queue surface, reachable from the pipeline.
+- [ ] 1.5 Render the empty queue as "nothing waiting", distinct from a refusal.
+- [ ] 1.6 Render a refused queue read with the platform's own reason.
+- [ ] 1.7 Show remaining time from `expiresAt`; show the size as a proportion
+      with no currency amount anywhere on the surface.
+
+## 2. Authority, before either write exists
+
+- [ ] 2.1 Check connection authority before any answer is attempted; refuse
+      first, naming the authority needed.
+- [ ] 2.2 Step-up flow from the point of use, stating what the authority permits
+      and that accepting commits real money.
+- [ ] 2.3 Prove no read, model-recorded proposal, or scheduled work can begin a
+      step-up.
+- [ ] 2.4 Audit records for both answers, including refusals — the record exists
+      before the writes that use it.
+
+## 3. Cancel — built and proven first
+
+- [ ] 3.1 `cancelDecision` on the port; `cancel_entry_decision` in the adapter,
+      treated as destructive.
+- [ ] 3.2 The binding comparison in the domain: re-read, compare the three
+      levels, refuse with which level moved and from what to what.
+- [ ] 3.3 Cancel confirmation: what is being cancelled, and that the agent will
+      not re-propose it.
+- [ ] 3.4 Expired-first path — told it expired, not reported as a cancel
+      performed.
+
+## 4. Verification gate — cancel proven before accept is written
+
+- [ ] 4.1 Unit: the binding refuses when entry, stop, or target differs; passes
+      when all three match; refuses when the decision is missing.
+- [ ] 4.2 Unit: an answer is refused before any call when authority is absent.
+- [ ] 4.3 Unit: the queue renders empty and refused states distinguishably.
+- [ ] 4.4 **Live**: with operator authorization, cancel one real pending
+      decision. Read back that it is no longer waiting. Record the payload
+      verbatim in the backlog item.
+- [ ] 4.5 **Live**: confirm the audit recorded the cancel as a fund-committing
+      write with its bound levels.
+- [ ] 4.6 Record what the live cancel taught about the enrichment envelope that
+      the empty queue could not show.
+- [ ] **GATE — do not begin section 5 until 4.4 and 4.5 have passed.**
+
+## 5. Accept — only after the gate
+
+- [ ] 5.1 `acceptDecision` on the port and `accept_entry_decision` in the
+      adapter, reusing the binding and audit proven by cancel.
+- [ ] 5.2 Accept confirmation: coin, direction, the three levels, the proportion
+      committed, and a plain statement that a position opens with real money.
+- [ ] 5.3 Accept is not rendered on any surface where cancel is unavailable.
+- [ ] 5.4 Expired-first path — told it expired and no position opened.
+- [ ] 5.5 Report the platform's own reason on a refused accept.
+
+## 6. Retire the disclosure
+
+- [ ] 6.1 Remove the unfinished-mode text from the trading mode selector; link
+      to the queue instead.
+- [ ] 6.2 Check every other surface naming approval-required for the same claim.
+
+## 7. Verification
+
+- [ ] 7.1 Unit: expiry mid-answer is reported as expiry on both paths.
+- [ ] 7.2 Unit: no currency amount is produced anywhere for a pending decision.
+- [ ] 7.3 Unit: a refused answer is audited with its reason and no success.
+- [ ] 7.4 **Live, operator-authorized, by name at the moment**: accept one real
+      decision. Read back the position. Record it verbatim.
+- [ ] 7.5 Quality gates: typecheck, lint, vitest, build, drizzle no-op.
+- [ ] 7.6 `openspec.py validate` clean; surface manifest refreshed for the new
+      queue surface.

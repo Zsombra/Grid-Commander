@@ -2,8 +2,9 @@
 id: approvals-have-no-write-side
 title: The human-in-the-loop can be read but not answered — accept/cancel are unbuilt
 type: feature
-status: open
+status: in-progress
 priority: p3
+change: the-approval-can-be-answered
 created: 2026-08-03
 updated: 2026-08-15
 capability: agent-understanding
