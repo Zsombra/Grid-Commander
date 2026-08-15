@@ -1,5 +1,62 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-15 (keyed — the v19.1.0 re-probe and the platform's prose)
+
+**State**: green — **2498 vitest / 200 files**, typecheck and lint clean,
+`validate --all` at **0 errors / 13 warnings** (the same 13 design-ticket
+warnings). **13 capabilities, 198 archived changes, 24 backlog items open**
+(222 done), **0 active changes**, 27 surfaces, 27 design tickets.
+**BattleGrid is v19.1.0** — re-probed 2026-08-15 (#287) and all four records
+are level with it. `test:db` deliberately skipped: no schema changed.
+
+**BattleGrid was two majors ahead of the record, and nothing cheap could see
+it.** v19.1.0 kept **114 tools, none added or removed, every description
+identical, every annotation identical, the read/write/destructive split
+identical** — while 5 input and 34 output schemas moved underneath. This is
+the third deployment in a row where the count proved nothing and the first
+where the descriptions and annotations proved nothing either.
+
+**The refreshed record caught a live defect before the platform did.**
+`preview_strategy_report` dropped `regimeAutoDerive`/`regimeTimeframe` from an
+input that keeps `additionalProperties: false`, so **every strategy preview
+the product composes was being refused whole** on `main`. Same defect class as
+#285, on the sibling read path, found by a guard this time rather than by a
+refusal (`the-preview-matches-the-live-contract`, lite).
+
+**Declared and observed now disagree in both directions on one field pair.**
+`regimeAutoDerive` was deleted from all fifteen output schemas that declared
+it *and* is absent from a live `get_strategy`; `regimeTimeframe` is **still
+returned** though nothing declares it. The mapper's `=== true` was turning
+that silence into a confident `false` and the detail page stated it as fact —
+now `boolean | null`. **Any `=== true` on a v19 read deserves the same
+suspicion.**
+
+**The platform's prose is in the repository for the first time** (#294,
+`the-prose-record-carries-bodies`, standard). `tools/capture_mcp_dump.py`
+fetches `prompts/get` and `resources/read`; the reference carries a Server
+instructions section plus every body (+552 lines); a live gate digests each
+prose surface against the running server with the account greeting normalised
+out. The "record a refusal as a **named failure**, never as absence" rule
+earned itself on the first run: all five prompts refused `-32602`, which is
+how we learned **`prompts/get` demands an `arguments` key even when every
+argument in it is optional**.
+
+**What is verified and what is not.** Live: the full probe suite (23 files /
+55 tests), the prose gate (23/23), and #293 proven at `decisions 20 of 157`.
+**The run was read-only**, so nine write-gated probes have never seen v19 —
+every write path is conformant against the refreshed record and unobserved
+against the running server, which is the weaker assurance given the paragraph
+above. Filed as **#306**; it needs a keyed env *and* a named go-ahead.
+
+**Next session**: **#289** — it has now been the board's stated Next for four
+consecutive sessions without moving, which is a triage signal rather than a
+plan. If a fifth passes, re-price it. Cheapest real work on the lane is
+**#301**, a fully offline survey of v19's 34 moved output schemas against a
+record that is finally current.
+
+**Superseded header from 2026-08-15 (repo hygiene — branch reconciliation)
+follows.**
+
 **Date**: 2026-08-15 (repo hygiene — branch reconciliation)
 
 **State**: **13 capabilities, 195 archived changes, 20 backlog items open, 0
@@ -7,7 +64,7 @@ active changes, 26 surfaces, 27 design tickets**, `validate --all` at **0
 errors / 13 warnings** (the same 13 as the previous header — all design-ticket
 warnings). **No product code changed this session and no tests, typecheck,
 lint or build were run**, so the build status above the diff is inherited from
-the previous header rather than re-verified. BattleGrid v18.2.0.
+the previous header rather than re-verified. BattleGrid v18.2.0 at the time; **re-probed to v19.1.0 on 2026-08-15**.
 
 **The repo went from 52 local + 60 remote branches to 2 and 2.** `main` is
 untouched at `8821b5a`. 65 branch names (109 refs) were deleted, and none on a
@@ -171,7 +228,7 @@ All development branches have been merged. `main` is the single source of truth.
 | Design | 25 surfaces (15 designed, 7 needs-redesign, 3 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
 | Open PRs | **#82** (another session’s reconciliation record, draft); the rest through #277 merged |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
-| BattleGrid | **v18.2.0**; the surface record is level with live (the two-records comparison of #198 holds) |
+| BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
 
 ### Read this before anything else
 
@@ -181,13 +238,16 @@ v5.1.0 — and all three reported exactly **110 tools** while enums, required
 arguments and semantics changed underneath. **v14 then moved it to 114**, the
 first change in six major versions. So a count that has not moved proves
 nothing, and one that has says only that *something* changed — neither is a
-freshness check. **v18.2.0 is the current record** (2026-08-12), and it is the
-best example this project has of why the count is not the check: a whole major
-version arrived between two probes a day apart and **nothing structural moved
-at all** — 114 tools, none added or removed, no **input** schema changed on any
-tool, the read/write/destructive split identical, the vocabulary's values
-byte-identical. What moved was one tool's *meaning* (`list_gate_blocks`; see
-#185).
+freshness check. **v19.1.0 is the current record** (2026-08-15, #287), and the
+last two deployments are the best examples this project has of why the count is
+not the check. At **v18.2.0** a whole major version arrived between two probes a
+day apart and **nothing structural moved at all** — 114 tools, no **input**
+schema changed, the split identical, the vocabulary byte-identical; what moved
+was one tool's *meaning* (`list_gate_blocks`; see #185). At **v19.1.0** the
+count, every description, every annotation and the split were identical *again*
+— while 5 input and 34 output schemas moved underneath, one of which
+(`preview_strategy_report` dropping the regime pair from a closed input) would
+have refused every strategy preview the product composes.
 
 **That paragraph was scoped to inputs and read as general, and the scoping cost
 something.** Outputs grew by **188 schema leaves across 11 tools** at v18 —

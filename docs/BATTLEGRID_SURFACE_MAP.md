@@ -1,7 +1,7 @@
 # BattleGrid MCP — read/write surface map
 
-Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v18.2.0`**
-on 2026-08-12. v13 lasted about five hours, v14 about twenty, v15 and v16
+Probed live with `tools/probe_mcp_surface.py` against **`battlegrid v19.1.0`**
+on 2026-08-15. v13 lasted about five hours, v14 about twenty, v15 and v16
 about a day each — and v17 arrived already at patch **.2**, so 17.0 and 17.1
 came and went entirely unseen between probes. **v18 did the same**: it was
 found at **.2** one day later, so 18.0 and 18.1 were never seen either. A whole
@@ -42,6 +42,7 @@ enums, required arguments and one module's semantics moved underneath it.
 | → v16.0.0 | 114 | no tool added or removed; **three tools changed, one field**: `conditions[].required` became **required** on every condition-carrying write (`compile_strategy_plan`, `apply_strategy_plan`, `preview_strategy_report`). The read had returned it all along and this product had never modelled it, so `serialiseCondition` emitted four of the five accepted keys — dead write path #12, caught by `payload-conformance` on the same run that refreshed the record, before any live refusal. The v15 trade-level policy is **still inert** across the whole version bump |
 | → v17.2.0 | 114 | no tool added or removed; **17 tools changed, one redesign at the centre**: `positionManagement` lost `breakEvenTriggerTpProgressPct`, `trailingType` (`ATR\|FIXED`), `trailingAtrMultiple` and `trailingFixedPct`, gained **`breakEvenTriggerR`** (0.5–2) and **`trailingGivebackPct`** (25–55) — break-even triggers on an R-multiple now, trailing is a single giveback model, the block is 15 → 13 keys. Same reshape on both agent writes, all three agent reads, and the catalog (three defaults renamed; the stale-threshold default quietly moved 50 → 25). Around it: `get_signal_log` grew a whole `conditionEvaluation` evidence block, the positions reads grew per-position `breakEvenStatus`/`trailingStatus`, radar gained `blockedReason`/`blockedSince` + a `BLOCKED` state, `override_agent_protection` reports `observedLiveStopLoss`. Strategy-side declarations untouched — the v15 trade-level policy inertness stands as filed |
 | → v18.2.0 | 114 | no tool added or removed, **no input schema changed on any tool**, and the classification split held exactly (87 read · 17 write · 10 destructive). One description moved, and it is a semantic change rather than an edit: `list_gate_blocks` went from *"pre-signal pipeline rejections … each candidate that never reached signal evaluation"* to *"each evaluation that ended without a trade decision. Most are pre-model admission gates; **EVALUATION-stage rows ended after the model was called**"*. A gate block may now describe something that happened *after* the agent reasoned, which the product asserts the opposite of in two places — filed as `a-gate-block-is-no-longer-only-pre-evaluation`. The same tool now returns `INTERNAL_ERROR` for every agent (#100), so the claim could not be checked against data. Nothing else in the surface moved |
+| → v19.1.0 | 114 | no tool added or removed, **no description and no annotation changed**, classification split identical — the count proved nothing for a third time. Underneath: **5 input schemas shrank and 34 output schemas moved**. The centre of it is the regime pair. `regimeAutoDerive` and `regimeTimeframe` left `apply_strategy_plan` and `compile_strategy_plan` (already caught live at #285) **and `preview_strategy_report`**, whose input keeps `additionalProperties: false` — every preview the product composed would have been refused whole, caught here by the refreshed record rather than by a refusal (`the-preview-matches-the-live-contract`). `preview_strategy_report` gained **`marketReadLensTicker`/`marketReadText`** in their place (#302) and grew its output by 66 leaves; `compile_strategy_plan` grew by 60, `list_gate_blocks` by 39. On the read side `regimeAutoDerive` was deleted from **all fifteen** output schemas that declared it and is genuinely absent from a live `get_strategy`, while `regimeTimeframe` is **still returned** though nothing declares it — declared and observed disagreeing in both directions on one pair. The strategy read also now carries `marketReadText`. Vocabulary: every category dropped `1m` and `1d`, six authorable timeframes → four (#300). The 34 output changes are read by nothing (#301) |
 
 **v9 arrived as an outage.** The platform 502'd for most of a day, came back on
 a version four majors along, and kept flapping afterwards — individual tools
@@ -125,7 +126,7 @@ values the tool's own schema declares. Four tools were recovered this way, and
 the map's one standing failure is gone.
 
 **Composite arguments are built, where they can be honestly built.**
-`coinSelection`, `sections`, `gate`, `signals` and `regimeAutoDerive` are
+`coinSelection`, `sections`, `gate` and `signals` are
 assembled from the schema's own declared constants and from payloads the probe
 already holds — a real strategy's sections, the vocabulary's transforms. That is
 what finally made `preview_strategy_report` callable.
@@ -229,7 +230,7 @@ a request the tool rejects.
 | `list_strategy_vocabulary` | read | `category` | `budgets`, `category`, `metrics`, `templates`, `timeframeRefs`, `timeframes`, `transforms` |
 | `list_trade_outcomes` | read | `agentId` | `outcomes`, `total` |
 | `list_user_active_positions` | read | — | `activeCoinTickers`, `agents`, `positions`, `totals`, `userId` |
-| `preview_strategy_report` | read | `coinSelection`, `regimeAutoDerive`, `sections`, `timeframe` | `budgetUsage`, `conditionOutcomes`, `estimatedTokenCount`, `rankScopingNote`, `renderedSections`, `tokenCountModel` |
+| `preview_strategy_report` | read | `coinSelection`, `sections`, `timeframe` | `budgetUsage`, `conditionOutcomes`, `estimatedTokenCount`, `rankScopingNote`, `renderedSections`, `tokenCountModel` |
 | `rebind_intelligence_agent` | destructive | `agentId`, `confirm`, `expectedRevision`, `strategyId` | `agent` |
 | `restore_strategy` | write | `expectedRevision`, `strategyId` | `strategy` |
 | `simulate_aggregate_score` | read | `gate`, `signals` | `aggregateScore`, `aggregateScorePercent`, `attributions`, `gate`, `gatePercent`, `wouldRoute` |

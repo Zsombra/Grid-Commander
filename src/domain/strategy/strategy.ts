@@ -239,7 +239,12 @@ export interface StrategyDetail {
   /** Positions currently open under it. Part of the cost of changing it. */
   readonly openPositionCount: number;
   readonly cadence: string | null;
-  readonly regimeAutoDerive: boolean;
+  /**
+   * `null` since v19.1.0, which stopped publishing it — not "does not
+   * auto-derive". A boolean here would make the platform's silence
+   * indistinguishable from its answer.
+   */
+  readonly regimeAutoDerive: boolean | null;
   readonly regimeTimeframe: string | null;
 }
 

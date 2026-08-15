@@ -163,8 +163,6 @@ export class TryConditionQuery {
         userId: req.userId,
         accessToken: req.accessToken,
         timeframe: detail.summary.timeframe,
-        regimeAutoDerive: detail.regimeAutoDerive,
-        regimeTimeframe: detail.regimeTimeframe,
         sections: detail.sections,
         coinSelection: req.coinSelection,
         conditions: composed.conditions,
