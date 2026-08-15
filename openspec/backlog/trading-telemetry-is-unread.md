@@ -2,11 +2,11 @@
 id: trading-telemetry-is-unread
 title: The market context around a trade is unread — six coin and regime reads unused
 type: feature
-status: in-progress
+status: open
 priority: p3
 created: 2026-08-01
 updated: 2026-08-15
-change: "the-regime-the-record-was-taken-in"
+change: ""
 capability: agent-understanding
 github: "116"
 blocked_by: []
@@ -15,10 +15,12 @@ tags: [battlegrid, reporting, expected-value]
 
 # The market context around a trade is unread
 
-> **Taken in part, 2026-08-15.** The regime pair — `get_regime_snapshot` +
-> `get_regime_history` — went first, as one surface:
-> `the-regime-the-record-was-taken-in` (`/recorder/regime`, regime context for
-> the record's window, beside the forward-returns analysis). It went first
+> **Taken in part, 2026-08-15 — and that part archived the same day.** The
+> regime pair — `get_regime_snapshot` + `get_regime_history` — went first, as
+> one surface: `the-regime-the-record-was-taken-in` (archived 2026-08-15;
+> `/recorder/regime`, regime context for the record's window, beside the
+> forward-returns analysis). The item is re-scoped to the remaining four
+> reads and stays open. The regime pair went first
 > because an existing surface already begs its question: the forward returns
 > state their window and nothing about what kind of market that window was
 > (#282's claims-attachment gate is exactly this caveat), and the account's

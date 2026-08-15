@@ -1,0 +1,189 @@
+{
+  "id": "recorder-regime",
+  "title": "Regime context — the regime the record was taken in",
+  "route": "/recorder/regime",
+  "capability": "signal-recording",
+  "status": "functional",
+  "generated_at_commit": "eac9afb",
+  "source_files": [
+    "app/(app)/recorder/regime/page.tsx",
+    "src/presentation/components/regime-context.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "ReadRegimeContextResult ('context' | 'never-recorded' | 'unreadable')",
+      "source": "app.readRegimeContext.execute()"
+    }
+  ],
+  "components": [
+    {
+      "id": "regime-context-panel",
+      "role": "display",
+      "purpose": "Say what regime the platform classified over each recorded series' window, beside what it classifies now — so a forward-return figure can be read against the kind of market it was earned in.",
+      "states": [
+        "context",
+        "context-empty-series",
+        "never-recorded",
+        "unreadable"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Four arms. `context`: one SeriesBlock per recorded series, alphabetical by coin then interval. `context-empty-series`: one sentence for a record whose every series is attempts-only (no captures, so no window). `never-recorded`: the shared how-recording-starts sentence. `unreadable`: role=alert danger-tinted block with the reason and the record's own survival sentence (does-not-mean-empty).",
+      "constraints": [
+        "The four arms stay distinct — an unreadable store must never read as an empty record, and the platform's empty answers must never read as failures (spec: Each Series' Regime Reads Fail Alone, And Every Empty Answer Names Its Kind)",
+        "The store-failure arm deliberately does NOT use the shared WhyNotLoaded sentence: this arm's cause is the product's own store, and the shared sentence names BattleGrid (exempted with the stated reason in failure-is-explained.test.ts). A design must not wire it back in",
+        "Alphabetical series order is deliberate: the composition ranks nothing, and the order must not look like it does"
+      ],
+      "children": [
+        "series-block"
+      ]
+    },
+    {
+      "id": "series-block",
+      "role": "display",
+      "purpose": "One recorded series' regime story: its window, the composition of platform regime labels across that window, and the state the platform classifies now.",
+      "states": [
+        "composition",
+        "composition-lookback-short-of-window",
+        "composition-with-dropped-points",
+        "composition-nothing-in-window",
+        "history-none",
+        "history-unreadable",
+        "snapshot-now",
+        "snapshot-unclassified",
+        "snapshot-unreadable"
+      ],
+      "data": [
+        "result.series[]"
+      ],
+      "actions": [],
+      "current_implementation": "An h2 (`BTC · 1h`), a secondary window line (span + capture count), then HistoryLines and NowLine. Composition renders each regime label as <code> with its bar count, count-descending; a look-back that starts after the record's first capture states the span it actually covers; dropped points are counted out loud. `history-none` and `snapshot-unclassified` are the platform's own empty answers in their own terms ('not a failure'). The two unreadable arms are role=alert with the platform's reason plus the shared WhyNotLoaded sentence (subjects: 'this coin's regime history is' / 'this coin's current regime is'). The now line opens 'Now — not the window:' and carries conviction, run length, and every context axis the platform stated, names verbatim.",
+      "constraints": [
+        "Regime labels and context axes are the platform's vocabulary rendered verbatim — a design may restyle them but must not translate, truncate to a fixed set, or map them to icons/colors keyed by label name, because the vocabulary changes under the product without notice (spec: labels SHALL be carried verbatim)",
+        "Every regime label renders with its bar count — never a share or a bar without its n (spec: never a share without its count)",
+        "The covered-span sentence must render whenever the look-back does not reach the window start — a composition quietly narrower than the record's window is the lie the surface exists to prevent (spec-pinned)",
+        "'Now' stays visually distinct from the window composition — the snapshot is the state now, not a summary of the window (spec: Now is not the window)",
+        "One series' failure renders inside that series' block only; the guard, per-series isolation, is the query's, and a design must not merge failed and healthy series into one banner"
+      ],
+      "children": [
+        "history-lines",
+        "now-line"
+      ]
+    },
+    {
+      "id": "history-lines",
+      "role": "display",
+      "purpose": "The composition half of a series block — what the platform's per-bar classification held across the record's window.",
+      "states": [
+        "composition",
+        "composition-lookback-short-of-window",
+        "composition-with-dropped-points",
+        "composition-nothing-in-window",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "result.series[].history"
+      ],
+      "actions": [],
+      "current_implementation": "Plain paragraphs; see series-block. No table — the label list is inline prose with counts.",
+      "constraints": [],
+      "children": []
+    },
+    {
+      "id": "now-line",
+      "role": "display",
+      "purpose": "The snapshot half of a series block — the regime the platform classifies at this moment, kept apart from the window.",
+      "states": [
+        "snapshot-now",
+        "unclassified",
+        "unreadable"
+      ],
+      "data": [
+        "result.series[].snapshot"
+      ],
+      "actions": [],
+      "current_implementation": "One sentence, opening 'Now — not the window:'; qualifiers (conviction, run length, context axes) are a single text run to keep the rendered text seamless.",
+      "constraints": [],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell the reader their record and the platform's regime data still exist when a BattleGrid read fails, with the cause said accurately.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "history.cause",
+        "snapshot.cause"
+      ],
+      "actions": [],
+      "current_implementation": "The shared sentence component, rendered per failed read inside the affected series block.",
+      "constraints": [
+        "The sentence is the shared component and must stay it — a reworded copy is the drift it exists to prevent (failure-is-explained.test.ts)"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request with no authority.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment.",
+      "constraints": [
+        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Read the regime beside the forward returns",
+      "steps": [
+        "open /recorder/analysis and read the figures against their depth",
+        "follow 'The regime this window sat in' to /recorder/regime",
+        "read each series' composition against its covered span",
+        "read 'Now' apart from the window before acting on either"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "page heading",
+      "series blocks in order",
+      "forward-returns and back-to-record links"
+    ],
+    "notes": "Failed reads carry role=alert per affected series. Regime labels render as <code>. No tables; everything is prose inside a max-w-2xl main."
+  },
+  "source_digest": {
+    "app/(app)/recorder/regime/page.tsx": "sha256:05f838c843943e581922a8b8933f44d5b97e7e8dea451e4e15c7ca8a7708f493",
+    "src/presentation/components/regime-context.tsx": "sha256:3f03be83ca82e2f8c6e81f1887c688112972998f14281beb4f70a881facd1425",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -57,7 +57,7 @@
 ## 5. Wiring and record-keeping
 
 - [x] 5.1 `composition.ts`: `readRegimeContext` wired with store + market.
-- [ ] 5.2 Surface manifest `recorder-regime.json`; re-pin
+- [x] 5.2 Surface manifest `recorder-regime.json`; re-pin
       `recorder-analysis.json` (source file changed).
 - [x] 5.3 Backlog: #116 → in-progress + change link + why-regime-first note
       keeping the other four reads; file

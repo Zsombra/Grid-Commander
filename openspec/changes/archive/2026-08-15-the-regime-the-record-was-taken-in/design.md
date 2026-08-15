@@ -32,6 +32,18 @@ conviction `medium`. Enumerated nowhere — carried verbatim through port,
 domain and panel, so v19 renaming the vocabulary renders rather than
 breaks. Same rule the strategy verdict vocabulary follows.
 
+### Decision: the snapshot's context travels as `{axis, value}` pairs, not named fields
+
+Made mid-round, forced by a guard and better for it: the first draft gave
+`RegimeSnapshot` three fields (`trend`, `volatility`, `momentum`) and
+`structure.test.ts` refused `momentum` as platform vocabulary written into
+source. The cure is a list of scalar axes read verbatim from the payload's
+`context` block — names and values both the platform's words, mapped inside
+the adapter boundary where wire vocabulary is allowed. An axis the platform
+adds tomorrow renders the day it appears, the same guarantee the labels
+already carry. Rejected: renaming the fields to dodge the guard — same
+vocabulary, different spelling.
+
 ### Decision: the store-failure branch takes the guard's 8th exemption
 
 The page joins two sources. BattleGrid failures wear `<WhyNotLoaded>` (the
