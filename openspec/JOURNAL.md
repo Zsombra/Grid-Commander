@@ -1,5 +1,74 @@
 # Journal
 
+## 2026-08-16 (records) — four claims that outran their proof
+
+**Did**: `the-record-says-what-was-actually-checked` (lite, archived) — four p3
+items that are one defect in four costumes: **a claim nothing checked.**
+
+- **#193** — `DT-0014.json` carries a supersession note *and* both expired
+  acceptance lines annotated in place, because a reader checking acceptance
+  top-down never reaches `references`. Neither line deleted: deleting them
+  erases the evidence the supersession happened. `design` verified
+  **byte-identical**; only `acceptance`, `references`, `updated` moved.
+- **#242** — the ruling: a live region is `aria-live`, `role="status"` **or**
+  `role="alert"`; the last two are implicit live regions by ARIA definition.
+  19 was the `role="status"` count alone, and the `JOURNAL` sentence *named
+  both roles while carrying the status-only number*. Written into
+  `UI_COMPONENT_REVIEW_CHECKLIST.md` row 8. Three records corrected using the
+  repo's own `**Corrected <date>**` convention; the 2026-08-14 entry annotated,
+  not rewritten.
+- **#252** — `namesNewline`/`namesEncoding` extracted out of the rule loops and
+  composed through one `unpinned()`, then proved. **Extraction first is the
+  point**: a proof that re-typed the regex asserts against a copy and leaves
+  the live predicate unexercised — the same vacuity in a test's clothes.
+- **#293** — **nothing was changed.** The fix landed in `0c10bc4` (#303) on
+  2026-08-15 and the issue closed the same day; only the item stayed open.
+
+Deferred and filed: **#320**, the design-contract rule (a restyle ticket's
+acceptance describes treatment, not content) — a contract change, not smuggled
+into a bookkeeping pass.
+
+**State**: 0 active changes, **24 open items** (was 27), still no p2. Gates in
+this worktree: tsc, eslint exit 0, **205 files / 2576 vitest** (was 2575 — the
+one new case), `validate --all` 0 errors / 13 standing warnings. `test:db`
+skipped, no schema change. Branch `claude/four-ticket-items-board-89d446`.
+
+**Next**: unchanged for the third entry running — **#301's residue**:
+`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`,
+`debriefVerdict` on five signal-log reads. Gate-blocks first;
+`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
+admits at length, and the platform's is whole-population, so adopting it may
+retire the caveat rather than save arithmetic. **Read
+`git show origin/main:openspec/JOURNAL.md` before trusting this line.**
+
+**Watch out**: **four, and two of them cost real time.**
+
+1. **`git checkout -- <file>` deleted this session's own work.** Restoring a
+   file after a mutation test, while the change was still uncommitted, reverted
+   it to `HEAD` and took the whole #252 edit with it. Only that one file was
+   hit and it was rebuilt from the script. **Mutation-test by copying the file
+   aside and restoring from the copy — never from git — until the work is
+   committed.**
+2. **Backslashes collapse somewhere between here and Python.** `\\\\`
+   inside a quoted heredoc arrived as **one** backslash. Building the literal
+   from `chr(92)` sidesteps the layer entirely and is the only form that
+   survived. Same family as the CRLF and PS-encoding traps: **do not trust a
+   text pipeline on this box; assert the bytes you wrote.**
+3. **That produced a test that would have passed for the wrong reason.** The
+   pinned fixture is a TS string holding `newline="\n"`; a single backslash
+   makes `\n` an escape, so `textWrites` splits the fixture into two lines and
+   every assertion goes green against nonsense. Caught by reading the bytes.
+   The case now asserts `textWrites(PINNED)` has length 1.
+4. **A closed issue does not close its item.** #293's fix shipped, its issue
+   closed, and the canonical record sat open for a day on the board. #309 is
+   the mirror checked item→issue; **this is the direction nobody checks.**
+
+Also: the live-region count is not a fact about the product. It took **three
+values inside 2026-08-14 alone** (129/130/132) and is 139 today. Figures in
+records now carry the commit they were measured on; the checklist carries the
+grep instead of a number.
+
+
 ## 2026-08-16 (gate) — the gate stops depending on which checkouts exist
 
 **Did**: closed the session's own loose end. `lint-ignores-nested-worktrees`
@@ -2006,12 +2075,20 @@ argues against fixing it.
   focusable* with *unreachable*: `disabled` leaves the tab order, not the
   accessibility tree. The accurate argument is narrower and rests on this
   codebase — `perform-button.tsx` has no live region, so the progressive label
-  is announced only because the pressed control holds focus. There are 19
-  `role="status"`/`role="alert"` regions in the product and none on the pending
-  state. Corrected in both items and both issues.
+  is announced only because the pressed control holds focus. There are ~~19~~
+  **130** `role="status"`/`role="alert"` regions in the product and none on the
+  pending state. Corrected in both items and both issues.
+  *(Corrected again 2026-08-16, #242: this sentence names both roles while
+  carrying the `role="status"`-only count. `role="alert"` is an implicit live
+  region — ARIA defines it as `aria-live="assertive"` — so the figure on this
+  entry's commit is 130, and 139 on 2026-08-16. The count is a fact about a
+  commit; the definition is the durable part and now lives in the UI review
+  checklist, row 8. The absence on the pending state is unchanged and was
+  re-checked.)*
 
 - **Two agents overstated findings in the same sweep; both were checkable in a
-  minute.** "grep aria-live returns 0" — there are 19 live regions, just none on
+  minute.** "grep aria-live returns 0" — there are ~~19~~ 130 live regions
+  (corrected 2026-08-16, #242 — see the bullet above), just none on
   the pending state. "The UI tells users the connection is read-only" — the
   sentence is wager-scoped and its operative claim is true. Filed both at the
   size they actually are. Agent findings are leads, not conclusions.

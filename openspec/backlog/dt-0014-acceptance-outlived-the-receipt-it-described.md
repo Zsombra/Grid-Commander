@@ -2,11 +2,11 @@
 id: dt-0014-acceptance-outlived-the-receipt-it-described
 title: DT-0014's acceptance still asks for the trim receipt's counts, which an approved change deliberately removed
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
-change: ""
+updated: 2026-08-16
+change: the-record-says-what-was-actually-checked
 capability: signal-recording
 github: "193"
 blocked_by: []

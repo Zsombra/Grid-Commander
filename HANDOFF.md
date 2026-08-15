@@ -1,13 +1,27 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-16 (four legs — the advisory, the survey, the pause, the gate)
+**Date**: 2026-08-16 (five legs — the advisory, the survey, the pause, the
+gate, the records)
 
-**State**: green — **2575 vitest / 205 files**, 274 Python harness, typecheck,
-lint and `npm run build` clean, `validate --all` at **0 errors / 13 warnings**
-(the same 13 design-ticket warnings, unchanged all day). **13 capabilities, 201
-archived changes, 27 backlog items open** (226 done), **0 active changes**, 28
-surfaces, 27 design tickets. **No p2 and no p1.** BattleGrid is **v19.1.0**.
+**State**: green — **2576 vitest / 205 files**, 274 Python harness, typecheck
+and lint clean, `validate --all` at **0 errors / 13 warnings** (the same 13
+design-ticket warnings, unchanged all day). **13 capabilities, 202 archived
+changes, 24 backlog items open** (232 done), **0 active changes**, 28 surfaces,
+27 design tickets. **No p2 and no p1.** BattleGrid is **v19.1.0**.
 `test:db` skipped throughout: no schema changed.
+
+**The fifth leg closed four records rather than building anything.**
+`the-record-says-what-was-actually-checked` (lite) settled #193, #242, #252 and
+#293 — one defect in four costumes, a claim that outran its proof. DT-0014's
+expired acceptance is annotated in place *and* noted; the live-region
+definition is settled (`aria-live`, `role="status"` **or** `role="alert"` —
+19 counted only the first) and now lives in the UI review checklist rather than
+in three prose records; `tools-write-lf`'s two predicates are extracted and
+mutation-proved (each `→ /./` gives 1 failed / 4 passed, which is exactly the
+survival the item predicted); and #293 needed **no code at all** — its fix
+landed in `0c10bc4` on 2026-08-15 and only the canonical item was left open.
+Deferred and filed as **#320**: the design-contract rule that a restyle
+ticket's acceptance describes treatment, not content.
 
 **Two declared outputs were being read by nothing, and one of them was making
 the product lie.** `update_intelligence_agent` returns a `feasibilityAdvisory`
@@ -286,22 +300,23 @@ The idea brief is at `_IDEA/Grid-Commander_Idea_Brief.md`. The MVP feature spec 
 
 ## Current State of `main`
 
-This session's branches are merged and pruned. **Two PRs are open and neither is
-this session's** — parallel sessions run on this repo, which is why a `Next`
-written into `JOURNAL.md` can be stale before its PR lands. Read
-`git show origin/main:openspec/JOURNAL.md`, never the local copy, before
-trusting one.
+**Three PRs are open and none is this session's** — parallel sessions run on
+this repo, which is why a `Next` written into `JOURNAL.md` can be stale before
+its PR lands. Read `git show origin/main:openspec/JOURNAL.md`, never the local
+copy, before trusting one. It also means **the item↔issue mirror cannot be
+audited from `main` alone**: five issues are open with no item here (#299,
+#304, #305, #317, #318) because their items live on those unmerged branches.
 
 | Metric | Value |
 |---|---|
 | Capabilities (archived) | **13** |
-| Changes (archived) | **201** |
-| Vitest tests | **2575 / 205 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
+| Changes (archived) | **202** |
+| Vitest tests | **2576 / 205 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
 | Harness tests (Python) | 274 |
 | Active changes | none |
-| Open backlog items | **27**, **all p3 — no p1, no p2.** Mirrored 1:1 with 27 open issues |
+| Open backlog items | **24**, **all p3 — no p1, no p2.** *Not* 1:1 with the 27 open issues — see the PR row; two of the gaps (#283, #294) are genuine drift on `main` and are recorded on #309 |
 | Design | 28 surfaces (15 designed, 7 needs-redesign, 6 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
-| Open PRs | **#313** and **#307**, both another session's; everything of this session's is merged through `170f31c` |
+| Open PRs | **#319**, **#313** and **#307**, all another session's |
 | Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
 | BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
 

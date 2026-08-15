@@ -127,9 +127,19 @@ region.** `src/presentation/components/perform-button.tsx` carries no
 `role="status"` and no `aria-live`, so the progressive label reaches assistive
 tech today only because the pressed control still holds focus. Disabling removes
 focus from that control and therefore removes the only channel the announcement
-travels on. The product has 19 live regions elsewhere — on refusals and
-consequence blocks — and none on the pending state, which is a WCAG 4.1.3 gap in
-the code *as it stands*, independent of how this question is resolved.
+travels on. The product has ~~19~~ **130** live regions elsewhere — on refusals
+and consequence blocks — and none on the pending state, which is a WCAG 4.1.3
+gap in the code *as it stands*, independent of how this question is resolved.
+
+> **Corrected 2026-08-16 (#242).** 19 counted `role="status"` only.
+> `role="alert"` is an implicit live region (ARIA defines it as
+> `aria-live="assertive"`), so the figure on this item's commit was **130** —
+> 0 `aria-live`, 19 `role="status"`, 111 `role="alert"`. **Nothing above
+> changes**: the gap is an absence on one control, and a larger denominator
+> only makes it more conspicuous. The count is dated because it moves — **139**
+> on 2026-08-16, and three different values within 2026-08-14 alone. The
+> definition, not the number, is the durable part, and it is now stated in
+> `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` row 8.
 
 That reframes the option set: adding a live region is worth doing whichever way
 the disable question goes, and doing it first makes the disable question cheaper

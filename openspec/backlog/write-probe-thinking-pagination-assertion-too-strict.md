@@ -2,11 +2,11 @@
 id: write-probe-thinking-pagination-assertion-too-strict
 title: the thinking-log probe demands more than one page and fails a healthy agent that has exactly one
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
-change: ""
+updated: 2026-08-16
+change: the-record-says-what-was-actually-checked
 capability: platform-mapping
 github: "293"
 blocked_by: []
@@ -57,3 +57,43 @@ one page. The property worth guarding is that the product never invents
 decisions beyond what the server reports; it should not depend on the agent
 having accumulated two pages of history. The probe is key-gated, so the fix
 lands blind and is proven at the next keyed run.
+
+---
+
+## Settled 2026-08-16 — already fixed; the record was the only thing left open
+
+**Nothing was changed in the test.** The repair landed on `main` in `0c10bc4`
+("the record catches up two majors, and the platform's prose comes home",
+#287/#294/**#293**, PR #303) on 2026-08-15, and GitHub issue #293 was closed the
+same day. Only this item stayed `open`, which is why it was still on the board.
+
+Read from `tests/live/write-probe.test.ts` at `HEAD` (`e48a083`), not inferred
+from the commit subject:
+
+```ts
+// :539  const PAGE = 20;  — and the same PAGE is the requested `limit` on :540
+expect(log.decisions.length, 'the page honours the requested limit').toBeLessThanOrEqual(PAGE);
+expect(log.total, 'the total covers everything the page returned').toBeGreaterThanOrEqual(
+  log.decisions.length,
+);
+```
+
+That is exactly the pair this item asked for: the page honours its bound, and
+the reported total never undercounts what arrived. `grep 'more than one page
+holds'` returns nothing anywhere under `tests/` — the assertion that failed
+`expected 17 to be greater than 17` is gone, and the comment above the new pair
+records the 2026-08-11 failure and this item's number.
+
+**The proof is still owed, and the fix is still blind.** The probe is key-gated,
+so nothing above has been exercised against the live platform. What is verified
+today is that the assertion no longer *encodes a data precondition*; what is not
+verified is the read itself. **The first real evidence comes at the next
+operator-approved keyed run** — which is what this item predicted when it said
+"the fix lands blind and is proven at the next keyed run", and that sentence is
+still true.
+
+**The lesson is the gap, not the defect.** A fix can land with its issue closed
+and leave the canonical record open, because closing the issue and closing the
+item are two acts and only one of them is visible in a PR. This is the same
+family as `the-mirror-is-checked-one-way` (#309) — the mirror was checked from
+item to issue, and this is the direction that was not checked.
