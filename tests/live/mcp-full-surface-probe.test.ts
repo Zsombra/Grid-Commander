@@ -97,7 +97,7 @@ live('every MCP tool answers', () => {
       const names = tools.map((t) => t.name).sort();
       // eslint-disable-next-line no-console
       console.log(`  registry: ${tools.length} tools`);
-      expect(tools.length, 'the registry must not shrink unnoticed').toBe(25);
+      expect(tools.length, 'the registry must not shrink unnoticed').toBe(26);
 
       // --- discovery: ids the rest of the sweep needs ------------------------
       const roster = await call('list_agents', {});
@@ -117,6 +117,7 @@ live('every MCP tool answers', () => {
       if (agentId) {
         await call('read_agent_thinking', { agentId });
         await call('read_agent_limits', { agentId });
+        await call('read_loss_shape', { agentId });
         const record = await call('read_trading_record', { agentId, limit: 5 });
         await call('read_decision_pipeline', { agentId });
         await call('read_deployments', { agentId });
@@ -138,6 +139,7 @@ live('every MCP tool answers', () => {
         for (const t of [
           'read_agent_thinking',
           'read_agent_limits',
+          'read_loss_shape',
           'read_trading_record',
           'read_trade_story',
           'read_decision_pipeline',

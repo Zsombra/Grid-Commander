@@ -1,5 +1,43 @@
 # Journal
 
+## 2026-08-15 (sibling) — the loss shape reaches the model
+
+**Did**: merged #275 (main `05c8d80`). Radar freshness check before the
+work: still 20/20 `PLATFORM_PAUSED`, latest fire unchanged at
+2026-08-13T18:01Z — #101 stays cold. Then **#272** →
+`the-loss-shape-reaches-the-model` (lite, archived): a sibling read tool
+**`read_loss_shape`** wrapping the existing `ReadLossShapeQuery`, keeping
+the surface's 1:1 tool-to-use-case grain and leaving `read_agent_limits`'
+contract untouched. The description carries the span the way the page copy
+does — budget baseline, never the trading record, empty curve means no
+settlements. Pinned over a real client: populated answer (curve
+oldest-first), nothing-settled as a loss shape not a failure, a failing
+read as `unreadable` with cause, and the span present in the contract a
+model receives. The live probe's registry pin moved **25 → 26** and the
+probe calls the tool. `mcp-control` gained the requirement. #272 closed
+both sides — filed and resolved the same day.
+
+**State**: 0 active changes, **19 open items**, one p2 (#94, gated until
+~Aug 20 02:46 local). Gates at archive: typecheck, lint, **2437 vitest /
+192 files**, build, drizzle no-op; `test:db` skipped deliberately.
+`validate --all` 0 errors / 21 deliberate warnings / 3 info (unchanged —
+the set is itemised in the (pins) entry). Branch
+`claude/loss-shape-on-the-limits-read`; PR is this handoff's last act.
+
+**Next**: tripwires first — #94 from ~Aug 20 02:46 local. The one
+pre-ranked item left is **#274** (`/design agent-roster` — the eight
+uncovered states, pure restyle inside the refreshed manifest's
+constraints); after it, the lane is watches, upstream, and
+operator-gated items only.
+
+**Watch out**: the live full-surface probe pins the registry count
+**exactly** (now 26) — any tool addition that forgets it fails the next
+live run, which may be days later and read as a platform surprise. And the
+MCP surface's tool-count changed for the first time since the probe was
+written; `annotations.test.ts` derives read-only claims from the
+composition root, so a read tool needs no annotation bookkeeping — only
+the count pin and the probe's call list are manual.
+
 ## 2026-08-15 (pins) — the roster tells the truth again, and the create form joins the map
 
 **Did**: merged #273 (main `042266a`). Surveyor lane, per the triage

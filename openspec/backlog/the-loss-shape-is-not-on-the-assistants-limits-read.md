@@ -2,11 +2,11 @@
 id: the-loss-shape-is-not-on-the-assistants-limits-read
 title: read_agent_limits answers the gauges but not how the loss arrived
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-08-15
 updated: 2026-08-15
-change: ""
+change: "the-loss-shape-reaches-the-model"
 capability: mcp-control
 github: "272"
 blocked_by: []

@@ -144,6 +144,65 @@ describe('the MCP server, over a real client', () => {
     expect(text(result)).toContain('No such tool');
   });
 
+  /**
+   * The loss shape, over the boundary. The description carries the span —
+   * budget baseline, never the trading record — because a model reads the
+   * contract, not the page copy; and empty-vs-unreadable is the same
+   * distinction every read on this surface keeps.
+   */
+  describe('read_loss_shape keeps its states apart', () => {
+    it('answers a populated reading with the curve oldest-first', async () => {
+      const { app, agents } = world();
+      agents.performanceResult = {
+        kind: 'performance',
+        reading: { realizedPnlUsd: -0.84, curve: [0, -0.5, -0.84] },
+      };
+      const client = await connected(app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_loss_shape', arguments: { agentId: AGENT.id } })),
+      ) as { kind: string; realizedPnlUsd: number; curve: number[]; settlements: number };
+      expect(payload.kind).toBe('loss-shape');
+      expect(payload.realizedPnlUsd).toBe(-0.84);
+      expect(payload.curve).toEqual([0, -0.5, -0.84]);
+      expect(payload.settlements).toBe(3);
+    });
+
+    it('answers nothing-settled as a loss shape, not as a failure', async () => {
+      // The default fake is the live Vanguard shape: zero total, empty curve.
+      const client = await connected(world().app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_loss_shape', arguments: { agentId: AGENT.id } })),
+      ) as { kind: string; settlements: number };
+      expect(payload.kind).toBe('loss-shape');
+      expect(payload.settlements).toBe(0);
+    });
+
+    it('answers a failing platform read as unreadable, with its cause', async () => {
+      const { app, agents } = world();
+      agents.performanceResult = {
+        kind: 'unreadable',
+        reason: 'BattleGrid did not respond',
+        cause: 'unreachable',
+      };
+      const client = await connected(app);
+      const payload = JSON.parse(
+        text(await client.callTool({ name: 'read_loss_shape', arguments: { agentId: AGENT.id } })),
+      ) as { kind: string; reason: string; cause: string };
+      expect(payload.kind).toBe('unreadable');
+      expect(payload.reason).toBe('BattleGrid did not respond');
+      expect(payload.cause).toBe('unreachable');
+    });
+
+    it('states the span in the contract a model actually receives', async () => {
+      const client = await connected(world().app);
+      const { tools } = await client.listTools();
+      const tool = tools.find((t) => t.name === 'read_loss_shape');
+      expect(tool?.description).toContain('budget baseline');
+      expect(tool?.description).toContain('read_trading_record');
+      expect(tool?.description).toContain('not missing data');
+    });
+  });
+
   it('reports a use-case that throws as an error, not as an answer', async () => {
     const { app, agents } = world();
     agents.readBudget = async () => {

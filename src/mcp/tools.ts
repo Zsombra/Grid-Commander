@@ -183,6 +183,19 @@ export const TOOLS: readonly ToolDefinition[] = [
     call: (app, who, a) => app.readBudget.execute({ ...who, agentId: str(a['agentId']) }),
   },
   {
+    name: 'read_loss_shape',
+    description:
+      "How the loss behind an agent's stop arrived: cumulative realized P&L since the " +
+      'budget baseline, and one curve point per settlement, oldest first. This is not the ' +
+      'trading record — read_trading_record counts every closed trade over the agent\'s ' +
+      'lifetime, while this reading starts at the budget baseline; never combine the two ' +
+      'into one figure. An empty curve means nothing has settled yet, not missing data.',
+    useCase: 'readLossShape',
+    input: AGENT_ID,
+    required: ['agentId'],
+    call: (app, who, a) => app.readLossShape.execute({ ...who, agentId: str(a['agentId']) }),
+  },
+  {
     name: 'read_trading_record',
     description:
       'Every trade an agent closed, with net P&L after fees, slippage each side, leverage, ' +
