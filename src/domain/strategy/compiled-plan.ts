@@ -35,8 +35,8 @@ const PLAN_FIELDS_FROM_POST_STATE = [
   'description',
   'tagline',
   'timeframe',
-  'regimeAutoDerive',
-  'regimeTimeframe',
+  // `regimeAutoDerive` and `regimeTimeframe` left this list 2026-08-15 —
+  // see their entry in FIELDS_APPLY_REJECTS below.
   'marketReadText',
   'sections',
   'minAggregateScore',
@@ -84,6 +84,19 @@ export const FIELDS_APPLY_REJECTS = [
   // re-probing the surface after noticing the record still said v3.0.0; the
   // tool count was 110 on both sides of the deployment.
   'conditionVerdicts',
+  // `regimeAutoDerive` and `regimeTimeframe` joined 2026-08-15. The platform
+  // deployed mid-session (the MCP connector dropped twice at ~07:00Z) and the
+  // live apply began rejecting both as unrecognized keys — while the schema
+  // served at that session's start still declared them required, and this
+  // projection still sent them, so every apply the product composed was
+  // refused (#285, the seventh dead write path; same shape as
+  // `conditionVerdicts` above, caught by a live refusal rather than a probe).
+  // Observed both ways in one minute: the plan WITH the keys refused with
+  // `unrecognized_keys`, the identical plan WITHOUT them accepted — Salamis
+  // revision 3 → 4, changedAxes CONDITIONS. Both stay in `postState` (the
+  // compiler still returns them); the applier no longer takes them.
+  'regimeAutoDerive',
+  'regimeTimeframe',
   'bindingImpact',
   'reviewContext',
   'signalRules',
