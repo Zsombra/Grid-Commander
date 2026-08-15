@@ -2,11 +2,11 @@
 id: conditions-save-render-keys-collide
 title: The conditions-save page keys lists by display strings, and duplicates ConditionCard by hand
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-12
-updated: 2026-08-13
-change: ""
+updated: 2026-08-16
+change: "the-save-page-draws-the-shared-card"
 capability: strategy-authoring
 github: "167"
 blocked_by: []
@@ -89,3 +89,36 @@ existing-condition cards near-duplicate `ConditionCard` from
 two renderings of one thing can drift apart. That is a presentation refactor
 with no bearing on the harness, and it is why this item stays open at p3 rather
 than closing alongside #194.
+
+
+---
+
+# 2026-08-16 — finding 2 landed, and the item closes
+
+`the-save-page-draws-the-shared-card` (lite, archived) folded the listing
+state's inline card back into the shared `ConditionCard`, which is now exported
+from `strategy-conditions.tsx` with two seams:
+
+- `blockNote` — whether a null verdict is annotated in the card's own text.
+  The difference this item called drift was **not** drift: `spec.md:758-762`
+  is satisfied by *position* on the strategy page, which lists calls and blocks
+  apart under a heading, and has to be satisfied by *text* on the save page,
+  which lists flat. Both encodings survive; the parameter is which one a
+  caller needs. `strategy-conditions-save.json:160` records the annotation as
+  a design constraint and it is intact.
+- `actions` — a trailing slot for the per-condition remove/change links.
+
+The rendered listing is **byte-identical** across the change (text, links and
+headings dumped before and after, with a fixture whose `REGIME_DOWN` carries
+`verdict: null`, so the annotation is inside the compared text). The one
+difference is on a condition using a form the product does not model, which
+now also draws the shared card's "What is shown is incomplete" caveat —
+additive, and not a repair of a violation: `Not understood by Grid-Commander:`
+was already rendered on both sides by `ConditionStructure`.
+
+**Both findings this item is titled for are now done and the item closes.**
+Its third, `editQuery`'s multi-value truncation, was never one of them — it
+was recorded in Notes as an aside, and the 2026-08-13 entry that said "finding
+2 and only finding 2" overlooked it. Rather than leave it buried in a closed
+item it is filed on its own:
+[[a-repeated-draft-param-is-truncated-on-round-trip]].

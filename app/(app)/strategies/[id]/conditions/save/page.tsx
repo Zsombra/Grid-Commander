@@ -4,7 +4,7 @@ import { draftFromQuery } from '@/presentation/condition-form.js';
 import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import { ConditionStructure } from '@/presentation/components/strategy-conditions.js';
+import { ConditionCard } from '@/presentation/components/strategy-conditions.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { saveConditions } from './actions.js';
 
@@ -118,6 +118,9 @@ export default async function SaveConditionPage({
 
   const { strategy, existing } = result;
   const composer = `/strategies/${strategy.id}/conditions`;
+  // One set for the whole list. Built inside the row loop it was rebuilt per
+  // row, and every row's answer was the same one.
+  const defined = new Set(existing.map((e) => e.conditionKey));
 
   const list = (
     <section className="space-y-2">
@@ -129,36 +132,33 @@ export default async function SaveConditionPage({
       ) : (
         <ul className="space-y-2 text-sm">
           {existing.map((c) => (
-            <li key={c.conditionKey} className="rounded-gc-2 border border-border-default p-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-xs uppercase text-text-secondary">
-                  {c.conditionKey}
-                  {c.verdict === null ? ' · a named building block' : ` · calls ${c.verdict}`}
-                </span>
-              </div>
-              <div className="mt-1">
-                <ConditionStructure
-                  definition={c.definition}
-                  defined={new Set(existing.map((e) => e.conditionKey))}
-                />
-              </div>
-              <p className="mt-2 text-sm">
-                <a
-                  href={`/strategies/${strategy.id}/conditions/save?remove=${encodeURIComponent(c.conditionKey)}`}
-                  className="underline"
-                >
-                  Remove it from the strategy
-                </a>
-                {' · '}
-                <a
-                  href={`${composer}?try=1&from=${encodeURIComponent(c.conditionKey)}&key=${encodeURIComponent(c.conditionKey)}&name=${encodeURIComponent(c.name)}&verdict=${c.verdict ?? ''}`}
-                  className="underline"
-                >
-                  Change it
-                </a>
-              </p>
-            </li>
+            // The shared card, not a second drawing of one. `blockNote`
+            // because this list is flat: the strategy page separates the
+            // calls from the blocks under a heading that names the second
+            // group, and there is no such heading here to carry it.
+            <ConditionCard
+              key={c.conditionKey}
+              condition={c}
+              defined={defined}
+              blockNote
+              actions={
+                <>
+                  <a
+                    href={`/strategies/${strategy.id}/conditions/save?remove=${encodeURIComponent(c.conditionKey)}`}
+                    className="underline"
+                  >
+                    Remove it from the strategy
+                  </a>
+                  {' · '}
+                  <a
+                    href={`${composer}?try=1&from=${encodeURIComponent(c.conditionKey)}&key=${encodeURIComponent(c.conditionKey)}&name=${encodeURIComponent(c.name)}&verdict=${c.verdict ?? ''}`}
+                    className="underline"
+                  >
+                    Change it
+                  </a>
+                </>
+              }
+            />
           ))}
         </ul>
       )}
