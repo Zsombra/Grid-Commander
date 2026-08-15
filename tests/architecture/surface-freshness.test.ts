@@ -203,6 +203,40 @@ describe('the capabilities record carries the platform’s prose', () => {
     ].join('');
   }
 
+  /**
+   * Everything wrong with the record's coverage of what it lists. Empty means
+   * complete.
+   *
+   * One function, called by the real assertions *and* by the fixture case
+   * below. The cases were written the other way round first — the fixture
+   * rebuilding the lookup inline — and that is a check that proves its own
+   * copy correct while the guard beside it could rot untouched. The same
+   * shape as `records()` in the sweep further down, and for the same reason.
+   */
+  function coverageProblems(listed: readonly (string | undefined)[], captured: readonly Entry[]): string[] {
+    const byKey = new Map(captured.map((e) => [e.name ?? e.uri, e]));
+    const problems: string[] = [];
+    for (const key of listed) {
+      const entry = byKey.get(key);
+      if (entry === undefined) {
+        problems.push(`${String(key)} was listed and never fetched`);
+        continue;
+      }
+      const text = textOf(entry);
+      // Absent is the one state that may not be recorded: a body the server
+      // refused and a body nobody asked for are different facts, and only one
+      // of them is a finding.
+      if (text === null) {
+        if (entry.failure === null || entry.failure === '') {
+          problems.push(`${String(key)} failed with no reason`);
+        }
+        continue;
+      }
+      if (text.length === 0) problems.push(`${String(key)} recorded an empty body`);
+    }
+    return problems;
+  }
+
   it('carries the server instructions', () => {
     expect(cap.instructions, `no instructions recorded — re-capture: ${RECAPTURE}`).toBeTruthy();
     expect((cap.instructions ?? '').length).toBeGreaterThan(1000);
@@ -211,36 +245,13 @@ describe('the capabilities record carries the platform’s prose', () => {
   it('carries a body or a named failure for every prompt it lists', () => {
     const listed = (cap.prompts ?? []).map((p) => p.name);
     expect(listed.length, `no prompts listed — re-capture: ${RECAPTURE}`).toBeGreaterThan(0);
-    const captured = new Map((cap.promptBodies ?? []).map((e) => [e.name, e]));
-    for (const name of listed) {
-      const entry = captured.get(name);
-      expect(entry, `${String(name)} was listed and never fetched — ${RECAPTURE}`).toBeDefined();
-      // Absent is the one state that may not be recorded: a body the server
-      // refused and a body nobody asked for are different facts, and only one
-      // of them is a finding.
-      const text = textOf(entry as Entry);
-      if (text === null) {
-        expect((entry as Entry).failure, `${String(name)} failed with no reason`).toBeTruthy();
-      } else {
-        expect(text.length, `${String(name)} recorded an empty body`).toBeGreaterThan(0);
-      }
-    }
+    expect(coverageProblems(listed, cap.promptBodies ?? []), RECAPTURE).toEqual([]);
   });
 
   it('carries a content or a named failure for every resource it lists', () => {
     const listed = (cap.resources ?? []).map((r) => r.uri);
     expect(listed.length, `no resources listed — re-capture: ${RECAPTURE}`).toBeGreaterThan(0);
-    const captured = new Map((cap.resourceContents ?? []).map((e) => [e.uri, e]));
-    for (const uri of listed) {
-      const entry = captured.get(uri);
-      expect(entry, `${String(uri)} was listed and never fetched — ${RECAPTURE}`).toBeDefined();
-      const text = textOf(entry as Entry);
-      if (text === null) {
-        expect((entry as Entry).failure, `${String(uri)} failed with no reason`).toBeTruthy();
-      } else {
-        expect(text.length, `${String(uri)} recorded empty content`).toBeGreaterThan(0);
-      }
-    }
+    expect(coverageProblems(listed, cap.resourceContents ?? []), RECAPTURE).toEqual([]);
   });
 
   it('the reference renders the instructions and every recorded body', () => {
@@ -278,7 +289,10 @@ describe('the capabilities record carries the platform’s prose', () => {
      * capture must come back with *some* prose or say so here.
      */
     const withText = (entries: Entry[]): Entry[] =>
-      entries.filter((e) => e.failure === undefined && textOf(e).length > 0);
+      entries.filter((e) => {
+        const text = textOf(e);
+        return text !== null && text.length > 0;
+      });
     expect(
       withText(cap.promptBodies ?? []).length,
       `every prompt body is a refusal — the reference carries no prose. ${RECAPTURE}`,
@@ -291,30 +305,44 @@ describe('the capabilities record carries the platform’s prose', () => {
 
   it('a record missing a body is not a record that passes', () => {
     /**
-     * The refusal, driven. Every assertion above runs against the real record,
-     * which is complete — so on their own they prove only the passing path,
-     * and a check whose failure nobody has seen fire is the condition #198 and
-     * #294 were both born in.
+     * The refusal, driven — through `coverageProblems` itself, not through a
+     * copy of it. Every assertion above runs against the real record, which is
+     * complete, so on their own they prove only the passing path; a check
+     * whose failure nobody has seen fire is the condition #198 and #294 were
+     * both born in.
+     *
+     * All three branches at once: listed-and-never-fetched, fetched-and-empty,
+     * and a failure recorded with no reason in it.
      */
-    const incomplete: Capabilities = {
-      instructions: 'x'.repeat(1001),
-      prompts: [{ name: 'author-strategy' }, { name: 'strategy-guide' }],
-      promptBodies: [{ name: 'author-strategy', result: { messages: [] } }],
-    };
-    const captured = new Map((incomplete.promptBodies ?? []).map((e) => [e.name, e]));
-    const unfetched = (incomplete.prompts ?? [])
-      .map((p) => p.name)
-      .filter((name) => !captured.has(name));
-    expect(unfetched, 'a listed prompt with no entry must be visible').toEqual(['strategy-guide']);
+    expect(
+      coverageProblems(
+        ['author-strategy', 'strategy-guide', 'analyze-market', 'play-market-grid'],
+        [
+          { name: 'author-strategy', result: { messages: [] } },
+          { name: 'analyze-market', failure: null },
+          {
+            name: 'play-market-grid',
+            result: { messages: [{ content: { text: 'a real body' } }] },
+          },
+        ],
+      ).sort(),
+    ).toEqual(
+      [
+        'author-strategy recorded an empty body',
+        'strategy-guide was listed and never fetched',
+        'analyze-market failed with no reason',
+      ].sort(),
+    );
   });
 
   it('a named failure is a recorded fact, not a gap', () => {
-    // The other half of the same rule: an entry carrying a refusal is
-    // complete. Recording it as absence would make a platform that stopped
-    // answering look like a capture nobody ran.
+    // The other half of the same rule, through the same function: an entry
+    // carrying a refusal is COMPLETE and must raise nothing. Recording it as
+    // absence would make a platform that stopped answering look like a capture
+    // nobody ran.
     const refused: Entry = { name: 'author-strategy', failure: { code: -32602 } };
     expect(textOf(refused)).toBeNull();
-    expect(refused.failure).toBeTruthy();
+    expect(coverageProblems(['author-strategy'], [refused])).toEqual([]);
   });
 });
 

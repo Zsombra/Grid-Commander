@@ -289,15 +289,29 @@ live('the recorded prose still describes the platform', () => {
   it('the greeting is normalised away, and nothing else is', () => {
     /**
      * The normalisation, held to its own terms. A rule that erased more than
-     * the greeting would hide exactly the drift this gate exists to catch, so
-     * both directions are asserted: two accounts agree, and a real edit still
-     * separates them.
+     * the greeting would hide exactly the drift this gate exists to catch.
+     *
+     * The fixtures carry **a second em-dash on the greeting line**, which is
+     * what makes this discriminating rather than decorative: the real
+     * instructions hold 82 of them, so a greedy `.*` would swallow everything
+     * up to the last one on that line and silently erase real contract text.
+     * With one em-dash per fixture, greedy and lazy are indistinguishable and
+     * this case would pass for both.
      */
-    const mine = 'You are connected to BattleGrid as Fibonacci — a platform.\nRule: copy, do not construct.';
-    const theirs = 'You are connected to BattleGrid as Archimedes — a platform.\nRule: copy, do not construct.';
-    const edited = 'You are connected to BattleGrid as Fibonacci — a platform.\nRule: construct freely.';
+    const line = (who: string, rule: string): string =>
+      `You are connected to BattleGrid as ${who} — a platform — the only one.\nRule: ${rule}`;
+    const mine = line('Fibonacci', 'copy, do not construct.');
+    const theirs = line('Archimedes', 'copy, do not construct.');
+    const edited = line('Fibonacci', 'construct freely.');
+
+    // Two accounts, same platform: the greeting alone must not separate them.
     expect(digest(normalise(mine))).toBe(digest(normalise(theirs)));
+    // A real edit still separates them.
     expect(digest(normalise(mine))).not.toBe(digest(normalise(edited)));
+    // And the text after the greeting survives intact — the assertion an
+    // over-greedy variant fails.
+    expect(normalise(mine)).toContain('a platform — the only one.');
+    expect(normalise(mine)).not.toContain('Fibonacci');
   });
 
   it('the instructions have not moved', { timeout: 120_000 }, async () => {
@@ -318,10 +332,18 @@ live('the recorded prose still describes the platform', () => {
   for (const entry of cap.promptBodies ?? []) {
     it(`prompt ${String(entry.name)} has not moved`, { timeout: 120_000 }, async () => {
       if (entry.failure !== undefined) {
-        // A recorded refusal is a recorded fact. Re-asserting it live would
-        // fail this gate for a reason the record already states, so the
-        // comparison is skipped and the refusal stays visible in the record.
-        expect(entry.failure, 'a refused entry names its reason').toBeTruthy();
+        // A recorded refusal has no baseline to compare against — but it must
+        // not exempt the surface forever. If the platform has started
+        // answering, the record is stale in the one direction a digest
+        // comparison can never see, so the fetch is retried and a body that
+        // now arrives is the finding.
+        const retried = await rpc('prompts/get', { name: entry.name, arguments: {} }).catch(
+          () => null,
+        );
+        expect(
+          retried === null || textOf(retried as Entry['result']).length === 0,
+          `${String(entry.name)} is recorded as refused but the platform answers it now — ${RECAPTURE}`,
+        ).toBe(true);
         return;
       }
       const now = await rpc('prompts/get', { name: entry.name, arguments: {} });
@@ -336,7 +358,13 @@ live('the recorded prose still describes the platform', () => {
   for (const entry of cap.resourceContents ?? []) {
     it(`resource ${String(entry.uri)} has not moved`, { timeout: 120_000 }, async () => {
       if (entry.failure !== undefined) {
-        expect(entry.failure, 'a refused entry names its reason').toBeTruthy();
+        // Same rule as the prompts above: a refusal must not become a
+        // permanent exemption.
+        const retried = await rpc('resources/read', { uri: entry.uri }).catch(() => null);
+        expect(
+          retried === null || textOf(retried as Entry['result']).length === 0,
+          `${String(entry.uri)} is recorded as refused but the platform answers it now — ${RECAPTURE}`,
+        ).toBe(true);
         return;
       }
       const now = await rpc('resources/read', { uri: entry.uri });

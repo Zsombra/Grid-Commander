@@ -76,6 +76,13 @@ def harvest_bodies(key: str, out: Path) -> int:
     different facts and only one of them is a finding. One refusal does not
     abort the others.
 
+    **Resource templates are listed and not fetched, deliberately.** A template
+    is a URI pattern with holes; reading one means inventing values for those
+    holes, and a body fetched under invented arguments is not the platform's
+    prose — it is this tool's guess wearing the platform's voice. The server
+    declares none today. If it ever declares one, it will appear in
+    `restemplates.json` and have no body here, which is the honest state.
+
     Prompt argument *values* are deliberately not synthesised — every declared
     argument is optional, so the bodies come back in their unparameterised
     form. The empty `arguments: {}` is not a value, it is the envelope: all
@@ -97,7 +104,17 @@ def harvest_bodies(key: str, out: Path) -> int:
     ):
         entries = []
         for item in listed:
-            response = rpc(key, method, item["params"])
+            # Two ways a body fails to arrive, and both are the same fact here.
+            # `rpc` retries transport errors and then *raises* — and
+            # `urllib.error.HTTPError` is an `OSError`, so a 429 or a 500
+            # arrives as an exception rather than as an error envelope. Left
+            # uncaught it would abort the whole harvest and lose the entries
+            # already fetched, which is precisely what this function promises
+            # not to do.
+            try:
+                response = rpc(key, method, item["params"])
+            except Exception as exc:  # noqa: BLE001 — any failure is a recorded fact
+                response = {"error": {"transport": f"{type(exc).__name__}: {exc}"}}
             if "result" in response:
                 entries.append({**item["id"], "result": response["result"]})
                 note = ""
