@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-15
 change: ""
 capability: battlegrid-connection
 github: "205"
@@ -143,3 +143,39 @@ What follows:
    toggle can answer that.
 
 The item stays open on the second point alone.
+
+## Observed 2026-08-15 — the operator opened Settings → MCP, and the screen answered three things
+
+The operator shared BattleGrid's own Settings → MCP tab (account Fibonacci),
+the first direct observation of the platform's MCP settings surface. Three
+facts, none of them readable over MCP:
+
+1. **The second gate is displayed here and managed elsewhere.** An "Agent
+   Wagers" card reads *"MCP agents can sign wager entries on your behalf.
+   Managed in the Wallet tab."* with status **AUTHORIZED** — matching
+   `mcpWagerEnabled: true` read minutes earlier. The consent screen's
+   "Profile" wording was imprecise: the switch itself lives under
+   **Wallet**, and the MCP tab only mirrors it. The identity experiment
+   (flip it, watch the boolean) therefore runs through the Wallet tab, and
+   may involve a wallet-signature ceremony rather than a plain toggle —
+   the display shows a wallet address identity (0xb599…8e7c).
+
+2. **Live daily-limit counters exist, UI-only.** "Daily Limits: Wager
+   Count 0 / 10, Wager Volume (USD) $0.00 / $500.00." The counters this
+   item proved absent from every declared output schema are real and
+   rendered — the platform tracks them per account and shows them here,
+   which sharpens the finding from "the cap is not readable" to **"the cap
+   and its live usage exist as first-class account state that MCP simply
+   does not carry."**
+
+3. **The caps are editable per-account defaults, not constants.** The
+   panel footer reads "Using platform defaults" beside an EDIT control —
+   so 10/day and $500/day are defaults an account can change, not platform
+   constants. CLAUDE.md and `openspec/config.yaml` state them as fixed
+   platform caps; both sentences are now known to describe the default,
+   not the bound. Nothing renders them in-product, so no surface lies —
+   but any future consent copy naming the numbers must say "by default".
+
+Also confirmed in passing: one active API key per account ("creating a new
+key revokes all previous keys"), the active key created 07-29 and last used
+08-15 — this product's own reads.
