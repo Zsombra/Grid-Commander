@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import type { StrategyDetail } from '@/domain/strategy/strategy.js';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
 import { aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
@@ -45,7 +46,7 @@ const noSearch = Promise.resolve({});
 function hypeDeployment() {
   const radar = new RenderRadarPort();
   radar.result = {
-    kind: 'deployments',
+    kind: 'deployments', pause: NO_PAUSE_REPORTED,
     deployments: [
       {
         policyId: 'p1',

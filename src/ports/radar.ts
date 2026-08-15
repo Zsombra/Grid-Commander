@@ -1,4 +1,4 @@
-import type { RadarDeployment } from '@/domain/agent/deployment.js';
+import type { RadarDeployment, RadarPause } from '@/domain/agent/deployment.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type { FailureCause } from './failure.js';
 
@@ -47,5 +47,14 @@ export interface RadarPort {
 }
 
 export type RadarReadResult =
-  | { readonly kind: 'deployments'; readonly deployments: readonly RadarDeployment[] }
+  | {
+      readonly kind: 'deployments';
+      readonly deployments: readonly RadarDeployment[];
+      /**
+       * Whether the radar is running at all. Reported once for the fleet — the
+       * platform carries no per-deployment pause — so it rides beside the rows
+       * rather than on them.
+       */
+      readonly pause: RadarPause;
+    }
   | { readonly kind: 'unreadable'; readonly reason: string; readonly cause: FailureCause };

@@ -5,6 +5,7 @@ import { isRecognisedSection } from '@/domain/agent/deployment.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
 import { BindingSummary } from './binding.js';
+import { RadarPauseNote } from './radar-pause.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
@@ -66,6 +67,13 @@ export function AgentRoster({
               <WhyNotLoaded cause={deployments.cause} subject="their deployments are" />
             </div>
           )}
+          {/* One notice for the list, exactly as the unreadable branch above
+              is one notice for the list. Every row below carries a standing,
+              and a paused radar makes each of them read as activity that is
+              not happening — the same correction the agent page mounts, from
+              the same component, because the deployment spec's own reason for
+              computing standing once applies to qualifying it once. */}
+          {deployments.kind === 'summary' && <RadarPauseNote pause={deployments.pause} />}
         <ul className="space-y-3">
           {roster.agents.map((agent) => (
             <li key={agent.id} className="rounded-gc-2 border border-border-default p-4">

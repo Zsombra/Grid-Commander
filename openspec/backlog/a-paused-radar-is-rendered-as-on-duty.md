@@ -2,11 +2,11 @@
 id: a-paused-radar-is-rendered-as-on-duty
 title: The product says "on duty: scanning" for agents whose radar the platform has paused
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-16
 updated: 2026-08-16
-change: ""
+change: "a-paused-radar-says-so"
 capability: agent-deployment
 github: "311"
 blocked_by: []
@@ -110,3 +110,27 @@ radar is off or the whole platform is. Read both, and say which.
   instead of hand-polled.
 - Found by the #301 survey, 2026-08-16. Related:
   [[v19-moved-thirty-four-output-schemas]].
+
+## Done — 2026-08-16
+
+Built as `a-paused-radar-says-so` (standard). `summary` is mapped at the radar
+adapter, the pause travels on `RadarReadResult` → `ReadDeploymentsQuery` to all
+three consumers, and `RadarPauseNote` states it above the rows on both the agent
+page and the roster. The MCP surface gets it for free — `src/mcp/tools.ts`
+returns the query's result whole.
+
+**Two corrections this item got wrong**, both found by reading the declaration
+before building (recorded on #311):
+
+- `platformPaused` is a **number**, not a flag — a count of deployed coins the
+  platform has stopped. `radarPaused` is the only boolean. `summary` is a
+  fourteen-field status histogram, all required, and `summary` itself is
+  required beside `policies`.
+- `policies[].resolvesNow` carries **no** per-deployment pause, so "which pause
+  wins the sentence" was the wrong question. The pause is knowable only at fleet
+  level, which is why it sits above the rows and qualifies them rather than
+  rewriting any row's standing.
+
+Not proven against a live payload — the fixtures are the declared v19.1.0 shape,
+including the account's own recorded reading (20/20 platform-paused, radar
+paused, nothing scanning).

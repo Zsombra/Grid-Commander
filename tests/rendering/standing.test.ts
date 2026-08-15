@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NO_PAUSE_REPORTED } from '../support/fakes.js';
 import type { Agent } from '@/domain/agent/agent.js';
 import type { RadarDeployment } from '@/domain/agent/deployment.js';
 import { anAgent, FakeAgentsPort } from '../support/agent-fakes.js';
@@ -55,7 +56,7 @@ function sp500(over: Partial<RadarDeployment> = {}): RadarDeployment {
 
 function world(agents: readonly Agent[], deployments: readonly RadarDeployment[]) {
   const radar = new RenderRadarPort();
-  radar.result = { kind: 'deployments', deployments };
+  radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments };
   current = actingWith({ agents: new FakeAgentsPort([...agents]), radar });
 }
 
@@ -181,7 +182,7 @@ describe('the fleet spend line, where the fleet is', () => {
   function fleetWorld() {
     const agents = new FakeAgentsPort([ACTIVE]);
     const radar = new RenderRadarPort();
-    radar.result = { kind: 'deployments', deployments: [] };
+    radar.result = { kind: 'deployments', pause: NO_PAUSE_REPORTED, deployments: [] };
     current = actingWith({ agents, radar });
     return agents;
   }
