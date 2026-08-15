@@ -247,6 +247,17 @@ const EXEMPT: ReadonlyArray<{ file: string; reads: string; because: string }> = 
       'sentence exists to give, with the cause named truthfully.',
   },
   {
+    file: 'src/presentation/components/forward-returns.tsx',
+    reads: 'result',
+    because:
+      'The analysis reads the same store as the coverage surface above and ' +
+      'nothing else — no BattleGrid call exists in its path, so the shared ' +
+      'sentence would name a cause that cannot be the cause, and ' +
+      '`ReadForwardReturnsResult` carries no `FailureCause` for the same ' +
+      'reason. Its unreadable branch carries the survival sentence in its own ' +
+      'terms: the read failing says nothing about what is recorded.',
+  },
+  {
     file: 'app/(app)/strategies/metrics/[metric]/page.tsx',
     reads: 'check?',
     because:

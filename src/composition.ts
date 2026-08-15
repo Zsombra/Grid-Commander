@@ -67,6 +67,7 @@ import { ReadTradingRecordQuery } from './application/use-cases/read-trading-rec
 import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
+import { ReadForwardReturnsQuery } from './application/use-cases/read-forward-returns.query.js';
 import { ReadRecordCoverageQuery } from './application/use-cases/read-record-coverage.query.js';
 import { ReadSignalHistoryQuery } from './application/use-cases/read-signal-history.query.js';
 import { ReadStoppagesQuery } from './application/use-cases/read-stoppages.query.js';
@@ -365,6 +366,9 @@ export function app(cookies: CookieStore) {
     captureSignals: new CaptureSignalsCommand(i.market, i.radar, i.signalRecord, systemClock),
     readSignalHistory: new ReadSignalHistoryQuery(i.signalRecord),
     readRecordCoverage: new ReadRecordCoverageQuery(i.signalRecord, systemClock),
+    // The record's first analytical question — derived from the rows at
+    // read time, like coverage, and reading only the product's own store.
+    readForwardReturns: new ReadForwardReturnsQuery(i.signalRecord),
     // The one destructive act against the product's own store. Same ceremony
     // as the BattleGrid writes; deliberately absent from the MCP tool table.
     describeTrimRecord: new DescribeTrimRecordQuery(i.signalRecord, i.confirmations, random, systemClock),
