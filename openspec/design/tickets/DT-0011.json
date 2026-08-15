@@ -6,11 +6,11 @@
   ],
   "type": "restyle",
   "priority": "p3",
-  "status": "implemented",
+  "status": "open",
   "behavior_impact": "none",
   "spec_change": "",
-  "intent": "The roster's message blocks stop wearing the anonymous border: an unreadable roster speaks in danger, the two advisory banners speak in notice, and empty stays prose. The first ruling on the unreadable role, stated here and reused by DT-0013.",
-  "rationale": "DT-0004 built the hierarchy — a bounced attempt speaks in danger, advisory speaks in notice, consequence outranks everything — but no ticket has ruled on a page whose whole read failed: DT-0009 left 'unreadable' explicitly unchanged. The ruling: unreadable wears danger. The code already treats it as a failure (role=alert, 'could not be loaded'), and 'advisory is not failure' (system.json) cuts both ways — dressing a failed read as a notice teaches users that notice sometimes means broken, which spends the calm that makes notices readable. The reassurance sentence (why-not-loaded) stays inside the danger block: the block reports the failure honestly; the text is what keeps it from reading as loss. The two role=status banners — create-at-capacity and radar-unreadable — are advisory (the page works; nothing the user did failed) and take notice; the radar one is currently a bare paragraph with no box at all, invisible next to the bordered rows it governs. Empty is an answer, not an event: plain prose, unchanged. Row cards already wear the swept token border and stay put.",
+  "intent": "The roster's message blocks stop wearing the anonymous border: an unreadable roster speaks in danger, the two advisory banners speak in notice, and empty stays prose. The first ruling on the unreadable role, stated here and reused by DT-0013. Revised 2026-08-15 to cover the eight row states the re-survey surfaced: the one standing with money behind it takes weight, quoted platform identifiers wear mono, and everything else is ruled unchanged on purpose.",
+  "rationale": "DT-0004 built the hierarchy — a bounced attempt speaks in danger, advisory speaks in notice, consequence outranks everything — but no ticket has ruled on a page whose whole read failed: DT-0009 left 'unreadable' explicitly unchanged. The ruling: unreadable wears danger. The code already treats it as a failure (role=alert, 'could not be loaded'), and 'advisory is not failure' (system.json) cuts both ways — dressing a failed read as a notice teaches users that notice sometimes means broken, which spends the calm that makes notices readable. The reassurance sentence (why-not-loaded) stays inside the danger block: the block reports the failure honestly; the text is what keeps it from reading as loss. The two role=status banners — create-at-capacity and radar-unreadable — are advisory (the page works; nothing the user did failed) and take notice; the radar one is currently a bare paragraph with no box at all, invisible next to the bordered rows it governs. Empty is an answer, not an event: plain prose, unchanged. Row cards already wear the swept token border and stay put. | 2026-08-15 revision, for the eight states the re-survey added (#274). Two rulings and six deliberate no-ops. (1) Holding-position takes weight: it is the one standing with live money behind it, the words already carry the fact, and weight — not colour — is the signal, per 'never colour alone'. (2) Quoted platform identifiers wear mono: the manifest forbids translating the qualification block token or an unrecognised section value, and mono is the visual grammar for 'quoted from the platform, not our sentence' — it keeps an ALL_CAPS token from reading as this product shouting. Regime names and cooldown timestamps stay in sentence type: the sentence presents them as description, and marking every platform-derived word would turn the note line into typography soup. The unscanned-market line stays unboxed prose for the empty-state reason: boxing a fact ranks it against the notice banners. The acceptance line 'zero copy changes anywhere on the page' is rescoped to this ticket's own edits — the DT-0014 lesson: a restyle's content freeze is a constraint on the restyle, never a standing rule, and read as one it forbids every future behaviour change to the page.",
   "design": {
     "layout": "Unchanged — create affordance, then the list; unreadable replaces the page body.",
     "tokens": {
@@ -62,6 +62,30 @@
       },
       "agent-row:deployment-waiting": {
         "content": "Unchanged — 'Not deployed — scanning no market' stays plain prose; absence is stated in words, and the detail page's wording binds."
+      },
+      "agent-row:deployment-holding-position": {
+        "content": "The holding-position standing takes type.weight.medium; the other standings stay type.weight.regular. Money is live behind this row and weight is the signal — the words already carry the fact, and colour alone is forbidden. Wording unchanged; the detail page's words bind."
+      },
+      "agent-row:deployment-slot-held-not-scanning": {
+        "content": "Unchanged — plain prose at the standing line's existing size. The sentence already states both halves (slot held, nothing scanned) and why; emphasis would recolour a lifecycle fact as an alarm."
+      },
+      "agent-row:deployment-unscanned-market": {
+        "content": "Unchanged as unboxed prose in color.text.primary at type.size.sm — a deployed-and-unscanned market is a fact in words, and boxing it would rank it against the two notice banners (the empty-state reasoning, applied forward). No notice or danger token."
+      },
+      "agent-row:resolution-not-qualifying": {
+        "content": "The note line stays demoted: color.text.secondary at type.size.sm. The platform's verbatim block token (e.g. AGGREGATE_BELOW_MIN) takes type.family.mono at type.size.xs — quoted evidence wears quoting dress, which keeps an ALL_CAPS identifier from reading as this product's own voice raised."
+      },
+      "agent-row:resolution-not-qualifying-no-reason": {
+        "content": "Demoted prose, unchanged — color.text.secondary at type.size.sm. There is no token to mark; the sentence states the absence in this product's own words."
+      },
+      "agent-row:resolution-cooldown": {
+        "content": "Demoted prose, unchanged. The timestamp is this product's own wording around a time, not a quoted platform identifier — it stays in the sentence's face."
+      },
+      "agent-row:resolution-regime": {
+        "content": "Demoted prose, unchanged. Regime names are presented as description inside the sentence; only quoted refusal/anomaly identifiers take mono, or the note line becomes typography soup."
+      },
+      "agent-row:resolution-unrecognised-section": {
+        "content": "Demoted prose; the unrecognised section value takes the same type.family.mono at type.size.xs dress as the block token. It is quoted evidence of an unknown state and must not be restyled into looking like a recognised label (manifest constraint: named as unrecognised, never shown as scanning or idle)."
       }
     },
     "responsive": {
@@ -83,16 +107,25 @@
     "The empty state remains unboxed plain prose",
     "A 60-character agent name wraps within its card without pushing the status word out of view",
     "No block on this page other than the unreadable branch uses any color.danger token",
-    "Zero copy changes anywhere on the page",
-    "No raw color, spacing, or size literal is introduced"
+    "This ticket changes no copy — every sentence and platform token on the page renders byte-identical before and after (scoped to this restyle, per the DT-0014 lesson; it is not a standing freeze on the page)",
+    "No raw color, spacing, or size literal is introduced",
+    "The holding-position standing renders at type.weight.medium and the other three standings at the regular weight",
+    "Resolution note lines render in color.text.secondary at type.size.sm",
+    "The qualification block token and an unrecognised section value render in type.family.mono at type.size.xs; regime names and cooldown timestamps stay in the sentence's own face",
+    "The unscanned-market line renders as unboxed prose carrying no notice or danger token",
+    "No element is introduced for a deployment whose resolution is null — the silence stays silent"
   ],
   "references": [
     {
       "kind": "note",
       "value": "Backlog 157 (the design lane's tail) — first ticket for this surface. The unreadable-wears-danger ruling is restated by DT-0013 for the strategy catalog; DT-0009 had left the role undecided."
+    },
+    {
+      "kind": "note",
+      "value": "Revised 2026-08-15 for #274 (dt-0011-no-longer-covers-the-row-it-styled): the 2026-08-15 re-survey surfaced eight row states the implemented ticket never styled. Status returned to open for the two real treatments (holding-position weight, mono for quoted platform identifiers); the six ruled-unchanged states are decisions, not omissions."
     }
   ],
   "created": "2026-08-12",
-  "updated": "2026-08-12",
+  "updated": "2026-08-15",
   "github_issue": null
 }

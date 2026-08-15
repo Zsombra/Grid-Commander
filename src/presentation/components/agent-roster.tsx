@@ -100,7 +100,22 @@ export function AgentRoster({
                 <>
                   <p className="mt-1 text-sm">
                     {(deployments.byAgent[agent.id] ?? []).length > 0
-                      ? (deployments.byAgent[agent.id] ?? []).map(rosterStanding).join(' · ')
+                      ? (deployments.byAgent[agent.id] ?? []).map((d, i) => (
+                          <span key={`st-${d.coinTicker}-${d.timeframe}`}>
+                            {i > 0 && ' · '}
+                            {/* DT-0011: the one standing with money behind it
+                                takes weight. The words carry the fact; weight
+                                is the signal, because colour alone is
+                                forbidden and the other standings stay plain. */}
+                            <span
+                              className={
+                                d.standing === 'holding-position' ? 'font-medium' : undefined
+                              }
+                            >
+                              {rosterStanding(d)}
+                            </span>
+                          </span>
+                        ))
                       : 'Not deployed — scanning no market'}
                   </p>
                   {/* What the platform is letting happen, which the standing
@@ -108,13 +123,31 @@ export function AgentRoster({
                       account were "Scanning" and not qualifying at the same
                       time; the standing was true and the row was misleading. */}
                   {(deployments.byAgent[agent.id] ?? []).map((d) => {
-                    const note = resolutionNote(d);
-                    return note === null ? null : (
+                    const segments = resolutionNoteSegments(d);
+                    return segments === null ? null : (
                       <p
                         key={`res-${d.coinTicker}-${d.timeframe}`}
                         className="mt-1 text-sm text-text-secondary"
                       >
-                        {d.coinTicker} ({d.timeframe}): {note}
+                        {d.coinTicker} ({d.timeframe}):{' '}
+                        {segments.map((part, i) => (
+                          <span key={`part-${String(i)}`}>
+                            {i > 0 && ' · '}
+                            {part.map((seg, j) =>
+                              seg.kind === 'platform-token' ? (
+                                /* DT-0011: quoted evidence wears quoting
+                                   dress. Mono marks "from the platform, not
+                                   our sentence" — it keeps an ALL_CAPS token
+                                   from reading as this product shouting. */
+                                <code key={`seg-${String(j)}`} className="font-mono text-xs">
+                                  {seg.text}
+                                </code>
+                              ) : (
+                                <span key={`seg-${String(j)}`}>{seg.text}</span>
+                              ),
+                            )}
+                          </span>
+                        ))}
                       </p>
                     );
                   })}
@@ -180,40 +213,84 @@ function rosterStanding(d: AgentDeployment): string {
  * supports no statement in either direction — the same rule the occupancy line
  * follows for an agent whose lifecycle was never read.
  */
-export function resolutionNote(d: AgentDeployment): string | null {
+/**
+ * One piece of a resolution note: this product's own prose, or a value quoted
+ * verbatim from the platform. The distinction exists for DT-0011's mono
+ * ruling — quoted evidence wears quoting dress — and it is decided here,
+ * where the sentence is composed, so the renderer cannot re-classify a token
+ * by matching on its text.
+ */
+export interface NoteSegment {
+  readonly text: string;
+  readonly kind: 'prose' | 'platform-token';
+}
+
+export function resolutionNoteSegments(
+  d: AgentDeployment,
+): readonly (readonly NoteSegment[])[] | null {
   const r = d.resolution;
   if (!r) return null;
 
-  const parts: string[] = [];
+  const parts: NoteSegment[][] = [];
 
   if (!isRecognisedSection(r.section) && r.section !== null) {
     // Declared by the platform and never observed here — `BLOCKED` is the one
     // in the record. Named rather than interpreted, which is what lets it
     // arrive honestly without having been modelled in advance.
-    parts.push(`the platform reports a state this product does not recognise: ${r.section}`);
+    parts.push([
+      { text: 'the platform reports a state this product does not recognise: ', kind: 'prose' },
+      { text: r.section, kind: 'platform-token' },
+    ]);
   }
 
   if (r.qualified === false) {
     parts.push(
       r.qualificationBlock
-        ? `not qualifying — the platform gives ${r.qualificationBlock}`
-        : 'not qualifying, and the platform did not say why',
+        ? [
+            { text: 'not qualifying — the platform gives ', kind: 'prose' },
+            { text: r.qualificationBlock, kind: 'platform-token' },
+          ]
+        : [{ text: 'not qualifying, and the platform did not say why', kind: 'prose' }],
     );
   }
 
   // Whether it is still running was decided in the read, against the injected
   // clock. This only words it — see `tests/architecture/boundaries.test.ts`.
+  // The timestamp is this product's own wording around a time, not a quoted
+  // platform identifier, so it is prose (DT-0011).
   if (r.cooldownActive === true && r.cooldownUntil) {
-    parts.push(`sitting out a cooldown until ${r.cooldownUntil.toISOString()}`);
+    parts.push([
+      { text: `sitting out a cooldown until ${r.cooldownUntil.toISOString()}`, kind: 'prose' },
+    ]);
   }
 
   if (r.regime) {
-    parts.push(
-      r.regimeConviction ? `regime ${r.regime} (${r.regimeConviction})` : `regime ${r.regime}`,
-    );
+    // Regime names are presented as description inside the sentence, so they
+    // stay prose — only quoted refusal/anomaly identifiers take the token
+    // dress, or the note line becomes typography soup (DT-0011).
+    parts.push([
+      {
+        text: r.regimeConviction
+          ? `regime ${r.regime} (${r.regimeConviction})`
+          : `regime ${r.regime}`,
+        kind: 'prose',
+      },
+    ]);
   }
 
-  return parts.length > 0 ? parts.join(' · ') : null;
+  return parts.length > 0 ? parts : null;
+}
+
+/**
+ * The note as one string — derived from the segments so the wording has a
+ * single source. `tests/agent/radar-resolution.test.ts` pins the sentences
+ * through this; the renderer reads the segments.
+ */
+export function resolutionNote(d: AgentDeployment): string | null {
+  const parts = resolutionNoteSegments(d);
+  return parts === null
+    ? null
+    : parts.map((part) => part.map((s) => s.text).join('')).join(' · ');
 }
 
 /** The markets on this row that nothing active is deployed on. */
