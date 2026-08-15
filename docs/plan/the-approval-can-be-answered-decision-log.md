@@ -19,11 +19,29 @@ High-signal decisions only. Cosmetic choices are not logged.
 | Approved by | Operator, by name, 2026-08-15 |
 | Next action | Implement in Phase C; assert all five in `tests/agent/pending-decision.test.ts` |
 
-**Caveat carried forward**: mutability evidence is **N = 1**. One lifecycle
-transition was observed, in which only `status`, `tradeStatus` and `closedAt`
-moved while every value field stayed byte-identical. That is not proof a
-`PENDING` decision can never be re-priced, which is exactly why the levels stay
-in the binding rather than being dropped for liveness alone.
+~~**Caveat carried forward**: mutability evidence is **N = 1**.~~
+**CAVEAT RETIRED 2026-08-15 18:19Z — the levels were right to keep.**
+
+The caveat said one observed transition was not proof a `PENDING` decision can
+never be re-priced. An accept observed the same day settles it in the other
+direction: **`expiresAt` was rewritten**. Decision
+`ec5d1d33-0164-48c1-b02f-8f086058ed46` was created 18:05:54 with a 15-minute
+window — due to expire 18:20:54 — and reads `expiresAt: 18:34:00.258Z`, exactly
+`executedAt` + 15 minutes.
+
+Decision fields **do** change across a lifecycle transition. Had the binding
+been reduced to liveness alone, as the "content never moves" reading invited, it
+would have been built on something now known to be false. The three levels stay.
+
+Two more corrections from the same payload, both already handled correctly in
+the code but not by design:
+
+- **`status` and `tradeStatus` diverge** (`EXECUTED` / `LIVE`). They moved
+  together on the cancel; do not derive one from the other.
+- **`closedAt` stays null on an EXECUTED decision.** So `closedAt` alone is not
+  a liveness test — `status === "PENDING"` carries real weight in the pair, and
+  a `closedAt`-only check would treat a live position's decision as answerable.
+  `isAnswerable` already requires both.
 
 ---
 

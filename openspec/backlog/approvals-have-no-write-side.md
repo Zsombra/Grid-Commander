@@ -581,6 +581,86 @@ instruments move more, not only because of Cannae. If Vanguard stays
 the coin set is the cause and the next lever is deploying Vanguard onto
 higher-ATR coins — which touches Radar policies and needs its own decision.
 
+## THE ACCEPT PATH, OBSERVED — Vanguard AVAX, 2026-08-15 18:19:00Z
+
+The operator accepted a decision in BattleGrid's own UI. **This is the last
+unobserved arm of the lifecycle**, and it falsifies two things this item
+previously recorded as safe assumptions.
+
+Decision `ec5d1d33-0164-48c1-b02f-8f086058ed46` — Vanguard, AVAX, ENTER LONG,
+conviction 0.55, `positionSizePct: 12` / `positionSizePreset: "MEDIUM"`.
+
+```
+created   2026-08-15T18:05:54.293Z
+executed  2026-08-15T18:19:00.258Z
+expires   2026-08-15T18:34:00.258Z      ← see below
+status              "EXECUTED"
+tradeStatus         "LIVE"
+closedAt            null
+entryFillPrice      6.4944
+entryFillQuantity   3.32
+entryFee            0.008624
+executedOrderId     "517280812849"
+stopLossOrderId     "517280812851"
+takeProfitOrderId   "517280812850"
+```
+
+### Finding 1: `expiresAt` IS REWRITTEN on accept. Decisions mutate.
+
+`createdAt` 18:05:54 with a 15-minute window should expire at **18:20:54**. The
+row reads **18:34:00.258** — which is `executedAt` + exactly 15 minutes.
+
+So `expiresAt` means two different things either side of acceptance: the
+approval window before, and how long the entry order rests after. **A field on a
+decision was rewritten by a lifecycle transition.**
+
+**This retires the N=1 caveat in DL-1.** That caveat said one observed
+transition was "not proof a PENDING decision can never be re-priced". It is now
+positively established that decision fields *do* change — so keeping the three
+price levels in the binding was the right call, and dropping them for liveness
+alone would have been wrong. Do not treat any decision field as immutable.
+
+### Finding 2: `status` and `tradeStatus` DIVERGE.
+
+On the cancel they moved together, both `CANCELLED`, and it was tempting to
+treat them as one fact. Here `status: "EXECUTED"` while `tradeStatus: "LIVE"` —
+one describes the decision, the other the trade it produced. **Never derive one
+from the other.**
+
+### Finding 3: `closedAt` stays null on an EXECUTED decision.
+
+An accepted decision is not answerable, yet `closedAt` is null. So `closedAt`
+alone is **not** a liveness test — `status === "PENDING"` is doing real work in
+the pair, and a `closedAt`-only check would treat a live position's decision as
+still answerable.
+
+This validates the implementation as written:
+`isAnswerable = status === 'PENDING' && closedAt === null`
+(`src/domain/agent/pending-decision.ts`), and the test
+*"filters out an EXECUTED decision even when nothing closed it"* was covering
+exactly this case before the platform confirmed it.
+
+### Finding 4: the sizing model reproduces exactly, on a second agent
+
+Vanguard's cap is 45 with nothing else open, so headroom is 45:
+
+```
+45 × 0.12 (MEDIUM) × 4 (leverage) = 21.600
+21.600 / 6.4944 = 3.3259 → floor 3.32 → 3.32 × 6.4944 = 21.561408 ✓ observed
+```
+
+`entryNotionalUsd` is **21.561408**, to the cent. That is the third independent
+confirmation of `headroom × pct × leverage` with integer-quantity flooring —
+now across two agents, two presets (SMALL and MEDIUM) and two leverages (3 and
+4). The formula is solid; **it still must not be used to display an amount**
+(PE-2), because it remains our arithmetic rather than the platform's statement.
+
+### The position this opened
+
+AVAX LONG, 3.32 units at 6.4944 — **$21.56 notional on $5.39 margin at 4×**,
+stop 6.40037561, target 6.8771, R:R 4.07. Live and unremarkable at −$0.002.
+Vanguard's first trade in its existence.
+
 ### Catching the next one
 
 Undertow produced this at 13:18Z having produced nothing at 12:00Z, so the rate

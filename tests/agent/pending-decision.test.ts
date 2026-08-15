@@ -128,6 +128,51 @@ describe('checkAnswerable — all five conditions on one re-read', () => {
   });
 });
 
+describe('the accepted decision of 2026-08-15, observed', () => {
+  /**
+   * Vanguard's AVAX entry. Recorded because it falsified two assumptions that
+   * looked safe after the cancel: that `status` and `tradeStatus` move
+   * together, and that a decision's fields do not change.
+   */
+  const ACCEPTED: EntryDecision = {
+    ...LIVE,
+    id: 'ec5d1d33-0164-48c1-b02f-8f086058ed46',
+    coinTicker: 'AVAX',
+    direction: 'LONG',
+    status: 'EXECUTED',
+    closedAt: null,
+    executedOrderId: '517280812849',
+    expiresAt: '2026-08-15T18:34:00.258Z',
+    executedAt: '2026-08-15T18:19:00.258Z',
+    at: '2026-08-15T18:05:54.293Z',
+  };
+
+  it('is not answerable, even though nothing closed it', () => {
+    // closedAt is null on an EXECUTED decision, so closedAt alone would call
+    // this live. `status` is what refuses it.
+    expect(ACCEPTED.closedAt).toBeNull();
+    expect(isAnswerable(ACCEPTED)).toBe(false);
+  });
+
+  it('is refused by the binding as not-answerable, not as levels-moved', () => {
+    const check = checkAnswerable(shown, { ...ACCEPTED, ...shown });
+    expect(check.kind === 'refused' && check.refusal.kind).toBe('not-answerable');
+  });
+
+  it('had its expiresAt rewritten — decision fields are not immutable', () => {
+    // Created 18:05:54 with a 15-minute window, so it was due at 18:20:54.
+    // It reads 18:34:00.258 — executedAt + 15 minutes exactly. This is why
+    // the three price levels stay in the binding (DL-1).
+    const created = Date.parse(ACCEPTED.at ?? '');
+    const executed = Date.parse(ACCEPTED.executedAt ?? '');
+    const expires = Date.parse(ACCEPTED.expiresAt ?? '');
+    const fifteenMinutes = 15 * 60 * 1000;
+
+    expect(expires - created).not.toBe(fifteenMinutes);
+    expect(expires - executed).toBe(fifteenMinutes);
+  });
+});
+
 describe('confirmationTarget.decisionAnswer', () => {
   it('binds accept and cancel to DIFFERENT targets', () => {
     // The whole point. A token agreeing to decline a trade must never be
