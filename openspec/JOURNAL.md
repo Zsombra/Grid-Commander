@@ -1,5 +1,62 @@
 # Journal
 
+## 2026-08-16 (schemas) — the survey found a defect, and it is live
+
+**Did**: #301, surveyed. Leaf-diffed the v19.1.0 capabilities record against the
+v18.2.0 generation (`fbe0aa2`) and grepped every addition for a reader.
+**The item's own numbers reproduce exactly and measure the wrong thing for its
+own question**: `+66/+60/+39/…` are raw JSON nodes (34 schemas), while readable
+property paths give **27 schemas, 57 leaves added, 18 removed**. Most of the
+delta is `type`/`required`/`description`. `preview_strategy_report` is +66 nodes
+and **+19 readable fields** — sizing work off the node count overestimates it
+threefold. All 18 removals are the known `regimeAutoDerive` deletion, none with
+a reader. The 57 additions are five families, and family 2 is a **live defect**:
+`list_radar_deployments.summary.{platformPaused,radarPaused}` is unread
+(`radar-adapter.ts:36` maps `policies` and nothing else; `grep -rn paused src/
+app/` is empty) while `/agents/[id]` renders "On duty: scanning …" regardless —
+on an account three sessions have recorded as 20/20 `platformPaused`,
+`radarPaused: true`, `lastFireAt` frozen since 2026-08-13. Filed
+`a-paused-radar-is-rendered-as-on-duty` / **#311, p2**. Residue: gate-block
+`summary[]` (the platform now publishes the aggregate `blocks.ts:118-163`
+derives from a *window*), `budget.blockedReason`/`blockedSince`, and
+`debriefVerdict` on five signal-log reads — #301 stays open, narrowed to those
+three. Market-read markers (38 of 57) noted on #302; `rankedTimeframes` on #300.
+Landed `tools/diff_output_schemas.py` so the next re-probe does not hand-roll
+this again — #198's lesson was that nothing compared the records, and nothing
+still did.
+
+Also closed out the previous chapter: **#308 and #295 merged** (`2e59622`,
+`fe6d2f6`), #295 rebased through two conflicts, both branches archive-tagged and
+pruned; **#310 merged** (`2c9fbb6`) carrying the corrected journal `Next` and
+`the-mirror-is-checked-one-way` / #309.
+
+**State**: 0 active changes, 28 open items, **one p2** (#311). No source code
+touched by the survey. `validate --all` 0 errors / 13 standing warnings; python
+harness 274 green. vitest/build not re-run — nothing under `src/` or `app/`
+changed on this branch.
+
+**Next**: **#311.** It is the only p2, it is wrong on the live account right
+now, and it is small — map `summary` in the radar adapter, carry the pair
+through `RadarPort` → `ReadDeploymentsQuery`, give the four standing sentences a
+paused arm. No new platform call; `list_radar_deployments` is already read on
+that page.
+
+**Watch out**: **`platformPaused` and `radarPaused` are two fields and may
+disagree** — collapsing them would leave the surface unable to say whether the
+operator's own radar is off or the whole platform is. Read both. — **Absent must
+not map to `false`** on either: a radar read that omits `summary` is a read that
+did not answer, not a running radar. That is the `=== true` mistake #285/#287
+already paid for on `regimeAutoDerive`, and it is the same shape here. — The
+pause fields were **observable before they were declared**: sessions have
+hand-polled `summary.radarPaused` since 2026-08-13 while v18.2.0 declared
+neither. Declared-vs-observed disagreeing in the harmless direction, but it
+means the v18 record was never evidence of absence. — **The gate-block summary
+is not a like-for-like swap.** `blocks.ts` admits its window's partiality at
+length; a platform summary is whole-population, so adopting it may retire that
+caveat rather than just save arithmetic — read what it actually spans before
+deleting anything. — CLAUDE.md is **LF on `main`** despite the earlier entry
+recording it as CRLF; check before assuming either.
+
 ## 2026-08-16 (feasibility) — the edit answers with what can still be built
 
 **Did**: #291. `update_intelligence_agent` returns two things and this product

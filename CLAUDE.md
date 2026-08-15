@@ -30,6 +30,9 @@ instructions and every prompt and resource body verbatim,
 with `docs/BATTLEGRID_SURFACE_MAP.md` as orientation.
 `tools/capture_mcp_dump.py` captures, `tools/generate_mcp_reference.py`
 renders, and `tools/probe_mcp_surface.py` writes the surface record.
+`tools/diff_output_schemas.py` compares two capability records' **output**
+schemas — run it after every re-probe, because the count and the inputs have
+now twice stayed still while the outputs moved underneath (#198, #301).
 
 Three facts that shape almost every decision:
 
