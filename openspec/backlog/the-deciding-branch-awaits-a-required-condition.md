@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-11
-updated: 2026-08-13
+updated: 2026-08-15
 change: ""
 capability: agent-understanding
 github: "147"
@@ -91,3 +91,46 @@ real strategy on a real account. That is the operator's call, not something a
 read-only sweep should make on its own. Calling this item "blocked" would
 overstate it; calling it "one read away" would too. It is one deliberate write
 away, and nobody has chosen to make it.
+
+## Move 1 taken, 2026-08-15 — the nine were read, and the account-wide sentence is now measured
+
+All nine remaining strategies read in full (Normandy, Stalingrad, Berlin,
+Iwo Jima; Lepanto, Salamis, Cannae, Trafalgar, Alesia). Three findings, one
+of them not the one this item predicted:
+
+1. **No `required: true` CONDITION exists anywhere on the account.** The
+   seventeen strategies carry 35 authored conditions between them (the four
+   Full-Send SYSTEM strategies are rich: Normandy 9 with `conditionRef`
+   groups, Stalingrad 10, Berlin 6 including the `N_OF` n-of-3 tally and a
+   `NOT` group, Iwo Jima 6; four of the five private strategies carry one
+   each) — and every one reads `required: false`. The eight-strategies-wide
+   finding is now account-wide **measurement**. The deciding branch's
+   `verdict`/`decidedBy` remain reachable only by the write.
+
+2. **Two `required: true` SIGNAL RULES exist, and were live all along** —
+   `trend_adx_ranging` on **Salamis** (bound 1) and `trend_adx_trending` on
+   **Trafalgar** (bound 2), both at `minRequiredCount: 0`. The 2026-08-13
+   census counted the eight SYSTEM strategies only; the account's own
+   strategies were the unread nine. This is a different axis from the
+   condition system, but it means **historical evaluations under required
+   signal rules already exist** (the fleet fired through 08-13 18:01Z) — how
+   the platform reports a required signal (the required-count tally, any
+   per-signal marker) is readable NOW from a Trafalgar- or Salamis-bound
+   agent's signal logs, no write needed. That read is the sharpened next
+   step before the write, and also the first probe of what
+   `minRequiredCount: 0` under a required rule even means.
+
+3. **The strategy-side verdict vocabulary is observed**: `null`, `"NEITHER"`,
+   `"UP"`, `"DOWN"` all appear on live condition payloads (the privates read
+   NEITHER; Normandy/Berlin's directional composites carry UP/DOWN; most
+   SYSTEM conditions read null). The *evaluation*-side `decidedBy` remains
+   the unobserved half.
+
+**The write, if taken, has a better shape than a test fixture.** Flipping
+Salamis's own `RANGING_TAPE` (or Trafalgar's `TRENDING_TAPE`) to
+`required: true` is not an artificial probe — it is the strategy becoming
+more itself (a range-fade that refuses non-ranging tape), it targets a
+bound strategy so evaluations arrive as soon as the platform unpauses, and
+the propagation is the strategy's stated intent rather than a side effect.
+The unbound alternative (a throwaway condition on Alesia) is zero-risk and
+zero-observation until something binds it.
