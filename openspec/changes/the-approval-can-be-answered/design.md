@@ -16,7 +16,49 @@ it is wrong.
 
 ## Decisions
 
-### Decision: The confirmation binds decision id plus the three price levels
+### Decision: The confirmation binds decision id, the three price levels, AND liveness
+
+**RULED BY THE OPERATOR 2026-08-15 (task 0.1). This is the change's load-bearing
+contract; it is settled and implementation may proceed against it.**
+
+The answer is refused unless **all five** hold on a re-read taken immediately
+before the write:
+
+```
+entryPrice  === what was shown
+stopLoss    === what was shown
+takeProfit  === what was shown
+status      === "PENDING"
+closedAt    === null
+```
+
+Both halves come from **one** re-read, so liveness costs nothing on top of the
+levels.
+
+**Why liveness was added after the first draft.** Task 0.2's re-read compared
+the same decision as `PENDING` and as `CANCELLED`: exactly three fields moved —
+`status`, `tradeStatus`, `closedAt` — while `entryPrice`, `stopLoss`,
+`takeProfit`, `conviction`, `positionSizePct`, `reasoning` and the entire
+`signalChecklist` were byte-identical. The platform also issued a **new decision
+id** for its second HYPE proposal rather than re-pricing the first.
+
+So on the evidence, what actually moves on a decision is its lifecycle, not its
+values — and a levels-only binding had a real hole: a decision could re-read
+with all three levels matching while being `EXPIRED`, or cancelled from another
+tab, and the product would forward it to the platform instead of refusing first.
+The platform would refuse, but the operator would have been told their answer
+was being performed.
+
+**What this still does not protect against, stated plainly**: a decision that
+changes in a field we do not compare (`conviction`, `reasoning`,
+`positionSizePct`) passes. A decision replaced by a different decision carrying
+identical levels would also pass. Neither is defended, and no surface may imply
+otherwise — hence the requirement's own sentence forbidding a stronger claim.
+
+**Caveat on the mutability evidence: N = 1.** One lifecycle transition was
+observed. It is not proof that a `PENDING` decision can never be re-priced in
+place, which is precisely why the levels remain in the binding rather than being
+dropped in favour of liveness alone.
 
 Chosen because the platform publishes **no revision on a decision**. The payload
 was read in full on 2026-08-15 (recorded verbatim in

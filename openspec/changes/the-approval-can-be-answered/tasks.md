@@ -1,14 +1,22 @@
 # Tasks
 
-## 0. Decide the binding before anything is built
+## 0. Decide the binding before anything is built — SETTLED 2026-08-15
 
-- [ ] 0.1 Operator decides: the confirmation binds decision id + entry + stop +
-      target, in place of the revision the platform does not publish. Record the
-      answer in `design.md` under the existing decision. **Nothing below starts
-      until this is answered** — it is the change's load-bearing contract.
-- [ ] 0.2 Confirm the platform still publishes no revision on a decision by
-      re-reading one live row. If a revision has appeared, stop and revise the
-      binding to use it.
+- [x] 0.1 **RULED: the answer binds decision id + `entryPrice` + `stopLoss` +
+      `takeProfit` + `status === "PENDING"` + `closedAt === null`.** All five
+      checked on a single re-read taken immediately before the write; any
+      mismatch refuses before anything is sent. Liveness was added to the
+      original levels-only proposal because a decision can re-read with matching
+      levels while no longer being answerable. Recorded in `design.md`.
+- [x] 0.2 Confirmed 2026-08-15: re-read of decision `6c11b3dc` returns 35 keys
+      with no `revision`, `version`, `updatedAt` or ETag. The gap is real and
+      the binding above stands.
+- [x] 0.2a Mutability probed as a side effect: the same decision read as
+      `PENDING` and as `CANCELLED` differed in exactly three fields —
+      `status`, `tradeStatus`, `closedAt`. `entryPrice`, `stopLoss`,
+      `takeProfit`, `conviction`, `positionSizePct`, `reasoning` and the whole
+      `signalChecklist` were byte-identical. **N = 1** — not proof of
+      immutability, which is why the levels stay in the binding.
 
 ## 1. Read the queue
 
@@ -45,8 +53,10 @@
 
 - [ ] 3.1 `cancelDecision` on the port; `cancel_entry_decision` in the adapter,
       treated as destructive.
-- [ ] 3.2 The binding comparison in the domain: re-read, compare the three
-      levels, refuse with which level moved and from what to what.
+- [ ] 3.2 The binding comparison in the domain: one re-read, then compare the
+      three levels **and** assert `status === "PENDING"` and
+      `closedAt === null`. Refuse naming which level moved and from what to
+      what, or what became of the decision if it is no longer answerable.
 - [ ] 3.3 Cancel confirmation: what is being cancelled, and that the agent will
       not re-propose it.
 - [ ] 3.4 Expired-first path — told it expired, not reported as a cancel
@@ -54,8 +64,9 @@
 
 ## 4. Verification gate — cancel proven before accept is written
 
-- [ ] 4.1 Unit: the binding refuses when entry, stop, or target differs; passes
-      when all three match; refuses when the decision is missing.
+- [ ] 4.1 Unit: the binding refuses when entry, stop, or target differs; refuses
+      when the levels match but `status !== "PENDING"` or `closedAt !== null`;
+      refuses when the decision is missing; passes only when all five hold.
 - [ ] 4.2 Unit: an answer is refused before any call when authority is absent.
 - [ ] 4.3 Unit: the queue renders empty and refused states distinguishably.
 - [x] 4.4 **Live**: with operator authorization, cancel one real pending

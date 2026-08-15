@@ -47,11 +47,20 @@ none of them a concurrency token. This is the one place BattleGrid departs from
 the `expectedRevision` pattern every other mutation on the platform uses, and
 `accept_entry_decision` takes exactly one argument: `decisionId`.
 
-So the binding is proposed as **decision id + `entryPrice` + `stopLoss` +
-`takeProfit`**, with the three levels serving as the change-detector a revision
-would otherwise be. `design.md` records why, what it does not protect against,
-and the two alternatives rejected. **This needs an explicit decision before
-implementation** — it is a contract gap, not an oversight.
+**Ruled by the operator on 2026-08-15.** The answer binds **decision id +
+`entryPrice` + `stopLoss` + `takeProfit` + `status === "PENDING"` +
+`closedAt === null`** — all five checked on a single re-read taken immediately
+before the write.
+
+Liveness was added to the original levels-only proposal because a decision can
+re-read with all three levels matching while no longer being answerable: expired,
+or answered from another tab. Levels alone would have forwarded that to the
+platform, which would refuse — after the operator had been told their answer was
+being performed.
+
+`design.md` records the reasoning, what the binding still does not protect
+against, the alternatives rejected, and the N=1 caveat on the mutability
+evidence that keeps the levels in rather than dropping them for liveness alone.
 
 ## Out of Scope
 

@@ -102,15 +102,19 @@ SHALL carry the decision's identity **and its entry, stop and target levels**
 from the moment they are shown into the moment the answer is performed, and
 SHALL re-read the decision immediately before performing it.
 
-If any of the three levels differs from what was shown, the answer SHALL be
-refused, the difference stated, and the operator returned to a freshly rendered
-decision. The platform publishes no revision or version on a decision, so the
-levels are the change-detector; the product MUST NOT claim a guarantee stronger
-than they provide.
+The answer SHALL be refused unless, on that re-read, all three levels match what
+was shown **and** the decision is still awaiting an answer. A decision that is
+no longer awaiting an answer SHALL be refused even when its levels match.
 
-#### Scenario: The decision is unchanged
+On any refusal the difference SHALL be stated and the operator returned to a
+freshly rendered decision. The platform publishes no revision or version on a
+decision, so the levels and the decision's own state are the change-detector;
+the product MUST NOT claim a guarantee stronger than they provide.
+
+#### Scenario: The decision is unchanged and still waiting
 - **GIVEN** an operator confirming an answer
-- **WHEN** the decision re-reads identically on all three levels
+- **WHEN** the decision re-reads identically on all three levels and is still
+  awaiting an answer
 - **THEN** the answer is performed
 
 #### Scenario: A level moved between reading and answering
@@ -119,6 +123,14 @@ than they provide.
 - **THEN** the answer is refused before it is attempted
 - **AND** the operator is shown which level moved, from what to what
 - **AND** the decision is re-rendered for a fresh answer
+
+#### Scenario: The levels match but the decision is no longer waiting
+- **GIVEN** an operator confirming an answer
+- **WHEN** the decision re-reads with all three levels matching but it has
+  expired, or been answered elsewhere
+- **THEN** the answer is refused before it is attempted
+- **AND** the operator is told what became of it
+- **AND** nothing is sent to the platform
 
 #### Scenario: The decision is gone
 - **GIVEN** an operator confirming an answer
