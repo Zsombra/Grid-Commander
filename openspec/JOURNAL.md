@@ -33,6 +33,20 @@ survey is the cheapest follow-up: it is entirely offline against a record that
 is now current, and the four signal-log reads growing by the same +15/+17
 suggests one shared block landing on four surfaces at once.
 
+*(Addendum, close-out: the operator said merge and wrap. Gates re-run on this
+exact tree before integrating — typecheck, lint, the full vitest suite,
+**2498/2498**, `validate --all` 0 errors — then **#303 squash-merged to main**
+as this close-out's act. The branch tip was archive-tagged
+(`archive/claude/battlegrid-api-capabilities-6a479a`) and pushed before the
+remote branch was deleted, per the (prune) convention; the local branch and
+worktree stay on disk, held by this session, and go when it exits. Both
+changes were archived mid-session, so the spec layer carries nothing forward.
+`HANDOFF.md` gained this session's header and the previous one is marked
+superseded. **A second session was live on this repo concurrently** — the
+approvals lane, PR #307 — and both other open PRs (#307, #295) were already
+`CONFLICTING` against main before this merge; they will need a rebase, and
+`openspec/JOURNAL.md`'s top is the likely collision.)*
+
 **Watch out**: **the live run was read-only, so nine write probes have never
 seen v19** — `apply`, `condition-write`, `custom-table`, `proposal`, `radar`,
 `recorder`, `restore`, `retune`, and `write-probe`'s write half, all gated

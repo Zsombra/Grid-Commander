@@ -1,5 +1,62 @@
 # Grid-Commander — Session Handoff
 
+**Date**: 2026-08-15 (keyed — the v19.1.0 re-probe and the platform's prose)
+
+**State**: green — **2498 vitest / 200 files**, typecheck and lint clean,
+`validate --all` at **0 errors / 13 warnings** (the same 13 design-ticket
+warnings). **13 capabilities, 198 archived changes, 24 backlog items open**
+(222 done), **0 active changes**, 27 surfaces, 27 design tickets.
+**BattleGrid is v19.1.0** — re-probed 2026-08-15 (#287) and all four records
+are level with it. `test:db` deliberately skipped: no schema changed.
+
+**BattleGrid was two majors ahead of the record, and nothing cheap could see
+it.** v19.1.0 kept **114 tools, none added or removed, every description
+identical, every annotation identical, the read/write/destructive split
+identical** — while 5 input and 34 output schemas moved underneath. This is
+the third deployment in a row where the count proved nothing and the first
+where the descriptions and annotations proved nothing either.
+
+**The refreshed record caught a live defect before the platform did.**
+`preview_strategy_report` dropped `regimeAutoDerive`/`regimeTimeframe` from an
+input that keeps `additionalProperties: false`, so **every strategy preview
+the product composes was being refused whole** on `main`. Same defect class as
+#285, on the sibling read path, found by a guard this time rather than by a
+refusal (`the-preview-matches-the-live-contract`, lite).
+
+**Declared and observed now disagree in both directions on one field pair.**
+`regimeAutoDerive` was deleted from all fifteen output schemas that declared
+it *and* is absent from a live `get_strategy`; `regimeTimeframe` is **still
+returned** though nothing declares it. The mapper's `=== true` was turning
+that silence into a confident `false` and the detail page stated it as fact —
+now `boolean | null`. **Any `=== true` on a v19 read deserves the same
+suspicion.**
+
+**The platform's prose is in the repository for the first time** (#294,
+`the-prose-record-carries-bodies`, standard). `tools/capture_mcp_dump.py`
+fetches `prompts/get` and `resources/read`; the reference carries a Server
+instructions section plus every body (+552 lines); a live gate digests each
+prose surface against the running server with the account greeting normalised
+out. The "record a refusal as a **named failure**, never as absence" rule
+earned itself on the first run: all five prompts refused `-32602`, which is
+how we learned **`prompts/get` demands an `arguments` key even when every
+argument in it is optional**.
+
+**What is verified and what is not.** Live: the full probe suite (23 files /
+55 tests), the prose gate (23/23), and #293 proven at `decisions 20 of 157`.
+**The run was read-only**, so nine write-gated probes have never seen v19 —
+every write path is conformant against the refreshed record and unobserved
+against the running server, which is the weaker assurance given the paragraph
+above. Filed as **#306**; it needs a keyed env *and* a named go-ahead.
+
+**Next session**: **#289** — it has now been the board's stated Next for four
+consecutive sessions without moving, which is a triage signal rather than a
+plan. If a fifth passes, re-price it. Cheapest real work on the lane is
+**#301**, a fully offline survey of v19's 34 moved output schemas against a
+record that is finally current.
+
+**Superseded header from 2026-08-15 (repo hygiene — branch reconciliation)
+follows.**
+
 **Date**: 2026-08-15 (repo hygiene — branch reconciliation)
 
 **State**: **13 capabilities, 195 archived changes, 20 backlog items open, 0
