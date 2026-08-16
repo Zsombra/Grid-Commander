@@ -270,8 +270,70 @@
       (audited) from a **refusal before the attempt** (not audited - nothing left
       this process). Tests cover both, plus that a platform failure is not
       disguised as a binding refusal.
-- [ ] 7.4 **Live, operator-authorized, by name at the moment**: accept one real
-      decision. Read back the position. Record it verbatim.
+- [x] 7.4 **PASSED 2026-08-17.** The operator accepted one real decision through
+      the product, by name, at the moment. **I did not press it and could not** —
+      executing a trade is outside what I may do, so the setup, the read-back and
+      the recording are mine and the click is theirs. Task 7.4 names the operator
+      anyway.
+
+      **Getting a decision to exist a second time** repeated the 4.5 rig, and the
+      diagnosis was wrong twice before it was right. Vanguard was not short of
+      coins — it had five — and the signal logs showed every evaluation `ROUTED`,
+      which looked like the strategy gates were passing. They were not: the logs
+      only contain evaluations that *survived*. `list_radar_deployments`'s
+      `resolvesNow.qualificationBlock` showed all five idle on
+      `ATR_VOLATILITY_BELOW_MIN` or `AGGREGATE_BELOW_MIN`. **The population that
+      never reaches the model is invisible in the signal logs and visible only on
+      the radar read** — worth remembering, it cost two wrong answers.
+
+      Applied to the fork (`2da94e1e`, revision 2): `minAggregateScore` 0.62 → 0,
+      `minAtrPct` 0.5 → 0.01. Agent: `minTradeConviction` → 0,
+      `gridMinConfidence` → 0. All 20 radar coins temporarily to Vanguard at
+      `minConviction 0` — snapshotted first and restored exactly afterwards.
+
+      **The position, verbatim:**
+
+      ```
+      decision  89bf87d3-c111-48cb-8caf-5fc0b36d5c19   XRP SHORT  conviction 0.45
+      proposed entry 1.0009        actual fill 1.0017       <- they differ
+      quantity 21                  fee 0.014724             notional 21.0357
+      effectiveLeverage 4          R:R 3.0                  atrPct 0.2089
+      executedOrderId   517752339688
+      stopLossOrderId   517752339690    stop   1.00299135
+      takeProfitOrderId 517752339689    target 0.99462595
+      executedAt 2026-08-16T19:28:47.710Z   tradeStatus LIVE
+      breakEvenStatus INACTIVE_SETUP  <- a value this repository had not seen
+      ```
+
+      **All three order ids populated** — entry, stop and target all placed, so
+      the protection rests at the exchange rather than being merely intended.
+
+      **The audit row:**
+
+      ```json
+      {"tool":"accept_entry_decision","actor":"user","destructive":false,
+       "outcome":"succeeded","created_at":"2026-08-16T19:28:33.149Z",
+       "completed_at":"2026-08-16T19:28:35.404Z","failure_reason":null}
+      ```
+
+      Queried as *every* answer row ever written: exactly two, one per verb.
+
+      **`destructive: false` on the accept** is the platform's own annotation,
+      and it is backwards from where the risk sits — cancelling is flagged
+      destructive, opening a leveraged position is not. Recorded, not concluded;
+      it deserves its own item.
+
+      **The sizing formula held a fourth time**, and for the first time on an
+      accept this product performed: headroom 45 x 0.12 x leverage 4 = 21.60,
+      floored to 21 units at 1.0017 = **21.0357**, observed exactly. And
+      `effectiveLeverage` appears only on the *position* — the decision row never
+      carried it, so the confirmation could not have named the amount even if
+      PE-2 permitted it. That settles #305 by measurement.
+
+      **The account was restored**: radar 20/20 to its exact original owners and
+      convictions, Vanguard back on Cannae r3 at 0.55/0.75. The fork is
+      deliberately left **active** because the live XRP position cites it as
+      provenance; archive it at `expectedRevision: 2` once that trade closes.
 - [x] 7.5 **DONE, with one gate honestly not run.** `tsc` clean,
       `npm run lint` clean, **2681 vitest across 211 files**, `npm run build`
       compiled with all three `/approvals` routes emitted, `db:generate` leaves

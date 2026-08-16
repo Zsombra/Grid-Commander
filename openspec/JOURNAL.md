@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-17 (accepted) — 40/40, and a diagnosis that was wrong twice
+
+**Did**: task **7.4**. The operator accepted one real decision through the
+product; `the-approval-can-be-answered` is **40/40**. I built the rig, read it
+back and recorded it — **I did not press accept and may not**, which is fine
+because 7.4 names the operator.
+
+**The diagnosis was wrong twice before it was right, and the reason generalises.**
+Vanguard was not short of coins (it had five), and its signal logs showed every
+evaluation `ROUTED`, which read as the strategy gates passing. They were not:
+**the signal logs only contain evaluations that survived.** The population
+filtered before the model is visible *only* in
+`list_radar_deployments.resolvesNow.qualificationBlock` — all five coins idle on
+`ATR_VOLATILITY_BELOW_MIN` or `AGGREGATE_BELOW_MIN`. Two wrong answers came from
+reading survivors as if they were the population.
+
+**The radar takeover was scripted, and the snapshot went to disk first.** All 20
+coins to Vanguard, then restored 20/20 to their exact original owners and
+convictions. `radar.mjs save|takeover|restore` exists in the session scratchpad;
+writing the restore *before* the takeover is what made a 40-write round trip safe
+to attempt at low context.
+
+**What the live position bought, and nothing else could:**
+
+- **#336 confirmed on a second agent.** Vanguard holding XRP reads
+  `accountEquityUsd 0` and `openUnrealizedPnlUsd 0` against a live `-0.0042`, in
+  the payload that prices its margin correctly. Two agents, two coins, two
+  strategies — the bar this repository sets.
+- **#305 settled by measurement.** `effectiveLeverage` appears only on the
+  position, after acceptance; the decision row never carries it. The confirmation
+  could not have named the amount even without PE-2.
+- **Proposed entry 1.0009, actual fill 1.0017.** The confirmation binds and shows
+  the *proposed* level. Nothing is wrong — the binding detects levels *moving* —
+  but no surface may ever promise a fill.
+- **`breakEvenStatus: INACTIVE_SETUP`**, a value not previously seen.
+- **`destructive: false` on the accept**, while cancel is `true`. The platform's
+  annotation is backwards from where the money risk is. Worth its own item.
+
+**State**: radar restored 20/20, Vanguard on Cannae r3 at 0.55/0.75 and still
+`APPROVAL_REQUIRED`, `.env.local` deleted, dev server stopped, tree clean,
+`validate --all` 0 errors.
+
+**Next**: archive `2da94e1e` at `expectedRevision: 2` once the XRP position
+closes — left active on purpose, the live position cites it as provenance. Then
+the untaken decisions: #320, #331, #322's residue, #304, #282, and #327's
+corrected ask.
+
+**Watch out**: `#306`'s `radar-probe` still needs a flat fleet below cap, and the
+account is at 20/20 with four positions. Its `finally` guard landed today, so it
+is safe whenever that window comes.
+
 ## 2026-08-17 (accept) — section 5 built, on a gate that had just been earned
 
 **Did**: built 5.2–5.5 of `the-approval-can-be-answered`, which the audited
