@@ -99,3 +99,24 @@ balance of 38.573919. This item is where it is concluded.
 - Not p2: nothing renders either field today, so nothing is currently wrong on
   any surface. It becomes p2 the moment a surface reaches for open P&L, which is
   a plausible next feature.
+
+## Second agent confirmed 2026-08-16, on a position this product opened
+
+Vanguard, holding XRP SHORT (opened 19:28:47Z through the product's own accept):
+
+```
+get_agent_budget(Vanguard)          capitalAtRiskUsd 5.4   gauges.exposure.fill 5.4
+                                    accountEquityUsd 0     openUnrealizedPnlUsd 0
+list_user_active_positions          marginedUsd 5.2589     unrealizedPnlUsd -0.0042
+get_account_state                   balance.usdc ~38, tradingWalletProvisioned true
+```
+
+Both fields fail the same way they do on Undertow, in the same payload that gets
+`capitalAtRiskUsd` right. **That is the two-agent bar this repository sets for a
+claim**, and it is now met — on a different agent, a different coin, a different
+strategy, and a position opened by this product rather than by the platform's
+own auto-execution.
+
+`openUnrealizedPnlUsd: 0` against a live `-0.0042` is the sharper of the two: the
+position is four minutes old, `pricingStatus: LIVE`, and the same call prices its
+margin correctly.

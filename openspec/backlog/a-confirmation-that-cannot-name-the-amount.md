@@ -157,3 +157,34 @@ stays p3. But the question it asks can now be answered more sharply than
   this is taken up.
 
 Still blocked by `the-approval-can-be-answered`, and unchanged in priority.
+
+## The amount was underivable, and now that is measured rather than argued
+
+Task 7.4's accept produced the first position this product has opened, so the
+formula could finally be checked against a fill it caused:
+
+```
+headroom at decision time   45.00      (Vanguard flat, cap 45)
+positionSizePct             12  MEDIUM
+effectiveLeverage            4
+  predicted notional  45 x 0.12 x 4        = 21.60
+  quantity            21.60 / 1.0017       = 21.5633 -> floor 21
+  actual notional     21 x 1.0017          = 21.0357   <- observed exactly
+```
+
+Fourth confirmation of `headroom x pct x leverage` with integer flooring, and the
+first on a **product-performed** accept rather than a platform auto-execution.
+
+**And it settles this item's open question.** `effectiveLeverage: 4` appears on
+`list_user_active_positions` — *after* acceptance. The decision row carried no
+leverage field at any point. So the confirmation could not have named the amount
+even if PE-2 permitted it: the multiplier did not exist yet on anything the
+surface could read. The proportion was not an imprecise description of the
+amount; it was one of three terms, and a second term only came into being when
+the position did.
+
+**One more thing the fill shows.** Proposed entry **1.0009**, actual fill
+**1.0017** — the confirmation binds and displays the *proposed* level, and the
+position opened 8 pips away from it. Nothing here is wrong (the binding exists to
+detect the levels *moving*, not to promise a fill), but it means a surface that
+ever says "you will enter at X" would be overstating what the platform offers.
