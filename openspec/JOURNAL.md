@@ -1,5 +1,139 @@
 # Journal
 
+## 2026-08-16 (approvals) — the write path reaches the UI, and stops where a person is needed
+
+**Did**: `the-approval-can-be-answered` from **19/40 to 33/40**. #307 built the
+whole write path below the UI and nothing in the product could reach it; this is
+the UI. Three surfaces — `/approvals` (account-wide queue), the cancel
+confirmation, and `/approvals/authority` (the step-up) — plus four use cases, the
+retirement of the unanswerable-mode disclosure, and 56 new tests.
+
+**Scope was settled before anything was built, and the artifacts had already
+settled it.** The two P2s were checked against the proposal's Out of Scope
+section, which rules on both *by name*: #304 is `blocked_by` this very change
+(folding an item into its own blocker is a category error) and #299 belongs to a
+different capability and a different surface, with its copy half already shipped
+separately. **Queued, both.** The one fold-in considered and rejected was #304's
+own cheapest mitigation — an expired-unanswered count on the queue — which needs
+a `status: EXPIRED` read this change never makes.
+
+**Reading `main` for that decision would have been wrong.** PR #329 was open and
+had *rewritten* `the-exposure-cap-starves-silently` with a live measurement that
+made its remaining half cheaper. The STATE handed to this session said 0 open PRs
+and one remote branch; both were stale. #329 also touches `money-limits.tsx` and
+three surface manifests this change touches — different lines, but whichever
+merges second must recompute those digests, because the file will differ from
+what either PR hashed.
+
+**Accept is not built, and that is the point.** DL-11 records that the accept
+port method landed early and that the Phase D gate's purpose held only because no
+surface reached it. This session built the surface that reaches **cancel alone**,
+and `tests/rendering/approvals.test.ts` now asserts no accept control renders on
+either authority branch. The gate stopped being a promise in a document and
+became a failing test if anyone crosses it.
+
+**BattleGrid publishes no account-wide decision read.** `list_entry_decisions`
+requires an agent id, so the queue fans out one read per agent — which makes
+**partial failure the ordinary failure**. Every result carries the agents that
+could not be reached, including results that also carry decisions. A test caught
+the first version still saying "Nothing is waiting" over a failed read, which is
+exactly the lie the surface exists to refuse; the heading is now qualified.
+
+**Task 6.2 was the one that paid.** It asks whether any other surface repeats the
+retired claim. None did — but two surfaces made claims the *step-up* falsified.
+The arena said Grid-Commander **"never requests the wager scope"**; the connect
+page said **"It does not ask for that authority"**. Both were true of the whole
+product until this change and are now false as stated. Narrowed rather than
+deleted: never at connect, never to play in the arena, none held by default, and
+exactly one place in the product that can ask.
+
+**The delta spec was corrected rather than worked around.** It obliged the
+product to audit *every* refusal. DL-9 had ruled the opposite during Phase A —
+`call-path.ts` refuses before writing any row, and `wager.test.ts` asserts the
+audit is empty after a refused wager call — but **nothing had reconciled the
+requirement with the ruling**, so the spec and the code disagreed and task 7.3
+would have been built to the wrong one. The requirement now distinguishes an
+attempt that failed (audited) from a refusal before the attempt (not audited,
+because nothing left this process). DL-17.
+
+**Four guards caught real defects; none was excepted.** A route importing the
+domain (`boundaries.test.ts`, W-D) — the refusal wording moved to the
+presentation layer. A confirmation token coerced into existence with `?? ''`
+(`concurrency.test.ts`) — the form now simply does not render without a token. A
+hidden `next` field the server action never read (`reachability.test.ts`) —
+removed, because the grant returns through an OAuth callback that knows nothing
+about that page. And a dropped `FailureCause` (`failure-is-explained.test.ts`)
+that left three surfaces unable to say whether BattleGrid had refused or simply
+not answered.
+
+**State**: 13 capabilities, **1 active change** (`the-approval-can-be-answered`,
+**33/40**), 28 open backlog items — 3 of them P2, unchanged by this session.
+Gates on this tree: `tsc` clean, `npm run lint` clean, **2681 tests across 211
+files** (up from 2625/208), `npm run build` compiled with all three `/approvals`
+routes emitted, `db:generate` leaves `drizzle/` clean, `validate --all` **0
+errors / 15 warnings** — 15 is the standing count, and the run reached 19
+mid-session because this change staled four manifests. All four were refreshed in
+**prose as well as digest**: three asserted the retired disclosure in words, and a
+refreshed hash over stale prose claims a survey nobody performed.
+
+**`npm run test:db` was NOT run, and the gate is not claimed as passed.** It
+truncates every table it touches including the signal record, `DATABASE_URL` here
+points at the real `grid_commander`, and the suite's own guard refuses. Overriding
+it would destroy a record BattleGrid cannot re-serve, because it serves current
+readings only. It needs a disposable database. `test:live` likewise not run.
+
+**Two live read-only checks at the end, and both were first written up as more
+than they were.** The operator caught it: *"I thought we already did this
+Vanguard thing. I proved it before and then ended it before."* They were right,
+twice.
+
+- **The expiry finding was already made.** `approvals-have-no-write-side.md`
+  established the mechanism, the ~15-minute window, `total: 12` EXPIRED on
+  Undertow, and the rate — *"roughly one unheld-coin ENTER per hour or two"* —
+  on 2026-08-15. It was written up here as *"a rate, where the prior evidence
+  was only a count"*, which is false: the prior record had both. What is
+  genuinely new is narrower and was kept: **Undertow and Breakwater are now
+  `FULL_EXECUTION`, so Vanguard is the account's only `APPROVAL_REQUIRED`
+  agent**, and 5 of its 7 lifetime ENTERs expired unanswered. That is the same
+  finding continuing on a new producer — confirmation, not evidence — and its
+  one operational use is naming the agent to watch when the live gate is
+  attempted. #304 was trimmed to say exactly that and to point at the prior
+  write-up rather than restate it.
+- **PE-1 was already discharged too**, by change task 0.2 on 2026-08-15: a
+  re-read of decision `6c11b3dc` returning 35 keys with no `revision`,
+  `version`, `updatedAt` or ETag. Today's read was written up as the first
+  proof and is not. It was re-scoped to what it actually is — **a version guard**:
+  0.2 ran at v19.1.0, #329 then found v19.2.0 had arrived unannounced, and the
+  same 35 keys with no concurrency token still hold at v19.2.0. Worth having in
+  a repo twice caught by a surface whose count and inputs held still while the
+  shape moved (#198, #301), but it is a re-check, not a finding.
+
+**"And then ended it before" is the other half, and it is a live constraint.**
+The write-side item instructs a ≤7-minute `list_pending_approvals` poll with the
+session kept idle; the decision log later says *"do not start a polling watch —
+the operator asked for none"*, and `cron-watches-need-an-idle-repl` records a
+Workflow having already cost one 15-minute observation window. The later
+instruction governs. **No watch was started this session**, and the gate check
+was a single read: nothing pending at the time, which is why 4.5 could not be
+attempted.
+
+Two corroborations from that read were kept because they are fresh instances of
+documented traps rather than new claims: `executedAt` is set at **creation**
+(every EXPIRED row carries `executedAt == createdAt` with `entryFillPrice:
+null`), and `expiresAt` **is rewritten on acceptance** — DL-1 retired its caveat
+on one instance, and there are now three.
+
+**Next**: **task 4.5 — and it cannot be done by an agent.** It is the change's
+gate: a cancel performed *through the product* and confirmed in the audit.
+Everything it needs is now built; what it needs from the operator is two things —
+a real decision waiting (Vanguard produces them unprompted, so this is timing,
+not setup) and the operator granting fund-committing authority at
+`/approvals/authority` and answering one decision **by name, at the moment**. That
+grant would be the first time this product has ever held `mcp:wager`, and the
+cancel the first fund-committing call it has ever made. It commits no money,
+which is precisely why the gate puts it first. Section 5 stays unbuilt until it
+passes.
+
 ## 2026-08-16 (lane) — two P2s answered, and a guard that already existed
 
 **Did**: worked the audit's ladder from the top. **#299's copy half** shipped as

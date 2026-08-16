@@ -1,4 +1,5 @@
 import { isAnswerable } from '@/domain/agent/pending-decision.js';
+import type { FailureCause } from '@/ports/failure.js';
 import type { AgentsPort, EntryDecision, StageResult } from '@/ports/agents.js';
 import type { Clock } from '@/ports/clock.js';
 
@@ -48,7 +49,17 @@ export interface PendingDecisionView {
 export type PendingDecisionsResult =
   | { readonly kind: 'waiting'; readonly decisions: readonly PendingDecisionView[] }
   | { readonly kind: 'none' }
-  | { readonly kind: 'unreadable'; readonly reason: string };
+  | {
+      readonly kind: 'unreadable';
+      readonly reason: string;
+      /**
+       * Carried through rather than dropped: `WhyNotLoaded` says something
+       * different for a refusal than for an outage, and telling somebody with a
+       * bad credential to wait out an outage is the exact mistake that component
+       * was written to stop.
+       */
+      readonly cause: FailureCause;
+    };
 
 export class ReadPendingDecisionsQuery {
   constructor(
@@ -64,7 +75,8 @@ export class ReadPendingDecisionsQuery {
   }): Promise<PendingDecisionsResult> {
     const stage: StageResult<EntryDecision> = await this.agents.readEntryDecisions(req);
 
-    if (stage.kind === 'unreadable') return { kind: 'unreadable', reason: stage.reason };
+    if (stage.kind === 'unreadable')
+      return { kind: 'unreadable', reason: stage.reason, cause: stage.cause };
     if (stage.kind === 'none') return { kind: 'none' };
 
     const now = this.clock.now().getTime();

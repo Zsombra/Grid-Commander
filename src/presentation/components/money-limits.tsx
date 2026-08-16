@@ -79,17 +79,21 @@ export function MoneyLimits({
             read what the agent decides before any of it costs anything.
           </p>
           {/*
-            Said here rather than filed as a limitation nobody reads. This
-            product offers a mode whose entire point is that it waits for a
-            human, and the accept and cancel actions are `mcp:wager` and
-            unbuilt (`approvals-have-no-write-side`). Choosing it without
-            being told means proposals that expire unanswered.
+            This used to disclose that the mode was unanswerable here — the
+            requirement "An Unanswerable Trading Mode Says So", now retired,
+            because the disclosure has become false. What replaces it is not
+            silence but the thing the disclosure was standing in for: where the
+            proposals go, and how long there is to answer them.
+
+            Accepting is still unbuilt and the sentence says so rather than
+            letting "answer them" imply both halves.
           */}
           <p className="text-sm text-text-secondary">
-            <strong>Approval required</strong> is not answerable here yet:
-            Grid-Commander can show you what the agent proposes but cannot
-            accept or cancel it. Until it can, answering happens on
-            battlegrid.trade, and unanswered proposals expire.
+            <strong>Approval required</strong> means the agent proposes a trade and waits.
+            Proposals appear under <a href="/approvals" className="underline">Waiting</a>,
+            where you can cancel them; the window is fifteen minutes, after which a
+            proposal expires and the agent does not offer it again. Accepting is not yet
+            available here and still happens on battlegrid.trade.
           </p>
         </div>
       )}

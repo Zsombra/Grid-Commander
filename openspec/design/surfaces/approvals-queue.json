@@ -1,0 +1,285 @@
+{
+  "id": "approvals-queue",
+  "title": "Trades waiting for your answer",
+  "route": "/approvals",
+  "capability": "agent-understanding",
+  "status": "functional",
+  "generated_at_commit": "339a087",
+  "source_files": [
+    "app/(app)/approvals/page.tsx",
+    "src/presentation/components/approval-queue.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "ApprovalQueueResult — 'waiting' {groups, unreadable} | 'none' {unreadable} | 'no-agents' | 'unreadable' {reason, cause}",
+      "source": "app.readApprovalQueue.execute — one list_entry_decisions read per agent, because BattleGrid publishes no account-wide decision read"
+    },
+    {
+      "name": "authority",
+      "shape": "'held' | 'absent'",
+      "source": "app.readAnswerAuthority.execute — the same HeldScopes the write guard reads"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the reason a refused answer redirected back with"
+    },
+    {
+      "name": "note",
+      "shape": "string | undefined",
+      "source": "searchParams — a cancel that succeeded, said rather than silently redirected"
+    }
+  ],
+  "components": [
+    {
+      "id": "approvals-page",
+      "role": "container",
+      "purpose": "Show every trade an agent proposed and is waiting on a human for, across every agent, with how long each has left before it expires.",
+      "states": [
+        "waiting",
+        "waiting-with-unreachable-agents",
+        "none",
+        "none-with-unreachable-agents",
+        "no-agents",
+        "roster-unreadable",
+        "with-problem",
+        "with-note",
+        "not-connected"
+      ],
+      "data": [
+        "result",
+        "authority",
+        "problem",
+        "note"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centred column, space-y-4, p-6 — the queue skeleton /pending already wears. h1 'Trades waiting for your answer', `<CarriedProblem>`, an optional role=status note, the fifteen-minute explainer, an optional step-up link when authority is absent, then `<ApprovalQueue>`.",
+      "constraints": [
+        "No currency amount may appear (PE-2). BattleGrid computes no position size until a decision is accepted, so any figure here would be this product's arithmetic wearing the platform's authority, about money. tests/agent/approval-queue.test.ts scans this file for currency formatting and for the money-shaped budget fields.",
+        "'Nothing is waiting' and 'the queue could not be read' must never render as the same state — the requirement's own scenario, and on this surface the difference is a real trade expiring unanswered.",
+        "The step-up link must stay reachable from here and not only from a decision page: tests/architecture/reachability.test.ts requires a route to be offered from somewhere that is not itself a mutation.",
+        "The page renders whole from one server round trip; the only client code is the shared nav and PerformButton further in. Client-side polling or auto-refresh would change behavior and is requires-spec-change — the operator explicitly asked for no polling watch."
+      ],
+      "children": [
+        "problem",
+        "note",
+        "step-up-link",
+        "approval-queue"
+      ]
+    },
+    {
+      "id": "approval-queue",
+      "role": "display",
+      "purpose": "The waiting decisions themselves, grouped under the agent that proposed each one.",
+      "states": [
+        "waiting",
+        "none",
+        "none-with-unreachable-agents",
+        "no-agents",
+        "unreadable"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "`<ApprovalQueue>` (approval-queue.tsx). Each group is a section headed by a link to its agent; each decision is a bordered consequence card carrying entry/stop/target/conviction as a `<dl>`, the proportion sentence, the model's reasoning, and one link to the answer page. Unreachable agents render above everything in a role=alert danger block with `<WhyNotLoaded>` per agent.",
+      "constraints": [
+        "The agent is named at the group, never on the decision view. `PendingDecisionView` is asserted to carry exactly `decision` and `msRemaining` so there is nowhere on it for an amount to appear; grouping keeps that guard exactly as strong while still naming who proposed what.",
+        "The empty heading stays qualified whenever any agent went unread — 'Nothing is waiting from the agents that answered'. The unqualified claim is the lie this component exists to refuse.",
+        "No control is offered on a list row. The consequence has to be stated before cancel is reachable, and a control on a row is a control without one."
+      ],
+      "children": [
+        "remaining",
+        "unreadable-agents",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "remaining",
+      "role": "display",
+      "purpose": "How long is left to answer, in units somebody under time pressure can act on.",
+      "states": [
+        "minutes-and-seconds",
+        "seconds-only",
+        "window-closed",
+        "no-expiry-sent"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Rendered from `msRemaining`, derived server-side and floored at zero. Null renders 'No expiry was sent for this decision'; zero renders 'The window has closed — this can no longer be answered'.",
+      "constraints": [
+        "Must not be rebuilt from `expiresAt` in the component. The Iron Rule permits the server-side derivation and forbids the client one, and it is also what stops this figure disagreeing with the liveness the binding checks.",
+        "A missing expiry is unknown, never 'expires now'. Guessing in either direction is a claim about someone else's money that nobody made.",
+        "This is the most perishable thing on the page and stays beside each decision rather than once at the top. It is rendered at request time and does not tick — a design implying a live countdown would be claiming behavior the page does not have."
+      ],
+      "children": []
+    },
+    {
+      "id": "unreadable-agents",
+      "role": "feedback",
+      "purpose": "Name the agents that could not be asked, so a partial read is never read as an empty account.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "role=alert danger block listing each agent with the platform's own reason and `<WhyNotLoaded>` beneath it. Rendered above the groups on the waiting branch and above the empty heading on the none branch.",
+      "constraints": [
+        "role=alert must survive.",
+        "Must keep rendering on the 'none' branch — that is exactly the case where its absence would be most misleading, because the page otherwise reads as an account with nothing waiting."
+      ],
+      "children": []
+    },
+    {
+      "id": "step-up-link",
+      "role": "navigation",
+      "purpose": "Offer fund-committing authority from a page that mutates nothing, for an operator who wants it before a decision arrives.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "authority"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Goes to /approvals/authority"
+        }
+      ],
+      "current_implementation": "A plain underlined link in a text-sm secondary paragraph, rendered only when authority is absent, saying the queue below is readable without it.",
+      "constraints": [
+        "Absent entirely when the authority is held — not a disabled control and not an 'already granted' variant.",
+        "Must not be styled as a call to action. The product's standing posture is that most users never need this, and a prominent ask here would undercut the claim the connect page makes."
+      ],
+      "children": []
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted cancel back here.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "Shared `CarriedProblem` (carried-problem.tsx) — DT-0004 danger treatment, role=alert, semibold 'Refused: ' prefix. Renders null without a problem, which is what makes the unconditional mount free.",
+      "constraints": [
+        "role=alert must survive.",
+        "Shared by twelve surfaces now — restyle in the component, never per page.",
+        "The reason is domain- or platform-authored and unbounded: wrap rather than clip, and never truncate or paraphrase.",
+        "Rendering nothing when there is no problem is load-bearing — no reserved empty slot, no placeholder."
+      ],
+      "children": []
+    },
+    {
+      "id": "note",
+      "role": "feedback",
+      "purpose": "Say that a cancel succeeded, rather than redirecting silently.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "note"
+      ],
+      "actions": [],
+      "current_implementation": "role=status notice block — notice tokens, never danger — carrying the sentence the action set ('The proposal was cancelled. Nothing was bought or sold.').",
+      "constraints": [
+        "Notice never borrows danger's colour (system.json principle): a successful cancel is not a failure.",
+        "Must not be removed as noise. A silent redirect is how an account moves without its operator learning it did, and this surface answers a money question."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Say whether a failed read was a refusal or an outage, because the two have different next steps.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Shared `WhyNotLoaded`, taking the `FailureCause` carried through from the port on both the roster failure and each per-agent failure.",
+      "constraints": [
+        "The refused/unreachable distinction is spec-bearing — telling somebody with a bad credential to wait out an outage that is not happening is the mistake this component exists to stop."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Read what is waiting",
+      "steps": [
+        "open /approvals",
+        "read each agent's proposals with levels, conviction and reasoning",
+        "see how long each has left",
+        "follow one into its answer page"
+      ]
+    },
+    {
+      "name": "Some agents could not be asked",
+      "steps": [
+        "open /approvals",
+        "the danger block names the agents that failed and why",
+        "the groups below are explicitly not the whole account"
+      ]
+    },
+    {
+      "name": "Nothing is waiting",
+      "steps": [
+        "open /approvals",
+        "read that no agent has a trade waiting — qualified when any agent went unread"
+      ]
+    },
+    {
+      "name": "A cancel lands back here",
+      "steps": [
+        "cancel a proposal from its decision page",
+        "return with a status note saying nothing was bought or sold",
+        "the cancelled decision is no longer listed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "step-up-link",
+      "agent-links",
+      "answer-links"
+    ],
+    "notes": "The problem banner and the unreachable-agents block both carry role=alert and can be on screen together; the success note carries role=status. Focus ring is global (focus-visible, 2px). Every state change is a full navigation."
+  },
+  "source_digest": {
+    "app/(app)/approvals/page.tsx": "sha256:3fa38182246d9f49631906c9d13df98ff32951156202114730dabfb7852b53f7",
+    "src/presentation/components/approval-queue.tsx": "sha256:5d8af0e58c0c689e238455f0bb99ba2b497643690c72bfbdfc105cde59f0551c",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

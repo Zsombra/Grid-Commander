@@ -245,6 +245,19 @@ export class FakeAgentsPort implements AgentsPort {
     if (this.answerFails) throw this.answerFails;
   }
 
+  /**
+   * The real tool names, on purpose.
+   *
+   * A confirmation is bound to the tool as well as the target, so a fake that
+   * returned a placeholder here would let a test mint a token the real adapter
+   * could never consume — and the mint/spend agreement is exactly what this
+   * method exists to hold together. `wager.test.ts` A10 scans `src/` and `app/`
+   * only; naming them in a fake is what keeps the guard checking production.
+   */
+  answerDecisionTool(verb: 'accept' | 'cancel'): string {
+    return verb === 'accept' ? 'accept_entry_decision' : 'cancel_entry_decision';
+  }
+
   async setLifecycle(params: {
     agentId: string;
     expectedRevision: number;
@@ -335,11 +348,27 @@ export class FakeAgentsPort implements AgentsPort {
     return this.signalLogs;
   }
 
+  /**
+   * Per-agent decision reads, for the account-wide queue.
+   *
+   * The approvals queue asks one agent at a time — BattleGrid has no
+   * account-wide decision read — so its interesting case is **partial
+   * failure**: some agents answer and some do not. A single `entryDecisions`
+   * cannot express that, and a fake that answers identically for every agent
+   * would let the queue report an empty account while an agent it never
+   * reached had a trade expiring.
+   *
+   * Falls back to `entryDecisions` when an agent has no entry here, so every
+   * existing caller is untouched.
+   */
+  readonly entryDecisionsByAgent = new Map<string, StageResult<EntryDecision>>();
+
   async readEntryDecisions(params: {
+    agentId: string;
     limit?: number | undefined;
   }): Promise<StageResult<EntryDecision>> {
     this.entryDecisionLimits.push(params.limit);
-    return this.entryDecisions;
+    return this.entryDecisionsByAgent.get(params.agentId) ?? this.entryDecisions;
   }
 
   /** One evaluation in full, and the agent's own funnel. */

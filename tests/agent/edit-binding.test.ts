@@ -468,7 +468,19 @@ describe('no caller composes a target inline', () => {
    * re-opens the seam: it can compose the string from values the person never
    * saw, and the compiler has no opinion about string contents.
    */
-  const TARGET_SHAPES = [/agent:\$\{/, /->strategy:\$\{/, /strategy:\$\{[^}]*\}#\$\{/];
+  const TARGET_SHAPES = [
+    /agent:\$\{/,
+    /->strategy:\$\{/,
+    /strategy:\$\{[^}]*\}#\$\{/,
+    /*
+     * Added with `the-approval-can-be-answered`. This is the target that
+     * authorises spending money, so it is the one that would matter most if a
+     * caller composed it from values the operator never saw — and the verb is
+     * part of the string, which means a hand-built one could also turn an
+     * agreement to decline into an agreement to buy.
+     */
+    /decision:\$\{/,
+  ];
 
   function tsFilesUnder(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

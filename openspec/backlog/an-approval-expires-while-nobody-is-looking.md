@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "304"
@@ -50,6 +50,30 @@ actively watching for exactly that row.
   it — `perTradePushEnabled: false` on Undertow's budget read. **Whether it
   covers approval-pending decisions or only executed trades is NOT DETERMINED**
   and is the first thing to establish.
+
+## 2026-08-16 — the producer changed; the finding did not
+
+**This item's case was already made.** `approvals-have-no-write-side.md`
+established the mechanism, the ~15-minute window, `total: 12` EXPIRED on
+Undertow, and the rate — *"roughly one unheld-coin ENTER per hour or two"* — on
+2026-08-15. None of that needs re-deriving, and a later reader should go there
+rather than here for it.
+
+**What has changed is who produces the rows.** Undertow is now
+`FULL_EXECUTION`; so is Breakwater. **Vanguard is the account's only
+`APPROVAL_REQUIRED` agent**, at the 15-minute ceiling, and it has taken over as
+the source of approval rows. Its whole history, read 2026-08-16:
+
+```
+total decisions   37
+ENTER -> EXPIRED   5      (f67c36af, a0e4a5c9, d049533c, b1165d28, fb67f4a3)
+ENTER -> EXECUTED  2      (both accepted by hand at battlegrid.trade)
+```
+
+Five of seven, on the new producer, in one night. That is the same finding
+continuing on a different agent — **confirmation, not new evidence** — and its
+only operational value is that it names Vanguard as the agent to watch when
+`the-approval-can-be-answered`'s live gate is attempted.
 
 ## Notes
 

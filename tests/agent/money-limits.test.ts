@@ -216,19 +216,28 @@ describe('the safe answer is the default answer', () => {
   });
 
   /**
-   * The mode this product cannot yet serve says so where it is chosen.
+   * The mode says where its proposals go, and what can be done with them.
    *
-   * `APPROVAL_REQUIRED` means the agent proposes and waits for a human, and
-   * the accept/cancel tools are `mcp:wager` and unbuilt. Offering it silently
-   * would hand the operator an agent whose proposals expire unanswered — a
-   * dead end the product created and did not mention.
+   * This guard used to assert the opposite — that the selector disclosed
+   * accept and cancel were **unbuilt** — under the requirement "An Unanswerable
+   * Trading Mode Says So". `the-approval-can-be-answered` built cancelling, so
+   * that disclosure became false and the requirement was retired with the
+   * change. What replaces it is not silence: the operator still needs to know
+   * where proposals appear and that the window is short, and accepting is still
+   * unbuilt, so the sentence must not let "answer them" imply both halves.
    */
-  it('says that approval-required is not answerable here yet', () => {
+  it('sends approval-required to the queue and is honest about which half exists', () => {
     const source = form();
-    expect(source).toContain('cannot');
-    expect(source).toMatch(/accept or cancel/);
-    // And names where answering does happen, rather than only refusing.
+    // Where the proposals go, as a link rather than a description of one.
+    expect(source).toContain('/approvals');
+    // The window, because an operator who does not know it is short will miss it.
+    expect(source).toContain('fifteen minutes');
+    // Accepting is still unbuilt, and still names where it does happen.
+    // Whitespace-tolerant: the sentence wraps across lines in the JSX source.
+    expect(source).toMatch(/[Aa]ccepting is not yet\s+available/);
     expect(source).toContain('battlegrid.trade');
+    // And the dead-end disclosure is gone rather than softened.
+    expect(source).not.toMatch(/accept or cancel it/);
   });
 
   /**

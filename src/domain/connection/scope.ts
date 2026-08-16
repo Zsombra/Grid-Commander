@@ -34,3 +34,34 @@ export function describeScope(scope: Scope): string {
       return 'Commit your funds — place entries and open trades';
   }
 }
+
+/**
+ * What a step-up asks for: the standing scope, plus authority to commit funds.
+ *
+ * Deliberately a **separate** constant rather than a widening of
+ * `REQUESTED_SCOPES`. The connection default is the product's central safety
+ * claim — a user who never answers a decision must never be asked for more than
+ * reading and configuration — and `tests/agent/wager.test.ts` A10 reads
+ * `REQUESTED_SCOPES` out of this file by regex and fails if the word `wager`
+ * appears in it. Keeping the two apart is what lets the guard stay true while
+ * the step-up exists at all.
+ *
+ * `mcp:read` is carried alongside rather than dropped: a grant replaces what the
+ * connection holds, so requesting wager alone would trade away the authority
+ * every other surface in the product runs on.
+ */
+export const STEP_UP_SCOPES: readonly Scope[] = ['mcp:read', 'mcp:wager'];
+
+/**
+ * What the fund-committing step-up permits, in the words the operator reads.
+ *
+ * Single source, for the same reason `describeScope` is: the requirement
+ * "Fund-Committing Authority Is Granted By A Step-Up The Operator Begins"
+ * obliges the surface to state which operations the authority covers and that it
+ * permits committing the user's money, and a second copy of that sentence is a
+ * second chance for one of them to soften.
+ */
+export const STEP_UP_PERMITS: readonly string[] = [
+  'Accept a trade one of your agents has proposed — this opens a position with your money',
+  'Cancel a trade one of your agents has proposed — this commits nothing',
+];

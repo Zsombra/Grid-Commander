@@ -39,15 +39,21 @@ export function WagerAuthority({ wager }: { wager: WagerAuthorityResult }) {
      * Not "it connects read-only" — that was this sentence's first form, and
      * it is the exact inference "Configuration Authority Is Described
      * Honestly" forbids: the scope this product holds can create, rebind and
-     * archive agents. What stands between it and a stake is the scope it
-     * never requests, and the confirmation every change asks for first (#234).
+     * archive agents.
+     *
+     * **"It never requests the wager scope" was this sentence's second form,
+     * and `the-approval-can-be-answered` made it false.** The product now asks
+     * for that authority in exactly one place — a step-up an operator begins
+     * from a decision they are looking at — so the honest claim is the narrow
+     * one: not at connect, not for the arena, and never without being asked.
      */
     return (
       <p className="text-sm">
         BattleGrid would allow MCP-signed wagers on this account. Grid-Commander still
-        cannot place one: it never requests the wager scope. The access it does hold can
-        create and change your agents and strategies — each change confirmed with you
-        first — and none of it can commit your funds.
+        cannot place one: it never requests wager authority to play here, and holds none
+        by default. The access it does hold can create and change your agents and
+        strategies — each change confirmed with you first. The one thing that can ask for
+        more is answering a trade your own agent proposed, and only if you go and grant it.
       </p>
     );
   }

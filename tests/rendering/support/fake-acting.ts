@@ -32,6 +32,12 @@ import { ReadCatalogQuery } from '@/application/use-cases/read-catalog.query.js'
 import { ReadTradingRecordQuery } from '@/application/use-cases/read-trading-record.query.js';
 import { ReadTradeStoryQuery } from '@/application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from '@/application/use-cases/read-pipeline.query.js';
+import { ReadApprovalQueueQuery } from '@/application/use-cases/read-approval-queue.query.js';
+import { ReadAnswerAuthorityQuery } from '@/application/use-cases/read-answer-authority.query.js';
+import { DescribeDecisionAnswerQuery } from '@/application/use-cases/describe-decision-answer.query.js';
+import { AnswerDecisionCommand } from '@/application/use-cases/answer-decision.command.js';
+import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
+import type { Scope } from '@/domain/connection/scope.js';
 import { ReadOwnEvaluationQuery } from '@/application/use-cases/read-own-evaluation.query.js';
 import { ReadDeploymentsQuery } from '@/application/use-cases/read-deployments.query.js';
 import { ReadQualificationQuery } from '@/application/use-cases/read-qualification.query.js';
@@ -125,6 +131,15 @@ export function actingWith({
    */
   remedy = 'reconnect' as Remedy,
   /**
+   * What the connection may do, for the surfaces that gate on it.
+   *
+   * `['mcp:read']` by default because that is the product's standing posture —
+   * the state every user is in until they deliberately step up. A default that
+   * held wager authority would render the answer controls on every page test
+   * and let the gate rot unnoticed.
+   */
+  heldScopes = ['mcp:read'] as readonly Scope[],
+  /**
    * The reply an agent edit came back with, waiting to be shown once.
    *
    * Empty by default: the advisory arrives only on a write, so *nothing* is
@@ -149,6 +164,7 @@ export function actingWith({
   feasibilityReply?: InMemoryFeasibilityReplies;
   clock?: FakeClock;
   remedy?: Remedy;
+  heldScopes?: readonly Scope[];
 } = {}) {
   const confirmations = new FakeConfirmationStore(clock);
   const random = new SequentialRandom();
@@ -178,6 +194,12 @@ export function actingWith({
     readTradingRecord: new ReadTradingRecordQuery(agents),
     readTradeStory: new ReadTradeStoryQuery(agents),
     readPipeline: new ReadPipelineQuery(agents),
+    // Answering a proposed trade: the queue, the authority it needs, the
+    // describe that mints the confirmation, and the command that spends it.
+    readApprovalQueue: new ReadApprovalQueueQuery(agents, clock),
+    readAnswerAuthority: new ReadAnswerAuthorityQuery(new DeclaredScopes(heldScopes)),
+    describeDecisionAnswer: new DescribeDecisionAnswerQuery(agents, confirmations, random, clock),
+    answerDecision: new AnswerDecisionCommand(agents),
     readQualification: new ReadQualificationQuery(agents, radar, market),
     readStoppages: new ReadStoppagesQuery(agents),
     // No platform read behind it — it collects what the apply action set down

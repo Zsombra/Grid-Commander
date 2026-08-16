@@ -6,6 +6,7 @@ import { loadConfig } from './config.js';
 import type { Remedy } from '@/domain/connection/remedy.js';
 import type { PersonalConfig } from './config.js';
 import { DeclaredScopes } from './domain/connection/held-scopes.js';
+import type { HeldScopes } from './domain/connection/held-scopes.js';
 import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
 import { CaptureSignalsCommand } from './application/use-cases/capture-signals.command.js';
 import { CreateAgentCommand } from './application/use-cases/create-agent.command.js';
@@ -66,6 +67,10 @@ import { DescribeTrimRecordQuery, TrimRecordCommand } from './application/use-ca
 import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
 import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
 import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
+import { ReadApprovalQueueQuery } from './application/use-cases/read-approval-queue.query.js';
+import { DescribeDecisionAnswerQuery } from './application/use-cases/describe-decision-answer.query.js';
+import { AnswerDecisionCommand } from './application/use-cases/answer-decision.command.js';
+import { ReadAnswerAuthorityQuery } from './application/use-cases/read-answer-authority.query.js';
 import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
 import { ReadForwardReturnsQuery } from './application/use-cases/read-forward-returns.query.js';
 import { ReadRegimeContextQuery } from './application/use-cases/read-regime-context.query.js';
@@ -144,6 +149,16 @@ let cached: Infrastructure | null = null;
 
 interface Infrastructure {
   readonly connections: DrizzleConnectionRepository;
+  /**
+   * What the user's credential may actually do.
+   *
+   * Exposed on the container rather than staying private to the MCP adapter so
+   * a surface can ask the **same** source the guard asks. Two answers to "does
+   * this connection hold wager authority" is two answers that will one day
+   * disagree — and the disagreement would show up as a control the product
+   * offers and the platform refuses.
+   */
+  readonly heldScopes: HeldScopes;
   readonly transactions: DrizzleTransactionStore;
   readonly audit: DrizzleAuditRepository;
   readonly confirmations: DrizzleConfirmationStore;
@@ -191,6 +206,12 @@ function infrastructure(): Infrastructure {
   // person who configured it.
   const remedy: Remedy = config.personal ? 'repair-the-key' : 'reconnect';
 
+  // A delegated grant is read from the connection BattleGrid issued; a personal
+  // key carries a declaration the operator made. Two sources, one guard.
+  const heldScopes: HeldScopes = config.personal
+    ? new DeclaredScopes(config.personal.scopes)
+    : new ConnectionScopes(connections);
+
   const battlegrid = new McpBattleGridAdapter({
     config: config.battlegrid,
     audit,
@@ -198,9 +219,7 @@ function infrastructure(): Infrastructure {
     // Where "what may this credential do" is answered. A delegated grant is read
     // from the connection BattleGrid issued; a personal key carries a
     // declaration the operator made. Two sources, one guard — see HeldScopes.
-    heldScopes: config.personal
-      ? new DeclaredScopes(config.personal.scopes)
-      : new ConnectionScopes(connections),
+    heldScopes,
     // Fixed above so that no failure path has to work it out — and so that the
     // surface reporting the failure names the same one this adapter does.
     remedy,
@@ -209,6 +228,7 @@ function infrastructure(): Infrastructure {
 
   cached = {
     connections,
+    heldScopes,
     transactions: new DrizzleTransactionStore(db, systemClock),
     audit,
     confirmations,
@@ -348,6 +368,27 @@ export function app(cookies: CookieStore) {
     readTradingRecord: new ReadTradingRecordQuery(i.agents),
     readTradeStory: new ReadTradeStoryQuery(i.agents),
     readPipeline: new ReadPipelineQuery(i.agents),
+    // Answering a proposed trade: read the queue, describe one answer, perform
+    // it. Three objects because they are three different acts — and the
+    // describe is separate from the perform for the same reason the edit flow
+    // splits them: the consequence and the token it mints are formed when
+    // somebody opens the page, from a read taken at that moment.
+    readApprovalQueue: new ReadApprovalQueueQuery(i.agents, systemClock),
+    // Reads the same HeldScopes the write guard reads. It decides what to draw,
+    // never whether a write is allowed — P1, and the refusal that matters runs
+    // in beginGuardedCall on every path including ones that never render.
+    readAnswerAuthority: new ReadAnswerAuthorityQuery(i.heldScopes),
+    describeDecisionAnswer: new DescribeDecisionAnswerQuery(
+      i.agents,
+      i.confirmations,
+      random,
+      systemClock,
+    ),
+    // The only fund-committing write this product performs. It re-reads and
+    // checks all five binding conditions before the port is touched; the port's
+    // own guards — classification, scope, the confirmation consume, the audit
+    // row — run after that and are not duplicated here.
+    answerDecision: new AnswerDecisionCommand(i.agents),
     readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
     readDeployments: new ReadDeploymentsQuery(i.radar, systemClock),
     // Three ports because the question needs three answers: the gates come
