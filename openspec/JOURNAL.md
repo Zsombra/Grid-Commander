@@ -1,5 +1,98 @@
 # Journal
 
+## 2026-08-16 (headroom) — the cap shows what is left, and two claims were withdrawn
+
+**Did**: merged **#329** and **#332**, then proposed and built
+`the-cap-shows-what-is-left` — **21/21**, the `standard` half of #299. The limits
+surface now shows how full the exposure cap is, that BattleGrid **sizes each new
+entry from what is left rather than stopping at the ceiling**, what the platform
+reports that headroom authorizes, and the consequence nobody was being told:
+below the exchange minimum, entries stop being placed and the platform does not
+say why. A platform-reported block renders with its own reason, or says plainly
+that none was given.
+
+**The product had been fetching the answer and discarding it.**
+`capitalAtRiskUsd` and `headroomUsd` were on the domain type, mapped by the
+adapter, and read by no query, component or page. `effectiveNotionalUsd`,
+`blockedReason` and `blockedSince` were not mapped at all. No new platform call
+was needed — the limits page already calls `readBudget`.
+
+**#299's own conclusion did not survive the proposal.** The item recorded, after
+its 2026-08-16 measurement, that surfacing *"the next order would size to X,
+floor is Y"* had become **"a rendering problem over fields already in hand"**.
+That is true of headroom and **false of the next order's size**: the size preset
+is this product's to apply, the platform publishes no per-preset projection, and
+the figure is `headroom × sizePct × effectiveLeverage` — the exact formula
+`the-approval-can-be-answered` refused as **PE-2** the day before, on the
+neighbouring money surface, for the same stated reason. Building it here would
+have overturned that decision **by accident**, on a different screen, without
+anyone deciding to. The question is now filed once, on #305, which already held
+it for the approvals confirmation and now governs both surfaces;
+`tests/agent/sizing-base.test.ts` fails if either file starts computing it.
+
+**The live read then corrected a claim this change had written itself.** A doc
+comment justified carrying `effectiveNotionalUsd` separately on the grounds that
+it differs from `headroomUsd` by the leverage term. `get_agent_budget` for
+Undertow: `headroomUsd 36.72`, `effectiveNotionalUsd 36.72` — **equal**, at 4x
+leverage, and #299's earlier reading had them equal too (36.45/36.45). The claim
+was withdrawn rather than kept as a plausible story. Both fields are still
+carried, because the platform publishes each as its own and equality on one
+account at one leverage is not identity — but nothing asserts a relationship
+between them now.
+
+**Two guards were written against comments and had to learn the difference.**
+The PE-2 scan failed on its own explanation: both files describe at length *why*
+the projection is refused, and a naive substring scan cannot tell naming a
+forbidden thing from doing it. Stripping comments before scanning is not a
+loophole — the alternative forces the explanation out of the files the rule
+governs, which is how a later reader deletes a rule as mysterious. The same
+mistake had already been made once today, on the approvals path, with the word
+"currency". A tripwire test now asserts the scan is reading real files, because
+an empty scan passes every assertion.
+
+**Merging, and the trap that fires on worktrees only.** #329 merged first, and
+`gh pr merge --delete-branch` reported success while **leaving the remote branch
+alive** — #324, reproduced exactly, because a worktree held the local branch.
+#332 merged afterwards with no such trap: the main checkout held that branch, and
+`gh` handles that by switching. So #324 is narrower than filed — it is a
+worktree-held-branch defect, not a merged-PR defect.
+
+**The #332 rebuild found a conflict worse than predicted.** Three surface
+manifests conflicted, and on two of them **both sides were half-right in prose**:
+#329 had added a real observation about the exposure hint's length while keeping
+the approval sentence #332 made false. Resolving by picking a side would have
+silently dropped content either way. Taken from main wholesale, both corrections
+re-applied on top, and every digest **recomputed from the merged tree** — the
+recomputed hashes differ from both sides, which is the proof the trap was real:
+neither described the merged file, and staleness is only a warning, so nothing
+would have failed loudly.
+
+**Worktree cleanup, done the documented way.** `git worktree remove` deleted the
+contents and failed to unlink the empty directory — `Permission denied` on the
+handle. **Not chased with `rm -rf`**, which is what turned that exact state into
+a wiped shared `node_modules` two sessions ago. `rmdir`, which cannot delete
+contents or follow a junction, still reports the handle busy; the directory is
+empty, deregistered, and harmless. Before removing anything, the branch was
+checked for stranded work the only way that settles it: `git log origin/main..`
+showed 10 "unreachable" commits, which is the squash artifact and proves nothing,
+while `git diff origin/main ed4afea` was **empty** — byte-identical, nothing
+lost. `node_modules` verified intact afterwards.
+
+**State**: 13 capabilities, **2 active changes** —
+`the-approval-can-be-answered` (**33/40**, gate open) and
+`the-cap-shows-what-is-left` (**21/21**, ready for verify). 30 open backlog
+items, **2 P2** — down from 3, because #329 shipped #325's checkout guard.
+Gates on this tree: `tsc` clean, `lint` clean, **2708 tests across 212 files**,
+`npm run build` compiled, `drizzle/` clean, `validate --all` 0 errors.
+`npm run test:db` **not run and not claimed** — it truncates the signal record
+and `DATABASE_URL` here is not disposable.
+
+**Next**: `the-cap-shows-what-is-left` wants `/verify` then `/archive`. And
+`the-approval-can-be-answered` task **4.5 is still the gate and still needs a
+person** — a Vanguard proposal caught inside its fifteen minutes, with
+fund-committing authority granted at `/approvals/authority`. Nothing was pending
+at either check today.
+
 ## 2026-08-16 (approvals) — the write path reaches the UI, and stops where a person is needed
 
 **Did**: `the-approval-can-be-answered` from **19/40 to 33/40**. #307 built the

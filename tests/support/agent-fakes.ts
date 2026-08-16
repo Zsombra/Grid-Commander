@@ -638,6 +638,12 @@ export function aBudget(overrides: Partial<Budget> = {}): Budget {
     haltReason: null,
     capitalAtRiskUsd: 0,
     headroomUsd: 250,
+    // Equal to headroom, which is what the live account shows on every reading
+    // so far (36.45/36.45, then 36.72/36.72 at 4x). The fixture mirrors that
+    // rather than inventing a spread nobody has observed.
+    effectiveNotionalUsd: 250,
+    blockedReason: null,
+    blockedSince: null,
     ...overrides,
   };
 }

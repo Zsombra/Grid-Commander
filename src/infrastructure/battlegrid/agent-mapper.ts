@@ -429,6 +429,7 @@ export function mapBudget(raw: unknown): Budget {
   }
 
   const haltedAt = str(inner['haltedAt']);
+  const blockedSince = str(inner['blockedSince']);
   return {
     agentId: str(inner['agentId']) ?? '',
     gauges,
@@ -439,6 +440,12 @@ export function mapBudget(raw: unknown): Budget {
     haltReason: str(inner['haltReason']),
     capitalAtRiskUsd: num(inner['capitalAtRiskUsd']) ?? null,
     headroomUsd: num(inner['headroomUsd']) ?? null,
+    // Absent stays null, never 0. A budget that did not report headroom is not
+    // a budget with no headroom, and rendering the second would say the agent
+    // is about to stop when the truth is that nobody knows.
+    effectiveNotionalUsd: num(inner['effectiveNotionalUsd']) ?? null,
+    blockedReason: str(inner['blockedReason']),
+    blockedSince: blockedSince === null ? null : new Date(blockedSince),
   };
 }
 

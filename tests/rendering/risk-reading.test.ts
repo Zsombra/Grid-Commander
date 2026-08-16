@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  aBudget,
   anAgent,
   aTradeOutcome,
   FakeAccountStatePort,
@@ -328,5 +329,100 @@ describe('what it may risk, against the money behind it', () => {
     expect(r.text).toContain('This does not mean');
     expect(r.text).toContain('Computed by Grid-Commander');
     expect(r.text).toContain('against a default of 10');
+  });
+});
+
+/**
+ * What is left under the exposure cap, on the page.
+ *
+ * Rendered rather than asserted on the query for this file's own stated reason:
+ * the property is what a person reads. The sentence that names the mechanism —
+ * that entries are sized from the remainder rather than stopped by the cap —
+ * exists only here, and it is the whole point of the section.
+ */
+describe('the fill side of the exposure cap', () => {
+  beforeEach(() => vi.resetModules());
+
+  const withCap = (over: Parameters<typeof aBudget>[0] = {}) => {
+    const agents = withTrades();
+    agents.budgetResult = {
+      kind: 'budget',
+      budget: aBudget({
+        gauges: { exposure: { used: 8.55, remaining: 36.45, ceiling: 45, breached: false } },
+        capitalAtRiskUsd: 8.55,
+        headroomUsd: 36.45,
+        effectiveNotionalUsd: 36.45,
+        ...over,
+      }),
+    };
+    return agents;
+  };
+
+  it('shows what is committed and what is left', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('8.55 committed');
+    expect(r.text).toContain('36.45 left');
+  });
+
+  it('names the remainder as the base new trades are sized from', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('sizes each new trade from what is left');
+    expect(r.text).toContain('36.45 of position is currently authorized');
+    // The consequence the block never states.
+    expect(r.text).toContain('Below the exchange minimum they stop being placed');
+  });
+
+  /**
+   * The figure this surface is forbidden from inventing. `headroom x pct x
+   * leverage` reconstructs observed fills exactly, which is why it is refused —
+   * PE-2, on the neighbouring money surface, for the same reason.
+   */
+  it('projects no size for a specific next trade', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toMatch(/next (trade|order|entry) would/i);
+    expect(r.text).not.toContain('10.93');
+    expect(r.text).not.toMatch(/floor is/i);
+  });
+
+  it('shows no fill for a cap the platform reports unconfigured', async () => {
+    world(
+      withCap({
+        gauges: { exposure: { used: 0, remaining: null, ceiling: null, breached: false } },
+        headroomUsd: null,
+        effectiveNotionalUsd: null,
+      }),
+    );
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('What is left to trade with');
+    expect(r.text).not.toContain('0 committed');
+  });
+
+  it('states a platform-reported block with its own reason', async () => {
+    world(withCap({ blockedReason: 'DAILY_LOSS_LIMIT', blockedSince: new Date('2026-08-16T04:00:00Z') }));
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('budget blocked: DAILY_LOSS_LIMIT');
+    expect(r.text).toContain('2026-08-16 04:00 UTC');
+  });
+
+  it('invents no reason where the platform gave none', async () => {
+    world(withCap({ blockedReason: null, blockedSince: new Date('2026-08-16T04:00:00Z') }));
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('gave no reason for it');
+  });
+
+  it('describes no block where the platform reports none', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('budget blocked');
   });
 });

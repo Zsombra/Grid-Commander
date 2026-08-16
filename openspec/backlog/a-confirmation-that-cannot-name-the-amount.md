@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "305"
@@ -66,3 +66,31 @@ which is why this is filed as a question rather than a bug.
   first time, which #299 wants anyway.
 - Do not resolve this before at least one real accept has been performed and its
   actual fill compared against what the confirmation said.
+
+## 2026-08-16 — this question now governs two surfaces, not one
+
+`the-cap-shows-what-is-left` reached the same fork on the **limits** surface and
+stopped at the same place, for the same reason. It shows the headroom the
+platform publishes and refuses to project what a specific next entry would
+stake, because that figure is `headroom × sizePct × effectiveLeverage` — this
+product's arithmetic, about money not yet committed.
+
+So the question this item holds is no longer only *"should the accept
+confirmation name an amount?"*. It is:
+
+> **Where the platform states no figure, may Grid-Commander show a
+> clearly-labelled estimate of its own — and if so, on which surfaces?**
+
+Answering it separately per surface is how two screens come to disagree about
+the same number, so it should be answered once. The three shapes this item
+already lists (proportion only / labelled estimate / show the inputs and let the
+operator do the arithmetic) apply unchanged to both.
+
+**One input the limits work adds**: shape 3's side benefit is already banked.
+`headroomUsd` is on a surface now, which this item noted #299 wanted anyway — so
+the "show the inputs" option is cheaper than when it was written, on the limits
+surface at least.
+
+Still standing from the Notes: do not resolve this before at least one real
+accept has been performed and its actual fill compared against what the
+confirmation said. That is `the-approval-can-be-answered` task 7.4, still open.

@@ -106,6 +106,57 @@ stopped at exactly three positions because the third was the last that fit.
 states the notional reading; `:5464-5473` records the gate payload implying
 margin — written a day apart, neither reconciled against the other.
 
+## The standard half shipped 2026-08-16 — the item stays open, and one claim is withdrawn
+
+`the-cap-shows-what-is-left` landed. The limits surface now shows, for an agent
+whose cap is configured: the margin committed against it, the headroom left, the
+statement that BattleGrid **sizes each new trade from what is left rather than
+stopping at the cap**, what the platform reports that headroom authorizes, and
+the consequence — below the exchange minimum, entries stop being placed and the
+platform does not say why. A platform-reported block renders with its own reason,
+or says plainly that none was given.
+
+**Consequence 3 is discharged.** `capitalAtRiskUsd` and `headroomUsd` were
+declared, mapped and read by nothing; they are now read.
+`effectiveNotionalUsd`, `blockedReason` and `blockedSince` were not mapped at
+all and now are.
+
+**Consequence 2 is discharged in part, deliberately.** An operator can see the
+cap filling before the silence arrives. They are **not** shown "the next order
+would size to X, floor is Y".
+
+### The claim this item made that does not survive
+
+This item recorded, after the 2026-08-16 measurement, that surfacing the
+next-order sizing had become *"a rendering problem over fields already in hand
+rather than a derivation"*.
+
+**That is true of headroom and false of the next order's size.** The size preset
+is this product's to apply and the platform publishes no per-preset projection,
+so the figure is `headroom × sizePct × effectiveLeverage` — the exact formula
+`the-approval-can-be-answered` refused as **PE-2** a day earlier, on the
+neighbouring money surface, for the same reason. Building it here would have
+overturned that decision by accident rather than on purpose.
+
+The question is now filed once, on
+[[a-confirmation-that-cannot-name-the-amount]] (#305), which already held it for
+the approvals confirmation and now governs both surfaces. A guard —
+`tests/agent/sizing-base.test.ts` — fails if either file starts computing it.
+
+### A second claim, corrected by the live read
+
+`effectiveNotionalUsd` was assumed to differ from `headroomUsd` by the leverage
+term. **It does not, on any reading yet taken**: 36.45/36.45 in this item's own
+measurement, and 36.72/36.72 on Undertow at 4x leverage on 2026-08-16. Both are
+carried, neither is derived, and nothing asserts a relationship between them.
+
+### What keeps this item open
+
+- The `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` / `minEquityUsd: 33.333333` test is
+  still **NOT DETERMINED**. No such row has been produced.
+- `accountEquityUsd` still reads **0** on a funded account — re-observed
+  2026-08-16. Recorded, not concluded, here and on #107.
+
 ## Notes
 
 - **Free falsifiable test, no write needed**: at the next evaluation a fresh
