@@ -352,6 +352,21 @@ and stands.
 
 ---
 
+## DL-19a — CORRECTION: DL-19's premise understated the hole
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **POST-ARCHIVE CORRECTION** |
+| Type | Withdrawal of a claim in DL-19 |
+| Decision | DL-19's reachability guard stands and is unaffected. Its **premise** is corrected: it said cancel is gated and "the money-committing verb is not", implying the scope gate fires. It does not fire for either verb |
+| Impacted files | none — record only; the guard shipped as described |
+| Reason | `rawDiscoverTools` never sets `declaredScope` and `inferScope` returns `'mcp:read'` unconditionally, so **every known tool** classifies as `mcp:read` and the port's wager gate can fire only on the fail-closed `UNKNOWN_TOOL` path. Measured through the real classifier and the real guard: accept is admitted on a read-only connection with no token. So at the port, accept passes **both** gates and cancel is stopped by the confirmation alone |
+| Approved by | Auditor, correcting itself |
+| Next action | **#340**, re-priced p2 and re-scoped: the port needs a source of truth for which operations commit funds, keyed to by both gates. The application layer's protections are real and unaffected — what is wrong is where the audit said the boundary was |
+
+---
+
 ## DL-20 — A surface constraint forbade the control the change had just shipped
 
 | Field | Value |
