@@ -59,7 +59,7 @@
       "actions": [],
       "current_implementation": "max-w-3xl centred column, space-y-4, p-6 — the confirmation-page skeleton. h1 naming the trade, a 'Back to waiting trades' link, `<CarriedProblem>`, then the levels `<dl>`, the proportion sentence, the reasoning section, and either the cancel form or the step-up block.",
       "constraints": [
-        "**Accept is rendered nowhere, with authority or without.** The change's Phase D gate requires a cancel performed through the product and confirmed in the audit before any accept surface is written (DL-11); tests/rendering/approvals.test.ts asserts no accept control exists on either branch. A design must not add one, and the sentence naming battlegrid.trade as where accepting happens is what stands in its place.",
+        "**Accept is never rendered alone.** The two verbs are requested together and cancel is drawn first — the harmless answer nearest the reasoning, so accept is not what a hurried click lands on. When the connection lacks fund-committing authority **neither** is drawn, because gating by not-rendering is UI checklist item 5 and system.json principle 10: a greyed-out control says the product could do this if the operator found the right lever, on the surface where that belief is most expensive. tests/rendering/approvals.test.ts asserts accept appears only alongside cancel. A design may restyle either control and must not separate them, reorder them, or render one in a state where the other is absent. **This constraint was inverted until 2026-08-17**: it read 'accept is rendered nowhere' and forbade adding one, which was true only for the window between cancel shipping (4.5) and the accept surface shipping (5.2/5.3). A design round running against it would have removed a live money control.",
         "Gate by not rendering, never by disabling — UI checklist item 5 and system.json principle 10. Without authority there is no control at all, not a greyed-out one.",
         "No currency amount (PE-2). The proportion is what the platform sent and is what is shown.",
         "The describe runs when the page is opened, so the levels, the consequence and the token bound to both come from one read taken while somebody is looking. A design must not cache, defer, or pre-render it — a consequence computed earlier is a claim about a world that may have moved.",
@@ -314,7 +314,7 @@
   },
   "source_digest": {
     "app/(app)/approvals/[agentId]/[id]/actions.ts": "sha256:9b5dd6c6ccd65ccc31046f6573694303bdfc60434c1be6b4b351fdd1faa1ee18",
-    "app/(app)/approvals/[agentId]/[id]/page.tsx": "sha256:52daecd3229c045a330476bb12e4d08e7aadf654cae4f5ef57dddbef2c7f420e",
+    "app/(app)/approvals/[agentId]/[id]/page.tsx": "sha256:651638afb3e61b762089fe9954cdd12ea6777628a343d0fa0ae71ae55e6bfda9",
     "src/presentation/answer-refusal.ts": "sha256:c76f4b03a1cb775c5d70bb518c9c26192bb086654d30e7e3f1716a992454c26d",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",

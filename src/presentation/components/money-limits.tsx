@@ -81,19 +81,31 @@ export function MoneyLimits({
           {/*
             This used to disclose that the mode was unanswerable here — the
             requirement "An Unanswerable Trading Mode Says So", now retired,
-            because the disclosure has become false. What replaces it is not
+            because the disclosure had become false. What replaces it is not
             silence but the thing the disclosure was standing in for: where the
             proposals go, and how long there is to answer them.
 
-            Accepting is still unbuilt and the sentence says so rather than
-            letting "answer them" imply both halves.
+            **Both halves are now built** (change `the-approval-can-be-answered`,
+            sections 4 and 5), so the sentence names both. It said "accepting is
+            not yet available here and still happens on battlegrid.trade" for the
+            window between cancel shipping and accept shipping, and went on saying
+            it afterwards — sending operators off the product for something the
+            product does. That is the exact failure the retired requirement
+            existed to prevent, committed by its own replacement, and
+            `answering-is-not-disclaimed.test.ts` now fails if this copy claims
+            an answer is unavailable.
+
+            Accepting is named as needing permission rather than as unavailable:
+            it does need a step-up the operator grants, and that is a different
+            statement from "go elsewhere".
           */}
           <p className="text-sm text-text-secondary">
             <strong>Approval required</strong> means the agent proposes a trade and waits.
             Proposals appear under <a href="/approvals" className="underline">Waiting</a>,
-            where you can cancel them; the window is fifteen minutes, after which a
-            proposal expires and the agent does not offer it again. Accepting is not yet
-            available here and still happens on battlegrid.trade.
+            where you can cancel one or accept it; the window is fifteen minutes, after
+            which a proposal expires and the agent does not offer it again. Accepting
+            opens a position with real money, so it asks you to grant that permission
+            the first time.
           </p>
         </div>
       )}

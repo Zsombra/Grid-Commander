@@ -218,26 +218,42 @@ describe('the safe answer is the default answer', () => {
   /**
    * The mode says where its proposals go, and what can be done with them.
    *
-   * This guard used to assert the opposite — that the selector disclosed
-   * accept and cancel were **unbuilt** — under the requirement "An Unanswerable
-   * Trading Mode Says So". `the-approval-can-be-answered` built cancelling, so
-   * that disclosure became false and the requirement was retired with the
-   * change. What replaces it is not silence: the operator still needs to know
-   * where proposals appear and that the window is short, and accepting is still
-   * unbuilt, so the sentence must not let "answer them" imply both halves.
+   * **This guard has now asserted three different things, and the sequence is
+   * the lesson.** It first asserted the selector disclosed accept and cancel
+   * were unbuilt, under "An Unanswerable Trading Mode Says So". When cancel
+   * shipped it was rewritten to assert that *accepting* was still unbuilt and
+   * still happened on battlegrid.trade. Then accept shipped — sections 5 and
+   * 7.4 — and that assertion went on passing, holding a false sentence in place
+   * on the money surface for as long as anyone cared to read it.
+   *
+   * A test that pins copy pins it whether or not it is still true. This one was
+   * even made whitespace-tolerant "because the sentence wraps across lines",
+   * which is also why a line-based grep for the claim found nothing. Both halves
+   * exist now and the assertion says so; `answering-is-not-disclaimed.test.ts`
+   * is the guard that fails if the disclaimer ever comes back, in this file or
+   * any other.
    */
-  it('sends approval-required to the queue and is honest about which half exists', () => {
+  it('sends approval-required to the queue and names both answers', () => {
     const source = form();
     // Where the proposals go, as a link rather than a description of one.
     expect(source).toContain('/approvals');
     // The window, because an operator who does not know it is short will miss it.
     expect(source).toContain('fifteen minutes');
-    // Accepting is still unbuilt, and still names where it does happen.
-    // Whitespace-tolerant: the sentence wraps across lines in the JSX source.
-    expect(source).toMatch(/[Aa]ccepting is not yet\s+available/);
-    expect(source).toContain('battlegrid.trade');
-    // And the dead-end disclosure is gone rather than softened.
-    expect(source).not.toMatch(/accept or cancel it/);
+    // Both halves, named. Whitespace-tolerant: the sentence wraps in the JSX.
+    expect(source).toMatch(/cancel one or accept it/);
+    // The consequence of the half that costs money, on the surface about money.
+    expect(source).toMatch(/opens a position with real money/);
+
+    // The negatives read the **rendered copy**, not the file. The comment above
+    // the paragraph quotes the retired sentence in order to record why it is
+    // gone, and a check that could not tell naming a forbidden thing from doing
+    // it would force that explanation out of the file the rule governs — which
+    // is how a later reader deletes a rule as mysterious. Same reasoning as the
+    // PE-2 scan and `answering-is-not-disclaimed.test.ts`.
+    const copy = source.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(copy).toMatch(/cancel one or accept it/); // the strip kept the copy
+    expect(copy).not.toMatch(/not yet\s+available/);
+    expect(copy).not.toContain('battlegrid.trade');
   });
 
   /**

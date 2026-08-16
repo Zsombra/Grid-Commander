@@ -1,5 +1,170 @@
 # Journal
 
+## 2026-08-17 (archive) — the approval can be answered, and #101 is closed
+
+**Did**: cleared the last gate violation, took the gate to **PASS**, archived
+`the-approval-can-be-answered`, closed **#101**.
+
+**The DB gate was run, not waived — the operator asked for both and both are
+recorded.** `grid_commander_test` created, migrated, suite green at **96 tests /
+8 files**. `DB_TESTS_MAY_TRUNCATE` was never set, so `assertDisposable` and
+`assertNoLiveGrant` each did their own work rather than being told to stand down,
+and the live-grant preflight read 0 active connections first. The standing
+position is also written down: CI provisions a disposable postgres on every push,
+so no future session needs a local run.
+
+**Then the working database was counted rather than assumed safe**: `grid_commander`
+holds **144,732** `signal_readings` against **0** in the test database the suite
+truncated. That check is not ceremony — the guard's own error text records that
+this suite was once pointed at a live database, destroyed a record that could not
+be rebuilt, and **every test passed while it did**.
+
+**The merge, verified after the fact rather than trusted.** One removal and seven
+requirements: *An Unanswerable Trading Mode Says So* is gone from
+`openspec/specs/agent-understanding/spec.md` (grep count 0), the five new
+requirements are each present exactly once, and `battlegrid-connection` carries
+both the modified scope posture and the step-up. Writing is not landing, so each
+was read back.
+
+**#101 is closed on a live account, not on a green suite.** Cancel was proven
+through the product with its audit row, the accept surface was built only after
+that, and the operator accepted a real decision opening a real position. The
+sequence is provable in git — `eac3284` → `b9d1286` → `f12a274` — which is what the
+gate was for.
+
+**Three things stay open and the closure says so**: **#340** (the confirmation
+gate keyed to the platform's inverted `destructiveHint` — DL-19 closed the bypass
+route, not the inversion), **#304** (nothing tells an operator a decision is
+waiting), **#305** (why no amount can be named, now settled by measurement:
+`effectiveLeverage` exists only on the position, after acceptance).
+
+**A cosmetic defect in the tool, noticed and not fixed.** `journal_stale` renders
+the newest entry as `'audit: production gate PASS â€” the DB gate…'` — an em-dash
+read as cp1252. The warning is correct; only its rendering is wrong. Filed
+nowhere yet; it belongs with the other Windows-encoding items if it recurs.
+
+**State**: **0 active changes** · `validate --all` 0 errors · `mirror` clean ·
+207 archived changes.
+
+**Next**: **#340** — key confirmation to consequence rather than to the platform's
+word for it, and sweep the annotation set for other inversions. Then the three
+P2s: #304, #335, and #340 itself.
+
+
+## 2026-08-17 (audit) — the gate holds on one thing, and it is the operator's
+
+**Did**: ran the production gate on `the-approval-can-be-answered`. **BLOCKED**,
+one open violation. Tracker at `plan/production-gate.md`, rationale in DL-21.
+
+**Nothing in the built work failed.** Five of six quality gates pass — typecheck,
+lint, **2716/2722** at the documented six-failure baseline, build, and the drizzle
+schema check. Every scan clean: no conflict markers, no debt markers, no
+deprecated paths, and `answerEntryDecision` has exactly one production caller.
+All seven Phase 3 checklist items pass, including the one the whole change was
+sequenced around — the git history shows `eac3284` (4.5, cancel proven live) then
+`b9d1286` (the accept surface) then `f12a274` (7.4, accept live), in that order.
+
+**Two clerical blockers, one of which I cleared.** PG-001: the master plan still
+ended `PLAN READY FOR REVIEW`, so execution had never been declared handed over.
+That is this repository's convention, not the skill's import — five of the eight
+most recent archived full-track plans carry the marker and seventeen gate trackers
+exist — so it was a real gap rather than a foreign rule. Fixed as executor and
+re-audited under Mode B; integrity is VALID.
+
+**PG-002 is not mine to clear, and that is the point.** `npm run test:db` did not
+run. `DATABASE_URL` is set — to `grid_commander`, the working database. The suite
+truncates the signal record on setup and BattleGrid serves current readings only,
+so the gate was **not run** rather than run carefully. The precedent
+(`2026-08-13-the-connection-asks-who-it-is`, PG-003) is to point it at a
+`_test` database that `assertDisposable` will accept; the alternative is a dated
+waiver to CI. Either is the operator's call because the database is theirs.
+
+**The audit's own findings were all pre-audit.** PG-003/004/005 came from the
+verifier pass and were fixed in `fbdeade`, each proven non-vacuous by reverting.
+The gate found no new defect — which is what a verifier running first is for.
+
+**State**: `validate` clean on the change, 0/15/10 overall · `mirror` clean ·
+branch `claude/verify-and-archive-approvals`.
+
+**Next**: PG-002, then re-audit to PASS, then `/archive` — which is what closes
+**#101**. Then **#340**, whose fix should key confirmation to consequence rather
+than to the platform's word for it.
+
+
+## 2026-08-17 (verify) — the retirement's own replacement carried the falsehood
+
+**Did**: verified `the-approval-can-be-answered` (40/40), found **1 critical and
+2 warnings**, fixed all three, and added the guard. Ready for the auditor.
+
+**The critical one is the change's own defect class, committed by the change.**
+`money-limits.tsx` rendered *"Accepting is not yet available here and still
+happens on battlegrid.trade"* — false since section 5, and pointing operators off
+the product for something the product does, on the money surface, the day after
+7.4 accepted a real decision through it. The requirement retired by this change,
+*An Unanswerable Trading Mode Says So*, was retired **on the grounds that the
+disclosure would become false once answering was built**. Its replacement then
+said the same thing in narrower words.
+
+**DL-16 is why it survived, and the miss is precise.** Task 6.2 swept *other*
+surfaces for the *old* disclosure and correctly found none. Nobody swept the
+**replacement copy this change had just written** — true when 6.1 wrote it, false
+eight tasks later.
+
+**A test was holding it in place.** `money-limits.test.ts` asserted
+`/[Aa]ccepting is not yet\s+available/` and `battlegrid.trade`, under a docstring
+saying *"accepting is still unbuilt"*. It had already been rewritten once for the
+same reason and went on passing after accept shipped. It was made
+whitespace-tolerant *"because the sentence wraps across lines"* — which is also
+exactly why a line-based grep for the claim found nothing, and why reading the
+file rather than grepping it is what found it. **A test that pins copy pins it
+whether or not it is still true.**
+
+**Two warnings, both stale claims about the code's own shape.** The decision
+page's docstring still headed itself *"Why there is no accept button here"* and
+said the surface *"deliberately reaches cancel alone"*, twelve lines above
+`verbs: ['cancel', 'accept']`. And `answer-decision.command.ts:16-20` claimed the
+binding *"cannot be skipped by a caller, because the port method is not reachable
+from anywhere else"* — true, and enforced by nothing.
+
+**That second one matters more than it reads**, because the layer meant to catch
+a bypass is inert on the verb that spends money: `call-path.ts:71` gates the
+confirmation consume on `cls.destructive`, and BattleGrid annotates
+`accept_entry_decision` `destructiveHint: false` (**#340**). Cancel is gated;
+accept is not. The unenforced convention was the only thing left on that path.
+
+**`answering-is-not-disclaimed.test.ts` holds both**, and both halves were proven
+against the defect rather than assumed:
+
+```
+false copy restored        -> 2 failed   (go-elsewhere, not-available-yet)
+second unbound caller added -> 1 failed  (reachability)
+both restored               -> 7 passed
+```
+
+The copy half is labelled **weak** in the file: it catches the phrasings a human
+writes for an unready capability, cannot catch a novel sentence meaning the same,
+and deliberately leaves *"you do not have permission"* sayable — true, and a
+different statement. Comments are stripped before scanning, so `money-limits.tsx`
+may quote the retired sentence to record why it is gone; the same reasoning as
+the PE-2 scan, and the local strip carries its own it-kept-the-copy assertion so
+an over-broad strip cannot make the negatives vacuous.
+
+**Recorded as DL-18 and DL-19.** DL-19 says explicitly that it does **not** fix
+#340 — it closes the bypass route; the inverted annotation, the unspent token and
+the audit row reading `destructive: false` on a position-opening write stay open
+there.
+
+**Gates**: `tsc` clean · `lint` clean · **2716/2722**, the 6 failures being the
+documented baseline (`cli-spawn` 2, `live-probes-are-named` 4, confirmed by
+running both files alone) · `validate` clean · `mirror` clean.
+
+**Not verified in a browser.** The copy renders on the agent create/edit form,
+which needs a live connection to reach; the assertion is a source-reading test,
+as it was before.
+
+**Next**: the auditor, then archive — that is what closes #101. Then #340.
+
+
 ## 2026-08-17 (triage, second leg) — the session-start view could not see an unmerged session
 
 **Did**: found and fixed the thing that caused this morning's near-duplication,

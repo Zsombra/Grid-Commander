@@ -322,6 +322,81 @@ and stands.
 
 ---
 
+## DL-18 — The replacement copy carried the falsehood the retirement removed
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Correction found by the verifier pass |
+| Decision | `money-limits.tsx` copy rewritten to name both answers; two stale docstrings corrected; `tests/architecture/answering-is-not-disclaimed.test.ts` added so the class cannot recur |
+| Impacted files | `src/presentation/components/money-limits.tsx`, `app/(app)/approvals/[agentId]/[id]/page.tsx`, `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Reason | The surface rendered *"Accepting is not yet available here and still happens on battlegrid.trade"* — false since 5.2, and actively sending operators off the product for something it does, on the money surface, the day after 7.4 accepted a real decision through it. **DL-16 is why this survived.** Task 6.2 swept *other* surfaces for the *old* disclosure and correctly found none; nobody swept the **replacement copy this change had just written**, which was true when 6.1 wrote it and false eight tasks later. The retired requirement existed precisely to stop a disclosure outliving its truth, and its own replacement did it |
+| Approved by | Executor, on the verifier's CRITICAL |
+| Next action | Auditor: the guard is a **transcription** check and is labelled weak in the file. It catches the phrasings a human writes for an unready capability; it cannot catch a novel sentence meaning the same thing, and it deliberately leaves *"you do not have permission"* sayable, that being true and different |
+
+---
+
+## DL-19 — The binding's one door is now held shut by a test
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Guard added for an unenforced invariant |
+| Decision | `answerEntryDecision` may be named only in the command, the port interface and the adapter, asserted in `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Impacted files | `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Reason | `answer-decision.command.ts:16-20` claims the binding check *"cannot be skipped by a caller, because the port method is not reachable from anywhere else in the application layer"*. True when written, enforced by nothing. It matters more than an ordinary convention because the second layer is **inert on accept**: `call-path.ts:71` gates the confirmation consume on `cls.destructive`, and BattleGrid annotates `accept_entry_decision` `destructiveHint: false`, so the token is passed and never spent (**#340**). Cancel is gated; the money-committing verb is not. On the accept path this convention was the only thing left |
+| Approved by | Executor, on the verifier's WARNING |
+| Next action | **This does not fix #340** and must not be read as doing so. It closes the bypass route; the inverted annotation, the unspent token and the audit row reading `destructive: false` on a position-opening write are still open there |
+
+---
+
+## DL-20 — A surface constraint forbade the control the change had just shipped
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Correction found while re-pinning manifests |
+| Decision | `approvals-decision.constraints[0]` inverted; `agent-new`'s implementation prose corrected; four manifests re-pinned in **prose and digest** |
+| Impacted files | `openspec/design/surfaces/approvals-decision.json`, `agent-new.json`, `agent-edit.json`, `agent-reactivate-confirm.json` |
+| Reason | The constraint read ***"Accept is rendered nowhere, with authority or without — a design must not add one, and the sentence naming battlegrid.trade as where accepting happens is what stands in its place."*** True for the window between 4.5 and 5.2, false afterwards, and **a constraint rather than a description**: a design round reading it would have been instructed to remove a live money control and restore the disclaimer. `agent-new` carried the milder version, describing the note as saying accepting was unbuilt. Both were found only because editing the two source files staled four manifests and `validate` named them |
+| Approved by | Executor, following DL-16's rule |
+| Next action | Auditor: this is the **third** instance in one change of a record outliving the thing it described — DL-16 (two surfaces), DL-18 (the replacement copy and its test), DL-20 (a constraint and a manifest). The pattern is that each was written true and none had a producer that would revisit it; the copy half now has `answering-is-not-disclaimed.test.ts`, and manifest prose still has none |
+
+---
+
+## DL-21 — AUDIT: gate BLOCKED on two clerical handoff items, nothing in the code
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **AUDIT** |
+| Type | Production gate decision |
+| Decision | **BLOCKED**, 2 OPEN MAJOR — both HANDOFF. Tracker: `plan/production-gate.md` |
+| Impacted files | `openspec/changes/the-approval-can-be-answered/plan/production-gate.md` |
+| Reason | **PG-001**: the master plan's final line still reads `PLAN READY FOR REVIEW`. The marker is this repository's convention, not the skill's import — five of the eight most recent archived full-track plans end `EXECUTION READY FOR PRODUCTION GATE` and 17 gate trackers exist in the archive — so execution was never declared handed over. **PG-002**: `npm run test:db` could not run. `DATABASE_URL` points at `grid_commander`, the operator's working database; the suite truncates the signal record on setup and BattleGrid serves current readings only, so it was **not** run rather than run carefully. Five of six gates pass: typecheck, lint, 2716/2722 at the documented six-failure baseline, build, and the drizzle schema check |
+| Approved by | Auditor |
+| Next action | PG-001 is one line for the executor. PG-002 is the operator's to designate — a `_test` database as in `2026-08-13-the-connection-asks-who-it-is` PG-003, or a dated waiver to CI. Everything the gate checks about the built work passed; the three substantive findings (PG-003/004/005) came from the verifier pass and were fixed before the audit, each proven non-vacuous by reverting |
+
+---
+
+## DL-22 — AUDIT: gate PASS, and the DB gate was run rather than waived
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **AUDIT** |
+| Type | Production gate decision, re-audit 2 |
+| Decision | **PASS** — zero OPEN violations. Cleared for `/archive` |
+| Impacted files | `plan/production-gate.md`, `plan/master-plan.md` |
+| Reason | PG-001 fixed by declaring execution handed over, honestly — 40/40, every Phase 2 box checked, verifier findings fixed. **PG-002 the operator asked to be both run and waived, and both are recorded.** Run: `grid_commander_test` created, migrated, suite green at **96 tests / 8 files**, `DB_TESTS_MAY_TRUNCATE` never set so both guards did their own work, and the live-grant preflight read 0 active connections first. Waived-position: CI provisions a disposable postgres on every push, so future sessions need no local run. **The working database was counted afterwards** — `grid_commander` holds 144,732 `signal_readings` against 0 in the truncated test database. That check is not ceremony: the guard's own message records that this suite was once pointed at a live database, destroyed a record that could not be rebuilt, and every test passed while it did |
+| Approved by | Auditor, on the operator's instruction to do both |
+| Next action | `/archive`, which merges the deltas into `openspec/specs/` — including **removing** *An Unanswerable Trading Mode Says So* from the main spec, where it correctly still stands pre-archive — and closes **#101**. **#340 is not closed by this** and its item stays open |
+
+---
+
 ## Where a fresh session picks this up
 
 **Read first**: this log top to bottom, then
