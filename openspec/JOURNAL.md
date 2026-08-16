@@ -1,5 +1,106 @@
 # Journal
 
+## 2026-08-16 (backlog) — the oldest issues, walked in order, and the pause that lifted
+
+**Did**: worked the open GitHub issues oldest-first, as asked. Eleven reached,
+**three closed**, **two new filed**, one `lite` change shipped and archived.
+Almost all of it came from live reads: the fleet is trading again after being
+`PLATFORM_PAUSED` since 2026-08-13T18:01Z, and **two items had watches armed
+that only an unpaused fleet could discharge**. Both discharged.
+
+**#146 and #147 were the payoff, and neither was answerable yesterday.**
+
+*#146 — closed.* `list_gate_blocks(Undertow)`: 100 rows in 50 min 00.5 s =
+**120.0 blocks/hr**, the same figure as the 2026-08-12 peak. The blocked coins
+are the coins the agent holds — FARTCOIN and MELANIA at ~1/min each. So cause 2
+("the agent stopped evaluating") is refuted, cause 1 ("it has simply been flat")
+is confirmed, and the whole 31 → 90 → 102 → 3.6 → 120/hr series tracks position
+state rather than health. **AIXBT's two rows are what keeps it honest**: both
+fall *before* its position opened at 13:13:24Z, and it has not blocked since —
+so the rate follows radar dispatch of held coins, not `openPositionCount`, and a
+model built on the latter would be wrong.
+
+*#147 — closed.* The 2026-08-15 apply that made Salamis's `RANGING_TAPE`
+required paid off. `conditionEvaluation` now reads `verdict "NEITHER"`,
+`decidedBy "RANGING_TAPE"`, `counts {trueCount 1, total 1, unresolvedCount 0}` —
+first population of all three. **`verdict` is directional, not pass/fail**: it
+reads `NEITHER` while the required condition is `TRUE` and the evaluation
+routed, so a surface rendering it as success/failure would be wrong. And the
+FALSE branch **is not a signal log at all** — `BLOCKED` and `INELIGIBLE` both
+return 0 rows. It is a gate block at `CONDITIONS`/`REQUIRED_CONDITION_FALSE`, a
+stage never before seen here, 17 occurrences, carrying a populated
+`reasonDetail` where `OPEN_POSITION_CONFLICT` always sends null.
+
+**Two corrections that would have cost someone a session each.**
+
+*#85's issue told the next reader to do work that shipped 2026-08-14.* The
+backlog item had recorded it; the issue had not — #309's one-way mirror, in the
+wild. Corrected, and blocker 2 re-confirmed at v19.2.0 (Cannae still reads the
+platform defaults while its agent was built at `minRiskRewardRatio 2.0`).
+
+*#116 claimed `trailingGeometry.observedExtreme` was live adverse-excursion data
+and that #85's third blocker was therefore softer than recorded.* **It is the
+favorable extreme.** On three open LONG positions it sits at or above both entry
+and mark — including AIXBT, under water, where it sits at *entry* rather than at
+the low — and `trailLevel == observedExtreme - trailDistance` holds exactly on
+all three. MFE where #85 needs MAE. Pointer withdrawn on both items.
+
+**#107 closed; #336 filed from what closing it turned up.** The
+`get_agent_fund_allocation` defect is confirmed with a negative control,
+mitigated (`read-budget` sources `committedUsd` from the exposure gauge), and
+guarded by a reachability test with a vacuity check. Verified live:
+`gauges.exposure.fill 11.95` against `marginedUsd 11.9419`. Its unconcluded
+"these may be two different pots" caveat is now settled — `accountEquityUsd`
+reads **0** while **$11.94 of margin is live in the trading wallet**, so there is
+no pot for which zero is right, and `openUnrealizedPnlUsd` fails the same way
+(**0** against `list_user_active_positions`' **0.177854**). Filed separately as
+**#336** because that tool is *load-bearing* here: the answer to
+`get_agent_fund_allocation` is "never call it", and the answer to
+`get_agent_budget` cannot be, so the rule has to name fields instead.
+
+**#201's last open question answered, and option 3 taken.** `Probe 238 Dedupe`
+traces to this journal — an operator-authorized **hand walk**, like
+`GC probe shape II` before it. Both reached `create_intelligence_agent` through
+the adapter without touching `probe-agent.ts`, so **options 1 and 2 cannot be
+made sufficient; there is no code path to bind.** Shipped
+`the-roster-says-when-residue-grew` (lite, archived):
+`tests/live/residue-probe.test.ts`, which classifies **by exclusion, not by
+prefix** — the nine older residue agents share `GC probe`/`Grid-Commander
+probe`, the tenth shares neither, so a prefix match would have missed *precisely
+the create it exists for*. Threshold 10, verified live (16 agents, 6 the
+operator's, all residue ARCHIVED and `tradingMode: OFF`).
+
+**The suite's six-failure baseline is not a code defect.** It was this worktree's
+`node_modules` holding one entry: only the two files that *spawn a subprocess*
+could notice, everything else resolved through `npx`. After `npm ci`,
+`live-probes-are-named` passes 10/10 and the suite reaches **2711/2711 across
+three runs**. That answers #330's option 3 without repairing or skipping
+anything — **gate on zero, after `npm ci`.** #330 also gained a second instance
+with its failure mode captured: `new-agent.test.ts` **timed out at 5000 ms**,
+passing alone in 512 ms. A timeout, not an assertion — which rules out both
+hypotheses on record and points at contention against the unset default
+`testTimeout` (collect swung 77 s between identical runs; both flaking files are
+the JSX-heavy `tests/rendering/` ones).
+
+**Not touched, deliberately.** #104 — eight recorded confirmations and an
+explicit instruction not to poll again; respected. #101 — its gate needs a real
+decision waiting *and* the operator answering one by name;
+`list_pending_approvals` returned `[]`, so it is doubly blocked.
+
+**State**: 0 active changes besides `the-approval-can-be-answered` (33/40, gated
+on 4.5). 30 open issues, down from 31 net of 3 closed and 2 filed. Gates on this
+tree: `tsc` clean, `lint` clean, **2711/2711 vitest**, `validate --all` 0 errors.
+
+**Next**: #282 onward — the nineteen issues below #201 are untouched. Two need
+the operator rather than a session: **#101's live accept/cancel through the
+product**, and **clearing the ten residue agents in BattleGrid's own UI**, which
+is the only thing that reduces #201's count.
+
+**Watch out**: a fresh worktree needs `npm ci` before its test count means
+anything — six failures there are an install, not a regression. And check
+`node_modules` is not a reparse point before running it; on a junction `npm ci`
+would wipe the shared install.
+
 ## 2026-08-16 (headroom) — the cap shows what is left, and two claims were withdrawn
 
 **Did**: merged **#329** and **#332**, then proposed and built

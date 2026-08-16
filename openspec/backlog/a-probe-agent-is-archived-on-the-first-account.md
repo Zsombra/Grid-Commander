@@ -6,7 +6,7 @@ status: open
 priority: p3
 created: 2026-08-13
 updated: 2026-08-16
-change: "the-roster-says-when-residue-grew"
+change: ""
 capability: agent-authoring
 github: "201"
 blocked_by: []
@@ -235,7 +235,9 @@ slotUsage limit 3, used 3, remaining 0   (ACTIVE only — residue costs no slot)
 
 Unchanged from this morning's count, so the threshold is 10.
 
-**This item stays open.** The tripwire notices growth; it cannot remove a row.
+**This item stays open, and the `change:` link is cleared on archive** — the
+change's scope was the tripwire alone, not the residue. The tripwire notices
+growth; it cannot remove a row.
 All ten are already archived and no tool on the 114 deletes an agent, so the
 count falls only if the operator clears them in BattleGrid's own UI. That ask is
 the one remaining action and it is outside this repository.

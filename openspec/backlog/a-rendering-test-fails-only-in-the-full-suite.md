@@ -68,3 +68,88 @@ is the only reason this one was correctly dismissed.
 
 Option 3 is the one with value beyond this item — it is what makes a seventh
 failure legible without a re-run.
+
+## 2026-08-16, later — a second instance, the failure mode captured, and the baseline explained
+
+Three full-suite runs while shipping `the-roster-says-when-residue-grew`.
+
+| run | result | note |
+|---|---|---|
+| 1 | `live-probes-are-named` **4 failed / 6 passed** | before `npm ci` — see below |
+| 2 | **2710 passed / 1 failed** | `tests/rendering/new-agent.test.ts` |
+| 3 | **2711 passed / 0 failed** | fully green |
+
+### The six-failure baseline is not a code defect. It was an uninstalled worktree.
+
+This item's option 3 calls the baseline "itself the hazard" and asks for the two
+files to be repaired or skipped so the pass criterion can return to zero.
+**Neither is needed.** The failures were `Cannot find module
+.../node_modules/vitest/vitest.mjs`: this worktree had a `node_modules`
+containing one entry (`.vite`), so `npm ls vitest` answered empty, and the two
+files that **spawn a subprocess** — `live-probes-are-named` shelling to `vitest`
+and `tsc`, and `cli-spawn` likewise — were the only ones that could notice.
+Everything else resolved through `npx`.
+
+After `npm ci` in the worktree, `live-probes-are-named` passes **10/10** and the
+whole suite reaches **2711/2711**.
+
+So the pass criterion **can already be zero**, and the thing that made it six was
+a setup step, not the code. Anyone gating a change on "the count is unchanged
+rather than zero" in a fresh worktree is measuring their own install. Run
+`npm ci` first and gate on zero.
+
+*(Checked before running it: `node_modules` here is a real directory, not a
+reparse point — `Attributes: Directory`, no target. `npm ci` on a junction would
+have wiped the shared install, which is a known hazard in this repository.)*
+
+### The second instance — a different file, and this time the failure mode is captured
+
+```
+FAIL tests/rendering/new-agent.test.ts
+  > the new-agent form asks what the operation requires
+  > offers every strategy the platform lists
+  Error: Test timed out in 5000ms.
+```
+
+Run alone immediately after: **19/19 passed, the failing case in 512 ms.**
+
+**It is a timeout, not an assertion failure.** That is the diff this item asked
+for in step 2, and it rules out both candidates the item lists: an ordering bug
+would show stale fake state and a clock bug an off-by-interval, and neither
+produces "timed out". Nothing was asserted at all — the test never finished.
+
+### A third hypothesis, better supported than either of the two on record
+
+**Contention against the default 5 s `testTimeout`.** `vitest.config.ts` sets no
+`testTimeout`, so every test runs on vitest's 5000 ms default. The full-run
+timings say what that competes with:
+
+```
+run 2   transform 80.15s   collect 231.25s   tests 184.26s   (212 files)
+run 3   transform 80.77s   collect 154.26s   tests 201.29s
+```
+
+A case that needs 512 ms of its own work is being given a 5 s wall while the
+runner transforms and collects 212 files in parallel. `collect` alone swung by
+**77 seconds** between two runs of identical code, which is the size of variance
+that makes 10x headroom occasionally not enough.
+
+That also explains the two observations together without needing them to share a
+cause in the code: **both flaking files are under `tests/rendering/`**, the
+heaviest transform targets in the suite (they import page components and compile
+JSX), so they are where a scheduling stall is most likely to land.
+
+### What is left
+
+The evidence for the timeout hypothesis is circumstantial — strong, and not a
+measurement. It would be settled by running the suite with an explicit
+`testTimeout` and seeing the class disappear.
+
+**Recommended:** set `testTimeout` explicitly in `vitest.config.ts`, with a
+comment recording that 5 s was chosen by vitest and not by anyone here, that the
+observed per-case cost is ~0.5 s, and that the raise is for scheduler contention
+across 212 files — never a licence for a case that genuinely got slower. Keeping
+the default is the option that leaves a known flake in the gate for every change.
+
+Steps 1 and 2 of "what would settle it" are discharged. Step 3 is answered:
+`npm ci`.
