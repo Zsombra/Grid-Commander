@@ -562,11 +562,11 @@ and the `NEXT:` line. Nothing here restates them.
    `list_pending_approvals` was empty when last read, so it is doubly blocked.
    And the **ten probe agents on the account** can only be removed in
    BattleGrid's own UI; nothing on the 114 tools deletes an agent (#201).
-2. **#306 is the other operator-gated one**: nine live write probes have never
-   run against v19, and running them needs a keyed environment *and* a
-   go-ahead. One of its named risks is now covered from the read side — the
-   preview fix is exercised live at v19.2.0 — but `apply_strategy_plan` and
-   `compile_strategy_plan` remain unobserved.
+2. **#306 needs one probe run, not nine.** Eight of nine executed against
+   v19.2.0 on 2026-08-16 with authorisation, seven green. What is held back is
+   **`radar-probe`**: its step 1 deletes a real deployed coin and the file has
+   no `finally`, so it needs that guard or a window when the fleet is below cap
+   and flat.
 3. **Two open decisions, both filed and both cheap once decided**: #322 (this
    section's own mechanism) and #320 (whether a restyle ticket's acceptance may
    pin content). Neither is an edit.

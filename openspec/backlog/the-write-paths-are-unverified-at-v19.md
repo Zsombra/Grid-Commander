@@ -173,13 +173,19 @@ conformant against the record — **and it needed no write flag, no operator
 authorization, and no mutation.** The probe that was thought to be the only
 route was not the only route.
 
-### What that leaves
+### Correction — written against a stale reading of this item
 
-The residual is genuinely smaller than filed. Of the two tools whose input
-schemas v19 changed and which this item calls out —
-`apply_strategy_plan` and `compile_strategy_plan` — **both still mutate and both
-remain unobserved at v19.** Nothing here touches them. The nine gated probe
-files are unchanged and unrun.
+**The paragraph that stood here was wrong and is withdrawn.** It said the nine
+gated probe files were "unchanged and unrun" and that `apply_strategy_plan` and
+`compile_strategy_plan` "remain unobserved at v19". Both claims are false: the
+**Run 2026-08-16** section above records eight of nine executed against v19.2.0
+with the operator's authorisation, seven green, and `apply-probe` PASS exercises
+both of those tools. The error came from reading this item's opening and Notes
+without reading its own run record — the exact failure this repository keeps
+filing about.
+
+What is actually true of *this* session: **it ran no write probe and sought no
+authorisation to.** That is all the note below was entitled to say.
 
 **Note the version drift**: this item was filed against v19.1.0. The server is
 now **v19.2.0** (confirmed today by the `initialize` handshake:
