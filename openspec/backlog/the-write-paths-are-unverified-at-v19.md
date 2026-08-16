@@ -145,3 +145,52 @@ one level down — recorded on #201 rather than here.
 Eight of nine paths are now observed against a running v19.2.0 server, one is a
 confirmed refusal with its own item, and one is unrun by choice. This item stays
 open until `radar-probe` has either a `finally` or a safe window.
+
+## 2026-08-16 — one of the named risks is now covered, by a read rather than a write
+
+**No write probe was run.** This item is explicit that running them needs a keyed
+environment *and* the operator's go-ahead, and neither was assumed. It stays open
+and stays the operator's call.
+
+What did happen is that the single risk this item names most concretely got
+covered from the read side.
+
+### `preview_strategy_report` is exercised live at v19.2.0, post-fix
+
+The Why says *"`custom-table-probe` is the only place the preview fix from
+`the-preview-matches-the-live-contract` is exercised live at all"* — and that
+probe is behind the writes flag, so the fix was unexercised.
+
+`preview_strategy_report` **is a read tool**. It was called twice today at
+v19.2.0 with the post-fix argument shape (no `regimeAutoDerive`, no
+`regimeTimeframe`), on `{timeframe, coinSelection, sections}` plus the two new
+market-read inputs, and it **answered 200 both times** with fully rendered
+sections. Working details are on [[the-preview-cannot-carry-a-market-read]]
+(#302).
+
+So the preview fix is now observed against the running server, not merely
+conformant against the record — **and it needed no write flag, no operator
+authorization, and no mutation.** The probe that was thought to be the only
+route was not the only route.
+
+### What that leaves
+
+The residual is genuinely smaller than filed. Of the two tools whose input
+schemas v19 changed and which this item calls out —
+`apply_strategy_plan` and `compile_strategy_plan` — **both still mutate and both
+remain unobserved at v19.** Nothing here touches them. The nine gated probe
+files are unchanged and unrun.
+
+**Note the version drift**: this item was filed against v19.1.0. The server is
+now **v19.2.0** (confirmed today by the `initialize` handshake:
+`serverInfo battlegrid 19.2.0`). Whatever run eventually happens will be against
+a version later than the record the offline guard passes on, so the run should
+re-check the version first rather than assume the record still matches.
+
+### The ask, stated once
+
+Running the nine needs the operator to say so, in the session, at the moment.
+They fork strategies, create and archive agents, and write deployments on the
+live account — self-cleaning by design, but real writes on a real account.
+Nothing in this session sought that authorization, and nothing should be run
+until it is given.

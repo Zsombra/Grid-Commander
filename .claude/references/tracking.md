@@ -251,6 +251,36 @@ Once the backfill landed, the scoping covered exactly one remaining case — an
 old item **reopened** later — and that is the case that most needs a mirror, so
 it came out.
 
+### The other direction: `openspec.py mirror`
+
+`validate` checks that a mirror **exists**. It has never checked that the two
+agree, so an item could read `status: open, priority: p2` while its issue was
+CLOSED and every check passed — which happened for a day, with the board's
+`NEXT:` line recommending work GitHub already considered finished (#309).
+
+```bash
+python3 .claude/tools/openspec.py mirror
+```
+
+Three directions, and only two of them are drift:
+
+| | meaning | exit |
+|---|---|---|
+| item open/in-progress/blocked, issue **CLOSED** | drift | fails |
+| item **done**, issue OPEN | drift | fails |
+| issue OPEN with **no item** | usually in-flight | reports; fails only under `--strict` |
+
+The third is the noisy one. Every session's tracking lands as a PR and its
+issues close immediately, so between filing and merge an issue legitimately has
+no item on `main`. Against a working tree it is quiet; against `main`
+mid-flight it is not.
+
+**It is deliberately not part of `validate`.** `validate` is offline and must
+stay that way — it runs in CI, in hooks, and on a laptop with no `gh`
+credential, and a check needing the network would either fail there or teach
+people to skim the warning block, which is the exact failure the scoping note
+above records. `mirror` needs `gh` and says so, exiting 2 when it is missing.
+
 A rule nothing enforces is a rule that gets skipped. That is not a guess here —
 `failure-is-explained.test.ts` exists because thirty branches hand-rolled their
 own failure sentence, and its header names the cause: *nothing stopped the
