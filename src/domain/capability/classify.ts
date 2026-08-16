@@ -42,25 +42,45 @@ export function classifyTool(tool: DiscoveredTool | undefined): ToolClass {
 
   // destructiveHint is only meaningful for something that mutates. Where it is
   // absent on a mutating tool, assume the worst rather than the convenient.
-  const destructive = mutating && (a.destructiveHint ?? true);
+  const platformSaysDestructive = mutating && (a.destructiveHint ?? true);
+
+  // An operation requiring fund-committing authority carries a consequence a
+  // person must agree to, whatever the platform says about it. BattleGrid
+  // annotates the one write that opens a real position as *not* destructive,
+  // and keying the gate to that annotation is how the confirmation came to be
+  // skipped on the only operation that spends money (#340).
+  //
+  // The authority comes from `declaredScope`, which the adapter sets from this
+  // product's own judgement — the domain names no tool.
+  const commitsFunds = tool.declaredScope === 'mcp:wager';
 
   return {
     mutating,
-    destructive,
-    requiredScope: tool.declaredScope ?? inferScope(mutating),
+    destructive: platformSaysDestructive || commitsFunds,
+    platformDestructiveHint: a.destructiveHint,
+    requiredScope: tool.declaredScope ?? defaultScope(),
     basis: 'annotations',
   };
 }
 
 /**
- * When a tool does not declare its scope, infer the least surprising one.
+ * The authority assumed for an operation that declares none.
  *
- * Note this never infers `mcp:wager` for a mutating tool: most mutating tools
- * on BattleGrid run on read scope, and guessing wager here would make the
- * product refuse operations it is entitled to perform. Tools that genuinely
- * need wager authority say so, and are caught by `declaredScope`.
+ * **This used to claim more than it did.** It read: *"tools that genuinely need
+ * wager authority say so, and are caught by `declaredScope`"* — describing a
+ * mechanism with no producer. Nothing set `declaredScope`, so every known tool
+ * classified as `mcp:read` and the port's wager gate could fire only on the
+ * fail-closed unknown path. The comment is why that survived four months of
+ * being read (#340).
+ *
+ * `declaredScope` now has a producer (`money-tools.ts`, via the adapter), so
+ * this is the honest remainder: a tool nobody has judged to commit funds is
+ * measured against the basic grant. It does not infer, and it never guesses
+ * upward — guessing wager here would make the product refuse operations it is
+ * entitled to perform. Unknown tools are a different case and still fail closed
+ * through `UNKNOWN_TOOL`.
  */
-function inferScope(_mutating: boolean): Scope {
+function defaultScope(): Scope {
   return 'mcp:read';
 }
 

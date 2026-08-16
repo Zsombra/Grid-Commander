@@ -6,7 +6,7 @@
 |---|---|
 | Slug | `the-port-knows-what-costs-money` |
 | Change | `openspec/changes/the-port-knows-what-costs-money/` |
-| Phase | **1 — Planning** |
+| Phase | **2 — Execution** |
 | Base ref | `origin/main` (`86ee8fa`) |
 | Track | `full` |
 | Last updated | 2026-08-17 |

@@ -95,6 +95,51 @@ one. The auditor reads this for decision-log parity.
 
 ---
 
+## DE-1 — EXECUTION: the plan's "one home" was impossible, and the reason is the point
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Plan error, corrected during execution |
+| Decision | Two files, not one: `src/infrastructure/battlegrid/money-tools.ts` holds the **reachable** set; `tests/support/money-tools.ts` holds the **forbidden** set |
+| Impacted files | both of the above, `tests/agent/wager.test.ts` |
+| Reason | PD-1/PD-2 said to move both sets into one module under `src/infrastructure/battlegrid/`. **That would violate A10 half 1 on the first line**: no forbidden tool name may appear anywhere under `src/`, and putting them there is exactly the violation the guard exists to catch. The sets have opposite requirements about where their names may live, so they cannot share a home. The intent survives — one home *per set*, imported rather than duplicated, so `wager.test.ts` reads the same lists the runtime does |
+| Approved by | Executor, on the guard rather than on preference |
+| Next action | Inventory updated. The partition test in `money-tools.test.ts` asserts no name is in both |
+
+---
+
+## DE-2 — EXECUTION: section 0 evidence, recorded before anything changed
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Evidence |
+| Decision | Recorded here and the throwaway deleted per task 8.1 |
+| Impacted files | `tests/capability/__defect-evidence.test.ts` (created, then deleted) |
+| Reason | Driven through the real `buildClassificationMap` and the real `beginGuardedCall`, before any change: `accept -> {"destructive":false,"requiredScope":"mcp:read"}`, `cancel -> {"destructive":true,"requiredScope":"mcp:read"}`, accept admitted on `mcp:read` alone with no token, audit row `destructive: false`, and `mcp-adapter.ts sets declaredScope: false`. **A flaw in that test is worth keeping**: it built `DiscoveredTool`s by hand without `declaredScope`, so it bypassed the adapter and could never have shown the fix — the same fabricated-input trap this change exists to remove, committed by its own evidence test. `money-tools.test.ts` drives the composed path instead |
+| Approved by | Executor |
+| Next action | Deleted. `money-tools.test.ts` is the permanent test and asserts the corrected behaviour |
+
+---
+
+## DE-3 — EXECUTION: A10 caught a doc comment, and the ruling already existed
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Guard hit, obeyed rather than weakened |
+| Decision | The comment was de-named. A10 unchanged |
+| Impacted files | `src/domain/capability/tool-class.ts`, `tests/capability/money-tools.test.ts` |
+| Reason | A new doc comment on `ToolClass.destructive` named a released tool to explain the defect, and A10 half 2 failed on it — the same event DL-7 of `the-approval-can-be-answered` recorded, with the same answer: the guard is blunt on purpose, a name is the first step toward a call, and weakening it for a comment spends the guard for nothing. **My own "the domain names no tool" assertion missed it**, because it scanned `classify.ts` alone; it now scans all of `src/domain`. A guard narrower than the rule it enforces is a guard with a hole in it |
+| Approved by | Executor |
+| Next action | None. Both guards green |
+
+---
+
 ## Scope boundaries
 
 **In**: the classification, the two port gates, the audit's content, the tests

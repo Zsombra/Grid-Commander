@@ -11,15 +11,15 @@
 
 ## 0. Prove the defect before changing anything
 
-- [ ] 0.1 A test that drives `buildClassificationMap` over the **real**
+- [x] 0.1 A test that drives `buildClassificationMap` over the **real**
       `docs/battlegrid-mcp-capabilities.json` and asserts today's behaviour:
       `accept_entry_decision` → `destructive: false`, `requiredScope: 'mcp:read'`.
       **This test is expected to be deleted**, not kept — it pins the defect. Its
       job is to make the starting state undeniable in the diff.
-- [ ] 0.2 A test that drives the **real** `beginGuardedCall` with that
+- [x] 0.2 A test that drives the **real** `beginGuardedCall` with that
       classification on `heldScopes: ['mcp:read']` and shows accept is admitted
       with no confirmation token. Also deleted at the end.
-- [ ] 0.3 Record both outputs verbatim in `plan/decision-log.md`. Everything
+- [x] 0.3 Record both outputs verbatim in `plan/decision-log.md`. Everything
       after this is measured against them.
 
 ## 1. One home for the judgement
@@ -29,59 +29,59 @@
 > `src/infrastructure/battlegrid/`. So the producer is the **adapter**, never the
 > domain. The audit question is settled too: **record both, never backfill**.
 
-- [ ] 1.1 Move the names to one module under `src/infrastructure/battlegrid/`,
+- [x] 1.1 Move the names to one module under `src/infrastructure/battlegrid/`,
       partitioned into **forbidden** (unreachable) and **reachable**.
       `tests/agent/wager.test.ts` imports it instead of declaring its own copy, so
       A10 guards the same list the runtime uses.
-- [ ] 1.2 Add **`random_submit_market_grid`** to the forbidden set. Money-affecting,
+- [x] 1.2 Add **`random_submit_market_grid`** to the forbidden set. Money-affecting,
       absent from `WAGER_TOOLS`, unnamed in `src`/`app` today — unreachable in fact
       and unguarded.
-- [ ] 1.3 Assert the **partition**: every money-committing tool is in exactly one
+- [x] 1.3 Assert the **partition**: every money-committing tool is in exactly one
       set. A name in both, or called while in neither, is an error.
-- [ ] 1.4 A one-line reason per entry, and a line for each remaining mutating tool
+- [x] 1.4 A one-line reason per entry, and a line for each remaining mutating tool
       saying why it is on neither list. The absence of a reason is how the next one
       gets missed.
 
 ## 2. `declaredScope` gets the producer its comment already claims
 
-- [ ] 2.1 `rawDiscoverTools` (`mcp-adapter.ts:387`) sets `declaredScope` on the
+- [x] 2.1 `rawDiscoverTools` (`mcp-adapter.ts:387`) sets `declaredScope` on the
       reachable money-committing tools as it maps the discovered list. It is inside
       the directory A10 permits, and it is the only place that may know the names.
-- [ ] 2.2 `classify.ts` stays **name-free**. It keeps reading
+- [x] 2.2 `classify.ts` stays **name-free**. It keeps reading
       `tool.declaredScope ?? inferScope(...)`; the field simply now has a value.
-- [ ] 2.3 `classify.ts` distinguishes **what the platform said** from **what this
+- [x] 2.3 `classify.ts` distinguishes **what the platform said** from **what this
       product concluded**, retaining the raw `destructiveHint` as evidence.
-- [ ] 2.4 A money-committing operation classifies as consequential, so the
+- [x] 2.4 A money-committing operation classifies as consequential, so the
       confirmation gate applies whatever the annotation says.
-- [ ] 2.5 The absent-hint case is unchanged and still fails closed
+- [x] 2.5 The absent-hint case is unchanged and still fails closed
       (`classify.ts:44` reasoning preserved verbatim).
-- [ ] 2.6 `UNKNOWN_TOOL` unchanged — `destructive: true`,
+- [x] 2.6 `UNKNOWN_TOOL` unchanged — `destructive: true`,
       `requiredScope: 'mcp:wager'`. A newly deployed money-committing tool stays
       safe before anyone classifies it.
-- [ ] 2.7 **`inferScope` stops lying.** Either it goes, or its comment stops
+- [x] 2.7 **`inferScope` stops lying.** Either it goes, or its comment stops
       claiming `declaredScope` catches wager tools. No comment may describe a
       mechanism with no producer — that sentence is why this survived four months.
 
 ## 3. The list cannot rot
 
-- [ ] 3.1 A name on the money-committing list that is **absent from the
+- [x] 3.1 A name on the money-committing list that is **absent from the
       discovered surface** is an error, not a silent no-op.
-- [ ] 3.2 That guard carries a vacuity assertion — it must fail if the surface
+- [x] 3.2 That guard carries a vacuity assertion — it must fail if the surface
       record cannot be read, rather than passing over an empty set.
-- [ ] 3.3 Verified non-vacuous by adding a bogus name and confirming the failure.
+- [x] 3.3 Verified non-vacuous by adding a bogus name and confirming the failure.
 
 ## 4. Both gates, at the port
 
-- [ ] 4.1 `beginGuardedCall` refuses a money-committing operation on a connection
+- [x] 4.1 `beginGuardedCall` refuses a money-committing operation on a connection
       without fund-committing authority, **before** it is attempted, naming the
       authority.
-- [ ] 4.2 `beginGuardedCall` requires and **spends** a confirmation for a
+- [x] 4.2 `beginGuardedCall` requires and **spends** a confirmation for a
       money-committing operation.
-- [ ] 4.3 Cancel's behaviour is unchanged — it is destructive by the platform's
+- [x] 4.3 Cancel's behaviour is unchanged — it is destructive by the platform's
       annotation and by ours, and must stay gated.
-- [ ] 4.4 No audit row is written for either refusal. A refusal is not an attempt
+- [x] 4.4 No audit row is written for either refusal. A refusal is not an attempt
       (DL-9 of the approvals change, and `wager.test.ts`).
-- [ ] 4.5 **No second opinion.** The application layer is untouched;
+- [x] 4.5 **No second opinion.** The application layer is untouched;
       `read-answer-authority.query.ts` still decides only what is *drawn*.
 
 ## 5. The tests stop asserting fabricated inputs
@@ -119,7 +119,7 @@
 
 ## 8. Close out
 
-- [ ] 8.1 Delete the section 0 tests. They pinned a defect that no longer exists.
+- [x] 8.1 Delete the section 0 tests. They pinned a defect that no longer exists.
 - [ ] 8.2 `#340` updated with what was measured, and closed only if the sweep in
       1.4 is complete.
 - [ ] 8.3 Re-pin any surface manifest whose source files moved.

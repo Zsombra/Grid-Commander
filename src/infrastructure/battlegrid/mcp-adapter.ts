@@ -1,6 +1,7 @@
 import type { AuditWriter } from '@/domain/audit/audit-repository.js';
 import type { ConfirmationStore } from '@/domain/capability/confirmation.js';
 import type { DiscoveredTool } from '@/domain/capability/tool-class.js';
+import { declaredScopeFor } from './money-tools.js';
 import type { HeldScopes } from '@/domain/connection/held-scopes.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
@@ -388,6 +389,12 @@ export class McpBattleGridAdapter implements BattleGridPort {
       name: t.name,
       description: t.description,
       annotations: t.annotations as DiscoveredTool['annotations'],
+      // The producer `declaredScope` never had. BattleGrid publishes no
+      // per-tool authority, so it comes from this product's own judgement —
+      // and this directory is the only one permitted to know tool names (A10,
+      // P6). Undefined for everything else, which leaves the domain's default
+      // exactly as it was.
+      declaredScope: declaredScopeFor(t.name),
       // Kept rather than dropped. Discarding it left the assistant guessing
       // argument names for 110 tools, and every guess that missed arrived as a
       // failed read the user was told about.
