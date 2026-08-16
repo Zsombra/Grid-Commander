@@ -86,14 +86,14 @@
 
 ## 5. The tests stop asserting fabricated inputs
 
-- [ ] 5.1 Rewrite `tests/agent/answer-authority.test.ts:171-176` to take its
+- [x] 5.1 Rewrite `tests/agent/answer-authority.test.ts:171-176` to take its
       classification from the real map rather than hand-building
       `{ destructive: true, requiredScope: 'mcp:wager' }`. **It currently passes
       while the defect is live**, which is the whole problem.
-- [ ] 5.2 Sweep the suite for other hand-built `ToolClass` literals and give each
+- [x] 5.2 Sweep the suite for other hand-built `ToolClass` literals and give each
       one either a real classification or a comment saying why a fabricated one is
       correct there.
-- [ ] 5.3 Every new guard reverted once and shown to fail.
+- [x] 5.3 Every new guard reverted once and shown to fail.
 
 ## 6. The audit says what we did
 

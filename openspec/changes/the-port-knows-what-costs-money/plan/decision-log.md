@@ -140,6 +140,21 @@ one. The auditor reads this for decision-log parity.
 
 ---
 
+## DE-4 — EXECUTION: the fabricated-input rule is narrow, and deliberately so
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Scope judgement on task 5.2 |
+| Decision | Guard **fabricated wager classifications beside a real money-tool name**, not every hand-built `ToolClass`. `call-path.test.ts` and `money-tools.test.ts` exempt by name |
+| Impacted files | `tests/agent/answer-authority.test.ts`, `tests/capability/money-tools.test.ts` |
+| Reason | 22 test files hand-build `{ mutating: false, destructive: false, requiredScope: 'mcp:read' }` inside a fake so a read call can pass. Annotating all of them would be churn for no safety: a read tool's classification is not the subject under test and cannot hide a money defect. The shape that **did** hide one is a fabricated `mcp:wager` classification paired with a real money-tool name — exactly what `answer-authority.test.ts:171-176` carried, correct in every assertion and about an input production never produced. `call-path.test.ts` is exempt because its `READ`/`WRITE`/`DESTRUCTIVE`/`WAGER` fixtures make the **class** the subject rather than standing in for a tool |
+| Approved by | Executor |
+| Next action | Proven non-vacuous: a probe file pairing the two fails the guard; removed, it passes. `answer-authority.test.ts` now drives `buildClassificationMap`, and reverting the classification fix fails 3 tests across the two files |
+
+---
+
 ## Scope boundaries
 
 **In**: the classification, the two port gates, the audit's content, the tests

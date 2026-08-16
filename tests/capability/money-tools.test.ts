@@ -209,6 +209,48 @@ describe('both gates fire at the port', () => {
   });
 });
 
+describe('no test fabricates a money-committing classification', () => {
+  /**
+   * The narrow rule, and it is narrow on purpose.
+   *
+   * 22 test files hand-build `{ mutating: false, destructive: false,
+   * requiredScope: 'mcp:read' }` inside a fake so a read call can pass. That is
+   * harmless: a read tool's classification is not the subject under test, and
+   * getting it wrong cannot hide a money defect.
+   *
+   * The dangerous case is a **fabricated wager classification** — exactly what
+   * `answer-authority.test.ts` carried. It asserted correctly against a
+   * classification production never produced, passed for four months, and is the
+   * reason nobody saw #340. A test that wants to exercise a money-committing
+   * tool must take the classification from the real map.
+   *
+   * `call-path.test.ts` is exempt by name: its `READ`/`WRITE`/`DESTRUCTIVE`/
+   * `WAGER` fixtures exist to test the guard's behaviour **per class**, which
+   * makes the class the subject rather than a stand-in for a real tool.
+   */
+  const EXEMPT = ['call-path.test.ts', 'money-tools.test.ts'];
+
+  it('never pairs a hand-built mcp:wager classification with a real tool name', () => {
+    const files = filesUnder('tests').filter((f) => !EXEMPT.some((e) => f.endsWith(e)));
+    expect(files.length, 'the scan must be reading real files').toBeGreaterThan(50);
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      if (!text.includes("requiredScope: 'mcp:wager'")) continue;
+      // Naming a money tool beside a fabricated wager classification is the
+      // shape that hid the defect.
+      for (const name of Object.keys(REACHABLE_MONEY_TOOLS)) {
+        if (text.includes(name)) offenders.push(`${file}: ${name}`);
+      }
+    }
+    expect(
+      offenders,
+      'take the classification from buildClassificationMap, not from a literal',
+    ).toEqual([]);
+  });
+});
+
 describe('the mirror of the adapter is honest', () => {
   it('the adapter really calls declaredScopeFor', () => {
     // `discovered()` above mirrors `rawDiscoverTools`. The mirror is only valid
