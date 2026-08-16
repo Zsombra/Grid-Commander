@@ -1,5 +1,95 @@
 # Journal
 
+## 2026-08-16 (probe) — the account was holding positions, and nine parked items answered
+
+**Did**: audited all 28 open backlog items into a report grouped by category and
+ranked by difficulty, then tested whether the live BattleGrid connector could
+settle any of them. It settled seven on read-only calls alone. A keyed session
+then settled two more, found a deployment nobody knew about, and ran eight of
+the nine write paths that had never executed against v19.
+
+**The correction that made it work, and it is worth keeping.** The instinct was
+to extract the surface from the connector. That is backwards: the connector
+exposes `description` and `inputSchema` only, while
+`docs/battlegrid-mcp-capabilities.json` already carries `outputSchema`,
+`annotations`, `execution` and `title` for all 114 tools. **The record was never
+the bottleneck.** Every parked item was blocked on *observation*, and live calls
+are the only thing that produces those. Recorded as a memory rather than here,
+because it will recur.
+
+**#107 became a defect.** `get_open_orders` answered with six live protective
+legs, which meant positions were open — the condition the item had waited on
+since 2026-07-29. At one instant, Undertow: `list_user_active_positions` says
+`marginedUsd 8.5119`, `get_agent_budget` says `capitalAtRiskUsd 8.55`, and
+`get_agent_fund_allocation` says `committedUsd 0`. Breakwater reproduces it.
+**Vanguard, holding nothing, also reads zero** — the negative control that makes
+the other two readable, and the reason three weeks of flat-account re-checks
+proved nothing. Moved `question` → `bug`.
+
+**#299's unit claim is measured, not argued.** Undertow carries
+`currentNotionalUsd 29.48` against `maxConcurrentExposureUsd 45`, and
+`gauges.exposure.fill` reads **8.55**. The cap meters margin. Separately its
+expensive half shrank: `headroomUsd`, `effectiveNotionalUsd` and four resolved
+gauges already arrive on a call the product makes, and the tool description says
+of them *"render them, never re-derive."*
+
+**Five more items moved**: #110 answered negatively (no cost ceiling is readable
+anywhere — not in 29 agent-payload keys, not in `get_agent_budget`'s four
+gauges); #300 settles as no-instance (all 17 strategies are `1h`); #114 got its
+mechanism (the description states an XOR the schema cannot express — not a
+server bug); #201 got worse (ten probe agents, up from nine); #116's discovery
+read is discharged, and the v19 protection family is observed rather than
+declared.
+
+**BattleGrid is on v19.2.0, and the record said 19.1.0.** Found by accident
+while capturing. `diff_output_schemas.py` — built after #198 for exactly this —
+worked on its first live use: 114 tools unchanged, **1 output schema changed, 7
+leaves added, 0 removed**, all on `get_account_state`. All three records were
+brought to 19.2.0.
+
+**#198's gap is still open, and that is the sharpest finding of the day.**
+Before the refresh the three records read `surface 19.2.0`,
+`vocabulary 19.1.0`, `capabilities 19.1.0` — and
+`tests/live/surface-freshness.test.ts`, whose header calls it *"the only check
+in the repository that can discover a BattleGrid deployment"*, **passed all 23
+assertions.** It reads two of the three records and never opens the one holding
+every output schema. Filed p2 as `the-capability-record-has-no-freshness-guard`
+(#328); the cheapest answer is offline and needs no key — assert that all three
+records carry the same version as each other.
+
+**Eight of nine write paths ran against v19.2.0, seven green.** apply, restore,
+retune, recorder, custom-table, proposal and write all passed;
+`recorder-probe` captured `run-1 · platform 19.2.0 · 20 recorded, 0 failed`.
+`condition-write-probe` refused for a real reason — `operator 'gt' is not legal
+for 'regTrend_now' (output kind 'classification')` — filed as #327, where the
+open question is whether the product's own authoring surface can compose the
+same illegal pairing.
+
+**`radar-probe` was held back on purpose.** It is the only probe that mutates
+something the operator is actively running: `delete_radar_deployment` against a
+real coin, then `expect(deleted.deleted).toBe(true)`, and only then the
+restoring upsert — **with no `finally` in the file**. At run time radar was at
+its cap (20 of 20) with three coins `IN_POSITION` carrying real margin. The
+authorisation to run the nine was given before that state was known, so it was
+not treated as covering this one.
+
+**The account was verified clean afterwards**: agents 16 → 16 with none created,
+archived or status-changed; slots 3/3; radar 20/20 with every policyId and
+revision identical; quota 5/25 with Alesia parked and restored. No probe agent
+was minted, which is #201's fixture working on the paths that route through it.
+Five archived strategy forks were minted — the same residue pattern one level
+down, recorded on #201.
+
+**Two test files fail and it is not from this work.** `live-probes-are-named`
+and `cli-spawn` fail identically at HEAD with a clean tree, verified by stashing
+and re-running. `validate --all` is 0 errors, 15 warnings throughout.
+
+**Next**: `the-capability-record-has-no-freshness-guard` (#328) — the offline
+half is small, needs no key, and catches the divergence that actually occurred.
+Then `radar-probe` needs a `finally` before #306 can finish. The three P2s from
+the audit are unchanged and each is an afternoon: #299's copy half, #325's
+worktree preflight, and the notification shape behind #304.
+
 ## 2026-08-16 (reconcile) — three PRs blocked on one file, and the branch that kept nothing
 
 **Did**: reconciled 11 branches and 11 worktrees down to 2, and closed the open

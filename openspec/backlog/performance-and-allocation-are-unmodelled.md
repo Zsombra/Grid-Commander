@@ -1,11 +1,11 @@
 ---
 id: performance-and-allocation-are-unmodelled
 title: get_agent_fund_allocation reported zero for money the platform reported as committed
-type: question
+type: bug
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "107"
@@ -28,6 +28,70 @@ tags: [battlegrid, agent-understanding, mapping]
 >
 > Original title: *"get_agent_performance and get_agent_fund_allocation have
 > never returned a figure"*. Everything below is kept.
+
+## CONFIRMED 2026-08-16 — measured against open positions, with a negative control
+
+**The blocker is gone and the finding is now a defect, not a question.** Every
+re-check since 2026-07-29 was uninformative for the same reason: the account was
+flat, so `committedUsd: 0` was the *correct* answer and could not falsify
+anything. On 2026-08-16 the account held three open positions across two agents,
+and the tool was read against them.
+
+Read live over the authenticated MCP connector at v19.1.0, all within one minute
+(`generatedAtMs 1786839673543`), no writes:
+
+| agent | open positions | `marginedUsd` | `capitalAtRiskUsd` | `committedUsd` | verdict |
+|---|---|---|---|---|---|
+| Undertow | 2 | 8.511903 | 8.55 | **0** | **wrong** |
+| Breakwater | 1 | 4.298067 | 4.50 | **0** | **wrong** |
+| Vanguard | 0 | — | — | 0 | correct — negative control |
+
+Two independent tools corroborate the non-zero on both trading agents:
+`list_user_active_positions` reports the margin per agent and
+`get_agent_budget` reports the same figure as `capitalAtRiskUsd` and as
+`gauges.exposure.fill`. `get_agent_fund_allocation` returns zero on **every**
+field for all three:
+
+```
+get_agent_fund_allocation(Undertow)    availableUsd 0  committedUsd 0
+                                       lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+get_agent_fund_allocation(Breakwater)  availableUsd 0  committedUsd 0
+                                       lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+get_agent_fund_allocation(Vanguard)    availableUsd 0  committedUsd 0    <- flat, so correct
+```
+
+**Vanguard is the control that makes the other two readable.** It holds no
+position, and there the zero agrees with every other tool. So the tool is not
+returning a constant that happens to be right sometimes — it is returning zero
+where zero is wrong and zero where zero is right, which is what "unwired" looks
+like rather than "stale".
+
+**The lifetime fields are dead too.** `lifetimeAllocatedUsd` and
+`lifetimeRecalledUsd` are 0 on all three agents, on an account with 15 games,
+$150 total wagered, and live trades in the same hour.
+
+### What this settles
+
+- The premise reproduces **on a second agent** (Breakwater), which is what the
+  2026-08-15 accept-path work established as the bar for a sizing claim.
+- It is an **upstream defect**, not a mapping gap. Per
+  [[upstream-defects-are-answered-in-product]] the move is client-side: source
+  committed and available funds from `get_agent_budget`
+  (`capitalAtRiskUsd`, `headroomUsd`, `gauges.exposure`) and
+  `list_user_active_positions` (`marginedUsd`), both of which answer correctly,
+  and stop reading `get_agent_fund_allocation` for anything but
+  `perTradePushEnabled` and `haltedAt`.
+- The item can move off `question` once that read is re-sourced.
+
+### One anomaly recorded, not concluded
+
+`get_agent_budget.accountEquityUsd` reads **0** on both trading agents while
+`get_account_state` reports `balance.usdc 38.573919` and
+`tradingWalletProvisioned: true`. The tool's own description calls it "owner
+account equity". These may be two different pots — play balance versus trading
+wallet equity — so this is **observed, not judged**. It is not folded into the
+verdict above. See [[battlegrid-declared-vs-observed]]; if it is a second
+instance of the same wiring gap it deserves its own item.
 
 ## Status 2026-08-13 — the finding stands, and cannot be re-measured today
 

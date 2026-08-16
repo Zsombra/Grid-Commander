@@ -5,7 +5,7 @@ type: bug
 status: open
 priority: p2
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "299"
@@ -125,3 +125,61 @@ margin — written a day apart, neither reconciled against the other.
   `OPEN_POSITION_CONFLICT` is 96% of blocks but its `latestAt` is
   2026-08-12T09:29Z — three days stale, and zero today despite three held
   tickers. It is the dominant historical code, not an active one.
+
+## Measured 2026-08-16 — the unit is settled, and the expensive half is cheaper
+
+Read live at v19.1.0 over the authenticated MCP connector. Read-only, no writes.
+
+**The cap is metered on margin. That is no longer an inference.** Undertow, at
+one instant:
+
+```
+maxConcurrentExposureUsd   45
+currentNotionalUsd         29.478109      <- notional across its 2 positions
+capitalAtRiskUsd            8.55          <- margin
+gauges.exposure.fill        8.55          <- what the cap actually counts
+```
+
+Were the cap metered on notional, the exposure gauge would read 29.48 against
+45. It reads 8.55, and `marginedUsd` from `list_user_active_positions` agrees at
+8.511903. Breakwater reproduces it: notional 12.9118, `capitalAtRiskUsd` 4.5,
+`gauges.exposure.fill` 4.5.
+
+So `money-limits.tsx:119` — *"The total of everything open at the same time."* —
+is **measurably** wrong rather than arguably wrong, and the label above it
+remains correct. Consequence 1 of this item is now settled evidence.
+
+### The `standard` half is smaller than it was filed as
+
+The explanation this item asks for is largely **already published on a response
+the product already fetches**. `get_agent_budget` returns, per agent:
+
+```
+headroomUsd               36.45   <- the sizing base
+effectiveNotionalUsd      36.45   <- what that headroom authorizes
+budgetOverSubscribed      false
+stopBelowSingleTradeLoss  false
+stopEffectivelyUnbounded  false
+blockedReason             null
+blockedSince              null
+gauges.exposure  { fill 8.55, remaining 36.45, configured true, breached false }
+```
+
+The tool's own description names `headroomUsd` "the sizing base", calls
+`effectiveNotionalUsd` "the effective notional the current headroom authorizes",
+warns that `configured: false` means no limit rather than a limit of zero, and
+says of the gauges: **"render them, never re-derive."**
+
+That turns "surface headroom and the next-order sizing" from a derivation
+problem into a rendering problem over fields already in hand. The delta spec is
+still required — it adds behaviour to the limits surface — but the arithmetic
+the item worried about belongs to the platform, not to us.
+
+### Still open after this read
+
+- The `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` / `minEquityUsd: 33.333333` test in
+  the Notes is **still NOT DETERMINED**. No such row was produced today.
+- **New, recorded not concluded**: `accountEquityUsd` reads 0 on both trading
+  agents while `get_account_state` reports `balance.usdc 38.573919`. Carried
+  identically on [[performance-and-allocation-are-unmodelled]] (#107); it is not
+  folded into any verdict here.

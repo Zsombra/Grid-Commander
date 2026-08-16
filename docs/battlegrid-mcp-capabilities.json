@@ -192,7 +192,7 @@
   ],
   "serverInfo": {
     "name": "battlegrid",
-    "version": "19.1.0"
+    "version": "19.2.0"
   },
   "tools": [
     {
@@ -3813,9 +3813,41 @@
             ],
             "type": "object"
           },
+          "agents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "agentId": {
+                  "type": "string"
+                },
+                "avatarUrl": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agentId",
+                "displayName",
+                "avatarUrl"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "balance": {
             "additionalProperties": false,
             "properties": {
+              "available": {
+                "type": "boolean"
+              },
               "hasAccount": {
                 "type": "boolean"
               },
@@ -3829,9 +3861,16 @@
             "required": [
               "usdc",
               "totalBalance",
-              "hasAccount"
+              "hasAccount",
+              "available"
             ],
             "type": "object"
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "mcpWagerEnabled": {
             "type": "boolean"
@@ -3926,9 +3965,12 @@
         },
         "required": [
           "username",
+          "avatarUrl",
+          "bio",
           "balance",
           "stats",
           "agentSlots",
+          "agents",
           "mcpWagerEnabled",
           "tradingWalletProvisioned"
         ],
@@ -7345,7 +7387,7 @@
           },
           "tradingConfig": {
             "additionalProperties": false,
-            "description": "Optional trading configuration applied at create: mode, capital and execution limits (including maxConcurrentExposureUsd, maxCumulativeDrawdownUsd, and maxDailyLossUsd), position sizing, ATR preferences, and nested positionManagement. Omit the whole object to use platform database defaults; when provided it must be complete.",
+            "description": "Optional trading configuration applied at create: mode, capital and execution limits (including maxConcurrentExposureUsd, maxCumulativeDrawdownUsd, and maxDailyLossUsd), position sizing, ATR preferences, and nested positionManagement. Omit the whole object to use platform database defaults; when provided every field in THIS schema is required. This schema is narrower than the tradingConfig an agent read returns: strategyTimeframe and regimeTimeframe are read-only (bind derives the regime rung from the strategy main candle) and are rejected as unknown keys, so do not echo a read config back unchanged.",
             "properties": {
               "balanceThresholdUsd": {
                 "description": "Minimum wallet equity to allow trading (registry-bound) — required when tradingConfig is provided",
@@ -8381,7 +8423,7 @@
           },
           "tradingConfig": {
             "additionalProperties": false,
-            "description": "Optional complete trading configuration. When provided, every nested field is required. Omit it for a non-config update.",
+            "description": "Optional complete trading configuration. When provided, every field in THIS schema is required. This schema is narrower than the tradingConfig an agent read returns: strategyTimeframe and regimeTimeframe are read-only (bind derives the regime rung from the strategy main candle) and are rejected as unknown keys, so do not echo a read config back unchanged. Omit it for a non-config update.",
             "properties": {
               "balanceThresholdUsd": {
                 "description": "Minimum wallet equity to allow trading (registry-bound) — required when tradingConfig is provided",

@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-14
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "110"
@@ -206,3 +206,41 @@ falsy observations only, still unexplained. The four deliberately unmapped
 fields stay unmapped; nothing has asked for them and nothing has been observed
 that would let them be mapped honestly.
 
+
+## Measured 2026-08-16 — all six observed, and the ceiling is confirmed unreadable
+
+Read live at v19.1.0 over the authenticated MCP connector. Read-only.
+`list_intelligence_agents` returns 29 keys per agent. The six, on the three
+ACTIVE agents:
+
+```
+last24hCostUsd        Vanguard 0.08093531  Undertow 0.7340375  Breakwater 0.29225819
+activeGameCount       0     on all three
+hasActiveAssignments  false on all three
+provider              null  on all three
+modelDisplayName      "GLM-5.2" on all three
+avatarUrl / modelImageUrl   populated CDN URLs on all three
+```
+
+### The open question is answered, and the answer is no
+
+*"Whether the cap itself is readable is unknown; only the breach event and the
+running total have been seen."* — **it is not readable.** There is no cost
+ceiling on any read available to this account:
+
+- **Not on the agent payload.** Scanning all 29 keys for a cost or limit field
+  returns `last24hCostUsd` and `capabilities`, and nothing else.
+- **Not on `get_agent_budget`.** Its four gauges are `dailyTrades`, `exposure`,
+  `drawdown`, `dailyLoss`. There is no cost gauge and no cost field anywhere in
+  the block.
+
+So the running total is readable and the ceiling that halts the agent is not.
+That sharpens what `/limits` should do: it can honestly show spend-to-date as a
+fifth way to be stopped, and it must say the ceiling is **not published** rather
+than imply there is none — the same distinction `get_agent_budget` draws itself
+when it documents `configured: false` as "no limit is set, which is NOT a limit
+of zero".
+
+`provider: null` also settles the cheap half. `modelDisplayName` is the field
+that can replace the agent page's `CUSTOM`; `provider` cannot help, because the
+platform does not populate it.
