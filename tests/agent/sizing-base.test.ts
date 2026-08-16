@@ -85,9 +85,10 @@ describe('what is left under the cap', () => {
     );
 
     const sizing = result.kind === 'budget' ? result.sizing : null;
-    // Falls back to the gauge's own remainder, which the platform did resolve —
-    // but the authorized notional has no fallback and stays null.
-    expect(sizing?.headroomUsd).toBe(45);
+    // Both stay null. An earlier version fell back to the gauge's own remainder
+    // here — two platform fields, so nothing was computed, but a disagreement
+    // between them would have shown one labelled as the other.
+    expect(sizing?.headroomUsd).toBeNull();
     expect(sizing?.authorizedNotionalUsd).toBeNull();
   });
 

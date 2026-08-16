@@ -41,7 +41,7 @@ would describe a limit that does not exist.
 - **WHEN** the limits surface renders
 - **THEN** the failure is stated with its reason
 - **AND** the fill is not rendered as zero
-- **AND** the other ceilings on the surface are still shown
+- **AND** the other sections on the surface are still shown
 
 ### Requirement: The Headroom An Order Is Sized From Is Named As The Sizing Base
 

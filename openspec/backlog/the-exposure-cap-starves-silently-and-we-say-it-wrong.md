@@ -2,11 +2,11 @@
 id: the-exposure-cap-starves-silently-and-we-say-it-wrong
 title: The exposure cap is a sizing base that starves entries silently — our hint calls it a total
 type: bug
-status: in-progress
+status: open
 priority: p2
 created: 2026-08-15
 updated: 2026-08-16
-change: the-cap-shows-what-is-left
+change: ""
 capability: agent-understanding
 github: "299"
 blocked_by: []
@@ -149,6 +149,15 @@ the approvals confirmation and now governs both surfaces. A guard —
 term. **It does not, on any reading yet taken**: 36.45/36.45 in this item's own
 measurement, and 36.72/36.72 on Undertow at 4x leverage on 2026-08-16. Both are
 carried, neither is derived, and nothing asserts a relationship between them.
+
+### `change:` cleared and `status:` returned to open — the second time, deliberately
+
+`the-cap-shows-what-is-left` is archived, so the link is cleared: the change
+that picked up the standard half is finished and the item is not. This is the
+same move this item made when the `lite` half shipped, and for the same reason —
+it was filed for more than one piece of work, and an item closed because *a*
+change touching it landed is how the last two open questions below stop being
+anybody's.
 
 ### What keeps this item open
 

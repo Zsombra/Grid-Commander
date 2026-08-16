@@ -87,11 +87,38 @@ Gates on this tree: `tsc` clean, `lint` clean, **2708 tests across 212 files**,
 `npm run test:db` **not run and not claimed** — it truncates the signal record
 and `DATABASE_URL` here is not disposable.
 
-**Next**: `the-cap-shows-what-is-left` wants `/verify` then `/archive`. And
-`the-approval-can-be-answered` task **4.5 is still the gate and still needs a
-person** — a Vanguard proposal caught inside its fifteen minutes, with
-fund-committing authority granted at `/approvals/authority`. Nothing was pending
-at either check today.
+**Verified and archived the same session, and the verifier earned its keep on
+its own author's work.** Three warnings, no criticals, and two were worth fixing
+before the merge rather than filing:
+
+1. **A delta scenario asserted something the implementation cannot do** — *"the
+   other **ceilings** on the surface are still shown"* when the budget read
+   fails. The ceilings come from that same read; when it fails they are replaced
+   by `WhyNotLoaded`. What survives is the other **sections**. The behaviour was
+   right and the requirement text was wrong — and the archiver merges delta text
+   into `openspec/specs/`, so a false clause there would have outlived the
+   change. Corrected before applying; the source of truth now carries the true
+   wording.
+2. **A silent substitution between two platform fields** — `headroomUsd ??
+   gauge.remaining`. Both are the platform's, so nothing was computed, but a
+   disagreement between them would have shown one labelled as the other. They
+   were equal on every reading taken, which is the coincidence this repo has
+   twice been caught by. Fallback removed; absent stays absent, as it already
+   did on the line below.
+3. An error scenario covered at query level and structurally but not at render
+   level — a rendering test added.
+
+Merged as 3 ADDED requirements into `agent-understanding`; no removals, no
+renames. **#299 stays open with `change:` cleared** — the second time it has
+made that move, and for the same reason: it was filed for more than one piece of
+work, and the `minEquityUsd` floor test and the `accountEquityUsd: 0` anomaly are
+still nobody else's.
+
+**Next**: **`the-approval-can-be-answered` task 4.5 — the gate, and the only
+thing left that needs a person.** A Vanguard proposal caught inside its fifteen
+minutes, with fund-committing authority granted at `/approvals/authority`.
+Nothing was pending at either check today. `the-cap-shows-what-is-left` is
+**archived**; the backlog is the only other lane open.
 
 ## 2026-08-16 (approvals) — the write path reaches the UI, and stops where a person is needed
 

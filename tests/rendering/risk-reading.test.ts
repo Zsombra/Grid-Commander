@@ -426,3 +426,47 @@ describe('the fill side of the exposure cap', () => {
     expect(r.text).not.toContain('budget blocked');
   });
 });
+
+/**
+ * The budget read failing, on the page.
+ *
+ * Verifier finding #3. The query-level failure was covered twice and the
+ * architecture guard proves the branch carries its explanation, but nothing
+ * asserted what a person actually sees: no fill invented, and the three
+ * sections fed by other reads still standing. The neighbouring test covers the
+ * *balance* failing, which is a different read with a different consequence.
+ */
+describe('the limits page when the budget cannot be read', () => {
+  beforeEach(() => vi.resetModules());
+
+  const unreadableBudget = () => {
+    const agents = withTrades([stopped('a', 99, -1)]);
+    agents.budgetResult = { kind: 'unreadable', reason: 'upstream 500', cause: 'unreachable' };
+    return agents;
+  };
+
+  it('states the failure and says whether it was refused or unreachable', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('This does not mean this agent’s limits are gone');
+    expect(r.text).toContain('could not reach BattleGrid');
+  });
+
+  it('invents no fill for a cap it could not read', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('What is left to trade with');
+    expect(r.text).not.toContain('committed');
+    expect(r.text).not.toContain('sizes each new trade from what is left');
+  });
+
+  it('keeps the sections fed by the other reads', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    // Risk reading and loss shape come from their own calls and must survive.
+    expect(r.text).toContain('against a default of 10');
+  });
+});
