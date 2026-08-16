@@ -1,13 +1,22 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-16 (five legs — the advisory, the survey, the pause, the
-gate, the records)
+**Date**: 2026-08-16 (six legs — the advisory, the survey, the pause, the
+gate, the records, and the lane)
 
-**State**: green — **2576 vitest / 205 files**, 274 Python harness, typecheck
-and lint clean, `validate --all` at **0 errors / 13 warnings** (the same 13
-design-ticket warnings, unchanged all day). **13 capabilities, 202 archived
-changes, 24 backlog items open** (232 done), **0 active changes**, 28 surfaces,
-27 design tickets. **No p2 and no p1.** BattleGrid is **v19.1.0**.
+**State**: green — **2631 vitest / 208 files** (six known failures, see below),
+**284 Python harness**, typecheck, lint and build clean, `validate --all` at
+**0 errors / 15 warnings**. **13 capabilities, 206 archived changes, 30 backlog
+items open** (238 closed: 234 done + 4 wontfix), **1 active change**, 28
+surfaces. **Two p2 open** — `an-approval-expires-while-nobody-is-looking`
+(#304, blocked) and the standard half of
+`the-exposure-cap-starves-silently-and-we-say-it-wrong` (#299). BattleGrid is
+**v19.2.0**.
+
+**The suite's pass criterion is six failures, not zero.**
+`live-probes-are-named` (4) and `cli-spawn` (2) fail at `HEAD` on a clean tree
+for reasons unrelated to any change in flight — verified by stashing and
+re-running. A seventh failure cannot be told from a flake without a re-run;
+that is #330.
 `test:db` skipped throughout: no schema changed.
 
 **The fifth leg closed four records rather than building anything.**
@@ -530,22 +539,23 @@ are their own gate, opt-in on **`CI_LIVE=1`**, serial, about nine minutes —
 until 2026-08-10 this instruction fired all thirty in parallel at the real
 account; see the journal entry for that day.
 
-### The current thread (2026-08-16)
+### The current thread (2026-08-16, close of the lane leg)
 
-**#301's residue** — the standing `Next` for three journal entries running.
-v19.1.0's output survey found three declared reads the product still discards:
-`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`, and
-`debriefVerdict` on five signal-log reads. **Take gate-blocks first**:
-`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
-admits at length, and the platform's is whole-population — so adopting it may
-retire the caveat rather than merely save arithmetic.
+**`/propose` #299's standard half** — render `headroomUsd` and
+`effectiveNotionalUsd` on the limits surface so it can answer *"why did my agent
+stop?"*. Today's live measurement turned that from a derivation problem into a
+rendering one: `get_agent_budget` already publishes both, plus `blockedReason`
+and four resolved gauges, on a call the product already makes. It still adds
+behaviour and still needs a delta spec.
 
-**State**: 24 open items, **all p3 — no p1, no p2.** Nothing is urgent, so the
-pick is genuinely yours. Four PRs are open (**#321** this session's;
-**#319**, **#313**, **#307** from parallel sessions), which is exactly why a
-`Next` written here can be stale before it lands: read
-`git show origin/main:openspec/JOURNAL.md`, never the local copy, before
-trusting one.
+**State**: 30 open items, **two p2** (above). One active change,
+`the-approval-can-be-answered` at 19/40 — untouched today and still the board's
+`NEXT`. **PR #329 is open and mergeable** with the whole lane leg in it. The
+mirror is clean both directions, 30 items to 30 issues.
+
+**Read `git show origin/main:openspec/JOURNAL.md`, never the local copy**, before
+trusting any `Next` written here — parallel sessions make it stale before it
+lands. That instruction has now been vindicated twice.
 
 ### Everything below this line is a dated snapshot, not instructions
 
@@ -558,9 +568,9 @@ pending-treatment items have no GitHub issue yet is false: they are **#228** and
 **#229**.
 
 The counts in it are equally of their moment — it says 161 archived changes and
-25 open items against today's **202** and **24**, and calls
-`v15-trade-level-policy-is-declared-but-inert` "the one P1" when no p1 or p2 has
-been open for days.
+25 open items against today's **206** and **30**, and calls
+`v15-trade-level-policy-is-declared-but-inert` "the one P1" when that item is
+now `done` and the two open p2s are different ones entirely.
 
 Read what follows for **why** things were decided. Do not read it for what to do
 next; the section above is that.
