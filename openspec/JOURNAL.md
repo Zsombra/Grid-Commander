@@ -130,11 +130,40 @@ each was nearly written up as new. Two reached the operator before being caught.
 The habit that fixes it is cheap: grep `openspec/backlog/` and this file before
 writing an observation up, then write only the delta.
 
-**Next**: **`the-approval-can-be-answered` task 4.5 — the gate, and the only
-thing left that needs a person.** A Vanguard proposal caught inside its fifteen
-minutes, with fund-committing authority granted at `/approvals/authority`.
-Nothing was pending at either check today. `the-cap-shows-what-is-left` is
-**archived**; the backlog is the only other lane open.
+**The close-out itself surfaced a new P2, and the handoff skill surfaced it by
+failing.** Its Context block reported **28 open items, 19/40, and
+`a-pruned-worktree-is-an-ignored-directory` as an open P2** — an item this
+session watched close. Every pipeline skill's Context block is gathered in
+whichever checkout the session was launched from; this one ran from a worktree
+pinned at `339a087` while all work happened in the main checkout, so `/propose`,
+`/verify`, the verifier and `/handoff` each planned against stale numbers that
+read exactly like current ones. Filed as
+[[skill-context-probes-read-a-stale-worktree]] (**#335**, p2, harness-integrity)
+with all four instances tabulated.
+
+**It is not #325.** That one is a worktree that lost its `.git`; its guard,
+`tools/assert_checkout.py`, would **pass** in this session and the Context block
+would still be wrong. Nothing was built on the stale numbers only because every
+block was ignored and the board re-read from the main checkout — four times, by
+noticing.
+
+**Next**: two lanes, and they need different things.
+
+1. **`the-approval-can-be-answered` task 4.5 — the gate.** Needs a *person* and
+   luck: a Vanguard proposal caught inside its fifteen minutes, wager authority
+   granted at `/approvals/authority`, one cancel performed through the product.
+   Nothing was pending at either check today. Section 5 stays unbuilt until it
+   passes, and a rendering test enforces that.
+2. **The backlog — start with #335**, the item this close-out filed. It is P2,
+   unblocked, needs no live account, is self-contained harness work, and it
+   protects every future session from planning against a stale board. The other
+   two P2s both wait on observation: #304 is blocked by the change above, and
+   #299's remaining threads (`minEquityUsd: 33.333333`, `accountEquityUsd: 0`)
+   need rows the platform has not produced.
+
+**Watch out**: read `git show origin/main:openspec/JOURNAL.md` and re-run
+`board` **from the main checkout** before trusting any figure in a skill's
+Context block — including this entry's, if you are reading it from a worktree.
 
 ## 2026-08-16 (approvals) — the write path reaches the UI, and stops where a person is needed
 
