@@ -6,7 +6,7 @@ status: open
 priority: p3
 created: 2026-08-13
 updated: 2026-08-16
-change: ""
+change: "the-roster-says-when-residue-grew"
 capability: agent-authoring
 github: "201"
 blocked_by: []
@@ -197,3 +197,45 @@ That shifts the four options rather than just re-pricing them:
 
 Slot pressure is unchanged: `slotUsage` reads `limit 3, used 3, remaining 0`,
 which counts ACTIVE only. The residue costs roster legibility, not capacity.
+
+
+## 2026-08-16 — the open question is answered, and option 3 is taken
+
+**"Widen the fixture must name that path" — there is no such path.**
+`Probe 238 Dedupe` traces to `openspec/JOURNAL.md`: an **operator-authorized
+hand walk** for the #238 dedupe probe, which archived `Vanguard` to free a slot,
+created the agent with `tradingMode: OFF` carrying
+`idempotencyKey: gc-probe-238-key-alpha`, archived it, and reactivated
+`Vanguard`. `grep` finds no test file naming it, and only two files in the
+repository call `acquireProbeAgent` — neither created this.
+
+So both recurrences this item records were hand walks reaching
+`create_intelligence_agent` through the adapter. **Options 1 and 2 cannot be
+made sufficient**, because there is no code path to bind. That was the last
+thing holding the choice open.
+
+**Option 3 is taken**: `the-roster-says-when-residue-grew` (lite) adds
+`tests/live/residue-probe.test.ts`.
+
+**The design decision worth carrying forward.** The probe classifies **by
+exclusion, not by prefix**. The nine residue agents known before today share
+`GC probe` and `Grid-Commander probe`; the tenth is `Probe 238 Dedupe` and
+shares neither — so a prefix match would have missed *precisely the create this
+item was re-filed for*, which is this repository's characteristic defect. The
+probe instead holds a six-name allowlist of the operator's own agents and treats
+every other row as residue, with a vacuity guard that reports a stale allowlist
+as a different failure from a new throwaway.
+
+**Re-measured while writing it**, over the connector at v19.2.0:
+
+```
+16 agents | 6 the operator's | 10 residue, every one ARCHIVED, tradingMode OFF
+slotUsage limit 3, used 3, remaining 0   (ACTIVE only — residue costs no slot)
+```
+
+Unchanged from this morning's count, so the threshold is 10.
+
+**This item stays open.** The tripwire notices growth; it cannot remove a row.
+All ten are already archived and no tool on the 114 deletes an agent, so the
+count falls only if the operator clears them in BattleGrid's own UI. That ask is
+the one remaining action and it is outside this repository.
