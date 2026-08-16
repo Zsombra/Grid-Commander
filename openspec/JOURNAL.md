@@ -1,5 +1,72 @@
 # Journal
 
+## 2026-08-17 (propose+plan) — #340 is wider than filed, and I had it wrong in the audit
+
+**Did**: proposed and planned `the-port-knows-what-costs-money` (**full**, 36
+tasks). Corrected three records first. **#340 was auto-closed by a merge and
+reopened.**
+
+**The correction comes first because it is mine.** This session's own production
+gate asserted *"the scope step-up is intact — both verbs declare `mcp:wager` and
+step 2 fires."* False. Worse: during the verifier pass I saw the correct reading,
+called it an artifact of a synthetic tool object, and withdrew it. **The
+withdrawal was the error** — the synthetic object was reproducing production
+exactly. Withdrawn now on #340, in the archived gate tracker, and as DL-19a.
+
+**Neither gate fires on accept**, measured through the real
+`buildClassificationMap` and the real `beginGuardedCall`:
+
+```
+accept_entry_decision -> {"destructive":false,"requiredScope":"mcp:read"}
+cancel_entry_decision -> {"destructive":true, "requiredScope":"mcp:read"}
+accept admitted on mcp:read alone, no token. audit row destructive: false
+```
+
+`rawDiscoverTools` never sets `declaredScope`; `inferScope` returns `'mcp:read'`
+unconditionally. So **every known tool** classifies as read scope and the wager
+gate can fire only on the fail-closed `UNKNOWN_TOOL` path. `classify.ts:61` says
+*"tools that need wager authority say so, and are caught by `declaredScope`"* — a
+comment describing a mechanism with no producer, which is why this survived four
+months of being read.
+
+**Then the scope adjustment, and it shrank the change.** The first proposal draft
+asked the planner to invent a list of money-committing tools and decide where it
+lives. **Both were already answered and the draft had not looked.**
+`tests/agent/wager.test.ts:79-88` has held `WAGER_TOOLS` since 2026-07-27, and
+A10 forbids those names anywhere in `src`/`app` — so the producer is the adapter,
+the domain stays name-free, and the work is *give the existing judgement a second
+consumer*, not build one. Only reachable tools need runtime classification: you
+cannot call what you cannot name.
+
+**The sweep found a real gap in a guard that already existed.**
+`random_submit_market_grid` is money-affecting and is **not** in `WAGER_TOOLS`.
+Unnamed in `src`/`app` today, so nothing is wrong yet and nothing stops the next
+person naming it.
+
+**#340 was auto-closed by the #343 squash, from a sentence written to prevent
+exactly that**: *"DL-19 states it does **NOT** fix #340."* GitHub matches
+`fix #340` and never sees the negation. Caught by the before/after issue-count
+check this repo already requires. The memory note is sharpened: a **negated**
+closing verb still closes, and it is the most dangerous phrasing because it reads
+as handled. Put the number first — `#340 is not fixed here`.
+
+**Also**: PR **#341** and **#343** merged; `the-approval-can-be-answered`
+archived; **#101 closed** on a live accept.
+
+**State**: 1 active change at 0/36 · `validate --all` 0 errors · `mirror` clean ·
+25 open items, 4 blocked.
+
+**Next**: the plan is **awaiting review**. Execution starts only on explicit
+approval — the planner does not hand itself the work. When it does: section 0
+first, and its output goes in the decision log, because the current tests pass
+while the defect is live.
+
+**Watch out**: `tests/agent/answer-authority.test.ts:171-176` hand-builds
+`{ destructive: true, requiredScope: 'mcp:wager' }`. Every assertion in it is
+correct about an input production never produces. If it still passes unchanged
+after the work, the work is not done.
+
+
 ## 2026-08-17 (archive) — the approval can be answered, and #101 is closed
 
 **Did**: cleared the last gate violation, took the gate to **PASS**, archived
