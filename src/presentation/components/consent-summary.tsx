@@ -42,9 +42,17 @@ export function ConsentSummary({ grant }: { grant: GrantDescription }) {
               <li key={p}>{p}</li>
             ))}
           </ul>
+          {/*
+            Scoped to this grant, deliberately. "It does not ask for that
+            authority" was true of the whole product until answering a proposed
+            trade was built; it is still exactly true of what is being agreed to
+            here, and the second sentence keeps the difference visible rather
+            than letting someone discover it later.
+          */}
           <p className="mt-2 text-sm">
-            Grid-Commander cannot move your funds. It does not ask for that
-            authority.
+            Connecting does not give Grid-Commander the ability to move your funds, and
+            this authorization does not ask for it. If you later want it to answer a trade
+            one of your agents proposes, it will ask you for that separately.
           </p>
         </div>
       )}

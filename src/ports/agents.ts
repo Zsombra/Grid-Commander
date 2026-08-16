@@ -174,6 +174,24 @@ export interface AgentsPort {
   }): Promise<void>;
 
   /**
+   * The tool an answer of this verb will actually be performed with.
+   *
+   * Exists because a confirmation is bound to a **tool name** as well as a
+   * target, and the two ends of that binding are issued in different layers: the
+   * application layer mints the token, the adapter spends it. If the mint site
+   * hard-coded the name it would be a second copy, free to drift into a token
+   * that can never be consumed — a confirmation that refuses everyone with
+   * "unrecognised" and no way to tell why.
+   *
+   * It is a method on the port rather than an exported constant so the literal
+   * stays inside `src/infrastructure/battlegrid/`. `tests/agent/wager.test.ts`
+   * A10 greps for these two names outside the adapter and fails on a match;
+   * returning the string at runtime is what keeps that guard meaningful while
+   * still letting the mint site name the right tool.
+   */
+  answerDecisionTool(verb: DecisionAnswerVerb): string;
+
+  /**
    * An agent's decision cycles, newest first.
    *
    * `agentId` omitted reads the account-wide log — BattleGrid exposes those as

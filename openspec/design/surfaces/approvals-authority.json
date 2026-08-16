@@ -1,0 +1,226 @@
+{
+  "id": "approvals-authority",
+  "title": "Grant authority to answer proposed trades",
+  "route": "/approvals/authority",
+  "capability": "battlegrid-connection",
+  "status": "functional",
+  "generated_at_commit": "339a087",
+  "source_files": [
+    "app/(app)/approvals/authority/actions.ts",
+    "app/(app)/approvals/authority/page.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/nothing-to-connect.tsx",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "authority",
+      "shape": "'held' | 'absent' with the operations the step-up would permit",
+      "source": "app.readAnswerAuthority.execute — wording from STEP_UP_PERMITS so the two surfaces naming it cannot drift"
+    },
+    {
+      "name": "personal",
+      "shape": "PersonalConfig | null",
+      "source": "the container — a configured credential carries a declaration this product cannot widen"
+    },
+    {
+      "name": "next",
+      "shape": "string — an in-product path only",
+      "source": "searchParams, rejected unless it begins with a single '/'"
+    }
+  ],
+  "components": [
+    {
+      "id": "authority-page",
+      "role": "container",
+      "purpose": "The one place this product asks for authority to commit funds — and the only place it can be asked for.",
+      "states": [
+        "offer",
+        "already-held",
+        "personal-deployment",
+        "not-connected"
+      ],
+      "data": [
+        "authority",
+        "personal",
+        "next"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centred column, space-y-4, p-6 — the consent skeleton /connect wears. h1, the explanation that connecting never asks for this, the permitted-operations list, the consequence block, the caps sentence, the grant form, and a visible way out.",
+      "constraints": [
+        "This page must never be reachable as a side effect. The requirement forbids beginning a step-up on the product's own initiative, on a schedule, in response to a model, or as a side effect of reading anything — tests/agent/answer-authority.test.ts asserts that exactly one file in the whole product passes `stepUp: true`, and it is this page's server action.",
+        "`REQUESTED_SCOPES` must stay `['mcp:read']`; the step-up is a separate constant. tests/agent/wager.test.ts reads that constant out of the source and fails if the word 'wager' appears in it.",
+        "A personal deployment renders `<NothingToConnect>` — its scopes are an environment declaration this product cannot widen, and offering a button that cannot work is the failure 'A Remedy Named Must Exist In That Deployment' is about.",
+        "This surface asks for money authority, so it must not use urgency, scarcity or default-styling to encourage the grant. The way out is a peer of the grant, not a footnote."
+      ],
+      "children": [
+        "permits",
+        "consequence",
+        "caps",
+        "grant-form",
+        "way-out"
+      ]
+    },
+    {
+      "id": "permits",
+      "role": "display",
+      "purpose": "Which operations the authority covers, in the words the operator reads.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "authority"
+      ],
+      "actions": [],
+      "current_implementation": "A bulleted list rendered from STEP_UP_PERMITS — one source, so the surfaces naming these cannot drift. Names accepting as opening a position with the operator's money, and cancelling as committing nothing.",
+      "constraints": [
+        "The wording comes from the domain constant and is never inlined here.",
+        "Both operations must stay named. Cancelling requires the same authority, and an operator who assumes otherwise will not understand the refusal they get — this is the surface where 'scope is not a safety boundary' becomes something a person has to act on."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "display",
+      "purpose": "The sentence being agreed to: this permits committing real money.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "The consequence treatment every other confirmation in this product uses for the same job (DT-0005/DT-0007 role). States that the product will only spend on a trade the operator accepts themselves, that the authority is nonetheless real, and that it is theirs to withdraw at battlegrid.trade.",
+      "constraints": [
+        "Must not be softened into reassurance. The requirement obliges the step-up to state that the authority permits committing the user's money, and the qualifier about how the product intends to use it does not replace that.",
+        "The withdrawal route must keep being named — it is the operator's only way back, and it is at BattleGrid rather than here."
+      ],
+      "children": []
+    },
+    {
+      "id": "caps",
+      "role": "display",
+      "purpose": "Say that the platform's own limits continue to apply.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "A text-sm secondary paragraph naming the three per-agent caps — what it may lose in a day, in total, and hold at once — and that BattleGrid enforces them whoever asks.",
+      "constraints": [
+        "Required by the requirement's own wording ('the platform's own caps continue to apply'). This is spec-bearing copy, not reassurance, and must not be dropped as redundant.",
+        "It must not imply the caps make the authority safe — they bound the size of what can be spent, not whether it is spent."
+      ],
+      "children": []
+    },
+    {
+      "id": "grant-form",
+      "role": "action",
+      "purpose": "Begin the authorization at BattleGrid.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "loading"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "grant",
+          "effect": "Runs grantAnswerAuthority — the only caller in the product that requests fund-committing scope — and redirects to BattleGrid"
+        }
+      ],
+      "current_implementation": "A form with no hidden inputs and one `<PerformButton>` labelled 'Continue to BattleGrid to grant this'.",
+      "constraints": [
+        "No hidden return address. The grant leaves through the OAuth callback, which knows nothing about this page, and tests/architecture/reachability.test.ts fails a control whose value no operation reads.",
+        "Nothing is recorded before BattleGrid answers — an abandoned step-up leaves no half-granted state and no authority the product claims but does not hold. A design must not add optimistic feedback implying otherwise.",
+        "Styling goes through BUTTON_PRIMARY in control.ts; 44px minimum tap target; focus ring is global."
+      ],
+      "children": []
+    },
+    {
+      "id": "way-out",
+      "role": "navigation",
+      "purpose": "Leave without granting anything.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "next"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to the validated in-product path, or /approvals"
+        }
+      ],
+      "current_implementation": "A plain underlined link reading 'Not now — go back without granting anything'.",
+      "constraints": [
+        "Must stay visible rather than implied. A page asking for authority over someone's money with no stated way out is a page that pressures.",
+        "The destination must remain an in-product path — the same validation the step-up link's `next` gets."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Grant the authority",
+      "steps": [
+        "arrive from a decision or the queue",
+        "read what it permits and that it commits real money",
+        "read that the platform caps still apply",
+        "continue to BattleGrid",
+        "return with the authority and answer the decision"
+      ]
+    },
+    {
+      "name": "Decide not to",
+      "steps": [
+        "arrive",
+        "read",
+        "follow 'Not now'",
+        "back where you were, with nothing granted and nothing recorded"
+      ]
+    },
+    {
+      "name": "Already granted",
+      "steps": [
+        "arrive with the authority held",
+        "told there is nothing to grant",
+        "offered the way back"
+      ]
+    },
+    {
+      "name": "A configured deployment",
+      "steps": [
+        "arrive on a personal-key deployment",
+        "told there is nothing to connect — the scopes are an environment declaration",
+        "no button that could not work"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "grant-submit",
+      "way-out"
+    ],
+    "notes": "No alerts on this surface — nothing has failed, and the page describes an intended state. Focus ring is global (focus-visible, 2px). The only client code is PerformButton."
+  },
+  "source_digest": {
+    "app/(app)/approvals/authority/actions.ts": "sha256:543218c1a1beaf7cda1d931a1813f90b3d502d6e2ee10de82a97c5a322fca28b",
+    "app/(app)/approvals/authority/page.tsx": "sha256:eb74b221017a552272584c1eff72ad6c628e90f189fe4544c458f9ce1852e732",
+    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -76,7 +76,14 @@ describe('empty is not unreadable', () => {
     const { agents, query } = world();
     agents.entryDecisions = { kind: 'unreadable', reason: 'upstream 500', cause: 'refused' };
 
-    expect(await query.execute(REQ)).toEqual({ kind: 'unreadable', reason: 'upstream 500' });
+    // The cause travels with the reason: `WhyNotLoaded` says something different
+    // for a refusal than for an outage, and telling somebody with a bad
+    // credential to wait out an outage is the mistake it exists to stop.
+    expect(await query.execute(REQ)).toEqual({
+      kind: 'unreadable',
+      reason: 'upstream 500',
+      cause: 'refused',
+    });
   });
 });
 

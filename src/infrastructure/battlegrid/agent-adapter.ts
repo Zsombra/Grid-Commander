@@ -829,7 +829,7 @@ export class McpAgentAdapter implements AgentsPort {
     confirmation: Confirmation;
     idempotencyKey?: string | undefined;
   }): Promise<void> {
-    const tool = params.verb === 'accept' ? TOOLS.acceptDecision : TOOLS.cancelDecision;
+    const tool = this.answerDecisionTool(params.verb);
     await this.call(
       params,
       tool,
@@ -839,6 +839,17 @@ export class McpAgentAdapter implements AgentsPort {
         idempotencyKey: params.idempotencyKey,
       },
     );
+  }
+
+  /**
+   * The one place the verb becomes a tool name, for both the mint and the call.
+   *
+   * `answerEntryDecision` above routes through this rather than repeating the
+   * ternary, so the token issued and the tool spent cannot disagree even in
+   * principle.
+   */
+  answerDecisionTool(verb: DecisionAnswerVerb): string {
+    return verb === 'accept' ? TOOLS.acceptDecision : TOOLS.cancelDecision;
   }
 
   // -- internals ---------------------------------------------------------

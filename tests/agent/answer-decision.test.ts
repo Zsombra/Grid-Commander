@@ -38,11 +38,38 @@ const req = (verb: 'accept' | 'cancel', over: Record<string, unknown> = {}) => (
   decisionId: DECISION_ID,
   verb,
   shown: SHOWN,
-  confirmation: {
-    token: 'tok-1',
-    target: confirmationTarget.decisionAnswer(verb, DECISION_ID, SHOWN),
-  },
+  confirmationToken: 'tok-1',
   ...over,
+});
+
+describe('the target the command composes', () => {
+  /**
+   * The command builds the target; the caller hands in a token alone.
+   *
+   * This moved out of the server action deliberately — a caller that composes
+   * its own target can compose one from values the person never saw, and
+   * `edit-binding.test.ts` scans `src/` for exactly that shape while a route in
+   * `app/` would sit outside it. What the port receives must therefore match
+   * what the describe minted, and that is what this asserts.
+   */
+  it('binds the verb, the decision and the levels that were shown', async () => {
+    const { agents, command } = world(pending());
+
+    await command.execute(req('cancel'));
+
+    expect(agents.calls.at(-1)?.target).toBe(
+      confirmationTarget.decisionAnswer('cancel', DECISION_ID, SHOWN),
+    );
+  });
+
+  it('cannot spend a cancel agreement on an accept', async () => {
+    const cancelled = world(pending());
+    await cancelled.command.execute(req('cancel'));
+    const accepted = world(pending());
+    await accepted.command.execute(req('accept'));
+
+    expect(cancelled.agents.calls.at(-1)?.target).not.toBe(accepted.agents.calls.at(-1)?.target);
+  });
 });
 
 describe('answering a decision that still matches', () => {

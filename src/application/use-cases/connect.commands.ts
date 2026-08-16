@@ -4,7 +4,7 @@ import type {
   OAuthTransactionStore,
 } from '@/domain/connection/connection-repository.js';
 import { expiryFromResponse } from '@/domain/connection/connection.js';
-import { REQUESTED_SCOPES } from '@/domain/connection/scope.js';
+import { REQUESTED_SCOPES, STEP_UP_SCOPES } from '@/domain/connection/scope.js';
 import {
   AccountUnidentifiedError,
   ConnectionRevokedError,
@@ -35,7 +35,9 @@ export interface Randomness {
  *
  * Nothing about the user is created here. A connection exists only once
  * BattleGrid has confirmed the grant — so an abandoned or failed flow leaves
- * nothing behind.
+ * nothing behind. That is also what makes an abandoned **step-up** safe: the
+ * operator who starts one and walks away has changed nothing, and the product
+ * has not recorded authority it does not hold.
  */
 export class StartConnectionCommand {
   constructor(
@@ -45,7 +47,15 @@ export class StartConnectionCommand {
     private readonly clock: Clock,
   ) {}
 
-  async execute(): Promise<StartConnectionResponse> {
+  /**
+   * @param req.stepUp Ask for fund-committing authority as well as the standing
+   * scope. **Only ever true because an operator asked for it at the point of
+   * use.** Nothing may pass this on a schedule, on a model's suggestion, or as
+   * a side effect of reading — the requirement forbids it, and
+   * `tests/connection/step-up.test.ts` asserts the default stays read-only so
+   * that a caller has to name the widening to get it.
+   */
+  async execute(req: { stepUp?: boolean } = {}): Promise<StartConnectionResponse> {
     const state = this.random.token(32);
     const codeVerifier = this.random.token(64);
     const now = this.clock.now();
@@ -61,7 +71,7 @@ export class StartConnectionCommand {
       authorizationUrl: this.battlegrid.buildAuthorizationUrl({
         state,
         codeChallenge: this.random.codeChallengeS256(codeVerifier),
-        scopes: REQUESTED_SCOPES,
+        scopes: req.stepUp === true ? STEP_UP_SCOPES : REQUESTED_SCOPES,
       }),
       state,
     };

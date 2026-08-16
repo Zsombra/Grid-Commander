@@ -1,6 +1,6 @@
 import type { AnswerRefusal, DecisionLevels } from '@/domain/agent/pending-decision.js';
 import { checkAnswerable } from '@/domain/agent/pending-decision.js';
-import type { Confirmation } from '@/domain/capability/confirmation.js';
+import { confirmationTarget } from '@/domain/capability/confirmation.js';
 import type { AgentsPort, DecisionAnswerVerb, EntryDecision } from '@/ports/agents.js';
 
 /**
@@ -34,7 +34,17 @@ export interface AnswerDecisionRequest {
    * a fresh read would compare the platform against itself and always agree.
    */
   readonly shown: DecisionLevels;
-  readonly confirmation: Confirmation;
+  /**
+   * The token minted when the decision was described. **Only the token.**
+   *
+   * The target it is spent against is composed here, from the verb, the id and
+   * the levels above — never handed in. `edit-binding.test.ts` exists because a
+   * caller that composes its own target can compose one from values the person
+   * never saw, and the compiler has no opinion about string contents. Taking a
+   * whole `Confirmation` would have put that composition in a server action, in
+   * `app/`, outside the scan that guards it.
+   */
+  readonly confirmationToken: string;
   readonly idempotencyKey?: string | undefined;
 }
 
@@ -62,7 +72,13 @@ export class AnswerDecisionCommand {
       accessToken: req.accessToken,
       decisionId: req.decisionId,
       verb: req.verb,
-      confirmation: req.confirmation,
+      confirmation: {
+        token: req.confirmationToken,
+        // The one construction site on this path, matching what the describe
+        // minted. Accept and cancel produce different targets, so a token
+        // agreeing to decline can never be spent opening the position.
+        target: confirmationTarget.decisionAnswer(req.verb, req.decisionId, req.shown),
+      },
       idempotencyKey: req.idempotencyKey,
     });
 

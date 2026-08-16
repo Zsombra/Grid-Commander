@@ -145,17 +145,36 @@ Every accept and every cancel SHALL be recorded in the audit as a write made on
 the operator's behalf that required authority to commit funds, with the decision
 it answered, the levels it was bound to, and the platform's response.
 
-A refused answer SHALL be recorded with its reason.
+An answer that was **attempted** and failed SHALL be recorded with its outcome.
+An answer **refused before it was attempted** SHALL NOT be recorded at all.
+
+> **Corrected during execution — see DL-9.** This requirement first read *"a
+> refused answer SHALL be recorded with its reason"*, without distinguishing the
+> two. That contradicted the codebase's existing, tested position: `call-path.ts`
+> refuses before writing any audit row because *"a refused operation was never
+> attempted, and recording it as attempted would be a lie in the other
+> direction"*, and `wager.test.ts` asserts the audit is empty after a refused
+> wager call. A binding refusal never reaches BattleGrid, so it is the same class
+> of event. Written as originally drafted, this requirement would have put
+> operations in the operator's audit log that never left the process — and the
+> audit's central claim is "this is what we did to your account".
 
 #### Scenario: An accepted decision is audited
 - **WHEN** an operator accepts a decision
 - **THEN** the audit records the decision, the levels agreed to, and the outcome
 - **AND** the record states that fund-committing authority was used
 
-#### Scenario: A refused answer is audited
-- **WHEN** an answer is refused by the platform or by the binding check
-- **THEN** the audit records the attempt and the reason
+#### Scenario: An attempted answer that the platform rejects is audited
+- **WHEN** an answer reaches BattleGrid and BattleGrid refuses it
+- **THEN** the audit records the attempt and its outcome
 - **AND** no success is recorded
+
+#### Scenario: An answer refused before it is attempted is not audited
+- **GIVEN** an answer refused by the binding check, or by the authority guard
+- **WHEN** the refusal happens
+- **THEN** nothing is sent to BattleGrid
+- **AND** no audit row is written, because nothing was done to the account
+- **AND** the operator is told why, on the surface rather than in the log
 
 ## REMOVED Requirements
 

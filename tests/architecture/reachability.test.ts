@@ -562,6 +562,7 @@ describe('every capability is reachable from wherever you already are', () => {
     // above vacuously; the whole route table would fail it for the wrong reason.
     expect(TOP_LEVEL).toEqual([
       '/agents',
+      '/approvals',
       '/arena',
       '/audit',
       '/explorer',

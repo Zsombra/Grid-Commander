@@ -6,10 +6,10 @@
 |---|---|
 | Slug | `the-approval-can-be-answered` |
 | Change | `openspec/changes/the-approval-can-be-answered/` |
-| Phase | **2 — Execution (Phase A complete; B–G open)** |
+| Phase | **2 — Execution (A, B, C, F, G complete; D is the live gate, E held behind it)** |
 | Base ref | `origin/main` |
 | Track | `full` |
-| Last updated | 2026-08-15 |
+| Last updated | 2026-08-16 |
 
 Checklists read from `docs/checklists/` (**not** `docs/specs/` — the planner
 skill names a path this project does not use; CLAUDE.md is authoritative).
@@ -105,6 +105,23 @@ already carries `entryPrice`, `stopLoss`, `takeProfit`, `status`,
 | 11 | `tests/agent/wager.test.ts` | **modify (Phase C)** | test | **Added during execution — not in the original plan.** A10 asserts no fund-committing tool name appears in `src/` or `app/`. Phase C must narrow the structural half deliberately and keep the behavioural half. See DL-7 |
 | 12 | `tests/support/agent-fakes.ts` | modify | test | **Added during execution.** `anEntryDecision` gains `closedAt` |
 | 13 | `tests/rendering/pipeline.test.ts` | modify | test | **Added during execution.** Two decision fixtures gain `closedAt` |
+| 14 | `src/application/use-cases/read-approval-queue.query.ts` | **create** | application | **Added 2026-08-16.** Account-wide fan-out, one read per agent, partial failure as a result (DL-14) |
+| 15 | `src/application/use-cases/describe-decision-answer.query.ts` | **create** | application | **Added 2026-08-16.** Reads one decision fresh, composes the consequence, mints the token — conditionally (DL-15) |
+| 16 | `src/application/use-cases/read-answer-authority.query.ts` | **create** | application | **Added 2026-08-16.** Decides what to draw, never what is allowed (DL-15) |
+| 17 | `src/presentation/components/approval-queue.tsx` | **create** | presentation | **Added 2026-08-16.** The queue, grouped by agent, with partial failure named |
+| 18 | `src/presentation/answer-refusal.ts` | **create** | presentation | **Added 2026-08-16.** Refusal wording; lives here because `app/` may not import the domain (W-D) |
+| 19 | `app/(app)/approvals/page.tsx` | **create** | presentation | **Added 2026-08-16.** Task 1.4b |
+| 20 | `app/(app)/approvals/[agentId]/[id]/page.tsx` + `actions.ts` | **create** | presentation | **Added 2026-08-16.** Tasks 3.3, 3.4 — and the file the Phase D gate is enforced in |
+| 21 | `app/(app)/approvals/authority/page.tsx` + `actions.ts` | **create** | presentation | **Added 2026-08-16.** Task 2.2; the only caller that requests wager scope |
+| 22 | `src/domain/connection/scope.ts` | **modify** | domain | **Added 2026-08-16.** `STEP_UP_SCOPES` + `STEP_UP_PERMITS`, separate from `REQUESTED_SCOPES` so A10 keeps passing |
+| 23 | `src/application/use-cases/connect.commands.ts` | **modify** | application | **Added 2026-08-16.** `execute({stepUp})`, defaulting to no widening |
+| 24 | `src/ports/agents.ts` + `agent-adapter.ts` | **modify** | ports/infra | **Added 2026-08-16.** `answerDecisionTool(verb)` so the mint and the spend cannot drift (DL-13) |
+| 25 | `src/composition.ts` | **modify** | root | **Added 2026-08-16.** Wires the four new use cases and hoists `heldScopes` onto the container |
+| 26 | `src/presentation/components/money-limits.tsx` | **modify** | presentation | **Added 2026-08-16.** Task 6.1 — the retired disclosure |
+| 27 | `src/presentation/components/wager-authority.tsx`, `consent-summary.tsx` | **modify** | presentation | **Added 2026-08-16.** Task 6.2 found both claims false (DL-16) |
+| 28 | `src/presentation/components/section-nav.tsx` | **modify** | presentation | **Added 2026-08-16.** Reachability — a route nothing links to is a defect |
+| 29 | `tests/agent/answer-authority.test.ts`, `approval-queue.test.ts`, `tests/rendering/approvals.test.ts` | **create** | test | **Added 2026-08-16.** 56 new tests across tasks 2.3, 3.3, 3.4, 4.2, 4.6, 7.1, 7.2, 7.3 |
+| 30 | `openspec/design/surfaces/approvals-{queue,decision,authority}.json` | **create** | design | **Added 2026-08-16.** Task 7.6; four staled manifests also refreshed in prose and digest |
 
 ## Dependency / Call-Tree Sketch
 
@@ -164,12 +181,12 @@ Task detail lives in `openspec/changes/the-approval-can-be-answered/tasks.md`
 | Plan phase | tasks.md sections | Exit condition |
 |---|---|---|
 | **A — Read** | 1 | **PARTIALLY COMPLETE 2026-08-15.** Done: `closedAt` on the port type and mapper, the `PendingDecision` domain module, the `decisionAnswer` confirmation target, 19 tests. **Not done: the read query and the queue surface** |
-| B — Authority & audit | 2 | No write path can reach BattleGrid without an audit row |
-| C — Cancel | 3 | Cancel works end to end through the product |
-| D — **GATE** | 4 | **A cancel performed through the product, audited, read back. Section 5 is not begun until this passes.** |
-| E — Accept | 5 | Accept works, reusing C's binding and audit unchanged |
-| F — Retire disclosure | 6 | `An Unanswerable Trading Mode Says So` removed |
-| G — Verify | 7 | Quality gates + `openspec.py validate` clean |
+| B — Authority & audit | 2 | **COMPLETE 2026-08-16.** The step-up exists at `/approvals/authority`, and exactly one file in the product can begin one — asserted structurally |
+| C — Cancel | 3 | **COMPLETE 2026-08-16.** Cancel works end to end in code and in tests; it has not yet been *performed* against the live platform through the product — that is D |
+| D — **GATE** | 4 | **OPEN — the one thing left that needs a person.** A cancel performed through the product, audited, read back. Needs the operator to grant wager authority and answer a real decision by name. Section 5 is not begun until this passes |
+| E — Accept | 5 | **NOT BEGUN, correctly.** `tests/rendering/approvals.test.ts` asserts no accept control renders on either authority branch — the gate made mechanical |
+| F — Retire disclosure | 6 | **COMPLETE 2026-08-16.** Disclosure replaced with a link to the queue; task 6.2 found and corrected two further claims the step-up had falsified (DL-16) |
+| G — Verify | 7 | **COMPLETE for everything built.** Gates green except `test:db`, which is stated as not run rather than claimed. 7.4 (live accept) is held with E |
 
 **The gate is the plan's central safety property.** Sections 3 and 5 share the
 binding, the audit and the adapter shape; cancel exercises all of it while
@@ -188,15 +205,15 @@ committing no money.
 
 ## Phase 2 Review Checklist — Executor
 
-- [ ] Every file in the inventory created/modified as described, or the deviation logged
-- [ ] `confirmationTarget.decisionAnswer` is the **only** construction site; guard test extended
-- [ ] Accept and cancel produce **different** targets — asserted by test
-- [ ] Audit row precedes every attempt, including refused bindings
-- [ ] No `expectedRevision` invented; no retry path anywhere
-- [ ] No currency amount derived for a pending decision
-- [ ] **Phase D gate passed before any Phase E file was written**
-- [ ] Quality gates pass: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, `npm run db:generate && git diff --quiet drizzle/`. `npm run test:db` needs `DATABASE_URL` — run in CI, skip locally if absent
-- [ ] Review docs filled with evidence; decision log updated
+- [x] Every file in the inventory created/modified as described, or the deviation logged — inventory extended to 30 rows; every deviation carries a DL entry
+- [x] `confirmationTarget.decisionAnswer` is the **only** construction site; guard test extended — `TARGET_SHAPES` gained the decision shape, and composition moved into the command so no route touches a target (DL-12)
+- [x] Accept and cancel produce **different** targets — asserted twice, at the mint and at the port
+- [x] ~~Audit row precedes every attempt, including refused bindings~~ **Corrected.** The row precedes every *attempt*; a refusal before the attempt is audited nowhere, per DL-9 — and **the delta spec was updated to match** (DL-17), because it still carried the original claim
+- [x] No `expectedRevision` invented; no retry path anywhere
+- [x] No currency amount derived for a pending decision — enforced by a scan over all five files on the path, not by review alone
+- [x] **Phase D gate passed before any Phase E file was written** — satisfied in the strong direction: no Phase E file exists, and a rendering test asserts no accept control on either branch
+- [x] Quality gates: `typecheck` clean, `lint` clean, **2681 tests / 211 files**, `build` compiled with all three routes, `db:generate` leaves `drizzle/` clean. **`test:db` NOT run** — it truncates the signal record and `DATABASE_URL` here is not disposable; stated rather than claimed
+- [x] Review docs filled with evidence; decision log updated — DL-12 through DL-17, and three violations the guards caught are recorded rather than quietly fixed
 
 ## Phase 3 Review Checklist — Auditor
 

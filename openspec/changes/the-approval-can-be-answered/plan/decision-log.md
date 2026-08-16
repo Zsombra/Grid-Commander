@@ -232,56 +232,154 @@ and stands.
 
 ---
 
+## DL-12 — The command composes the target; the caller hands in a token alone
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Safety / API change |
+| Decision | `AnswerDecisionCommand` takes `confirmationToken: string` instead of a whole `Confirmation`, and builds the target itself with `confirmationTarget.decisionAnswer(verb, id, shown)` |
+| Impacted files | `src/application/use-cases/answer-decision.command.ts`, `tests/agent/answer-decision.test.ts`, `app/(app)/approvals/[agentId]/[id]/actions.ts` |
+| Reason | Taking a `Confirmation` would have put target composition in a **server action**, which lives in `app/` — outside the directory `edit-binding.test.ts` scans. That guard exists because a caller composing its own target can compose one from values the person never saw, and the compiler has no opinion about string contents. `UpdateAgentCommand` already takes a bare token for exactly this reason; this now matches it |
+| Approved by | Executor, on in-codebase precedent |
+| Next action | None. Two tests assert the composed target reaches the port and that accept and cancel differ |
+
+---
+
+## DL-13 — The port publishes the tool name, so the mint and the spend cannot drift
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Architecture |
+| Decision | `AgentsPort.answerDecisionTool(verb)` returns the tool an answer will be performed with; `DescribeDecisionAnswerQuery` asks the port rather than naming the tool |
+| Impacted files | `src/ports/agents.ts`, `src/infrastructure/battlegrid/agent-adapter.ts`, `src/application/use-cases/describe-decision-answer.query.ts`, `tests/support/agent-fakes.ts` |
+| Reason | A confirmation binds a **tool name** as well as a target, and the two ends are issued in different layers — the application layer mints, the adapter spends. A hard-coded name at the mint site would be a second copy free to drift into a token that can never be consumed: a confirmation refusing everyone with "unrecognised" and no way to tell why. A method rather than an exported constant keeps the literal inside `src/infrastructure/battlegrid/`, which is what A10 checks (DL-10) |
+| Approved by | Executor |
+| Next action | None. `approval-queue.test.ts` asserts the issued tool equals `answerDecisionTool('cancel')` |
+
+---
+
+## DL-14 — The account-wide queue is its own query, and partial failure is a result
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Architecture / plan deviation |
+| Decision | `ReadApprovalQueueQuery` composes `ReadPendingDecisionsQuery` per agent rather than the latter growing an optional `agentId`. Every result carries the agents that could **not** be read, including results that also carry decisions |
+| Impacted files | `src/application/use-cases/read-approval-queue.query.ts` (new), `tests/support/agent-fakes.ts`, `tests/agent/approval-queue.test.ts` |
+| Reason | The requirement says "across all of the user's agents", and `list_entry_decisions` **requires an agent id** — BattleGrid publishes no account-wide decision read. Fanning out makes partial failure the ordinary failure, and that is a different problem from reading one agent's queue, so it is a different object. Keeping it separate also left 1.7's guard — that `PendingDecisionView` carries exactly `decision` and `msRemaining`, so there is nowhere for a currency amount to appear — exactly as strong; the agent is named at the **group** instead |
+| Approved by | Executor |
+| Next action | None. The queue's empty heading stays qualified whenever an agent went unread, asserted in `tests/rendering/approvals.test.ts` |
+
+---
+
+## DL-15 — No confirmation is minted for an act the connection cannot perform
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Safety |
+| Decision | `DescribeDecisionAnswerQuery` takes `mintConfirmation`, false when the connection holds no fund-committing authority; the description's `confirmationToken` is then `null` and the page renders no control |
+| Impacted files | `src/application/use-cases/describe-decision-answer.query.ts`, `src/application/use-cases/read-answer-authority.query.ts` (new), `app/(app)/approvals/[agentId]/[id]/page.tsx` |
+| Reason | The requirement says the decision stays **fully readable** without the authority, and that accept and cancel are refused before they are attempted. Minting anyway would put a row in the confirmation store recording that somebody was offered a choice they were never actually offered. Making the token nullable also removed the `?? ''` the compiler would otherwise have forced — `concurrency.test.ts` forbids defaulting an identifier into existence, and an empty token renders a form that could only ever be refused |
+| Approved by | Executor |
+| Next action | **`ReadAnswerAuthorityQuery` is not a safety boundary and must not become one.** It decides what to *draw*; `beginGuardedCall` refuses, on every path including ones that never render (P1) |
+
+---
+
+## DL-16 — Retiring the disclosure falsified two claims elsewhere
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Correction found by task 6.2 |
+| Decision | `wager-authority.tsx` and `consent-summary.tsx` were both corrected, and their guard tests narrowed with them |
+| Impacted files | `src/presentation/components/wager-authority.tsx`, `src/presentation/components/consent-summary.tsx`, `tests/rendering/arena.test.ts`, plus four design surface manifests |
+| Reason | Task 6.2 asked whether any other surface claimed approval-required was unanswerable. None did — but two claimed something the **step-up** falsified. The arena said Grid-Commander *"never requests the wager scope"*, and the connect page said *"It does not ask for that authority"*. Both were true of the whole product until this change; both are now false as stated. They were narrowed rather than deleted: never at connect, never to play in the arena, none held by default, and exactly one place that can ask |
+| Approved by | Executor |
+| Next action | The four manifests those files appear in were refreshed in **prose and digest** — three asserted the retired disclosure in words, and a refreshed hash over stale prose would claim a survey nobody performed |
+
+---
+
+## DL-17 — The delta spec's audit requirement was corrected, not worked around
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-16 |
+| Phase | **EXECUTION** |
+| Type | Spec correction |
+| Decision | The requirement *Answering A Decision Is Recorded As A Money Write* now distinguishes an **attempt that failed** (audited) from a **refusal before the attempt** (not audited). Task 7.3 was implemented against the corrected text |
+| Impacted files | `openspec/changes/the-approval-can-be-answered/specs/agent-understanding/spec.md`, `tests/agent/answer-authority.test.ts` |
+| Reason | DL-9 already ruled this during Phase A and the code follows it — but **the delta spec still carried the original claim**, so the requirement and the implementation disagreed and nothing had reconciled them. Building 7.3 to the spec as written would have put operations in the operator's audit log that never left this process. The project's own rule is that a divergence is not taken silently: the spec was updated and the reason recorded in it |
+| Approved by | Executor, on DL-9's standing ruling |
+| Next action | Auditor should check the corrected requirement against `call-path.ts` and `wager.test.ts` rather than against the original wording |
+
+---
+
 ## Where a fresh session picks this up
 
 **Read first**: this log top to bottom, then
 `openspec/backlog/approvals-have-no-write-side.md` for every observed payload.
-Nothing below the UI needs re-deriving — it is built and tested.
 
-**Built and green (19/40)**: the binding (`src/domain/agent/pending-decision.ts`),
-the confirmation target, the read query, the port method, the adapter, and
-`AnswerDecisionCommand`. 34 tests. `npm test` → 2505 across 199 files.
+**Built and green (33/40)**: everything below *and* including the UI. The queue
+(`/approvals`), the decision page with its cancel confirmation
+(`/approvals/[agentId]/[id]`), the step-up (`/approvals/authority`), the
+account-wide read, the authority read, the describe-and-mint, and the retirement
+of the unanswerable-mode disclosure. Gates on this tree: `tsc` clean, lint clean,
+**2681 tests across 211 files**, `npm run build` compiled with all three routes
+emitted, `drizzle/` clean, `validate --all` 0 errors / 15 warnings.
 
-**The next task is 1.4b — the queue surface**, then 3.3/3.4 (the cancel
-confirmation). Everything needed is already behind the query:
-`ReadPendingDecisionsQuery` returns `waiting` / `none` / `unreadable` as distinct
-kinds, and each view carries exactly `{decision, msRemaining}`.
+**The next task is 4.5, and it cannot be done by an agent alone.** It is the
+change's gate: a cancel performed *through the product*, confirmed in the audit.
+Everything it needs is now built. What it needs from a person is two things:
 
-**Three constraints the surface must honour, all already decided:**
+1. a real decision waiting — Vanguard produces them on its own, so this needs no
+   setup writes, only timing;
+2. the operator granting fund-committing authority at `/approvals/authority` and
+   answering one decision, **by name, at the moment**.
 
-1. **No currency amount** anywhere (PE-2). Size renders as the proportion the
-   platform sent. The formula that would produce an amount is known and exact —
-   that is why the rule exists, not why it can be broken.
-2. **Gate by not rendering.** Accept must not exist on any surface where cancel
-   is unavailable, and a disabled-but-present control is forbidden twice over
-   (UI checklist item 5, `system.json` principle 10).
-3. **`executedAt` is not "when the trade opened."** It is set at creation, and
-   was observed set on a decision that had executed nothing.
+That grant is the first time this product will ever hold `mcp:wager`, and the
+cancel is the first fund-committing call it will ever make. It commits no money —
+that is exactly why the gate puts it first.
 
-**Then 4.5, which is the live gate**: perform a cancel *through the product* and
-confirm the audit row. Vanguard produces decisions on its own now, so this needs
-no setup writes — wait for one and answer it. **No accept surface may be built
-until this passes** (DL-11).
+**Section 5 (accept) is still not begun and must not be**, per DL-11 and the
+gate. `tests/rendering/approvals.test.ts` asserts no accept control is rendered
+on either authority branch; that assertion is the gate made mechanical, and it
+should be deleted only by the change that legitimately crosses it.
 
-**Do not**: start a polling watch (the operator asked for none); name a
-fund-committing tool outside `src/infrastructure/battlegrid/` (A10 checks);
-compose a confirmation target inline (`edit-binding.test.ts` checks); or add a
-retry anywhere (P4 item 3 is not excepted).
+**Three constraints the accept surface will inherit, unchanged:**
+
+1. **No currency amount** (PE-2). Now enforced by a scan over all five files on
+   this path, not only by the view's shape.
+2. **Gate by not rendering.** Absent authority removes the control; it is never
+   disabled. `system.json` principle 10, UI checklist item 5.
+3. **`executedAt` is not "when the trade opened."** Set at creation, observed set
+   on a decision that had executed nothing.
+
+**Do not**: start a polling watch (the operator asked for none, and the queue's
+manifest records that as requires-spec-change); name a fund-committing tool
+outside `src/infrastructure/battlegrid/` (A10); compose a confirmation target at
+a call site (`edit-binding.test.ts` now scans for the decision shape too); add a
+retry anywhere (P4 item 3 is not excepted); or run `npm run test:db` against a
+`DATABASE_URL` that is not disposable — it truncates the signal record, and
+BattleGrid serves current readings only.
 
 ---
 
 ## Executor handoff notes
 
-1. **Start with `closedAt`.** The liveness half of DL-1 is unimplementable until
-   the port type and adapter carry it. It is not currently mapped.
-2. **Do not compose a confirmation target inline.** `tests/agent/edit-binding.test.ts`
-   exists to catch that; extend it rather than working around it.
-3. **The audit row goes in before the call, including for refused bindings.** A
-   refusal is a thing that happened.
-4. **No currency amount for a pending decision** (PE-2). The platform computes
-   none until accept time; deriving one violates the Iron Rule.
-5. **`npm run test:db` needs `DATABASE_URL`.** CI provides postgres; skip locally
-   if absent and say so — do not report the gate as passed.
-6. If any of DL-1 through DL-6 turns out to be wrong in implementation, **update
-   the entry** rather than adding a contradicting one, and say so in the review
-   doc.
+1. **The two live tasks (4.5, 7.4) are the only ones left that need a human.**
+   Everything else in sections 1-7 is built, tested and green.
+2. **`ReadAnswerAuthorityQuery` decides what to draw, never what is allowed.**
+   If a future change starts branching on it for permission, that is the P1
+   violation this log is warning about in advance.
+3. **The delta spec was corrected during execution** (DL-17). Read the
+   requirement as it stands, not as the proposal describes it.
+4. **`npm run test:db` was not run and the gate is not claimed as passed.** It
+   needs a disposable database; CI provides one.

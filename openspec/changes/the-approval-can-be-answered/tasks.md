@@ -42,7 +42,14 @@
       **Never match on `AWAITING_APPROVAL`** — the tool description names that
       string and the live payload does not contain it.
 - [x] 1.4a **DONE** — read-side query (`read-pending-decisions.query.ts`).
-- [ ] 1.4b Queue surface, reachable from the pipeline. **NOT STARTED.**
+- [x] 1.4b **DONE** - `/approvals` (`app/(app)/approvals/page.tsx`), account-wide
+      via `ReadApprovalQueueQuery`. **Deviation, deliberate**: the requirement says
+      "across all of the user's agents", and `list_entry_decisions` requires an
+      agent id - there is no account-wide decision read on the platform. So the
+      queue fans out one read per agent and carries **partial failure** as a
+      first-class result. Reachable from the section nav and from the trading-mode
+      selector; the agent is named at the group rather than on the view, so 1.7's
+      "exactly two keys" guard stays exactly as strong.
 - [x] 1.5 **DONE at the query layer** — `none` and `unreadable` are separate
       result kinds with tests. Rendering waits on 1.4b.
 - [x] 1.6 **DONE at the query layer** — the platform's `reason` is carried
@@ -57,10 +64,16 @@
 - [x] 2.1 **DONE, inherited** — `beginGuardedCall` refuses on held scope before
       the attempt and before any audit row. Not reimplemented here: a second
       opinion about whether a write is allowed is worse than none.
-- [ ] 2.2 Step-up flow from the point of use, stating what the authority permits
-      and that accepting commits real money.
-- [ ] 2.3 Prove no read, model-recorded proposal, or scheduled work can begin a
-      step-up.
+- [x] 2.2 **DONE** - `/approvals/authority`. `STEP_UP_SCOPES` is a separate
+      constant from `REQUESTED_SCOPES` (which stays read-only, so A10 keeps
+      passing), and it carries read forward rather than replacing it. The page
+      states the two operations, that it commits real money, that the platform
+      caps still apply, and offers a visible way out.
+- [x] 2.3 **DONE, structurally** - `tests/agent/answer-authority.test.ts` scans
+      `src/` and `app/` and asserts **exactly one** file requests the step-up: the
+      authority page's server action, which only runs on a form submit. A second
+      caller of any kind fails the test. The default - calling `execute()` with no
+      argument, as the connect flow does - is separately asserted not to widen.
 - [x] 2.4 **DONE, inherited — and the plan was wrong about refusals.** The
       guard writes the audit row before the attempt and completes it with the
       outcome. Binding refusals are **not** audited; see DL-9.
@@ -75,10 +88,14 @@
       three levels **and** assert `status === "PENDING"` and
       `closedAt === null`. Refuse naming which level moved and from what to
       what, or what became of the decision if it is no longer answerable.
-- [ ] 3.3 Cancel confirmation: what is being cancelled, and that the agent will
-      not re-propose it.
-- [ ] 3.4 Expired-first path — told it expired, not reported as a cancel
-      performed.
+- [x] 3.3 **DONE** - `DescribeDecisionAnswerQuery` composes the consequence and
+      mints the token bound to verb + id + levels; the page renders it in the
+      shared consequence role. Minting is **conditional on authority**: no
+      agreement is issued for an act the connection cannot perform.
+- [x] 3.4 **DONE, on both halves** - the describe returns `no-longer-answerable`
+      before minting anything (the page renders `<ExpiredNotice>`), and a decision
+      that closes between render and submit refuses in the command and comes back
+      as "Nothing was cancelled ... this is not a cancel you performed".
 
 ## 4. Verification gate — cancel proven before accept is written
 
@@ -86,7 +103,9 @@
       `tests/agent/answer-decision.test.ts` (12). ~~Unit: the binding refuses when entry, stop, or target differs; refuses
       when the levels match but `status !== "PENDING"` or `closedAt !== null`;
       refuses when the decision is missing; passes only when all five hold.
-- [ ] 4.2 Unit: an answer is refused before any call when authority is absent.
+- [x] 4.2 **DONE** - `answer-authority.test.ts`, both verbs, asserting the
+      refusal happens before the attempt, names the missing authority, and writes
+      no audit row.
 - [x] 4.3 **DONE at the query layer** — `tests/agent/read-pending-decisions.test.ts`.
 - [x] 4.4 **Live**: with operator authorization, cancel one real pending
       decision. Read back that it is no longer waiting. Record the payload
@@ -95,12 +114,18 @@
       `{"decisionId":"…","cancelled":true}` and nothing else; read-back shows
       `status`/`tradeStatus` → `CANCELLED`, `closedAt` set, every other field
       preserved. Assert against that response; do not model a richer one.
-- [ ] 4.5 **Live**: confirm the audit recorded the cancel as a fund-committing
-      write with its bound levels. **Note**: the 4.4 cancel was made directly
-      over MCP before the audit path existed, so it is not in the audit. This
-      task still needs a cancel made *through the product*.
-- [ ] 4.6 Assert the two-key response shape in a test — a UI cannot render the
-      outcome from it and must re-read. Regression-guard that re-read.
+- [ ] 4.5 **Live - BLOCKED ON THE OPERATOR. This is the change's gate.**
+      Everything it needs now exists: the queue renders, the confirmation binds,
+      the step-up can obtain the authority, and the audit path runs behind the
+      port. What it needs is (a) a real decision waiting and (b) the operator
+      granting fund-committing authority and answering one, by name, at the
+      moment. **Note**: the 4.4 cancel was made directly over MCP before the audit
+      path existed, so it is not in the audit. This still needs a cancel made
+      *through the product*.
+- [x] 4.6 **DONE** - the port returns `void` (asserted), and the command's
+      `answered` result is asserted to carry exactly `kind`, `verb`, `decisionId`
+      - nothing echoed from the platform, so no surface can render an outcome from
+      the ack.
 - [ ] **GATE — do not begin section 5 until 4.4 and 4.5 have passed.**
 
 ## 5. Accept — only after the gate
@@ -122,17 +147,51 @@
 
 ## 6. Retire the disclosure
 
-- [ ] 6.1 Remove the unfinished-mode text from the trading mode selector; link
-      to the queue instead.
-- [ ] 6.2 Check every other surface naming approval-required for the same claim.
+- [x] 6.1 **DONE** - `money-limits.tsx` now links to `/approvals`, names the
+      fifteen-minute window, and says accepting is still unbuilt rather than
+      letting "answer them" imply both halves. `tests/agent/money-limits.test.ts`
+      was inverted to assert the new obligation and that the dead-end disclosure
+      is gone rather than softened.
+- [x] 6.2 **DONE - and it found two.** No other surface claimed the mode was
+      unanswerable, but two made claims the step-up falsified:
+      `wager-authority.tsx` said the product "never requests the wager scope" (now
+      narrowed to: never to play in the arena, none held by default, and one place
+      that can ask), and `consent-summary.tsx` said "It does not ask for that
+      authority" (now scoped to the grant being agreed to, with the later step-up
+      named). Both guard tests updated to the narrower claims.
 
 ## 7. Verification
 
-- [ ] 7.1 Unit: expiry mid-answer is reported as expiry on both paths.
-- [ ] 7.2 Unit: no currency amount is produced anywhere for a pending decision.
-- [ ] 7.3 Unit: a refused answer is audited with its reason and no success.
+- [x] 7.1 **DONE** - `answer-authority.test.ts`, over both verbs: refuses as
+      `not-answerable` carrying status `EXPIRED`, and sends nothing. Also covers
+      the `EXECUTED` / `closedAt: null` case that a `closedAt`-only check would
+      have treated as answerable.
+- [x] 7.2 **DONE, at the surface as well as the view** - `approval-queue.test.ts`
+      scans all five files on this path for currency formatting and for the
+      money-shaped budget fields, and the rendering test asserts no currency
+      figure reaches the page.
+- [x] 7.3 **DONE - and the delta spec was corrected to match DL-9.** The
+      requirement as drafted said every refusal is audited; that contradicted the
+      codebase's tested position. It now distinguishes an **attempt that failed**
+      (audited) from a **refusal before the attempt** (not audited - nothing left
+      this process). Tests cover both, plus that a platform failure is not
+      disguised as a binding refusal.
 - [ ] 7.4 **Live, operator-authorized, by name at the moment**: accept one real
       decision. Read back the position. Record it verbatim.
-- [ ] 7.5 Quality gates: typecheck, lint, vitest, build, drizzle no-op.
-- [ ] 7.6 `openspec.py validate` clean; surface manifest refreshed for the new
-      queue surface.
+- [x] 7.5 **DONE, with one gate honestly not run.** `tsc` clean,
+      `npm run lint` clean, **2681 vitest across 211 files**, `npm run build`
+      compiled with all three `/approvals` routes emitted, `db:generate` leaves
+      `drizzle/` clean. **`npm run test:db` was NOT run**: it truncates every
+      table it touches including the signal record, and `DATABASE_URL` here points
+      at the real `grid_commander`. The suite's own guard refuses, and overriding
+      it would destroy a record BattleGrid cannot re-serve because it serves
+      current readings only. It needs a disposable database (CI). `test:live`
+      likewise not run.
+- [x] 7.6 **DONE** - `validate --all` **0 errors / 15 warnings**, and 15 is the
+      standing count. The run reached 19 mid-session because this change staled
+      four manifests; all four were refreshed in **prose as well as digest**,
+      since three of them asserted the retired disclosure in words and a refreshed
+      hash over stale prose would claim a survey that never happened. Three new
+      manifests written: `approvals-queue`, `approvals-decision`,
+      `approvals-authority`. The three new `design_orphan_surface` INFOs are
+      correct - these surfaces have had no design pass, which is `/design`'s step.

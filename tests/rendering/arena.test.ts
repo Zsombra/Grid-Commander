@@ -506,7 +506,16 @@ describe('whether the credential could stake, said beside the watch-only stance'
     const r = await arenaRendered();
     const text = asRead(r.text);
     expect(text).toContain('BattleGrid would allow MCP-signed wagers on this account');
-    expect(text).toContain('never requests the wager scope');
+    /*
+     * "never requests the wager scope" was this assertion until
+     * `the-approval-can-be-answered` made it false: the product now asks for
+     * that authority in exactly one place, a step-up an operator begins from a
+     * decision they are looking at. The claim narrowed rather than
+     * disappearing, and the narrower one is what is checked — still nothing to
+     * do with the arena, still nothing held by default.
+     */
+    expect(text).toContain('never requests wager authority to play here');
+    expect(text).toContain('holds none by default');
   });
 
   it('names the platform’s own refusal when wagering is off', async () => {
