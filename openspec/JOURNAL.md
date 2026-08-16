@@ -1,5 +1,89 @@
 # Journal
 
+## 2026-08-17 (decisions) — three taken, one refused by the surface it was for
+
+**Did**: the operator picked four items off the decision list. **Three landed;
+the fourth turned out not to be buildable as approved**, which is the entry's
+main content.
+
+**`radar-probe` has its guard (#306).** The item said the file has no `finally`.
+The sharper truth was *where* the missing guard was:
+`expect(deleted.deleted).toBe(true)` sat **between the delete and the try**, so
+the operator's coin was already off the radar and any throw in that window left
+it gone with nothing to put it back. That assertion is now the first statement
+inside the try; the restore moved from a `catch` to a `finally` gated on a
+`restored` flag that flips only after the re-deploy is confirmed. The `finally`
+re-reads the radar before restoring — `deleted.deleted === false` reaches there
+too, and a first-deploy at `expectedRevision: null` over a *live* deployment is a
+different request than this probe means to make. Failures inside it are logged
+and swallowed deliberately: it runs while an exception is propagating, and a
+throw from a `finally` replaces it. **Running the probe is still the operator's
+call**; what changed is that it is now safe to say yes to.
+
+**`testTimeout: 15_000` (#330).** The measurements are at the setting rather than
+in a commit message: ~0.5 s of real work per case, against 212 files transforming
+and collecting in parallel where `collect` alone swings 138–231 s on an unchanged
+tree. The comment says 30× headroom is for the scheduler and **not** licence for
+a case that genuinely got slower. Closed, with the honest caveat written down:
+a green run proves nothing about a flake — what this does is remove the failure
+mode from the gate.
+
+**One focus ring (#338).** `CONTROL` dropped all three focus utilities.
+**The design system decided it, not me**: `system.json`'s principle is *"a
+visible focus state at 2px offset"*, the global rule is `outline: 2px` +
+`outline-offset: 2px`, and a Tailwind `ring-2` has no offset — so the override
+was the one treatment on the product that did not meet the stated principle. The
+`focus` token is not orphaned; `globals.css` reads it, which the original comment
+was mistaken about. 21 manifests re-pinned, digest only, because no manifest
+describes the override — the nineteen claims are *repaired* by this, not
+falsified.
+
+**The two tests that pinned the override were moved, not deleted.** Deleting them
+would have left nineteen manifest claims checked by nothing, which is how they
+came to be false. One asserts `CONTROL` carries no focus treatment; the other
+**reads `app/globals.css`** and asserts the rule is `:focus-visible` at 2px with
+2px offset and keyboard-only — read rather than restated, so a constant here
+cannot agree with itself while the stylesheet says otherwise.
+
+**And writing those tests reproduced a hazard this repo already records.** The
+regexes went through a shell heredoc, `\b` collapsed, and Python emitted **three
+literal 0x08 bytes**. `/\x08ring-/` matches nothing, so two `.not.toMatch`
+assertions were **vacuously true and passing** — a green test checking nothing,
+inside the change whose entire subject is a claim nothing checked. Found by
+byte-inspecting the file, repaired from `chr(92)` in a script written to disk
+rather than piped. `backslashes-collapse-in-shell-heredocs` is not a historical
+note; it bit again today.
+
+**#327 was approved and not built, and that is the right outcome.** Its step 2 —
+*"the authoring surface should filter the operator picker by kind and this
+becomes a small UI fix"* — presumes the product knows which column a row means at
+render time. **It does not**: `condition-composer.tsx` takes the column as two
+free-text inputs, and `gc-condition-columns` is a *datalist* — a suggestion whose
+selection fires no round trip. Narrowing the operator options in response to what
+is typed needs client JavaScript, and **seventeen manifests assert the only
+client code is `PerformButton`**, with the conditions-save manifest adding that
+further interactivity is `requires-spec-change`. So it is an architectural
+decision under a design contract, not an afternoon's work. Three real options are
+recorded on the item, with **validate-at-describe-time** as the honest one — the
+product already calls `get_strategy_column_contract` there and already has a step
+whose job is saying what a write would do.
+
+I also corrected my own earlier comment on #327, which had called it a small fix:
+I had checked that the data was reachable and not that the surface could act on
+it.
+
+**State**: 27 open items, `validate --all` 0 errors, `mirror` clean both
+directions, **2713/2713 across 212 files**, `tsc` and `lint` clean. PR #339
+carries the whole thing.
+
+**Next**: the decisions still untaken — #320, #331, #322's residue, #304, #282 —
+plus #327's corrected ask, which now needs a `/propose` rather than an edit. And
+`#101`'s live gate, still waiting on a decision actually being in the queue.
+
+**Watch out**: never build a regex through a heredoc in this environment. Write
+the script to disk, or build the escape from `chr(92)`, and **byte-check the
+result** — a collapsed `\b` produces a passing test, not a failing one.
+
 ## 2026-08-16 (backlog, second leg) — the rest of the issues, and two fixes
 
 **Did**: finished the oldest-first pass over the open issues — #282 through #335,
