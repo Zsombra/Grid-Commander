@@ -3,7 +3,7 @@
 **Audit timestamp**: 2026-08-17
 **Track**: full
 **Evidence window**: `0fd2ce0..fbdeade` (`8f06401^` → HEAD)
-**Auditor**: auditor skill, Mode A
+**Auditor**: auditor skill — Mode A, then two Mode B re-audits
 
 ---
 
@@ -33,7 +33,7 @@ Read from `openspec/config.yaml:71` via `docs/checklists/ARCHITECTURE_REVIEW_CHE
 | `npm test` | **PASS** | 2716/2722 across 213 files. The 6 failures are the documented baseline — `cli-spawn` (2), `live-probes-are-named` (4) — confirmed by running both files alone; `HANDOFF.md` states the pass criterion is six, not zero |
 | `npm run build` | **PASS** | exit 0, full route table emitted |
 | `npm run db:generate && git diff --quiet drizzle/` | **PASS** | "No schema changes, nothing to migrate"; `drizzle/` clean |
-| `npm run test:db` | **CANNOT RUN** | No disposable database available (PG-002) |
+| `npm run test:db` | **PASS** (re-audit 2) | 96 tests, 8 files, against `grid_commander_test` — see PG-002 |
 
 ---
 
@@ -67,7 +67,7 @@ Read from `openspec/config.yaml:71` via `docs/checklists/ARCHITECTURE_REVIEW_CHE
 | ID | Severity | Category | Status |
 |---|---|---|---|
 | PG-001 | MAJOR | HANDOFF | **FIXED** (re-audit) |
-| PG-002 | MAJOR | HANDOFF | **OPEN** |
+| PG-002 | MAJOR | HANDOFF | **FIXED** (re-audit 2) |
 | PG-003 | CRITICAL | UI | **FIXED** before this audit |
 | PG-004 | MAJOR | STALE_CODE | **FIXED** before this audit |
 | PG-005 | MAJOR | ARCHITECTURE | **FIXED** before this audit |
@@ -101,6 +101,20 @@ Read from `openspec/config.yaml:71` via `docs/checklists/ARCHITECTURE_REVIEW_CHE
   `assertDisposable` refuses a target whose name does not mark it disposable. **Do not point it at `grid_commander`.** Alternatively waive to CI with an owner and date.
 - **Owner**: Operator (the database is theirs to designate)
 - **Verification note**: Suite green against a `_test` database, or a dated waiver recorded here and in the decision log.
+- **Status**: **FIXED** (re-audit 2, 2026-08-17). Run for real rather than waived:
+  `grid_commander_test` created, migrated, and the suite run against it — **96 tests,
+  8 files, all passing**. `DB_TESTS_MAY_TRUNCATE` was never set; both guards were left
+  to do their work, and the live-grant preflight read 0 active connections in the test
+  database before the run.
+  **The working database was verified untouched afterwards**: `grid_commander` still
+  holds **144,732** `signal_readings`, against **0** in the test database the suite
+  truncated. That check is the point — the guard's own error text records that this
+  suite was once pointed at a live database and destroyed a record that could not be
+  rebuilt, and that every test passed while it did.
+- **Standing position, recorded at the operator's request**: CI provisions a disposable
+  postgres and runs this gate on every push, so a local run is not required of future
+  sessions. A session without a disposable database may waive to CI by dating it here
+  rather than pointing `DATABASE_URL` at a working database.
 
 ---
 
@@ -142,36 +156,48 @@ Read from `openspec/config.yaml:71` via `docs/checklists/ARCHITECTURE_REVIEW_CHE
 
 ## Gate Decision
 
-**Mode A, 2026-08-17** — **BLOCKED**. 2 OPEN MAJOR, both HANDOFF.
+| Pass | Date | Decision | Open |
+|---|---|---|---|
+| Mode A | 2026-08-17 | BLOCKED | 2 MAJOR |
+| Mode B re-audit | 2026-08-17 | BLOCKED | 1 MAJOR |
+| Mode B re-audit 2 | 2026-08-17 | **PASS** | **0** |
 
-**Mode B re-audit, 2026-08-17** — **BLOCKED**. 1 OPEN MAJOR.
+**Decision: `PASS`** — 2026-08-17. Zero OPEN violations.
 
-PG-001 is FIXED and verified. **PG-002 remains the sole blocker**, and it is not
-the executor's to clear: `npm run test:db` needs a database the operator
-designates as disposable, because the suite truncates the signal record and
-BattleGrid serves current readings only.
+*(The literal token above is what `openspec.py board` reads to stop reporting "remediate gate violations"; this file necessarily still contains the word BLOCKED in its own history table, and the board's check is a substring one.)*
 
-All gates re-run at re-audit, not only the failed one:
+All six quality gates pass, all re-run at re-audit rather than only the failed one:
 
-| Gate | Re-audit |
+| Gate | Result |
 |---|---|
 | `npm run typecheck` | **PASS** |
 | `npm run lint` | **PASS** |
 | `npm test` | **PASS** — 2716/2722, the documented six-failure baseline |
-| `npm run build` | **PASS** (Mode A; no source changed since) |
+| `npm run build` | **PASS** — no source file changed after Mode A; only plan and journal documents |
 | `npm run db:generate && git diff --quiet drizzle/` | **PASS** |
-| `npm run test:db` | **CANNOT RUN** — PG-002 |
-| `openspec.py validate <change>` | **PASS** — clean, no issues found |
+| `npm run test:db` | **PASS** — 96 tests, 8 files, `grid_commander_test` |
+| `openspec.py validate <change>` | **PASS** — clean |
 
-No new violations were introduced by the remediation. Everything the gate checks
-about the built work passes; the three substantive findings came from the
-verifier pass and were fixed before Mode A, each proven non-vacuous by reverting.
+No new violations were introduced by either remediation round. All five findings
+are FIXED and each was verified rather than asserted:
 
-**Two ways to clear PG-002**, both legitimate and both the operator's call:
+- **PG-003/004/005** came from the verifier pass and were proven non-vacuous by
+  reverting — restoring the false copy fails 2 assertions, adding a second
+  unbound caller fails 1.
+- **PG-001** verified by `tail -1`.
+- **PG-002** verified by a real run, plus an after-the-fact count confirming the
+  working database was untouched.
 
-1. Run it against a disposable target — the precedent is
-   `2026-08-13-the-connection-asks-who-it-is` PG-003:
-   `DATABASE_URL=postgres://USER:PASS@localhost:5432/grid_commander_test npm run db:migrate`,
-   then the same URL for `npm run test:db`. `assertDisposable` refuses a target
-   that is not marked disposable. **Never `grid_commander`.**
-2. Waive to CI with an owner and a date recorded here and in the decision log.
+**What this gate did not cover**, stated rather than implied:
+
+- **#340 stays open** and is not fixed here. DL-19 closed the bypass route; the
+  inverted `destructiveHint`, the confirmation token that is never spent on
+  accept, and the audit row reading `destructive: false` on a position-opening
+  write are all still live. The audit's PG-005 says so explicitly.
+- **PE-1 was verified from the record, not re-read live** this session.
+- The **live behaviour** of the accept surface rests on task 7.4's recorded
+  evidence, not on a fresh execution.
+
+Cleared for `/archive`.
+
+**PRODUCTION GATE: PASS.**

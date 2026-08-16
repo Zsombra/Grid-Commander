@@ -382,6 +382,21 @@ and stands.
 
 ---
 
+## DL-22 — AUDIT: gate PASS, and the DB gate was run rather than waived
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **AUDIT** |
+| Type | Production gate decision, re-audit 2 |
+| Decision | **PASS** — zero OPEN violations. Cleared for `/archive` |
+| Impacted files | `plan/production-gate.md`, `plan/master-plan.md` |
+| Reason | PG-001 fixed by declaring execution handed over, honestly — 40/40, every Phase 2 box checked, verifier findings fixed. **PG-002 the operator asked to be both run and waived, and both are recorded.** Run: `grid_commander_test` created, migrated, suite green at **96 tests / 8 files**, `DB_TESTS_MAY_TRUNCATE` never set so both guards did their own work, and the live-grant preflight read 0 active connections first. Waived-position: CI provisions a disposable postgres on every push, so future sessions need no local run. **The working database was counted afterwards** — `grid_commander` holds 144,732 `signal_readings` against 0 in the truncated test database. That check is not ceremony: the guard's own message records that this suite was once pointed at a live database, destroyed a record that could not be rebuilt, and every test passed while it did |
+| Approved by | Auditor, on the operator's instruction to do both |
+| Next action | `/archive`, which merges the deltas into `openspec/specs/` — including **removing** *An Unanswerable Trading Mode Says So* from the main spec, where it correctly still stands pre-archive — and closes **#101**. **#340 is not closed by this** and its item stays open |
+
+---
+
 ## Where a fresh session picks this up
 
 **Read first**: this log top to bottom, then
