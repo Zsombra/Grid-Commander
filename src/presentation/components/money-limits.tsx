@@ -120,7 +120,7 @@ export function MoneyLimits({
             name="maxConcurrentExposureUsd"
             current={value('maxConcurrentExposureUsd')}
             label="Most it may have at risk at once"
-            hint="The total of everything open at the same time."
+            hint="Margin, not position size. BattleGrid sizes each new trade from what is left — and once that falls under 10, the next trade is refused without saying why."
           />
         )}
         {asked.has('balanceThresholdUsd') && (

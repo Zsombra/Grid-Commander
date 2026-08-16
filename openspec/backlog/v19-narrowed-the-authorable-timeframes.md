@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: strategy-authoring
 github: "300"
@@ -70,3 +70,32 @@ own item.
 Related: [[the-surface-record-is-a-deployment-behind]] (the re-probe that
 surfaced this), and the vocabulary carve-out reasoning in
 `tools/probe_vocabulary.py`.
+
+## Settled 2026-08-16 — no instance exists
+
+The one read this item named was run live at v19.1.0 over the authenticated MCP
+connector. `list_strategies` returns 17 strategies — 12 SYSTEM and 5 PRIVATE
+(quota 5/25):
+
+```
+SYSTEM   Dunkirk  Leningrad  London  Tobruk  Midway  El Alamein  Bastogne
+         Kursk  Normandy  Stalingrad  Berlin  Iwo Jima
+PRIVATE  Salamis  Lepanto  Cannae  Trafalgar  Alesia
+```
+
+**Every one reads `timeframe: "1h"`.** Not one sits on the retired `1m` or `1d`.
+
+So question 1 — what the platform does with a strategy already authored on a
+retired timeframe — has no instance on this account to ask it of, and question 2
+— what this product renders for such a strategy — is hypothetical. That is
+exactly the item's own stated closing condition: *"If none is, this closes as
+'no instance exists' and the render question becomes hypothetical."*
+
+**Recommended `done`.** Left `open` here pending triage rather than closed
+unilaterally.
+
+One fact worth carrying forward rather than losing with the item: the retirement
+is scoped to the **authorable vocabulary**, not to the platform.
+`get_market_context` still accepts a `primaryTimeframe` of `5m, 15m, 1h, 4h, 1d`
+— `1d` remains a legal market-read timeframe while it is no longer an authorable
+one. Those are two different lists, and the product must not conflate them.

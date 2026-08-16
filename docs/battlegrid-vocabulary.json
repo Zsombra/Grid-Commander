@@ -2,9 +2,9 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "19.1.0"
+    "version": "19.2.0"
   },
-  "probed_at": "2026-08-15T12:33:07Z",
+  "probed_at": "2026-08-16T00:45:41Z",
   "note": "The vocabulary payloads verbatim \u2014 values, not shapes. This is the stated carve-out from the shape-only rule: the vocabulary is platform-owned and account-independent, so nothing in it is anyone's private data. `categories_declared` is the schema's own enum for the `category` argument at probe time; `vocabulary` is keyed by what `list_strategy_categories` actually answered, so a divergence between the two is visible here rather than hidden. Compared against the live platform by tests/live/surface-freshness.test.ts; regenerate with BATTLEGRID_API_KEY=\u2026 python3 tools/probe_vocabulary.py",
   "categories_declared": [
     "price",

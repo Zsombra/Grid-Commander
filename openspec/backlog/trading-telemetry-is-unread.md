@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-01
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "116"
@@ -217,3 +217,50 @@ rests. The join is by coin in the query; the read fails independently.
 `get_regime_snapshot`, `get_regime_history`) — none blocked, each its own
 surface when something asks the question it answers — and `get_order_status`,
 observed but unmodelled until a surface needs per-order polling.
+
+## Discovery read done 2026-08-16 — the slices are observed, and they are rich
+
+The discovery read this item was waiting on was run live at v19.1.0 over the
+authenticated MCP connector. Read-only. **The known risk did not materialise**:
+the private position data is not empty.
+
+`list_user_active_positions` returned **three open positions across two agents**
+(Undertow x2, Breakwater x1), `pricingStatus: LIVE`,
+`trackingLabel: AGENT_PIPELINE_TRACKED`, `refreshIntervalMs 10000`. Beyond entry
+and live P&L, each position carries:
+
+```
+effectiveStopLoss   effectiveTakeProfit   effectiveLeverage   liquidationPrice
+conviction          riskRewardRatio       timeHorizon
+breakEvenStatus     breakEvenGeometry { armPrice, stopPrice, offsetBps,
+                                        distanceToArmPct, armed }
+trailingStatus      trailingGeometry  { trailDistance, trailLevel,
+                                        observedExtreme, givebackPct, engaged }
+decisionId   signalLogId   positionId
+strategyLabel   strategyTimeframe   strategyCadence
+```
+
+That protection family is the v19 output growth catalogued in
+[[v19-moved-thirty-four-output-schemas]] (#301) — **observed here rather than
+declared**.
+
+`get_open_orders` returned six resting legs: Stop Market and Take Profit Market
+pairs on TRUMP, AIXBT and SKHX, every one `reduceOnly: true`. So the open-orders
+slice has real shape to render as well.
+
+### What this does to the item
+
+The discovery step is discharged; what is left is modelling, and it is smaller
+than filed:
+
+- `decisionId` and `signalLogId` sit on **every** position, so a trade chart can
+  be joined to the recorder without a separate lookup.
+- `strategyTimeframe` and `strategyCadence` arrive on each position, which
+  answers part of what `get_regime_snapshot` / `get_regime_history` were wanted
+  for.
+
+**Note for whoever takes this:** `trailingGeometry.observedExtreme` and
+`trailingGeometry.trailDistance` are live adverse-excursion data — which is what
+[[the-stop-vs-noise-comparison-has-no-home]] (#85) assumed it needed accumulated
+candle history to compute. Read #85 against this payload before building
+anything there; its third blocker may be softer than recorded.

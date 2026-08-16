@@ -4,7 +4,7 @@
   "route": "/agents/[id]/reactivate",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "d782154",
+  "generated_at_commit": "1cdaa4c",
   "source_files": [
     "app/(app)/agents/[id]/reactivate/actions.ts",
     "app/(app)/agents/[id]/reactivate/page.tsx",
@@ -321,7 +321,7 @@
     "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
-    "src/presentation/components/money-limits.tsx": "sha256:c7f42009c9da626959f5f749d72491fcb6b9dd9a07d727106020295bbf2613fa",
+    "src/presentation/components/money-limits.tsx": "sha256:88160ab8092fe9ca36716f54c43c10f59388d491ff33f2b4e0d19fd8c398022f",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"

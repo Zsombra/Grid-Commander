@@ -1,13 +1,22 @@
 # Grid-Commander — Session Handoff
 
-**Date**: 2026-08-16 (five legs — the advisory, the survey, the pause, the
-gate, the records)
+**Date**: 2026-08-16 (six legs — the advisory, the survey, the pause, the
+gate, the records, and the lane)
 
-**State**: green — **2576 vitest / 205 files**, 274 Python harness, typecheck
-and lint clean, `validate --all` at **0 errors / 13 warnings** (the same 13
-design-ticket warnings, unchanged all day). **13 capabilities, 202 archived
-changes, 24 backlog items open** (232 done), **0 active changes**, 28 surfaces,
-27 design tickets. **No p2 and no p1.** BattleGrid is **v19.1.0**.
+**State**: green — **2631 vitest / 208 files** (six known failures, see below),
+**284 Python harness**, typecheck, lint and build clean, `validate --all` at
+**0 errors / 15 warnings**. **13 capabilities, 206 archived changes, 30 backlog
+items open** (238 closed: 234 done + 4 wontfix), **1 active change**, 28
+surfaces. **Two p2 open** — `an-approval-expires-while-nobody-is-looking`
+(#304, blocked) and the standard half of
+`the-exposure-cap-starves-silently-and-we-say-it-wrong` (#299). BattleGrid is
+**v19.2.0**.
+
+**The suite's pass criterion is six failures, not zero.**
+`live-probes-are-named` (4) and `cli-spawn` (2) fail at `HEAD` on a clean tree
+for reasons unrelated to any change in flight — verified by stashing and
+re-running. A seventh failure cannot be told from a flake without a re-run;
+that is #330.
 `test:db` skipped throughout: no schema changed.
 
 **The fifth leg closed four records rather than building anything.**
@@ -300,25 +309,28 @@ The idea brief is at `_IDEA/Grid-Commander_Idea_Brief.md`. The MVP feature spec 
 
 ## Current State of `main`
 
-**Three PRs are open and none is this session's** — parallel sessions run on
+**One PR is open and it is this session's** (#329). Parallel sessions run on
 this repo, which is why a `Next` written into `JOURNAL.md` can be stale before
 its PR lands. Read `git show origin/main:openspec/JOURNAL.md`, never the local
-copy, before trusting one. It also means **the item↔issue mirror cannot be
-audited from `main` alone**: five issues are open with no item here (#299,
-#304, #305, #317, #318) because their items live on those unmerged branches.
+copy, before trusting one. The item↔issue mirror is currently clean **both**
+directions — 30 open items to 30 open issues — but that only holds while no
+other branch is carrying items, so re-check it rather than inheriting this line.
+
+**Re-measured at the close of the lane leg, 2026-08-16.** Every figure below was
+counted, not incremented.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | **13** |
-| Changes (archived) | **202** |
-| Vitest tests | **2576 / 205 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
-| Harness tests (Python) | 274 |
-| Active changes | none |
-| Open backlog items | **24**, **all p3 — no p1, no p2.** *Not* 1:1 with the 27 open issues — see the PR row; two of the gaps (#283, #294) are genuine drift on `main` and are recorded on #309 |
-| Design | 28 surfaces (15 designed, 7 needs-redesign, 6 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
-| Open PRs | **#319**, **#313** and **#307**, all another session's |
-| Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
-| BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
+| Capabilities | **13** |
+| Changes (archived) | **206** |
+| Vitest tests | **2631 / 208 files**, of which **six fail at `HEAD` on a clean tree** (`live-probes-are-named` ×4, `cli-spawn` ×2) — the pass criterion is six, not zero (#330). Plus key-gated live; the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
+| Harness tests (Python) | **284** |
+| Active changes | **1** — `the-approval-can-be-answered`, 19/40 |
+| Open backlog items | **30** (238 closed: 234 done + 4 wontfix). **Two p2**: #304 (blocked on #101) and #299's standard half |
+| Design | 28 surfaces, 0 open tickets, `system.json` designed |
+| Open PRs | **#329** — this session's, mergeable |
+| Open GitHub issues | **30**, mirrored 1:1 with the backlog (the tracking rule) |
+| BattleGrid | **v19.2.0** — found by accident on 2026-08-16 while capturing, when the record still said v19.1.0. All three records were refreshed and are level with live. The only output movement was `get_account_state` (+7 leaves) |
 
 ### Read this before anything else
 
@@ -530,22 +542,23 @@ are their own gate, opt-in on **`CI_LIVE=1`**, serial, about nine minutes —
 until 2026-08-10 this instruction fired all thirty in parallel at the real
 account; see the journal entry for that day.
 
-### The current thread (2026-08-16)
+### The current thread (2026-08-16, close of the lane leg)
 
-**#301's residue** — the standing `Next` for three journal entries running.
-v19.1.0's output survey found three declared reads the product still discards:
-`list_gate_blocks.summary[]`, `budget.blockedReason`/`blockedSince`, and
-`debriefVerdict` on five signal-log reads. **Take gate-blocks first**:
-`blocks.ts:118-163` derives that aggregate from a *window* whose partiality it
-admits at length, and the platform's is whole-population — so adopting it may
-retire the caveat rather than merely save arithmetic.
+**`/propose` #299's standard half** — render `headroomUsd` and
+`effectiveNotionalUsd` on the limits surface so it can answer *"why did my agent
+stop?"*. Today's live measurement turned that from a derivation problem into a
+rendering one: `get_agent_budget` already publishes both, plus `blockedReason`
+and four resolved gauges, on a call the product already makes. It still adds
+behaviour and still needs a delta spec.
 
-**State**: 24 open items, **all p3 — no p1, no p2.** Nothing is urgent, so the
-pick is genuinely yours. Four PRs are open (**#321** this session's;
-**#319**, **#313**, **#307** from parallel sessions), which is exactly why a
-`Next` written here can be stale before it lands: read
-`git show origin/main:openspec/JOURNAL.md`, never the local copy, before
-trusting one.
+**State**: 30 open items, **two p2** (above). One active change,
+`the-approval-can-be-answered` at 19/40 — untouched today and still the board's
+`NEXT`. **PR #329 is open and mergeable** with the whole lane leg in it. The
+mirror is clean both directions, 30 items to 30 issues.
+
+**Read `git show origin/main:openspec/JOURNAL.md`, never the local copy**, before
+trusting any `Next` written here — parallel sessions make it stale before it
+lands. That instruction has now been vindicated twice.
 
 ### Everything below this line is a dated snapshot, not instructions
 
@@ -558,9 +571,9 @@ pending-treatment items have no GitHub issue yet is false: they are **#228** and
 **#229**.
 
 The counts in it are equally of their moment — it says 161 archived changes and
-25 open items against today's **202** and **24**, and calls
-`v15-trade-level-policy-is-declared-but-inert` "the one P1" when no p1 or p2 has
-been open for days.
+25 open items against today's **206** and **30**, and calls
+`v15-trade-level-policy-is-declared-but-inert` "the one P1" when that item is
+now `done` and the two open p2s are different ones entirely.
 
 Read what follows for **why** things were decided. Do not read it for what to do
 next; the section above is that.

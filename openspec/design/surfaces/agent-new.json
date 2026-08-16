@@ -4,7 +4,7 @@
   "route": "/agents/new",
   "capability": "agent-authoring",
   "status": "functional",
-  "generated_at_commit": "042266a",
+  "generated_at_commit": "1cdaa4c",
   "source_files": [
     "app/(app)/agents/new/page.tsx",
     "app/(app)/agents/new/actions.ts",
@@ -132,7 +132,7 @@
         "composed"
       ],
       "actions": [],
-      "current_implementation": "Consequence-tinted fieldset shared verbatim with the edit surface. Trading mode select with OFF first and default; five required number inputs in a 2-col grid (1-col mobile), each with a label, an aria-describedby hint, and — on the three fields BattleGrid reads 0 as no-cap — a bold 'Entering 0 removes this limit' warning beside the box. On the create form the boxes start empty (no number chosen on the operator's behalf); a bounce refills them from what was typed. An APPROVAL_REQUIRED note sends the operator to /approvals, names the fifteen-minute window, and says accepting is still unbuilt while cancelling is not — the requirement 'An Unanswerable Trading Mode Says So' was retired by the-approval-can-be-answered because its disclosure had become false.",
+      "current_implementation": "Consequence-tinted fieldset shared verbatim with the edit surface. Trading mode select with OFF first and default; five required number inputs in a 2-col grid (1-col mobile), each with a label, an aria-describedby hint, and — on the three fields BattleGrid reads 0 as no-cap — a bold 'Entering 0 removes this limit' warning beside the box. On the create form the boxes start empty (no number chosen on the operator's behalf); a bounce refills them from what was typed. An APPROVAL_REQUIRED note sends the operator to /approvals, names the fifteen-minute window, and says accepting is still unbuilt while cancelling is not — the requirement 'An Unanswerable Trading Mode Says So' was retired by the-approval-can-be-answered because its disclosure had become false. The exposure hint is materially longer than its four neighbours (~150 characters against ~40): it names the metered quantity, the sizing behaviour and the silent refusal, so at column width it runs to roughly three lines where the others run to one, and on the three no-cap fields the bold zero warning follows it inside the same paragraph.",
       "constraints": [
         "OFF stays first and default — it is the only answer that makes the other five harmless, and this ordering is the difference between creating something that reasons and something that spends",
         "The zero-removes-this-limit warning renders beside the box it is typed into, not in a paragraph above the form",
@@ -244,7 +244,7 @@
     "app/(app)/agents/new/actions.ts": "sha256:3c351aa8e804b7af989d137187883f637fbe415fc529be75a4406de78f0219bd",
     "src/presentation/components/agent-form.tsx": "sha256:017e280bedb3829f03c0de1bf5419d379d4f29907f8d9b50bb7c43add39e76d5",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
-    "src/presentation/components/money-limits.tsx": "sha256:c7f42009c9da626959f5f749d72491fcb6b9dd9a07d727106020295bbf2613fa",
+    "src/presentation/components/money-limits.tsx": "sha256:88160ab8092fe9ca36716f54c43c10f59388d491ff33f2b4e0d19fd8c398022f",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
