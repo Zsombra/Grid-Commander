@@ -367,6 +367,68 @@ describe('the form says what zero does, where it is typed', () => {
   });
 });
 
+describe('a limit is described by what the platform meters', () => {
+  const form = () => readText('src/presentation/components/money-limits.tsx');
+
+  /** The exposure field's `hint=` value, whatever it currently says. */
+  const exposureHint = () => {
+    const source = form();
+    const field = source.indexOf('name="maxConcurrentExposureUsd"');
+    expect(field, 'the exposure field is gone').toBeGreaterThan(-1);
+    const hint = /hint="([^"]+)"/.exec(source.slice(field));
+    expect(hint, 'the exposure field has no hint').not.toBeNull();
+    return hint![1]!;
+  };
+
+  /**
+   * Measured live at BattleGrid v19.2.0 on 2026-08-16, and the reason this
+   * block exists: `maxConcurrentExposureUsd` is metered on **margin**, not
+   * notional. Undertow's `gauges.exposure.fill` read `8.55` while its
+   * `currentNotionalUsd` was `29.48` under a cap of `45`; Breakwater reproduced
+   * it at `4.5` against `12.91`. The hint said "the total of everything open at
+   * the same time", which describes the number the gauge does *not* count.
+   *
+   * These assert the **claim**, not the sentence. Pinning the exact wording is
+   * how a restyle's acceptance criteria rotted in #320 — a later rewrite that
+   * is still true should not fail here.
+   */
+  it('names the quantity the cap actually counts', () => {
+    expect(exposureHint()).toMatch(/margin/i);
+  });
+
+  it('does not describe the cap as a total of what is open', () => {
+    // The original defect, kept as its own assertion so a regression to it is
+    // named rather than merely uncovered.
+    expect(exposureHint()).not.toMatch(/total of everything open/i);
+  });
+
+  it('says the cap sizes the next trade rather than stopping it', () => {
+    // A ceiling that trips and a base that sizes are different mechanisms.
+    // BattleGrid shrinks each successive order against remaining headroom.
+    expect(exposureHint()).toMatch(/sizes each new trade|sized from|what is left/i);
+  });
+
+  it('names the refusal the operator would otherwise have to infer', () => {
+    // Zero of the account's 5,521 lifetime gate blocks names exposure, so an
+    // agent that has gone quiet gives the operator nothing to search for.
+    const hint = exposureHint();
+    expect(hint).toMatch(/refused|refuses/i);
+    expect(hint).toMatch(/10/);
+  });
+
+  it('still composes with the zero warning as one paragraph', () => {
+    // The field is in UNBOUNDED_AT_ZERO, so the bold "Entering 0 removes this
+    // limit" is appended to whatever the hint says. Scenario "A value that
+    // removes the limit" must not regress because this copy changed.
+    expect(UNBOUNDED_AT_ZERO as readonly string[]).toContain('maxConcurrentExposureUsd');
+    expect(exposureHint().trimEnd()).toMatch(/\.$/);
+  });
+
+  it('leaves the label alone, because the label was already right', () => {
+    expect(form()).toMatch(/label="Most it may have at risk at once"/);
+  });
+});
+
 describe('a present configuration is not a set limit', () => {
   const page = () => readFileSync('src/presentation/components/money-summary.tsx', 'utf8');
 
