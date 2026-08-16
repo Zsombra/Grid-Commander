@@ -44,7 +44,7 @@
     {
       "name": "problem",
       "shape": "string | undefined",
-      "source": "searchParams — the refusal a rejected saveConditions redirected back with; the rest of the query is the edit, round-tripped so a refusal returns to a describe over the same edit"
+      "source": "searchParams — the refusal a rejected saveConditions redirected back with; the rest of the query is the edit, round-tripped so a refusal returns to a describe over the same edit. Since #317 the round trip keeps **every** value of a repeated param rather than the first, so a hand-edited query comes back whole. It steers nothing new — `draftFromQuery` reads every field through `one()` — but a draft the operator edited by hand is no longer silently truncated on the way back from a refusal"
     }
   ],
   "components": [
@@ -432,7 +432,7 @@
   },
   "source_digest": {
     "app/(app)/strategies/[id]/conditions/save/actions.ts": "sha256:9a8190da580ee65e4b365c7945f497f26ea24af5025e83f404d30022d29f6c3e",
-    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:a5faf7efd4a0a5e6eebfdd6479651cc0f858431a5bdcff377aea1e9ea5f4ab0b",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:e03ff5b65eb30550da36f3638d30e5473a2fb80ef1d7d4a167986408ccf57fc9",
     "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/strategy-conditions.tsx": "sha256:0182476630a84224f09a0e383557ca9d37d0d4c5a5912bcc89aba90afbdf8af8",
