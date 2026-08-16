@@ -42,13 +42,27 @@ function one(q: Record<string, string | string[] | undefined>, key: string): str
  * same edit rather than to a blank page. Rebuilt with `URLSearchParams` rather
  * than carried as a path: the value comes back from a browser, and a query
  * string can only ever be re-attached to a route this file names.
+ *
+ * **Every value of a repeated param is kept, not just the first (#317).** This
+ * used to `set` the first value and drop the rest, which is the right call in
+ * `one()` above — that function wants one scalar and says so — and the wrong one
+ * here. This function's whole job is fidelity: the surface manifest names the
+ * query as something *"an operator can keep, share, or edit by hand"*, and a
+ * hand-edited draft that comes back from a refusal missing part of itself is
+ * the page describing an edit nobody submitted.
+ *
+ * Keeping them changes no behaviour. `draftFromQuery` reads every field through
+ * `one()`, so the first value still decides — the extra values survive the
+ * round-trip without steering it. That asymmetry is deliberate and is the point:
+ * **collapse where a scalar is wanted, preserve where a draft is carried.**
  */
 function editQuery(q: Record<string, string | string[] | undefined>): string {
   const out = new URLSearchParams();
   for (const [key, value] of Object.entries(q)) {
     if (key === 'problem') continue;
-    const first = Array.isArray(value) ? value[0] : value;
-    if (typeof first === 'string') out.set(key, first);
+    for (const each of Array.isArray(value) ? value : [value]) {
+      if (typeof each === 'string') out.append(key, each);
+    }
   }
   return out.toString();
 }

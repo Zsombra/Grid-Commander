@@ -31,7 +31,10 @@ vi.mock('@/presentation/session.js', () => ({
 
 const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
 
-async function saveRendered(id: string, search: Record<string, string> = {}) {
+async function saveRendered(
+  id: string,
+  search: Record<string, string | string[] | undefined> = {},
+) {
   const Page = (await import('../../app/(app)/strategies/[id]/conditions/save/page.js')).default;
   return rendered(await Page({ params: params({ id }), searchParams: Promise.resolve(search) }));
 }
@@ -385,5 +388,47 @@ describe('a refusal the prose caused is named as that', () => {
     expect(r.text).toContain('BattleGrid refused this change');
     expect(r.text).toContain('BattleGrid is not answering right now');
     expect(r.text).not.toContain('own description names it');
+  });
+});
+
+
+/**
+ * #317 — the draft that comes back from a refusal is the draft that was sent.
+ *
+ * `editQuery` round-trips the query so a refused save returns to a describe over
+ * the same edit. It used to keep only the first value of a repeated param and
+ * drop the rest silently, so an operator who hand-edited the query — which the
+ * `strategy-conditions-save` manifest names as a supported thing to do — could
+ * get back a draft missing part of itself, and the page would describe an edit
+ * nobody submitted.
+ *
+ * The collapse is still correct in `one()`, which wants a scalar. It was wrong
+ * here, where the whole job is fidelity.
+ */
+describe('a draft carrying a repeated param survives the round trip', () => {
+  it('keeps every value, not just the first', async () => {
+    saveWorld();
+    const r = await saveRendered('s1', { ...A_DRAFT, 'm0.value': ['0', '7'] });
+
+    // The round-tripped query reaches the page as a link back to the composer
+    // and as the confirm form's hidden `draft` field; which of the two renders
+    // depends on the branch, so this asserts over both rather than pinning one.
+    const carriers = [...r.links, ...r.values].filter(
+      (v) => typeof v === 'string' && v.includes('m0.value'),
+    );
+    expect(carriers.length, 'the draft is carried back somewhere').toBeGreaterThan(0);
+    for (const carried of carriers) {
+      expect(carried).toContain('m0.value=0');
+      expect(carried, 'the second value was dropped — #317').toContain('m0.value=7');
+    }
+  });
+
+  it('still drops the problem it may have arrived with', async () => {
+    saveWorld();
+    const r = await saveRendered('s1', { ...A_DRAFT, problem: ['one', 'two'] });
+    for (const carried of [...r.links, ...r.values]) {
+      expect(carried).not.toContain('problem=one');
+      expect(carried).not.toContain('problem=two');
+    }
   });
 });
