@@ -1,5 +1,105 @@
 # Journal
 
+## 2026-08-16 (backlog, second leg) — the rest of the issues, and two fixes
+
+**Did**: finished the oldest-first pass over the open issues — #282 through #335,
+the nineteen left after the first leg. **Six closed across both legs**, **three
+filed**, **three changes shipped and archived**. Most of it came from live reads
+and one database query; two items turned into code.
+
+**Two shipped fixes.**
+
+*`openspec.py mirror` (#309).* `validate` has always checked that an open item
+**has** a `github:` number and never that the two agree. Now there is a command
+that compares them, in three directions — item open with a CLOSED issue and item
+`done` with an OPEN issue both fail; an OPEN issue with no item reports and
+fails only under `--strict`, because every session's tracking lands as a PR whose
+issues close immediately. **Deliberately not folded into `validate`**, which is
+offline and must stay so; a network check there would fail in CI and hooks or
+teach everyone to skim the warning block, which is the exact failure
+`tracking.md`'s own scoping note records. Run on this tree: 272 items, 148
+issues, all three directions zero — taken *after* the session's closures, so it
+exercises the drift rather than re-measuring a quiet tree.
+
+*`editQuery` keeps every value (#317).* The grammar question deferred twice went
+to the operator, who chose keep-all. It changes no behaviour — `draftFromQuery`
+reads every field through `one()`, so the first value still decides — and the
+asymmetry is now a rule at the call site: **collapse where a scalar is wanted,
+preserve where a draft is carried.** Confirmed non-vacuous by reverting: the test
+fails with *"the second value was dropped — #317"* against the old code.
+
+**#299 closed by a row that arrived while the session was running.** Its "free
+falsifiable test" — also #101's — predicted a fresh
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` carrying `minEquityUsd: 33.333333`. One
+appeared at 14:00:25Z: `{equityUsd 33.05, minEquityUsd 33.333333, smallPct 10,
+maxLeverage 3}`. `equityUsd` **is** `headroomUsd`, so the floor runs against live
+headroom and the starvation is confirmed end to end — the agent was refused by
+**$0.28**. It also re-confirms MARGIN a fourth time.
+
+**The unanticipated part is the useful part: the floor is per-coin.** That row
+reads `maxLeverage: 3` while Undertow is configured 4, and its open positions ran
+at 3 (AIXBT, MELANIA) and 4 (FARTCOIN). So the floor is $33.33 on one coin and
+$25.00 on another — **the same agent, at the same headroom, starved on one and
+fine on the other**. That makes the shipped copy's refusal to print a figure
+mandatory rather than cautious, and it is now recorded in `ceilings.tsx` and in
+the `agent-limits` manifest's constraint. It also sharpens #305: the decision row
+carries **no leverage field**, so `positionSizePct: 10` is not merely imprecise —
+it is insufficient to derive the amount from.
+
+**#318 measured both remaining manifest-claim families, and they disagree.**
+Element-of-record claims hold (native `<details>` 2 sites, native checkboxes 4,
+`role="checkbox"` nowhere). **Focus-ring claims fail**: 12 manifests assert *"do
+not add a per-element ring"* while `CONTROL` adds one at **71 sites** and
+`outline-none` switches the global rule off for every input, select and textarea.
+Filed as **#338** rather than fixed — removing it changes what 71 controls look
+like, which is `/design`'s call. #270's ARIA family came back 0-false-of-191; a
+family can hold at 191 while a ten-claim family rots, and that is no longer a
+caution but an observation.
+
+**#327 is answered and is a small fix.** The legal operator set **is** published,
+per column, on `preview_strategy_report` — `conditionOperators` plus
+`conditionVocabulary` — in a response the product already calls, and nothing
+reads either. And the composer renders a static `CLAUSE_OPS` for every column, so
+**the product offers `gt` on a classification metric exactly as the probe
+composed it.** Filtering needs no new platform read.
+
+**#302's two questions, two preview calls.** `marketReadText` is a template and
+the preview is a **linter** for it: each `{token}` returns with `status: "column"`
+or `"unknown"` and brace-spanning offsets, so an authoring UI can underline a bad
+marker. But `resolvedValue` is null on every marker — it validates, it does not
+interpolate. And only `marketReadMarkers[]` turns on; the other four market-read
+outputs stayed empty in both calls.
+
+**A correction I had to make to my own work.** I wrote on #306 that the nine
+write probes were "unchanged and unrun" and that `apply`/`compile` were
+unobserved at v19. Both false — the item's own *Run 2026-08-16* section records
+eight of nine executed, seven green. I had read the item's opening and Notes and
+not its run record. Withdrawn in the item, on the issue, and in HANDOFF, which
+had inherited it. What actually stays open there is **`radar-probe` alone**.
+
+**Start Here was demoted (#322), and the argument is a measurement.** It was
+repaired yesterday and was stale again by today on five counts — its named next
+action shipped and its issue closed, the item count, the p2 count, the active
+change's progress, and a PR it called open had merged. Repairing prose with no
+producer buys about a day. It now leads with **"Run `/board`"** and carries no
+counts at all; what it keeps is what no command can print.
+
+**State**: 28 open items, 0 errors from `validate --all`, `mirror` clean both
+directions, **2713/2713 vitest across 212 files**, `tsc` and `lint` clean.
+
+**Next**: three decisions nobody has taken — #320 (may a restyle acceptance pin
+content), #322's residue (should the fenced snapshot be deleted rather than
+fenced), #331 (render-reach vs module-reach in surface pins). And two things
+needing the operator, not a session: `the-approval-can-be-answered`'s live gate,
+and clearing the ten probe agents in BattleGrid's own UI.
+
+**Watch out**: a fresh worktree needs `npm ci` before its test count means
+anything — six failures there are an install, not a regression — and check
+`node_modules` is not a reparse point first, because `npm ci` on a junction
+wipes the shared install. And the two-line currency check
+(`git rev-list --count HEAD..origin/main`, and the reverse) is what made this
+worktree's board figures trustworthy; #335 is why that matters.
+
 ## 2026-08-16 (backlog) — the oldest issues, walked in order, and the pause that lifted
 
 **Did**: worked the open GitHub issues oldest-first, as asked. Eleven reached,

@@ -72,3 +72,24 @@ been a change to the contract smuggled inside a bookkeeping pass.
 Same family as [[a-design-round-stales-the-manifests-it-designed-against]] and
 [[the-re-pin-pins-to-the-commit-before-its-own-edits]]: the design layer's
 records are pinned to a moment, and nothing tells them when the moment passed.
+
+## 2026-08-16 — no decision taken, and one datum for whoever takes it
+
+Untouched: the three questions in "what would settle it" make this a decision
+about the design contract, not an edit, and nothing in this session had standing
+to take it.
+
+One datum from today that bears on it. #318's sweep measured the two unmeasured
+manifest-claim families and found the **focus-ring family false in 12
+manifests** — they assert *"do not add a per-element ring"* while a shared
+constant adds one at 71 sites (#338). That is the same failure mode as `DT-0014`,
+one layer along: **prose asserted about the product, believed by everyone,
+contradicted by the code, and checked by nothing.**
+
+It argues that the rule this item proposes should be written as a *general*
+constraint on asserted prose rather than scoped to restyle-ticket acceptance
+lines — the acceptance line and the manifest constraint rot the same way, for
+the same reason, and a rule that covers only one of them leaves the other.
+
+Whether that widens the decision past what is worth deciding is itself part of
+the decision. Recorded, not concluded.

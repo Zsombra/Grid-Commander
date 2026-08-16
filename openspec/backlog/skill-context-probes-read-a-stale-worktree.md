@@ -82,3 +82,44 @@ would pass in this session and the Context block would still be wrong.
 - Found while closing out the session that merged #329, #332 and #333; the
   handoff skill surfaced it by reporting a P2 that this session had watched
   close.
+
+## 2026-08-16, next session — ran in a worktree, and the mitigation is two commands
+
+This session ran entirely in `.claude/worktrees/github-issues-backlog-1ccb4b`,
+which is exactly the condition this item describes, and **its figures were
+sound** — the board's counts tracked reality through nine issue state changes.
+
+Not by luck, and not by "ignoring every Context block" four times. By two
+commands, run before anything else:
+
+```bash
+git fetch origin
+git rev-list --count HEAD..origin/main   # 0 — the worktree is not behind
+git rev-list --count origin/main..HEAD   # 0 — and carries nothing unpushed
+```
+
+Both zero means the worktree *is* `main`, so every Context figure gathered in it
+is a figure about `main`. **That is the whole check**, it is two lines, and it
+converts the item's operator-side mitigation from "notice, four times" into
+"assert, once."
+
+### What that does to the candidate fixes
+
+It argues for the **third** one — *"stamp the block with the commit it
+describes"* — and against the other two:
+
+- Resolving the repository root does not help: `assert_checkout.py` already
+  passes here, as the item says. The worktree is intact and honest about itself.
+- Refusing to emit a board outside the main checkout would refuse this session,
+  which produced correct figures throughout.
+- **Stamping is the only one that distinguishes the two cases**, because the
+  distinguishing fact is not *where* the block was gathered but *whether that
+  checkout is level with `main`* — which is exactly what a commit stamp beside
+  `origin/main`'s makes visible.
+
+Cheaper still, and available today with no tooling change: **the two commands
+above belong in the skills' Context preamble**, so the block carries `behind 0 /
+ahead 0` beside its counts. A block that says `behind 12` is visibly stale
+rather than merely wrong, which is the property the item asks for.
+
+Still p2 and still open — nothing was built.
