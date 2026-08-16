@@ -2,11 +2,11 @@
 id: the-exposure-cap-starves-silently-and-we-say-it-wrong
 title: The exposure cap is a sizing base that starves entries silently — our hint calls it a total
 type: bug
-status: in-progress
+status: open
 priority: p2
 created: 2026-08-15
 updated: 2026-08-16
-change: the-cap-says-what-it-meters
+change: ""
 capability: agent-understanding
 github: "299"
 blocked_by: []
@@ -183,3 +183,29 @@ the item worried about belongs to the platform, not to us.
   agents while `get_account_state` reports `balance.usdc 38.573919`. Carried
   identically on [[performance-and-allocation-are-unmodelled]] (#107); it is not
   folded into any verdict here.
+
+## The copy half shipped 2026-08-16 — the item stays open
+
+`the-cap-says-what-it-meters` landed and is archived. The hint now reads:
+
+> Margin, not position size. BattleGrid sizes each new trade from what is left
+> — and once that falls under 10, the next trade is refused without saying why.
+
+That discharges **consequence 1** — the wrong unit — and nothing else. The
+`agent-authoring` requirement *An Agent's Spending Limits Are Stated Before It
+Exists* gained a clause obliging a limit to be described by what the platform
+meters and how it enforces it.
+
+**`change:` is cleared and `status:` returns to `open` deliberately.** The item
+was filed for two halves and only the `lite` one is done. What remains is the
+`standard` half, and the 2026-08-16 measurement made it cheaper than filed:
+`get_agent_budget` already publishes `headroomUsd`, `effectiveNotionalUsd`,
+`budgetOverSubscribed`, `stopBelowSingleTradeLoss`, `blockedReason` and four
+resolved gauges on a call the product already makes. Surfacing "the next order
+would size to X, floor is Y" is now a rendering problem over fields in hand
+rather than a derivation, but it adds behaviour to the limits surface and still
+needs a delta spec.
+
+Also still open from the Notes: the `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` /
+`minEquityUsd: 33.333333` test is **NOT DETERMINED**, and the
+`accountEquityUsd: 0` anomaly is recorded, not concluded.
