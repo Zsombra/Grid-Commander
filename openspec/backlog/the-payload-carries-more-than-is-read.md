@@ -244,3 +244,50 @@ of zero".
 `provider: null` also settles the cheap half. `modelDisplayName` is the field
 that can replace the agent page's `CUSTOM`; `provider` cannot help, because the
 platform does not populate it.
+
+## Re-checked 2026-08-16 (v19.2.0) — the cost split reproduces under load, and it is the sharpest reading yet
+
+The 2026-08-14 check could not exercise the list-vs-detail split: the fleet had
+been idle since 2026-08-12, both reads answered `0`, and a zero/zero pair
+falsifies nothing. **Today the fleet is trading** — Undertow shows
+`tradesToday: 11` on `get_agent_budget` and holds three open positions — so the
+read that was impossible two days ago is possible now.
+
+| tool | Undertow | Vanguard | Breakwater |
+|---|---|---|---|
+| `list_intelligence_agents` | **1.1710347** | 0.37036041 | 0.36110846 |
+| `get_intelligence_agent` | **0** | — | — |
+
+Sixth measurement, first at v19, and the **first taken while the agent was
+actively spending**. Same agent, same minute, every other key identical across
+the two payloads. The detail read reports zero against $1.17 of real spend.
+
+**This is the reading that makes the workaround defensible rather than merely
+inherited.** Every prior confirmation was either on a small non-zero (0.09,
+0.83) or on an idle fleet where zero was plausibly true. A dollar of spend
+reported as zero cannot be read as rounding, staleness, or a quiet fix.
+
+The product's decision — map spend from the list only — is **correct at
+v19.2.0** and is already enforced rather than just documented:
+`agent-mapper.ts:120` reads it in `mapRosterAgent`, `mapAgent` pins it to
+`null` (`:96`), and `tests/agent/mapper.test.ts:174,182` assert both directions.
+Nothing to change; this note exists so the next person to consider "simplifying"
+the two mappers into one finds the measurement that says why they are two.
+
+### The other four, unchanged
+
+- **`provider`** — `null` on all three agents. Fourth probe, now spanning v17,
+  v18 and v19. Never seen carrying a value on this account.
+- **`activeGameCount`** — `0` on all three. **`hasActiveAssignments`** — `false`
+  on all three. Both still falsy everywhere, so both stay exactly as unexplained
+  as they were; three falsy observations is not an observation of the field.
+- **`avatarUrl` / `modelImageUrl`** — present on all three, still presentation
+  this product has no use for.
+
+`modelDisplayName` reads `"GLM-5.2"` on all three (mapped since 2026-08-07).
+
+### Recorded in passing
+
+Vanguard runs `tradingMode: APPROVAL_REQUIRED` — it is the agent whose decisions
+reach the approval queue, which matters to #101 and #304 and is stated here
+because this read is where it was visible.

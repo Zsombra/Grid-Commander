@@ -263,3 +263,36 @@ Consequences:
 
 `get_open_orders` answered on the same sweep — six live resting legs — so the
 2026-08-13 healing holds at v19.1.0.
+
+
+## 2026-08-16 (v19.2.0) — the trigger condition was checked, and it did not fire
+
+This item's standing recommendation is *"keep open, stop expecting it to change,
+and re-read only when the description changes again."* v19 is a new major and
+moved 34 output schemas (#301), so the description was checked. **It has not
+changed in substance.**
+
+The tool description at v19.2.0 still carries the precondition in prose —
+*"Provide sessionId for session-scoped context, or primaryTimeframe (5m, 15m,
+1h, 4h, 1d) for general market research — exactly one of the two"* — and the
+input schema still declares **no `required`, no `anyOf`, no `oneOf`**. The bare
+call refuses identically:
+
+```
+get_market_context({}) -> {"code":"VALIDATION_ERROR",
+                           "message":"Provide sessionId or primaryTimeframe"}
+```
+
+Seventh measurement, now spanning **v5, v11, v14, v15, v16, v17, v18 and v19**.
+Nothing to do; recorded so the next reader can see the trigger was tested rather
+than assumed. The lesson this item is kept for is unchanged and was reinforced
+by v19: a JSON Schema is not the whole contract on this platform, and the prose
+is sometimes the only place a requirement is written down.
+
+### One thing worth carrying to #300
+
+`primaryTimeframe`'s enum at v19.2.0 is `["5m","15m","1h","4h","1d"]` — **`1d`
+is still offered here, and `1m` is absent.** #300 asks what v19's retirement of
+`1m` and `1d` from the authorable categories means. This is evidence that the
+retirement is scoped to *authorable* surfaces: a read parameter on the same
+platform version still accepts `1d`. Read there, not concluded here.

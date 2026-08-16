@@ -264,3 +264,46 @@ than filed:
 [[the-stop-vs-noise-comparison-has-no-home]] (#85) assumed it needed accumulated
 candle history to compute. Read #85 against this payload before building
 anything there; its third blocker may be softer than recorded.
+
+
+## Correction 2026-08-16 — `observedExtreme` is *favorable* excursion, and the note above says adverse
+
+The note this item ends on tells the next reader that
+`trailingGeometry.observedExtreme` and `trailDistance` are *"live
+adverse-excursion data"* and that #85's third blocker "may be softer than
+recorded". **Measured today, that is backwards**, and acting on it would have
+built a noise floor out of the wrong tail.
+
+Read live at v19.2.0, 2026-08-16, `list_user_active_positions`, three open LONG
+positions:
+
+| coin | entry | mark | `observedExtreme` | `trailDistance` | `trailLevel` |
+|---|---|---|---|---|---|
+| AIXBT | 0.017857 | 0.017833 | 0.017857 | 0.00017325 | 0.01768375 |
+| FARTCOIN | 0.14213 | 0.14287 | 0.14395 | 0.001908 | 0.142042 |
+| MELANIA | 0.07015 | 0.07075 | 0.07118 | 0.00072036 | 0.07045964 |
+
+Two facts hold on all three, the second exactly:
+
+1. `observedExtreme >= entry` **and** `observedExtreme >= markPrice`. On AIXBT,
+   which is *under* water (mark below entry), the extreme sits at the entry
+   price rather than at the low — so it does not track the adverse side at all.
+2. `trailLevel == observedExtreme - trailDistance`, to the last decimal place on
+   every row.
+
+The trail sits **below** the extreme. For a LONG that is only coherent if the
+extreme is the high-water mark — the best price seen since entry. So
+`observedExtreme` is **maximum favorable excursion (MFE)**, and #85 needs
+maximum *adverse* excursion (MAE). They are opposite tails of the same
+distribution and one cannot substitute for the other.
+
+**So #85's third blocker is not softened by this payload.** The pointer is
+withdrawn. What is still true, and is the useful half, is that `trailDistance`
+is a live per-position distance the platform itself computes — but it is a
+give-back allowance measured from the favorable extreme, not a noise floor, and
+it is not a fixed percentage of entry (0.97%, 1.34%, 1.03% across the three
+rows), so it cannot be read as a constant either.
+
+Scope stated honestly: all three positions were **LONG**. The direction-aware
+behaviour of `observedExtreme` on a SHORT is inferred, not observed — the
+arithmetic above is what was measured.

@@ -48,6 +48,15 @@ independence for cross-sectionally clustered coins (funding-flipping's 113 pairs
 sat in 55 distinct hours). Whoever takes this **runs the depth gate before
 proposing**, as #282 did, and reads it against effective sample, not raw `n`.
 
+One shortcut is closed off. [[trading-telemetry-is-unread]] (#116) carried a
+note suggesting `trailingGeometry.observedExtreme` was live adverse-excursion
+data and that this blocker was therefore softer than recorded. Measured
+2026-08-16 on three open LONG positions, `observedExtreme` is the **favorable**
+extreme — it sits at or above both entry and mark on every row, including one
+under water, and `trailLevel == observedExtreme - trailDistance` exactly. It is
+MFE where this item needs MAE. The pointer is withdrawn there; do not spend a
+session on it.
+
 Where such a figure may live is already constrained: **not on the strategy
 page.** `tests/architecture/no-population-constants.test.ts` forbids a measured
 constant there, and the archived change put the measured half on the agent's
