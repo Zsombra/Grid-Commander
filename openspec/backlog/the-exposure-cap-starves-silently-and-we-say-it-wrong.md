@@ -2,11 +2,11 @@
 id: the-exposure-cap-starves-silently-and-we-say-it-wrong
 title: The exposure cap is a sizing base that starves entries silently — our hint calls it a total
 type: bug
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-15
 updated: 2026-08-16
-change: ""
+change: the-cap-shows-what-is-left
 capability: agent-understanding
 github: "299"
 blocked_by: []
