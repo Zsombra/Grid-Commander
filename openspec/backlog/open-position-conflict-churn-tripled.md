@@ -2,10 +2,10 @@
 id: open-position-conflict-churn-tripled
 title: "Undertow's OPEN_POSITION_CONFLICT churn: 31/hr, then ~102/hr, then ~3.6/hr"
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-11
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "146"
@@ -300,3 +300,87 @@ Two facts from this session's reads:
    though it is radar-side evidence, not a gate-block read. Since
    2026-08-13T18:01Z the whole fleet is `PLATFORM_PAUSED`, which confounds
    any current-rate measurement — zero blocks while paused separates nothing.
+
+
+## ANSWERED 2026-08-16 (read 13:43Z, v19.2.0) — cause 1 confirmed, cause 2 refuted
+
+The separating read was blocked: since 2026-08-13T18:01Z the fleet was
+`PLATFORM_PAUSED`, and zero blocks while paused separates nothing. **The pause
+has lifted.** Undertow is trading — `tradesToday: 11`, three open positions —
+so the measurement this item has waited five days for is finally possible, and
+it is decisive.
+
+### The rate is back at the top of its own range, exactly
+
+`list_gate_blocks(Undertow, limit: 100)`, page 1, read 2026-08-16T13:43Z:
+
+```
+window   2026-08-16T12:52:53.559Z -> 13:42:54.078Z   = 50 min 00.5 s
+rows     100, every one TOKEN / OPEN_POSITION_CONFLICT
+rate     120.0 blocks/hr
+```
+
+**120.0/hr** — the same figure as the 2026-08-12 03:51–04:41 window, which was
+also 100 rows in 50 minutes. The fall to ~3.6/hr and the return to 120/hr are
+the same agent, unchanged, under two different position states.
+
+### The mechanism, measured rather than inferred
+
+The blocked coins are the coins the agent is holding:
+
+| coin | rows in the 50-min window | position |
+|---|---|---|
+| FARTCOIN | ~49, about one per minute | open since 11:24:55Z |
+| MELANIA | ~49, about one per minute | open since 08:05:54Z |
+| AIXBT | **2**, both at 13:00Z | opened 13:13:24Z — *after* both blocks |
+
+Two coins dispatched roughly once a minute each is exactly 2/min = 120/hr.
+So the churn is the pipeline re-offering a coin the agent already holds and the
+TOKEN gate refusing it — **normal behaviour under an open position, not a
+fault**, and the rate is a function of how many held coins the radar is
+currently dispatching.
+
+**The AIXBT rows are the detail that keeps this honest.** If the rule were
+simply "one block per held coin per cadence tick", AIXBT would be blocking every
+minute since 13:13 and it is not — it appears twice, both times *before* its
+position existed. So the rate tracks **radar dispatch of held coins**, not the
+count of held positions. A model predicting the rate from `openPositionCount`
+alone would be wrong, and this is the row that says so.
+
+### What this settles
+
+- **Cause 2 — "the agent stopped evaluating" — is refuted.** It is evaluating
+  right now, at about two candidate dispatches a minute.
+- **Cause 1 — "the agent has simply been flat" — is confirmed.** The 08-12
+  09:11 → 08-13 20:30 window averaging 3.6/hr is what this pipeline looks like
+  with nothing held; 120/hr is what it looks like with two coins held. Same
+  agent, same platform, no change in health.
+- **The series is explained.** 31/hr, 90/hr, 102/hr, 120/hr, 3.6/hr, 120/hr is
+  not a trend in anything. It tracks position state, which is why the title's
+  "tripled" never described it.
+
+### Lifetime counters at this read, for whoever needs the baseline
+
+```
+total 7103   (5,496 at the 2026-08-13 read)
+TOKEN      OPEN_POSITION_CONFLICT             6844   latest 2026-08-16T13:42:54Z
+EVALUATION LLM_UNAVAILABLE                     140   latest 2026-08-15T13:04:31Z
+TOKEN      EXCHANGE_MIN_NOTIONAL_UNREACHABLE    89   latest 2026-08-16T06:00:27Z
+ACCOUNT    DAILY_TRADE_LIMIT_REACHED            22   latest 2026-08-09T03:15:46Z
+EVALUATION LLM_OUTPUT_SCHEMA_INVALID             8   latest 2026-08-16T09:04:39Z
+```
+
+`LLM_UNAVAILABLE` (140) and `LLM_OUTPUT_SCHEMA_INVALID` (8, latest today) belong
+to [[battlegrid-is-returning-internal-errors]], this item's `blocked_by` — noted
+there, not concluded here.
+
+### No product change follows
+
+`stoppages.tsx` shows the reason code as the platform sent it and deliberately
+keeps no lookup table turning codes into sentences of ours — its rule 1, argued
+from the platform having replaced itself four times with unsettled code meanings.
+Explaining `OPEN_POSITION_CONFLICT` on the surface would breach exactly that
+rule. This finding belongs in the record, which is where it now is.
+
+**Closing.** The question this item asks is answered. It is not a defect, in
+this product or the platform.
