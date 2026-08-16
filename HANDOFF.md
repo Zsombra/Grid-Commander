@@ -309,25 +309,28 @@ The idea brief is at `_IDEA/Grid-Commander_Idea_Brief.md`. The MVP feature spec 
 
 ## Current State of `main`
 
-**Three PRs are open and none is this session's** — parallel sessions run on
+**One PR is open and it is this session's** (#329). Parallel sessions run on
 this repo, which is why a `Next` written into `JOURNAL.md` can be stale before
 its PR lands. Read `git show origin/main:openspec/JOURNAL.md`, never the local
-copy, before trusting one. It also means **the item↔issue mirror cannot be
-audited from `main` alone**: five issues are open with no item here (#299,
-#304, #305, #317, #318) because their items live on those unmerged branches.
+copy, before trusting one. The item↔issue mirror is currently clean **both**
+directions — 30 open items to 30 open issues — but that only holds while no
+other branch is carrying items, so re-check it rather than inheriting this line.
+
+**Re-measured at the close of the lane leg, 2026-08-16.** Every figure below was
+counted, not incremented.
 
 | Metric | Value |
 |---|---|
-| Capabilities (archived) | **13** |
-| Changes (archived) | **202** |
-| Vitest tests | **2576 / 205 files** (+ key-gated live); the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
-| Harness tests (Python) | 274 |
-| Active changes | none |
-| Open backlog items | **24**, **all p3 — no p1, no p2.** *Not* 1:1 with the 27 open issues — see the PR row; two of the gaps (#283, #294) are genuine drift on `main` and are recorded on #309 |
-| Design | 28 surfaces (15 designed, 7 needs-redesign, 6 functional); DT-0001–DT-0027 all implemented; `system.json` v3 |
-| Open PRs | **#319**, **#313** and **#307**, all another session's |
-| Open GitHub issues | mirrored 1:1 with the backlog (the tracking rule); **no P1s open** |
-| BattleGrid | **v19.1.0** (re-probed 2026-08-15, #287); all three records level with live, and the reference now carries the platform's prose too (#294) |
+| Capabilities | **13** |
+| Changes (archived) | **206** |
+| Vitest tests | **2631 / 208 files**, of which **six fail at `HEAD` on a clean tree** (`live-probes-are-named` ×4, `cli-spawn` ×2) — the pass criterion is six, not zero (#330). Plus key-gated live; the db suite runs only against a disposable database — it refuses the live record db, and that refusal is correct |
+| Harness tests (Python) | **284** |
+| Active changes | **1** — `the-approval-can-be-answered`, 19/40 |
+| Open backlog items | **30** (238 closed: 234 done + 4 wontfix). **Two p2**: #304 (blocked on #101) and #299's standard half |
+| Design | 28 surfaces, 0 open tickets, `system.json` designed |
+| Open PRs | **#329** — this session's, mergeable |
+| Open GitHub issues | **30**, mirrored 1:1 with the backlog (the tracking rule) |
+| BattleGrid | **v19.2.0** — found by accident on 2026-08-16 while capturing, when the record still said v19.1.0. All three records were refreshed and are level with live. The only output movement was `get_account_state` (+7 leaves) |
 
 ### Read this before anything else
 
