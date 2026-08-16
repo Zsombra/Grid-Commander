@@ -34,7 +34,20 @@ It is not: the **remote** branch is still there, and nothing later says so.
 
 Every branch this repo works on is checked out in a worktree, so this fires on
 **every** merge, and the failure mode is invisible in the direction people
-check. On 2026-08-16 four PRs (#307, #313, #319, #323) were merged this way; all
+check.
+
+> **Narrowed 2026-08-16 (later): "every merge" is too strong, and the exception
+> is a workaround.** Three PRs were merged that day. **#329 fired it** — its
+> branch was held by a worktree, `--delete-branch` reported success, and
+> `git ls-remote` showed the remote branch still there. **#332 and #333 did
+> not**: those branches were created and held in the **main checkout**, where
+> `gh` switches away and deletes cleanly, remote included. So the trigger is
+> precisely a *worktree-held* branch, not a merge — which the title already
+> said, and which this paragraph overstated. Working a branch from the main
+> checkout avoids it entirely, and is the cheapest mitigation until the item is
+> fixed properly. **The post-merge `git ls-remote` check is still owed either
+> way**, because which checkout held a branch is not something the merge output
+> tells you. On 2026-08-16 four PRs (#307, #313, #319, #323) were merged this way; all
 four reported success, and all four left their remote branch on `origin`. They
 were only found by listing `refs/remotes/origin` at the end of the session
 rather than trusting the merge output.
