@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-08-16 (lane) — two P2s answered, and a guard that already existed
+
+**Did**: worked the audit's ladder from the top. **#299's copy half** shipped as
+`the-cap-says-what-it-meters` (lite, archived): the exposure hint said "the total
+of everything open" and the cap meters **margin** — measured, not argued
+(`gauges.exposure.fill` 8.55 against a notional of 29.48). Six tests assert the
+claim rather than the sentence; four fail against the old copy. **#325 closed**
+via `a-session-knows-which-checkout-it-is-in` (standard, archived):
+`tools/assert_checkout.py` plus a `SessionStart` hook in a new
+`.claude/settings.json`, and `tests/test_assert_checkout.py` — ten tests,
+mutation-tested, four fail when the guard is neutered. Re-pinned the three
+surfaces the copy fix staled. Filed **#327** (a classification metric refuses
+comparison operators), **#330** (a suite flake), **#331** (a surface staled by an
+import it never renders). **Withdrew #328 the day it was filed** — see below.
+
+**State**: PR #329 open with 8 commits, mergeable. 30 open items, mirror clean
+30/30, `validate` 0 errors / 16 warnings. `the-approval-can-be-answered` still
+19/40 and untouched today. Two P2s remain: #299's `standard` half and #304
+(blocked on #101). Quality gates green; the offline suite sits at its known
+six failures, unchanged all session.
+
+**Next**: `/propose` #299's standard half — surfacing `headroomUsd` and
+`effectiveNotionalUsd` on the limits surface. The 2026-08-16 measurement made it
+a rendering problem over fields already fetched rather than a derivation, but it
+adds behaviour and still needs a delta spec.
+
+**Watch out**:
+- **`probe_mcp_surface.py` refreshes the surface record ALONE.** Running it puts
+  `battlegrid-mcp-surface.json` ahead of the vocabulary and capability records,
+  and that half-finished refresh looks exactly like a missing guard. It is what
+  produced the false #328. Refresh all three, or expect the disagreement.
+- **The `SessionStart` hook is not live in the session that created it.** The
+  settings watcher only watches directories that already had a settings file at
+  session start. It takes effect next session.
+- **The suite's pass criterion is six failures, not zero** — so a seventh cannot
+  be told from a flake without a re-run. That is #330, and it is why
+  `exposure.test.ts` was correctly dismissed.
+- **`jq` is not installed on this machine.** The hook builds its JSON in Python
+  for that reason; assume the same for anything else that shells out.
+- Archiving a change does not close a backlog item filed for two halves. #299
+  went back to `open` on purpose.
+
 ## 2026-08-16 (probe) — the account was holding positions, and nine parked items answered
 
 **Did**: audited all 28 open backlog items into a report grouped by category and
