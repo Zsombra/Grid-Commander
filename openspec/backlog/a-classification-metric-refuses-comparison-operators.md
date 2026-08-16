@@ -137,3 +137,70 @@ pairing is a **contract**, not a mistake, so `condition-write-probe` should
 assert the refusal deliberately rather than compose an illegal pairing and fail.
 That turns a red probe into a live check that the platform still enforces what
 the product will start filtering on.
+
+## 2026-08-17 — "filter the operator picker" is not available, and the reason is architectural
+
+Taken up to build. **It cannot be built as specified**, and the obstacle is not
+effort — it is the surface's stated design. Recording before proposing anything
+else, because the correction matters more than the workaround.
+
+### The composer has no picker over columns
+
+Step 2 says *"the authoring surface should filter the operator picker by kind
+and this becomes a small UI fix."* That presumes the product knows which column
+a row refers to at render time. It does not.
+
+`condition-composer.tsx` takes the column as **two free-text inputs**:
+
+```tsx
+<input type="text" name={`${p}section`} … />                       // section key
+<input type="text" name={`${p}header`} list="gc-condition-columns" … />
+```
+
+`gc-condition-columns` is a **datalist** — a suggestion list, not a constraint.
+The operator may type anything, and a datalist selection fires no round trip. So
+at the moment the operator select is rendered, the server does not know and
+cannot know which column the row means.
+
+### Filtering it would need client JavaScript, which the product declares it has none of
+
+To narrow the operator options in response to what is typed, something must
+react in the browser. **Seventeen surface manifests assert *"the only client code
+is `PerformButton`"***, and the conditions-save manifest adds that *"a design
+requiring further client-side interactivity changes behavior and is
+requires-spec-change."*
+
+So step 2 is not a small UI fix. It is a request to add client-side
+interactivity to a product built around not having any — an architectural
+decision with a design contract over it, not an afternoon's work.
+
+**Nothing was built. The approved option turned out not to exist.**
+
+### What is actually available, in ascending cost
+
+1. **Validate the pairing at describe time.** The product already composes there,
+   already calls `get_strategy_column_contract`
+   (`compose-column.query.ts:181`, `check-column.query.ts:32`), and already has
+   a describe step whose whole job is saying what a write would do before it
+   happens. Moving the refusal from write-time to describe-time costs the
+   operator nothing they have not already typed, and it is server-side — no JS,
+   no architectural change. **Needs**: `conditionOperators` mapped through
+   `mapColumnContract`, which currently keeps only `header`, `meaning`, `unit`
+   and `nullable` (`strategy-adapter.ts:1073-1086`), plus a delta spec.
+2. **Say the legal set beside the picker**, statically — render each column's
+   operators in the datalist's neighbourhood so the operator can see them. No
+   JS, no filtering, purely informative, and much weaker.
+3. **Constrain the header to a select over the contract.** Changes the
+   composer's whole model — it would need the full column list per section at
+   render time and would give up hand-editable URLs, which the manifest names as
+   a deliberate property.
+
+**(1) is the honest fix** and is what this item should now ask for. It does not
+prevent composing the pairing; it stops the operator finding out at the write.
+
+### One correction to my earlier comment on this issue
+
+I wrote that this *"is step 2, and it is a small fix"* and that filtering *"needs
+no new platform read"*. The second half stands — `conditionOperators` is on a
+response the product already receives. The first half was wrong: I checked that
+the data was reachable and not that the surface could act on it at render time.
