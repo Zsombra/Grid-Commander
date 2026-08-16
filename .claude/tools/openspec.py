@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -515,6 +516,74 @@ def find_archived(root: Path, change: str):
     suffix = re.sub(r"^\d{4}-\d{2}-\d{2}-", "", change)
     return next((n for n in archived_names(root)
                  if n == change or re.sub(r"^\d{4}-\d{2}-\d{2}-", "", n) == suffix), None)
+
+
+def mirror_check(root: Path) -> dict:
+    """Compare every item's `status:` against its issue's state on GitHub.
+
+    `validate` enforces that an open item *has* a `github:` number and never
+    compares the two states, so an item could read `status: open, priority: p2`
+    while its issue was CLOSED and every check in the repository passed. That
+    happened (#309), for a day, and the board's `NEXT:` line recommended work
+    GitHub already considered finished — three sessions read it.
+
+    **This is deliberately not part of `validate`.** `validate` is offline and
+    must stay that way: it runs in CI, in hooks, and on a laptop with no `gh`
+    credential, and a check that needs the network would either fail there or
+    teach people to ignore its warnings. This is its own command, run when
+    someone wants the answer.
+
+    **Three directions, and only two of them are drift.**
+
+      A. item open/in-progress/blocked, issue CLOSED  — drift
+      B. item done, issue OPEN                        — drift
+      C. issue OPEN with no item at all               — usually in-flight
+
+    C is the noisy one #309 warned about. Every session's tracking lands as a
+    PR and its issues close immediately, so between filing and merge an issue
+    legitimately has no item on `main`. Run against a working tree it is quiet;
+    run against `main` mid-flight it is not. So C reports and does not fail
+    unless `--strict` says to.
+    """
+    items = load_backlog(root)
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "list", "--state", "all", "--limit", "400",
+             "--json", "number,state"],
+            capture_output=True, text=True, check=True, cwd=str(root),
+        ).stdout
+    except FileNotFoundError:
+        return {"error": "gh is not installed — this check needs the GitHub CLI"}
+    except subprocess.CalledProcessError as err:
+        return {"error": f"gh failed: {(err.stderr or '').strip()[:200]}"}
+
+    state = {str(r["number"]): r["state"] for r in json.loads(out)}
+    closed_drift, done_drift, unmirrored = [], [], []
+    seen = set()
+
+    for item in items:
+        # `""` is unmirrored and `none` is the deliberate opt-out; both are
+        # already `validate`'s business, and neither has a state to compare.
+        if item.github in ("", "none"):
+            continue
+        seen.add(item.github)
+        gh_state = state.get(item.github)
+        if gh_state is None:
+            continue
+        if item.is_open and gh_state == "CLOSED":
+            closed_drift.append({"item": item.id, "status": item.status,
+                                 "issue": item.github})
+        if item.status == "done" and gh_state == "OPEN":
+            done_drift.append({"item": item.id, "status": item.status,
+                               "issue": item.github})
+
+    for num, gh_state in sorted(state.items(), key=lambda kv: int(kv[0])):
+        if gh_state == "OPEN" and num not in seen:
+            unmirrored.append({"issue": num})
+
+    return {"itemsScanned": len(items), "issuesKnown": len(state),
+            "itemOpenIssueClosed": closed_drift, "itemDoneIssueOpen": done_drift,
+            "issueOpenNoItem": unmirrored}
 
 
 def validate_backlog(root: Path, strict: bool) -> list:
@@ -2070,6 +2139,12 @@ def main(argv: list) -> int:
     p_status = sub.add_parser("status", help="artifact graph for a change", parents=[common])
     p_status.add_argument("change", nargs="?")
 
+    p_mirror = sub.add_parser("mirror",
+                              help="compare each item's status against its GitHub issue (needs gh)",
+                              parents=[common])
+    p_mirror.add_argument("--strict", action="store_true",
+                          help="also fail on an open issue with no item (noisy mid-flight)")
+
     p_validate = sub.add_parser("validate", help="validate deltas and main specs", parents=[common])
     p_validate.add_argument("change", nargs="?")
     p_validate.add_argument("--all", action="store_true", help="validate every active change")
@@ -2104,6 +2179,34 @@ def main(argv: list) -> int:
                 bar = f"{r['completedTasks']}/{r['totalTasks']}" if r["totalTasks"] else "—"
                 print(f"  {r['name']:<34} {r['track']:<9} tasks {bar:>7}  {r['state']}")
         return 0
+
+    if args.command == "mirror":
+        result = mirror_check(root)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        if "error" in result:
+            if not args.json:
+                print(f"  {result['error']}")
+            return 2
+        a = result["itemOpenIssueClosed"]
+        b = result["itemDoneIssueOpen"]
+        c = result["issueOpenNoItem"]
+        if not args.json:
+            print(f"  {result['itemsScanned']} items, {result['issuesKnown']} issues")
+            for row in a:
+                print(f"  DRIFT  {row['item']} is {row['status']} — issue #{row['issue']} is CLOSED")
+            for row in b:
+                print(f"  DRIFT  {row['item']} is done — issue #{row['issue']} is OPEN")
+            for row in c:
+                print(f"  UNMIRRORED  issue #{row['issue']} is OPEN with no item"
+                      " (expected while its branch is unmerged)")
+            if not a and not b and not c:
+                print("  clean — every mirrored item agrees with its issue")
+            elif not a and not b:
+                print(f"  no drift; {len(c)} open issue(s) without an item")
+        if a or b:
+            return 1
+        return 1 if (c and args.strict) else 0
 
     if args.command == "board":
         changes = [Change(root, n) for n in list_changes(root)]

@@ -5,17 +5,62 @@ type: question
 status: open
 priority: p3
 created: 2026-08-10
-updated: 2026-08-14
+updated: 2026-08-16
 change: ""
 capability: strategy-authoring
 github: "85"
 blocked_by: []
-tags: [battlegrid, v15, risk, measurement]
+tags: [battlegrid, v15, v19, risk, measurement]
 ---
 
 # The stop-versus-noise comparison has no home
 
-Tracked on GitHub as **#85**, which carries both samples and the unblocking order.
+Tracked on GitHub as **#85**. The upstream watch is stated at the foot of this
+file, under "Re-scoped 2026-08-14"; the two sections below are the only things
+that have moved since.
+
+## Re-confirmed at v19.2.0 — 2026-08-16
+
+Blocker (2) still holds, now five majors running. `get_strategy` on Cannae
+(`f901a336-6adc-458a-9d5e-19fb117deee1`), read 2026-08-16:
+`minStopLossAtrMultiple 1`, `maxStopLossPct 5`, `minRiskRewardRatio 1.5` — the
+platform defaults, while Cannae's agent Undertow was deliberately built at
+`minRiskRewardRatio 2.0`. Parsed and discarded, unchanged across v15, v16, v17,
+v18, v19.
+
+The previous confirmation in this file is at v18.2.0. Nothing else about the
+blocker has changed and nothing is owed from this side: the panel already says
+the values are platform-set and inert, and offers no edit.
+
+## Blocker (3)'s premise is now worth re-testing — 2026-08-16
+
+Blocker (3) was filed as "adverse excursion needs candle history", which was
+true when nothing recorded prices. The recorder has since accumulated: **1,203
+captures over 2.61 days at 1h across 20 series, 1,130 valid pairs** (measured
+read-only 2026-08-15 under #282's depth gate). A forward-return distribution at
+1h **is** a locally measured single-step move — the same reference class as the
+population study's "mean single-bar adverse excursion of 0.47%". So the
+reference number may be reachable from the record this product already keeps,
+with no `get_coin_candles` call and no borrowed constant.
+
+It is not reachable yet, and the reason is the one #282 hit: raw `n` overstates
+independence for cross-sectionally clustered coins (funding-flipping's 113 pairs
+sat in 55 distinct hours). Whoever takes this **runs the depth gate before
+proposing**, as #282 did, and reads it against effective sample, not raw `n`.
+
+One shortcut is closed off. [[trading-telemetry-is-unread]] (#116) carried a
+note suggesting `trailingGeometry.observedExtreme` was live adverse-excursion
+data and that this blocker was therefore softer than recorded. Measured
+2026-08-16 on three open LONG positions, `observedExtreme` is the **favorable**
+extreme — it sits at or above both entry and mark on every row, including one
+under water, and `trailLevel == observedExtreme - trailDistance` exactly. It is
+MFE where this item needs MAE. The pointer is withdrawn there; do not spend a
+session on it.
+
+Where such a figure may live is already constrained: **not on the strategy
+page.** `tests/architecture/no-population-constants.test.ts` forbids a measured
+constant there, and the archived change put the measured half on the agent's
+trading record deliberately — one strategy binds several agents.
 
 ## What
 

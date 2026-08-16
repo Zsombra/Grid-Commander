@@ -16,14 +16,31 @@
  * *token-based* className is the same defect one layer along: four files that
  * can disagree, invisibly, until someone notices one form looks different.
  *
- * `focus-visible` rather than `focus`, so a mouse click does not draw a ring a
- * keyboard user needs. The `focus` token has existed in `system.json` since
- * DT-0001 and was referenced by nothing until now.
+ * **No focus treatment here, deliberately (#338).** This string used to carry
+ * `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus`,
+ * and `outline-none` switched off the global rule in `globals.css` for all 71
+ * places `CONTROL` is used — every text input, select and textarea. Two things
+ * made that wrong rather than merely duplicated:
+ *
+ *  1. **Nineteen surface manifests say it cannot happen.** Twelve assert
+ *     *"Focus ring comes from the one global rule in globals.css — do not add a
+ *     per-element ring"*, and seven that the ring is global. The code
+ *     contradicted all nineteen, and nothing checked.
+ *  2. **The two treatments are not the same.** `system.json`'s own principle is
+ *     *"a visible focus state at 2px offset"*. The global rule is
+ *     `outline: 2px` with `outline-offset: 2px`; a Tailwind `ring-2` has no
+ *     offset. So the override did not restate the principle, it broke it — and
+ *     a focused input wore a different indicator from a focused link.
+ *
+ * The `focus` token is **not** orphaned by removing this: `globals.css:20`
+ * references it as `var(--gc-focus)`, which is where it always belonged. The
+ * original comment here read that the token *"was referenced by nothing until
+ * now"* — that was the reason the override existed, and it was mistaken about
+ * the global rule already consuming it.
  */
 export const CONTROL =
   'w-full rounded-gc-2 border border-border-default bg-bg-raised p-2 ' +
-  'text-base font-normal text-text-primary ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus';
+  'text-base font-normal text-text-primary';
 
 /**
  * How a checkbox looks — which is to say, almost entirely how the browser

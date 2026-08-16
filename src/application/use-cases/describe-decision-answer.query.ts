@@ -23,10 +23,14 @@ import type { Randomness } from './connect.commands.js';
  * and to mint. Two reads is the point — the binding compares them.
  */
 
-export interface DecisionAnswerDescription {
-  readonly decision: EntryDecision;
-  /** Milliseconds until the platform stops accepting an answer, floored at zero. */
-  readonly msRemaining: number | null;
+/**
+ * One verb, its consequence sentence, and the agreement that spends it.
+ *
+ * Kept per verb rather than per description because the two are not
+ * interchangeable: `confirmationTarget.decisionAnswer` puts the verb *first*,
+ * so a token minted to decline can never be spent opening the position.
+ */
+export interface DecisionAnswerOffer {
   readonly verb: DecisionAnswerVerb;
   /** The wording shown, stored on the token so the audit proves what was agreed. */
   readonly consequence: string;
@@ -40,6 +44,24 @@ export interface DecisionAnswerDescription {
    * never actually offered.
    */
   readonly confirmationToken: string | null;
+}
+
+export interface DecisionAnswerDescription {
+  readonly decision: EntryDecision;
+  /** Milliseconds until the platform stops accepting an answer, floored at zero. */
+  readonly msRemaining: number | null;
+  /**
+   * One entry per verb the caller asked about, in the order asked.
+   *
+   * **Both verbs are described from a single read, deliberately.** Accept and
+   * cancel are offered together (5.3), and describing them in two calls would
+   * mean two reads: the levels rendered would come from one and the accept
+   * token would be bound to the other's. They agree in practice — a PENDING
+   * decision's levels do not move — and "agree in practice" is the reasoning
+   * this repository has been burned by. One read, one set of levels, one
+   * agreement per verb.
+   */
+  readonly answers: readonly DecisionAnswerOffer[];
   /**
    * The levels the token is bound to, carried into the perform.
    *
@@ -83,7 +105,10 @@ export class DescribeDecisionAnswerQuery {
     accessToken: string;
     agentId: string;
     decisionId: string;
-    verb: DecisionAnswerVerb;
+    /**
+     * The verbs to describe, in render order. One read serves all of them.
+     */
+    verbs: readonly DecisionAnswerVerb[];
     /**
      * Whether to issue a confirmation for this describe.
      *
@@ -117,54 +142,53 @@ export class DescribeDecisionAnswerQuery {
     }
 
     const shown = levelsOf(decision);
-    const consequence = describeAnswer(req.verb, decision);
+    const answers: DecisionAnswerOffer[] = [];
 
-    if (!req.mintConfirmation) {
-      return {
-        kind: 'answerable',
-        description: {
-          decision,
-          msRemaining: remainingMs(decision.expiresAt, this.clock.now().getTime()),
-          verb: req.verb,
-          consequence,
-          confirmationToken: null,
-          shown,
-        },
-      };
+    for (const verb of req.verbs) {
+      const consequence = describeAnswer(verb, decision);
+
+      if (!req.mintConfirmation) {
+        answers.push({ verb, consequence, confirmationToken: null });
+        continue;
+      }
+
+      const confirmationToken = this.random.token(32);
+
+      await this.confirmations.issue({
+        token: confirmationToken,
+        userId: req.userId,
+        // Asked of the port rather than written here: the literal belongs to the
+        // adapter (A10), and a second copy could drift into a token that can
+        // never be consumed.
+        tool: this.agents.answerDecisionTool(verb),
+        /**
+         * The verb, the decision and the three levels — never the decision alone.
+         *
+         * Accept and cancel produce **different** targets on purpose, so a token
+         * issued for a decline can never be spent opening the position. The
+         * precedent is `agentDeploy`/`agentUndeploy`, and the asymmetry here is
+         * far worse than that pair's: one of these commits nothing and the other
+         * spends real money.
+         *
+         * Both are minted from the **same** `shown`, which is what lets the two
+         * offers be rendered side by side without either being bound to levels
+         * the operator never saw.
+         */
+        target: confirmationTarget.decisionAnswer(verb, decision.id, shown),
+        consequence,
+        expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
+        consumedAt: null,
+      });
+
+      answers.push({ verb, consequence, confirmationToken });
     }
-
-    const confirmationToken = this.random.token(32);
-
-    await this.confirmations.issue({
-      token: confirmationToken,
-      userId: req.userId,
-      // Asked of the port rather than written here: the literal belongs to the
-      // adapter (A10), and a second copy could drift into a token that can
-      // never be consumed.
-      tool: this.agents.answerDecisionTool(req.verb),
-      /**
-       * The verb, the decision and the three levels — never the decision alone.
-       *
-       * Accept and cancel produce **different** targets on purpose, so a token
-       * issued for a decline can never be spent opening the position. The
-       * precedent is `agentDeploy`/`agentUndeploy`, and the asymmetry here is
-       * far worse than that pair's: one of these commits nothing and the other
-       * spends real money.
-       */
-      target: confirmationTarget.decisionAnswer(req.verb, decision.id, shown),
-      consequence,
-      expiresAt: new Date(this.clock.now().getTime() + CONFIRMATION_TTL_SECONDS * 1000),
-      consumedAt: null,
-    });
 
     return {
       kind: 'answerable',
       description: {
         decision,
         msRemaining: remainingMs(decision.expiresAt, this.clock.now().getTime()),
-        verb: req.verb,
-        consequence,
-        confirmationToken,
+        answers,
         shown,
       },
     };

@@ -2,7 +2,7 @@
 id: the-exposure-cap-starves-silently-and-we-say-it-wrong
 title: The exposure cap is a sizing base that starves entries silently — our hint calls it a total
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-15
 updated: 2026-08-16
@@ -269,3 +269,97 @@ needs a delta spec.
 Also still open from the Notes: the `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` /
 `minEquityUsd: 33.333333` test is **NOT DETERMINED**, and the
 `accountEquityUsd: 0` anomaly is recorded, not concluded.
+
+## DETERMINED 2026-08-16 — the free falsifiable test fired, and it confirms the thesis end to end
+
+The Notes describe a test needing no write: *"at the next evaluation a fresh
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row's `reasonDetail` publishes `equityUsd`.
+If it reads ≈32.8 the floor test uses live headroom and the starvation is
+confirmed end to end; if it reads 45 it uses the static cap. The string
+`minEquityUsd: 33.333333` settles it."*
+
+**A row was produced at 2026-08-16T14:00:25.929Z and read minutes later:**
+
+```json
+{ "coinTicker": "MOODENG", "gateStage": "TOKEN",
+  "reasonCode": "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+  "reasonDetail": { "equityUsd": 33.05, "minEquityUsd": 33.333333,
+                    "smallPct": 10, "maxLeverage": 3 } }
+```
+
+`get_agent_budget(Undertow)` the same hour: `maxConcurrentExposureUsd 45`,
+`capitalAtRiskUsd 11.95`, **`headroomUsd 33.05`**.
+
+**`equityUsd` is 33.05. That is `headroomUsd` exactly, and it is not 45.** The
+floor test runs against live headroom, not the static cap. **The starvation
+thesis is confirmed end to end**, on this account, by the platform's own row:
+the agent was refused an entry it wanted, by **$0.28**, because three open
+positions had eaten the base it sizes from.
+
+And `minEquityUsd: 33.333333` is there, the exact string this item predicted.
+
+### The floor's arithmetic, now readable
+
+The detail publishes every term:
+
+```
+minEquityUsd = 10 / (smallPct/100 x maxLeverage)
+             = 10 / (0.10 x 3)
+             = 33.333333        <- matches to the last published digit
+```
+
+So the $10 exchange minimum notional, the agent's small-size preset and the
+leverage together set the equity below which entries stop. Nothing here is
+inferred; all four numbers are on the row.
+
+### The floor is per-coin, not per-agent — and that is new
+
+The row reads `maxLeverage: 3`. Undertow's `tradingConfig.maxLeverage` is **4**.
+The open positions confirm leverage is resolved per coin:
+`effectiveLeverage` is **3** on AIXBT and MELANIA and **4** on FARTCOIN.
+
+That changes the floor by a third:
+
+| effective leverage | minEquityUsd |
+|---|---|
+| 4 | **25.00** |
+| 3 | **33.33** |
+
+**The same agent, at the same moment, starves on one coin and not on another.**
+At headroom 33.05 Undertow is below the floor for a leverage-3 coin like MOODENG
+and comfortably above it for a leverage-4 coin. There is no single number that
+is "this agent's floor".
+
+**This retroactively justifies what `the-cap-shows-what-is-left` shipped.** That
+change's copy says *"As this falls, each new trade is smaller. Below the exchange
+minimum they stop"* — and names **no figure**. Written before this row existed,
+that reads as caution. It is now the only correct option, and the finding should
+be recorded as a constraint rather than left to be rediscovered: **do not put a
+numeric floor on the limits surface.** It would be right for some coins and wrong
+for others on the same screen.
+
+### Both consequences and both loose ends are now discharged
+
+| | state |
+|---|---|
+| 1. hint asserts the wrong unit | shipped — `the-cap-says-what-it-meters` |
+| 2. nothing explains the starvation | shipped — `the-cap-shows-what-is-left` |
+| 3. we fetch the answer and discard it | shipped — same change |
+| `minEquityUsd: 33.333333` test | **DETERMINED above** |
+| `accountEquityUsd: 0` anomaly | concluded and rehomed to **#336** |
+
+**Closing.** Everything this item was filed for is either shipped or answered.
+
+### Recorded in passing, for #100
+
+The same page carried a reason code whose detail shape had not been seen:
+
+```json
+{ "gateStage": "EVALUATION", "reasonCode": "LLM_OUTPUT_SCHEMA_INVALID",
+  "reasonDetail": { "evaluationFaultDetail": "entry: Expected object, received string",
+                    "evaluationFaultAttempts": 2 } }
+```
+
+9 occurrences, latest 2026-08-16T14:09:11Z. A platform-side model fault with a
+retry count. Noted for [[battlegrid-is-returning-internal-errors]], not concluded
+here.

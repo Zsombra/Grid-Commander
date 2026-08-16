@@ -172,3 +172,47 @@ was drift** — #299, #304, #305 arrived with #307; #317, #318 with #319; all fi
 now sit on `main` as `status: open` against open issues. So the noisy direction
 is worth building after all, provided the check tolerates in-flight branches —
 and there is now a measured zero-state on a known SHA to regress against.
+
+## Built 2026-08-16 — `openspec.py mirror`
+
+The check this item asks for exists: `python3 .claude/tools/openspec.py mirror`.
+
+**Three directions, and only two of them are drift**, as the measured
+zero-state on `8e9e4c2` framed them:
+
+| | meaning | exit |
+|---|---|---|
+| item open/in-progress/blocked, issue **CLOSED** | drift | fails |
+| item **done**, issue OPEN | drift | fails |
+| issue OPEN with **no item** | usually in-flight | reports; fails only under `--strict` |
+
+The third direction is the one this item warned was noisy, and it is handled the
+way the item concluded it should be: reported, not fatal, because every session's
+tracking lands as a PR whose issues close immediately, so between filing and
+merge an issue legitimately has no item on `main`. `--strict` opts in.
+
+**It is deliberately not part of `validate`, and that is the design decision
+worth recording.** `validate` is offline: it runs in CI, in hooks, and on a
+laptop with no `gh` credential. A network-dependent check bolted into it would
+either fail in those places or teach everyone to skim the warning block — which
+is precisely the failure `tracking.md`'s own scoping note already records from
+the backfill. So `mirror` is its own command, needs `gh`, and exits **2** when
+`gh` is absent rather than reporting a false clean.
+
+Documented in `.claude/references/tracking.md` §7 under *"The other direction"*.
+
+### Run on this tree, 2026-08-16
+
+```
+271 items, 147 issues
+clean — every mirrored item agrees with its issue
+```
+
+All three directions zero. That is a **second** measured zero-state, and it was
+taken after a session that closed four issues (#107, #146, #147, #299) and filed
+two (#336, #337) — so it exercises the drift the check exists to catch rather
+than merely re-measuring a quiet tree.
+
+**This item stays open until the fix is on `main`.** It is itself an instance of
+what it describes: the check lives on a branch, and until that branch merges,
+`main` still has no mirror check.

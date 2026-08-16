@@ -218,7 +218,7 @@
   "source_digest": {
     "app/(app)/approvals/authority/actions.ts": "sha256:543218c1a1beaf7cda1d931a1813f90b3d502d6e2ee10de82a97c5a322fca28b",
     "app/(app)/approvals/authority/page.tsx": "sha256:eb74b221017a552272584c1eff72ad6c628e90f189fe4544c458f9ce1852e732",
-    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
     "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"

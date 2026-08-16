@@ -7,19 +7,39 @@ import { ConfirmationRequiredError, ScopeUnavailableError } from '@/domain/error
 import { explainAnswerRefusal } from '@/presentation/answer-refusal.js';
 
 /**
- * Cancel a proposed trade.
+ * Cancel a proposed trade. Commits nothing.
+ */
+export async function cancelDecision(formData: FormData) {
+  return answerDecision('cancel', formData);
+}
+
+/**
+ * Accept a proposed trade. **Opens a real position with real money.**
  *
+ * Unlocked by the Phase D gate, which required a cancel performed through this
+ * product and confirmed in the audit before any accept surface could exist
+ * (DL-11). That happened on 2026-08-17 — one audited cancel row,
+ * `destructive: true`, `outcome: succeeded` — so this path now runs the machinery
+ * a cancel already proved: the same binding, the same audit, the same scope
+ * guard, the same adapter. Only the verb differs, and the verb is first in the
+ * confirmation target precisely so the two can never be substituted.
+ */
+export async function acceptDecision(formData: FormData) {
+  return answerDecision('accept', formData);
+}
+
+/**
  * The whole write path in one function, and every branch of it ends somewhere a
  * person can read. The command re-reads the decision and checks all five binding
  * conditions before the port is touched; what arrives back here is either an
  * answer that was performed or a typed refusal that names why.
  *
- * **Accepting has no action.** The change's Phase D gate requires a cancel
- * performed through the product and confirmed in the audit before any accept
- * surface exists (DL-11). Cancelling commits nothing, so it is the path that
- * proves the binding, the audit, the scope guard and the adapter for free.
+ * **One implementation, parameterised by verb**, because DL-3 settled that
+ * answering is one operation. Two copies would be two places for the binding,
+ * the refusal handling and the scope redirect to drift apart — and the one that
+ * drifted would be the one nobody exercised.
  */
-export async function cancelDecision(formData: FormData) {
+async function answerDecision(verb: 'accept' | 'cancel', formData: FormData) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') redirect('/connect');
 
@@ -47,7 +67,7 @@ export async function cancelDecision(formData: FormData) {
       ...user.authority,
       agentId,
       decisionId,
-      verb: 'cancel',
+      verb,
       // The levels as they were rendered, carried back unchanged. The command
       // compares these against a fresh read — that comparison is the binding,
       // and it is also what makes a tampered hidden field fail: the target is
@@ -88,7 +108,22 @@ export async function cancelDecision(formData: FormData) {
     redirect(`${back}?problem=${encodeURIComponent(explainAnswerRefusal(result.refusal))}`);
   }
 
-  redirect('/approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.');
+  /*
+   * What the ack can support, and no more.
+   *
+   * The port returns `void` and the command's `answered` result carries exactly
+   * `kind`, `verb` and `decisionId` — nothing echoed from the platform (4.6). So
+   * the cancel line can be definite, because cancelling *is* the whole act, and
+   * the accept line cannot: BattleGrid was asked to open a position and said
+   * nothing back about whether it filled, at what price, or for how much.
+   * Claiming a position exists here would be this surface inventing an outcome.
+   */
+  redirect(
+    verb === 'cancel'
+      ? '/approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.'
+      : '/approvals?note=Accepted.+BattleGrid+was+asked+to+open+the+position+' +
+          '%E2%80%94+its+size+and+fill+are+on+the+agent%27s+positions%2C+not+in+this+answer.',
+  );
 }
 
 /**

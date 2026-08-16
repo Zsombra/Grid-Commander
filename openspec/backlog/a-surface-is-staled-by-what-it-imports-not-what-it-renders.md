@@ -71,3 +71,24 @@ what renders"* — is unavailable, because the validator overrides that call.
 (2) is the one that generalises. Related: [[the-focus-ring-and-element-claims-are-unmeasured]]
 (#318) records the same granularity mismatch from the other direction — a claim
 about one element is not resolvable at manifest granularity.
+
+## 2026-08-16 — the render-vs-import distinction bit again, in the other direction
+
+A comment-only edit to `src/presentation/components/ceilings.tsx` staled
+`agent-limits` today. That surface **does** render the component, so this is the
+legitimate case rather than this item's — and it is worth recording because it
+sharpens what a fix must preserve.
+
+The manifest was re-pinned in **prose as well as digest**: the `sizing-panel`
+constraint that already forbade an exchange-floor comparison now carries the
+measurement that makes it mandatory (the floor is per-coin — #299). So the
+re-survey was owed and did real work.
+
+**That is the contrast this item needs.** Here the staleness bought a genuine
+correction to the manifest's prose. On `agent-reactivate-confirm` it buys
+nothing, because no change to `money-limits.tsx` can alter what that surface
+displays. A fix that distinguishes the two must keep the first case firing —
+the risk of "pin what is rendered, not what is imported" is that it also stops
+firing where the render *is* real but indirect.
+
+Nothing built; the item is unchanged in substance.

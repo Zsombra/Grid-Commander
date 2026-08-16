@@ -113,7 +113,7 @@
       "actions": [],
       "current_implementation": "`SizingPanel` in ceilings.tsx — a bordered block showing committed / left, the sentence naming the remainder as the sizing base, what the platform reports it authorizes, and the consequence: below the exchange minimum, entries stop being placed and BattleGrid does not say why. Renders nothing at all when the cap is unconfigured or absent.",
       "constraints": [
-        "**No projected order size, and no exchange-floor comparison.** That figure is `headroom x sizePct x effectiveLeverage`; the preset is this product's to apply and the platform publishes no per-preset projection. `the-approval-can-be-answered` refused the same formula as PE-2 on the neighbouring money surface. `tests/agent/sizing-base.test.ts` scans this file with comments stripped, so the rule can be explained here without tripping its own guard.",
+        "**No projected order size, and no exchange-floor comparison.** That figure is `headroom x sizePct x effectiveLeverage`; the preset is this product's to apply and the platform publishes no per-preset projection. `the-approval-can-be-answered` refused the same formula as PE-2 on the neighbouring money surface. `tests/agent/sizing-base.test.ts` scans this file with comments stripped, so the rule can be explained here without tripping its own guard. **Measured 2026-08-16 (#299): the floor is per-coin, not per-agent.** A live `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row published `{equityUsd 33.05, minEquityUsd 33.333333, smallPct 10, maxLeverage 3}` — `minEquityUsd` is `10 / (smallPct x maxLeverage)`, and `maxLeverage` resolves per coin (3 on AIXBT and MELANIA, 4 on FARTCOIN, against a configured 4). So the same agent's floor is $33.33 on one coin and $25.00 on another at the same moment. Any single figure printed here would be wrong for some coin the agent trades.",
         "Renders nothing for an unconfigured cap — an unbounded cap has no proportion to be full of, and `0% used` would describe a limit that does not exist.",
         "Every figure is the platform's, rendered as sent. `get_agent_budget`'s own description says of the gauges: *render them, never re-derive*.",
         "The mechanism sentence is the point of the section. A relayout may move it but must not drop it — the remaining figure alone reads as room to keep going, which is the misreading that makes the failure invisible."
@@ -243,7 +243,7 @@
   "source_digest": {
     "app/(app)/agents/[id]/limits/page.tsx": "sha256:95cc4215575f8f238630e21f8518c5352d8aa39f786792b0918df2276a9edbb2",
     "src/presentation/components/agent-page-heading.tsx": "sha256:51458ba558f1dda6290b7ba96caaa78435b66dacd3e5b27990dfebcfacbaaedd",
-    "src/presentation/components/ceilings.tsx": "sha256:815c7a5b9dd7f03eec4cee75f678bd7e802d362d6ecce0585791317ee1f03b71",
+    "src/presentation/components/ceilings.tsx": "sha256:4e2709128ca0d6829aabfe3e17ef924116d8a0a783ba0adb055325f0379d0239",
     "src/presentation/components/loss-shape.tsx": "sha256:bf22d86bec41368b7e3ede00862b75ecb28eabf32ea9c2ae46897a9be0ed5429",
     "src/presentation/components/risk-reading.tsx": "sha256:d1f96734c2231d60ec179de42e311a5bff1baa440919b0357f687f6990a7785f",
     "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",

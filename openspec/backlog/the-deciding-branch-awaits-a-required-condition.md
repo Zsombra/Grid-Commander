@@ -2,10 +2,10 @@
 id: the-deciding-branch-awaits-a-required-condition
 title: conditionEvaluation's verdict/decidedBy have never been seen populated — observable once a required condition exists
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-08-11
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: agent-understanding
 github: "147"
@@ -165,3 +165,101 @@ bound strategy so evaluations arrive as soon as the platform unpauses, and
 the propagation is the strategy's stated intent rather than a side effect.
 The unbound alternative (a throwaway condition on Alesia) is zero-risk and
 zero-observation until something binds it.
+
+
+## OBSERVED 2026-08-16 (v19.2.0) — both branches, and a gate stage nobody had seen
+
+The watch armed on 2026-08-15 fired. The fleet unpaused, Breakwater was
+evaluated under Salamis revision 4, and **both halves of the observation this
+item asked for are now on record** — the TRUE capture and the FALSE one. They
+arrive through two different tools, which is itself the finding.
+
+### The deciding branch, populated for the first time
+
+`get_signal_log(Breakwater, 390ed557…)`, LDO, evaluated 2026-08-16T07:39:03Z:
+
+```json
+"conditionEvaluation": {
+  "outcomes": [{
+    "conditionKey": "RANGING_TAPE",
+    "name": "The tape is ranging (ADX ceiling)",
+    "outcome": "TRUE",
+    "required": true,
+    "evidence": [{ "kind": "clause", "sectionKey": "includeTrendStrength",
+                   "header": "ADX_now", "op": "lte", "operand": "16.3",
+                   "literal": "20", "outcome": "TRUE" }],
+    "counts": null,
+    "provisional": true
+  }],
+  "verdict": "NEITHER",
+  "decidedBy": "RANGING_TAPE",
+  "strategyRevision": 4,
+  "provisional": true,
+  "counts": { "trueCount": 1, "total": 1, "unresolvedCount": 0 }
+}
+```
+
+**The vocabulary, no longer unknown:**
+
+- `decidedBy` carries a **`conditionKey`** — the condition that decided it, not
+  a stage name or an enum.
+- `verdict` is **directional, not pass/fail**. It reads `NEITHER` while the
+  required condition is `TRUE` and the evaluation routed. It mirrors the
+  condition's own authored `verdict` field (`NEITHER` on this condition), so it
+  answers *"which side does the condition system point at"*, not *"did it
+  pass"*. **Anything that renders `verdict` as a success/failure signal would
+  be wrong** — that is the trap this item existed to prevent.
+- `counts` is `{trueCount, total, unresolvedCount}` at the outcome level and
+  `null` per-condition. So the `N_OF` tally guessed at in the What is a
+  three-field roll-up, and it sits beside the outcomes rather than inside them.
+- `provisional: true` appears at both levels and in the gate-block detail
+  below. Unexplained by anything read here; recorded, not interpreted.
+
+### The FALSE branch is not a signal log at all — it is a new gate stage
+
+The item expected to find the FALSE case "for a capture where ADX ≤ 20 did not
+hold" among the evaluations. It is not there, and could not be:
+`list_signal_logs(Breakwater, terminalStatus: BLOCKED)` and `INELIGIBLE` both
+return **0 rows**. A failed required condition never becomes a signal log.
+
+It becomes a gate block, at a stage this account had never produced:
+
+```json
+{ "coinTicker": "SKHX", "gateStage": "CONDITIONS",
+  "reasonCode": "REQUIRED_CONDITION_FALSE",
+  "reasonDetail": { "failedConditionKeys": ["RANGING_TAPE"],
+                    "conditionVerdict": "NEITHER",
+                    "strategyRevision": 4, "provisional": true },
+  "createdAt": "2026-08-16T12:57:59.501Z" }
+```
+
+`list_gate_blocks(Breakwater)` summary: **`CONDITIONS` / `REQUIRED_CONDITION_FALSE`,
+17 occurrences, latest 2026-08-16T12:57:59Z.** Both the gate stage and the
+reason code are new to this account — every stage previously seen was `TOKEN`,
+`EVALUATION` or `ACCOUNT`.
+
+And unlike `OPEN_POSITION_CONFLICT`, whose `reasonDetail` is always `null`,
+**this one carries a populated detail** naming the failed condition, the
+verdict, the revision it was evaluated under and the same `provisional` flag.
+
+### What this settles
+
+The premise this item rested on — *"no condition on this account is
+`required: true`, so the condition system is never asked to decide"* — was true
+when measured across 706 occurrences on 2026-08-13, and was ended deliberately
+by the 2026-08-15 apply that flipped Salamis's `RANGING_TAPE` to required. The
+same day's platform pause deferred the payoff by one day. **The write was worth
+making**, and the shape it bought is the record above.
+
+**Closing.** Nothing here is broken and nothing was claimed falsely — the
+evaluation page carries these fields verbatim, which is why the day they filled
+they were correct.
+
+### One thing this exposed, filed separately
+
+`stoppages.tsx` renders any detail value that is an object or array as the
+literal string `(detail)`. On this payload that hides `failedConditionKeys`,
+which is the single most useful field in it — an array of plain strings that
+would render perfectly. The rule was written for `rrRejectedPairs`, an array of
+structured objects where `(detail)` is the right call. See
+[[a-condition-block-hides-the-condition-that-failed]] (#337).

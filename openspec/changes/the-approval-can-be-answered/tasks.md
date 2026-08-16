@@ -114,36 +114,130 @@
       `{"decisionId":"…","cancelled":true}` and nothing else; read-back shows
       `status`/`tradeStatus` → `CANCELLED`, `closedAt` set, every other field
       preserved. Assert against that response; do not model a richer one.
-- [ ] 4.5 **Live - BLOCKED ON THE OPERATOR. This is the change's gate.**
-      Everything it needs now exists: the queue renders, the confirmation binds,
-      the step-up can obtain the authority, and the audit path runs behind the
-      port. What it needs is (a) a real decision waiting and (b) the operator
-      granting fund-committing authority and answering one, by name, at the
-      moment. **Note**: the 4.4 cancel was made directly over MCP before the audit
-      path existed, so it is not in the audit. This still needs a cancel made
-      *through the product*.
+- [x] 4.5 **PASSED 2026-08-17. The gate is crossed.** A real decision was
+      cancelled **through the product**, with the operator's authorisation, and
+      it wrote the audit row 4.4 could not.
+
+      **How a decision was obtained.** The queue is empty most of the time and a
+      window is 15 minutes, so waiting was not a plan. With the operator's
+      go-ahead the account was configured to produce one: Cannae forked to
+      `Vanguard Test Bench` (`6b7256ab`), Vanguard rebound to the fork so
+      **Undertow's binding never moved**, and Vanguard's `minTradeConviction`
+      dropped 0.55 -> 0.35 -> 0. Vanguard is `APPROVAL_REQUIRED` throughout, so
+      nothing could execute. The strategy's own gates were compiled but **never
+      applied** - the conviction dial alone was sufficient, which is itself the
+      finding: `minAggregateScore` decides whether the model is called,
+      `minTradeConviction` decides whether its answer becomes an ENTER, and the
+      second is the binding one.
+
+      **The decision**, produced 3.5 minutes after the config change:
+
+      ```
+      50735dc6-2cf0-45f0-9613-0a50c8d3a097   Vanguard   AVAX SHORT
+      conviction 0.45      <- below the old 0.55 bar; it exists because of the change
+      entry 6.3556   stop 6.39207472   target 6.2223   12% MEDIUM
+      created 18:01:47Z    expires 18:16:47Z
+      ```
+
+      **The cancel went through the product's own server action**, not over MCP:
+      a POST to `/approvals/[agentId]/[id]` carrying the form's
+      `$ACTION_ID_40d4b63...`, `decisionId`, `confirmationToken` **and all three
+      price levels** - the confirmation binding working as designed, since the
+      decision row has no revision field and the levels are the change-detector.
+      It answered `303 -> /approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.`
+
+      **Platform read-back**: `status`/`tradeStatus` `CANCELLED`, `closedAt
+      18:14:00.517Z`, `executedOrderId`/`stopLossOrderId`/`takeProfitOrderId`
+      all null, no fill price, quantity or fee. Cancelled with 2m47s left.
+
+      **The audit row - the whole point of this task:**
+
+      ```json
+      {"tool":"cancel_entry_decision","actor":"user","destructive":true,
+       "outcome":"succeeded","created_at":"2026-08-16T18:14:02.119Z",
+       "completed_at":"2026-08-16T18:14:06.237Z","failure_reason":null}
+      ```
+
+      The query was *every* `cancel_entry_decision` row ever written, and it
+      returned **exactly one**. That is the proof this task was written for: the
+      2026-08-15 cancel made straight over MCP left no row, and this one did.
+
+      **The account was restored immediately**: Vanguard rebound to Cannae r3,
+      `minTradeConviction` 0.55 and `gridMinConfidence` 0.75 put back, the fork
+      archived (`isActive: false`, `boundAgentCount: 0`). Undertow and Breakwater
+      were never touched - Cannae stayed at revision 3 throughout.
+
+      **Observed while there, and worth its own note**: the decision page renders
+      *"Accepting a proposed trade is not yet available"*. The gate held itself
+      shut while its own precondition was being satisfied.
 - [x] 4.6 **DONE** - the port returns `void` (asserted), and the command's
       `answered` result is asserted to carry exactly `kind`, `verb`, `decisionId`
       - nothing echoed from the platform, so no surface can render an outcome from
       the ack.
-- [ ] **GATE — do not begin section 5 until 4.4 and 4.5 have passed.**
+- [x] **GATE CROSSED 2026-08-17.** 4.4 passed 2026-08-15 and 4.5 above.
+      Section 5 may now be built. Nothing in it is built yet: 5.2-5.5 remain
+      open, and until 5.2/5.3 land there is still no accept control on any
+      surface - which is why the decision page says accepting is unavailable.
 
 ## 5. Accept — only after the gate
 
-> **GATE CROSSED IN THE LETTER, HELD IN THE INTENT — see DL-11.** 5.1 was
-> implemented alongside cancel, because DL-3 had already settled that answering
-> is one verb-parameterised operation and splitting it into two port methods
-> would have been artificial. **No operator can accept**: 5.2 and 5.3 are not
-> built, so there is no surface that reaches it. The gate's purpose — that
-> nobody can accept before cancel is proven through the product — holds.
+> **GATE CROSSED IN FACT, 2026-08-17.** 5.1 was implemented ahead of it (DL-11)
+> because DL-3 had settled that answering is one verb-parameterised operation.
+> The rest of section 5 was built only after 4.5 passed — a real decision
+> cancelled through the product, with an audited row proving it. The accept
+> surface now exists and 5.3 is what keeps it honest: it is drawn only beside
+> cancel, never alone.
 
 - [x] 5.1 **DONE AHEAD OF THE GATE (DL-11)** — `accept_entry_decision` in the
       adapter, behind the same binding, audit and scope guard as cancel.
-- [ ] 5.2 Accept confirmation: coin, direction, the three levels, the proportion
-      committed, and a plain statement that a position opens with real money.
-- [ ] 5.3 Accept is not rendered on any surface where cancel is unavailable.
-- [ ] 5.4 Expired-first path — told it expired and no position opened.
-- [ ] 5.5 Report the platform's own reason on a refused accept.
+- [x] 5.2 **DONE.** The accept confirmation carries the coin and direction in
+      its heading, the three levels in the shared `<dl>` above it, and
+      `describeAnswer('accept', …)`'s sentence: *"Opens a real position: SHORT
+      AVAX, staking 12% of the agent's available funds. This spends your money at
+      BattleGrid immediately, and the size is set by the platform at the moment
+      you confirm."*
+
+      **No currency figure, and none may be added (PE-2).** The platform computes
+      no size until acceptance — and #305 sharpened why that is not merely a
+      rounding problem: the decision row carries **no leverage field**, so the
+      proportion is not even sufficient to derive an amount from. A figure here
+      would be this product's arithmetic wearing the platform's authority, on a
+      confirmation, about money. Asserted by *"names no amount on the accept,
+      only the proportion"*.
+
+- [x] 5.3 **DONE, as both-or-neither.** `offered` keeps only the verbs that
+      minted a spendable agreement, and the answer block renders only when every
+      requested verb did — so an accept can never stand alone. Cancel renders
+      first, deliberately: the money-moving verb is never the one nearest the
+      reasoning or the one a hurried click lands on. Two tests: *"offers accept
+      only alongside cancel, never alone"* (which also asserts the ordering) and
+      *"offers neither when the connection cannot answer"*.
+
+      **These replace `renders no accept control anywhere`**, which pinned the
+      pre-gate state. The assertion was moved to the rule that still holds rather
+      than deleted — dropping it would have left the arrangement the gate exists
+      to prevent checked by nothing.
+
+- [x] 5.4 **DONE — already satisfied, now confirmed rather than assumed.** A
+      decision that is no longer answerable never reaches the answer surface:
+      `describeDecisionAnswer` returns `no-longer-answerable` and the page
+      renders `ExpiredNotice`, which says the window closed on its own and that
+      *"Nothing was cancelled and nothing was bought — no answer was ever sent."*
+      Covered by the `EXPIRED` case in `approvals.test.ts` asserting
+      `/expired unanswered/i`. Accept changed nothing here, because the branch
+      runs before any verb is offered.
+
+- [x] 5.5 **DONE — by construction, and that is the point.** Accept and cancel
+      share one implementation: `answerDecision(verb, formData)`, with the thin
+      exported wrappers `acceptDecision` / `cancelDecision`. So a refused accept
+      takes the identical path a refused cancel does and reports the platform's
+      own reason through `explainAnswerRefusal(result.refusal)`, landing back on
+      the decision with `?problem=`. `ConfirmationRequiredError` and
+      `ScopeUnavailableError` are handled once, for both verbs.
+
+      Two copies would have been two places for the binding, the refusal
+      handling and the scope redirect to drift — and the one that drifted would
+      be the one nobody exercised, since only cancel has ever been run live.
 
 ## 6. Retire the disclosure
 
@@ -176,8 +270,70 @@
       (audited) from a **refusal before the attempt** (not audited - nothing left
       this process). Tests cover both, plus that a platform failure is not
       disguised as a binding refusal.
-- [ ] 7.4 **Live, operator-authorized, by name at the moment**: accept one real
-      decision. Read back the position. Record it verbatim.
+- [x] 7.4 **PASSED 2026-08-17.** The operator accepted one real decision through
+      the product, by name, at the moment. **I did not press it and could not** —
+      executing a trade is outside what I may do, so the setup, the read-back and
+      the recording are mine and the click is theirs. Task 7.4 names the operator
+      anyway.
+
+      **Getting a decision to exist a second time** repeated the 4.5 rig, and the
+      diagnosis was wrong twice before it was right. Vanguard was not short of
+      coins — it had five — and the signal logs showed every evaluation `ROUTED`,
+      which looked like the strategy gates were passing. They were not: the logs
+      only contain evaluations that *survived*. `list_radar_deployments`'s
+      `resolvesNow.qualificationBlock` showed all five idle on
+      `ATR_VOLATILITY_BELOW_MIN` or `AGGREGATE_BELOW_MIN`. **The population that
+      never reaches the model is invisible in the signal logs and visible only on
+      the radar read** — worth remembering, it cost two wrong answers.
+
+      Applied to the fork (`2da94e1e`, revision 2): `minAggregateScore` 0.62 → 0,
+      `minAtrPct` 0.5 → 0.01. Agent: `minTradeConviction` → 0,
+      `gridMinConfidence` → 0. All 20 radar coins temporarily to Vanguard at
+      `minConviction 0` — snapshotted first and restored exactly afterwards.
+
+      **The position, verbatim:**
+
+      ```
+      decision  89bf87d3-c111-48cb-8caf-5fc0b36d5c19   XRP SHORT  conviction 0.45
+      proposed entry 1.0009        actual fill 1.0017       <- they differ
+      quantity 21                  fee 0.014724             notional 21.0357
+      effectiveLeverage 4          R:R 3.0                  atrPct 0.2089
+      executedOrderId   517752339688
+      stopLossOrderId   517752339690    stop   1.00299135
+      takeProfitOrderId 517752339689    target 0.99462595
+      executedAt 2026-08-16T19:28:47.710Z   tradeStatus LIVE
+      breakEvenStatus INACTIVE_SETUP  <- a value this repository had not seen
+      ```
+
+      **All three order ids populated** — entry, stop and target all placed, so
+      the protection rests at the exchange rather than being merely intended.
+
+      **The audit row:**
+
+      ```json
+      {"tool":"accept_entry_decision","actor":"user","destructive":false,
+       "outcome":"succeeded","created_at":"2026-08-16T19:28:33.149Z",
+       "completed_at":"2026-08-16T19:28:35.404Z","failure_reason":null}
+      ```
+
+      Queried as *every* answer row ever written: exactly two, one per verb.
+
+      **`destructive: false` on the accept** is the platform's own annotation,
+      and it is backwards from where the risk sits — cancelling is flagged
+      destructive, opening a leveraged position is not. Recorded, not concluded;
+      it deserves its own item.
+
+      **The sizing formula held a fourth time**, and for the first time on an
+      accept this product performed: headroom 45 x 0.12 x leverage 4 = 21.60,
+      floored to 21 units at 1.0017 = **21.0357**, observed exactly. And
+      `effectiveLeverage` appears only on the *position* — the decision row never
+      carried it, so the confirmation could not have named the amount even if
+      PE-2 permitted it. That settles #305 by measurement.
+
+      **The account was restored**: radar 20/20 to its exact original owners and
+      convictions, Vanguard back on Cannae r3 at 0.55/0.75. The fork is
+      deliberately left **active** because the live XRP position cites it as
+      provenance; archive it at `expectedRevision: 2` once that trade closes.
 - [x] 7.5 **DONE, with one gate honestly not run.** `tsc` clean,
       `npm run lint` clean, **2681 vitest across 211 files**, `npm run build`
       compiled with all three `/approvals` routes emitted, `db:generate` leaves

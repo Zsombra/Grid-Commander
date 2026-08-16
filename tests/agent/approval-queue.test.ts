@@ -151,7 +151,10 @@ const describeReq = (verb: 'accept' | 'cancel', mintConfirmation = true) => ({
   accessToken: 't1',
   agentId: 'a1',
   decisionId: DECISION_ID,
-  verb,
+  // One verb per call here, though the query takes a list: these tests are
+  // about what a single verb mints, and the page's both-or-neither rule has
+  // its own coverage.
+  verbs: [verb],
   mintConfirmation,
 });
 
@@ -167,7 +170,7 @@ describe('describing what answering would do', () => {
     const result = await query.execute(describeReq('cancel'));
 
     expect(result.kind).toBe('answerable');
-    const consequence = result.kind === 'answerable' ? result.description.consequence : '';
+    const consequence = result.kind === 'answerable' ? (result.description.answers[0]?.consequence ?? '') : '';
     expect(consequence).toContain('SHORT HYPE');
     expect(consequence).toMatch(/will not propose this trade again/);
     expect(consequence).toMatch(/no money moves/);
@@ -223,7 +226,7 @@ describe('describing what answering would do', () => {
     const result = await query.execute(describeReq('cancel', false));
 
     expect(result.kind).toBe('answerable');
-    expect(result.kind === 'answerable' && result.description.confirmationToken).toBeNull();
+    expect(result.kind === 'answerable' && result.description.answers[0]?.confirmationToken).toBeNull();
     expect([...confirmations.tokens.keys()]).toEqual([]);
   });
 
@@ -290,7 +293,7 @@ describe('no currency amount is produced for a pending decision', () => {
   it('says the proportion, and says what it is a proportion of', async () => {
     const { query } = describing(waiting());
     const result = await query.execute(describeReq('accept'));
-    const consequence = result.kind === 'answerable' ? result.description.consequence : '';
+    const consequence = result.kind === 'answerable' ? (result.description.answers[0]?.consequence ?? '') : '';
 
     expect(consequence).toContain('10%');
     // A bare percentage is not an amount, but it is also not informative — the

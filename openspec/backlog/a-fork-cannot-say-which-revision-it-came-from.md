@@ -5,12 +5,12 @@ type: question
 status: open
 priority: p3
 created: 2026-08-06
-updated: 2026-08-06
+updated: 2026-08-16
 change: ""
 capability: strategy-authoring
 github: "97"
 blocked_by: []
-tags: [battlegrid, fork, lineage, unobserved]
+tags: [battlegrid, fork, lineage, v19, unobserved]
 ---
 
 # A fork knows its parent and not its parent's revision
@@ -35,6 +35,36 @@ systemKey, tagline, timeframe, updatedAt, visibility
 
 `forkedFromStrategyId` and no revision beside it. `revision` is the fork's
 **own** counter, which starts fresh.
+
+## Update 2026-08-16 — the product forks now, so option 2 is live
+
+**"This product does not fork today" is stale.** It forks:
+`ForkStrategyCommand` (`src/application/use-cases/strategy-lifecycle.command.ts`)
+calls `fork_strategy` from `/strategies/[id]/fork`, and it does not take
+`sourceRevision` from the pre-perform re-read — it carries the revision the page
+named, as a hidden field, precisely so the copy comes from the version the
+operator was shown. The page says so in prose: *"starts identical to revision
+N — the one you are looking at."*
+
+So **the one moment where the fact exists is already in this product's hands**,
+and it is thrown away the instant the platform answers. That is option 2, and it
+is no longer hypothetical.
+
+**Option 1 is satisfied, but only by accident.** `forkedFromStrategyId` is
+mapped into the domain (`strategy.ts:21`, `strategy-adapter.ts:742`) and reaches
+no surface — `grep` finds it nowhere under `src/presentation`. Nothing implies
+currency because nothing names lineage at all. Nothing enforces that; the first
+surface to render a parent's name will have to answer the revision question with
+no test to remind it.
+
+**The platform still does not return it, at v19.2.0.** Confirmed 2026-08-16 on
+both `list_strategies` and `get_strategy`: `forkedFromStrategyId` appears with no
+revision beside it. Unchanged since this item was filed at v13.
+
+**p3 still stands** and for the original reason: nothing is claimed falsely.
+What changed is the cost of fixing it — recording the source revision no longer
+needs the product to start forking first, because it already does.
+
 
 ## Why it matters
 

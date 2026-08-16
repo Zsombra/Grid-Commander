@@ -340,7 +340,7 @@
   "source_digest": {
     "app/(app)/strategies/[id]/edit/actions.ts": "sha256:404fbdc797f428c9987fd27588a8be84f80e55de3bbdca9e10a290907b8510c9",
     "app/(app)/strategies/[id]/edit/page.tsx": "sha256:8edd1d4792c610472458208acb63f9a83f50a943ed5d8165b0382bdacece16cd",
-    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
     "src/presentation/components/plan-review.tsx": "sha256:9114b3e4b5c0f9141b5008eda2d1dfac8727d224244886d03da062ca68ac7eb8",
     "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",

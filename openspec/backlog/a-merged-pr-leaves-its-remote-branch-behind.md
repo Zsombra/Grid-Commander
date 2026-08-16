@@ -87,3 +87,32 @@ What would settle it: after any `gh pr merge`, assert
 Cheap, and it turns a silent leak into a caught one. Related:
 [[the-mirror-is-checked-one-way]] — same shape, a record that disagrees with
 reality in the direction nothing looks.
+
+## Measured 2026-08-16 — the remote is clean right now, and the mechanism is untouched
+
+`git fetch --prune origin` then `git branch -r`: **zero remote branches besides
+`origin/main`.** So no leftover is outstanding at this moment — either the ones
+this item was filed for were cleaned up, or subsequent merges avoided the trap.
+
+**That is not evidence the defect is gone.** It is evidence that the account is
+currently tidy. The failure needs three things to coincide — a squash-merge via
+`gh pr merge --delete-branch`, the branch checked out in a worktree, and nobody
+re-reading the remote afterwards — and the last few merges plainly did not
+coincide that way.
+
+### This session is itself a live test case
+
+The work is on `claude/github-issues-backlog-1ccb4b`, **checked out in a git
+worktree** at `.claude/worktrees/github-issues-backlog-1ccb4b`. If its PR is
+merged with `gh pr merge --squash --delete-branch`, this item predicts:
+
+- the merge succeeds,
+- `gh` fails on the **local** branch delete because a worktree holds it,
+- exits non-zero having deleted **neither** branch,
+- and the remote branch survives with the message reading as cleanup noise.
+
+**Check `git branch -r` after merging this one.** If the remote branch is there,
+that is the reproduction this item has been waiting for, on a known SHA, with the
+prediction written down in advance rather than reconstructed afterwards.
+
+Nothing about the mechanism changed today.

@@ -2,7 +2,7 @@
 id: performance-and-allocation-are-unmodelled
 title: get_agent_fund_allocation reported zero for money the platform reported as committed
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-07-29
 updated: 2026-08-16
@@ -92,6 +92,51 @@ account equity". These may be two different pots — play balance versus trading
 wallet equity — so this is **observed, not judged**. It is not folded into the
 verdict above. See [[battlegrid-declared-vs-observed]]; if it is a second
 instance of the same wiring gap it deserves its own item.
+
+
+## CLOSED 2026-08-16 — confirmed, mitigated, guarded, and the anomaly rehomed
+
+Everything this item exists to establish is established, and the product-side
+answer is already in the tree. Closing on our own evidence, per
+[[upstream-defects-are-answered-in-product]] — no upstream report is drafted.
+
+**The defect is confirmed** by the 2026-08-16 measurement above: zero committed
+on two agents demonstrably holding margin, with a flat third agent as the
+negative control that distinguishes "unwired" from "stale".
+
+**The mitigation is already shipped, and was shipped before this confirmation.**
+`read-budget.query.ts` sources `committedUsd` from `get_agent_budget`'s exposure
+gauge (`sizingBase`, preferring `gauge.used` over `capitalAtRiskUsd` because it
+is the figure the platform resolved against the cap). Verified live the same
+day: `gauges.exposure.fill 11.95` against `list_user_active_positions.totals.
+marginedUsd 11.9419` on Undertow with three positions open. The correct source
+agrees; the wrong one does not.
+
+**The mitigation is enforced, not just done.** `tests/architecture/
+no-population-constants.test.ts` — *"the account balance is reported, never
+divided"* — fails if any file under `src/` or `app/` so much as names
+`get_agent_fund_allocation`, and carries a vacuity guard asserting the tool is
+still on the surface record, so the rule cannot quietly become an assertion
+about nothing. `grep` confirms the product reaches it from nowhere.
+
+**The `accountEquityUsd` anomaly is settled and moved.** This item recorded it
+as "observed, not judged", leaving open that equity and play balance might be
+two different pots. That is now closed off: read at v19.2.0 on 2026-08-16,
+`accountEquityUsd` is **0** while the trading wallet holds **$11.94 of live
+margin** — so it is wrong under the trading-wallet reading as well as the play-
+balance one, and there is no pot for which zero is the answer. A second field in
+the same payload reads zero the same way (`openUnrealizedPnlUsd` **0** against
+`list_user_active_positions.totals.unrealizedPnlUsd` **0.177854**, all three
+positions `LIVE`).
+
+Both are now [[two-budget-fields-read-zero-against-live-money]] (**#336**),
+filed rather than folded in, because they belong to a *different tool* — one
+this product calls and depends on. The distinction is the whole point: the
+answer to `get_agent_fund_allocation` is "never call it", and the answer to
+`get_agent_budget` cannot be, so the rule there has to name fields instead.
+
+**What is not closed by this**, and is tracked elsewhere: the performance half
+of the original title, superseded by #189; the unmapped-field survey, #110.
 
 ## Status 2026-08-13 — the finding stands, and cannot be re-measured today
 

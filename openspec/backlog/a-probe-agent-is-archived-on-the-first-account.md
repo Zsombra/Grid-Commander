@@ -39,6 +39,13 @@ whole of cleanup, and `canDelete` describes BattleGrid's own app rather than thi
 client (findings-agents F-1). So none of the nine can be tidied from here at any
 priority. Only the accumulation is ours to stop.
 
+> **Corrected 2026-08-16 by the operator.** The `findings-agents` F-1 reading —
+> that `canDelete: true` describes BattleGrid's own app — is **wrong**. There is
+> no delete on the platform either. `canDelete` is answered by nothing, in any
+> client, including BattleGrid's own. F-1 was right that it is a trap and wrong
+> about where the door is: there is no door. **Every "ask the operator to delete
+> them in the UI" below is struck.**
+
 ## Why it matters
 
 p3, and p3 for two reasons rather than one: the residue is now the majority of a
@@ -110,8 +117,9 @@ Four options. None is free, and the evidence does not pick one outright.
   needs a real roster from a real account, so it lives in `tests/live/` behind
   the same opt-in as every other probe and runs when someone runs it. And it can
   only ever report: with no delete on the surface, it cannot clean up.
-- **Ask the operator to remove them in BattleGrid's own UI.** The only route that
-  reduces the nine at all. Outside this repository entirely, and a one-time ask.
+- ~~**Ask the operator to remove them in BattleGrid's own UI.**~~ **Struck
+  2026-08-16 — this route does not exist.** The operator confirms BattleGrid
+  offers no delete on its own platform. Nothing reduces the count, anywhere.
 
 **Cheapest against what already exists: the residue test.** `tests/live/` holds
 thirty-one probe files with an established opt-in and a skip-with-a-reason
@@ -197,3 +205,55 @@ That shifts the four options rather than just re-pricing them:
 
 Slot pressure is unchanged: `slotUsage` reads `limit 3, used 3, remaining 0`,
 which counts ACTIVE only. The residue costs roster legibility, not capacity.
+
+
+## 2026-08-16 — the open question is answered, and option 3 is taken
+
+**"Widen the fixture must name that path" — there is no such path.**
+`Probe 238 Dedupe` traces to `openspec/JOURNAL.md`: an **operator-authorized
+hand walk** for the #238 dedupe probe, which archived `Vanguard` to free a slot,
+created the agent with `tradingMode: OFF` carrying
+`idempotencyKey: gc-probe-238-key-alpha`, archived it, and reactivated
+`Vanguard`. `grep` finds no test file naming it, and only two files in the
+repository call `acquireProbeAgent` — neither created this.
+
+So both recurrences this item records were hand walks reaching
+`create_intelligence_agent` through the adapter. **Options 1 and 2 cannot be
+made sufficient**, because there is no code path to bind. That was the last
+thing holding the choice open.
+
+**Option 3 is taken**: `the-roster-says-when-residue-grew` (lite) adds
+`tests/live/residue-probe.test.ts`.
+
+**The design decision worth carrying forward.** The probe classifies **by
+exclusion, not by prefix**. The nine residue agents known before today share
+`GC probe` and `Grid-Commander probe`; the tenth is `Probe 238 Dedupe` and
+shares neither — so a prefix match would have missed *precisely the create this
+item was re-filed for*, which is this repository's characteristic defect. The
+probe instead holds a six-name allowlist of the operator's own agents and treats
+every other row as residue, with a vacuity guard that reports a stale allowlist
+as a different failure from a new throwaway.
+
+**Re-measured while writing it**, over the connector at v19.2.0:
+
+```
+16 agents | 6 the operator's | 10 residue, every one ARCHIVED, tradingMode OFF
+slotUsage limit 3, used 3, remaining 0   (ACTIVE only — residue costs no slot)
+```
+
+Unchanged from this morning's count, so the threshold is 10.
+
+**This item stays open, and the `change:` link is cleared on archive** — the
+change's scope was the tripwire alone, not the residue.
+
+**And there is no remaining action, because the count cannot fall.** The operator
+confirmed on 2026-08-16 that BattleGrid offers **no delete on its own platform**,
+so the plan written here — ask them to clear the ten in the UI — describes a
+route that does not exist. All ten are archived, `archive_intelligence_agent` is
+the whole of cleanup in every client, and `capabilities.canDelete: true` is
+answered by nothing anywhere.
+
+**So the residue is permanent and monotonic.** The tripwire is not the cheapest
+of four responses, it is the *only* one, and `RESIDUE_AT_LAST_COUNT` is a floor
+that can never be lowered — raising it records a new leak, never a cleanup. What
+this item is for now is preventing the eleventh.

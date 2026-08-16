@@ -1,5 +1,415 @@
 # Journal
 
+## 2026-08-17 (accepted) — 40/40, and a diagnosis that was wrong twice
+
+**Did**: task **7.4**. The operator accepted one real decision through the
+product; `the-approval-can-be-answered` is **40/40**. I built the rig, read it
+back and recorded it — **I did not press accept and may not**, which is fine
+because 7.4 names the operator.
+
+**The diagnosis was wrong twice before it was right, and the reason generalises.**
+Vanguard was not short of coins (it had five), and its signal logs showed every
+evaluation `ROUTED`, which read as the strategy gates passing. They were not:
+**the signal logs only contain evaluations that survived.** The population
+filtered before the model is visible *only* in
+`list_radar_deployments.resolvesNow.qualificationBlock` — all five coins idle on
+`ATR_VOLATILITY_BELOW_MIN` or `AGGREGATE_BELOW_MIN`. Two wrong answers came from
+reading survivors as if they were the population.
+
+**The radar takeover was scripted, and the snapshot went to disk first.** All 20
+coins to Vanguard, then restored 20/20 to their exact original owners and
+convictions. `radar.mjs save|takeover|restore` exists in the session scratchpad;
+writing the restore *before* the takeover is what made a 40-write round trip safe
+to attempt at low context.
+
+**What the live position bought, and nothing else could:**
+
+- **#336 confirmed on a second agent.** Vanguard holding XRP reads
+  `accountEquityUsd 0` and `openUnrealizedPnlUsd 0` against a live `-0.0042`, in
+  the payload that prices its margin correctly. Two agents, two coins, two
+  strategies — the bar this repository sets.
+- **#305 settled by measurement.** `effectiveLeverage` appears only on the
+  position, after acceptance; the decision row never carries it. The confirmation
+  could not have named the amount even without PE-2.
+- **Proposed entry 1.0009, actual fill 1.0017.** The confirmation binds and shows
+  the *proposed* level. Nothing is wrong — the binding detects levels *moving* —
+  but no surface may ever promise a fill.
+- **`breakEvenStatus: INACTIVE_SETUP`**, a value not previously seen.
+- **`destructive: false` on the accept**, while cancel is `true`. The platform's
+  annotation is backwards from where the money risk is. Worth its own item.
+
+**State**: radar restored 20/20, Vanguard on Cannae r3 at 0.55/0.75 and still
+`APPROVAL_REQUIRED`, `.env.local` deleted, dev server stopped, tree clean,
+`validate --all` 0 errors.
+
+**Next**: archive `2da94e1e` at `expectedRevision: 2` once the XRP position
+closes — left active on purpose, the live position cites it as provenance. Then
+the untaken decisions: #320, #331, #322's residue, #304, #282, and #327's
+corrected ask.
+
+**Watch out**: `#306`'s `radar-probe` still needs a flat fleet below cap, and the
+account is at 20/20 with four positions. Its `finally` guard landed today, so it
+is safe whenever that window comes.
+
+## 2026-08-17 (accept) — section 5 built, on a gate that had just been earned
+
+**Did**: built 5.2–5.5 of `the-approval-can-be-answered`, which the audited
+cancel unblocked hours earlier. **39/40.** The only task left is **7.4**, the
+live accept — real money, and a separate authorisation.
+
+**One read, two mints.** `describeDecisionAnswer` took a `verb` and now takes
+`verbs`, returning one `DecisionAnswerOffer` per verb from a **single** platform
+read. Two calls would have meant two reads: the levels rendered from one and the
+accept token bound to the other's. They agree in practice — a PENDING decision's
+levels do not move — and *"agree in practice"* is the reasoning this repository
+keeps getting caught by.
+
+**5.3 is both-or-neither, and the ordering is part of it.** `offered` keeps only
+verbs that minted, and the block draws only when every requested verb did, so an
+accept can never stand alone — that is the arrangement the gate exists to
+prevent. Cancel renders first: the money-moving verb is never nearest the
+reasoning nor where a hurried click lands.
+
+**5.5 came free, and deliberately so.** Both verbs share one
+`answerDecision(verb, formData)` behind thin wrappers, so a refused accept takes
+the identical path a refused cancel does. Two copies would have been two places
+for the binding, the refusal handling and the scope redirect to drift — and the
+one that drifted would be the one nobody exercised, since **only cancel has ever
+been run live.**
+
+**Three architecture guards fired, and all three were right.**
+
+- `wager.test.ts` reads raw text with no comment stripping, so a doc comment
+  naming the cancel tool outside the adapter was a real offence. Reworded.
+- `a-form-sends-what-its-action-reads` and `reachability` both broke on
+  `action={ternary}` — the resolvers look for a literal binding. Split into two
+  sections with literal actions, which is clearer anyway.
+- Then `a-form-sends-what-its-action-reads` broke again because the six hidden
+  inputs had been extracted into a shared child, **where the guard cannot see
+  them**. Inlined back, duplicated across both forms, with the reason written at
+  the call site. A form that renders its fields and submits nothing is
+  indistinguishable from a working one; satisfying that guard by hiding from it
+  would be the defect it exists for.
+
+**A test was moved rather than deleted.** `renders no accept control anywhere`
+pinned the pre-gate state and is now false by design. It is replaced by *"offers
+accept only alongside cancel, never alone"*, *"offers neither when the connection
+cannot answer"*, and *"names no amount on the accept, only the proportion"* —
+PE-2 on the surface where it matters most. Deleting it would have left the
+arrangement the gate prevents checked by nothing.
+
+**5.4 was already satisfied and is now confirmed rather than assumed**: a
+no-longer-answerable decision never reaches the answer surface at all, so accept
+changed nothing about it.
+
+**State**: 2715/2715 across 212 files, `tsc` and `lint` clean, `validate --all`
+0 errors, `approvals-decision` re-pinned in prose as well as digest (its
+`cancel-form` component is now `answer-forms`).
+
+**Next**: 7.4 only — accept one real decision live, which needs the operator and
+real money. Everything else in the change is done.
+
+**Watch out**: the accept success note claims nothing about size or fill. The
+port returns `void` and the command echoes nothing from the platform (4.6), so
+the surface has no outcome to report and must not invent one.
+
+## 2026-08-17 (decisions) — three taken, one refused by the surface it was for
+
+**Did**: the operator picked four items off the decision list. **Three landed;
+the fourth turned out not to be buildable as approved**, which is the entry's
+main content.
+
+**`radar-probe` has its guard (#306).** The item said the file has no `finally`.
+The sharper truth was *where* the missing guard was:
+`expect(deleted.deleted).toBe(true)` sat **between the delete and the try**, so
+the operator's coin was already off the radar and any throw in that window left
+it gone with nothing to put it back. That assertion is now the first statement
+inside the try; the restore moved from a `catch` to a `finally` gated on a
+`restored` flag that flips only after the re-deploy is confirmed. The `finally`
+re-reads the radar before restoring — `deleted.deleted === false` reaches there
+too, and a first-deploy at `expectedRevision: null` over a *live* deployment is a
+different request than this probe means to make. Failures inside it are logged
+and swallowed deliberately: it runs while an exception is propagating, and a
+throw from a `finally` replaces it. **Running the probe is still the operator's
+call**; what changed is that it is now safe to say yes to.
+
+**`testTimeout: 15_000` (#330).** The measurements are at the setting rather than
+in a commit message: ~0.5 s of real work per case, against 212 files transforming
+and collecting in parallel where `collect` alone swings 138–231 s on an unchanged
+tree. The comment says 30× headroom is for the scheduler and **not** licence for
+a case that genuinely got slower. Closed, with the honest caveat written down:
+a green run proves nothing about a flake — what this does is remove the failure
+mode from the gate.
+
+**One focus ring (#338).** `CONTROL` dropped all three focus utilities.
+**The design system decided it, not me**: `system.json`'s principle is *"a
+visible focus state at 2px offset"*, the global rule is `outline: 2px` +
+`outline-offset: 2px`, and a Tailwind `ring-2` has no offset — so the override
+was the one treatment on the product that did not meet the stated principle. The
+`focus` token is not orphaned; `globals.css` reads it, which the original comment
+was mistaken about. 21 manifests re-pinned, digest only, because no manifest
+describes the override — the nineteen claims are *repaired* by this, not
+falsified.
+
+**The two tests that pinned the override were moved, not deleted.** Deleting them
+would have left nineteen manifest claims checked by nothing, which is how they
+came to be false. One asserts `CONTROL` carries no focus treatment; the other
+**reads `app/globals.css`** and asserts the rule is `:focus-visible` at 2px with
+2px offset and keyboard-only — read rather than restated, so a constant here
+cannot agree with itself while the stylesheet says otherwise.
+
+**And writing those tests reproduced a hazard this repo already records.** The
+regexes went through a shell heredoc, `\b` collapsed, and Python emitted **three
+literal 0x08 bytes**. `/\x08ring-/` matches nothing, so two `.not.toMatch`
+assertions were **vacuously true and passing** — a green test checking nothing,
+inside the change whose entire subject is a claim nothing checked. Found by
+byte-inspecting the file, repaired from `chr(92)` in a script written to disk
+rather than piped. `backslashes-collapse-in-shell-heredocs` is not a historical
+note; it bit again today.
+
+**#327 was approved and not built, and that is the right outcome.** Its step 2 —
+*"the authoring surface should filter the operator picker by kind and this
+becomes a small UI fix"* — presumes the product knows which column a row means at
+render time. **It does not**: `condition-composer.tsx` takes the column as two
+free-text inputs, and `gc-condition-columns` is a *datalist* — a suggestion whose
+selection fires no round trip. Narrowing the operator options in response to what
+is typed needs client JavaScript, and **seventeen manifests assert the only
+client code is `PerformButton`**, with the conditions-save manifest adding that
+further interactivity is `requires-spec-change`. So it is an architectural
+decision under a design contract, not an afternoon's work. Three real options are
+recorded on the item, with **validate-at-describe-time** as the honest one — the
+product already calls `get_strategy_column_contract` there and already has a step
+whose job is saying what a write would do.
+
+I also corrected my own earlier comment on #327, which had called it a small fix:
+I had checked that the data was reachable and not that the surface could act on
+it.
+
+**State**: 27 open items, `validate --all` 0 errors, `mirror` clean both
+directions, **2713/2713 across 212 files**, `tsc` and `lint` clean. PR #339
+carries the whole thing.
+
+**Next**: the decisions still untaken — #320, #331, #322's residue, #304, #282 —
+plus #327's corrected ask, which now needs a `/propose` rather than an edit. And
+`#101`'s live gate, still waiting on a decision actually being in the queue.
+
+**Watch out**: never build a regex through a heredoc in this environment. Write
+the script to disk, or build the escape from `chr(92)`, and **byte-check the
+result** — a collapsed `\b` produces a passing test, not a failing one.
+
+## 2026-08-16 (backlog, second leg) — the rest of the issues, and two fixes
+
+**Did**: finished the oldest-first pass over the open issues — #282 through #335,
+the nineteen left after the first leg. **Six closed across both legs**, **three
+filed**, **three changes shipped and archived**. Most of it came from live reads
+and one database query; two items turned into code.
+
+**Two shipped fixes.**
+
+*`openspec.py mirror` (#309).* `validate` has always checked that an open item
+**has** a `github:` number and never that the two agree. Now there is a command
+that compares them, in three directions — item open with a CLOSED issue and item
+`done` with an OPEN issue both fail; an OPEN issue with no item reports and
+fails only under `--strict`, because every session's tracking lands as a PR whose
+issues close immediately. **Deliberately not folded into `validate`**, which is
+offline and must stay so; a network check there would fail in CI and hooks or
+teach everyone to skim the warning block, which is the exact failure
+`tracking.md`'s own scoping note records. Run on this tree: 272 items, 148
+issues, all three directions zero — taken *after* the session's closures, so it
+exercises the drift rather than re-measuring a quiet tree.
+
+*`editQuery` keeps every value (#317).* The grammar question deferred twice went
+to the operator, who chose keep-all. It changes no behaviour — `draftFromQuery`
+reads every field through `one()`, so the first value still decides — and the
+asymmetry is now a rule at the call site: **collapse where a scalar is wanted,
+preserve where a draft is carried.** Confirmed non-vacuous by reverting: the test
+fails with *"the second value was dropped — #317"* against the old code.
+
+**#299 closed by a row that arrived while the session was running.** Its "free
+falsifiable test" — also #101's — predicted a fresh
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE` carrying `minEquityUsd: 33.333333`. One
+appeared at 14:00:25Z: `{equityUsd 33.05, minEquityUsd 33.333333, smallPct 10,
+maxLeverage 3}`. `equityUsd` **is** `headroomUsd`, so the floor runs against live
+headroom and the starvation is confirmed end to end — the agent was refused by
+**$0.28**. It also re-confirms MARGIN a fourth time.
+
+**The unanticipated part is the useful part: the floor is per-coin.** That row
+reads `maxLeverage: 3` while Undertow is configured 4, and its open positions ran
+at 3 (AIXBT, MELANIA) and 4 (FARTCOIN). So the floor is $33.33 on one coin and
+$25.00 on another — **the same agent, at the same headroom, starved on one and
+fine on the other**. That makes the shipped copy's refusal to print a figure
+mandatory rather than cautious, and it is now recorded in `ceilings.tsx` and in
+the `agent-limits` manifest's constraint. It also sharpens #305: the decision row
+carries **no leverage field**, so `positionSizePct: 10` is not merely imprecise —
+it is insufficient to derive the amount from.
+
+**#318 measured both remaining manifest-claim families, and they disagree.**
+Element-of-record claims hold (native `<details>` 2 sites, native checkboxes 4,
+`role="checkbox"` nowhere). **Focus-ring claims fail**: 12 manifests assert *"do
+not add a per-element ring"* while `CONTROL` adds one at **71 sites** and
+`outline-none` switches the global rule off for every input, select and textarea.
+Filed as **#338** rather than fixed — removing it changes what 71 controls look
+like, which is `/design`'s call. #270's ARIA family came back 0-false-of-191; a
+family can hold at 191 while a ten-claim family rots, and that is no longer a
+caution but an observation.
+
+**#327 is answered and is a small fix.** The legal operator set **is** published,
+per column, on `preview_strategy_report` — `conditionOperators` plus
+`conditionVocabulary` — in a response the product already calls, and nothing
+reads either. And the composer renders a static `CLAUSE_OPS` for every column, so
+**the product offers `gt` on a classification metric exactly as the probe
+composed it.** Filtering needs no new platform read.
+
+**#302's two questions, two preview calls.** `marketReadText` is a template and
+the preview is a **linter** for it: each `{token}` returns with `status: "column"`
+or `"unknown"` and brace-spanning offsets, so an authoring UI can underline a bad
+marker. But `resolvedValue` is null on every marker — it validates, it does not
+interpolate. And only `marketReadMarkers[]` turns on; the other four market-read
+outputs stayed empty in both calls.
+
+**A correction I had to make to my own work.** I wrote on #306 that the nine
+write probes were "unchanged and unrun" and that `apply`/`compile` were
+unobserved at v19. Both false — the item's own *Run 2026-08-16* section records
+eight of nine executed, seven green. I had read the item's opening and Notes and
+not its run record. Withdrawn in the item, on the issue, and in HANDOFF, which
+had inherited it. What actually stays open there is **`radar-probe` alone**.
+
+**Start Here was demoted (#322), and the argument is a measurement.** It was
+repaired yesterday and was stale again by today on five counts — its named next
+action shipped and its issue closed, the item count, the p2 count, the active
+change's progress, and a PR it called open had merged. Repairing prose with no
+producer buys about a day. It now leads with **"Run `/board`"** and carries no
+counts at all; what it keeps is what no command can print.
+
+**State**: 28 open items, 0 errors from `validate --all`, `mirror` clean both
+directions, **2713/2713 vitest across 212 files**, `tsc` and `lint` clean.
+
+**Next**: three decisions nobody has taken — #320 (may a restyle acceptance pin
+content), #322's residue (should the fenced snapshot be deleted rather than
+fenced), #331 (render-reach vs module-reach in surface pins). And two things
+needing the operator, not a session: `the-approval-can-be-answered`'s live gate,
+and — struck the same day — clearing the ten residue agents,
+which the operator confirmed **cannot be deleted on BattleGrid's platform
+either**. #201's count is permanent and can only rise.
+
+*(Addendum, after the leg closed — an operator correction worth its own line.*
+*__Agents cannot be deleted on BattleGrid's platform either__, only archived. So*
+*`capabilities.canDelete: true` is answered by nothing in any client, and the*
+*`findings-agents` F-1 reading of it — a first-party capability MCP merely lacks*
+*— is wrong. The consequence for #201 is that its residue is __permanent and*
+*monotonic__: the tripwire is not the cheapest of four responses but the only*
+*one, and its threshold is a floor that can never be lowered. Struck in six*
+*places that had asserted the "ask the operator to clear them in the UI" route.)*
+
+**Watch out**: a fresh worktree needs `npm ci` before its test count means
+anything — six failures there are an install, not a regression — and check
+`node_modules` is not a reparse point first, because `npm ci` on a junction
+wipes the shared install. And the two-line currency check
+(`git rev-list --count HEAD..origin/main`, and the reverse) is what made this
+worktree's board figures trustworthy; #335 is why that matters.
+
+## 2026-08-16 (backlog) — the oldest issues, walked in order, and the pause that lifted
+
+**Did**: worked the open GitHub issues oldest-first, as asked. Eleven reached,
+**three closed**, **two new filed**, one `lite` change shipped and archived.
+Almost all of it came from live reads: the fleet is trading again after being
+`PLATFORM_PAUSED` since 2026-08-13T18:01Z, and **two items had watches armed
+that only an unpaused fleet could discharge**. Both discharged.
+
+**#146 and #147 were the payoff, and neither was answerable yesterday.**
+
+*#146 — closed.* `list_gate_blocks(Undertow)`: 100 rows in 50 min 00.5 s =
+**120.0 blocks/hr**, the same figure as the 2026-08-12 peak. The blocked coins
+are the coins the agent holds — FARTCOIN and MELANIA at ~1/min each. So cause 2
+("the agent stopped evaluating") is refuted, cause 1 ("it has simply been flat")
+is confirmed, and the whole 31 → 90 → 102 → 3.6 → 120/hr series tracks position
+state rather than health. **AIXBT's two rows are what keeps it honest**: both
+fall *before* its position opened at 13:13:24Z, and it has not blocked since —
+so the rate follows radar dispatch of held coins, not `openPositionCount`, and a
+model built on the latter would be wrong.
+
+*#147 — closed.* The 2026-08-15 apply that made Salamis's `RANGING_TAPE`
+required paid off. `conditionEvaluation` now reads `verdict "NEITHER"`,
+`decidedBy "RANGING_TAPE"`, `counts {trueCount 1, total 1, unresolvedCount 0}` —
+first population of all three. **`verdict` is directional, not pass/fail**: it
+reads `NEITHER` while the required condition is `TRUE` and the evaluation
+routed, so a surface rendering it as success/failure would be wrong. And the
+FALSE branch **is not a signal log at all** — `BLOCKED` and `INELIGIBLE` both
+return 0 rows. It is a gate block at `CONDITIONS`/`REQUIRED_CONDITION_FALSE`, a
+stage never before seen here, 17 occurrences, carrying a populated
+`reasonDetail` where `OPEN_POSITION_CONFLICT` always sends null.
+
+**Two corrections that would have cost someone a session each.**
+
+*#85's issue told the next reader to do work that shipped 2026-08-14.* The
+backlog item had recorded it; the issue had not — #309's one-way mirror, in the
+wild. Corrected, and blocker 2 re-confirmed at v19.2.0 (Cannae still reads the
+platform defaults while its agent was built at `minRiskRewardRatio 2.0`).
+
+*#116 claimed `trailingGeometry.observedExtreme` was live adverse-excursion data
+and that #85's third blocker was therefore softer than recorded.* **It is the
+favorable extreme.** On three open LONG positions it sits at or above both entry
+and mark — including AIXBT, under water, where it sits at *entry* rather than at
+the low — and `trailLevel == observedExtreme - trailDistance` holds exactly on
+all three. MFE where #85 needs MAE. Pointer withdrawn on both items.
+
+**#107 closed; #336 filed from what closing it turned up.** The
+`get_agent_fund_allocation` defect is confirmed with a negative control,
+mitigated (`read-budget` sources `committedUsd` from the exposure gauge), and
+guarded by a reachability test with a vacuity check. Verified live:
+`gauges.exposure.fill 11.95` against `marginedUsd 11.9419`. Its unconcluded
+"these may be two different pots" caveat is now settled — `accountEquityUsd`
+reads **0** while **$11.94 of margin is live in the trading wallet**, so there is
+no pot for which zero is right, and `openUnrealizedPnlUsd` fails the same way
+(**0** against `list_user_active_positions`' **0.177854**). Filed separately as
+**#336** because that tool is *load-bearing* here: the answer to
+`get_agent_fund_allocation` is "never call it", and the answer to
+`get_agent_budget` cannot be, so the rule has to name fields instead.
+
+**#201's last open question answered, and option 3 taken.** `Probe 238 Dedupe`
+traces to this journal — an operator-authorized **hand walk**, like
+`GC probe shape II` before it. Both reached `create_intelligence_agent` through
+the adapter without touching `probe-agent.ts`, so **options 1 and 2 cannot be
+made sufficient; there is no code path to bind.** Shipped
+`the-roster-says-when-residue-grew` (lite, archived):
+`tests/live/residue-probe.test.ts`, which classifies **by exclusion, not by
+prefix** — the nine older residue agents share `GC probe`/`Grid-Commander
+probe`, the tenth shares neither, so a prefix match would have missed *precisely
+the create it exists for*. Threshold 10, verified live (16 agents, 6 the
+operator's, all residue ARCHIVED and `tradingMode: OFF`).
+
+**The suite's six-failure baseline is not a code defect.** It was this worktree's
+`node_modules` holding one entry: only the two files that *spawn a subprocess*
+could notice, everything else resolved through `npx`. After `npm ci`,
+`live-probes-are-named` passes 10/10 and the suite reaches **2711/2711 across
+three runs**. That answers #330's option 3 without repairing or skipping
+anything — **gate on zero, after `npm ci`.** #330 also gained a second instance
+with its failure mode captured: `new-agent.test.ts` **timed out at 5000 ms**,
+passing alone in 512 ms. A timeout, not an assertion — which rules out both
+hypotheses on record and points at contention against the unset default
+`testTimeout` (collect swung 77 s between identical runs; both flaking files are
+the JSX-heavy `tests/rendering/` ones).
+
+**Not touched, deliberately.** #104 — eight recorded confirmations and an
+explicit instruction not to poll again; respected. #101 — its gate needs a real
+decision waiting *and* the operator answering one by name;
+`list_pending_approvals` returned `[]`, so it is doubly blocked.
+
+**State**: 0 active changes besides `the-approval-can-be-answered` (33/40, gated
+on 4.5). 30 open issues, down from 31 net of 3 closed and 2 filed. Gates on this
+tree: `tsc` clean, `lint` clean, **2711/2711 vitest**, `validate --all` 0 errors.
+
+**Next**: #282 onward — the nineteen issues below #201 are untouched. Two need
+the operator rather than a session: **#101's live accept/cancel through the
+product**, and — struck the same day — clearing the ten residue agents,
+which the operator confirmed **cannot be deleted on BattleGrid's platform
+either**. #201's count is permanent and can only rise.
+
+**Watch out**: a fresh worktree needs `npm ci` before its test count means
+anything — six failures there are an install, not a regression. And check
+`node_modules` is not a reparse point before running it; on a junction `npm ci`
+would wipe the shared install.
+
 ## 2026-08-16 (headroom) — the cap shows what is left, and two claims were withdrawn
 
 **Did**: merged **#329** and **#332**, then proposed and built

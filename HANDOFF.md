@@ -542,23 +542,43 @@ are their own gate, opt-in on **`CI_LIVE=1`**, serial, about nine minutes —
 until 2026-08-10 this instruction fired all thirty in parallel at the real
 account; see the journal entry for that day.
 
-### The current thread (2026-08-16, close of the lane leg)
+### The current thread (2026-08-16, close of the backlog leg)
 
-**`/propose` #299's standard half** — render `headroomUsd` and
-`effectiveNotionalUsd` on the limits surface so it can answer *"why did my agent
-stop?"*. Today's live measurement turned that from a derivation problem into a
-rendering one: `get_agent_budget` already publishes both, plus `blockedReason`
-and four resolved gauges, on a call the product already makes. It still adds
-behaviour and still needs a delta spec.
+**No counts live in this section any more, deliberately — see #322.** The
+2026-08-13 text was audited and repaired on 2026-08-16, and **it was stale again
+within a day**: by the close of the next session its named next action was done,
+its item count was wrong, its active-change progress was wrong, and the PR it
+called open was merged. Repairing prose that has no producer buys about
+twenty-four hours. So what used to be a state block is now one line:
 
-**State**: 30 open items, **two p2** (above). One active change,
-`the-approval-can-be-answered` at 19/40 — untouched today and still the board's
-`NEXT`. **PR #329 is open and mergeable** with the whole lane leg in it. The
-mirror is clean both directions, 30 items to 30 issues.
+**Run `/board`.** It prints the live counts, the active change and its progress,
+and the `NEXT:` line. Nothing here restates them.
 
-**Read `git show origin/main:openspec/JOURNAL.md`, never the local copy**, before
-trusting any `Next` written here — parallel sessions make it stale before it
-lands. That instruction has now been vindicated twice.
+**What this leg left, in order (updated 2026-08-17):**
+
+1. **`the-approval-can-be-answered` is 40/40 — both live gates passed.** Task
+   4.5 (a cancel through the product, with its audit row) on 2026-08-16, and
+   task 7.4 (the operator accepting one real decision) on 2026-08-17. Next
+   action is **`/verify`, then the auditor** — it is a `full` track change.
+2. **Archive `2da94e1e` at `expectedRevision: 2`** once the XRP position opened
+   by 7.4 closes. Left active on purpose: the live position cites that strategy
+   as provenance.
+3. **The ten probe agents are permanent.** The operator confirmed 2026-08-17
+   that BattleGrid offers **no delete on its own platform either**, so
+   `capabilities.canDelete: true` is answered by nothing in any client. Nothing
+   reduces that count; #201 is a tripwire problem, not a cleanup one.
+4. **#306 needs one probe run, not nine.** Eight of nine executed against
+   v19.2.0 on 2026-08-16, seven green. What is held back is **`radar-probe`** —
+   its `finally` guard landed 2026-08-17, so it now needs only a window when the
+   fleet is below cap and flat. It is at 20/20 with four positions.
+5. **Six open decisions, all filed, all cheap once decided**: #320, #331,
+   #322 (this section's own mechanism), #304, #282, and #327's corrected ask.
+   None is an edit.
+
+**Before trusting any `Next` written anywhere**, read
+`git show origin/main:openspec/JOURNAL.md` rather than the local copy —
+parallel sessions make a written `Next` stale before it lands. That instruction
+has now been vindicated three times.
 
 ### Everything below this line is a dated snapshot, not instructions
 

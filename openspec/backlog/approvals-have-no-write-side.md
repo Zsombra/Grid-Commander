@@ -724,3 +724,133 @@ these, not exposure.
   against 41 lifetime trades. (`accountEquityUsd: 0` is **resolved, not
   anomalous** — `lifetimeAllocatedUsd` is 0 across 41 trades, so fund-allocation
   is simply not this agent's funding path.)
+
+## 2026-08-16 — the free falsifiable test fired, and it answers the NOT DETERMINED
+
+This item's "Free falsifiable test, no write required" predicted branch (a): a
+fresh `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row at TOKEN stage with
+`reasonDetail ≈ {equityUsd: 32.8, minEquityUsd: 33.333333, smallPct: 10,
+maxLeverage: 3}`.
+
+**Branch (a) fired at 2026-08-16T14:00:25.929Z**, read minutes later:
+
+```json
+{ "coinTicker": "MOODENG", "gateStage": "TOKEN",
+  "reasonCode": "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+  "reasonDetail": { "equityUsd": 33.05, "minEquityUsd": 33.333333,
+                    "smallPct": 10, "maxLeverage": 3 } }
+```
+
+Three of the four predicted values are exact — `minEquityUsd: 33.333333`, the
+string this item said would settle it, plus `smallPct: 10` and `maxLeverage: 3`.
+`equityUsd` reads **33.05** rather than 32.8 because headroom had moved
+(`get_agent_budget` the same hour: cap 45, `capitalAtRiskUsd` 11.95, **headroom
+33.05**).
+
+### It settles both open questions the test was built to answer
+
+1. **"NOT DETERMINED: whether that TOKEN-stage floor test reads live headroom
+   (32.8, fails) or the static cap (45, passes)."** — **Live headroom.**
+   `equityUsd` is `headroomUsd` exactly, and the entry was refused. Starvation
+   confirmed end to end: the agent was blocked by **$0.28**.
+2. **"Either reading also re-confirms MARGIN, since under NOTIONAL that field
+   would read ≈8.47."** — It reads 33.05, not 8.47. **MARGIN re-confirmed**, a
+   fourth time.
+
+### One thing the prediction did not anticipate
+
+`maxLeverage` in the row is **3**, while Undertow is configured `maxLeverage: 4`.
+Its open positions ran at effective leverage 3 (AIXBT, MELANIA) and 4
+(FARTCOIN), so **leverage is resolved per coin and the floor moves with it** —
+$33.33 at leverage 3, $25.00 at leverage 4. The queue is therefore not
+"structurally blocked until a close" as a single global state: at headroom 33.05
+Undertow was below the floor for a leverage-3 coin and above it for a
+leverage-4 one, simultaneously.
+
+That matters to this change's confirmation copy and is recorded on
+[[a-confirmation-that-cannot-name-the-amount]] (#305): the decision row carries
+no leverage field, so `positionSizePct: 10` is not merely imprecise — it is
+insufficient to derive the amount from.
+
+Full working on #299, which this measurement closed.
+
+## Task 4.5 PASSED 2026-08-17 — the gate is crossed
+
+A real decision was cancelled **through the product**, with the operator's
+authorisation, and it wrote the audit row the 2026-08-15 cancel could not.
+
+### Getting a decision to exist
+
+The queue is empty most of the time and a window is 15 minutes, so waiting was
+not a plan. With the operator's go-ahead the account was configured to produce
+one — and the isolation mattered more than the loosening:
+
+- **Cannae was forked** to `Vanguard Test Bench` (`6b7256ab`) and Vanguard was
+  rebound to the fork. **Undertow shares Cannae and runs `FULL_EXECUTION`**, so
+  editing Cannae would have made it trade harder with real money and no approval
+  step. Cannae stayed at revision 3 throughout and was never touched.
+- **`minTradeConviction` 0.55 → 0.35 → 0** on Vanguard, which is agent-scoped
+  and reaches nothing else.
+- Vanguard stayed `APPROVAL_REQUIRED` the whole time, so nothing could execute.
+
+**The strategy's own gates were compiled but never applied.** The conviction
+dial alone produced a decision in 3.5 minutes — which is the finding worth
+keeping: `minAggregateScore` decides whether the **model is called**;
+`minTradeConviction` decides whether its answer becomes an **ENTER**. The second
+is the binding one, and it lives on the agent, not the strategy.
+
+### The decision
+
+```
+50735dc6-2cf0-45f0-9613-0a50c8d3a097   Vanguard   AVAX SHORT
+conviction 0.45     <- below the old 0.55 bar; it exists because of the change
+entry 6.3556   stop 6.39207472   target 6.2223   12% MEDIUM
+created 18:01:47Z   expires 18:16:47Z
+```
+
+### The cancel, through the product
+
+A POST to `/approvals/[agentId]/[id]` carrying the rendered form's
+`$ACTION_ID_40d4b63…`, `decisionId`, `confirmationToken` **and all three price
+levels** — the confirmation binding working exactly as designed, since the
+decision row carries no revision field and the levels are the change-detector.
+
+```
+303 See Other
+Location: /approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.
+```
+
+Platform read-back: `status`/`tradeStatus` **CANCELLED**, `closedAt
+18:14:00.517Z`, `executedOrderId` / `stopLossOrderId` / `takeProfitOrderId` all
+null, no fill price, quantity or fee. Cancelled with **2m47s** left on the clock.
+
+### The audit row — what this task exists for
+
+```json
+{"tool":"cancel_entry_decision","actor":"user","destructive":true,
+ "outcome":"succeeded","created_at":"2026-08-16T18:14:02.119Z",
+ "completed_at":"2026-08-16T18:14:06.237Z","failure_reason":null}
+```
+
+The query was **every `cancel_entry_decision` row ever written**, and it returned
+**exactly one**. That is the proof: the 2026-08-15 cancel made straight over MCP
+left no row; this one did. Confirmed `destructive: true`, `outcome: succeeded`,
+4.1 s end to end.
+
+### Restored immediately
+
+Vanguard rebound to Cannae r3, `minTradeConviction` 0.55 and `gridMinConfidence`
+0.75 put back, the fork archived (`isActive: false`, `boundAgentCount: 0`).
+Undertow and Breakwater untouched throughout.
+
+### Two things observed in passing
+
+- **The decision page says *"Accepting a proposed trade is not yet available"***.
+  The gate held itself shut while its own precondition was being satisfied —
+  5.2/5.3 are unbuilt, so there is no accept control to press.
+- **`last24hCostUsd` read 0 on every write response** (rebind, update) while
+  `list_intelligence_agents` read 0.478 minutes earlier. That is #110's
+  list-vs-detail cost split appearing on **write** payloads too, not just
+  `get_intelligence_agent` — noted there.
+
+**Section 5 is now unblocked.** Nothing in it is built: 5.2–5.5 remain open.

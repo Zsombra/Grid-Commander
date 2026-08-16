@@ -61,3 +61,18 @@ That half is `a-probe-reuses-its-throwaway-agent`.
 **What stays here after it lands:** the eight above. Nothing in this product can
 remove them — asking the operator to delete them in BattleGrid's own UI is the
 only route, and it is now a one-time ask rather than a recurring one.
+
+
+## Struck 2026-08-16 — the "delete them in the UI" route does not exist
+
+Both places this item names deleting the residue in BattleGrid's own UI are
+**wrong**, and so is the inference behind them. The operator confirmed on
+2026-08-16 that **BattleGrid offers no delete on its own platform either**.
+`capabilities.canDelete: true` is answered by nothing, in any client, including
+BattleGrid's own — it is not, as `findings-agents` F-1 read it, a capability of
+the first-party app that MCP merely lacks.
+
+So residue on either account is **permanent**. Archiving is the whole of cleanup
+everywhere, and every archived probe agent ever minted is a row that will be on
+the roster forever. Prevention is the only lever, which is what
+[[a-probe-agent-is-archived-on-the-first-account]] (#201) now exists for.
