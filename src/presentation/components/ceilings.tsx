@@ -96,6 +96,24 @@ export function Ceilings({
  * apply, the platform publishes no per-preset projection, and computing one is
  * what `the-approval-can-be-answered` refused as PE-2 on the neighbouring money
  * surface. `tests/agent/sizing-base.test.ts` scans this file for it.
+ *
+ * **Nor may the exchange minimum be given a number here, and that is measured
+ * rather than cautious.** The last paragraph deliberately says "below the
+ * exchange minimum" without one. A gate block read live on 2026-08-16 (#299)
+ * publishes the whole floor:
+ *
+ *     EXCHANGE_MIN_NOTIONAL_UNREACHABLE  MOODENG
+ *     { equityUsd 33.05, minEquityUsd 33.333333, smallPct 10, maxLeverage 3 }
+ *
+ * `equityUsd` is `headroomUsd` exactly — so the floor is tested against live
+ * headroom, not the static cap — and `minEquityUsd` is `10 / (smallPct x
+ * maxLeverage)`. **That last term is resolved per coin, not per agent.**
+ * Undertow is configured `maxLeverage: 4`, and its open positions ran at
+ * effective leverage 3 (AIXBT, MELANIA) and 4 (FARTCOIN). So its floor is
+ * $33.33 on a leverage-3 coin and $25.00 on a leverage-4 one, and at headroom
+ * 33.05 it was starved on the first while fine on the second — at the same
+ * moment, on the same screen. Any single figure printed here would be wrong for
+ * some coin the agent trades.
  */
 function SizingPanel({ sizing }: { sizing: SizingBase | null }) {
   // No exposure gauge at all, or a cap the platform reports unconfigured. An
