@@ -49,8 +49,9 @@ spec names as the boundary is the inert one.
 
 ## What Changes
 
-- **The port learns which operations commit funds**, from a source this product
-  owns rather than from the platform's description of itself.
+- **The existing `WAGER_TOOLS` judgement reaches the runtime**, from one home in
+  the adapter, so the port stops depending on the platform's description of
+  itself. `declaredScope` gets the producer its own comment already claims.
 - **Both gates key to it.** An operation that commits funds requires
   fund-committing authority *and* a confirmation, whatever the platform says
   about it.
@@ -58,10 +59,11 @@ spec names as the boundary is the inert one.
   is the platform's own claim and worth recording — but it may no longer be the
   only thing that decides. Where it is absent the existing fail-closed reading
   stands.
-- **The audit records the product's judgement**, so a position-opening write
-  stops reading `destructive: false` in the operator's own log.
-- **The annotation set is swept** for other inversions rather than one tool being
-  repaired and the class declared closed.
+- **The audit records both** the platform's claim and this product's judgement,
+  so a position-opening write stops reading `destructive: false` as though it
+  were our assessment. Existing rows are never rewritten.
+- **`random_submit_market_grid` is added to the guard**, a gap the sweep found in
+  a list that already existed.
 
 ## Capabilities
 
@@ -71,18 +73,36 @@ spec names as the boundary is the inert one.
 - `battlegrid-connection` — the confirmation trigger, and the wager-authority
   scenario that is currently vacuous
 
-## The fact the port is missing, and where it can come from
+## The fact the port is missing already exists
 
-BattleGrid publishes no per-tool scope. The capability record's tool entries
-carry `annotations`, `description`, `execution`, `inputSchema`, `name`,
-`outputSchema`, `title` — and `execution` is only `{"taskSupport": "forbidden"}`.
-So `declaredScope` cannot be populated from discovery; there is nothing to
-populate it from.
+**Scope adjusted before planning.** The first draft proposed inventing a list of
+money-committing tools and asked the planner to decide where it should live. Both
+questions were already answered in the repository:
 
-The fact therefore has to be **this product's own**, which `design.md` argues is
-correct rather than merely necessary: whether an operation spends the user's
-money is a judgement this product is accountable for, and delegating it to the
-counterparty is what produced the defect.
+- **The list exists.** `tests/agent/wager.test.ts:79-88` holds `WAGER_TOOLS`,
+  eight names, plus `ANSWER_TOOLS` for the released pair. It has been there since
+  `author-agents` on 2026-07-27, enforcing *unreachability*. Nothing carries it
+  into the runtime, where it could drive *classification*.
+- **The field exists.** `DiscoveredTool.declaredScope` is declared, is read by
+  `classify.ts:50`, and is **set by nothing**. Giving it a producer is the fix.
+- **A10 decides where the producer goes**, and it is the adapter — half 1 forbids
+  a `WAGER_TOOLS` name anywhere in `src/`/`app/`, half 2 confines the answer pair
+  to `src/infrastructure/battlegrid/`. The domain may not hold names at all.
+
+So this is not "build a source of truth". It is **give the existing one a second
+consumer, from the one directory permitted to know tool names**, and stop it
+being two lists that can drift.
+
+It is also smaller than the first draft implied, because only *reachable*
+money-committing tools need runtime classification. The eight forbidden ones are
+protected structurally: you cannot call what you cannot name.
+
+## A gap the sweep found
+
+`random_submit_market_grid` submits a Market Grid entry, entry costs the fee, and
+it is **not in `WAGER_TOOLS`**. It is unnamed in `src/`/`app/` today so nothing is
+wrong yet, and nothing stops the next person naming it. It gets added — which is
+the argument for doing the class rather than the tool.
 
 ## Out of Scope
 

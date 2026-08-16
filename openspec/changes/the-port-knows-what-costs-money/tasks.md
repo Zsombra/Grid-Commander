@@ -1,9 +1,13 @@
 # Tasks: The Port Knows What Costs Money
 
-> **Track `full`.** The planner writes `plan/` before section 2 begins. Sections 0
-> and 1 are deliberately available to the planner as evidence-gathering, because
-> the central decision (where the fact lives) needs the A10 question settled
-> first.
+> **Track `full`.** The planner writes `plan/` before section 2 begins. Section 0
+> is deliberately available to the planner as evidence-gathering — it only adds
+> throwaway tests that pin today's behaviour.
+>
+> **The two questions the first draft deferred are settled** and section 1 records
+> the answers: A10 puts the producer in the adapter, and the audit records both
+> claims without backfilling. Do not re-open either; challenge them in the
+> decision log if the planner disagrees.
 
 ## 0. Prove the defect before changing anything
 
@@ -18,36 +22,45 @@
 - [ ] 0.3 Record both outputs verbatim in `plan/decision-log.md`. Everything
       after this is measured against them.
 
-## 1. Settle where the fact lives
+## 1. One home for the judgement
 
-- [ ] 1.1 **Resolve the A10 question.** A10 forbids naming a fund-committing tool
-      outside `src/infrastructure/battlegrid/`; the judgement belongs in
-      `src/domain/capability/`. Decide, and record why in the decision log. Do not
-      start section 2 until this is settled.
-- [ ] 1.2 Decide the audit-column question from `design.md` — platform's claim,
-      product's judgement, or both. The design recommends **both**, with existing
-      rows left alone.
-- [ ] 1.3 Write the list of money-committing tools, with a one-line reason per
-      entry, and a line for each of the remaining 22 mutating tools saying why it
-      is **not** on the list. The absence of a reason is how the next one gets
-      missed.
+> **Settled before planning — do not re-open.** A10 half 1 forbids a
+> `WAGER_TOOLS` name anywhere in `src/`/`app/`; half 2 confines the answer pair to
+> `src/infrastructure/battlegrid/`. So the producer is the **adapter**, never the
+> domain. The audit question is settled too: **record both, never backfill**.
 
-## 2. The classification learns the difference
+- [ ] 1.1 Move the names to one module under `src/infrastructure/battlegrid/`,
+      partitioned into **forbidden** (unreachable) and **reachable**.
+      `tests/agent/wager.test.ts` imports it instead of declaring its own copy, so
+      A10 guards the same list the runtime uses.
+- [ ] 1.2 Add **`random_submit_market_grid`** to the forbidden set. Money-affecting,
+      absent from `WAGER_TOOLS`, unnamed in `src`/`app` today — unreachable in fact
+      and unguarded.
+- [ ] 1.3 Assert the **partition**: every money-committing tool is in exactly one
+      set. A name in both, or called while in neither, is an error.
+- [ ] 1.4 A one-line reason per entry, and a line for each remaining mutating tool
+      saying why it is on neither list. The absence of a reason is how the next one
+      gets missed.
 
-- [ ] 2.1 `classify.ts` distinguishes **what the platform said** from **what this
-      product concluded**. The raw `destructiveHint` is retained as evidence.
-- [ ] 2.2 A money-committing operation classifies as requiring fund-committing
-      authority, whatever the platform's annotation says.
-- [ ] 2.3 A money-committing operation classifies as consequential, so the
-      confirmation gate applies to it.
-- [ ] 2.4 The absent-hint case is unchanged and still fails closed
+## 2. `declaredScope` gets the producer its comment already claims
+
+- [ ] 2.1 `rawDiscoverTools` (`mcp-adapter.ts:387`) sets `declaredScope` on the
+      reachable money-committing tools as it maps the discovered list. It is inside
+      the directory A10 permits, and it is the only place that may know the names.
+- [ ] 2.2 `classify.ts` stays **name-free**. It keeps reading
+      `tool.declaredScope ?? inferScope(...)`; the field simply now has a value.
+- [ ] 2.3 `classify.ts` distinguishes **what the platform said** from **what this
+      product concluded**, retaining the raw `destructiveHint` as evidence.
+- [ ] 2.4 A money-committing operation classifies as consequential, so the
+      confirmation gate applies whatever the annotation says.
+- [ ] 2.5 The absent-hint case is unchanged and still fails closed
       (`classify.ts:44` reasoning preserved verbatim).
-- [ ] 2.5 `UNKNOWN_TOOL` is unchanged: still `destructive: true`,
-      `requiredScope: 'mcp:wager'`. A new money-committing tool must stay safe
-      before anyone classifies it.
-- [ ] 2.6 **`inferScope` stops lying.** Either it is removed, or its comment stops
+- [ ] 2.6 `UNKNOWN_TOOL` unchanged — `destructive: true`,
+      `requiredScope: 'mcp:wager'`. A newly deployed money-committing tool stays
+      safe before anyone classifies it.
+- [ ] 2.7 **`inferScope` stops lying.** Either it goes, or its comment stops
       claiming `declaredScope` catches wager tools. No comment may describe a
-      mechanism with no producer.
+      mechanism with no producer — that sentence is why this survived four months.
 
 ## 3. The list cannot rot
 
@@ -84,9 +97,10 @@
 
 ## 6. The audit says what we did
 
-- [ ] 6.1 A money-committing write records the product's judgement.
-- [ ] 6.2 Whatever section 1.2 decided about recording the platform's claim
-      alongside it.
+- [ ] 6.1 A money-committing write records **both** the platform's claim and this
+      product's judgement, as separate facts.
+- [ ] 6.2 The badge renders **ours**, because it is presented as our statement
+      about what we did to someone's account.
 - [ ] 6.3 Existing rows are **not** rewritten. An audit you edit is not an audit.
 - [ ] 6.4 `audit-list.tsx` renders the change without claiming anything about
       rows written before it.
@@ -107,6 +121,6 @@
 
 - [ ] 8.1 Delete the section 0 tests. They pinned a defect that no longer exists.
 - [ ] 8.2 `#340` updated with what was measured, and closed only if the sweep in
-      1.3 is complete.
+      1.4 is complete.
 - [ ] 8.3 Re-pin any surface manifest whose source files moved.
 - [ ] 8.4 Journal entry.

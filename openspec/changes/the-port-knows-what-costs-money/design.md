@@ -1,143 +1,170 @@
 # Design: The Port Knows What Costs Money
 
-## The one decision everything else follows from
+> **Scope adjusted before planning, 2026-08-17.** The first draft proposed
+> creating a list of money-committing tools and asked the planner to settle where
+> it should live. **Both questions were already answered in the repository** and
+> the draft had not looked. This version is built on what exists.
 
-**Where does the fact live?** The port needs to know that
-`accept_entry_decision` commits funds. Four candidates:
+## The list already exists
 
-| | Source | Verdict |
+`tests/agent/wager.test.ts:79-88`:
+
+```ts
+const WAGER_TOOLS = [
+  'submit_agent_grid', 'submit_market_grid', 'close_agent_position',
+  'override_agent_protection', 'set_agent_per_trade_push',
+  'reset_agent_drawdown_baseline', 'halt_intelligence_agent',
+  'resume_intelligence_agent',
+];
+const ANSWER_TOOLS = ['accept_entry_decision', 'cancel_entry_decision'];
+```
+
+This is exactly the fact the port is missing — **this product's own judgement
+about which operations commit funds** — and it has been written down since
+`author-agents` (2026-07-27). It lives in a test, where it enforces
+*unreachability*. Nothing carries it into the runtime, where it could drive
+*classification*.
+
+So the change is not "invent a source of truth". It is **give the existing one a
+second consumer**, and stop it being two lists that can drift.
+
+## A10 settles where the code goes, and it is the adapter
+
+A10 has two structural halves:
+
+| | Rule |
+|---|---|
+| 1 | No `WAGER_TOOLS` name may appear anywhere in `src/` or `app/` — these are operations the product must not be able to call |
+| 2 | `ANSWER_TOOLS` may appear **only** in `src/infrastructure/battlegrid/` |
+
+That rules out the first draft's suggestion of putting names in
+`src/domain/capability/`. It would violate half 1 outright for eight tools, and
+half 2 for the other two.
+
+**So the producer is the adapter**, which is also the only place allowed to know
+tool names at all (policy P6, "one way in"). Concretely:
+`rawDiscoverTools` in `src/infrastructure/battlegrid/mcp-adapter.ts:387` maps the
+discovered list and is already inside the permitted directory.
+
+## The field already exists too, and has no producer
+
+`DiscoveredTool.declaredScope` is declared (`tool-class.ts:56`), read
+(`classify.ts:50`), and **set by nothing**. `classify.ts:61` says *"tools that
+need wager authority say so, and are caught by `declaredScope`"* — describing a
+mechanism with no producer, which is why the hole survived four months of being
+read.
+
+**Giving `declaredScope` a producer is the fix.** The domain keeps its existing
+shape and stays name-free; the adapter supplies the fact it is uniquely permitted
+to know.
+
+That is a much smaller change than the first draft implied, and it repairs the
+comment rather than deleting it.
+
+## Two classes of tool, two protections, and only one needs runtime
+
+This is the simplification the first draft missed.
+
+**The eight `WAGER_TOOLS` are unreachable by construction.** A10 half 1 means
+their names cannot appear in `src/` or `app/` at all — so the product cannot call
+them, and runtime classification of them is unnecessary. **You cannot call what
+you cannot name.** Their protection is structural and already works.
+
+**Only the reachable money-committing tools need runtime classification.** Today
+that is `accept_entry_decision` and `cancel_entry_decision` — the two A10 half 2
+confines to the adapter, and the two the product actually calls.
+
+So the runtime list is *short*, and it grows by exactly one deliberate move: when
+a change releases a tool, its name moves from `WAGER_TOOLS` to the adapter's
+reachable list, guarded on both sides. That is the same shape DL-10 already
+performed by hand for the answer pair.
+
+## The two lists must not drift
+
+The risk in having a test list and a runtime list is that they disagree. Three
+properties, all of which must be built:
+
+1. **One home.** The names live in one module inside
+   `src/infrastructure/battlegrid/`; `wager.test.ts` imports it rather than
+   re-declaring. A10's guard then reads the same list it protects.
+2. **Partition, asserted.** Every money-committing tool is in exactly one of
+   *forbidden* or *reachable*. A name in both, or in neither while being called,
+   is an error.
+3. **Every name resolves.** A name absent from the discovered surface is an
+   error, not a silent no-op — the failure mode `CLAUDE.md` warns about when it
+   says never hard-code a tool list. With a vacuity guard, because an empty scan
+   passes everything.
+
+## A gap the sweep found
+
+`random_submit_market_grid` is **money-affecting** — it submits a Market Grid
+entry, and entry costs the fee — and it is **not in `WAGER_TOOLS`**. It is not
+named in `src/` or `app/` today, so nothing is currently wrong; but nothing stops
+the next person naming it either.
+
+Add it. This is the value of doing the class rather than the tool: the sweep
+found a hole in the guard that already existed.
+
+Full sweep of the five money-affecting tools annotated `destructiveHint: false`:
+
+| tool | in `WAGER_TOOLS`? | reachable? |
 |---|---|---|
-| A | BattleGrid's `destructiveHint` | **This is the defect.** It says accept is harmless and cancel is not |
-| B | A per-tool scope from discovery | **Impossible.** The platform publishes none — tool entries carry `annotations`, `description`, `execution`, `inputSchema`, `name`, `outputSchema`, `title`, and `execution` is only `{"taskSupport":"forbidden"}` |
-| C | A name list this product owns | Viable, and the only one that exists today |
-| D | Infer from the operation's own arguments | Rejected — there is nothing in `{decisionId}` that says money |
+| `accept_entry_decision` | no — released (DL-10) | yes, adapter |
+| `close_agent_position` | yes | no |
+| `submit_market_grid` | yes | no |
+| `submit_agent_grid` | yes | no |
+| `random_submit_market_grid` | **no — gap** | no |
 
-**C, and it is right rather than merely available.** Whether an operation spends
-someone's money is a judgement this product is accountable for. Delegating it to
-the counterparty is precisely what produced the defect, and `CLAUDE.md` already
-states the general form: *never treat scope alone as a safety boundary*, because
-the platform's description of its own danger is not evidence.
+## `destructiveHint` becomes evidence
 
-## The objection to a name list, and why it is survivable here
+Kept and demoted. It stops deciding and becomes recorded: it is the platform's
+own claim, it has been measured wrong on five tools, and that record has value.
 
-A hard-coded list of tool names is exactly what `CLAUDE.md` warns about: *"The
-tool list goes stale after a BattleGrid deployment. Rediscover at runtime; never
-hard-code a tool list."*
+The absent case is unchanged and still fails closed — `classify.ts:44`'s *"assume
+the worst rather than the convenient"* was right and simply never extended to the
+present-and-wrong case. `UNKNOWN_TOOL` is untouched, so a newly deployed
+money-committing tool is safe before anyone classifies it.
 
-That rule is about **discovery** — never assume the set of tools, never assume a
-tool exists, never assume the count. This list is a different thing: a set of
-names this product has decided are money-committing. It is not used to decide
-what exists; it is used to decide what a *known* operation costs.
+## The audit column — settled, not deferred
 
-Two properties keep it honest, and both must be built:
-
-1. **A name on the list that is absent from the discovered surface is an error**,
-   not a silent no-op. That is the failure mode the rule exists for — a list that
-   quietly stops matching. `no-population-constants.test.ts` already carries this
-   shape as a vacuity guard, and `surface-freshness.test.ts` proves the record is
-   current.
-2. **Unknown stays fail-closed.** `UNKNOWN_TOOL` already classifies as
-   `destructive: true, requiredScope: 'mcp:wager'`. Nothing here weakens it, and
-   a new money-committing tool is therefore safe by default until it is
-   classified — the list can only ever *add* safety to a known tool.
-
-**Open for review**: whether the list should live in the domain
-(`src/domain/capability/`) beside `classify.ts`, or in the adapter beside the
-`TOOLS` map that already confines tool names to one directory (A10). The A10 rule
-says naming a fund-committing tool outside `src/infrastructure/battlegrid/` is a
-violation — which argues for the adapter — but `classify.ts` is domain and is
-where the judgement belongs. **This is the first thing the planner should settle.**
-
-## What `destructiveHint` becomes
-
-Kept, and demoted. It stops being an input to the gate and becomes recorded
-evidence: it is the platform's own claim about its own operation, it has been
-observed to be wrong, and the record of *that* is worth having.
-
-Concretely, the classification grows a distinction the code does not currently
-make:
-
-- **what the platform said** — the raw hint, retained
-- **what this product concluded** — what the gates key to
-
-The absent case is unchanged and still fails closed: `classify.ts:44` already
-reasons *"Where it is absent on a mutating tool, assume the worst rather than the
-convenient."* That reasoning was right; it was simply never extended to the
-present-and-wrong case.
-
-## The audit column, and the era problem
-
-`call-path.ts:105` writes `destructive: cls.destructive`, and `audit-list.tsx:60`
+`call-path.ts:105` writes `destructive: cls.destructive`; `audit-list.tsx:60`
 renders it as a badge. Today a position-opening write reads `destructive: false`.
 
-**Decision: the column records the product's judgement**, because the badge is
-rendered as this product's own statement about what it did to someone's account,
-and the audit's whole claim is *"this is what we did"*.
+**Decision: record both, and never rewrite history.**
 
-**The era problem is real and must be handled explicitly.** Rows written before
-this change carry the platform's answer; rows after carry ours. A reader
-comparing two accepts across the boundary sees a flag flip with no write having
-changed. Three options, for the planner:
-
-1. **Leave history alone and date the change.** Honest, cheapest, and leaves a
-   discontinuity a reader can only resolve by knowing this change exists.
-2. **Backfill.** Rewrites the audit log, which is the one artifact that should
-   never be rewritten. **Rejected** — an audit you edit is not an audit.
-3. **Record both, from here on.** The platform's claim and ours, side by side.
-   Costs a column; makes the disagreement visible rather than resolved; and turns
-   the inversion into standing evidence instead of a footnote.
-
-**Recommendation: 3**, with 1 for existing rows. It fits what this repository
-does everywhere else — record the declared and the observed, and never let one
-overwrite the other.
+- The row carries **the platform's claim** and **this product's judgement** as
+  separate facts. The badge renders ours, because it is presented as our
+  statement about what we did to someone's account.
+- **Existing rows are not backfilled.** An audit you edit is not an audit. Rows
+  before this change carry the platform's answer in the single old field, and the
+  change is dated in the journal so a reader can place them.
+- Recording both rather than replacing keeps the disagreement visible, which is
+  what this repository does everywhere else with declared-versus-observed — and
+  it turns the inversion into standing evidence instead of a footnote.
 
 ## What must not change
 
 - **No second opinion about whether a write is allowed.**
   `answer-decision.command.ts:16-20` is explicit that the port owns
-  classification, scope, the confirmation consume and the audit row, and that
-  duplicating them in the application layer would create a second opinion. This
-  change makes the port's opinion correct; it must not move the decision.
-- **The application layer keeps working exactly as it does.**
-  `read-answer-authority.query.ts` decides what is *drawn*, never what is
-  *permitted* — the P1 rule the approvals change's decision log warns about in
-  advance. That separation stays.
-- **`inferScope` must stop lying or stop existing.** Its comment claims tools
-  needing wager authority "are caught by `declaredScope`". Whatever replaces it,
-  no comment may describe a mechanism with no producer — that is how this defect
-  survived four months of reading.
+  classification, scope, the confirmation consume and the audit row. This change
+  makes the port's opinion correct; it must not move the decision upward.
+- **`read-answer-authority.query.ts` still decides only what is drawn**, never
+  what is permitted — the P1 rule the approvals log warns about in advance.
+- **A10's behavioural half is untouched.** A wager call arriving without the
+  scope is refused before it is attempted and is not audited as an attempt.
 
-## How this gets proven, not asserted
+## How this gets proven
 
-The existing tests pass while the defect is live, so new tests must be built to
-fail against today's code:
+The existing tests pass while the defect is live, so the new ones must fail
+against today's code before they pass against tomorrow's:
 
-- **The classification test drives the real record.** `buildClassificationMap`
-  over the actual `docs/battlegrid-mcp-capabilities.json`, asserting
-  `accept_entry_decision` requires wager and is treated as consequential. Against
-  today's code this fails, which is the point.
-- **The guard test uses production classifications**, never a hand-built
-  `ToolClass`. `tests/agent/answer-authority.test.ts:171-176` hand-builds
-  `{ destructive: true, requiredScope: 'mcp:wager' }` and is a *correct assertion
-  about a fabricated input* — it must be rewritten to take its classification
-  from the map, or it will keep passing whatever the code does.
-- **Every new guard is reverted once** to prove it fails, per this repository's
-  standing practice.
-
-## The sweep
-
-Of 27 mutating tools, five are money-affecting and annotated
-`destructiveHint: false`:
-
-```
-accept_entry_decision      opens a position
-close_agent_position       realises P&L
-submit_market_grid         costs the entry fee
-random_submit_market_grid  costs the entry fee
-submit_agent_grid          costs the entry fee
-```
-
-The product calls only the first. The other four are classified correctly by this
-change and remain uncalled — the point is that the class is handled rather than
-one tool repaired. The remaining 22 want a line each in the planner's inventory
-saying why they are not on the list.
+- **Classification driven from the real record.** `buildClassificationMap` over
+  `docs/battlegrid-mcp-capabilities.json`, asserting `accept_entry_decision`
+  requires wager and is consequential. Fails today.
+- **The guard test stops fabricating its input.**
+  `tests/agent/answer-authority.test.ts:171-176` hand-builds
+  `{ destructive: true, requiredScope: 'mcp:wager' }`. Every assertion in it is
+  correct about an input production never produces — a true test of the wrong
+  subject, and the reason nobody saw this. It must take its classification from
+  the real map.
+- **Every new guard reverted once** and shown to fail, per standing practice.
