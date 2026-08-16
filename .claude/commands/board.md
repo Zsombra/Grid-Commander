@@ -10,7 +10,7 @@ argument-hint: (none)
 !`python3 .claude/tools/openspec.py mirror 2>/dev/null || echo "(mirror unavailable — gh missing or unauthenticated)"`
 
 Work in flight elsewhere:
-!`gh pr list --state open 2>/dev/null || echo "  (gh unavailable)"`
+!`gh pr list --state open --json number,title,headRefName --template '{{if .}}{{range .}}  #{{.number}}  {{.headRefName}}  {{.title}}{{"\n"}}{{end}}{{else}}  none open — nothing finished is waiting to merge{{"\n"}}{{end}}' 2>/dev/null || echo "  (gh unavailable — in-flight work NOT checked)"`
 !`git log --all --oneline -8 2>/dev/null`
 
 ## Task
