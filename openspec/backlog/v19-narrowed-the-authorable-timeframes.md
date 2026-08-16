@@ -99,3 +99,65 @@ is scoped to the **authorable vocabulary**, not to the platform.
 `get_market_context` still accepts a `primaryTimeframe` of `5m, 15m, 1h, 4h, 1d`
 — `1d` remains a legal market-read timeframe while it is no longer an authorable
 one. Those are two different lists, and the product must not conflate them.
+
+## 2026-08-16 — the precondition is answered: no such strategy exists, and none can now be made
+
+This item says it *"is a question, not a defect, until someone checks whether the
+account holds such a strategy."* Checked, at v19.2.0.
+
+**`list_strategies` read whole: 17 strategies — 12 SYSTEM, 5 PRIVATE. Every one
+reads `timeframe: "1h"`.** Not one is at `1m` or `1d`. The materialized configs
+agree from the other side: all three agents report
+`strategyTimeframe: "1h"`, `regimeTimeframe: "4h"` on
+`list_intelligence_agents`, and `get_strategy(Cannae)` reads
+`regimeTimeframe: "4h"`.
+
+**And none can be created now.** `1m` and `1d` are no longer authorable in any
+of the ten vocabulary categories, so a strategy on either could only exist by
+having been authored *before* v19. None was.
+
+That moves both open questions from *unobserved* to *unobservable here*:
+
+1. **"What the platform does with a strategy already authored at `1m` or `1d`"**
+   cannot be answered on this account by any read, because there is no such
+   strategy and the platform will refuse to author one. Answering it needs an
+   account that predates v19 and holds one — which is not this account, and is
+   not something a write can manufacture.
+2. **"What this product shows for one"** is reachable without the platform: a
+   saved timeframe outside the authorable list is a rendering state, and a
+   fixture can hold that value even though the platform will not. If anyone
+   wants that branch covered, it is a **test**, not a probe. Nothing needs to be
+   observed live first.
+
+**Re-priced in substance if not in number.** This stays p3, but the reason
+changes: not "nobody has looked" — someone has, and there is nothing to find on
+this account. What remains is a defensive rendering branch nobody has asked for.
+
+## Corroboration: the retirement is authorable-scoped, and `1m` went further than `1d`
+
+The item argues that the declared enums not narrowing is not itself a defect,
+because *"a candle interval of `1d` is legitimate; a strategy section at `1d` is
+not — different concepts sharing one enum"*. A live read at v19.2.0 supports
+that, and refines it.
+
+`get_market_context`'s `primaryTimeframe` — a **read** parameter, not an
+authoring one — declares:
+
+```
+["5m", "15m", "1h", "4h", "1d"]
+```
+
+Five values: the four authorable ones **plus `1d`**, and **without `1m`**.
+
+So the two retired values did not go the same way. `1d` survives as a research
+interval while being retired from authoring — exactly the two-concepts reading.
+**`1m` is absent from both**, which the item's framing did not predict and which
+is the sharper fact: it suggests `1m` was withdrawn as a supported granularity
+rather than merely as an authoring choice.
+
+That also means neither the schema enums (thirteen values) nor this read enum
+(five) can tell you what is authorable. **The vocabulary remains the only source
+that can** — which is what this item already says, now with a third distinct
+enum width on the same platform version to prove it.
+
+Observed while re-checking #114; recorded here because that is where it belongs.

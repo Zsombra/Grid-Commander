@@ -138,3 +138,83 @@ debrief verdict (5). Family 1 belongs to #302 and family 2 left as #311.
 
 Still p3: nothing is broken by any of the three, and each is an optional read
 whose absence costs a caveat rather than a correctness claim.
+
+## Observed 2026-08-16 — all three adoptable reads met live, and only one of them carries data
+
+The survey was schema-side: the additions were *declared* and unexamined. All
+three of the remaining adoptable families were read live at v19.2.0 today, while
+answering #146, #147 and #299. **They do not rank equally, and the schema could
+not have told you that.**
+
+### (3) `list_gate_blocks.summary[]` — populated, load-bearing, and it does retire the caveat
+
+Read four times today across two agents. Shape confirmed exactly as declared,
+`{gateStage, reasonCode, count, latestAt}`, and populated every time:
+
+```
+Undertow, 2026-08-16T14:10Z          total 7147
+  TOKEN      OPEN_POSITION_CONFLICT             6886  latest 14:04:52Z
+  EVALUATION LLM_UNAVAILABLE                     140  latest 08-15T13:04:31Z
+  TOKEN      EXCHANGE_MIN_NOTIONAL_UNREACHABLE    90  latest 14:00:25Z
+  ACCOUNT    DAILY_TRADE_LIMIT_REACHED            22  latest 08-09T03:15:46Z
+  EVALUATION LLM_OUTPUT_SCHEMA_INVALID             9  latest 14:09:11Z
+```
+
+**The hypothesis in this item is confirmed: it is computed over the whole
+population, not the page.** The counts sum to 7,147 — the `total` — while the
+page carried 100 rows. So it does retire the window caveat that
+`blocks.ts:118-163` goes to real trouble to admit, and that is worth more than
+the saved arithmetic, exactly as this item argued.
+
+It is also already proving itself: **the summary is what answered #146** (the
+churn series) and **what found the row that settled #299** (it named
+`EXCHANGE_MIN_NOTIONAL_UNREACHABLE`'s `latestAt`, which is how the right page was
+located). Two closed issues in one session came off this field.
+
+`reasonDetail.evaluationFaultDetail` / `evaluationFaultAttempts` — the other half
+of family 3 — were also **seen populated**, for the first time:
+
+```json
+{ "reasonCode": "LLM_OUTPUT_SCHEMA_INVALID",
+  "reasonDetail": { "evaluationFaultDetail": "entry: Expected object, received string",
+                    "evaluationFaultAttempts": 2 } }
+```
+
+### (4) `get_agent_budget.blockedReason` / `.blockedSince` — declared, never seen populated
+
+`get_agent_budget(Undertow)` at 13:40Z, on an agent that had been refused an
+entry 20 minutes earlier and was blocking ~120 times an hour:
+
+```
+blockedReason: null    blockedSince: null    haltedAt: null    haltReason: null
+```
+
+**Null while the agent was demonstrably being blocked.** So whatever
+`blockedReason` reports, it is not the gate-block stream — the limits page's
+question ("why, and since when") is *not* answered by this pair on the evidence
+available. Per [[battlegrid-declared-vs-observed]] nothing may be built on it
+until it is seen carrying a value.
+
+### (5) `debriefVerdict` — declared, never seen populated
+
+`list_signal_logs(Breakwater)`: `debriefVerdict: null` on all five rows read.
+`get_signal_log` carries the key at the top level; also null. No value observed
+on any read.
+
+### What this does to "three adoptable reads"
+
+**One is adoptable now; two are not yet.** The item's Remaining scope should read:
+
+1. **`list_gate_blocks.summary[]` — take it.** Populated, whole-population,
+   already earning its keep, and it retires a caveat the product currently
+   writes prose to excuse.
+2. **`blockedReason` / `blockedSince` — hold.** Declared and null under exactly
+   the conditions that should populate it.
+3. **`debriefVerdict` — hold.** Declared and null on every row seen.
+
+That ordering is not a schema fact and could not have come from the diff. It is
+the same lesson this item exists for, pointed the other way: **a declared output
+is not an available one**, and the only way to tell is to read it while the
+condition it describes is true.
+
+Still p3. Nothing is broken by any of the three.
