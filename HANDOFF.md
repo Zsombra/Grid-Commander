@@ -554,22 +554,26 @@ twenty-four hours. So what used to be a state block is now one line:
 **Run `/board`.** It prints the live counts, the active change and its progress,
 and the `NEXT:` line. Nothing here restates them.
 
-**What this leg left, in order:**
+**What this leg left, in order (updated 2026-08-17):**
 
-1. **Two things need the operator, not a session.**
-   `the-approval-can-be-answered`'s live gate (task 4.5) needs a real decision
-   waiting *and* explicit authorization to answer one through the product —
-   `list_pending_approvals` was empty when last read, so it is doubly blocked.
-   And the **ten probe agents on the account** can only be removed in
-   BattleGrid's own UI; nothing on the 114 tools deletes an agent (#201).
-2. **#306 needs one probe run, not nine.** Eight of nine executed against
-   v19.2.0 on 2026-08-16 with authorisation, seven green. What is held back is
-   **`radar-probe`**: its step 1 deletes a real deployed coin and the file has
-   no `finally`, so it needs that guard or a window when the fleet is below cap
-   and flat.
-3. **Two open decisions, both filed and both cheap once decided**: #322 (this
-   section's own mechanism) and #320 (whether a restyle ticket's acceptance may
-   pin content). Neither is an edit.
+1. **`the-approval-can-be-answered` is 40/40 — both live gates passed.** Task
+   4.5 (a cancel through the product, with its audit row) on 2026-08-16, and
+   task 7.4 (the operator accepting one real decision) on 2026-08-17. Next
+   action is **`/verify`, then the auditor** — it is a `full` track change.
+2. **Archive `2da94e1e` at `expectedRevision: 2`** once the XRP position opened
+   by 7.4 closes. Left active on purpose: the live position cites that strategy
+   as provenance.
+3. **The ten probe agents are permanent.** The operator confirmed 2026-08-17
+   that BattleGrid offers **no delete on its own platform either**, so
+   `capabilities.canDelete: true` is answered by nothing in any client. Nothing
+   reduces that count; #201 is a tripwire problem, not a cleanup one.
+4. **#306 needs one probe run, not nine.** Eight of nine executed against
+   v19.2.0 on 2026-08-16, seven green. What is held back is **`radar-probe`** —
+   its `finally` guard landed 2026-08-17, so it now needs only a window when the
+   fleet is below cap and flat. It is at 20/20 with four positions.
+5. **Six open decisions, all filed, all cheap once decided**: #320, #331,
+   #322 (this section's own mechanism), #304, #282, and #327's corrected ask.
+   None is an edit.
 
 **Before trusting any `Next` written anywhere**, read
 `git show origin/main:openspec/JOURNAL.md` rather than the local copy —
