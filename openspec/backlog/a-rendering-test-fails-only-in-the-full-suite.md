@@ -153,3 +153,49 @@ the default is the option that leaves a known flake in the gate for every change
 
 Steps 1 and 2 of "what would settle it" are discharged. Step 3 is answered:
 `npm ci`.
+
+## 2026-08-16, session close — 13 failures then 0, same tree, back to back
+
+The strongest reading yet, and it arrived by accident during a close-out gate run.
+
+```
+run 4   6 files failed, 13 tests failed / 2700 passed
+run 5   212 files passed, 2713 passed / 0 failed
+```
+
+**Same commit, same tree, consecutive runs, nothing touched between them.** Run 4
+listed failures across six *different* files — `qualification`, `trim-record`
+and others — and none of them repeated in run 5. The one failure captured in
+detail was again `Error: Test timed out in 5000ms`, with **zero
+`AssertionError`s in the whole run**.
+
+That is the hypothesis on this item confirmed about as far as observation can
+take it:
+
+- **Nothing is wrong with the code.** Thirteen tests cannot break and unbreak
+  between two runs of an unchanged tree.
+- **It is not one file or one fixture.** Six files at once rules out ordering
+  against a specific shared fake.
+- **It is not assertions at all.** Zero assertion failures across thirteen
+  reported failures. Every one is the clock.
+- **The load correlation is direct.** Run 4 came after a long session with the
+  machine busy; run 5 followed immediately with it quiet. `collect` alone has
+  now been observed swinging between **138 s and 231 s** across runs of the same
+  212 files.
+
+### This raises what the fix is worth
+
+Earlier today the evidence was one flake, then two. It is now **13 in a single
+run** — which means the suite that gates every change can report a double-digit
+failure count for no reason at all. A gate that does that does not get read; it
+gets re-run until green, which is the habit that lets a real failure through.
+
+**Recommendation stands and is now urgent enough to state as one**: set
+`testTimeout` explicitly in `vitest.config.ts`. The observed per-case cost is
+~0.5 s, the default is vitest's 5 s and was chosen by nobody here, and the
+competition is 212 files transforming and collecting in parallel. The comment
+should say exactly that, so the raise reads as sizing for scheduler contention
+and never as licence for a case that genuinely got slower.
+
+Steps 1 and 2 of "what would settle it" were already discharged. This is the
+measurement that says step 3 is not optional.
