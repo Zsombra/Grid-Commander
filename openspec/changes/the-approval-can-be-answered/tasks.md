@@ -114,19 +114,70 @@
       `{"decisionId":"…","cancelled":true}` and nothing else; read-back shows
       `status`/`tradeStatus` → `CANCELLED`, `closedAt` set, every other field
       preserved. Assert against that response; do not model a richer one.
-- [ ] 4.5 **Live - BLOCKED ON THE OPERATOR. This is the change's gate.**
-      Everything it needs now exists: the queue renders, the confirmation binds,
-      the step-up can obtain the authority, and the audit path runs behind the
-      port. What it needs is (a) a real decision waiting and (b) the operator
-      granting fund-committing authority and answering one, by name, at the
-      moment. **Note**: the 4.4 cancel was made directly over MCP before the audit
-      path existed, so it is not in the audit. This still needs a cancel made
-      *through the product*.
+- [x] 4.5 **PASSED 2026-08-17. The gate is crossed.** A real decision was
+      cancelled **through the product**, with the operator's authorisation, and
+      it wrote the audit row 4.4 could not.
+
+      **How a decision was obtained.** The queue is empty most of the time and a
+      window is 15 minutes, so waiting was not a plan. With the operator's
+      go-ahead the account was configured to produce one: Cannae forked to
+      `Vanguard Test Bench` (`6b7256ab`), Vanguard rebound to the fork so
+      **Undertow's binding never moved**, and Vanguard's `minTradeConviction`
+      dropped 0.55 -> 0.35 -> 0. Vanguard is `APPROVAL_REQUIRED` throughout, so
+      nothing could execute. The strategy's own gates were compiled but **never
+      applied** - the conviction dial alone was sufficient, which is itself the
+      finding: `minAggregateScore` decides whether the model is called,
+      `minTradeConviction` decides whether its answer becomes an ENTER, and the
+      second is the binding one.
+
+      **The decision**, produced 3.5 minutes after the config change:
+
+      ```
+      50735dc6-2cf0-45f0-9613-0a50c8d3a097   Vanguard   AVAX SHORT
+      conviction 0.45      <- below the old 0.55 bar; it exists because of the change
+      entry 6.3556   stop 6.39207472   target 6.2223   12% MEDIUM
+      created 18:01:47Z    expires 18:16:47Z
+      ```
+
+      **The cancel went through the product's own server action**, not over MCP:
+      a POST to `/approvals/[agentId]/[id]` carrying the form's
+      `$ACTION_ID_40d4b63...`, `decisionId`, `confirmationToken` **and all three
+      price levels** - the confirmation binding working as designed, since the
+      decision row has no revision field and the levels are the change-detector.
+      It answered `303 -> /approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.`
+
+      **Platform read-back**: `status`/`tradeStatus` `CANCELLED`, `closedAt
+      18:14:00.517Z`, `executedOrderId`/`stopLossOrderId`/`takeProfitOrderId`
+      all null, no fill price, quantity or fee. Cancelled with 2m47s left.
+
+      **The audit row - the whole point of this task:**
+
+      ```json
+      {"tool":"cancel_entry_decision","actor":"user","destructive":true,
+       "outcome":"succeeded","created_at":"2026-08-16T18:14:02.119Z",
+       "completed_at":"2026-08-16T18:14:06.237Z","failure_reason":null}
+      ```
+
+      The query was *every* `cancel_entry_decision` row ever written, and it
+      returned **exactly one**. That is the proof this task was written for: the
+      2026-08-15 cancel made straight over MCP left no row, and this one did.
+
+      **The account was restored immediately**: Vanguard rebound to Cannae r3,
+      `minTradeConviction` 0.55 and `gridMinConfidence` 0.75 put back, the fork
+      archived (`isActive: false`, `boundAgentCount: 0`). Undertow and Breakwater
+      were never touched - Cannae stayed at revision 3 throughout.
+
+      **Observed while there, and worth its own note**: the decision page renders
+      *"Accepting a proposed trade is not yet available"*. The gate held itself
+      shut while its own precondition was being satisfied.
 - [x] 4.6 **DONE** - the port returns `void` (asserted), and the command's
       `answered` result is asserted to carry exactly `kind`, `verb`, `decisionId`
       - nothing echoed from the platform, so no surface can render an outcome from
       the ack.
-- [ ] **GATE — do not begin section 5 until 4.4 and 4.5 have passed.**
+- [x] **GATE CROSSED 2026-08-17.** 4.4 passed 2026-08-15 and 4.5 above.
+      Section 5 may now be built. Nothing in it is built yet: 5.2-5.5 remain
+      open, and until 5.2/5.3 land there is still no accept control on any
+      surface - which is why the decision page says accepting is unavailable.
 
 ## 5. Accept — only after the gate
 

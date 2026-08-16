@@ -773,3 +773,84 @@ no leverage field, so `positionSizePct: 10` is not merely imprecise — it is
 insufficient to derive the amount from.
 
 Full working on #299, which this measurement closed.
+
+## Task 4.5 PASSED 2026-08-17 — the gate is crossed
+
+A real decision was cancelled **through the product**, with the operator's
+authorisation, and it wrote the audit row the 2026-08-15 cancel could not.
+
+### Getting a decision to exist
+
+The queue is empty most of the time and a window is 15 minutes, so waiting was
+not a plan. With the operator's go-ahead the account was configured to produce
+one — and the isolation mattered more than the loosening:
+
+- **Cannae was forked** to `Vanguard Test Bench` (`6b7256ab`) and Vanguard was
+  rebound to the fork. **Undertow shares Cannae and runs `FULL_EXECUTION`**, so
+  editing Cannae would have made it trade harder with real money and no approval
+  step. Cannae stayed at revision 3 throughout and was never touched.
+- **`minTradeConviction` 0.55 → 0.35 → 0** on Vanguard, which is agent-scoped
+  and reaches nothing else.
+- Vanguard stayed `APPROVAL_REQUIRED` the whole time, so nothing could execute.
+
+**The strategy's own gates were compiled but never applied.** The conviction
+dial alone produced a decision in 3.5 minutes — which is the finding worth
+keeping: `minAggregateScore` decides whether the **model is called**;
+`minTradeConviction` decides whether its answer becomes an **ENTER**. The second
+is the binding one, and it lives on the agent, not the strategy.
+
+### The decision
+
+```
+50735dc6-2cf0-45f0-9613-0a50c8d3a097   Vanguard   AVAX SHORT
+conviction 0.45     <- below the old 0.55 bar; it exists because of the change
+entry 6.3556   stop 6.39207472   target 6.2223   12% MEDIUM
+created 18:01:47Z   expires 18:16:47Z
+```
+
+### The cancel, through the product
+
+A POST to `/approvals/[agentId]/[id]` carrying the rendered form's
+`$ACTION_ID_40d4b63…`, `decisionId`, `confirmationToken` **and all three price
+levels** — the confirmation binding working exactly as designed, since the
+decision row carries no revision field and the levels are the change-detector.
+
+```
+303 See Other
+Location: /approvals?note=The+proposal+was+cancelled.+Nothing+was+bought+or+sold.
+```
+
+Platform read-back: `status`/`tradeStatus` **CANCELLED**, `closedAt
+18:14:00.517Z`, `executedOrderId` / `stopLossOrderId` / `takeProfitOrderId` all
+null, no fill price, quantity or fee. Cancelled with **2m47s** left on the clock.
+
+### The audit row — what this task exists for
+
+```json
+{"tool":"cancel_entry_decision","actor":"user","destructive":true,
+ "outcome":"succeeded","created_at":"2026-08-16T18:14:02.119Z",
+ "completed_at":"2026-08-16T18:14:06.237Z","failure_reason":null}
+```
+
+The query was **every `cancel_entry_decision` row ever written**, and it returned
+**exactly one**. That is the proof: the 2026-08-15 cancel made straight over MCP
+left no row; this one did. Confirmed `destructive: true`, `outcome: succeeded`,
+4.1 s end to end.
+
+### Restored immediately
+
+Vanguard rebound to Cannae r3, `minTradeConviction` 0.55 and `gridMinConfidence`
+0.75 put back, the fork archived (`isActive: false`, `boundAgentCount: 0`).
+Undertow and Breakwater untouched throughout.
+
+### Two things observed in passing
+
+- **The decision page says *"Accepting a proposed trade is not yet available"***.
+  The gate held itself shut while its own precondition was being satisfied —
+  5.2/5.3 are unbuilt, so there is no accept control to press.
+- **`last24hCostUsd` read 0 on every write response** (rebind, update) while
+  `list_intelligence_agents` read 0.478 minutes earlier. That is #110's
+  list-vs-detail cost split appearing on **write** payloads too, not just
+  `get_intelligence_agent` — noted there.
+
+**Section 5 is now unblocked.** Nothing in it is built: 5.2–5.5 remain open.
