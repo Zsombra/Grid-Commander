@@ -91,7 +91,9 @@ directions, **2713/2713 vitest across 212 files**, `tsc` and `lint` clean.
 content), #322's residue (should the fenced snapshot be deleted rather than
 fenced), #331 (render-reach vs module-reach in surface pins). And two things
 needing the operator, not a session: `the-approval-can-be-answered`'s live gate,
-and clearing the ten probe agents in BattleGrid's own UI.
+and — struck the same day — clearing the ten residue agents,
+which the operator confirmed **cannot be deleted on BattleGrid's platform
+either**. #201's count is permanent and can only rise.
 
 **Watch out**: a fresh worktree needs `npm ci` before its test count means
 anything — six failures there are an install, not a regression — and check
@@ -193,8 +195,9 @@ tree: `tsc` clean, `lint` clean, **2711/2711 vitest**, `validate --all` 0 errors
 
 **Next**: #282 onward — the nineteen issues below #201 are untouched. Two need
 the operator rather than a session: **#101's live accept/cancel through the
-product**, and **clearing the ten residue agents in BattleGrid's own UI**, which
-is the only thing that reduces #201's count.
+product**, and — struck the same day — clearing the ten residue agents,
+which the operator confirmed **cannot be deleted on BattleGrid's platform
+either**. #201's count is permanent and can only rise.
 
 **Watch out**: a fresh worktree needs `npm ci` before its test count means
 anything — six failures there are an install, not a regression. And check

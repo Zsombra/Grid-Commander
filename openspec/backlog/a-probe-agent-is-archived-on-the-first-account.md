@@ -39,6 +39,13 @@ whole of cleanup, and `canDelete` describes BattleGrid's own app rather than thi
 client (findings-agents F-1). So none of the nine can be tidied from here at any
 priority. Only the accumulation is ours to stop.
 
+> **Corrected 2026-08-16 by the operator.** The `findings-agents` F-1 reading —
+> that `canDelete: true` describes BattleGrid's own app — is **wrong**. There is
+> no delete on the platform either. `canDelete` is answered by nothing, in any
+> client, including BattleGrid's own. F-1 was right that it is a trap and wrong
+> about where the door is: there is no door. **Every "ask the operator to delete
+> them in the UI" below is struck.**
+
 ## Why it matters
 
 p3, and p3 for two reasons rather than one: the residue is now the majority of a
@@ -110,8 +117,9 @@ Four options. None is free, and the evidence does not pick one outright.
   needs a real roster from a real account, so it lives in `tests/live/` behind
   the same opt-in as every other probe and runs when someone runs it. And it can
   only ever report: with no delete on the surface, it cannot clean up.
-- **Ask the operator to remove them in BattleGrid's own UI.** The only route that
-  reduces the nine at all. Outside this repository entirely, and a one-time ask.
+- ~~**Ask the operator to remove them in BattleGrid's own UI.**~~ **Struck
+  2026-08-16 — this route does not exist.** The operator confirms BattleGrid
+  offers no delete on its own platform. Nothing reduces the count, anywhere.
 
 **Cheapest against what already exists: the residue test.** `tests/live/` holds
 thirty-one probe files with an established opt-in and a skip-with-a-reason
@@ -236,8 +244,16 @@ slotUsage limit 3, used 3, remaining 0   (ACTIVE only — residue costs no slot)
 Unchanged from this morning's count, so the threshold is 10.
 
 **This item stays open, and the `change:` link is cleared on archive** — the
-change's scope was the tripwire alone, not the residue. The tripwire notices
-growth; it cannot remove a row.
-All ten are already archived and no tool on the 114 deletes an agent, so the
-count falls only if the operator clears them in BattleGrid's own UI. That ask is
-the one remaining action and it is outside this repository.
+change's scope was the tripwire alone, not the residue.
+
+**And there is no remaining action, because the count cannot fall.** The operator
+confirmed on 2026-08-16 that BattleGrid offers **no delete on its own platform**,
+so the plan written here — ask them to clear the ten in the UI — describes a
+route that does not exist. All ten are archived, `archive_intelligence_agent` is
+the whole of cleanup in every client, and `capabilities.canDelete: true` is
+answered by nothing anywhere.
+
+**So the residue is permanent and monotonic.** The tripwire is not the cheapest
+of four responses, it is the *only* one, and `RESIDUE_AT_LAST_COUNT` is a floor
+that can never be lowered — raising it records a new leak, never a cleanup. What
+this item is for now is preventing the eleventh.

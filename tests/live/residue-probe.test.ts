@@ -22,10 +22,17 @@ import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fak
  * the operator's own has not grown since it was last counted.
  *
  * **What it does not prove, and must not be read as proving.** That the residue
- * is gone, or that it can be cleaned up from here. It cannot: no tool on the
- * 114 deletes an agent, `archive_intelligence_agent` is the whole of cleanup,
- * and all ten are already archived. Only the operator, in BattleGrid's own UI,
- * can reduce this number. A green run means *unchanged*, never *fine*.
+ * is gone, or that it can ever be cleaned up. It cannot: no tool on the 114
+ * deletes an agent, `archive_intelligence_agent` is the whole of cleanup, and
+ * all ten are already archived.
+ *
+ * **Nor can it be cleaned up anywhere else.** The operator confirmed on
+ * 2026-08-16 that BattleGrid offers no delete on its own platform either — so
+ * `capabilities.canDelete: true` on the agent payload is answered by nothing,
+ * in any client, including BattleGrid's own. **This count can only ever rise.**
+ * That is what makes a tripwire the whole of the available response, and it is
+ * why the threshold below is a floor rather than a budget. A green run means
+ * *unchanged*, never *fine*.
  *
  * Read-only. Names no mutating tool and constructs no `*Command`, which
  * `tests/architecture/live-writes.test.ts` enforces.

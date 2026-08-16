@@ -68,4 +68,7 @@
       #201, which closes its open question — *"'widen the fixture' must name
       that path"* — with **there is no such path in code**.
 - [x] 3.2 **DONE** — #201 stays open. It is the standing record of the ten rows,
-      which only the operator can remove in BattleGrid's own UI.
+      which nothing can remove. **Corrected 2026-08-16 by the operator**: this
+      line said "which only the operator can remove in BattleGrid's own UI" —
+      there is no delete on BattleGrid's platform either, so the count is
+      permanent and the threshold is a floor, not a budget.
