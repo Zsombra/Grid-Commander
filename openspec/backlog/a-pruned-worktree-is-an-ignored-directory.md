@@ -2,7 +2,7 @@
 id: a-pruned-worktree-is-an-ignored-directory
 title: A worktree that loses its .git becomes an ignored directory, and git commands inside it silently answer for main
 type: risk
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-16
 updated: 2026-08-16
@@ -74,3 +74,33 @@ and `git rev-parse --git-dir` must resolve inside it. Cheapest useful form is a
 preflight in the session-start hook that fails loudly when the working directory
 sits under an ignored path while claiming to be a checkout. A clean
 `git status` is not evidence that edits landed.
+
+## Settled 2026-08-16 — the assertion exists and is proven to fail
+
+`a-session-knows-which-checkout-it-is-in` landed and is archived.
+
+**The discriminator was measured before anything was built.** In a healthy
+worktree `git check-ignore .` exits 1; in a dead one it exits 0 and names
+`.git/info/exclude:12`. A healthy worktree's own repository does not ignore its
+own root, and a dead one is answered for by a repository that does. That is why
+the guard asks git rather than comparing paths — a path comparison cannot tell a
+dead worktree from an ordinary subdirectory, since both sit below a toplevel
+they are not equal to.
+
+`tools/assert_checkout.py` exits 0 healthy, 1 when the answering repository
+ignores the directory, 2 outside a repository. It is wired as a `SessionStart`
+hook in `.claude/settings.json`, which did not exist before, and is runnable by
+hand.
+
+`tests/test_assert_checkout.py` builds the real geometry and pins ten cases,
+including that the premise still holds — git really does report clean in such a
+directory, asserted rather than assumed. **Mutation-tested: neutering the guard
+fails four of the ten.**
+
+### One thing the next session should know
+
+**The hook is not live in the session that created it.** The settings watcher
+only watches directories that already had a settings file when the session
+started, and `.claude/settings.json` did not exist then. It takes effect on the
+next session, or after `/hooks` is opened once in an interactive terminal.
+That is a property of the harness, not of this guard.
