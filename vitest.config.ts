@@ -27,6 +27,29 @@ export default defineConfig({
     // probe that stops parsing still fails `npm run typecheck`. Asserted in
     // `tests/architecture/live-probes-are-named.test.ts`.
     exclude: ['**/node_modules/**', 'tests/db/**', 'tests/live/**'],
+    /*
+     * Sized for scheduler contention, not for how long a test's own work takes.
+     *
+     * vitest's default is 5000 ms and was chosen by vitest, not by anyone here.
+     * The cases that kept tripping it need about **0.5 s** each when run alone —
+     * `new-agent.test.ts` timed out in a full run and passed in 512 ms
+     * immediately after, on the same tree. What they compete with is 212 files
+     * transforming and collecting in parallel: `collect` alone has been observed
+     * swinging between **138 s and 231 s** across runs of an unchanged tree.
+     *
+     * The failure that settled it (#330): one gate run reported **13 failures
+     * across 6 different files** and the very next run of the same commit
+     * reported 2713/2713. Zero assertion failures in the 13 — every one was this
+     * clock. A gate that can report a double-digit failure count for no reason
+     * stops being read and starts being re-run until green, which is the habit
+     * that lets a real failure through.
+     *
+     * **This is not licence for a case that genuinely got slower.** 15 s against
+     * a 0.5 s workload is 30x headroom for the scheduler; a test that needs more
+     * than that has a real problem and should be fixed rather than accommodated
+     * by raising this again.
+     */
+    testTimeout: 15_000,
     // `PerformButton` is a client component and the rendering harness calls
     // components directly, so its hook has no dispatcher and throws. Registered
     // once here rather than at the top of every file that renders a ceremony

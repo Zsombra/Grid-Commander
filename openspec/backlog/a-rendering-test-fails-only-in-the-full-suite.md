@@ -2,7 +2,7 @@
 id: a-rendering-test-fails-only-in-the-full-suite
 title: tests/rendering/exposure.test.ts failed once in the full suite and passes alone
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-16
 updated: 2026-08-16
@@ -199,3 +199,32 @@ and never as licence for a case that genuinely got slower.
 
 Steps 1 and 2 of "what would settle it" were already discharged. This is the
 measurement that says step 3 is not optional.
+
+## Fixed 2026-08-17 — `testTimeout: 15_000`, set explicitly
+
+`vitest.config.ts` now sets `testTimeout` rather than inheriting vitest's 5000 ms
+default, with the reasoning at the setting:
+
+- the cases that tripped it need **~0.5 s** alone (`new-agent.test.ts` timed out
+  in a full run and passed in **512 ms** immediately after, same tree);
+- what they compete with is 212 files transforming and collecting in parallel,
+  and `collect` alone has been seen swinging between **138 s and 231 s** on an
+  unchanged tree;
+- the run that settled it reported **13 failures across 6 files** with the very
+  next run reporting 2713/2713 — **zero assertion failures among the 13**.
+
+The comment states plainly that 15 s against a 0.5 s workload is 30× headroom
+for the scheduler and **not** licence for a case that genuinely got slower. A
+test needing more than that has a real problem and should be fixed rather than
+accommodated by raising this again.
+
+Suite after the change: **2713/2713 across 212 files**, `tsc` and `lint` clean.
+
+**What this does and does not prove.** It does not prove the hypothesis — a
+green run proves nothing about a flake, and the honest position is that the
+class has not recurred *since*, on one run. What it does is remove the failure
+mode from the gate: a timeout at 15 s on a 0.5 s case would need a 30× stall,
+which is a different and much louder problem than the one this item recorded.
+
+Item closes. If the class ever returns at 15 s, that is new evidence and wants a
+new item rather than a bigger number here.

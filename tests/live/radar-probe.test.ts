@@ -103,12 +103,27 @@ live('first deployment via expectedRevision: null (slot-shuffle)', () => {
           target: confirmationTarget.agentUndeploy(agentId, coin),
         },
       });
-      expect(deleted.deleted).toBe(true);
       // eslint-disable-next-line no-console
       console.log(`  undeployed ${coin}`);
 
-      // Step 2: first-deploy it back with expectedRevision: null
+      /*
+       * From this line the operator's coin is off the radar, so **everything
+       * that can throw belongs inside the try** and the restore belongs in a
+       * `finally` rather than a `catch`.
+       *
+       * `expect(deleted.deleted).toBe(true)` used to sit here, between the
+       * delete and the try. That was the hole #306 held this probe back for:
+       * the delete had already happened, so a failing assertion — or any throw
+       * in that window — left a real deployment gone with nothing to put it
+       * back. It is now the first statement inside the try.
+       *
+       * `restored` flips only after the re-deploy is confirmed, so a read-back
+       * assertion that fails *after* a successful re-deploy correctly does not
+       * restore twice.
+       */
+      let restored = false;
       try {
+        expect(deleted.deleted).toBe(true);
         await confirmations.issue({
           token: 'probe-first-deploy',
           userId: who.userId,
@@ -130,6 +145,7 @@ live('first deployment via expectedRevision: null (slot-shuffle)', () => {
             target: confirmationTarget.agentDeploy(agentId, coin),
           },
         });
+        restored = true;
         // eslint-disable-next-line no-console
         console.log(`  first-deploy ${coin}: revision ${result.revision}`);
         expect(result.revision).toBeGreaterThan(0);
@@ -142,33 +158,63 @@ live('first deployment via expectedRevision: null (slot-shuffle)', () => {
         expect(standing?.slotAgentIds).toEqual([agentId]);
         // eslint-disable-next-line no-console
         console.log(`  read-back: r${String(standing?.revision)} slots=[${String(standing?.slotAgentIds.join(', '))}]`);
-      } catch (err) {
-        // Restore the deployment if the first-deploy failed — don't leave the
-        // operator's radar with a hole.
-        // eslint-disable-next-line no-console
-        console.error(`  first-deploy failed, restoring: ${err}`);
-        await confirmations.issue({
-          token: 'probe-restore',
-          userId: who.userId,
-          tool: 'upsert_radar_deployment',
-          target: confirmationTarget.agentDeploy(agentId, coin),
-          consequence: `Probe: restore ${coin} after failed first-deploy.`,
-          expiresAt: new Date(clock.now().getTime() + 300_000),
-          consumedAt: null,
-        });
-        await radar.upsertDeployment({
-          ...who,
-          coinId: coin,
-          timeframe: savedTimeframe,
-          enabled: true,
-          agentId,
-          expectedRevision: null,
-          confirmation: {
-            token: 'probe-restore',
-            target: confirmationTarget.agentDeploy(agentId, coin),
-          },
-        });
-        throw err;
+      } finally {
+        if (!restored) {
+          /*
+           * Restore, but check the live state first rather than assuming the
+           * coin is gone. `deleted.deleted === false` reaches here too, and in
+           * that case the deployment is still standing — a first-deploy at
+           * `expectedRevision: null` over a live one is a different request
+           * than the one this probe means to make.
+           *
+           * Every failure in here is logged and swallowed **on purpose**: this
+           * runs while an exception is already propagating, and a throw from a
+           * `finally` replaces it. The original failure is the more
+           * informative one, and a restore that could not run must be shouted
+           * about rather than substituted for it.
+           */
+          try {
+            const now = await radar.listDeployments(who);
+            const stillThere =
+              now.kind === 'deployments' && now.deployments.some((d) => d.coinTicker === coin);
+            if (stillThere) {
+              // eslint-disable-next-line no-console
+              console.error(`  ${coin} is still deployed — nothing to restore`);
+            } else {
+              // eslint-disable-next-line no-console
+              console.error(`  restoring ${coin} — the probe left the radar with a hole`);
+              await confirmations.issue({
+                token: 'probe-restore',
+                userId: who.userId,
+                tool: 'upsert_radar_deployment',
+                target: confirmationTarget.agentDeploy(agentId, coin),
+                consequence: `Probe: restore ${coin} after a failed slot-shuffle.`,
+                expiresAt: new Date(clock.now().getTime() + 300_000),
+                consumedAt: null,
+              });
+              await radar.upsertDeployment({
+                ...who,
+                coinId: coin,
+                timeframe: savedTimeframe,
+                enabled: true,
+                agentId,
+                expectedRevision: null,
+                confirmation: {
+                  token: 'probe-restore',
+                  target: confirmationTarget.agentDeploy(agentId, coin),
+                },
+              });
+              // eslint-disable-next-line no-console
+              console.error(`  restored ${coin}`);
+            }
+          } catch (restoreErr) {
+            // eslint-disable-next-line no-console
+            console.error(
+              `  RESTORE FAILED for ${coin} — the operator's radar is short a ` +
+                `deployment and needs manual repair: ${String(restoreErr)}`,
+            );
+          }
+        }
       }
     },
   );
