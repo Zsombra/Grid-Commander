@@ -2,14 +2,14 @@
 id: the-stop-vs-noise-comparison-has-no-home
 title: The stop-versus-noise comparison belongs to the strategy now, and the platform ignores it there
 type: question
-status: open
+status: blocked
 priority: p3
 created: 2026-08-10
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: strategy-authoring
 github: "85"
-blocked_by: []
+blocked_by: [upstream:battlegrid]
 tags: [battlegrid, v15, v19, risk, measurement]
 ---
 
@@ -204,3 +204,29 @@ rule that nothing may be built on those fields *as applied* until a compile
 carrying changed values provably changes `derive_strategy_rule_view` output
 or a trade's stop provably comes from the strategy value. Re-priced p2 → p3:
 what remained buildable shipped; the rest waits on BattleGrid.
+
+## Re-statused 2026-08-17 — `blocked`, on BattleGrid, with the tripwire named
+
+`status: open` was never true of what remains here. Every buildable half shipped
+(`the-floor-is-the-platforms-own-noise-answer`), and what is left is blocker (2):
+the platform parses strategy-authored trade-level policy and discards it,
+confirmed unchanged across v15, v16, v17 and v18. The item read `open` because
+`blocked_by` could only name other backlog items, so a wait on BattleGrid had no
+way to be written down and the validator asked for `open` instead.
+
+**Tripwire — either one ends the wait:**
+
+1. A compile carrying **changed** `minStopLossAtrMultiple` / `maxStopLossPct` /
+   `minRiskRewardRatio` that provably changes `derive_strategy_rule_view` output.
+2. A trade whose stop provably came from the strategy value.
+
+Test 1 is runnable here and has never been run in four majors. Read-back
+equality — writing `2.0` to Cannae and reading `1.5` — proves the *payload* does
+not reflect the write; it does not distinguish *discarded* from *applied and
+echoed from a defaults table*. `derive_strategy_rule_view` is a second, separate
+surface, and agreement across two surfaces is evidence where agreement with
+itself is not. **Run it on a fork or an unbound strategy, never on Cannae**: the
+hypothesis under test is that the platform ignores these values, and if that is
+wrong the write retunes a live agent.
+
+Nothing may be built on these fields *as applied* until one of the two lands.

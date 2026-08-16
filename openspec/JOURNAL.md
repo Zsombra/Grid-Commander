@@ -1,5 +1,103 @@
 # Journal
 
+## 2026-08-17 (triage) — a duplicate caught late, and the status the board could not say
+
+**Did**: merged **#339**, filed **#340**, closed **#309**, and gave `blocked_by`
+three namespaces for waits outside this repository, re-statusing four items onto
+them.
+
+**I nearly rebuilt thirty-one commits.** Asked to walk the open issues
+oldest-first, I read `main`, found seven items open against closed issues and two
+open issues with no item, diagnosed it as accumulated rot, and started building
+the two-way mirror check. All nine were **#339 sitting unmerged** — that session
+closed its issues by hand as it went, and its backlog writes were one branch over.
+The detection came from #318's closing comment naming an archived change,
+`one-focus-ring`, that was not in this checkout: a closing comment only names
+changes that were archived, so an archived change missing from the archive is a
+strict contradiction. `git log --all` found it in a minute. **`git log` alone
+cannot see this, and the board reads one checkout** — in a repo where sessions run
+in parallel worktrees, `--all` belongs in the triage reflex before the board does.
+
+**#309 was its own subject, a third time.** Every one of the nine resolved on
+merge. My "the mirror has rotted" framing was wrong in emphasis and is corrected
+on the item: the record was not neglected, the reader was reading `main` mid-flight.
+This is also the first instance where the *reader* was the thing that went wrong
+rather than the record, which is the argument for the third direction being
+non-fatal made once more from the other side — a check that failed on "issue open,
+no item" would have been red that whole window while nothing was wrong.
+
+**The shipped mirror is better than mine and mine is discarded.** I had put the
+check inside `validate`, reading a committed cache to keep the offline guarantee.
+That answers the network objection and not the noise one: I graded direction C a
+*warning*, which fires on every open PR. #339's split — own command, `gh` required,
+exit 2 when absent, C reported and not fatal — is correct and no change is wanted.
+
+**#340, from a deferral this repository forbids leaving unfiled.** Yesterday's
+journal recorded that `accept_entry_decision` is annotated `destructive: false`
+while `cancel` is `true`, said "worth its own item", and filed none. It is worse
+than a labelling error: `call-path.ts:71` **gates the confirmation on that flag**.
+Driven through the real `beginGuardedCall` and the real `classifyTool`:
+
+```
+accept admitted with NO confirmation token          audit row destructive flag: false
+cancel refused with: ConfirmationRequiredError
+token store size before/after: 0 0
+```
+
+A token that was **never issued** is accepted for the one write that opens a real
+position, because nothing looks at it. The scope step-up still fires and the UI
+still shows the consequence — but the binding that exists to catch levels moving
+between read and click does not run on the verb where it matters, and the levels
+do move: yesterday's walk recorded 1.0009 proposed, 1.0017 filled. The proof was
+run as a temporary test and **deleted rather than kept**, because a permanent test
+here would assert the defect.
+
+**One correction inside that finding.** A first reading had accept resolving to
+`mcp:read`, which would have made it far worse. That was an artifact of a synthetic
+tool object with no `declaredScope`; both verbs declare `mcp:wager` and step 2
+fires. Withdrawn on the item before filing rather than after.
+
+**`blocked_by` could not say what a third of the board was waiting for.** It took
+item ids only, so an item waiting on BattleGrid, on other players, or on a live
+authorisation had no way to write it down — and `validate` said "set status: open",
+so they did. Thirty items read as thirty pieces of available work. Three
+namespaces now name the wait (`upstream:` / `external:` / `operator:`), an
+unrecognised namespace is an **error**, and four items moved onto them: #85
+(upstream:battlegrid), #104 (external:market-grid-players), #114
+(upstream:battlegrid), #306 (operator:live-write-authorization). Each states its
+tripwire, because a token is not an excuse.
+
+Proven non-vacuous rather than assumed: `upstream:vendor-x` → 0 errors,
+`vendor:battlegrid` → **1 error**, `not-a-real-item` → 16 warnings, restored → 15.
+
+**Landed without a proposal, on the operator's explicit call** after the concern
+was raised that it is contract-shaped work `CLAUDE.md` routes to a full track.
+Recorded here because the reasoning should not be lost with the decision.
+
+**The same gap has a second shape, not taken.** `an-approval-expires-while-nobody-is-looking`
+carries `blocked_by: [the-approval-can-be-answered]` — a **change** name, not an
+item — and has been one of the fifteen standing warnings all along. A `change:`
+namespace would close it. Left alone deliberately: it is a different argument, and
+widening a vocabulary twice in one pass is how the second half stops being read.
+
+**#101 was right and I was wrong about it.** Told it felt already addressed, I
+answered from a stale checkout that accept had no surface. 7.4 passed the same
+day: the operator accepted a real decision through the product and the change is
+**40/40**.
+
+**State**: `validate --all` 0 errors, 15 warnings, 10 info — the standing baseline,
+unmoved. `openspec.py mirror` clean in all three directions. Branch merged from
+`main`, not rebased. Remote branch for #339 deleted explicitly rather than with
+`--delete-branch`, because a worktree held it and that is #324's exact trigger —
+so #324 was avoided, not tested. No auto-close on the squash: 26 open before, 26
+after.
+
+**Next**: `the-approval-can-be-answered` is 40/40 and wants `/verify`, then the
+auditor, then archive — that is what actually closes #101. Then #340, whose fix
+should key confirmation to consequence rather than to the platform's word for it,
+and should sweep the annotation set for other inversions.
+
+
 ## 2026-08-17 (accepted) — 40/40, and a diagnosis that was wrong twice
 
 **Did**: task **7.4**. The operator accepted one real decision through the

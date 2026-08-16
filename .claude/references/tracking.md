@@ -86,7 +86,7 @@ updated: 2026-07-25
 change: ""                   # change-id once work starts
 capability: ""               # openspec/specs/<capability> this concerns
 github: "87"                 # the issue mirroring this item — bare number, or `none` + a reason (§7)
-blocked_by: []               # other item ids
+blocked_by: []               # other item ids, or an external namespace (below)
 tags: [checkout, payments]
 ---
 ```
@@ -110,6 +110,36 @@ consequence is someone's preference, not a priority.
 `open` → `in-progress` (a change exists) → `done` (the change archived).
 `blocked` requires `blocked_by`. `wontfix` requires a reason in the body —
 a closed item that does not say why gets reopened by the next person.
+
+#### Waiting on someone outside this repository
+
+`blocked_by` took item ids and nothing else, so an item waiting on BattleGrid, on
+other players, or on a live authorisation had no way to say so — `validate` told
+it to "set status: open", and it did. A board of thirty items then read as thirty
+pieces of available work when a third of them were waits. Three namespaces name
+the wait instead:
+
+| token | meaning | example |
+|---|---|---|
+| `upstream:<name>` | the platform must change | `upstream:battlegrid` |
+| `external:<name>` | someone outside must act | `external:market-grid-players` |
+| `operator:<name>` | the operator must authorise | `operator:live-write-authorization` |
+
+An unrecognised namespace is an **error**, not a warning — `blocked_by:
+[vendor:battlegrid]` fails. A bare name that is not an item stays a warning, as
+before.
+
+**A token is not an excuse.** `blocked` on an external cause carries two
+obligations, enforced by review rather than by the parser:
+
+1. The body explains the wait.
+2. The body names the **tripwire** — the observable change that would end it.
+
+`market-grid-payloads-that-only-fill-once-someone-plays` is the model. Eight
+reads across four platform majors proved polling had nothing to find, so it names
+the condition (`playersNeeded < minimumPlayers`) and says outright not to poll. An
+item that cannot say it is waiting gets re-read every session by someone deciding
+whether to take it, which is the cost this exists to stop.
 
 ### Naming
 
@@ -303,6 +333,7 @@ thirty-first.*
 | `backlog_in_progress_without_change` | warning | `in-progress` with nothing linked |
 | `backlog_blocked_without_cause` | warning | `blocked` with empty `blocked_by` |
 | `backlog_blocked_by_unknown` | warning | Blocker is not a real item |
+| `backlog_blocked_by_malformed` | error | Blocker uses an unknown `<ns>:<name>` namespace |
 | `backlog_capability_not_found` | warning | Names a capability with no spec |
 | `change_without_backlog_item` | info | Active change with no linked item — fine, just noted |
 

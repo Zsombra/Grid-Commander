@@ -2,10 +2,10 @@
 id: the-mirror-is-checked-one-way
 title: An item and its GitHub issue can disagree about state, and nothing checks it
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-08-16
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: harness-integrity
 github: "309"
@@ -216,3 +216,41 @@ than merely re-measuring a quiet tree.
 **This item stays open until the fix is on `main`.** It is itself an instance of
 what it describes: the check lives on a branch, and until that branch merges,
 `main` still has no mirror check.
+
+## Closed 2026-08-17 — the fix is on `main`
+
+The condition this item set for itself is met. `openspec.py mirror` merged in
+**#339** (`0791160`) and the check now runs from `main`:
+
+```
+272 items, 148 issues
+clean - every mirrored item agrees with its issue
+```
+
+**The nine discrepancies visible before that merge were this item's own subject,
+not a new instance of it.** A triage pass on 2026-08-17 read `main` while #339
+sat unmerged and found seven items open against closed issues (#107, #146, #147,
+#299, #317, #318, #330) plus two open issues with no item (#336, #337) — and
+read them as accumulated rot. Every one resolved on merge, because all nine were
+the branch-invisibility artifact this item names and had already been written
+correctly on the unmerged branch. That is the third measured instance of the
+pattern and the first where the *reader* was the thing that went wrong rather
+than the record.
+
+Which is the argument for the third direction being non-fatal, made once more
+from the other side: a check that failed on "issue open, no item" would have
+been red for that entire window while nothing was wrong.
+
+**One thing the triage pass got wrong that the shipped design gets right.** It
+proposed the same check inside `validate`, reading a committed cache to keep the
+offline guarantee. That sidesteps the network objection but not the noise one —
+it graded the third direction as a warning, which would have fired on every open
+PR. The shipped split (own command, `gh` required, exit 2 when absent, third
+direction reported not fatal) is the correct one and no change is wanted.
+
+Residual, deliberately not folded in: **two CLOSED issues have no backlog item**
+— #86 (docs drift, fixed in PR #83 the same day) and #338 (shipped as
+`one-focus-ring`, archived). Both were found and settled inside a single change,
+so the archived change is their canonical record and no item is owed. Recorded
+because a future reader running the same query will find them and should not
+re-open the question.

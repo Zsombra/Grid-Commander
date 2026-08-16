@@ -448,6 +448,28 @@ ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
 OPEN_STATUSES = ("open", "in-progress", "blocked")
 PRIORITY_ORDER = {p: i for i, p in enumerate(ITEM_PRIORITIES)}
 
+#: `blocked_by` named other backlog items and nothing else, so an item waiting on
+#: someone outside this repository had no way to say so. The validator then told
+#: it to "set status: open", and it did — which is why a board of thirty items
+#: read as thirty pieces of available work when a third of them were waiting on
+#: BattleGrid, on other players, or on a live authorisation only the operator can
+#: give. Three namespaces name the wait:
+#:
+#:   upstream:<name>  — the platform must change      (upstream:battlegrid)
+#:   external:<name>  — someone outside must act      (external:market-grid-players)
+#:   operator:<name>  — the operator must authorise   (operator:live-write-authorization)
+#:
+#: A token is not a free-text excuse. `blocked` on an external cause carries two
+#: obligations, both enforced by review rather than by the parser: the body must
+#: explain the wait, and it must state the **tripwire** — the observable change
+#: that would end it. `market-grid-payloads-that-only-fill-once-someone-plays` is
+#: the model: eight reads proved polling had nothing to find, so it names the
+#: condition (`playersNeeded < minimumPlayers`) and says outright not to poll.
+#:
+#: The point is not bookkeeping. An item that cannot say it is waiting gets
+#: re-read every session by someone deciding whether to take it.
+EXTERNAL_BLOCKER = re.compile(r"(upstream|external|operator):[a-z0-9][a-z0-9-]*")
+
 
 class BacklogItem:
     def __init__(self, path: Path, root: Path):
@@ -612,13 +634,21 @@ def validate_backlog(root: Path, strict: bool) -> list:
                                   f"{', '.join(allowed)}", rel))
 
         for dep in item.blocked_by:
-            if dep and dep not in ids:
+            if not dep or dep in ids or EXTERNAL_BLOCKER.fullmatch(dep):
+                continue
+            if ":" in dep:
+                found.append(diag("error", "backlog_blocked_by_malformed",
+                                  f"{item.id}: blocked_by '{dep}' is not a known external "
+                                  f"namespace", rel,
+                                  "use upstream:<name>, external:<name> or operator:<name>"))
+            else:
                 found.append(diag("warning", "backlog_blocked_by_unknown",
                                   f"{item.id}: blocked_by '{dep}' is not a backlog item", rel))
         if item.status == "blocked" and not item.blocked_by:
             found.append(diag("warning", "backlog_blocked_without_cause",
                               f"{item.id}: status is blocked but blocked_by is empty", rel,
-                              "name the blocker, or explain it in the body and set status: open"))
+                              "name the blocker — a backlog item, or upstream:/external:/"
+                              "operator:<name> for a wait outside this repository"))
 
         if item.change:
             arch = find_archived(root, item.change)
