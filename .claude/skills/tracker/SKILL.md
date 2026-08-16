@@ -33,18 +33,55 @@ their whole value is that every agent follows the same ones.
 
 ```bash
 python3 .claude/tools/openspec.py board
+python3 .claude/tools/openspec.py mirror     # needs gh; sees past this checkout
+gh pr list --state open                      # what is finished but unmerged
 ```
 
 Read the output, then read the last 2–3 journal entries in full — the board
 shows only their summary lines, and the **Watch out** field is usually the most
 valuable text in the repo.
 
+**`board` describes one checkout. `main` is routinely behind finished work.**
+Sessions run in parallel worktrees, each lands as a PR, and each closes its
+issues the moment they are settled — so between close-out and merge every local
+count is true about `main` and false about reality. `board`, `backlog list`,
+`validate` and `JOURNAL.md` are all blind to this; `mirror` and `gh pr list` are
+the only two commands here that are not. Run them.
+
 Report:
-1. What is in flight, and how far along.
+1. What is in flight, and how far along — **including open PRs and what each
+   one claims to settle.**
 2. What the last session said to do next, and whether that still holds.
-3. Anything the board flags as drifted — an archived change with an open item, a
-   change with no tasks, validation errors.
+3. Anything flagged as drifted — an archived change with an open item, a change
+   with no tasks, validation errors. **Check `mirror`'s drift rows against the
+   open PRs before calling any of them a record nobody updated** (see below).
 4. **One** recommended next action. Not a menu.
+
+### Drift has two causes that look identical
+
+An item reading `open` against a CLOSED issue means one of:
+
+| | what it is | what to do |
+|---|---|---|
+| **rot** | the record was never updated | write the closure |
+| **in-flight** | a PR carrying the closure has not merged | merge it, write nothing |
+
+Guessing wrong is expensive in one direction only: writing closures for work
+already done on a branch duplicates it and then conflicts with it. On 2026-08-17
+a session read nine such rows as rot and rebuilt most of a tool the unmerged PR
+had already shipped — the rows were #339's close-out.
+
+Two signals separate them, neither conclusive alone: a **same-day cluster** of
+closed issues (one session closes as it goes; rot accumulates on scattered
+dates), and an **open PR**. `mirror` prints both. When in doubt the check is two
+commands and costs nothing:
+
+```bash
+gh pr list --state open
+git log --all --oneline -20
+```
+
+`git log` alone cannot see another worktree's branch; `--all` can.
 
 If the journal's **Next** disagrees with what the board computes, say so
 explicitly and explain which you trust. That disagreement is usually where

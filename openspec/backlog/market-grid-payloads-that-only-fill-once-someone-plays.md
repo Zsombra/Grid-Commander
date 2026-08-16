@@ -2,14 +2,14 @@
 id: market-grid-payloads-that-only-fill-once-someone-plays
 title: Three Market Grid shapes are unobserved for one reason — nobody on this account has played
 type: question
-status: open
+status: blocked
 priority: p3
 created: 2026-08-06
-updated: 2026-08-15
+updated: 2026-08-17
 change: ""
 capability: market-grid
 github: "104"
-blocked_by: []
+blocked_by: [external:market-grid-players]
 tags: [battlegrid, market-grid, unobserved-shape]
 ---
 
@@ -267,3 +267,28 @@ condition is unchanged: a row where `playersNeeded < minimumPlayers` is the
 first sign of life, and the follow-up order stands (re-read that row's
 `coinPicks.top` and crowd percentages, then follow the same session through
 `LIVE → RESOLVING → SETTLED`).
+
+## Re-statused 2026-08-17 — `blocked`, on other people, and this item is the model
+
+Eight reads across four platform majors, 50 rows every time, `playerCount: 0` and
+`playersNeeded == minimumPlayers == 5` on every row. No account anywhere this
+listing reaches has entered a session. Nothing this product, this account or the
+operator can do produces the state all three unobserved shapes need.
+
+The status now says so. Nothing else changes: the watch condition and the
+follow-up order below stand, and **the instruction not to poll stands with them.**
+
+**Tripwire:** a row where `playersNeeded < minimumPlayers` — one player counted,
+not yet five.
+
+This item is the reason the external-blocker vocabulary exists. It had already
+done the hard part in prose — replacing "poll for a session with players" with a
+named condition after three reads proved polling had nothing to find — and the
+frontmatter could not say it.
+
+One thing that would change the picture and is the operator's call, recorded so
+it is not rediscovered: **entering a PENDING session costs 10 USDC and buys shape
+2 only.** Our own submission makes `get_market_grid_player_grid` answerable. It
+does not buy shape 1, which needs five players and a settlement, or shape 3,
+which needs other people. Whether the fee refunds on cancellation is itself
+unobserved, and 48 of 50 sessions cancelled.

@@ -448,6 +448,28 @@ ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
 OPEN_STATUSES = ("open", "in-progress", "blocked")
 PRIORITY_ORDER = {p: i for i, p in enumerate(ITEM_PRIORITIES)}
 
+#: `blocked_by` named other backlog items and nothing else, so an item waiting on
+#: someone outside this repository had no way to say so. The validator then told
+#: it to "set status: open", and it did — which is why a board of thirty items
+#: read as thirty pieces of available work when a third of them were waiting on
+#: BattleGrid, on other players, or on a live authorisation only the operator can
+#: give. Three namespaces name the wait:
+#:
+#:   upstream:<name>  — the platform must change      (upstream:battlegrid)
+#:   external:<name>  — someone outside must act      (external:market-grid-players)
+#:   operator:<name>  — the operator must authorise   (operator:live-write-authorization)
+#:
+#: A token is not a free-text excuse. `blocked` on an external cause carries two
+#: obligations, both enforced by review rather than by the parser: the body must
+#: explain the wait, and it must state the **tripwire** — the observable change
+#: that would end it. `market-grid-payloads-that-only-fill-once-someone-plays` is
+#: the model: eight reads proved polling had nothing to find, so it names the
+#: condition (`playersNeeded < minimumPlayers`) and says outright not to poll.
+#:
+#: The point is not bookkeeping. An item that cannot say it is waiting gets
+#: re-read every session by someone deciding whether to take it.
+EXTERNAL_BLOCKER = re.compile(r"(upstream|external|operator):[a-z0-9][a-z0-9-]*")
+
 
 class BacklogItem:
     def __init__(self, path: Path, root: Path):
@@ -549,7 +571,7 @@ def mirror_check(root: Path) -> dict:
     try:
         out = subprocess.run(
             ["gh", "issue", "list", "--state", "all", "--limit", "400",
-             "--json", "number,state"],
+             "--json", "number,state,closedAt"],
             capture_output=True, text=True, check=True, cwd=str(root),
         ).stdout
     except FileNotFoundError:
@@ -557,7 +579,11 @@ def mirror_check(root: Path) -> dict:
     except subprocess.CalledProcessError as err:
         return {"error": f"gh failed: {(err.stderr or '').strip()[:200]}"}
 
-    state = {str(r["number"]): r["state"] for r in json.loads(out)}
+    rows = json.loads(out)
+    state = {str(r["number"]): r["state"] for r in rows}
+    # Close dates, for the in-flight diagnosis below. Genuine rot accumulates on
+    # scattered dates; one session's close-out shares one.
+    closed_on = {str(r["number"]): (r.get("closedAt") or "")[:10] for r in rows}
     closed_drift, done_drift, unmirrored = [], [], []
     seen = set()
 
@@ -572,7 +598,8 @@ def mirror_check(root: Path) -> dict:
             continue
         if item.is_open and gh_state == "CLOSED":
             closed_drift.append({"item": item.id, "status": item.status,
-                                 "issue": item.github})
+                                 "issue": item.github,
+                                 "closedOn": closed_on.get(item.github, "")})
         if item.status == "done" and gh_state == "OPEN":
             done_drift.append({"item": item.id, "status": item.status,
                                "issue": item.github})
@@ -583,7 +610,33 @@ def mirror_check(root: Path) -> dict:
 
     return {"itemsScanned": len(items), "issuesKnown": len(state),
             "itemOpenIssueClosed": closed_drift, "itemDoneIssueOpen": done_drift,
-            "issueOpenNoItem": unmirrored}
+            "issueOpenNoItem": unmirrored, "openPullRequests": open_pull_requests(root)}
+
+
+def open_pull_requests(root: Path) -> list:
+    """Open PRs, so drift can be read as in-flight work rather than as rot.
+
+    This is the half `mirror` was missing. It reported nine rows on 2026-08-17
+    that were an exact fingerprint of an unmerged session — seven items open
+    against issues all closed within four hours of one day, plus two orphan
+    issues — and a reader took them for accumulated rot and began rebuilding a
+    tool the unmerged PR had already shipped.
+
+    The evidence was right and the reading was wrong, so the fix belongs in the
+    output rather than only in the documentation: docs get skimmed, output gets
+    read. Failure is soft — a missing or unauthenticated `gh` costs the hint,
+    never the check.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--state", "open", "--json", "number,title,headRefName"],
+            capture_output=True, text=True, check=True, cwd=str(root), timeout=60,
+        ).stdout
+        return [{"number": str(r["number"]), "title": r["title"],
+                 "branch": r.get("headRefName", "")} for r in json.loads(out)]
+    except (FileNotFoundError, subprocess.CalledProcessError,
+            subprocess.TimeoutExpired, json.JSONDecodeError, KeyError):
+        return []
 
 
 def validate_backlog(root: Path, strict: bool) -> list:
@@ -612,13 +665,21 @@ def validate_backlog(root: Path, strict: bool) -> list:
                                   f"{', '.join(allowed)}", rel))
 
         for dep in item.blocked_by:
-            if dep and dep not in ids:
+            if not dep or dep in ids or EXTERNAL_BLOCKER.fullmatch(dep):
+                continue
+            if ":" in dep:
+                found.append(diag("error", "backlog_blocked_by_malformed",
+                                  f"{item.id}: blocked_by '{dep}' is not a known external "
+                                  f"namespace", rel,
+                                  "use upstream:<name>, external:<name> or operator:<name>"))
+            else:
                 found.append(diag("warning", "backlog_blocked_by_unknown",
                                   f"{item.id}: blocked_by '{dep}' is not a backlog item", rel))
         if item.status == "blocked" and not item.blocked_by:
             found.append(diag("warning", "backlog_blocked_without_cause",
                               f"{item.id}: status is blocked but blocked_by is empty", rel,
-                              "name the blocker, or explain it in the body and set status: open"))
+                              "name the blocker — a backlog item, or upstream:/external:/"
+                              "operator:<name> for a wait outside this repository"))
 
         if item.change:
             arch = find_archived(root, item.change)
@@ -2089,6 +2150,49 @@ def render_diagnostics(found: list) -> str:
 # CLI
 # --------------------------------------------------------------------------
 
+def in_flight_hint(closed_drift: list, unmirrored: list, prs: list) -> list:
+    """Say what the drift rows probably mean, where the reader will see them.
+
+    Drift in the item-open/issue-closed direction has two causes that look
+    identical in a table and want opposite responses:
+
+      rot        the record was never updated       -> write the closure
+      in-flight  a PR carrying the closure has not merged -> merge it, write nothing
+
+    Guessing wrong is expensive in one direction only. Writing closures for work
+    that is already closed on a branch duplicates it and then conflicts with it,
+    which is what happened on 2026-08-17 (#341's journal entry).
+
+    Two signals separate them, and neither is conclusive alone:
+
+      * a **same-day cluster** of closures — one session closes its issues as it
+        goes, so its drift shares a date; rot accumulates on scattered ones
+      * an **open PR** — the thing that would carry the missing closures
+
+    So this reports rather than concludes, and always names the cheap check.
+    """
+    lines = ["  --"]
+    dates = {}
+    for row in closed_drift:
+        day = row.get("closedOn") or "unknown"
+        dates.setdefault(day, []).append(row["issue"])
+    cluster = max(dates.items(), key=lambda kv: len(kv[1])) if dates else None
+    if cluster and len(cluster[1]) > 1:
+        lines.append(f"  {len(cluster[1])} of these closed on {cluster[0]} "
+                     f"(#{', #'.join(cluster[1])}) — a same-day cluster is usually")
+        lines.append("  one session's close-out sitting unmerged, not a record nobody updated.")
+    if prs:
+        lines.append(f"  {len(prs)} open PR(s) could be carrying the missing writes:")
+        for pr in prs[:5]:
+            lines.append(f"    #{pr['number']}  {pr['title'][:64]}")
+        if len(prs) > 5:
+            lines.append(f"    ... and {len(prs) - 5} more")
+    lines.append("  Before writing any closure, check what is already done elsewhere:")
+    lines.append("    gh pr list --state open")
+    lines.append("    git log --all --oneline -20")
+    return lines
+
+
 def main(argv: list) -> int:
     parser = argparse.ArgumentParser(prog="openspec.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -2204,6 +2308,9 @@ def main(argv: list) -> int:
                 print("  clean — every mirrored item agrees with its issue")
             elif not a and not b:
                 print(f"  no drift; {len(c)} open issue(s) without an item")
+            if a or c:
+                for line in in_flight_hint(a, c, result.get("openPullRequests") or []):
+                    print(line)
         if a or b:
             return 1
         return 1 if (c and args.strict) else 0

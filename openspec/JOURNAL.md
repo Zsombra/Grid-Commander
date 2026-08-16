@@ -1,5 +1,168 @@
 # Journal
 
+## 2026-08-17 (triage, second leg) — the session-start view could not see an unmerged session
+
+**Did**: found and fixed the thing that caused this morning's near-duplication,
+filed and closed **#342**.
+
+**The question was "what in the documentation keeps causing this", and it had a
+precise answer.** Grepping the whole session-start path — `board.md`,
+`handoff.md`, `tracker/SKILL.md`, `CLAUDE.md` — for `git log`, `--all`, `gh pr`,
+`unmerged` or `branch` returns **one** hit: `handoff.md:11`, which is
+`git log --oneline origin/main..HEAD` and shows the session's *own* commits.
+Nothing in the flow shows another session's work. `/board`'s entire Context block
+was one offline command.
+
+**`mirror` is the only tool here that can see past the local checkout, and it was
+not in the session-start path.** That is the whole defect in one sentence.
+
+**#335 does not cover it, measured rather than argued.** Its prescribed fix
+stamps `behind N / ahead N` against `origin/main`. Run against this session's
+start commit `3259b51` — identical to `origin/main` at the time — it reads
+**`0 / 0`** and passes cleanly. The checkout *was* `main`; `main` was what was
+behind. #335 stays open as the adjacent failure.
+
+**The evidence had been produced and misread, so the fix went where the evidence
+appears.** `mirror` printed nine rows this morning that were an exact fingerprint
+of an unmerged session — seven items open against issues all closed within four
+hours of one day, plus two orphan issues. Same-day clustering is diagnostic;
+rot accumulates on scattered dates. `tracking.md` came close, calling direction C
+"usually in-flight", but said that about the *quiet* direction and nothing about
+direction A, which is the loud one that fires. Docs get skimmed; output gets read.
+
+Three changes: `mirror` now fetches `closedAt`, reports the cluster, lists open
+PRs, and names the two-command check — reporting, not concluding, since neither
+signal is proof. `/board` and tracker Mode A run `mirror` and `gh pr list`.
+`tracking.md` §7 carries the interpretation rule that drift and rot want opposite
+responses.
+
+Proven by reproducing this morning: three items reopened against issues closed
+2026-08-16 → cluster named, PR #341 listed, exit 1; restored → exit 0 clean.
+
+**A regression was introduced and caught, and it is the more useful half.** The
+new helper was inserted at **column 0 inside `main()`**. `ast.parse` accepted it —
+the indentation was internally consistent — while `main()` silently ended early
+and `board`, `validate` and `archive` became dead code inside the helper.
+`validate --all` printed **nothing** at **exit 0**. Caught by running the command
+and noticing empty output where three lines belonged, not by the syntax check
+that had just said OK. **A syntax check is not a test**, and empty output is the
+failure mode that looks like success — the same shape as #194's vacuous
+assertions and the `` incident in #338.
+
+**The detection signal from this morning is worth keeping.** What caught the
+duplication was a closing comment naming an archived change (`one-focus-ring`)
+that was not in the archive. Closing comments only name archived changes, so the
+absence is a strict contradiction rather than a maybe. `git log --all` found it
+in a minute; plain `git log` could not see it at all, the branch being checked
+out in another worktree. **`--all` is load-bearing here**, and parallel worktrees
+are this repository's default layout.
+
+**State**: `validate --all` 0 errors, 15 warnings, 10 info — baseline restored
+after the regression. `mirror` clean in all three directions. Every subcommand
+re-run individually after the helper was moved to module level.
+
+**Next**: unchanged — `the-approval-can-be-answered` is 40/40 and wants
+`/verify`, then the auditor, then archive. Then #340.
+
+
+## 2026-08-17 (triage) — a duplicate caught late, and the status the board could not say
+
+**Did**: merged **#339**, filed **#340**, closed **#309**, and gave `blocked_by`
+three namespaces for waits outside this repository, re-statusing four items onto
+them.
+
+**I nearly rebuilt thirty-one commits.** Asked to walk the open issues
+oldest-first, I read `main`, found seven items open against closed issues and two
+open issues with no item, diagnosed it as accumulated rot, and started building
+the two-way mirror check. All nine were **#339 sitting unmerged** — that session
+closed its issues by hand as it went, and its backlog writes were one branch over.
+The detection came from #318's closing comment naming an archived change,
+`one-focus-ring`, that was not in this checkout: a closing comment only names
+changes that were archived, so an archived change missing from the archive is a
+strict contradiction. `git log --all` found it in a minute. **`git log` alone
+cannot see this, and the board reads one checkout** — in a repo where sessions run
+in parallel worktrees, `--all` belongs in the triage reflex before the board does.
+
+**#309 was its own subject, a third time.** Every one of the nine resolved on
+merge. My "the mirror has rotted" framing was wrong in emphasis and is corrected
+on the item: the record was not neglected, the reader was reading `main` mid-flight.
+This is also the first instance where the *reader* was the thing that went wrong
+rather than the record, which is the argument for the third direction being
+non-fatal made once more from the other side — a check that failed on "issue open,
+no item" would have been red that whole window while nothing was wrong.
+
+**The shipped mirror is better than mine and mine is discarded.** I had put the
+check inside `validate`, reading a committed cache to keep the offline guarantee.
+That answers the network objection and not the noise one: I graded direction C a
+*warning*, which fires on every open PR. #339's split — own command, `gh` required,
+exit 2 when absent, C reported and not fatal — is correct and no change is wanted.
+
+**#340, from a deferral this repository forbids leaving unfiled.** Yesterday's
+journal recorded that `accept_entry_decision` is annotated `destructive: false`
+while `cancel` is `true`, said "worth its own item", and filed none. It is worse
+than a labelling error: `call-path.ts:71` **gates the confirmation on that flag**.
+Driven through the real `beginGuardedCall` and the real `classifyTool`:
+
+```
+accept admitted with NO confirmation token          audit row destructive flag: false
+cancel refused with: ConfirmationRequiredError
+token store size before/after: 0 0
+```
+
+A token that was **never issued** is accepted for the one write that opens a real
+position, because nothing looks at it. The scope step-up still fires and the UI
+still shows the consequence — but the binding that exists to catch levels moving
+between read and click does not run on the verb where it matters, and the levels
+do move: yesterday's walk recorded 1.0009 proposed, 1.0017 filled. The proof was
+run as a temporary test and **deleted rather than kept**, because a permanent test
+here would assert the defect.
+
+**One correction inside that finding.** A first reading had accept resolving to
+`mcp:read`, which would have made it far worse. That was an artifact of a synthetic
+tool object with no `declaredScope`; both verbs declare `mcp:wager` and step 2
+fires. Withdrawn on the item before filing rather than after.
+
+**`blocked_by` could not say what a third of the board was waiting for.** It took
+item ids only, so an item waiting on BattleGrid, on other players, or on a live
+authorisation had no way to write it down — and `validate` said "set status: open",
+so they did. Thirty items read as thirty pieces of available work. Three
+namespaces now name the wait (`upstream:` / `external:` / `operator:`), an
+unrecognised namespace is an **error**, and four items moved onto them: #85
+(upstream:battlegrid), #104 (external:market-grid-players), #114
+(upstream:battlegrid), #306 (operator:live-write-authorization). Each states its
+tripwire, because a token is not an excuse.
+
+Proven non-vacuous rather than assumed: `upstream:vendor-x` → 0 errors,
+`vendor:battlegrid` → **1 error**, `not-a-real-item` → 16 warnings, restored → 15.
+
+**Landed without a proposal, on the operator's explicit call** after the concern
+was raised that it is contract-shaped work `CLAUDE.md` routes to a full track.
+Recorded here because the reasoning should not be lost with the decision.
+
+**The same gap has a second shape, not taken.** `an-approval-expires-while-nobody-is-looking`
+carries `blocked_by: [the-approval-can-be-answered]` — a **change** name, not an
+item — and has been one of the fifteen standing warnings all along. A `change:`
+namespace would close it. Left alone deliberately: it is a different argument, and
+widening a vocabulary twice in one pass is how the second half stops being read.
+
+**#101 was right and I was wrong about it.** Told it felt already addressed, I
+answered from a stale checkout that accept had no surface. 7.4 passed the same
+day: the operator accepted a real decision through the product and the change is
+**40/40**.
+
+**State**: `validate --all` 0 errors, 15 warnings, 10 info — the standing baseline,
+unmoved. `openspec.py mirror` clean in all three directions. Branch merged from
+`main`, not rebased. Remote branch for #339 deleted explicitly rather than with
+`--delete-branch`, because a worktree held it and that is #324's exact trigger —
+so #324 was avoided, not tested. No auto-close on the squash: 26 open before, 26
+after.
+
+**Next**: `the-approval-can-be-answered` is 40/40 and wants `/verify`, then the
+auditor, then archive — that is what actually closes #101. Then #340, whose fix
+should key confirmation to consequence rather than to the platform's word for it,
+and should sweep the annotation set for other inversions.
+
+
 ## 2026-08-17 (accepted) — 40/40, and a diagnosis that was wrong twice
 
 **Did**: task **7.4**. The operator accepted one real decision through the

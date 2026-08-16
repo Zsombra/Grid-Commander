@@ -2,14 +2,14 @@
 id: the-write-paths-are-unverified-at-v19
 title: Nine live write probes have never run against v19 — the writes are conformant on paper only
 type: risk
-status: open
+status: blocked
 priority: p3
 created: 2026-08-15
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: platform-mapping
 github: "306"
-blocked_by: []
+blocked_by: [operator:live-write-authorization]
 tags: [battlegrid, v19, live-probes, needs-key, needs-authorisation]
 ---
 
@@ -200,3 +200,26 @@ They fork strategies, create and archive agents, and write deployments on the
 live account — self-cleaning by design, but real writes on a real account.
 Nothing in this session sought that authorization, and nothing should be run
 until it is given.
+
+## Re-statused 2026-08-17 — `blocked`, on an authorisation only the operator can give
+
+The item states the ask in its own words: *"Running the nine needs the operator
+to say so, in the session, at the moment."* They fork strategies, create and
+archive agents, and write deployments on the live account. That is not work
+waiting to be picked up off a board, and `open` said it was.
+
+**Tripwire — two conditions, and they are separate:**
+
+1. The operator authorising a live write run, in-session and by name.
+2. For `radar-probe` specifically, a **flat fleet below cap**. The account stands
+   at 20/20 with open positions. Its `finally` guard landed 2026-08-17, so it is
+   safe to say yes to whenever that window opens — which is a different fact from
+   it being runnable now.
+
+Re-check the server version first when the run happens. The item was filed
+against v19.1.0 and the handshake now reports **v19.2.0**, so the offline guard
+passes against a record already one deployment behind the running server.
+
+Not withdrawn by this: eight of the nine probes **did** execute against v19.2.0
+on 2026-08-16, seven green. What stays open is the ninth and the re-run, not the
+whole set — the correction above says so and this status does not reopen it.

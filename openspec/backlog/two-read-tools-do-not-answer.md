@@ -2,14 +2,14 @@
 id: two-read-tools-do-not-answer
 title: get_market_context is refused for omitting an argument its own schema does not require
 type: question
-status: open
+status: blocked
 priority: p3
 created: 2026-07-29
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: battlegrid-connection
 github: "114"
-blocked_by: []
+blocked_by: [upstream:battlegrid]
 tags: [battlegrid, probe, declared-vs-observed]
 ---
 
@@ -296,3 +296,18 @@ is still offered here, and `1m` is absent.** #300 asks what v19's retirement of
 `1m` and `1d` from the authorable categories means. This is evidence that the
 retirement is scoped to *authorable* surfaces: a read parameter on the same
 platform version still accepts `1d`. Read there, not concluded here.
+
+## Re-statused 2026-08-17 — `blocked`, on BattleGrid
+
+Seven measurements spanning v5, v11, v14, v15, v16, v17, v18 and v19, all
+identical: the input schema declares no `required`, no `anyOf` and no `oneOf`,
+the prose carries the real precondition, and the bare call is refused. The item
+says of itself *"Nothing to do"* and is kept as a standing record. That is a
+wait on BattleGrid, and the frontmatter now says so instead of reading `open`.
+
+**Tripwire:** the input schema gains `anyOf`/`oneOf` expressing "exactly one of
+`sessionId` or `primaryTimeframe`", **or** the bare `{}` call stops being
+refused. Either makes the declaration match the behaviour.
+
+Do not re-measure on a schedule. The trigger this item already sets — re-read
+when the tool description changes — is the right one, and it was honoured at v19.

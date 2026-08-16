@@ -86,7 +86,7 @@ updated: 2026-07-25
 change: ""                   # change-id once work starts
 capability: ""               # openspec/specs/<capability> this concerns
 github: "87"                 # the issue mirroring this item — bare number, or `none` + a reason (§7)
-blocked_by: []               # other item ids
+blocked_by: []               # other item ids, or an external namespace (below)
 tags: [checkout, payments]
 ---
 ```
@@ -110,6 +110,36 @@ consequence is someone's preference, not a priority.
 `open` → `in-progress` (a change exists) → `done` (the change archived).
 `blocked` requires `blocked_by`. `wontfix` requires a reason in the body —
 a closed item that does not say why gets reopened by the next person.
+
+#### Waiting on someone outside this repository
+
+`blocked_by` took item ids and nothing else, so an item waiting on BattleGrid, on
+other players, or on a live authorisation had no way to say so — `validate` told
+it to "set status: open", and it did. A board of thirty items then read as thirty
+pieces of available work when a third of them were waits. Three namespaces name
+the wait instead:
+
+| token | meaning | example |
+|---|---|---|
+| `upstream:<name>` | the platform must change | `upstream:battlegrid` |
+| `external:<name>` | someone outside must act | `external:market-grid-players` |
+| `operator:<name>` | the operator must authorise | `operator:live-write-authorization` |
+
+An unrecognised namespace is an **error**, not a warning — `blocked_by:
+[vendor:battlegrid]` fails. A bare name that is not an item stays a warning, as
+before.
+
+**A token is not an excuse.** `blocked` on an external cause carries two
+obligations, enforced by review rather than by the parser:
+
+1. The body explains the wait.
+2. The body names the **tripwire** — the observable change that would end it.
+
+`market-grid-payloads-that-only-fill-once-someone-plays` is the model. Eight
+reads across four platform majors proved polling had nothing to find, so it names
+the condition (`playersNeeded < minimumPlayers`) and says outright not to poll. An
+item that cannot say it is waiting gets re-read every session by someone deciding
+whether to take it, which is the cost this exists to stop.
 
 ### Naming
 
@@ -275,6 +305,59 @@ issues close immediately, so between filing and merge an issue legitimately has
 no item on `main`. Against a working tree it is quiet; against `main`
 mid-flight it is not.
 
+#### Drift is not the same as rot — read it against the open PRs
+
+The table says which directions are *drift*. It does not say what drift **means**,
+and the first direction has two causes that look identical in a list and want
+opposite responses:
+
+| | what it is | what to do |
+|---|---|---|
+| **rot** | the record was never updated | write the closure |
+| **in-flight** | a PR carrying the closure has not merged | merge it, write nothing |
+
+Getting this wrong is expensive in one direction only. Writing closures for work
+already done on a branch duplicates it, and then conflicts with it on this very
+file.
+
+**It has happened, and the evidence was not the problem.** On 2026-08-17 a
+triage pass read seven items open against closed issues plus two orphan issues,
+called it accumulated rot, and rebuilt most of `mirror` itself before noticing
+that all nine were **#339 sitting unmerged**. `mirror` had reported the drift
+correctly; nothing told the reader how to interpret it.
+
+Two signals separate the cases, neither conclusive alone:
+
+- **A same-day cluster.** One session closes its issues as it goes, so its drift
+  shares a close date. Genuine rot accumulates on scattered ones. `mirror` prints
+  the cluster when it finds one.
+- **An open PR.** The thing that would be carrying the missing writes. `mirror`
+  lists them.
+
+Neither is proof, so `mirror` reports and does not conclude. The check it points
+at is two commands and costs nothing:
+
+```bash
+gh pr list --state open
+git log --all --oneline -20
+```
+
+**`--all` is the load-bearing flag.** Plain `git log` cannot see a branch checked
+out in another worktree, and this repository runs sessions in parallel worktrees
+by default.
+
+The detection signal that finally caught it generalises and is cheaper than
+either: **a closing comment naming an archived change that is not in the
+archive.** Closing comments only name changes that were archived, so the absence
+is a strict contradiction rather than a maybe.
+
+**What does not catch it**: `assert_checkout.py` (#325) passes — the worktree is
+intact. A `behind N / ahead N` stamp against `origin/main` (#335) reads `0 / 0`
+— the checkout *is* `main`, and `main` is the thing that is behind. Every
+offline surface here — `board`, `backlog list`, `validate`, `JOURNAL.md`,
+`HANDOFF.md` — describes one checkout and cannot see this at all. `mirror` and
+`gh pr list` are the only two that can.
+
 **It is deliberately not part of `validate`.** `validate` is offline and must
 stay that way — it runs in CI, in hooks, and on a laptop with no `gh`
 credential, and a check needing the network would either fail there or teach
@@ -303,6 +386,7 @@ thirty-first.*
 | `backlog_in_progress_without_change` | warning | `in-progress` with nothing linked |
 | `backlog_blocked_without_cause` | warning | `blocked` with empty `blocked_by` |
 | `backlog_blocked_by_unknown` | warning | Blocker is not a real item |
+| `backlog_blocked_by_malformed` | error | Blocker uses an unknown `<ns>:<name>` namespace |
 | `backlog_capability_not_found` | warning | Names a capability with no spec |
 | `change_without_backlog_item` | info | Active change with no linked item — fine, just noted |
 
