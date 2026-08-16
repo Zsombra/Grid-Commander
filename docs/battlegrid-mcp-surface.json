@@ -2,10 +2,10 @@
   "source": "https://mcp.battlegrid.trade/mcp",
   "server": {
     "name": "battlegrid",
-    "version": "19.1.0",
+    "version": "19.2.0",
     "protocol": "2025-06-18"
   },
-  "probed_at": "2026-08-15T12:35:57Z",
+  "probed_at": "2026-08-16T00:41:30Z",
   "tool_count": 114,
   "by_classification": {
     "read": 87,
@@ -3197,7 +3197,10 @@
       },
       "declared_output": [
         "agentSlots",
+        "agents",
+        "avatarUrl",
         "balance",
+        "bio",
         "mcpWagerEnabled",
         "stats",
         "tradingWalletProvisioned",
@@ -3205,7 +3208,10 @@
       ],
       "observed": [
         "agentSlots",
+        "agents",
+        "avatarUrl",
         "balance",
+        "bio",
         "mcpWagerEnabled",
         "stats",
         "tradingWalletProvisioned",
@@ -3223,11 +3229,22 @@
           "remaining": "int",
           "used": "int"
         },
+        "agents": [
+          {
+            "agentId": "str",
+            "avatarUrl": "str",
+            "displayName": "str"
+          },
+          "\u2026\u00d73"
+        ],
+        "avatarUrl": "str",
         "balance": {
+          "available": "bool",
           "hasAccount": "bool",
           "totalBalance": "str",
           "usdc": "str"
         },
+        "bio": "str",
         "mcpWagerEnabled": "bool",
         "stats": {
           "avgRank": "float",
@@ -3425,15 +3442,15 @@
           "blockedReason": "null",
           "blockedSince": "null",
           "budgetOverSubscribed": "bool",
-          "capitalAtRiskUsd": "float",
-          "dailyRealizedPnlUsd": "int",
+          "capitalAtRiskUsd": "int",
+          "dailyRealizedPnlUsd": "float",
           "drawdownUsd": "float",
-          "effectiveNotionalUsd": "float",
+          "effectiveNotionalUsd": "int",
           "gauges": {
             "dailyLoss": {
               "breached": "bool",
               "configured": "bool",
-              "fill": "int",
+              "fill": "float",
               "remaining": "float"
             },
             "dailyTrades": {
@@ -3451,13 +3468,13 @@
             "exposure": {
               "breached": "bool",
               "configured": "bool",
-              "fill": "float",
-              "remaining": "float"
+              "fill": "int",
+              "remaining": "int"
             }
           },
           "haltReason": "null",
           "haltedAt": "null",
-          "headroomUsd": "float",
+          "headroomUsd": "int",
           "maxConcurrentExposureUsd": "int",
           "maxCumulativeDrawdownUsd": "int",
           "maxDailyLossUsd": "float",
@@ -3522,7 +3539,7 @@
             "coinName": "str",
             "coinTicker": "str",
             "evaluatedAt": "str",
-            "firstFailReason": "str",
+            "firstFailReason": "null",
             "gates": {
               "aggregateScore": {
                 "minScorePercent": "int",
@@ -3546,7 +3563,7 @@
                 "rejectionStage": "null",
                 "slPolicyRejection": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "qualifies": "bool",
@@ -3556,7 +3573,7 @@
                 "rejectionStage": "null",
                 "slPolicyRejection": "null"
               },
-              "firstFailReason": "str",
+              "firstFailReason": "null",
               "qualifies": "bool"
             },
             "strategyTimeframe": "str"
@@ -3742,7 +3759,7 @@
           "modelVendors": [
             {
               "activeAgentCount": "int",
-              "activeAgentPercent": "int",
+              "activeAgentPercent": "float",
               "agentCount": "int",
               "avgNetPnl": "float",
               "avgTradeSizeUsd": "float",
@@ -3783,7 +3800,7 @@
                 "modelImageUrl": "str",
                 "pnlSparkline": [
                   "float",
-                  "\u2026\u00d712"
+                  "\u2026\u00d72"
                 ],
                 "roiPercent": "float"
               },
@@ -3799,7 +3816,7 @@
               "rank": "int",
               "totalNetPnl": "float"
             },
-            "\u2026\u00d73"
+            "\u2026\u00d74"
           ],
           "userId": "str"
         },
@@ -3905,7 +3922,7 @@
               "netPnl": "float"
             }
           },
-          "\u2026\u00d740"
+          "\u2026\u00d741"
         ],
         "filter": {
           "sortBy": "str",
@@ -4136,6 +4153,7 @@
                 },
                 "\u2026\u00d71"
               ],
+              "conditionVerdict": "str",
               "primaryTimeframe": "str",
               "provisional": "bool",
               "strategyRevision": "int",
@@ -4195,25 +4213,7 @@
         "positions"
       ],
       "observed_shape": {
-        "positions": [
-          {
-            "coinTicker": "str",
-            "conviction": "float",
-            "direction": "str",
-            "entryFillPrice": "float",
-            "entryFillQuantity": "int",
-            "executedAt": "str",
-            "leverage": "int",
-            "notionalUsd": "float",
-            "positionId": "str",
-            "riskRewardRatio": "float",
-            "signalLogId": "str",
-            "stopLoss": "float",
-            "takeProfit": "float",
-            "timeHorizon": "str"
-          },
-          "\u2026\u00d73"
-        ]
+        "positions": []
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -4263,7 +4263,7 @@
           "maxCumulativeDrawdownUsd": "int",
           "pnlCurveUsd": [
             "float",
-            "\u2026\u00d741"
+            "\u2026\u00d72"
           ],
           "realizedPnlUsd": "float"
         }
@@ -4440,6 +4440,7 @@
                 },
                 "\u2026\u00d71"
               ],
+              "conditionVerdict": "str",
               "primaryTimeframe": "str",
               "provisional": "bool",
               "strategyRevision": "int",
@@ -4504,7 +4505,14 @@
             "cost24hUsd": "float",
             "deployments": {
               "arenas": [],
-              "openPositions": [],
+              "openPositions": [
+                {
+                  "leverage": "int",
+                  "side": "str",
+                  "symbol": "str"
+                },
+                "\u2026\u00d71"
+              ],
               "radars": [
                 {
                   "coinId": "str",
@@ -4985,7 +4993,7 @@
             "category": "str",
             "correlationToTarget": "float",
             "momentumState": "str",
-            "priceChange1h": "float",
+            "priceChange1h": "int",
             "priceChange24h": "float",
             "relationship": "str",
             "ticker": "str",
@@ -5236,7 +5244,7 @@
             "executedOrderId": "str",
             "signalLogId": "str"
           },
-          "\u2026\u00d7100"
+          "\u2026\u00d7107"
         ]
       },
       "arguments_from": "none-required",
@@ -5344,12 +5352,12 @@
               "signalId": "str",
               "verdict": "str"
             },
-            "\u2026\u00d76"
+            "\u2026\u00d75"
           ],
           "signalLogId": "str",
           "signalModulesUsed": [
             "str",
-            "\u2026\u00d76"
+            "\u2026\u00d75"
           ],
           "status": "str",
           "stopLoss": "null",
@@ -5474,7 +5482,7 @@
                   "timestamp": "str",
                   "value": "float"
                 },
-                "\u2026\u00d720"
+                "\u2026\u00d72"
               ],
               "trades": "int",
               "winLoss": {
@@ -5681,16 +5689,13 @@
         },
         "data": [
           {
-            "crossover": {
-              "timeframe": "str",
-              "type": "str"
-            },
+            "crossover": "null",
             "marketStats": {
               "baseVolume24h": "float",
               "fundingRate": "float",
               "markPrice": "int",
               "openInterest": "float",
-              "oraclePrice": "float",
+              "oraclePrice": "int",
               "volumeUsd24h": "float"
             },
             "name": "str",
@@ -6535,7 +6540,7 @@
             "closedAt": "str",
             "coinTicker": "str",
             "conviction": "float",
-            "debriefVerdict": "str",
+            "debriefVerdict": "null",
             "direction": "str",
             "durationSeconds": "int",
             "entryFillPrice": "float",
@@ -6551,7 +6556,7 @@
             "roePercent": "float",
             "signalLogId": "str"
           },
-          "\u2026\u00d720"
+          "\u2026\u00d72"
         ]
       },
       "arguments_from": "discovered:agentId",
@@ -6615,11 +6620,11 @@
               "attributionPercent": "int",
               "effectiveAllocation": "int",
               "name": "str",
-              "score": "int",
+              "score": "float",
               "scorePercent": "int",
               "signalId": "str"
             },
-            "\u2026\u00d717"
+            "\u2026\u00d720"
           ],
           "challenge": "null",
           "coinTicker": "str",
@@ -6665,12 +6670,12 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "status": "str",
             "stopLoss": "null",
@@ -6704,7 +6709,7 @@
                   "takeProfitMethod": "str",
                   "takeProfitPrice": "float"
                 },
-                "\u2026\u00d78"
+                "\u2026\u00d79"
               ]
             },
             "candidateLevelsRejectionStage": "null",
@@ -6734,7 +6739,7 @@
                   "signalId": "str",
                   "verdict": "str"
                 },
-                "\u2026\u00d76"
+                "\u2026\u00d75"
               ],
               "stopLoss": "null",
               "stopLossDistancePct": "null",
@@ -6765,7 +6770,7 @@
                 "isPrimary": "bool",
                 "module": "str",
                 "required": "bool",
-                "score": "int",
+                "score": "float",
                 "scorePercent": "int",
                 "triggered": "bool"
               },
@@ -6796,28 +6801,8 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "funding_rate": "float",
-                  "prev_funding_rate": "float"
-                },
-                "isPrimary": "bool",
-                "module": "str",
-                "required": "bool",
-                "score": "float",
-                "scorePercent": "int",
-                "triggered": "bool"
-              },
-              "\u2026\u00d72"
-            ],
-            "supportingSignals": [
-              {
-                "bias": "str",
-                "details": "str",
-                "direction": "str",
-                "effectiveAllocation": "int",
-                "id": "str",
-                "indicatorValues": {
-                  "macd_histogram": "float",
-                  "prev_macd_histogram": "float",
+                  "open_interest": "float",
+                  "prev_open_interest": "float",
                   "prev_price": "float",
                   "price": "float"
                 },
@@ -6828,7 +6813,26 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d715"
+              "\u2026\u00d71"
+            ],
+            "supportingSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "rsi14": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "float",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d719"
             ],
             "timeframesUsed": [
               "str",
@@ -6871,19 +6875,16 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "macd_histogram": "float",
-                  "prev_macd_histogram": "float",
-                  "prev_price": "float",
-                  "price": "float"
+                  "rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
                 "required": "bool",
-                "score": "int",
+                "score": "float",
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d717"
+              "\u2026\u00d720"
             ]
           },
           "signalSource": "str",
@@ -7175,14 +7176,14 @@
             "coinTicker": "str",
             "count": "int"
           },
-          "\u2026\u00d77"
+          "\u2026\u00d73"
         ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
         "totalNetPnl": "float",
         "winCount": "int",
-        "winRate": "float",
-        "winRatePercent": "float"
+        "winRate": "int",
+        "winRatePercent": "int"
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -7287,20 +7288,8 @@
         "snapshot": {
           "fetchedAt": "str",
           "openPositionCount": "int",
-          "positions": [
-            {
-              "coinTicker": "str",
-              "direction": "str",
-              "entryPrice": "float",
-              "leverage": "int",
-              "movePercent": "float",
-              "positionSizeUsd": "float",
-              "roePercent": "float",
-              "unrealizedPnl": "float"
-            },
-            "\u2026\u00d73"
-          ],
-          "unrealizedPnl": "float"
+          "positions": [],
+          "unrealizedPnl": "int"
         }
       },
       "arguments_from": "discovered:agentId",
@@ -7451,7 +7440,7 @@
             "regime": "str",
             "timestamp": "int"
           },
-          "\u2026\u00d7210"
+          "\u2026\u00d7213"
         ],
         "symbol": "str",
         "timeframe": "str"
@@ -7617,11 +7606,11 @@
               "attributionPercent": "int",
               "effectiveAllocation": "int",
               "name": "str",
-              "score": "int",
+              "score": "float",
               "scorePercent": "int",
               "signalId": "str"
             },
-            "\u2026\u00d717"
+            "\u2026\u00d720"
           ],
           "challenge": "null",
           "coinTicker": "str",
@@ -7631,7 +7620,7 @@
               "trueCount": "int",
               "unresolvedCount": "int"
             },
-            "decidedBy": "null",
+            "decidedBy": "str",
             "outcomes": [
               {
                 "conditionKey": "str",
@@ -7657,7 +7646,7 @@
             ],
             "provisional": "bool",
             "strategyRevision": "int",
-            "verdict": "null"
+            "verdict": "str"
           },
           "createdAt": "str",
           "debriefVerdict": "null",
@@ -7701,12 +7690,12 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "status": "str",
             "stopLoss": "null",
@@ -7749,7 +7738,7 @@
                   "takeProfitMethod": "str",
                   "takeProfitPrice": "float"
                 },
-                "\u2026\u00d78"
+                "\u2026\u00d79"
               ]
             },
             "candidateLevelsRejectionStage": "null",
@@ -7779,7 +7768,7 @@
                   "signalId": "str",
                   "verdict": "str"
                 },
-                "\u2026\u00d76"
+                "\u2026\u00d75"
               ],
               "stopLoss": "null",
               "stopLossDistancePct": "null",
@@ -7810,7 +7799,7 @@
                 "isPrimary": "bool",
                 "module": "str",
                 "required": "bool",
-                "score": "int",
+                "score": "float",
                 "scorePercent": "int",
                 "triggered": "bool"
               },
@@ -7841,28 +7830,8 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "funding_rate": "float",
-                  "prev_funding_rate": "float"
-                },
-                "isPrimary": "bool",
-                "module": "str",
-                "required": "bool",
-                "score": "float",
-                "scorePercent": "int",
-                "triggered": "bool"
-              },
-              "\u2026\u00d72"
-            ],
-            "supportingSignals": [
-              {
-                "bias": "str",
-                "details": "str",
-                "direction": "str",
-                "effectiveAllocation": "int",
-                "id": "str",
-                "indicatorValues": {
-                  "macd_histogram": "float",
-                  "prev_macd_histogram": "float",
+                  "open_interest": "float",
+                  "prev_open_interest": "float",
                   "prev_price": "float",
                   "price": "float"
                 },
@@ -7873,7 +7842,26 @@
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d715"
+              "\u2026\u00d71"
+            ],
+            "supportingSignals": [
+              {
+                "bias": "str",
+                "details": "str",
+                "direction": "str",
+                "effectiveAllocation": "int",
+                "id": "str",
+                "indicatorValues": {
+                  "rsi14": "float"
+                },
+                "isPrimary": "bool",
+                "module": "str",
+                "required": "bool",
+                "score": "float",
+                "scorePercent": "int",
+                "triggered": "bool"
+              },
+              "\u2026\u00d719"
             ],
             "timeframesUsed": [
               "str",
@@ -7916,19 +7904,16 @@
                 "effectiveAllocation": "int",
                 "id": "str",
                 "indicatorValues": {
-                  "macd_histogram": "float",
-                  "prev_macd_histogram": "float",
-                  "prev_price": "float",
-                  "price": "float"
+                  "rsi14": "float"
                 },
                 "isPrimary": "bool",
                 "module": "str",
                 "required": "bool",
-                "score": "int",
+                "score": "float",
                 "scorePercent": "int",
                 "triggered": "bool"
               },
-              "\u2026\u00d717"
+              "\u2026\u00d720"
             ]
           },
           "signalSource": "str",
@@ -8052,14 +8037,14 @@
             "coinTicker": "str",
             "count": "int"
           },
-          "\u2026\u00d77"
+          "\u2026\u00d73"
         ],
         "totalEntryDecisions": "int",
         "totalEvaluations": "int",
         "totalNetPnl": "float",
         "winCount": "int",
-        "winRate": "float",
-        "winRatePercent": "float"
+        "winRate": "int",
+        "winRatePercent": "int"
       },
       "arguments_from": "discovered:agentId",
       "envelope": {
@@ -9265,11 +9250,12 @@
                   "outcome": "str",
                   "payload": [
                     "\u2026",
-                    "\u2026\u00d72"
+                    "\u2026\u00d71"
                   ]
                 },
                 "\u2026\u00d71"
               ],
+              "conditionVerdict": "str",
               "primaryTimeframe": "str",
               "provisional": "bool",
               "strategyRevision": "int",
@@ -9530,12 +9516,12 @@
                 "signalId": "str",
                 "verdict": "str"
               },
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "signalLogId": "str",
             "signalModulesUsed": [
               "str",
-              "\u2026\u00d76"
+              "\u2026\u00d75"
             ],
             "status": "str",
             "stopLoss": "null",
@@ -9701,7 +9687,7 @@
             "latestAt": "str",
             "reasonCode": "str"
           },
-          "\u2026\u00d75"
+          "\u2026\u00d72"
         ],
         "total": "int"
       },
@@ -9823,7 +9809,7 @@
                     "timestamp": "\u2026",
                     "value": "\u2026"
                   },
-                  "\u2026\u00d720"
+                  "\u2026\u00d72"
                 ],
                 "trades": "int",
                 "winLoss": {
@@ -10140,7 +10126,7 @@
               "openPositionAgentAvatarUrl": "null",
               "openPositionAgentDisplayName": "null",
               "openPositionAgentId": "null",
-              "qualificationBlock": "null",
+              "qualificationBlock": "str",
               "qualified": "bool",
               "reason": "null",
               "regimeConviction": "str",
@@ -10782,12 +10768,12 @@
             "openedAt": "str",
             "realizedPnl": "float",
             "signalLogId": "str",
-            "slippageEntry": "float",
+            "slippageEntry": "int",
             "slippageExit": "float",
             "totalFees": "float",
             "userId": "str"
           },
-          "\u2026\u00d710"
+          "\u2026\u00d72"
         ],
         "total": "int"
       },
@@ -10872,7 +10858,7 @@
                 "effectiveStopLoss": "float",
                 "effectiveTakeProfit": "float",
                 "entryFillPrice": "float",
-                "entryFillQuantity": "int",
+                "entryFillQuantity": "float",
                 "entryNotionalUsd": "float",
                 "liquidationPrice": "null",
                 "marginedUsd": "float",
@@ -10903,7 +10889,7 @@
                 "trailingStatus": "str",
                 "unrealizedPnlUsd": "float"
               },
-              "\u2026\u00d73"
+              "\u2026\u00d72"
             ],
             "pricedPositionCount": "int",
             "pricingStatus": "str",
@@ -10915,7 +10901,7 @@
             "unpricedPositionCount": "int",
             "unrealizedPnlUsd": "float"
           },
-          "\u2026\u00d71"
+          "\u2026\u00d72"
         ],
         "positions": [
           {
@@ -10941,7 +10927,7 @@
             "effectiveStopLoss": "float",
             "effectiveTakeProfit": "float",
             "entryFillPrice": "float",
-            "entryFillQuantity": "int",
+            "entryFillQuantity": "float",
             "entryNotionalUsd": "float",
             "liquidationPrice": "null",
             "marginedUsd": "float",

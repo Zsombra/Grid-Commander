@@ -392,6 +392,17 @@ been fixed — leaves them able to read a danger and unable to act on it. Where 
 product can write a value, the surface offers it; where it cannot, it says which
 of the two reasons applies.
 
+**A limit SHALL be described by what the platform actually meters, and by how
+it enforces it.** A ceiling that trips and a base that sizes are different
+mechanisms, and an operator who is told the first while the platform does the
+second cannot reason about either. `maxConcurrentExposureUsd` is metered on
+**margin**, not notional, and it does not trip: BattleGrid sizes each order from
+the headroom remaining under it, so as the cap fills, orders shrink, and one
+eventually falls under the exchange minimum and is refused without exposure ever
+being named. Where the enforcement is silent, the description SHALL carry the
+consequence the operator would otherwise have to infer from an agent that simply
+stopped trading.
+
 #### Scenario: Composing an agent
 - **WHEN** a user composes an agent
 - **THEN** they are asked for every spending limit the platform declines to
@@ -407,6 +418,14 @@ of the two reasons applies.
 - **WHEN** a field accepts a value the platform reads as *no cap*
 - **THEN** the user is told, where they enter it, that the limit is removed
 - **AND** the wording does not describe a stop that would never fire
+
+#### Scenario: A limit described by the wrong mechanism
+- **WHEN** a limit is presented to the operator
+- **THEN** the wording names the quantity the platform meters
+- **AND** where the platform enforces it by sizing rather than by stopping, the
+  wording says so rather than describing a ceiling
+- **AND** where the enforcement produces no message of its own, the wording names
+  what the operator would otherwise see instead
 
 ### Requirement: Every Value The Product Sends Is One The Platform Accepts
 Where Grid-Commander supplies a value the operator did not choose — a

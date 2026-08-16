@@ -5,7 +5,7 @@ type: debt
 status: open
 priority: p3
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-08-16
 change: ""
 capability: agent-authoring
 github: "201"
@@ -160,3 +160,40 @@ adapter that already calls the tool correctly (`agent-adapter.ts:147`). Re-read
 with `statuses: ['ACTIVE', 'ARCHIVED']`, the answer was nine. Same defect as
 reading `logs` where the payload says `entries`: the probe looked adjacent to
 what it claimed to measure.
+
+## Re-counted 2026-08-16 — the residue grew, and that is the finding
+
+Read live at v19.1.0, `list_intelligence_agents` with
+`statuses: ['ACTIVE','ARCHIVED']`. **Sixteen agents: 3 ACTIVE, 13 ARCHIVED.**
+
+Three archived are the operator's own (`THE .0`, `Volatilis`, `Quadratorum`).
+**Ten are this repository's residue — up from nine on 2026-08-13:**
+
+```
+Probe 238 Dedupe                              <- NEW since 2026-08-13
+GC probe shape II
+GC probe 1315                    GC probe 1315b
+Grid-Commander probe (off)
+Grid-Commander probe (off) 1785331191732
+Grid-Commander probe (off) 1785331381166
+GC probe renamed 1785332728782
+GC probe renamed 1785332866870
+GC probe renamed 1785333064996
+```
+
+**`Probe 238 Dedupe` is the whole point.** This item's claim was that the reuse
+fixture binds only the two files that call it, so anything routing around it
+leaves residue behind. Three days later there is one more, named after a
+different probe than any already listed. The claim is now demonstrated rather
+than restated.
+
+That shifts the four options rather than just re-pricing them:
+
+- An **account-side sweep** now has ten to clean, not nine, and the count is
+  still moving.
+- A **code-side binding alone** would not have prevented this one unless it also
+  covers whatever created `Probe 238 Dedupe` — so "widen the fixture" must name
+  that path before it can be claimed as sufficient.
+
+Slot pressure is unchanged: `slotUsage` reads `limit 3, used 3, remaining 0`,
+which counts ACTIVE only. The residue costs roster legibility, not capacity.

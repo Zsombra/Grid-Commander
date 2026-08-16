@@ -5,7 +5,7 @@ type: risk
 status: open
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: platform-mapping
 github: "306"
@@ -75,3 +75,73 @@ named basis.
 Cheapest useful subset if the full set is too much: `custom-table-probe`
 (covers the preview change directly) and `apply-probe` (covers the input
 schema v19 actually moved).
+
+## Run 2026-08-16 — eight of nine executed against v19.2.0, seven green
+
+Operator supplied the key and authorised the run by name. **The platform had
+moved again**: the probe found **v19.2.0**, not the v19.1.0 the record held, so
+these are the first write paths ever exercised against v19 *and* they were
+exercised against a deployment newer than the one they were audited on.
+
+Run with `BATTLEGRID_LIVE_WRITES=1` via `vitest.live.config.ts`:
+
+```
+apply-probe            PASS  64.0s  frees a slot, forks, compiles, applies, restores
+restore-probe          PASS  40.4s  forks, archives, restores, cleanup archived
+retune-probe           PASS  72.2s  parks Alesia, forks, retunes, restores Alesia
+recorder-probe         PASS  39.2s  run-1 - platform 19.2.0 - 20 recorded, 0 failed
+custom-table-probe     PASS
+proposal-probe         PASS
+write-probe            PASS
+condition-write-probe  FAIL         see below - a real refusal, not a flake
+radar-probe            NOT RUN      held back deliberately - see below
+```
+
+### The one failure is a finding
+
+```
+VALIDATION_ERROR  [condition] condition 'GC_PROBE_DRAFT':
+  operator 'gt' is not legal for 'regTrend_now' (output kind 'classification')
+  - legal operators are is, in
+```
+
+Filed separately as [[a-classification-metric-refuses-comparison-operators]] —
+the question it raises is whether the product's own authoring surface can
+compose the same illegal pairing.
+
+### Why radar-probe was held back
+
+It is the one probe that mutates something the operator is actively running.
+Step 1 is `delete_radar_deployment` against a **real** deployed coin, followed
+immediately by `expect(deleted.deleted).toBe(true)`, and only then the restoring
+`upsert`. **The file has no `finally`.** If that assertion trips, a live
+deployment is deleted and nothing puts it back.
+
+The account state at run time made that unacceptable: **radar was at its cap,
+`coinsDeployed: 20` of `coinCap: 20`**, with TRUMP, AIXBT and SKHX `IN_POSITION`
+carrying real margin. Held pending either a `finally` that restores, or a
+deliberate run when the fleet is below cap and flat.
+
+### The account was verified clean afterwards
+
+| | before | after |
+|---|---|---|
+| agents | 16 (3 ACTIVE) | 16 (3 ACTIVE) — none created, archived or changed |
+| agent slots | 3/3 | 3/3 |
+| radar | 20/20, 3 in position | 20/20, all policyIds and revisions identical |
+| strategy quota | 5/25 | 5/25 — Alesia parked and restored (r9) |
+
+`inPosition` moved 3 → 4 during the window because Breakwater opened ENA at
+00:50:49Z — normal trading, not the probes.
+
+**No probe agent was minted.** That is `a-probe-agent-is-archived-on-the-first-account`
+(#201)'s fixture working on every path that routes through it.
+
+**Five archived strategy forks were minted**, which is the same residue pattern
+one level down — recorded on #201 rather than here.
+
+### What stays open
+
+Eight of nine paths are now observed against a running v19.2.0 server, one is a
+confirmed refusal with its own item, and one is unrun by choice. This item stays
+open until `radar-probe` has either a `finally` or a safe window.

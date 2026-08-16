@@ -5,7 +5,7 @@ type: question
 status: open
 priority: p3
 created: 2026-07-29
-updated: 2026-08-14
+updated: 2026-08-16
 change: ""
 capability: battlegrid-connection
 github: "114"
@@ -227,3 +227,39 @@ the two"); the input schema still declares no `required`, no `anyOf`, no
 `oneOf`. The item's own recommendation stands: keep open as the standing rule —
 nothing may build a call to this tool from `required` alone — and re-read only
 when the description changes.
+
+## 2026-08-16 — eighth measurement, and the mechanism is finally visible
+
+Read live at v19.1.0 over the authenticated MCP connector.
+`get_market_context` called with no arguments:
+
+```
+{ "code": "VALIDATION_ERROR", "message": "Provide sessionId or primaryTimeframe" }
+```
+
+Unchanged across eight measurements and five majors.
+
+**What is new is why.** The tool's own description now states the constraint in
+words — *"Provide sessionId for session-scoped context, or primaryTimeframe
+(5m, 15m, 1h, 4h, 1d) for general market research — exactly one of the two"* —
+while its `inputSchema` still carries **no `required` array** and marks both
+properties optional.
+
+That resolves the item's third question. This is **not a server bug and never
+was**: it is a documented XOR precondition that JSON Schema `required` cannot
+express, so the schema under-declares it and the description carries it instead.
+
+Consequences:
+
+1. Fix (2) — record the real precondition where the product would build the call
+   — is the whole of the item. The precondition can now be **quoted from the
+   description** rather than inferred from a refusal.
+2. The probe's selection rule (`readOnlyHint` and no required arguments) is
+   sound. This tool is simply outside what its schema can say.
+3. If the probe is taught to distinguish a schema bug from a server bug, this
+   case classifies as **neither** — a correctly-behaving server enforcing a
+   constraint its schema cannot carry. That is a third category, and worth
+   naming as one.
+
+`get_open_orders` answered on the same sweep — six live resting legs — so the
+2026-08-13 healing holds at v19.1.0.

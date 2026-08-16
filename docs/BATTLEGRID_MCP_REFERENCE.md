@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v19.1.0`, protocol `2025-06-18`) on 2026-08-15.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v19.2.0`, protocol `2025-06-18`) on 2026-08-16.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -564,7 +564,7 @@ Get the authenticated user's complete account state: play balance (USDC), game s
 (level, rank, win rate), and intelligence agent slot usage. Use this to check if you're
 ready to play.
 
-Returns: `username`, `balance`, `stats`, `agentSlots`, `mcpWagerEnabled`, `tradingWalletProvisioned`
+Returns: `username`, `avatarUrl`, `bio`, `balance`, `stats`, `agentSlots`, `agents`, `mcpWagerEnabled`, `tradingWalletProvisioned`
 
 _No parameters._
 
@@ -851,7 +851,7 @@ Returns: `agent`, `feasibilityAdvisory`
 | `behavior.conviction` | enum(CAUTIOUS|MEASURED|BOLD) |  | Signal confidence threshold |
 | `modelId` | string |  | New LLM model ID |
 | `brainPreset` | enum(MONTGOMERY|KESSELRING|CHUIKOV|EISENHOWER|ZHUKOV|NIMITZ|BRADLEY|ROMMEL,…) |  | Named BRAIN preset (MONTGOMERY/KESSELRING/CHUIKOV/EISENHOWER/ZHUKOV/NIMITZ/BRADLEY/ROMMEL/PATTON/YAMAMOTO) — replaces modelId + behavior when supplie… |
-| `tradingConfig` | object |  | Optional complete trading configuration. When provided, every nested field is required. Omit it for a non-config update. |
+| `tradingConfig` | object |  | Optional complete trading configuration. When provided, every field in THIS schema is required. This schema is narrower than the tradingConfig an age… |
 | `tradingConfig.tradingMode` | enum(OFF|APPROVAL_REQUIRED|FULL_EXECUTION) | YES | OFF = no signals, APPROVAL_REQUIRED = evaluate + require manual accept, FULL_EXECUTION = auto-execute — required when tradingConfig is provided |
 | `tradingConfig.minAllocationUsd` | number | YES | Minimum order size in USD (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.maxDailyTrades` | integer | YES | Maximum trades per day (1-registry maximum) — required when tradingConfig is provided |
