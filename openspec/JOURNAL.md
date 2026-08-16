@@ -1,5 +1,56 @@
 # Journal
 
+## 2026-08-17 (archive) — the approval can be answered, and #101 is closed
+
+**Did**: cleared the last gate violation, took the gate to **PASS**, archived
+`the-approval-can-be-answered`, closed **#101**.
+
+**The DB gate was run, not waived — the operator asked for both and both are
+recorded.** `grid_commander_test` created, migrated, suite green at **96 tests /
+8 files**. `DB_TESTS_MAY_TRUNCATE` was never set, so `assertDisposable` and
+`assertNoLiveGrant` each did their own work rather than being told to stand down,
+and the live-grant preflight read 0 active connections first. The standing
+position is also written down: CI provisions a disposable postgres on every push,
+so no future session needs a local run.
+
+**Then the working database was counted rather than assumed safe**: `grid_commander`
+holds **144,732** `signal_readings` against **0** in the test database the suite
+truncated. That check is not ceremony — the guard's own error text records that
+this suite was once pointed at a live database, destroyed a record that could not
+be rebuilt, and **every test passed while it did**.
+
+**The merge, verified after the fact rather than trusted.** One removal and seven
+requirements: *An Unanswerable Trading Mode Says So* is gone from
+`openspec/specs/agent-understanding/spec.md` (grep count 0), the five new
+requirements are each present exactly once, and `battlegrid-connection` carries
+both the modified scope posture and the step-up. Writing is not landing, so each
+was read back.
+
+**#101 is closed on a live account, not on a green suite.** Cancel was proven
+through the product with its audit row, the accept surface was built only after
+that, and the operator accepted a real decision opening a real position. The
+sequence is provable in git — `eac3284` → `b9d1286` → `f12a274` — which is what the
+gate was for.
+
+**Three things stay open and the closure says so**: **#340** (the confirmation
+gate keyed to the platform's inverted `destructiveHint` — DL-19 closed the bypass
+route, not the inversion), **#304** (nothing tells an operator a decision is
+waiting), **#305** (why no amount can be named, now settled by measurement:
+`effectiveLeverage` exists only on the position, after acceptance).
+
+**A cosmetic defect in the tool, noticed and not fixed.** `journal_stale` renders
+the newest entry as `'audit: production gate PASS â€” the DB gate…'` — an em-dash
+read as cp1252. The warning is correct; only its rendering is wrong. Filed
+nowhere yet; it belongs with the other Windows-encoding items if it recurs.
+
+**State**: **0 active changes** · `validate --all` 0 errors · `mirror` clean ·
+207 archived changes.
+
+**Next**: **#340** — key confirmation to consequence rather than to the platform's
+word for it, and sweep the annotation set for other inversions. Then the three
+P2s: #304, #335, and #340 itself.
+
+
 ## 2026-08-17 (audit) — the gate holds on one thing, and it is the operator's
 
 **Did**: ran the production gate on `the-approval-can-be-answered`. **BLOCKED**,

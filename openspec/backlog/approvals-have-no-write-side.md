@@ -2,11 +2,11 @@
 id: approvals-have-no-write-side
 title: The human-in-the-loop can be read but not answered — accept/cancel are unbuilt
 type: feature
-status: in-progress
+status: done
 priority: p3
 change: the-approval-can-be-answered
 created: 2026-08-03
-updated: 2026-08-15
+updated: 2026-08-17
 capability: agent-understanding
 github: "101"
 blocked_by: []
@@ -854,3 +854,49 @@ Undertow and Breakwater untouched throughout.
   `get_intelligence_agent` — noted there.
 
 **Section 5 is now unblocked.** Nothing in it is built: 5.2–5.5 remain open.
+
+## Closed 2026-08-17 — both verbs are built, both proven live, and the change archived
+
+`the-approval-can-be-answered` archived at
+`openspec/changes/archive/2026-08-17-the-approval-can-be-answered/`. **40/40**,
+production gate **PASS**, zero open violations.
+
+**Both halves were proven on the real account, in the order the gate required:**
+
+| | |
+|---|---|
+| 4.4 / 4.5 | a real decision **cancelled through the product**, with its audit row — `{"decisionId":"…","cancelled":true}`, read back `CANCELLED` |
+| 5.2–5.5 | the accept surface, built only after that |
+| 7.4 | the operator **accepted a real decision**, opening a live position |
+
+The sequence is provable in git rather than asserted: `eac3284` → `b9d1286` →
+`f12a274`.
+
+**What the platform taught us on the way**, none of it guessable from the
+declaration: the decision payload carries **no revision** (PE-1), so the binding
+is decision id + three levels + `status PENDING` + `closedAt null`, all checked on
+one re-read immediately before the write. `effectiveLeverage` appears only on the
+**position**, after acceptance, so the confirmation could never have named a
+dollar amount (#305, settled by measurement rather than by PE-2's caution). A
+proposed entry of `1.0009` filled at `1.0017` — the binding detects levels
+*moving*, and no surface may ever promise a fill.
+
+**What stays open, and is not closed by this:**
+
+- **#340** — `call-path.ts:71` gates the confirmation consume on the platform's
+  `destructiveHint`, which is `false` on `accept_entry_decision`. The token is
+  passed and never spent; the audit row for a position-opening write reads
+  `destructive: false`. DL-19 closed the *bypass route* with a reachability test;
+  the inversion itself is untouched.
+- **#304** — nothing tells an operator a decision is waiting. This change made
+  answering possible, not timely, and said so in Out of Scope.
+- **#305** — kept as the standing record of why no amount can be named.
+
+**The verifier earned its place on this change.** It found the retired
+disclosure's own *replacement* still claiming accepting was unavailable and
+happened on battlegrid.trade — false since section 5, on the money surface, with
+a test holding it in place. Also a design **constraint** reading "Accept is
+rendered nowhere — a design must not add one", which would have instructed a
+design round to delete a live money control. All fixed before the audit, each
+proven non-vacuous by reverting, and guarded by
+`tests/architecture/answering-is-not-disclaimed.test.ts`.
