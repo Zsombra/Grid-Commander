@@ -92,6 +92,51 @@ are both approval-lifecycle and may fold into it rather than queue behind it;
 decide that before opening the next change. **Read
 `git show origin/main:openspec/JOURNAL.md` before trusting this line.**
 
+**Close-out addendum — and the correction that matters most.** The `rm -rf`
+did not only cost `node_modules`. **The worktree stopped being a worktree**: its
+`.git` file went with the rest, `git worktree prune` then dropped it from the
+registry, and `.claude/` went too — which is why `openspec.py` was missing when
+the handoff ran and why the skill's probe reported "no openspec/". Nothing was
+tracked, so "no tracked file touched" still holds, but the blast radius was
+stated far narrower than it had been checked.
+
+**The trap is what came next.** `.git/info/exclude:12` ignores
+`**/.claude/worktrees/`, so once that directory was no longer a worktree it
+became an *ignored subdirectory of the main checkout* — and git commands run
+inside it silently resolve to the main repo on `main`. The first close-out pass
+was written there in good faith: `git status` said clean because it was
+answering about `main`, and the edits were in the repo's blind spot rather than
+in the repo. **A `git status` that reads clean is not evidence your edits
+landed; `git rev-parse --show-toplevel` is.** Recovered by diffing the orphaned
+directory against `main` — exactly the three intended files differed, nothing
+else — and replaying them onto a branch in the main checkout.
+
+`the-mirror-is-checked-one-way` (#309) **updated, not duplicated.** Its two
+cases, left "as found, deliberately" pending someone checking the work, are both
+settled by this session — #283 self-corrected when #313 carried its item update
+in the same commit that shipped the tool, #294 verified against code. **The item
+now has no live cases**, which a future session needs to know before building
+against it. The open-branch caveat it called the hardest part is also gone, so
+the three-way check ran clean on `8e9e4c2` for the first time: **0 / 0 / 0**
+across 26 open issues and 26 items. The five "open issue, no item" entries it
+listed were exactly the predicted branch-invisibility artifact and **none was
+drift** — #299, #304, #305 arrived with #307; #317, #318 with #319.
+
+Filed `a-merged-pr-leaves-its-remote-branch-behind` (#324):
+`gh pr merge --delete-branch` aborts cleanup on the worktree error and keeps
+**the remote branch** while reporting the merge as done. It fired on all four
+merges today and was caught only by listing `refs/remotes/origin` at the end
+rather than trusting the merge output. And
+`a-pruned-worktree-is-an-ignored-directory` (#325, **p2**): the dead-worktree
+trap above, filed at the priority a silent failure that defeats `git status`
+deserves.
+
+**State, corrected for these two files**: **27 open — 24 p3 and 3 p2**
+(#299, #304, #325), not the 26/2 the entry above records; that line was written
+before this pass filed anything. `validate --all` 0 errors / 15 warnings / 6
+info, and the mirror is 0/0/0 in all three directions with both new items
+counted.
+
 ## 2026-08-16 (cards) — one card is drawn once, and 191 claims are checked to zero
 
 **Did**: two half-session items, both closed.
