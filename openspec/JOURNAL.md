@@ -1,5 +1,45 @@
 # Journal
 
+## 2026-08-17 (audit) — the gate holds on one thing, and it is the operator's
+
+**Did**: ran the production gate on `the-approval-can-be-answered`. **BLOCKED**,
+one open violation. Tracker at `plan/production-gate.md`, rationale in DL-21.
+
+**Nothing in the built work failed.** Five of six quality gates pass — typecheck,
+lint, **2716/2722** at the documented six-failure baseline, build, and the drizzle
+schema check. Every scan clean: no conflict markers, no debt markers, no
+deprecated paths, and `answerEntryDecision` has exactly one production caller.
+All seven Phase 3 checklist items pass, including the one the whole change was
+sequenced around — the git history shows `eac3284` (4.5, cancel proven live) then
+`b9d1286` (the accept surface) then `f12a274` (7.4, accept live), in that order.
+
+**Two clerical blockers, one of which I cleared.** PG-001: the master plan still
+ended `PLAN READY FOR REVIEW`, so execution had never been declared handed over.
+That is this repository's convention, not the skill's import — five of the eight
+most recent archived full-track plans carry the marker and seventeen gate trackers
+exist — so it was a real gap rather than a foreign rule. Fixed as executor and
+re-audited under Mode B; integrity is VALID.
+
+**PG-002 is not mine to clear, and that is the point.** `npm run test:db` did not
+run. `DATABASE_URL` is set — to `grid_commander`, the working database. The suite
+truncates the signal record on setup and BattleGrid serves current readings only,
+so the gate was **not run** rather than run carefully. The precedent
+(`2026-08-13-the-connection-asks-who-it-is`, PG-003) is to point it at a
+`_test` database that `assertDisposable` will accept; the alternative is a dated
+waiver to CI. Either is the operator's call because the database is theirs.
+
+**The audit's own findings were all pre-audit.** PG-003/004/005 came from the
+verifier pass and were fixed in `fbdeade`, each proven non-vacuous by reverting.
+The gate found no new defect — which is what a verifier running first is for.
+
+**State**: `validate` clean on the change, 0/15/10 overall · `mirror` clean ·
+branch `claude/verify-and-archive-approvals`.
+
+**Next**: PG-002, then re-audit to PASS, then `/archive` — which is what closes
+**#101**. Then **#340**, whose fix should key confirmation to consequence rather
+than to the platform's word for it.
+
+
 ## 2026-08-17 (verify) — the retirement's own replacement carried the falsehood
 
 **Did**: verified `the-approval-can-be-answered` (40/40), found **1 critical and

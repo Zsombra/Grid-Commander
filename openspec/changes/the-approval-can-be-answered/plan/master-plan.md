@@ -6,10 +6,10 @@
 |---|---|
 | Slug | `the-approval-can-be-answered` |
 | Change | `openspec/changes/the-approval-can-be-answered/` |
-| Phase | **2 — Execution (A, B, C, F, G complete; D is the live gate, E held behind it)** |
+| Phase | **3 — Production gate. All sections complete: tasks 40/40, D crossed live 2026-08-17 (4.5 cancel, 7.4 accept), E built behind it** |
 | Base ref | `origin/main` |
 | Track | `full` |
-| Last updated | 2026-08-16 |
+| Last updated | 2026-08-17 |
 
 Checklists read from `docs/checklists/` (**not** `docs/specs/` — the planner
 skill names a path this project does not use; CLAUDE.md is authoritative).
@@ -237,4 +237,9 @@ committing no money.
 | `openspec/changes/the-approval-can-be-answered/` | Proposal, deltas, design, tasks |
 | `openspec/backlog/approvals-have-no-write-side.md` | The observed evidence everything rests on |
 
-PLAN READY FOR REVIEW
+Execution is complete and declared. Tasks 40/40; the live gate was crossed on
+2026-08-17 — 4.5 cancelled a real decision through the product with its audit
+row, and 7.4 accepted one. The verifier pass raised one critical and two
+warnings, all fixed in `fbdeade` and each proven non-vacuous by reverting.
+
+EXECUTION READY FOR PRODUCTION GATE

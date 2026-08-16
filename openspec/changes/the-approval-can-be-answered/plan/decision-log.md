@@ -367,6 +367,21 @@ and stands.
 
 ---
 
+## DL-21 — AUDIT: gate BLOCKED on two clerical handoff items, nothing in the code
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **AUDIT** |
+| Type | Production gate decision |
+| Decision | **BLOCKED**, 2 OPEN MAJOR — both HANDOFF. Tracker: `plan/production-gate.md` |
+| Impacted files | `openspec/changes/the-approval-can-be-answered/plan/production-gate.md` |
+| Reason | **PG-001**: the master plan's final line still reads `PLAN READY FOR REVIEW`. The marker is this repository's convention, not the skill's import — five of the eight most recent archived full-track plans end `EXECUTION READY FOR PRODUCTION GATE` and 17 gate trackers exist in the archive — so execution was never declared handed over. **PG-002**: `npm run test:db` could not run. `DATABASE_URL` points at `grid_commander`, the operator's working database; the suite truncates the signal record on setup and BattleGrid serves current readings only, so it was **not** run rather than run carefully. Five of six gates pass: typecheck, lint, 2716/2722 at the documented six-failure baseline, build, and the drizzle schema check |
+| Approved by | Auditor |
+| Next action | PG-001 is one line for the executor. PG-002 is the operator's to designate — a `_test` database as in `2026-08-13-the-connection-asks-who-it-is` PG-003, or a dated waiver to CI. Everything the gate checks about the built work passed; the three substantive findings (PG-003/004/005) came from the verifier pass and were fixed before the audit, each proven non-vacuous by reverting |
+
+---
+
 ## Where a fresh session picks this up
 
 **Read first**: this log top to bottom, then
