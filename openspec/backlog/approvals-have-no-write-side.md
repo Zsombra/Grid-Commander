@@ -724,3 +724,52 @@ these, not exposure.
   against 41 lifetime trades. (`accountEquityUsd: 0` is **resolved, not
   anomalous** — `lifetimeAllocatedUsd` is 0 across 41 trades, so fund-allocation
   is simply not this agent's funding path.)
+
+## 2026-08-16 — the free falsifiable test fired, and it answers the NOT DETERMINED
+
+This item's "Free falsifiable test, no write required" predicted branch (a): a
+fresh `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row at TOKEN stage with
+`reasonDetail ≈ {equityUsd: 32.8, minEquityUsd: 33.333333, smallPct: 10,
+maxLeverage: 3}`.
+
+**Branch (a) fired at 2026-08-16T14:00:25.929Z**, read minutes later:
+
+```json
+{ "coinTicker": "MOODENG", "gateStage": "TOKEN",
+  "reasonCode": "EXCHANGE_MIN_NOTIONAL_UNREACHABLE",
+  "reasonDetail": { "equityUsd": 33.05, "minEquityUsd": 33.333333,
+                    "smallPct": 10, "maxLeverage": 3 } }
+```
+
+Three of the four predicted values are exact — `minEquityUsd: 33.333333`, the
+string this item said would settle it, plus `smallPct: 10` and `maxLeverage: 3`.
+`equityUsd` reads **33.05** rather than 32.8 because headroom had moved
+(`get_agent_budget` the same hour: cap 45, `capitalAtRiskUsd` 11.95, **headroom
+33.05**).
+
+### It settles both open questions the test was built to answer
+
+1. **"NOT DETERMINED: whether that TOKEN-stage floor test reads live headroom
+   (32.8, fails) or the static cap (45, passes)."** — **Live headroom.**
+   `equityUsd` is `headroomUsd` exactly, and the entry was refused. Starvation
+   confirmed end to end: the agent was blocked by **$0.28**.
+2. **"Either reading also re-confirms MARGIN, since under NOTIONAL that field
+   would read ≈8.47."** — It reads 33.05, not 8.47. **MARGIN re-confirmed**, a
+   fourth time.
+
+### One thing the prediction did not anticipate
+
+`maxLeverage` in the row is **3**, while Undertow is configured `maxLeverage: 4`.
+Its open positions ran at effective leverage 3 (AIXBT, MELANIA) and 4
+(FARTCOIN), so **leverage is resolved per coin and the floor moves with it** —
+$33.33 at leverage 3, $25.00 at leverage 4. The queue is therefore not
+"structurally blocked until a close" as a single global state: at headroom 33.05
+Undertow was below the floor for a leverage-3 coin and above it for a
+leverage-4 one, simultaneously.
+
+That matters to this change's confirmation copy and is recorded on
+[[a-confirmation-that-cannot-name-the-amount]] (#305): the decision row carries
+no leverage field, so `positionSizePct: 10` is not merely imprecise — it is
+insufficient to derive the amount from.
+
+Full working on #299, which this measurement closed.

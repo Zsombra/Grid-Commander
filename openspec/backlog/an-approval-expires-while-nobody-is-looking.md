@@ -87,3 +87,77 @@ only operational value is that it names Vanguard as the agent to watch when
   itself: show the count of decisions that expired unanswered in the last day.
   That converts a silent loss into a visible one without any notification
   machinery.
+
+## 2026-08-16 — the "first thing to establish" is established, and a Note is wrong
+
+The Evidence names one thing as NOT DETERMINED and *"the first thing to
+establish"*: whether `set_agent_per_trade_push` covers approval-pending
+decisions or only executed trades. **It is determined, and it needed no write.**
+
+The tool's own `enabled` parameter says what it delivers:
+
+> `enabled` — *"True to receive a push notification **per executed trade**;
+> false to stop them."*
+
+**Per executed trade.** A decision awaiting approval has not executed — that is
+the entire condition this item exists for — so `set_agent_per_trade_push` does
+not cover it. **It is not the mechanism.** The second of the two shapes in the
+Notes is struck.
+
+### A correction, and it is the safety-relevant kind
+
+The Notes say of that same option: *"The second is a `mcp:read` write (scope is
+not a safety boundary here) and changes the user's platform-side settings, so it
+needs its own confirmation."*
+
+**The scope is wrong.** The tool's description, at v19.2.0 and in
+`docs/battlegrid-mcp-capabilities.json`:
+
+> *"Requires the **mcp:wager** scope: it writes the same funding-envelope row
+> that carries the halt state, so it is gated with the rest of that surface
+> rather than treated as a free-standing preference."*
+
+So turning a notification preference on is a **wager-scoped** write against the
+row that carries the agent's halt state. That is a materially different act from
+what the Note describes, and the Note's parenthetical — *"scope is not a safety
+boundary here"* — is the repository's standing rule applied in the wrong
+direction: the rule warns that `mcp:read` can mutate, not that a wager-scoped
+write can be treated as a preference.
+
+The conclusion the Note reaches (*"it needs its own confirmation"*) survives and
+is if anything understated.
+
+### Why believing the declaration is safe here, unusually
+
+[[battlegrid-declared-vs-observed]] says a declaration is not an observation, and
+that normally cuts against trusting one. **Both conclusions above narrow what may
+be built**, so believing them costs nothing:
+
+- Believing "executed trades only" means **not** building on this tool. If the
+  declaration were wrong and it did cover approvals, the loss is an option not
+  taken.
+- Believing "`mcp:wager`" means treating it as a money-scoped write. If the
+  declaration were wrong, we over-protected a preference.
+
+Believing the opposite of either would mean making a wager-scoped write against
+a live funding row **to find out**. The asymmetry is the whole argument.
+
+### What is left
+
+**The cheapest partial mitigation in the Notes is now the only candidate that
+does not depend on the platform**: show, inside the queue surface, the count of
+decisions that expired unanswered in the last day. It converts a silent loss
+into a visible one with no notification machinery and no new scope.
+
+Two facts for whoever builds it, from today's reads:
+
+- **`list_pending_approvals` returned `[]`** at 2026-08-16T13:4xZ. The queue is
+  empty as often as not, so a surface that only shows *pending* rows will read as
+  "nothing is happening" during exactly the window this item is about. The
+  expired-count is what makes the empty state legible.
+- **Vanguard remains the only `APPROVAL_REQUIRED` agent** (confirmed on
+  `list_intelligence_agents`: `tradingMode: APPROVAL_REQUIRED`, the other two
+  `FULL_EXECUTION`), so it is still the agent to watch.
+
+Unchanged: blocked by `the-approval-can-be-answered`, because notifying someone
+about a decision they cannot answer would be worse than silence.
