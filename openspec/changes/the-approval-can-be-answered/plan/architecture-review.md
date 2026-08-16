@@ -58,7 +58,7 @@ audit repository are **extended, not replaced** (DL-4).
 
 | # | Check | Evidence | Status |
 |---|---|---|---|
-| 1 | ~~Every mutation carries `expectedRevision`~~ **EXCEPTED** — the platform publishes no revision on a decision. Auditor must confirm the limitation is real | **PE-1 discharged against the live platform, 2026-08-16, at v19.2.0.** `list_entry_decisions` read for Vanguard returned decisions carrying **35 keys**, and none of them is `revision`, `version`, `updatedAt` or an ETag. The full key set: `id, signalLogId, agentId, userId, coinTicker, decision, direction, conviction, convictionPercent, entryPrice, stopLoss, takeProfit, positionSizePct, positionSizePreset, reasoning, signalChecklist, signalModulesUsed, timeHorizon, riskRewardRatio, status, executedOrderId, stopLossOrderId, takeProfitOrderId, llmDurationMs, usageEventId, createdAt, expiresAt, executedAt, entryFillPrice, entryFillQuantity, entryFee, closedAt, atrPct, tradeStatus, challenge`. This was the auditor's own check and it is now performed rather than inherited — the limitation is real, not convenient | ☑ |
+| 1 | ~~Every mutation carries `expectedRevision`~~ **EXCEPTED** — the platform publishes no revision on a decision. Auditor must confirm the limitation is real | **PE-1 was confirmed on 2026-08-15 by change task 0.2** — a re-read of decision `6c11b3dc` returning 35 keys with no `revision`, `version`, `updatedAt` or ETag. That is the proof; this row does not replace it. **What today adds is a re-check at a different server version.** Task 0.2 ran at v19.1.0; #329 then found v19.2.0 had arrived unannounced, with 1 output schema changed and 7 leaves added. A re-read at v19.2.0 on 2026-08-16 returns the same 35 keys and still no concurrency token — which matters only because this repo has twice been caught by a surface whose count and inputs held still while the shape moved underneath (#198, #301). **Auditor: 0.2 is the evidence; this is a version guard on it** | ☑ |
 | 1a | Substitute in force: all five of `entryPrice`, `stopLoss`, `takeProfit`, `status === "PENDING"`, `closedAt === null` verified on one re-read immediately before the write | `checkAnswerable` verifies all five against one re-read taken in `AnswerDecisionCommand` immediately before the port call. `pending-decision.test.ts` (22) + `answer-decision.test.ts` cover each refusal cause | ☑ |
 | 2 | A refused binding is reported to the user, naming what moved | `explainAnswerRefusal` names the field, the shown value and the current value; the decision page renders it through `CarriedProblem` (role=alert). Asserted in `answer-authority.test.ts` | ☑ |
 | 3 | **No automatic retry** — NOT excepted, holds absolutely | No retry exists on any path. A refusal redirects to a freshly described decision and offers no one-click retry — recorded as a constraint on the decision manifest | ☑ |
@@ -121,10 +121,10 @@ audit repository are **extended, not replaced** (DL-4).
 
 **Two policy notes for the auditor, neither a violation:**
 
-- **PE-1 is now proven, not claimed.** The live read is quoted in the P4 row
-  above: 35 keys, no concurrency token of any kind. Two documented traps were
-  corroborated by the same read and are worth carrying forward, because both are
-  things a later change could get wrong:
+- **PE-1 was already proven by task 0.2 on 2026-08-15**; the P4 row above adds a
+  re-check at v19.2.0, not a first proof. Two documented traps picked up **fresh
+  instances** from the same read — neither is a new finding, and both are recorded
+  here because they are things a later change could still get wrong:
   - **`executedAt` is set at creation, not at fill.** Every EXPIRED decision
     carries `executedAt` **equal to `createdAt`** and `entryFillPrice: null` —
     e.g. `f67c36af`, `executedAt` and `createdAt` both `05:19:37.725Z`, nothing

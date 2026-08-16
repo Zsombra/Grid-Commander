@@ -82,6 +82,47 @@ points at the real `grid_commander`, and the suite's own guard refuses. Overridi
 it would destroy a record BattleGrid cannot re-serve, because it serves current
 readings only. It needs a disposable database. `test:live` likewise not run.
 
+**Two live read-only checks at the end, and both were first written up as more
+than they were.** The operator caught it: *"I thought we already did this
+Vanguard thing. I proved it before and then ended it before."* They were right,
+twice.
+
+- **The expiry finding was already made.** `approvals-have-no-write-side.md`
+  established the mechanism, the ~15-minute window, `total: 12` EXPIRED on
+  Undertow, and the rate — *"roughly one unheld-coin ENTER per hour or two"* —
+  on 2026-08-15. It was written up here as *"a rate, where the prior evidence
+  was only a count"*, which is false: the prior record had both. What is
+  genuinely new is narrower and was kept: **Undertow and Breakwater are now
+  `FULL_EXECUTION`, so Vanguard is the account's only `APPROVAL_REQUIRED`
+  agent**, and 5 of its 7 lifetime ENTERs expired unanswered. That is the same
+  finding continuing on a new producer — confirmation, not evidence — and its
+  one operational use is naming the agent to watch when the live gate is
+  attempted. #304 was trimmed to say exactly that and to point at the prior
+  write-up rather than restate it.
+- **PE-1 was already discharged too**, by change task 0.2 on 2026-08-15: a
+  re-read of decision `6c11b3dc` returning 35 keys with no `revision`,
+  `version`, `updatedAt` or ETag. Today's read was written up as the first
+  proof and is not. It was re-scoped to what it actually is — **a version guard**:
+  0.2 ran at v19.1.0, #329 then found v19.2.0 had arrived unannounced, and the
+  same 35 keys with no concurrency token still hold at v19.2.0. Worth having in
+  a repo twice caught by a surface whose count and inputs held still while the
+  shape moved (#198, #301), but it is a re-check, not a finding.
+
+**"And then ended it before" is the other half, and it is a live constraint.**
+The write-side item instructs a ≤7-minute `list_pending_approvals` poll with the
+session kept idle; the decision log later says *"do not start a polling watch —
+the operator asked for none"*, and `cron-watches-need-an-idle-repl` records a
+Workflow having already cost one 15-minute observation window. The later
+instruction governs. **No watch was started this session**, and the gate check
+was a single read: nothing pending at the time, which is why 4.5 could not be
+attempted.
+
+Two corroborations from that read were kept because they are fresh instances of
+documented traps rather than new claims: `executedAt` is set at **creation**
+(every EXPIRED row carries `executedAt == createdAt` with `entryFillPrice:
+null`), and `expiresAt` **is rewritten on acceptance** — DL-1 retired its caveat
+on one instance, and there are now three.
+
 **Next**: **task 4.5 — and it cannot be done by an agent.** It is the change's
 gate: a cancel performed *through the product* and confirmed in the audit.
 Everything it needs is now built; what it needs from the operator is two things —

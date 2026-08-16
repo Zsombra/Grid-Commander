@@ -51,63 +51,29 @@ actively watching for exactly that row.
   covers approval-pending decisions or only executed trades is NOT DETERMINED**
   and is the first thing to establish.
 
-## Measured 2026-08-16 — it is not a risk, it is the majority outcome
+## 2026-08-16 — the producer changed; the finding did not
 
-Read live over the authenticated connector at v19.2.0. Read-only, no writes.
+**This item's case was already made.** `approvals-have-no-write-side.md`
+established the mechanism, the ~15-minute window, `total: 12` EXPIRED on
+Undertow, and the rate — *"roughly one unheld-coin ENTER per hour or two"* — on
+2026-08-15. None of that needs re-deriving, and a later reader should go there
+rather than here for it.
 
-**Vanguard is the account's only `APPROVAL_REQUIRED` agent** — Undertow and
-Breakwater are both `FULL_EXECUTION` — and it runs a **15-minute**
-`signalTimeoutMinutes`, the platform ceiling. Its whole decision history:
+**What has changed is who produces the rows.** Undertow is now
+`FULL_EXECUTION`; so is Breakwater. **Vanguard is the account's only
+`APPROVAL_REQUIRED` agent**, at the 15-minute ceiling, and it has taken over as
+the source of approval rows. Its whole history, read 2026-08-16:
 
 ```
 total decisions   37
-ENTER  -> EXPIRED  5
-ENTER  -> EXECUTED 2
+ENTER -> EXPIRED   5      (f67c36af, a0e4a5c9, d049533c, b1165d28, fb67f4a3)
+ENTER -> EXECUTED  2      (both accepted by hand at battlegrid.trade)
 ```
 
-**Five of its seven proposals expired unanswered. Two were accepted**, both by
-hand at battlegrid.trade. That is a **71% loss rate on everything the agent has
-ever proposed**, and it is the number this item was filed on a suspicion of.
-
-The five, with their windows — the pattern is the item's whole argument, visible
-in one night:
-
-```
-f67c36af  created 05:19:37Z  expired 05:34:53Z   AVAX LONG  conviction 0.55  R:R 3.0
-a0e4a5c9  created 04:01:25Z  expired 04:16:54Z   AVAX LONG  conviction 0.58  R:R 5.7
-d049533c  created 01:58:37Z  expired 02:13:53Z   AVAX LONG  conviction 0.55  R:R 3.7
-b1165d28  created 01:21:59Z  expired 01:37:23Z   AVAX LONG  conviction 0.55  R:R 3.5
-fb67f4a3  created 22:48:55Z  expired 22:59:54Z   AVAX LONG  conviction 0.55  R:R 5.7
-```
-
-Every one is an ENTER the agent reasoned its way to, sized, and set levels for.
-Every one died because nobody was looking within fifteen minutes. The agent is
-not idle and it is not failing — **it is proposing into silence roughly every
-hour or two**, and being answered about a third of the time.
-
-### What this does to the item
-
-- The original evidence was a **count** (12 EXPIRED on Undertow, before that
-  agent moved to `FULL_EXECUTION`). This is a **rate**, on the agent that is
-  actually in the mode, and a rate is what makes the case: the failure is not an
-  edge case, it is the default outcome.
-- **It also sets the bar for any notification design.** A mechanism that only
-  reaches somebody within fifteen minutes is worth building; one that does not
-  changes nothing. That rules out anything requiring the operator to already be
-  in the product, which is most of the cheap options.
-- `set_agent_per_trade_push` is still **NOT DETERMINED** on whether it covers
-  approval-pending decisions or only executed trades. It remains the first thing
-  to establish, and this measurement is the reason it is worth establishing.
-
-**Still blocked by** [[approvals-have-no-write-side]]. The queue now exists and
-cancelling works, so the "notifying someone about a decision they cannot answer"
-objection is close to discharged — but accepting is still unbuilt, and a
-notification that leads to a surface offering only *decline* would be worse than
-one that leads to both.
-
-**Found while finishing the UI for `the-approval-can-be-answered`**, checking
-whether that change's live gate (task 4.5) could be attempted. It could not —
-nothing was pending at the time of reading — and the same read produced this.
+Five of seven, on the new producer, in one night. That is the same finding
+continuing on a different agent — **confirmation, not new evidence** — and its
+only operational value is that it names Vanguard as the agent to watch when
+`the-approval-can-be-answered`'s live gate is attempted.
 
 ## Notes
 
