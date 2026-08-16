@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p3
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-16
 change: ""
 capability: signal-recording
 github: "282"
@@ -80,3 +80,65 @@ where triggered and signal_id like 'funding_extreme%' group by 1`), or when
 the operator picks a different first family. Suggested floor when wiring:
 a claim cites a figure only at n ≥ 30, floor stated beside the claim;
 below it the tier stays "no forward data".
+
+## Re-check 2026-08-16 — the tripwire has not fired, and the reason it will not is now measured
+
+Ran the item's own re-check query read-only against the live record. The
+recorder's `DATABASE_URL` was loaded by evaluating that one assignment line out
+of `record.ps1` rather than dot-sourcing it — the script ends by *starting a
+capture run*, so sourcing it to read the database would have written to the
+thing being measured.
+
+```
+funding_extreme_positive   2 triggered
+funding_extreme_negative   absent from the result — still never triggered
+funding_rate_flipping    157 triggered
+
+record: 1,641 captures, 2026-08-12T19:46Z -> 2026-08-16T14:31Z (3.78 days), 20 series
+```
+
+### The prediction held, and that is the finding
+
+| | 2026-08-15 | 2026-08-16 | delta |
+|---|---:|---:|---:|
+| captures | 1,203 | 1,641 | **+438 (+36%)** |
+| days of record | 2.61 | 3.78 | +1.17 |
+| `funding_rate_flipping` | 113 | 157 | +44 |
+| `funding_extreme_positive` | 2 | **2** | **0** |
+| `funding_extreme_negative` | 0 | **0** | **0** |
+
+The item argued that *"calendar depth alone will not fix this — the tripwire is
+trigger count, not date."* That was an inference from §D.6 when written. It is
+now a measurement: **the record grew by 36% and the extreme signals gained not
+one trigger between them**, while the non-extreme signal in the same family
+gained 44. The extremes are not slow to accumulate; in this funding regime they
+are not firing at all.
+
+### What this does to the item
+
+**Nothing changes about the decision** — the attachment stays unbuilt, for the
+same reason and now with better evidence for it. The tier-moving claims (C10's
+crowding-unwind thesis, Lepanto's ±0.06% fade, Cannae's `FUNDING_STRETCHED`)
+rest on n = 2 and n = 0, and a second measurement says waiting is not a strategy.
+
+**What it changes is the advice.** The re-check condition should not be read as
+"come back in a few days". Two re-checks 1.17 days apart both answer 2/0. A
+third at the same cadence is a read whose answer is on record — the same trap
+`market-grid-payloads-that-only-fill-once-someone-plays` (#104) documents about
+polling a listing that has never changed. **Re-check on a regime change, or on
+the operator naming a different first family**, not on a calendar.
+
+The `funding_rate_flipping` figure is the one that moved (113 -> 157), and it is
+still the wrong thing to wire: it attaches only to a minor allocation-2 build
+note, and at 113 its mean sat inside ~1 se of both zero and baseline. n growing
+to 157 does not change what it is attached to.
+
+### Carried to #85
+
+The record's depth is now **1,641 captures over 3.78 days at 1h across 20
+series**, up from the 1,203/2.61 figure quoted in
+[[the-stop-vs-noise-comparison-has-no-home]]. That item's live candidate — a
+locally measured single-step adverse move from the forward-return distribution —
+is not signal-conditioned, so it draws on the whole record rather than on one
+signal's triggers. **It is therefore not blocked by what blocks this item**, and
+its own depth gate is still owed against effective sample.
