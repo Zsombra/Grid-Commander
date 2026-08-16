@@ -67,6 +67,8 @@ export default async function LimitsPage({ params }: { params: Promise<{ id: str
           unbounded={budget.unbounded}
           warnings={budget.warnings}
           halted={budget.halted}
+          sizing={budget.sizing}
+          block={budget.block}
         />
       )}
 

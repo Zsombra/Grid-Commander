@@ -35,6 +35,31 @@ export interface Budget {
   readonly haltReason: string | null;
   readonly capitalAtRiskUsd: number | null;
   readonly headroomUsd: number | null;
+  /**
+   * What the platform says the current headroom authorizes.
+   *
+   * **Observed equal to `headroomUsd` on every reading so far** — 36.45/36.45
+   * on 2026-08-16 and 36.72/36.72 on the same agent later that day, at 4x
+   * leverage. An earlier draft of this comment asserted the two differ by the
+   * leverage term; the data does not support that, and the claim is withdrawn
+   * rather than kept as a plausible story.
+   *
+   * It is still carried separately, because the platform publishes it as its
+   * own field with its own meaning — *"the effective notional the current
+   * headroom authorizes"* — and equality on one account at one leverage is not
+   * identity. What this product must not do either way is **compute** it:
+   * whatever relationship holds, it is the platform's to state.
+   */
+  readonly effectiveNotionalUsd: number | null;
+  /**
+   * The platform's own words for why this agent's budget is blocked, and when
+   * it started. Null on both when nothing is blocked.
+   *
+   * The one place BattleGrid names a budget-side stop directly, rather than
+   * leaving it to be inferred from an agent that quietly stopped acting.
+   */
+  readonly blockedReason: string | null;
+  readonly blockedSince: Date | null;
 }
 
 /** A gauge with a ceiling can stop the agent. One without cannot. */
