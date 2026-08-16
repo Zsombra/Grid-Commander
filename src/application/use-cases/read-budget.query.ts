@@ -137,10 +137,20 @@ function sizingBase(budget: Budget): SizingBase | null {
     // two ways; the gauge is preferred because it is the figure the platform
     // resolved against this cap.
     committedUsd: gauge.used,
-    // Only meaningful under a configured ceiling: the platform sends 0 for
-    // remaining where nothing caps the agent, and 0 here reads as "about to
-    // stop" when it means "will never stop".
-    headroomUsd: configured ? (budget.headroomUsd ?? gauge.remaining) : null,
+    /*
+     * Only meaningful under a configured ceiling: the platform sends 0 for
+     * remaining where nothing caps the agent, and 0 here reads as "about to
+     * stop" when it means "will never stop".
+     *
+     * **No fallback to the gauge's own remainder.** It was written as
+     * `headroomUsd ?? gauge.remaining`, and both are the platform's figures so
+     * nothing was computed — but they are two different fields, and if they
+     * ever disagreed the surface would label one as the other with no
+     * indication. They were equal on the readings taken so far, which is the
+     * kind of coincidence this repo has twice been caught by. Absent stays
+     * absent, as it does for `authorizedNotionalUsd` on the next line.
+     */
+    headroomUsd: configured ? budget.headroomUsd : null,
     authorizedNotionalUsd: configured ? budget.effectiveNotionalUsd : null,
   };
 }

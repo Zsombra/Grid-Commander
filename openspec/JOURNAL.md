@@ -87,11 +87,83 @@ Gates on this tree: `tsc` clean, `lint` clean, **2708 tests across 212 files**,
 `npm run test:db` **not run and not claimed** — it truncates the signal record
 and `DATABASE_URL` here is not disposable.
 
-**Next**: `the-cap-shows-what-is-left` wants `/verify` then `/archive`. And
-`the-approval-can-be-answered` task **4.5 is still the gate and still needs a
-person** — a Vanguard proposal caught inside its fifteen minutes, with
-fund-committing authority granted at `/approvals/authority`. Nothing was pending
-at either check today.
+**Verified and archived the same session, and the verifier earned its keep on
+its own author's work.** Three warnings, no criticals, and two were worth fixing
+before the merge rather than filing:
+
+1. **A delta scenario asserted something the implementation cannot do** — *"the
+   other **ceilings** on the surface are still shown"* when the budget read
+   fails. The ceilings come from that same read; when it fails they are replaced
+   by `WhyNotLoaded`. What survives is the other **sections**. The behaviour was
+   right and the requirement text was wrong — and the archiver merges delta text
+   into `openspec/specs/`, so a false clause there would have outlived the
+   change. Corrected before applying; the source of truth now carries the true
+   wording.
+2. **A silent substitution between two platform fields** — `headroomUsd ??
+   gauge.remaining`. Both are the platform's, so nothing was computed, but a
+   disagreement between them would have shown one labelled as the other. They
+   were equal on every reading taken, which is the coincidence this repo has
+   twice been caught by. Fallback removed; absent stays absent, as it already
+   did on the line below.
+3. An error scenario covered at query level and structurally but not at render
+   level — a rendering test added.
+
+Merged as 3 ADDED requirements into `agent-understanding`; no removals, no
+renames. **#299 stays open with `change:` cleared** — the second time it has
+made that move, and for the same reason: it was filed for more than one piece of
+work, and the `minEquityUsd` floor test and the `accountEquityUsd: 0` anomaly are
+still nobody else's.
+
+**Close-out check found one thing, and it was a claim to narrow rather than a
+finding to file.** `#324` says the merge trap fires on *"every merge"*. Three
+merges today: **#329 fired it** (worktree-held branch, `--delete-branch`
+reported success, the remote branch survived), **#332 and #333 did not** —
+those branches lived in the **main checkout**, where `gh` switches away and
+deletes cleanly. The item's own title already said *worktree-held*; the body
+overstated it. Narrowed, with the mitigation named: work the branch from the
+main checkout. The post-merge `git ls-remote` check is still owed either way,
+because the merge output does not say which checkout held the branch.
+
+**Three near-duplicates in one session is the pattern worth carrying forward.**
+The Vanguard expiry rate, PE-1, and this — each was already in the record, and
+each was nearly written up as new. Two reached the operator before being caught.
+The habit that fixes it is cheap: grep `openspec/backlog/` and this file before
+writing an observation up, then write only the delta.
+
+**The close-out itself surfaced a new P2, and the handoff skill surfaced it by
+failing.** Its Context block reported **28 open items, 19/40, and
+`a-pruned-worktree-is-an-ignored-directory` as an open P2** — an item this
+session watched close. Every pipeline skill's Context block is gathered in
+whichever checkout the session was launched from; this one ran from a worktree
+pinned at `339a087` while all work happened in the main checkout, so `/propose`,
+`/verify`, the verifier and `/handoff` each planned against stale numbers that
+read exactly like current ones. Filed as
+[[skill-context-probes-read-a-stale-worktree]] (**#335**, p2, harness-integrity)
+with all four instances tabulated.
+
+**It is not #325.** That one is a worktree that lost its `.git`; its guard,
+`tools/assert_checkout.py`, would **pass** in this session and the Context block
+would still be wrong. Nothing was built on the stale numbers only because every
+block was ignored and the board re-read from the main checkout — four times, by
+noticing.
+
+**Next**: two lanes, and they need different things.
+
+1. **`the-approval-can-be-answered` task 4.5 — the gate.** Needs a *person* and
+   luck: a Vanguard proposal caught inside its fifteen minutes, wager authority
+   granted at `/approvals/authority`, one cancel performed through the product.
+   Nothing was pending at either check today. Section 5 stays unbuilt until it
+   passes, and a rendering test enforces that.
+2. **The backlog — start with #335**, the item this close-out filed. It is P2,
+   unblocked, needs no live account, is self-contained harness work, and it
+   protects every future session from planning against a stale board. The other
+   two P2s both wait on observation: #304 is blocked by the change above, and
+   #299's remaining threads (`minEquityUsd: 33.333333`, `accountEquityUsd: 0`)
+   need rows the platform has not produced.
+
+**Watch out**: read `git show origin/main:openspec/JOURNAL.md` and re-run
+`board` **from the main checkout** before trusting any figure in a skill's
+Context block — including this entry's, if you are reading it from a worktree.
 
 ## 2026-08-16 (approvals) — the write path reaches the UI, and stops where a person is needed
 
