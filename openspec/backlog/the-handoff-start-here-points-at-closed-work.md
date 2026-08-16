@@ -81,3 +81,46 @@ against `openspec/backlog/` and `gh issue view`.
 Same family as [[the-mirror-is-checked-one-way]] and
 [[a-restyle-acceptance-can-pin-content-and-rot]]: **records pinned to a moment,
 with nothing to tell them the moment passed.**
+
+## Measured again 2026-08-16 — it rotted inside a day, and option 1 is taken
+
+This item records that Start Here was repaired on 2026-08-16 and that *"the
+mechanism that let it rot is untouched"*. **The mechanism was then measured, by
+accident, in the very next session.** By the close of that session the freshly
+repaired section was stale on five counts:
+
+| the repaired text said | reality, same day |
+|---|---|
+| `/propose` #299's standard half — the named next action | **shipped** (`the-cap-shows-what-is-left`, archived) and **#299 closed** |
+| "30 open items" | **28** |
+| "two p2" | **one** — #299 closed |
+| "`the-approval-can-be-answered` at 19/40" | **33/40** |
+| "PR #329 is open and mergeable" | **merged** |
+| "the mirror is clean, 30 items to 30 issues" | 272 items to 148 issues |
+
+**So repairing prose that has no producer buys about twenty-four hours.** That is
+the strongest evidence this item could get, and it did not need a special audit —
+one ordinary session produced it.
+
+### Option 1 taken: the section no longer carries state
+
+Start Here now leads with **"Run `/board`"** and states no counts, no progress
+figures, no PR status and no item totals. What it keeps is the part that has no
+producer and does not rot on its own: what the leg left, which of it needs the
+operator rather than a session, and which open questions are decisions rather
+than edits.
+
+The rule the section now states about itself: **if a producer exists, point at
+it; only write down what no command can print.**
+
+This is option 1 of the three this item lists, and the measurement above is the
+argument for it over options 2 and 3 — a regenerated block and a staleness check
+both keep the section in the business of carrying state, which is the thing that
+failed twice in four days.
+
+### What stays open
+
+The `### Everything below this line is a dated snapshot` fence below it is
+untouched and still correct — it is explicitly not instructions, and its value is
+its reasoning. Whether that fenced snapshot should eventually be deleted rather
+than fenced is a separate question nobody has asked.

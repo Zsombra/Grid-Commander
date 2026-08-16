@@ -542,23 +542,39 @@ are their own gate, opt-in on **`CI_LIVE=1`**, serial, about nine minutes —
 until 2026-08-10 this instruction fired all thirty in parallel at the real
 account; see the journal entry for that day.
 
-### The current thread (2026-08-16, close of the lane leg)
+### The current thread (2026-08-16, close of the backlog leg)
 
-**`/propose` #299's standard half** — render `headroomUsd` and
-`effectiveNotionalUsd` on the limits surface so it can answer *"why did my agent
-stop?"*. Today's live measurement turned that from a derivation problem into a
-rendering one: `get_agent_budget` already publishes both, plus `blockedReason`
-and four resolved gauges, on a call the product already makes. It still adds
-behaviour and still needs a delta spec.
+**No counts live in this section any more, deliberately — see #322.** The
+2026-08-13 text was audited and repaired on 2026-08-16, and **it was stale again
+within a day**: by the close of the next session its named next action was done,
+its item count was wrong, its active-change progress was wrong, and the PR it
+called open was merged. Repairing prose that has no producer buys about
+twenty-four hours. So what used to be a state block is now one line:
 
-**State**: 30 open items, **two p2** (above). One active change,
-`the-approval-can-be-answered` at 19/40 — untouched today and still the board's
-`NEXT`. **PR #329 is open and mergeable** with the whole lane leg in it. The
-mirror is clean both directions, 30 items to 30 issues.
+**Run `/board`.** It prints the live counts, the active change and its progress,
+and the `NEXT:` line. Nothing here restates them.
 
-**Read `git show origin/main:openspec/JOURNAL.md`, never the local copy**, before
-trusting any `Next` written here — parallel sessions make it stale before it
-lands. That instruction has now been vindicated twice.
+**What this leg left, in order:**
+
+1. **Two things need the operator, not a session.**
+   `the-approval-can-be-answered`'s live gate (task 4.5) needs a real decision
+   waiting *and* explicit authorization to answer one through the product —
+   `list_pending_approvals` was empty when last read, so it is doubly blocked.
+   And the **ten probe agents on the account** can only be removed in
+   BattleGrid's own UI; nothing on the 114 tools deletes an agent (#201).
+2. **#306 is the other operator-gated one**: nine live write probes have never
+   run against v19, and running them needs a keyed environment *and* a
+   go-ahead. One of its named risks is now covered from the read side — the
+   preview fix is exercised live at v19.2.0 — but `apply_strategy_plan` and
+   `compile_strategy_plan` remain unobserved.
+3. **Two open decisions, both filed and both cheap once decided**: #322 (this
+   section's own mechanism) and #320 (whether a restyle ticket's acceptance may
+   pin content). Neither is an edit.
+
+**Before trusting any `Next` written anywhere**, read
+`git show origin/main:openspec/JOURNAL.md` rather than the local copy —
+parallel sessions make a written `Next` stale before it lands. That instruction
+has now been vindicated three times.
 
 ### Everything below this line is a dated snapshot, not instructions
 
