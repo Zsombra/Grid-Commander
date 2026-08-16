@@ -1,5 +1,67 @@
 # Journal
 
+## 2026-08-17 (accept) — section 5 built, on a gate that had just been earned
+
+**Did**: built 5.2–5.5 of `the-approval-can-be-answered`, which the audited
+cancel unblocked hours earlier. **39/40.** The only task left is **7.4**, the
+live accept — real money, and a separate authorisation.
+
+**One read, two mints.** `describeDecisionAnswer` took a `verb` and now takes
+`verbs`, returning one `DecisionAnswerOffer` per verb from a **single** platform
+read. Two calls would have meant two reads: the levels rendered from one and the
+accept token bound to the other's. They agree in practice — a PENDING decision's
+levels do not move — and *"agree in practice"* is the reasoning this repository
+keeps getting caught by.
+
+**5.3 is both-or-neither, and the ordering is part of it.** `offered` keeps only
+verbs that minted, and the block draws only when every requested verb did, so an
+accept can never stand alone — that is the arrangement the gate exists to
+prevent. Cancel renders first: the money-moving verb is never nearest the
+reasoning nor where a hurried click lands.
+
+**5.5 came free, and deliberately so.** Both verbs share one
+`answerDecision(verb, formData)` behind thin wrappers, so a refused accept takes
+the identical path a refused cancel does. Two copies would have been two places
+for the binding, the refusal handling and the scope redirect to drift — and the
+one that drifted would be the one nobody exercised, since **only cancel has ever
+been run live.**
+
+**Three architecture guards fired, and all three were right.**
+
+- `wager.test.ts` reads raw text with no comment stripping, so a doc comment
+  naming the cancel tool outside the adapter was a real offence. Reworded.
+- `a-form-sends-what-its-action-reads` and `reachability` both broke on
+  `action={ternary}` — the resolvers look for a literal binding. Split into two
+  sections with literal actions, which is clearer anyway.
+- Then `a-form-sends-what-its-action-reads` broke again because the six hidden
+  inputs had been extracted into a shared child, **where the guard cannot see
+  them**. Inlined back, duplicated across both forms, with the reason written at
+  the call site. A form that renders its fields and submits nothing is
+  indistinguishable from a working one; satisfying that guard by hiding from it
+  would be the defect it exists for.
+
+**A test was moved rather than deleted.** `renders no accept control anywhere`
+pinned the pre-gate state and is now false by design. It is replaced by *"offers
+accept only alongside cancel, never alone"*, *"offers neither when the connection
+cannot answer"*, and *"names no amount on the accept, only the proportion"* —
+PE-2 on the surface where it matters most. Deleting it would have left the
+arrangement the gate prevents checked by nothing.
+
+**5.4 was already satisfied and is now confirmed rather than assumed**: a
+no-longer-answerable decision never reaches the answer surface at all, so accept
+changed nothing about it.
+
+**State**: 2715/2715 across 212 files, `tsc` and `lint` clean, `validate --all`
+0 errors, `approvals-decision` re-pinned in prose as well as digest (its
+`cancel-form` component is now `answer-forms`).
+
+**Next**: 7.4 only — accept one real decision live, which needs the operator and
+real money. Everything else in the change is done.
+
+**Watch out**: the accept success note claims nothing about size or fill. The
+port returns `void` and the command echoes nothing from the platform (4.6), so
+the surface has no outcome to report and must not invent one.
+
 ## 2026-08-17 (decisions) — three taken, one refused by the surface it was for
 
 **Did**: the operator picked four items off the decision list. **Three landed;

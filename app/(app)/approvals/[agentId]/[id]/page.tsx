@@ -3,7 +3,7 @@ import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { CarriedProblem } from '@/presentation/components/carried-problem.js';
 import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
-import { cancelDecision } from './actions.js';
+import { acceptDecision, cancelDecision } from './actions.js';
 
 /**
  * One proposed trade, and the answer that can be given to it.
@@ -57,7 +57,10 @@ export default async function DecisionPage({
     ...user.authority,
     agentId,
     decisionId: id,
-    verb: 'cancel',
+    // Cancel first, and that ordering is the render order (5.3): the harmless
+    // answer is the one nearest the reasoning, and accept is never the default
+    // thing a hurried click lands on.
+    verbs: ['cancel', 'accept'],
     mintConfirmation: authority.kind === 'held',
   });
 
@@ -100,6 +103,17 @@ export default async function DecisionPage({
 
   const { description } = result;
   const d = description.decision;
+  /*
+   * Every offer that carries a spendable agreement.
+   *
+   * Narrowed here rather than at each render site so the null check happens
+   * once and the type carries the result. `answers` and `offered` differing in
+   * length is the only signal the page needs: it means at least one verb could
+   * not be minted, and 5.3 says the answer surface is then not drawn at all.
+   */
+  const offered = description.answers.flatMap((a) =>
+    a.confirmationToken === null ? [] : [{ ...a, confirmationToken: a.confirmationToken }],
+  );
   const what = [d.direction, d.coinTicker].filter((p) => p !== null && p !== '').join(' ');
 
   return (
@@ -131,23 +145,22 @@ export default async function DecisionPage({
 
       {/*
         No token, no control — and the two conditions are checked together
-        rather than one standing in for the other. `confirmationToken` is null
-        exactly when authority is absent, but writing `?? ''` to satisfy the
-        compiler would coerce a missing agreement into an empty one and render a
-        form that could only ever be refused. `concurrency.test.ts` catches that
-        shape, and it is right to: an identifier defaulted into existence is how
-        a confirmation stops meaning anything.
+        rather than one standing in for the other. A token is null exactly when
+        authority is absent, but writing `?? ''` to satisfy the compiler would
+        coerce a missing agreement into an empty one and render a form that
+        could only ever be refused. `concurrency.test.ts` catches that shape,
+        and it is right to: an identifier defaulted into existence is how a
+        confirmation stops meaning anything.
+
+        **Both answers or neither (5.3).** `offered` keeps only the verbs that
+        actually minted, and the block renders only when *every* verb did. An
+        accept standing alone would be a surface where the sole available
+        answer spends money — the exact arrangement the gate exists to prevent.
       */}
-      {authority.kind === 'absent' || description.confirmationToken === null ? (
+      {authority.kind === 'absent' || offered.length !== description.answers.length ? (
         <StepUpBlock back={`/approvals/${agentId}/${id}`} />
       ) : (
-        <CancelForm
-          agentId={agentId}
-          decisionId={d.id}
-          consequence={description.consequence}
-          confirmationToken={description.confirmationToken}
-          shown={description.shown}
-        />
+        <AnswerForms agentId={agentId} decisionId={d.id} offers={offered} shown={description.shown} />
       )}
     </Shell>
   );
@@ -205,57 +218,97 @@ function StepUpBlock({ back }: { back: string }) {
 }
 
 /**
- * The one answer this product can currently give.
+ * Both answers, each behind its own agreement.
  *
- * Takes a non-null token by type, which is what lets the caller decide by
+ * Takes non-null tokens by type, which is what lets the caller decide by
  * rendering rather than by disabling: no agreement, no form.
+ *
+ * **The two are separate forms, never one form with two buttons.** A shared
+ * form would carry one `confirmationToken`, and the token's target names the
+ * verb first precisely so a decline can never be spent opening a position —
+ * one form would hand that guarantee back. Two forms, two tokens, two targets.
+ *
+ * **The six hidden fields are written twice on purpose.** They were briefly
+ * extracted into a shared child, and
+ * `a-form-sends-what-its-action-reads.test.ts` failed: it reads each form's own
+ * JSX for the fields its action requires, so extraction moved them where the
+ * guard cannot see and turned a checked pair into an unchecked one. That guard
+ * exists because a form which renders its fields and submits nothing is
+ * indistinguishable from a working one, and satisfying it by hiding from it
+ * would be the defect it was written for. Six duplicated lines is the cheaper
+ * of the two costs.
+ *
+ * **No amount appears on the accept, and none may be added (PE-2).** The
+ * platform computes no size until the decision is accepted, so any figure would
+ * be this product's arithmetic wearing the platform's authority, on a
+ * confirmation, about money. Worse than imprecise: the decision row carries no
+ * leverage either, so the proportion is not even sufficient to derive an amount
+ * from — see #305. The proportion is what the platform sent and it is what is
+ * said.
  */
-function CancelForm({
+function AnswerForms({
   agentId,
   decisionId,
-  consequence,
-  confirmationToken,
+  offers,
   shown,
 }: {
   agentId: string;
   decisionId: string;
-  consequence: string;
-  confirmationToken: string;
+  offers: readonly { verb: 'accept' | 'cancel'; consequence: string; confirmationToken: string }[];
   shown: { entryPrice: number | null; stopLoss: number | null; takeProfit: number | null };
 }) {
   return (
-    <section className="space-y-2">
-      <h2 className="text-base font-medium text-text-primary">Cancel this proposal</h2>
-      {/* The product's own consequence sentence, unchanged, in the same
-          consequence role every other confirmation uses. DT-0007. */}
-      <p className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary">
-        {consequence}
-      </p>
-      <form action={cancelDecision} className="space-y-2">
-        <input type="hidden" name="agentId" value={agentId} />
-        <input type="hidden" name="decisionId" value={decisionId} />
-        <input type="hidden" name="confirmationToken" value={confirmationToken} />
-        {/* The three levels as they were rendered, carried into the perform.
-            The binding compares these against a fresh read — re-deriving them
-            there would compare the platform against itself and always agree. A
-            tampered value fails the recomputed target. */}
-        <input type="hidden" name="entryPrice" value={String(shown.entryPrice ?? '')} />
-        <input type="hidden" name="stopLoss" value={String(shown.stopLoss ?? '')} />
-        <input type="hidden" name="takeProfit" value={String(shown.takeProfit ?? '')} />
-        <PerformButton pendingLabel="Cancelling…">
-          Cancel this proposal — the agent will not offer it again
-        </PerformButton>
-      </form>
-      {/*
-        Accepting is not offered anywhere in the product yet. Said plainly
-        rather than left as a missing button, because an operator who came here
-        to accept needs to know why they cannot, and where they still can.
-      */}
-      <p className="text-sm text-text-secondary">
-        Accepting a proposed trade is not yet available in Grid-Commander. Until it is,
-        accepting happens on <span className="font-mono">battlegrid.trade</span>.
-      </p>
-    </section>
+    <>
+      {offers.map((offer) =>
+        offer.verb === 'cancel' ? (
+          <section key="cancel" className="space-y-2">
+            <h2 className="text-base font-medium text-text-primary">Cancel this proposal</h2>
+            {/* The product's own consequence sentence, unchanged, in the same
+                consequence role every other confirmation uses. DT-0007. */}
+            <p className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary">
+              {offer.consequence}
+            </p>
+            <form action={cancelDecision} className="space-y-2">
+              <input type="hidden" name="agentId" value={agentId} />
+              <input type="hidden" name="decisionId" value={decisionId} />
+              <input type="hidden" name="confirmationToken" value={offer.confirmationToken} />
+              {/* The three levels as they were rendered, carried into the perform.
+                  The binding compares these against a fresh read — re-deriving them
+                  there would compare the platform against itself and always agree.
+                  A tampered value fails the recomputed target. */}
+              <input type="hidden" name="entryPrice" value={String(shown.entryPrice ?? '')} />
+              <input type="hidden" name="stopLoss" value={String(shown.stopLoss ?? '')} />
+              <input type="hidden" name="takeProfit" value={String(shown.takeProfit ?? '')} />
+              <PerformButton pendingLabel="Cancelling…">
+                Cancel this proposal — the agent will not offer it again
+              </PerformButton>
+            </form>
+          </section>
+        ) : (
+          <section key="accept" className="space-y-2">
+            <h2 className="text-base font-medium text-text-primary">Accept this proposal</h2>
+            <p className="rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary">
+              {offer.consequence}
+            </p>
+            <form action={acceptDecision} className="space-y-2">
+              <input type="hidden" name="agentId" value={agentId} />
+              <input type="hidden" name="decisionId" value={decisionId} />
+              <input type="hidden" name="confirmationToken" value={offer.confirmationToken} />
+              {/* The three levels as they were rendered, carried into the perform.
+                  The binding compares these against a fresh read — re-deriving them
+                  there would compare the platform against itself and always agree.
+                  A tampered value fails the recomputed target. */}
+              <input type="hidden" name="entryPrice" value={String(shown.entryPrice ?? '')} />
+              <input type="hidden" name="stopLoss" value={String(shown.stopLoss ?? '')} />
+              <input type="hidden" name="takeProfit" value={String(shown.takeProfit ?? '')} />
+              <PerformButton pendingLabel="Opening the position…">
+                Accept — open this position with real money
+              </PerformButton>
+            </form>
+          </section>
+        ),
+      )}
+    </>
   );
 }
 

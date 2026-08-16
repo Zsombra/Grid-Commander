@@ -142,15 +142,47 @@ describe('one decision, and the answer that can be given to it', () => {
    * is not begun until a cancel has been performed through the product and
    * confirmed in the audit (DL-11), so no surface may reach accept.
    */
-  it('renders no accept control anywhere, with authority or without', async () => {
+  /**
+   * Replaces `renders no accept control anywhere`, which pinned the state
+   * before the Phase D gate was crossed on 2026-08-17. Accept now renders — the
+   * rule that survives is 5.3: **never where cancel is unavailable.**
+   *
+   * The assertion is not dropped, it is moved to the rule that still holds.
+   * Deleting it would leave the arrangement the gate exists to prevent — a
+   * surface whose only available answer spends money — checked by nothing.
+   */
+  it('offers accept only alongside cancel, never alone', async () => {
     world([waiting()], ['mcp:read', 'mcp:wager']);
-    const withAuthority = await decisionPage();
-    expect(withAuthority).not.toMatch(/Accept this|Accept and|>\s*Accept\s*</);
+    const t = await decisionPage();
 
-    vi.resetModules();
+    expect(t, 'accept is offered once the connection may answer').toMatch(/Accept this proposal/);
+    expect(t, 'and cancel is offered beside it').toMatch(/Cancel this proposal/);
+    // The money-moving verb is never the one nearest the reasoning.
+    expect(t.indexOf('Cancel this proposal')).toBeLessThan(t.indexOf('Accept this proposal'));
+  });
+
+  it('offers neither when the connection cannot answer', async () => {
     world([waiting()], ['mcp:read']);
-    const without = await decisionPage();
-    expect(without).not.toMatch(/Accept this|Accept and|>\s*Accept\s*</);
+    const t = await decisionPage();
+
+    expect(t).not.toMatch(/Accept this proposal/);
+    expect(t).not.toMatch(/Cancel this proposal/);
+  });
+
+  /**
+   * PE-2, on the surface that matters most. The platform computes no size until
+   * the decision is accepted, and the decision row carries no leverage either
+   * (#305), so the proportion is not merely imprecise — it is insufficient to
+   * derive an amount from. A currency figure here would be this product's
+   * arithmetic wearing the platform's authority, on a confirmation, about money.
+   */
+  it('names no amount on the accept, only the proportion', async () => {
+    world([waiting()], ['mcp:read', 'mcp:wager']);
+    const t = await decisionPage();
+
+    const accept = t.slice(t.indexOf('Accept this proposal'));
+    expect(accept).toMatch(/real position/);
+    expect(accept, 'no currency figure may appear').not.toMatch(/[$£€]\s*\d/);
   });
 
   it('offers cancel, naming what is lost, when the connection may answer', async () => {

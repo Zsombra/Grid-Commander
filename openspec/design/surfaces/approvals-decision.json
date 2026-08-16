@@ -70,7 +70,7 @@
         "levels",
         "proportion",
         "reasoning",
-        "cancel-form",
+        "answer-forms",
         "step-up-block",
         "expired-notice",
         "why-not-loaded"
@@ -136,9 +136,9 @@
       "children": []
     },
     {
-      "id": "cancel-form",
+      "id": "answer-forms",
       "role": "action",
-      "purpose": "Cancel the proposal, after stating what that costs and what it forecloses.",
+      "purpose": "Both answers to the proposal, each after stating what it costs. Cancel first; accept only ever beside it.",
       "states": [
         "default",
         "hover",
@@ -151,16 +151,21 @@
       "actions": [
         {
           "id": "cancel",
-          "effect": "POSTs cancelDecision with the agent id, decision id, confirmation token and the three levels as shown; success lands on /approvals with a note, a refusal returns here with ?problem=, a lost authority lands on /approvals/authority"
+          "effect": "POSTs cancelDecision with the agent id, decision id, its own cancel-scoped confirmation token and the three levels as shown; success lands on /approvals with a note, a refusal returns here with ?problem=, a lost authority lands on /approvals/authority"
+        },
+        {
+          "id": "accept",
+          "effect": "POSTs acceptDecision with the same payload but an accept-scoped token; opens a real position. Success says BattleGrid was asked to open it and that the size and fill are on the agent’s positions, never in the answer — the ack echoes nothing. Refusal and authority paths are identical to cancel, because both verbs share one implementation."
         }
       ],
-      "current_implementation": "The consequence block (consequence tokens, the DT-0007 role) carrying the sentence stored on the token, then a form with five hidden inputs and one `<PerformButton>` labelled 'Cancel this proposal — the agent will not offer it again'. A secondary sentence below states that accepting is not yet available and still happens on battlegrid.trade.",
+      "current_implementation": "Two sections, cancel then accept, each a consequence block (consequence tokens, the DT-0007 role) carrying the sentence stored on that verb’s token, then its own <form> with six hidden inputs and one <PerformButton> — “Cancel this proposal — the agent will not offer it again” and “Accept — open this position with real money”. Built 2026-08-17, after the Phase D gate was crossed by an audited cancel; before that the section carried a sentence saying accepting was unavailable.",
       "constraints": [
-        "Rendered only when authority is held **and** a confirmation token exists. No `?? ''` fallback: tests/agent/concurrency.test.ts forbids defaulting an identifier into existence, and an empty token would render a form that could only ever be refused.",
-        "The three level inputs carry what was shown. The confirmation target is recomputed from them, so a tampered hidden field fails the binding rather than passing it.",
-        "One submit path only, and no retry control on a refusal — the state moved, and a one-click retry invites spending an agreement against a world that has changed.",
-        "Cancel is destructive per the platform's own annotation and is treated as such, but it is not styled as danger: it commits no money, and reserving danger for spending keeps the distinction legible when accept eventually exists.",
-        "Styling goes through BUTTON_PRIMARY in control.ts; 44px minimum tap target; focus ring is global."
+        "Rendered only when authority is held **and** every requested verb minted a token. No `?? ''` fallback: tests/agent/concurrency.test.ts forbids defaulting an identifier into existence, and an empty token would render a form that could only ever be refused.",
+        "**Both answers or neither, and cancel first.** An accept standing alone would be a surface whose only available answer spends money — the arrangement the gate exists to prevent. The order is part of the rule: the money-moving verb is never nearest the reasoning, nor where a hurried click lands. Asserted by “offers accept only alongside cancel, never alone”.",
+        "**Two forms, never one with two buttons.** The confirmation target names the verb first so a decline can never be spent opening a position; a shared form would carry one token and hand that guarantee back.",
+        "**The six hidden inputs are duplicated across the two forms on purpose.** Extracting them into a shared child moved them where a-form-sends-what-its-action-reads.test.ts cannot see, turning a checked pair into an unchecked one. Six repeated lines is the cheaper cost.",
+        "**No currency figure on the accept (PE-2).** The platform sizes only at acceptance, and the decision row carries no leverage either (#305), so the proportion is not sufficient to derive an amount from. Asserted by “names no amount on the accept, only the proportion”.",
+        "The three level inputs carry what was shown. The confirmation target is recomputed from them, so a tampered hidden field fails the binding rather than passing it."
       ],
       "children": []
     },
@@ -308,8 +313,8 @@
     "notes": "The problem banner carries role=alert. Focus ring is global (focus-visible, 2px). Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
   },
   "source_digest": {
-    "app/(app)/approvals/[agentId]/[id]/actions.ts": "sha256:d5eb9c8e01990cdfe4b06e8d995755cf79349a39a8cc879f5550e5b88bb45672",
-    "app/(app)/approvals/[agentId]/[id]/page.tsx": "sha256:69a9647eee49132915961e5d21695553aba5136c6d375edb00b4ecc8e1ebd6d7",
+    "app/(app)/approvals/[agentId]/[id]/actions.ts": "sha256:9b5dd6c6ccd65ccc31046f6573694303bdfc60434c1be6b4b351fdd1faa1ee18",
+    "app/(app)/approvals/[agentId]/[id]/page.tsx": "sha256:52daecd3229c045a330476bb12e4d08e7aadf654cae4f5ef57dddbef2c7f420e",
     "src/presentation/answer-refusal.ts": "sha256:c76f4b03a1cb775c5d70bb518c9c26192bb086654d30e7e3f1716a992454c26d",
     "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
     "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",

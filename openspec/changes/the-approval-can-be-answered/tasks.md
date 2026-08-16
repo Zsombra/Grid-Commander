@@ -181,20 +181,63 @@
 
 ## 5. Accept — only after the gate
 
-> **GATE CROSSED IN THE LETTER, HELD IN THE INTENT — see DL-11.** 5.1 was
-> implemented alongside cancel, because DL-3 had already settled that answering
-> is one verb-parameterised operation and splitting it into two port methods
-> would have been artificial. **No operator can accept**: 5.2 and 5.3 are not
-> built, so there is no surface that reaches it. The gate's purpose — that
-> nobody can accept before cancel is proven through the product — holds.
+> **GATE CROSSED IN FACT, 2026-08-17.** 5.1 was implemented ahead of it (DL-11)
+> because DL-3 had settled that answering is one verb-parameterised operation.
+> The rest of section 5 was built only after 4.5 passed — a real decision
+> cancelled through the product, with an audited row proving it. The accept
+> surface now exists and 5.3 is what keeps it honest: it is drawn only beside
+> cancel, never alone.
 
 - [x] 5.1 **DONE AHEAD OF THE GATE (DL-11)** — `accept_entry_decision` in the
       adapter, behind the same binding, audit and scope guard as cancel.
-- [ ] 5.2 Accept confirmation: coin, direction, the three levels, the proportion
-      committed, and a plain statement that a position opens with real money.
-- [ ] 5.3 Accept is not rendered on any surface where cancel is unavailable.
-- [ ] 5.4 Expired-first path — told it expired and no position opened.
-- [ ] 5.5 Report the platform's own reason on a refused accept.
+- [x] 5.2 **DONE.** The accept confirmation carries the coin and direction in
+      its heading, the three levels in the shared `<dl>` above it, and
+      `describeAnswer('accept', …)`'s sentence: *"Opens a real position: SHORT
+      AVAX, staking 12% of the agent's available funds. This spends your money at
+      BattleGrid immediately, and the size is set by the platform at the moment
+      you confirm."*
+
+      **No currency figure, and none may be added (PE-2).** The platform computes
+      no size until acceptance — and #305 sharpened why that is not merely a
+      rounding problem: the decision row carries **no leverage field**, so the
+      proportion is not even sufficient to derive an amount from. A figure here
+      would be this product's arithmetic wearing the platform's authority, on a
+      confirmation, about money. Asserted by *"names no amount on the accept,
+      only the proportion"*.
+
+- [x] 5.3 **DONE, as both-or-neither.** `offered` keeps only the verbs that
+      minted a spendable agreement, and the answer block renders only when every
+      requested verb did — so an accept can never stand alone. Cancel renders
+      first, deliberately: the money-moving verb is never the one nearest the
+      reasoning or the one a hurried click lands on. Two tests: *"offers accept
+      only alongside cancel, never alone"* (which also asserts the ordering) and
+      *"offers neither when the connection cannot answer"*.
+
+      **These replace `renders no accept control anywhere`**, which pinned the
+      pre-gate state. The assertion was moved to the rule that still holds rather
+      than deleted — dropping it would have left the arrangement the gate exists
+      to prevent checked by nothing.
+
+- [x] 5.4 **DONE — already satisfied, now confirmed rather than assumed.** A
+      decision that is no longer answerable never reaches the answer surface:
+      `describeDecisionAnswer` returns `no-longer-answerable` and the page
+      renders `ExpiredNotice`, which says the window closed on its own and that
+      *"Nothing was cancelled and nothing was bought — no answer was ever sent."*
+      Covered by the `EXPIRED` case in `approvals.test.ts` asserting
+      `/expired unanswered/i`. Accept changed nothing here, because the branch
+      runs before any verb is offered.
+
+- [x] 5.5 **DONE — by construction, and that is the point.** Accept and cancel
+      share one implementation: `answerDecision(verb, formData)`, with the thin
+      exported wrappers `acceptDecision` / `cancelDecision`. So a refused accept
+      takes the identical path a refused cancel does and reports the platform's
+      own reason through `explainAnswerRefusal(result.refusal)`, landing back on
+      the decision with `?problem=`. `ConfirmationRequiredError` and
+      `ScopeUnavailableError` are handled once, for both verbs.
+
+      Two copies would have been two places for the binding, the refusal
+      handling and the scope redirect to drift — and the one that drifted would
+      be the one nobody exercised, since only cancel has ever been run live.
 
 ## 6. Retire the disclosure
 
