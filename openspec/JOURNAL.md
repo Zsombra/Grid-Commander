@@ -47,15 +47,20 @@ worked on its first live use: 114 tools unchanged, **1 output schema changed, 7
 leaves added, 0 removed**, all on `get_account_state`. All three records were
 brought to 19.2.0.
 
-**#198's gap is still open, and that is the sharpest finding of the day.**
-Before the refresh the three records read `surface 19.2.0`,
-`vocabulary 19.1.0`, `capabilities 19.1.0` — and
-`tests/live/surface-freshness.test.ts`, whose header calls it *"the only check
-in the repository that can discover a BattleGrid deployment"*, **passed all 23
-assertions.** It reads two of the three records and never opens the one holding
-every output schema. Filed p2 as `the-capability-record-has-no-freshness-guard`
-(#328); the cheapest answer is offline and needs no key — assert that all three
-records carry the same version as each other.
+**A finding was filed and withdrawn the same day, and the withdrawal is the
+more useful entry.** Mid-session the three records read `surface 19.2.0`,
+`vocabulary 19.1.0`, `capabilities 19.1.0`, and that was filed p2 as
+`the-capability-record-has-no-freshness-guard` (#328) on the claim that nothing
+compares the capability record. **The claim was false.**
+`tests/architecture/surface-freshness.test.ts` already carries `agrees on which
+server, across all of them` — a sweep over every committed record — plus a
+sibling that names all three files so none drops out silently. At `HEAD~1` all
+three read `19.1.0`, in agreement. **The divergence was self-inflicted**:
+`probe_mcp_surface.py` refreshes the surface record alone, and the half-finished
+refresh was read as a pre-existing defect. Withdrawn, item `done`, issue closed
+with the reasoning. The lesson recorded there: check whether a guard exists
+before filing that it does not, and distrust a defect found immediately after
+running a tool that mutates what is being measured.
 
 **Eight of nine write paths ran against v19.2.0, seven green.** apply, restore,
 retune, recorder, custom-table, proposal and write all passed;
@@ -84,11 +89,11 @@ down, recorded on #201.
 and `cli-spawn` fail identically at HEAD with a clean tree, verified by stashing
 and re-running. `validate --all` is 0 errors, 15 warnings throughout.
 
-**Next**: `the-capability-record-has-no-freshness-guard` (#328) — the offline
-half is small, needs no key, and catches the divergence that actually occurred.
-Then `radar-probe` needs a `finally` before #306 can finish. The three P2s from
-the audit are unchanged and each is an afternoon: #299's copy half, #325's
-worktree preflight, and the notification shape behind #304.
+**Next**: the three P2s from the audit, each an afternoon — #299's copy half
+(one hint string on a money control that states the wrong unit, now measured),
+#325's worktree preflight, and the notification shape behind #304. Then
+`radar-probe` needs a `finally` before #306 can finish. **Not** #328, which was
+withdrawn the same day it was filed; the guard it asked for already exists.
 
 ## 2026-08-16 (reconcile) — three PRs blocked on one file, and the branch that kept nothing
 
