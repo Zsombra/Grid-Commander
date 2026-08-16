@@ -2,11 +2,11 @@
 id: a-pruned-worktree-is-an-ignored-directory
 title: A worktree that loses its .git becomes an ignored directory, and git commands inside it silently answer for main
 type: risk
-status: open
+status: in-progress
 priority: p2
 created: 2026-08-16
 updated: 2026-08-16
-change: ""
+change: a-session-knows-which-checkout-it-is-in
 capability: harness-integrity
 github: "325"
 blocked_by: []
