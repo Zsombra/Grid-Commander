@@ -236,7 +236,7 @@
     "app/connect/page.tsx": "sha256:5b56be07c173db06436adede1b207cc483013371d3b504e6e7eec19c076125e5",
     "src/application/use-cases/describe-grant.query.ts": "sha256:243fb14462428141517b2c606f07830627299f25909afb4ef0994c1ddb3b3b13",
     "src/presentation/components/consent-summary.tsx": "sha256:137b5f60c14e6b5d3e8490e1f7f53e05c0712652d886694b242e81d2ccaa8039",
-    "src/presentation/components/control.ts": "sha256:a472a7adb9acc1bec37f50bf08f01718d62bc544274606e4b68daae361cea1ec",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
     "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67",
     "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa"
   }

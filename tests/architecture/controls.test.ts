@@ -112,9 +112,6 @@ describe('the treatment itself is made of tokens', () => {
     expect(CONTROL).toMatch(/\btext-text-\w+/);
   });
 
-  it('uses the focus token that nothing used', () => {
-    expect(CONTROL).toMatch(/ring-focus/);
-  });
 
   it('tints the checkbox with the accent token, and nothing else', () => {
     // `accent-color` is the whole treatment (DT-0015): the native box already
@@ -124,11 +121,38 @@ describe('the treatment itself is made of tokens', () => {
     expect(CHECKBOX).not.toMatch(/\bbg-|\bborder-|\bappearance-none\b/);
   });
 
-  it('rings only on keyboard focus', () => {
+  /*
+   * These two replace `uses the focus token that nothing used` and `rings only
+   * on keyboard focus`, which asserted `CONTROL` carried its own
+   * `focus-visible:ring-2 ring-focus`. It did, and that was the defect (#338):
+   * the `outline-none` beside it switched off the global rule for all 71 places
+   * `CONTROL` is used, so a focused input wore a different indicator from a
+   * focused link — against `system.json`'s own principle, *"a visible focus
+   * state at 2px offset"*, which a Tailwind ring has no offset for, and against
+   * nineteen surface manifests asserting the ring is global.
+   *
+   * The assertion is not dropped, it is **moved to where the behaviour now
+   * lives**. Deleting it would leave the nineteen manifest claims checked by
+   * nothing, which is how they came to be false in the first place.
+   */
+  it('carries no focus treatment of its own — the global rule owns it', () => {
+    expect(CONTROL).not.toMatch(/focus-visible:/);
+    expect(CONTROL).not.toMatch(/\bring-/);
+    expect(CONTROL).not.toMatch(/\boutline-/);
+  });
+
+  it('and the global rule draws it, on keyboard focus only, at 2px offset', () => {
+    // Read from the stylesheet rather than restated here: a constant in this
+    // file could agree with itself while `globals.css` said something else,
+    // which is the shape of the defect this pair replaces.
+    const css = readFileSync(join('app', 'globals.css'), 'utf8');
+    const rule = css.slice(css.indexOf(':focus-visible'));
+    expect(rule, 'the global focus rule must exist').toContain(':focus-visible');
+    expect(rule).toMatch(/outline:\s*2px/);
+    expect(rule).toMatch(/outline-offset:\s*2px/);
     // `focus:` would draw a ring on every mouse click — noise for one user and
-    // the only signal for another.
-    expect(CONTROL).toMatch(/focus-visible:/);
-    expect(CONTROL).not.toMatch(/(^|\s)focus:(?!visible)/);
+    // the only signal for another. The global rule must be keyboard-only too.
+    expect(css).not.toMatch(/(^|[^-])\bfocus:(?!visible)/m);
   });
 
   it('sets the control text weight rather than inheriting it', () => {

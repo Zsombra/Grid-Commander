@@ -2,7 +2,7 @@
 id: the-focus-ring-is-not-one-rule
 title: A shared control constant disables the global focus ring and draws its own
 type: bug
-status: open
+status: done
 priority: p3
 created: 2026-08-16
 updated: 2026-08-16
@@ -81,3 +81,49 @@ claim repeated in nineteen manifests that the code contradicts.
   to give that token a first consumer rather than to change the treatment.
 - Whichever wins, **the nineteen manifest claims need to match it afterwards**.
   Fixing the code and leaving the prose is the failure #318 exists to catch.
+
+## Fixed 2026-08-17 — the global rule wins
+
+`CONTROL` drops all three focus utilities. Inputs, selects and textareas now
+wear the same indicator as links and buttons.
+
+**The design system decided this, not me.** `openspec/design/system.json`'s
+principle reads *"Every interactive element has a visible focus state at 2px
+offset."* The global rule is `outline: 2px` with `outline-offset: 2px`. A
+Tailwind `ring-2` has **no offset** — so the override was not a second way of
+saying the same thing, it was the one treatment on the product that did not meet
+the stated principle. That settles the "genuinely open" question in the Notes.
+
+**The `focus` token is not orphaned.** `globals.css:20` reads it as
+`var(--gc-focus)`. The original comment's reasoning — that the token *"was
+referenced by nothing until now"*, which is why the override existed — was
+mistaken about the global rule already consuming it. Corrected at the call site.
+
+### The assertions moved rather than went
+
+Two tests in `controls.test.ts` pinned the override. Deleting them would have
+left the nineteen manifest claims checked by nothing, which is how they came to
+be false. They are replaced by:
+
+- `carries no focus treatment of its own — the global rule owns it`
+- `and the global rule draws it, on keyboard focus only, at 2px offset`, which
+  **reads `app/globals.css`** rather than restating it, so a constant in the
+  test file cannot agree with itself while the stylesheet says otherwise.
+
+Confirmed non-vacuous: restoring the three utilities fails the first one.
+
+### A defect caught while writing those tests, worth recording
+
+The first version of those regexes went through a shell heredoc, where `\b`
+collapsed and Python emitted **three literal 0x08 bytes**. `/\x08ring-/` matches
+nothing, so two `.not.toMatch` assertions were **vacuously true and passing** —
+a green test checking nothing, in the very change whose subject is a claim
+nothing checked. Found by byte-inspecting the file, repaired from `chr(92)` in a
+script written to disk rather than piped.
+
+### Shipped as `one-focus-ring` (lite, archived)
+
+21 surface manifests re-pinned for `control.ts`, digest only — no manifest
+describes the override (`ring-2` appears in none of them), so the nineteen claims
+are *repaired* by this rather than falsified. Gates: `tsc` clean, `lint` clean,
+**2713/2713 across 212 files**.
