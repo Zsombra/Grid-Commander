@@ -13,18 +13,26 @@ import { acceptDecision, cancelDecision } from './actions.js';
  * read taken while somebody is actually looking. A consequence computed when the
  * agent proposed the trade would be a claim about a world that has since moved.
  *
- * ## Why there is no accept button here
+ * ## Why accept is drawn only beside cancel
  *
- * **The change's own gate.** `tasks.md` section 4 requires a cancel performed
- * *through the product* and confirmed in the audit before any accept surface is
- * written; DL-11 records that the accept port method was implemented early and
- * that the gate's purpose — nobody accepts before the shared machinery is proven
- * on the path that commits nothing — holds only because no surface reaches it.
- * This is that surface, and it deliberately reaches cancel alone.
+ * The requirement is "Accept SHALL NOT be offered on a surface where cancel is
+ * unavailable", and this surface satisfies it twice over: the two verbs are
+ * requested together in one list, and when authority is absent **neither** is
+ * drawn. There is no state in which accept appears alone.
  *
- * The requirement "Accept SHALL NOT be offered on a surface where cancel is
- * unavailable" is satisfied in the strong direction: neither is offered when
- * authority is absent, and accept is offered nowhere at all yet.
+ * The order is the render order. Cancel is first because it is the harmless
+ * answer and the one nearest the reasoning; accept is never the default thing a
+ * hurried click lands on.
+ *
+ * **History, because the sequence is the point.** `tasks.md` section 4 required
+ * a cancel performed *through the product* and confirmed in the audit before any
+ * accept surface was written — DL-11 records that the accept port method was
+ * implemented early, and that the gate held only because no surface reached it.
+ * For that window this file said "there is no accept button here" and meant it.
+ * The gate was crossed on 2026-08-17 (4.4 and 4.5 passed, a real decision
+ * cancelled through the product with its audit row), section 5 was built, and
+ * 7.4 accepted a real decision. That sentence stayed here after it stopped being
+ * true and was corrected by the verifier pass on the same change.
  *
  * ## Why absent authority removes the control instead of disabling it
  *

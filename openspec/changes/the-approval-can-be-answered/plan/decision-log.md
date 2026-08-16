@@ -322,6 +322,51 @@ and stands.
 
 ---
 
+## DL-18 — The replacement copy carried the falsehood the retirement removed
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Correction found by the verifier pass |
+| Decision | `money-limits.tsx` copy rewritten to name both answers; two stale docstrings corrected; `tests/architecture/answering-is-not-disclaimed.test.ts` added so the class cannot recur |
+| Impacted files | `src/presentation/components/money-limits.tsx`, `app/(app)/approvals/[agentId]/[id]/page.tsx`, `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Reason | The surface rendered *"Accepting is not yet available here and still happens on battlegrid.trade"* — false since 5.2, and actively sending operators off the product for something it does, on the money surface, the day after 7.4 accepted a real decision through it. **DL-16 is why this survived.** Task 6.2 swept *other* surfaces for the *old* disclosure and correctly found none; nobody swept the **replacement copy this change had just written**, which was true when 6.1 wrote it and false eight tasks later. The retired requirement existed precisely to stop a disclosure outliving its truth, and its own replacement did it |
+| Approved by | Executor, on the verifier's CRITICAL |
+| Next action | Auditor: the guard is a **transcription** check and is labelled weak in the file. It catches the phrasings a human writes for an unready capability; it cannot catch a novel sentence meaning the same thing, and it deliberately leaves *"you do not have permission"* sayable, that being true and different |
+
+---
+
+## DL-19 — The binding's one door is now held shut by a test
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Guard added for an unenforced invariant |
+| Decision | `answerEntryDecision` may be named only in the command, the port interface and the adapter, asserted in `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Impacted files | `tests/architecture/answering-is-not-disclaimed.test.ts` |
+| Reason | `answer-decision.command.ts:16-20` claims the binding check *"cannot be skipped by a caller, because the port method is not reachable from anywhere else in the application layer"*. True when written, enforced by nothing. It matters more than an ordinary convention because the second layer is **inert on accept**: `call-path.ts:71` gates the confirmation consume on `cls.destructive`, and BattleGrid annotates `accept_entry_decision` `destructiveHint: false`, so the token is passed and never spent (**#340**). Cancel is gated; the money-committing verb is not. On the accept path this convention was the only thing left |
+| Approved by | Executor, on the verifier's WARNING |
+| Next action | **This does not fix #340** and must not be read as doing so. It closes the bypass route; the inverted annotation, the unspent token and the audit row reading `destructive: false` on a position-opening write are still open there |
+
+---
+
+## DL-20 — A surface constraint forbade the control the change had just shipped
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **VERIFICATION** |
+| Type | Correction found while re-pinning manifests |
+| Decision | `approvals-decision.constraints[0]` inverted; `agent-new`'s implementation prose corrected; four manifests re-pinned in **prose and digest** |
+| Impacted files | `openspec/design/surfaces/approvals-decision.json`, `agent-new.json`, `agent-edit.json`, `agent-reactivate-confirm.json` |
+| Reason | The constraint read ***"Accept is rendered nowhere, with authority or without — a design must not add one, and the sentence naming battlegrid.trade as where accepting happens is what stands in its place."*** True for the window between 4.5 and 5.2, false afterwards, and **a constraint rather than a description**: a design round reading it would have been instructed to remove a live money control and restore the disclaimer. `agent-new` carried the milder version, describing the note as saying accepting was unbuilt. Both were found only because editing the two source files staled four manifests and `validate` named them |
+| Approved by | Executor, following DL-16's rule |
+| Next action | Auditor: this is the **third** instance in one change of a record outliving the thing it described — DL-16 (two surfaces), DL-18 (the replacement copy and its test), DL-20 (a constraint and a manifest). The pattern is that each was written true and none had a producer that would revisit it; the copy half now has `answering-is-not-disclaimed.test.ts`, and manifest prose still has none |
+
+---
+
 ## Where a fresh session picks this up
 
 **Read first**: this log top to bottom, then

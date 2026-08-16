@@ -1,5 +1,79 @@
 # Journal
 
+## 2026-08-17 (verify) — the retirement's own replacement carried the falsehood
+
+**Did**: verified `the-approval-can-be-answered` (40/40), found **1 critical and
+2 warnings**, fixed all three, and added the guard. Ready for the auditor.
+
+**The critical one is the change's own defect class, committed by the change.**
+`money-limits.tsx` rendered *"Accepting is not yet available here and still
+happens on battlegrid.trade"* — false since section 5, and pointing operators off
+the product for something the product does, on the money surface, the day after
+7.4 accepted a real decision through it. The requirement retired by this change,
+*An Unanswerable Trading Mode Says So*, was retired **on the grounds that the
+disclosure would become false once answering was built**. Its replacement then
+said the same thing in narrower words.
+
+**DL-16 is why it survived, and the miss is precise.** Task 6.2 swept *other*
+surfaces for the *old* disclosure and correctly found none. Nobody swept the
+**replacement copy this change had just written** — true when 6.1 wrote it, false
+eight tasks later.
+
+**A test was holding it in place.** `money-limits.test.ts` asserted
+`/[Aa]ccepting is not yet\s+available/` and `battlegrid.trade`, under a docstring
+saying *"accepting is still unbuilt"*. It had already been rewritten once for the
+same reason and went on passing after accept shipped. It was made
+whitespace-tolerant *"because the sentence wraps across lines"* — which is also
+exactly why a line-based grep for the claim found nothing, and why reading the
+file rather than grepping it is what found it. **A test that pins copy pins it
+whether or not it is still true.**
+
+**Two warnings, both stale claims about the code's own shape.** The decision
+page's docstring still headed itself *"Why there is no accept button here"* and
+said the surface *"deliberately reaches cancel alone"*, twelve lines above
+`verbs: ['cancel', 'accept']`. And `answer-decision.command.ts:16-20` claimed the
+binding *"cannot be skipped by a caller, because the port method is not reachable
+from anywhere else"* — true, and enforced by nothing.
+
+**That second one matters more than it reads**, because the layer meant to catch
+a bypass is inert on the verb that spends money: `call-path.ts:71` gates the
+confirmation consume on `cls.destructive`, and BattleGrid annotates
+`accept_entry_decision` `destructiveHint: false` (**#340**). Cancel is gated;
+accept is not. The unenforced convention was the only thing left on that path.
+
+**`answering-is-not-disclaimed.test.ts` holds both**, and both halves were proven
+against the defect rather than assumed:
+
+```
+false copy restored        -> 2 failed   (go-elsewhere, not-available-yet)
+second unbound caller added -> 1 failed  (reachability)
+both restored               -> 7 passed
+```
+
+The copy half is labelled **weak** in the file: it catches the phrasings a human
+writes for an unready capability, cannot catch a novel sentence meaning the same,
+and deliberately leaves *"you do not have permission"* sayable — true, and a
+different statement. Comments are stripped before scanning, so `money-limits.tsx`
+may quote the retired sentence to record why it is gone; the same reasoning as
+the PE-2 scan, and the local strip carries its own it-kept-the-copy assertion so
+an over-broad strip cannot make the negatives vacuous.
+
+**Recorded as DL-18 and DL-19.** DL-19 says explicitly that it does **not** fix
+#340 — it closes the bypass route; the inverted annotation, the unspent token and
+the audit row reading `destructive: false` on a position-opening write stay open
+there.
+
+**Gates**: `tsc` clean · `lint` clean · **2716/2722**, the 6 failures being the
+documented baseline (`cli-spawn` 2, `live-probes-are-named` 4, confirmed by
+running both files alone) · `validate` clean · `mirror` clean.
+
+**Not verified in a browser.** The copy renders on the agent create/edit form,
+which needs a live connection to reach; the assertion is a source-reading test,
+as it was before.
+
+**Next**: the auditor, then archive — that is what closes #101. Then #340.
+
+
 ## 2026-08-17 (triage, second leg) — the session-start view could not see an unmerged session
 
 **Did**: found and fixed the thing that caused this morning's near-duplication,
