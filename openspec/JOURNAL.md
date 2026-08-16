@@ -95,6 +95,15 @@ and — struck the same day — clearing the ten residue agents,
 which the operator confirmed **cannot be deleted on BattleGrid's platform
 either**. #201's count is permanent and can only rise.
 
+*(Addendum, after the leg closed — an operator correction worth its own line.*
+*__Agents cannot be deleted on BattleGrid's platform either__, only archived. So*
+*`capabilities.canDelete: true` is answered by nothing in any client, and the*
+*`findings-agents` F-1 reading of it — a first-party capability MCP merely lacks*
+*— is wrong. The consequence for #201 is that its residue is __permanent and*
+*monotonic__: the tripwire is not the cheapest of four responses but the only*
+*one, and its threshold is a floor that can never be lowered. Struck in six*
+*places that had asserted the "ask the operator to clear them in the UI" route.)*
+
 **Watch out**: a fresh worktree needs `npm ci` before its test count means
 anything — six failures there are an install, not a regression — and check
 `node_modules` is not a reparse point first, because `npm ci` on a junction
