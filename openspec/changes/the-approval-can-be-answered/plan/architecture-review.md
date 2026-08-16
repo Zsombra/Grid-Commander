@@ -58,7 +58,7 @@ audit repository are **extended, not replaced** (DL-4).
 
 | # | Check | Evidence | Status |
 |---|---|---|---|
-| 1 | ~~Every mutation carries `expectedRevision`~~ **EXCEPTED** — the platform publishes no revision on a decision. Auditor must confirm the limitation is real | PE-1 stands. Re-confirmed in this session by reading the port type: `EntryDecision` carries 35 fields and none is a concurrency token. **Auditor: verify against a live re-read, not against this row** | ☑ |
+| 1 | ~~Every mutation carries `expectedRevision`~~ **EXCEPTED** — the platform publishes no revision on a decision. Auditor must confirm the limitation is real | **PE-1 discharged against the live platform, 2026-08-16, at v19.2.0.** `list_entry_decisions` read for Vanguard returned decisions carrying **35 keys**, and none of them is `revision`, `version`, `updatedAt` or an ETag. The full key set: `id, signalLogId, agentId, userId, coinTicker, decision, direction, conviction, convictionPercent, entryPrice, stopLoss, takeProfit, positionSizePct, positionSizePreset, reasoning, signalChecklist, signalModulesUsed, timeHorizon, riskRewardRatio, status, executedOrderId, stopLossOrderId, takeProfitOrderId, llmDurationMs, usageEventId, createdAt, expiresAt, executedAt, entryFillPrice, entryFillQuantity, entryFee, closedAt, atrPct, tradeStatus, challenge`. This was the auditor's own check and it is now performed rather than inherited — the limitation is real, not convenient | ☑ |
 | 1a | Substitute in force: all five of `entryPrice`, `stopLoss`, `takeProfit`, `status === "PENDING"`, `closedAt === null` verified on one re-read immediately before the write | `checkAnswerable` verifies all five against one re-read taken in `AnswerDecisionCommand` immediately before the port call. `pending-decision.test.ts` (22) + `answer-decision.test.ts` cover each refusal cause | ☑ |
 | 2 | A refused binding is reported to the user, naming what moved | `explainAnswerRefusal` names the field, the shown value and the current value; the decision page renders it through `CarriedProblem` (role=alert). Asserted in `answer-authority.test.ts` | ☑ |
 | 3 | **No automatic retry** — NOT excepted, holds absolutely | No retry exists on any path. A refusal redirects to a freshly described decision and offers no one-click retry — recorded as a constraint on the decision manifest | ☑ |
@@ -121,10 +121,20 @@ audit repository are **extended, not replaced** (DL-4).
 
 **Two policy notes for the auditor, neither a violation:**
 
-- **PE-1 is claimed, not proven, by this document.** The auditor's own checklist
-  requires re-reading a live decision and confirming no revision field exists.
-  That check has not been performed in this session and should not be inherited
-  from these rows.
+- **PE-1 is now proven, not claimed.** The live read is quoted in the P4 row
+  above: 35 keys, no concurrency token of any kind. Two documented traps were
+  corroborated by the same read and are worth carrying forward, because both are
+  things a later change could get wrong:
+  - **`executedAt` is set at creation, not at fill.** Every EXPIRED decision
+    carries `executedAt` **equal to `createdAt`** and `entryFillPrice: null` —
+    e.g. `f67c36af`, `executedAt` and `createdAt` both `05:19:37.725Z`, nothing
+    ever executed. Rendering it as "when the trade opened" would put a fill time
+    on a trade that never happened.
+  - **`expiresAt` is rewritten on acceptance**, confirming the caveat DL-1
+    retired. `ec5d1d33` was created `18:05:54` with a 15-minute window and reads
+    `expiresAt 18:34:00` — exactly `executedAt` + 15 min. `9ea95de6` reproduces
+    it: created `23:02:43`, `executedAt 23:15:03`, `expiresAt 23:30:03`. **N is
+    now 2**, not 1, and the levels stay in the binding.
 - **The Phase D gate has not been crossed.** Section 5 is unbuilt and
   `tests/rendering/approvals.test.ts` asserts that no accept control is rendered
   on either authority branch. The git history shows cancel built first, as DL-6
