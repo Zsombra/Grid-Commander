@@ -129,6 +129,7 @@ describe('R2 — a connection is removed', () => {
       actor: 'user',
       tool: 'create_intelligence_agent',
       destructive: false,
+      platformDestructiveHint: null,
       idempotencyKey: null,
     });
     await record.complete(id, 'succeeded');

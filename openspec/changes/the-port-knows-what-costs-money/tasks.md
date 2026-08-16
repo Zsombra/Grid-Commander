@@ -97,12 +97,12 @@
 
 ## 6. The audit says what we did
 
-- [ ] 6.1 A money-committing write records **both** the platform's claim and this
+- [x] 6.1 A money-committing write records **both** the platform's claim and this
       product's judgement, as separate facts.
-- [ ] 6.2 The badge renders **ours**, because it is presented as our statement
+- [x] 6.2 The badge renders **ours**, because it is presented as our statement
       about what we did to someone's account.
-- [ ] 6.3 Existing rows are **not** rewritten. An audit you edit is not an audit.
-- [ ] 6.4 `audit-list.tsx` renders the change without claiming anything about
+- [x] 6.3 Existing rows are **not** rewritten. An audit you edit is not an audit.
+- [x] 6.4 `audit-list.tsx` renders the change without claiming anything about
       rows written before it.
 
 ## 7. Live

@@ -37,6 +37,7 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
         actor: entry.actor,
         tool: entry.tool,
         destructive: entry.destructive,
+        platformDestructiveHint: entry.platformDestructiveHint,
         outcome: 'attempted' satisfies AuditOutcome,
         createdAt: this.clock.now(),
         idempotencyKey: entry.idempotencyKey,
@@ -142,6 +143,10 @@ function toDomain(row: typeof auditEntries.$inferSelect): AuditEntry {
     // `attempted` — the honest unknown — rather than as a success.
     outcome: row.outcome === 'succeeded' || row.outcome === 'failed' ? row.outcome : 'attempted',
     destructive: row.destructive,
+    // `null` stays `null`. A row from before the column existed did not claim
+    // the platform agreed — it recorded nothing, and coercing it to false here
+    // would manufacture evidence.
+    platformDestructiveHint: row.platformDestructiveHint,
     createdAt: row.createdAt,
     completedAt: row.completedAt,
     failureReason: row.failureReason,

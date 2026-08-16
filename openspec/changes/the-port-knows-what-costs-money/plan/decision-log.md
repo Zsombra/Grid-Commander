@@ -155,6 +155,36 @@ one. The auditor reads this for decision-log parity.
 
 ---
 
+## DE-5 — EXECUTION: null means "not recorded", and that is what separates the eras
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Implementation of PD-4 |
+| Decision | `platform_destructive_hint boolean` — **nullable, not defaulted**. Migration `0005_volatile_zombie.sql`, one `ADD COLUMN`, no data touched |
+| Impacted files | `audit-entry.ts`, `audit-repository.ts`, `db/schema/index.ts`, `drizzle-audit-repository.ts`, `call-path.ts`, `audit-list.tsx`, `drizzle/migrations/0005_*` |
+| Reason | A default would have invented an answer for every historical row. Leaving it null makes the two eras tellable apart **without rewriting anything**, which is PD-4's whole point: rows before today recorded nothing about the platform's opinion, and a null must never be read as agreement. The read path passes it through unchanged rather than coercing to false — coercion would manufacture evidence |
+| Approved by | Executor, on PD-4 |
+| Next action | The surface draws the disagreement only when the platform positively said `false` against our `true`. A null draws nothing and the row makes no claim about what the platform thought |
+
+---
+
+## DE-6 — EXECUTION: the compiler found every writer, which is why the field is required
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Note for the auditor |
+| Decision | `NewAuditEntry.platformDestructiveHint` is **required**, not optional |
+| Impacted files | `audit-repository.ts`, and 5 test files the compiler named |
+| Reason | Optional would have let a future writer omit the fact and record nothing without noticing — the same silence this change exists to remove. Required means `tsc` names every construction site: 17 across 5 files, all fixtures, all set to `null` because a fake has no platform claim to report. The one production writer is `call-path.ts`, which sets it from the classification |
+| Approved by | Executor |
+| Next action | `npm run test:db` green at **96/96** against `grid_commander_test` with the column in place |
+
+---
+
 ## Scope boundaries
 
 **In**: the classification, the two port gates, the audit's content, the tests

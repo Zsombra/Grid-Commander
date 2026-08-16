@@ -66,6 +66,7 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
       actor: entry.actor,
       tool: entry.tool,
       destructive: entry.destructive,
+      platformDestructiveHint: null,
       outcome: 'attempted',
       createdAt: this.clock.now(),
       completedAt: null,

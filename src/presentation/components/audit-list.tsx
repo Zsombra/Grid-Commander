@@ -56,8 +56,27 @@ export function AuditList({
                   <code>{e.tool}</code>
                   {/* Colour is never the only signal — the word is there too.
                       The chip wears the consequence role: destructive-ness is
-                      blast radius (DT-0012). */}
+                      blast radius (DT-0012).
+
+                      The chip states **this product's** judgement. Until
+                      2026-08-17 it stated BattleGrid's, which called the one
+                      write that opens a real position harmless (#340). */}
                   {e.destructive && <span className="ml-2 rounded-gc-2 border border-consequence-border bg-consequence-subtle px-1">destructive</span>}
+                  {/* Where the platform disagreed, say so rather than resolving
+                      it silently — the disagreement is the evidence.
+
+                      `null` means the claim was not recorded, which is every
+                      row written before the column existed. It is **not** read
+                      as agreement: nothing is drawn, and the row makes no
+                      statement about what the platform thought. */}
+                  {e.destructive && e.platformDestructiveHint === false && (
+                    <span
+                      className="ml-2 text-sm text-text-secondary"
+                      title="BattleGrid annotates this tool as not destructive. Grid-Commander classifies it as committing funds, and the chip states our judgement."
+                    >
+                      (platform says otherwise)
+                    </span>
+                  )}
                 </td>
                 <td className="py-2 pr-4">
                   {/*

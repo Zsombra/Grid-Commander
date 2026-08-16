@@ -78,6 +78,7 @@ describe('journal_is_not_the_audit_log', () => {
       actor: 'user',
       tool: 'update_intelligence_agent',
       destructive: false,
+      platformDestructiveHint: null,
       idempotencyKey: null,
     });
     await record.complete(id, 'succeeded');

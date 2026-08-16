@@ -63,6 +63,12 @@ export const auditEntries = pgTable(
     actor: text('actor').notNull().default('user'),
     tool: text('tool').notNull(),
     destructive: boolean('destructive').notNull(),
+    // The platform's own claim about the same operation, kept as evidence
+    // rather than obeyed. Nullable and NOT defaulted: rows written before
+    // 2026-08-17 have no answer here, and a default would invent one. A null
+    // means "not recorded", never "false" — which is what makes the two eras
+    // tellable apart without rewriting history (#340, PD-4).
+    platformDestructiveHint: boolean('platform_destructive_hint'),
     // attempted | succeeded | failed. There is no 'unknown': 'attempted' IS
     // the unknown state, and reading it that way is the point.
     outcome: text('outcome').notNull(),

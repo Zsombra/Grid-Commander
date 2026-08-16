@@ -17,6 +17,7 @@ const attempt = (over: Partial<NewAuditEntry> = {}): NewAuditEntry => ({
   actor: 'user',
   tool: 'create_intelligence_agent',
   destructive: false,
+  platformDestructiveHint: null,
   idempotencyKey: null,
   ...over,
 });
