@@ -114,6 +114,22 @@ made that move, and for the same reason: it was filed for more than one piece of
 work, and the `minEquityUsd` floor test and the `accountEquityUsd: 0` anomaly are
 still nobody else's.
 
+**Close-out check found one thing, and it was a claim to narrow rather than a
+finding to file.** `#324` says the merge trap fires on *"every merge"*. Three
+merges today: **#329 fired it** (worktree-held branch, `--delete-branch`
+reported success, the remote branch survived), **#332 and #333 did not** —
+those branches lived in the **main checkout**, where `gh` switches away and
+deletes cleanly. The item's own title already said *worktree-held*; the body
+overstated it. Narrowed, with the mitigation named: work the branch from the
+main checkout. The post-merge `git ls-remote` check is still owed either way,
+because the merge output does not say which checkout held the branch.
+
+**Three near-duplicates in one session is the pattern worth carrying forward.**
+The Vanguard expiry rate, PE-1, and this — each was already in the record, and
+each was nearly written up as new. Two reached the operator before being caught.
+The habit that fixes it is cheap: grep `openspec/backlog/` and this file before
+writing an observation up, then write only the delta.
+
 **Next**: **`the-approval-can-be-answered` task 4.5 — the gate, and the only
 thing left that needs a person.** A Vanguard proposal caught inside its fifteen
 minutes, with fund-committing authority granted at `/approvals/authority`.
