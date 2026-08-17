@@ -1,5 +1,48 @@
 # Journal
 
+## 2026-08-17 (close-out) — two changes landed, one is one operator-click from done
+
+**Did**: archived `the-approval-can-be-answered` (**#101 closed**, on a live
+accept). Shipped `the-board-can-say-what-it-is-waiting-for` (#309 closed, #342
+filed-and-fixed): `blocked_by` gained `upstream:`/`external:`/`operator:`, and
+`/board` now runs `mirror` and `gh pr list`. Proposed, planned and executed
+`the-port-knows-what-costs-money` to **32/36** (#340). Filed **#340**, **#342**,
+**#344**, **#345**; reopened **#340** after a merge auto-closed it. Merged PRs
+**#339**, **#341**, **#343**.
+
+**State**: one active change, `the-port-knows-what-costs-money`, 32/36 on
+`claude/confirmation-keyed-to-consequence` — pushed, **no PR**, tree clean.
+`validate --all` 0/15/10 · `mirror` clean · suite **2732/2738** (documented
+six-failure baseline) · `test:db` 96/96 on `grid_commander_test`. 25 open items,
+4 blocked, 2 P2s free (#304, #335). Nothing scheduled, nothing serving, no
+`.env.local` here.
+
+**Next**: `/board`, then **task 7.2 — the operator accepts one real decision
+through the product**. It is the only blocker. Then 7.1 (needs a key), 8.2, the
+auditor, `/archive` — which closes #340.
+
+**Watch out**:
+- **The session opened by nearly rebuilding 31 merged commits.** Nine `mirror`
+  rows read as rot; they were **#339 sitting unmerged**. Fixed at the source —
+  `/board` now shows in-flight PRs and `mirror` names a same-day close cluster —
+  but the habit matters more than the tool: `gh pr list` and `git log --all`
+  before believing any count.
+- **A negated closing verb still closes an issue.** *"DL-19 states it does NOT
+  fix #340"* auto-closed #340 on merge. GitHub matches `fix #340` and never sees
+  the negation. Put the number first: `#340 is not fixed here`.
+- **I asserted something false in the production gate and had to withdraw it** —
+  that the wager step-up fires. It does not; no known tool required wager
+  authority at the port. I had seen the correct reading during the verifier pass
+  and dismissed it as a test artifact. Corrected on #340, in the archived gate
+  tracker, and as DL-19a.
+- **A test can be correct about an input production never produces.**
+  `answer-authority.test.ts` hand-built a wager classification and passed for
+  four months while the guard it proved was never reached. Harder to spot than a
+  vacuous assertion, and the reason #340 survived.
+- **`test:db` truncates.** `grid_commander_test` only — never `grid_commander`,
+  which holds 144,732 signal readings BattleGrid cannot re-serve.
+
+
 ## 2026-08-17 (execute) — both gates fire, and one blocker is left
 
 **Did**: executed `the-port-knows-what-costs-money` sections 0–6 and 8.1.
