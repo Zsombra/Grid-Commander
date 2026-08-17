@@ -9,6 +9,8 @@ import { DeclaredScopes } from '@/domain/connection/held-scopes.js';
 import { REQUESTED_SCOPES, STEP_UP_SCOPES } from '@/domain/connection/scope.js';
 import { ScopeUnavailableError } from '@/domain/errors.js';
 import { beginGuardedCall } from '@/infrastructure/battlegrid/call-path.js';
+import { buildClassificationMap } from '@/domain/capability/classify.js';
+import { declaredScopeFor } from '@/infrastructure/battlegrid/money-tools.js';
 import type { EntryDecision } from '@/ports/agents.js';
 import { anEntryDecision, FakeAgentsPort } from '../support/agent-fakes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
@@ -165,15 +167,34 @@ describe('an answer attempted without fund-committing authority', () => {
     };
   };
 
+  /**
+   * The classification comes from the **real** map, not from a literal.
+   *
+   * This used to hand-build `{ mutating: true, destructive: true, requiredScope:
+   * 'mcp:wager' }` and pass it in. Every assertion below was correct — about a
+   * classification production never produced. Until #340 the real one was
+   * `{ destructive: false, requiredScope: 'mcp:read' }`, so the guard these
+   * tests prove was never reached for `accept_entry_decision`, and they passed
+   * throughout.
+   *
+   * A true assertion about a fabricated input is harder to see than a vacuous
+   * one, and it is why the hole survived four months. Driving the composed path
+   * means these tests now fail if the classification regresses.
+   */
+  const CLASSIFICATIONS = buildClassificationMap(
+    (JSON.parse(readFileSync('docs/battlegrid-mcp-capabilities.json', 'utf8')) as {
+      tools?: Array<Record<string, unknown>>;
+    }).tools!.map((t) => ({
+      name: t['name'] as string,
+      annotations: t['annotations'] as never,
+      declaredScope: declaredScopeFor(t['name'] as string),
+    })),
+  );
+
   const answerCall = (tool: string) => ({
     userId: 'u1',
     tool,
-    classification: {
-      mutating: true,
-      destructive: true,
-      requiredScope: 'mcp:wager' as const,
-      basis: 'annotations' as const,
-    },
+    classification: CLASSIFICATIONS.get(tool)!,
   });
 
   /**

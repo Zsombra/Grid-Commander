@@ -57,7 +57,7 @@ Read from `openspec/config.yaml:71` via `docs/checklists/ARCHITECTURE_REVIEW_CHE
 | 3 | Accept and cancel targets provably distinct | **PASS** — `answer-decision.test.ts:65,101`; `approval-queue.test.ts:195` |
 | 4 | No mutating path reaches BattleGrid without a row written first | **PASS** — `call-path.ts` step 4 writes `audit.begin` before the call, on every path including accept |
 | 5 | Gate honoured — cancel proven before accept written | **PASS**, in git history: `eac3284` (4.5, cancel live) → `b9d1286` (section 5, accept surface) → `f12a274` (7.4, accept live) |
-| 6 | No UI copy calls read scope read-only; no computed currency amount | **PASS** — `access-is-described-honestly.test.ts` 4/4; `sizing-base.test.ts` 14/14 (PE-2) |
+| 6 | No UI copy calls read scope read-only; no computed currency amount | **PASS** — `access-is-described-honestly.test.ts` 4/4; `sizing-base.test.ts` 14/14 (PE-2). **See the correction below: a separate claim this audit made about the scope *gate* was wrong.** This row is about copy and stands |
 | 7 | Spec deltas match implementation; the disclosure actually removed | **PASS as of this audit.** The code still carried it until today — see PG-003, fixed pre-audit. The main spec still holds the requirement, which is correct pre-archive: the archiver removes it on merge |
 
 ---
@@ -201,3 +201,41 @@ are FIXED and each was verified rather than asserted:
 Cleared for `/archive`.
 
 **PRODUCTION GATE: PASS.**
+
+---
+
+## Correction, 2026-08-17 — this audit asserted something false about the scope gate
+
+**Withdrawn**: PG-005's sentence *"the `mcp:wager` step-up fires"*, and the
+matching claim in the Mode A narrative that *"the scope step-up is intact"*.
+
+Measured afterwards, from the capability record's own annotations through the
+real `buildClassificationMap` and the real `beginGuardedCall`:
+
+```
+accept_entry_decision -> {"mutating":true,"destructive":false,"requiredScope":"mcp:read"}
+cancel_entry_decision -> {"mutating":true,"destructive":true, "requiredScope":"mcp:read"}
+
+accept admitted on mcp:read alone, no token. audit id issued: true
+```
+
+`rawDiscoverTools` (`mcp-adapter.ts:387`) never sets `declaredScope`, and
+`inferScope` (`classify.ts:63`) returns `'mcp:read'` unconditionally — so **no
+known tool requires wager authority at the port**, and the gate can fire only on
+the fail-closed `UNKNOWN_TOOL` path. Neither of the port's two money-relevant
+gates applies to `accept_entry_decision`.
+
+**How the audit got it wrong.** It read the correct answer during the verifier
+pass, in a probe whose synthetic tool object carried no `declaredScope`, and
+withdrew it as an artifact of the probe. The probe was reproducing production
+exactly. Withdrawing a true observation for a plausible reason is the failure
+here, and it is worth more than the finding.
+
+**What this does not change.** Nothing archived becomes wrong: the application
+layer does gate on wager scope (`read-answer-authority.query.ts:36`) and does
+bind every answer (`AnswerDecisionCommand`), so no operator accepted without
+authority and no accept was unbound. The gate's PASS stands on the work that was
+audited. What is withdrawn is this document's description of *where* the
+protection lives.
+
+Tracked on **#340**, re-priced p2 and re-scoped to both gates.

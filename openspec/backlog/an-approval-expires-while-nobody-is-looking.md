@@ -5,7 +5,7 @@ type: feature
 status: open
 priority: p2
 created: 2026-08-15
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: agent-understanding
 github: "304"
@@ -161,3 +161,20 @@ Two facts for whoever builds it, from today's reads:
 
 Unchanged: blocked by `the-approval-can-be-answered`, because notifying someone
 about a decision they cannot answer would be worse than silence.
+
+## Evidence gathered 2026-08-17
+
+While running task 7.2, Vanguard was set to `APPROVAL_REQUIRED` and produced
+decisions faster than a human watching the page could answer them.
+
+- **8 decisions on this one agent have expired unanswered**, each closing
+  10–30 seconds after `expiresAt` (`list_entry_decisions status=EXPIRED`).
+- The product states the window itself — *"The window is fifteen minutes at most —
+  after it closes the decision expires and the agent does not propose it again on
+  its own"* — and then **nothing announces that one is waiting**. The operator only
+  learns by having `/approvals` open.
+- During the 7.2 session three decisions (XRP, AVAX, BTC) were pending at once with
+  6–8 minutes left, and the only reason any were answered is that the operator was
+  told in chat.
+
+This is the gap the item describes, now with a count rather than a prediction.

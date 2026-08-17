@@ -37,7 +37,22 @@ export interface AuditEntry {
   readonly actor: AuditActor;
   readonly tool: string;
   readonly outcome: AuditOutcome;
+  /** What **this product** judged: does the operation carry a consequence? */
   readonly destructive: boolean;
+  /**
+   * What BattleGrid said about the same question, kept as evidence.
+   *
+   * `null` on every row written before 2026-08-17, and on any tool the platform
+   * offered no opinion about. **A null is "not recorded", never "false"** — the
+   * two eras are distinguishable precisely because the old rows have nothing
+   * here, and nothing may read the absence as agreement.
+   *
+   * Recorded because the platform has been measured wrong on five tools: it
+   * annotates the one write that opens a real position as not destructive
+   * (#340). A row showing our judgement beside its claim is the evidence; a row
+   * showing only ours would quietly discard it.
+   */
+  readonly platformDestructiveHint: boolean | null;
   readonly createdAt: Date;
   readonly completedAt: Date | null;
   readonly failureReason: string | null;

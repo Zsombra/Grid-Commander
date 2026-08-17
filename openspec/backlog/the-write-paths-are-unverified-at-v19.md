@@ -223,3 +223,18 @@ passes against a record already one deployment behind the running server.
 Not withdrawn by this: eight of the nine probes **did** execute against v19.2.0
 on 2026-08-16, seven green. What stays open is the ninth and the re-run, not the
 whole set — the correction above says so and this status does not reopen it.
+
+## The blocker has moved — 2026-08-17
+
+`blocked_by: operator:live-write-authorization` was the constraint. Since then:
+
+- The operator **authorised and performed live writes** through the product against
+  the Fibonacci account (task 7.2 of `the-port-knows-what-costs-money`).
+- A working rig exists: the whole product on Docker, wager-scoped key installed.
+- The platform is now **v20.0.0**, not v19.1.0 — so the item's title is already
+  one major version stale. The nine probe files behind `BATTLEGRID_LIVE_WRITES=1`
+  have still never run, now against **two** unverified versions.
+
+The authorisation blocker is arguably discharged; what remains is scheduling the
+probe run and accepting that it writes to a live account. Re-title to v20 when it
+is picked up.

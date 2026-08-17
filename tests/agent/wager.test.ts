@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { beginGuardedCall } from '@/infrastructure/battlegrid/call-path.js';
 import { ScopeUnavailableError } from '@/domain/errors.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fakes.js';
+import { FORBIDDEN_MONEY_TOOL_NAMES } from '../support/money-tools.js';
+import { REACHABLE_MONEY_TOOLS } from '@/infrastructure/battlegrid/money-tools.js';
 
 /**
  * A10 — agent operations that commit funds are not reachable.
@@ -76,22 +78,24 @@ describe('no wager tool is reachable from any path', () => {
    * requiring authority the connection does not hold is refused before it is
    * attempted, and a refusal is never recorded as an attempt.
    */
-  const WAGER_TOOLS = [
-    'submit_agent_grid',
-    'submit_market_grid',
-    'close_agent_position',
-    'override_agent_protection',
-    'set_agent_per_trade_push',
-    'reset_agent_drawdown_baseline',
-    'halt_intelligence_agent',
-    'resume_intelligence_agent',
-  ];
+  /**
+   * **Imported, not re-declared, since 2026-08-17.** The names used to live here
+   * and nowhere else, which was fine while nothing else needed them. #340 gave
+   * the runtime a reason to know which operations commit funds, and two lists
+   * that can disagree is the defect class that issue exists for. So the guard
+   * now reads the same lists the product does.
+   *
+   * The two sets live in different files on purpose, and it is not tidiness:
+   * naming a forbidden tool anywhere under `src/` is itself the violation this
+   * test asserts, so the forbidden set must stay in the test tree.
+   */
+  const WAGER_TOOLS = FORBIDDEN_MONEY_TOOL_NAMES;
 
   /**
-   * The two released to `the-approval-can-be-answered`, named here so the
-   * release is legible in the guard itself rather than only in a git blame.
+   * The released pair, read from the runtime list so the release is legible in
+   * one place rather than in a git blame and a second copy.
    */
-  const ANSWER_TOOLS = ['accept_entry_decision', 'cancel_entry_decision'];
+  const ANSWER_TOOLS = Object.keys(REACHABLE_MONEY_TOOLS);
 
   it('names none of the still-forbidden ones in src/ or app/', () => {
     const offenders: string[] = [];

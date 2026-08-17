@@ -2,11 +2,11 @@
 id: accept-opens-a-position-without-spending-its-confirmation
 title: The confirmation gate is keyed to the platform's destructive hint, so the one write that commits money skips it
 type: bug
-status: open
+status: done
 priority: p2
 created: 2026-08-17
 updated: 2026-08-17
-change: ""
+change: "the-port-knows-what-costs-money"
 capability: agent-authoring
 github: "340"
 blocked_by: []
@@ -158,3 +158,116 @@ Two things to decide when taken, neither obvious:
 - Related: [[approvals-have-no-write-side]] (the change that built both verbs),
   [[the-wager-sentence-offers-scope-as-a-safety-boundary]] (the same
   do-not-trust-the-platform's-safety-claim argument, one level out).
+
+---
+
+# Wider than filed, and one claim in this item is withdrawn — 2026-08-17
+
+## The scope step-up does not fire either. Neither gate does.
+
+This item said *"The scope step-up is intact. Both verbs declare `mcp:wager` and
+step 2 refuses without it."* **That is false and is withdrawn.** So is the
+parenthetical explaining away an earlier reading of `mcp:read` as an artifact of
+a synthetic tool object — the synthetic object was behaving exactly like
+production.
+
+Driven from the record's own annotations through the real `buildClassificationMap`
+and the real `beginGuardedCall`:
+
+```
+accept_entry_decision -> {"mutating":true,"destructive":false,"requiredScope":"mcp:read"}
+cancel_entry_decision -> {"mutating":true,"destructive":true, "requiredScope":"mcp:read"}
+
+accept admitted on mcp:read alone, no token. audit id issued: true
+audit row destructive: false
+cancel refused with: ConfirmationRequiredError
+```
+
+## Why, and it is general rather than about these two tools
+
+```
+mcp-adapter.ts:387   rawDiscoverTools maps name, description, annotations,
+                     inputSchema — and never sets `declaredScope`
+classify.ts:50       requiredScope: tool.declaredScope ?? inferScope(mutating)
+classify.ts:63       function inferScope(_mutating) { return 'mcp:read' }
+```
+
+`declaredScope` is populated **nowhere in production**. So **every known tool
+classifies as `mcp:read`**, and the port's wager gate can fire only on the
+fail-closed `UNKNOWN_TOOL` path. The comment at `classify.ts:61` — *"tools that
+need wager authority say so, and are caught by `declaredScope`"* — describes a
+mechanism that has no producer.
+
+## What that does to the spec
+
+`battlegrid-connection`'s scenario **"A tool requiring wager authority is reached
+→ the operation is refused before it is attempted"** is satisfied only vacuously:
+no known tool ever requires wager authority at that layer. The requirement reads
+as a boundary and is not one.
+
+## What still protects accept, and it is real
+
+The **application layer**, entirely:
+
+- `read-answer-authority.query.ts:36` checks `held.includes('mcp:wager')` and the
+  decision page mints no confirmation and draws no controls without it.
+- `AnswerDecisionCommand` re-reads and checks all five binding conditions before
+  the port is called, and DL-19's reachability test now stops a second caller
+  reaching the port at all.
+
+So no operator accepts without wager scope, and no accept is unbound. The hole is
+that the **port applies nothing** — defence in depth is defence in one layer, and
+the layer the spec names as the boundary is the inert one.
+
+## Why the tests did not catch it
+
+`tests/agent/answer-authority.test.ts:171-176` hand-builds
+`classification: { destructive: true, requiredScope: 'mcp:wager' }` and passes it
+in. The guard behaves correctly given that classification; production never
+produces it for these tools. Not a vacuous assertion — a **correct assertion
+about a fabricated input**, which is harder to see.
+
+## More inversions, from the same survey
+
+The annotation sweep this item asked for has a preliminary answer. Among 27
+mutating tools, these are money-affecting and annotated `destructiveHint: false`:
+
+```
+accept_entry_decision      opens a position
+close_agent_position       realises P&L
+submit_market_grid         costs the entry fee
+random_submit_market_grid  costs the entry fee
+submit_agent_grid          costs the entry fee
+```
+
+Not concluded here — the product calls none of the last four today. Recorded so
+the change does not fix one tool and call the class closed.
+
+## Re-priced p2, and the ask is wider
+
+Keying the confirmation to consequence was half of it. The change must give the
+port a source of truth for **which operations commit funds**, and key both the
+scope check and the confirmation requirement to it. Fixing one alone leaves the
+other inert, because they are both missing the same fact.
+
+## Settled — 2026-08-17
+
+`the-port-knows-what-costs-money` archived; production gate **PASS**, 0 open
+violations. The gate is no longer keyed to BattleGrid's annotation.
+
+**Proven on a live account, not a green suite.** Two accepts through the product:
+
+```
+11:46:59  accept_entry_decision  destructive=true   platform_destructive_hint=false
+11:49:06  accept_entry_decision  destructive=true   platform_destructive_hint=false
+19:28:33  accept_entry_decision  destructive=false  platform_destructive_hint=NULL   <- before
+```
+
+Both confirmations were spent at the same second as their audit row, with the token
+target hash-bound to its decision id. The third row is the pre-change era, preserved
+untouched: migration 0005 is one `ADD COLUMN`, nullable, no DEFAULT, no UPDATE.
+
+The platform still annotates a position-opening write as `destructiveHint: false` —
+re-probed at **v20.0.0** on the same day, and unchanged. This item described current
+behaviour, not a historical bug.
+

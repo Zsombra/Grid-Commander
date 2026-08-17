@@ -1,0 +1,113 @@
+# Grid-Commander, entirely on Docker.
+#
+# One command owns whether this product is running or not:
+#
+#   docker compose up -d          # database, migrations, then serve
+#   docker compose down           # stop everything, keep the data
+#   docker compose logs -f app    # what it is doing
+#
+# Three things here are deliberate, and each one is a defect observed on
+# 2026-08-17 rather than a precaution:
+#
+#   1. postgres:18, not 16. The host runs a native PostgreSQL 18 holding the
+#      working database. `pg_dump` restores forward only, so consolidating that
+#      data into a 16 container is the unsupported direction. Matching the major
+#      version makes the move a same-version restore.
+#
+#   2. The database publishes 5433, not 5432. The native service already binds
+#      5432, and both were listening at once — `localhost:5432` resolved to
+#      whichever answered, which is why the app authenticated during its schema
+#      check and then failed on its runtime pool. 5432 means native; 5433 means
+#      this product. No ambiguity left to reason about.
+#
+#   3. A user-defined network, so `db` resolves as a hostname. The two
+#      containers were on the default bridge, which does no DNS between
+#      containers — the reason the previous run reached for
+#      `host.docker.internal` and landed on the native server.
+
+name: gridcommander
+
+services:
+  db:
+    image: postgres:18
+    container_name: gridcommander-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gridcommander}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-grid_commander}
+    ports:
+      # Host 5433 so the native PostgreSQL 18 keeps 5432 untouched.
+      - '5433:5432'
+    volumes:
+      # A named volume, not an anonymous one. The previous database lived on a
+      # volume named only by hash, which is the kind that gets collected by a
+      # stray `docker compose down -v` and cannot be identified afterwards.
+      #
+      # Mounted at the PARENT, not at `/data`. postgres:18 sets
+      # PGDATA=/var/lib/postgresql/18/docker — the path moved in this major
+      # version. Mounting the old `/var/lib/postgresql/data` looks correct,
+      # mounts cleanly, and silently writes the database into the container
+      # layer instead of the volume, where the first recreate destroys it.
+      - gridcommander-pgdata:/var/lib/postgresql
+    healthcheck:
+      # `migrate` must not race an initialising database. pg_isready reports the
+      # server accepting connections, which is the actual precondition.
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-gridcommander} -d ${POSTGRES_DB:-grid_commander}']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [gridcommander]
+
+  # The release step, as its own container that runs once and exits.
+  # docker-entrypoint.sh keeps `migrate` and `serve` separate precisely so this
+  # is possible: replicas migrating themselves on boot are N containers racing
+  # on one journal.
+  migrate:
+    build:
+      context: .
+    image: grid-commander:local
+    container_name: gridcommander-migrate
+    command: ['migrate']
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-gridcommander}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-grid_commander}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+    networks: [gridcommander]
+
+  app:
+    build:
+      context: .
+    image: grid-commander:local
+    container_name: gridcommander-app
+    restart: unless-stopped
+    command: ['serve']
+    env_file: [.env]
+    environment:
+      # Set here rather than in .env so it cannot be defined twice. The previous
+      # container carried two DATABASE_URL values and the last one won, pointing
+      # the product at the wrong server entirely.
+      DATABASE_URL: postgres://${POSTGRES_USER:-gridcommander}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-grid_commander}
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        # Serving refuses to start against an unmigrated schema by design, so
+        # waiting for the migration to *succeed* turns a deploy-order mistake
+        # into a startup failure rather than a puzzling refusal.
+        condition: service_completed_successfully
+    networks: [gridcommander]
+
+volumes:
+  gridcommander-pgdata:
+    name: gridcommander-pgdata
+
+networks:
+  gridcommander:
+    name: gridcommander

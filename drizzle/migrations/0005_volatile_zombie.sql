@@ -1,0 +1,1 @@
+ALTER TABLE "audit_entries" ADD COLUMN "platform_destructive_hint" boolean;

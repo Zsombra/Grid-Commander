@@ -16,6 +16,8 @@ export interface NewAuditEntry {
   readonly actor: AuditActor;
   readonly tool: string;
   readonly destructive: boolean;
+  /** The platform's contrary claim, or `null` where it offered none. */
+  readonly platformDestructiveHint: boolean | null;
   readonly idempotencyKey: string | null;
 }
 

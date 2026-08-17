@@ -103,6 +103,12 @@ export async function beginGuardedCall(
     actor: call.actor ?? 'user',
     tool: call.tool,
     destructive: cls.destructive,
+    // Both facts, side by side. `cls.destructive` is what this product
+    // concluded and is what the surface renders; the hint is what BattleGrid
+    // claimed about the same operation, and on the write that opens a real
+    // position the two disagree (#340). Recording the disagreement is worth
+    // more than a row that silently agrees.
+    platformDestructiveHint: cls.platformDestructiveHint ?? null,
     idempotencyKey: call.idempotencyKey ?? null,
   });
 }

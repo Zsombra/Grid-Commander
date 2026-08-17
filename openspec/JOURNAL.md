@@ -1,5 +1,314 @@
 # Journal
 
+## 2026-08-17 (infra) — the stack is committed, and the database has one authority
+
+**Did**: resolved **#346** and **#347**. Shipped the `lite` change
+`the-stack-runs-from-one-command` (compose file tracked, `.env.example` documents
+`POSTGRES_*`), and made the Docker database the single authority for the signal record.
+
+**The divergence had a name and a schedule.** A Windows scheduled task
+`GridCommanderRecorder` ran hourly from `C:/Users/rafae/grid-commander/record.ps1` — a
+**separate checkout dated 2026-08-11** — with `DATABASE_URL` hardcoded to native 5432,
+while the product read the container. A user-scope `DATABASE_URL` pointed there too.
+
+**It was bidirectional, so no dump could have fixed it.** Native was ahead by 1,680
+`signal_readings` / 20 captures / 1 run; **Docker was ahead by 515 `audit_entries`**,
+because the product had been writing there all session. Native was also at 4
+migrations against Docker's 6 — restoring native over the container would have
+reverted the schema.
+
+Fixed by row-level sync: CSV export, staging table, `INSERT ... ON CONFLICT DO NOTHING`
+with **no conflict target** so every unique constraint was honoured rather than only
+the primary key. `audit_entries` took an explicit column list so native's 22 rows
+landed with `platform_destructive_hint` NULL — not recorded, which is true of them.
+
+Then `record.ps1` was repointed at 5433 and run through its own task:
+
+```
+native  167,496 -> 167,496   (frozen)
+docker  167,496 -> 169,176   (+1,680, one new run)
+LastTaskResult: 0            (previously 3221225786 - terminated)
+```
+
+**State**: **0 active changes** · `validate --all` 0 errors / 15 warnings · 209
+archived changes · 26 open backlog items. Docker stack serving on :3000, database on
+5433, recorder writing to it hourly. Native left in place as the pre-consolidation
+fallback. PR #348 carries both this leg and the #340 archive.
+
+**Next**: `/board`. The two live positions on Fibonacci (ETH SHORT, SOL SHORT) are the
+operator's.
+
+**Watch out**:
+- **A backslash pair collapses inside a shell heredoc even when it is quoted.**
+  `C:\Users\...` arrived halved and Python read `\U` as an escape. Raw strings, or
+  forward slashes in prose, or build the escape from `chr(92)`.
+- **The recorder writes from a five-day-old checkout** at `ee65fea` with `record.ps1`
+  untracked and `package-lock.json` modified. It works, but it is not the code in this
+  repository. Running it as a compose service needs a `Dockerfile` change: the runtime
+  image copies `.next/standalone`, `drizzle` and two `tools/` scripts — **not `bin/`**.
+- **Its log is UTF-16**, written by PowerShell's `*>>`, so `tail` shows every character
+  space-separated. Not corruption.
+- **`docker compose config` passing does not prove the volume is right.** The mount has
+  to be checked against the image's *own* `PGDATA`; `postgres:18` reports
+  `/var/lib/postgresql/18/docker`, so the mount belongs on the parent. Confirmed by
+  reading `PG_VERSION` back off the volume rather than trusting the config.
+- **An `ON CONFLICT DO NOTHING` with a named target would have been wrong here.**
+  Migration 0004 replaced the `(user_id, idempotency_key)` unique index with a
+  partial one, and native still had the old shape — a primary-key-only conflict clause
+  would have thrown on the index instead of skipping.
+
+## 2026-08-17 (archive) — the port knows what costs money, proven on live money
+
+**Did**: closed section 7 of `the-port-knows-what-costs-money` live, took the
+production gate to **PASS**, archived the change, closed **#340**. Moved the whole
+product onto Docker to build the rig. Filed **#346**, **#347**; added live evidence to
+**#336**, **#304**, **#306**.
+
+**The defect was re-measured at v20.0.0 before it was fixed against.** BattleGrid had
+moved v19.1.0 → v20.0.0 with the tool count **still 114** — the third time. All five
+money-affecting tools still annotate `destructiveHint: false`, so this was current
+behaviour, not history (DE-7).
+
+**Two accepts through the product, on a live account.** The audit now states both
+claims as separate facts:
+
+```
+11:46:59  accept_entry_decision  destructive=true   platform_hint=false
+11:49:06  accept_entry_decision  destructive=true   platform_hint=false
+19:28:33  accept_entry_decision  destructive=false  platform_hint=NULL   <- before
+```
+
+Confirmations spent at the same second, tokens hash-bound to their decision ids. That
+third row is the change's thesis: **the two eras are distinguishable because nothing
+was rewritten** — 0005 is one `ADD COLUMN`, nullable, no DEFAULT, no UPDATE. 3,332 of
+3,690 rows still carry a NULL claim.
+
+**7.3 got the weaker result, and the log says so.** The surface refuses a read-only
+connection and renders no accept control, so the port is never reached through the UI.
+`beginGuardedCall`'s refusal stays proven offline. DE-9 records the gap rather than
+claiming the stronger result.
+
+**State**: **0 active changes** · `validate --all` 0 errors / 15 warnings · `mirror`
+clean · 28 open backlog items, 4 blocked · 208 archived changes. Docker stack serving
+on :3000, database on 5433. Two live positions open on Fibonacci (ETH SHORT, SOL
+SHORT) — the operator's.
+
+**Next**: commit and raise the PR for this branch, then **#346** (commit the compose
+file as a `lite` change) — it holds three fixes that cost an afternoon each.
+
+**Watch out**:
+- **The session opened in the wrong worktree.** `/board` described a branch at `main`
+  with none of the work; the change lived in a *differently named* worktree
+  (`github-issues-triage-169fc7`). The board is per-checkout and says nothing about
+  it. `git worktree list` and `git branch -vv` before believing any count.
+- **The product's key and the MCP connector were different BattleGrid accounts** —
+  `ANBUJEFF` (5 agents, $4.20) vs `Fibonacci` (Undertow/Vanguard/Breakwater, $63).
+  An agent menu was offered from the wrong one. `get_account_state` through the
+  product's own key is the only way to know who it acts as.
+- **`postgres:18` moved `PGDATA` to `/var/lib/postgresql/18/docker`.** Mounting the
+  old `/var/lib/postgresql/data` looks right, mounts cleanly, and writes the database
+  into the container layer where the first recreate destroys it.
+- **A stale image passes its own schema gate.** `check-schema.mjs` compares the
+  database against *the journal that build carries* — so an 18-day-old image was
+  confidently correct about a schema two migrations behind. Version gates prove
+  internal consistency, never currency.
+- **`test:db` was one command from the live database again.** The inherited
+  `DATABASE_URL` pointed at `grid_commander` (167,496 readings). Caught by preflight.
+  `assertDisposable` is a backstop, not a plan — override the URL inline, every time.
+- **`apply_strategy_plan` wants `rules` = the plan's `explicitRuleOverrides`**, not the
+  84 inherited rules. Sending all 84 returns a bare `INTERNAL_ERROR` naming nothing.
+  Plan tokens live five minutes: compile and apply in one call.
+- **The execution leg handed over with all three review artifacts empty** and the plan
+  marked `PLAN READY FOR REVIEW` — the identical PG-001 as the previous full-track
+  change. Two in a row. The executor's Phase 2 list is not optional.
+- **The operator's shell is PowerShell 5.1 (no `&&`) and their `bash` is WSL** (no
+  `/c/...` paths). Commands handed over must match the shell they will be pasted into.
+- **BattleGrid throws transient 502s**, and a naive client reports them as a parse
+  failure — blaming your own code for an upstream outage.
+
+## 2026-08-17 (close-out) — two changes landed, one is one operator-click from done
+
+**Did**: archived `the-approval-can-be-answered` (**#101 closed**, on a live
+accept). Shipped `the-board-can-say-what-it-is-waiting-for` (#309 closed, #342
+filed-and-fixed): `blocked_by` gained `upstream:`/`external:`/`operator:`, and
+`/board` now runs `mirror` and `gh pr list`. Proposed, planned and executed
+`the-port-knows-what-costs-money` to **32/36** (#340). Filed **#340**, **#342**,
+**#344**, **#345**; reopened **#340** after a merge auto-closed it. Merged PRs
+**#339**, **#341**, **#343**.
+
+**State**: one active change, `the-port-knows-what-costs-money`, 32/36 on
+`claude/confirmation-keyed-to-consequence` — pushed, **no PR**, tree clean.
+`validate --all` 0/15/10 · `mirror` clean · suite **2732/2738** (documented
+six-failure baseline) · `test:db` 96/96 on `grid_commander_test`. 25 open items,
+4 blocked, 2 P2s free (#304, #335). Nothing scheduled, nothing serving, no
+`.env.local` here.
+
+**Next**: `/board`, then **task 7.2 — the operator accepts one real decision
+through the product**. It is the only blocker. Then 7.1 (needs a key), 8.2, the
+auditor, `/archive` — which closes #340.
+
+**Watch out**:
+- **The session opened by nearly rebuilding 31 merged commits.** Nine `mirror`
+  rows read as rot; they were **#339 sitting unmerged**. Fixed at the source —
+  `/board` now shows in-flight PRs and `mirror` names a same-day close cluster —
+  but the habit matters more than the tool: `gh pr list` and `git log --all`
+  before believing any count.
+- **A negated closing verb still closes an issue.** *"DL-19 states it does NOT
+  fix #340"* auto-closed #340 on merge. GitHub matches `fix #340` and never sees
+  the negation. Put the number first: `#340 is not fixed here`.
+- **I asserted something false in the production gate and had to withdraw it** —
+  that the wager step-up fires. It does not; no known tool required wager
+  authority at the port. I had seen the correct reading during the verifier pass
+  and dismissed it as a test artifact. Corrected on #340, in the archived gate
+  tracker, and as DL-19a.
+- **A test can be correct about an input production never produces.**
+  `answer-authority.test.ts` hand-built a wager classification and passed for
+  four months while the guard it proved was never reached. Harder to spot than a
+  vacuous assertion, and the reason #340 survived.
+- **`test:db` truncates.** `grid_commander_test` only — never `grid_commander`,
+  which holds 144,732 signal readings BattleGrid cannot re-serve.
+
+
+## 2026-08-17 (execute) — both gates fire, and one blocker is left
+
+**Did**: executed `the-port-knows-what-costs-money` sections 0–6 and 8.1.
+**30/36.** Not handed to the gate — section 7 is genuinely incomplete, not
+merely blocked.
+
+**`declaredScope` has a producer for the first time.** `money-tools.ts` in the
+adapter holds the reachable fund-committing tools, `rawDiscoverTools` sets the
+field, `classify.ts` keys the consequence to it and names no tool. Measured
+through the composed path:
+
+```
+accept_entry_decision   before: mcp:read, destructive false, admitted on read scope with no token
+                        after:  mcp:wager, destructive true
+                                refused read-only, naming mcp:wager, no audit row
+                                refused with authority but no token, no audit row
+                                admitted with both, audit row destructive: true
+```
+
+**Three things went wrong and all three are recorded.**
+
+- **DE-1**: the plan's "one home" was impossible. A10 half 1 forbids a forbidden
+  tool's name anywhere under `src/`, so the two sets **cannot** share a file —
+  that is the point of the forbidden set. One home per set, imported not copied.
+- **DE-3**: A10 caught my own doc comment in `tool-class.ts` naming a released
+  tool. Same event as DL-7 of the approvals change, same answer: de-name the
+  comment, do not weaken the guard. **My own "domain names no tool" assertion
+  missed it** because it scanned one file; it now scans all of `src/domain`.
+- **DE-2**, the one worth keeping: the section 0 evidence test built
+  `DiscoveredTool`s by hand **without** `declaredScope`, so it bypassed the
+  adapter and could never have shown the fix. The fabricated-input trap this
+  change exists to remove, committed by its own evidence test. Caught only
+  because the fix landed and the test **did not move**.
+
+**Section 5 was the point of the whole change.**
+`answer-authority.test.ts:171-176` hand-built
+`{ destructive: true, requiredScope: 'mcp:wager' }`. Every assertion correct,
+about an input production never produced — which is why nobody saw this for four
+months. It now drives `buildClassificationMap`, and reverting the fix fails 3
+tests where before it failed none. 5.2 is narrow by **DE-4**: 22 files fabricate
+a *read* classification inside a fake, which is harmless; the guard forbids a
+fabricated `mcp:wager` classification beside a real money-tool name.
+
+**Section 6 records both claims and rewrites nothing.**
+`platform_destructive_hint`, nullable and **not** defaulted — a default would
+invent an answer for every historical row. Null means *not recorded*, never
+*false*, and the read path passes it through rather than coercing. That is what
+makes the two eras tellable apart without touching history (**DE-5**). The field
+is **required** on `NewAuditEntry` so a future writer cannot silently omit it;
+`tsc` named all 17 construction sites (**DE-6**).
+
+**Gates**: `tsc` · `lint` · `build` · schema clean · **2732/2738** (documented
+six-failure baseline) · `test:db` **96/96** against `grid_commander_test`, the
+working database untouched.
+
+**State**: branch `claude/confirmation-keyed-to-consequence`, pushed, **no PR
+raised** — the change is not finished. `validate --all` back to 0/15/10.
+`audit-log` manifest re-pinned in **prose and digest**. Nothing scheduled,
+nothing running, no `.env.local` in this worktree.
+
+**Next**: **7.2 is the only real blocker and it is the operator's** — a live
+accept through the product, by name, at the moment. PD-6 records why a green
+suite cannot substitute: the hazard is making accept *unreachable* without
+anyone noticing, and the surface would simply stop offering it. **7.1 needs a
+key** this worktree does not have. **7.3's offline half is already proven** in
+`money-tools.test.ts`; the live half rides with 7.2. Then 8.2–8.4, the auditor,
+and archive — which is what closes **#340**.
+
+**Watch out**: start at `/board`. It now runs `mirror` and `gh pr list`, so an
+unmerged branch shows as in-flight work rather than being rediscovered the hard
+way — which is the mistake that opened this session.
+
+
+## 2026-08-17 (propose+plan) — #340 is wider than filed, and I had it wrong in the audit
+
+**Did**: proposed and planned `the-port-knows-what-costs-money` (**full**, 36
+tasks). Corrected three records first. **#340 was auto-closed by a merge and
+reopened.**
+
+**The correction comes first because it is mine.** This session's own production
+gate asserted *"the scope step-up is intact — both verbs declare `mcp:wager` and
+step 2 fires."* False. Worse: during the verifier pass I saw the correct reading,
+called it an artifact of a synthetic tool object, and withdrew it. **The
+withdrawal was the error** — the synthetic object was reproducing production
+exactly. Withdrawn now on #340, in the archived gate tracker, and as DL-19a.
+
+**Neither gate fires on accept**, measured through the real
+`buildClassificationMap` and the real `beginGuardedCall`:
+
+```
+accept_entry_decision -> {"destructive":false,"requiredScope":"mcp:read"}
+cancel_entry_decision -> {"destructive":true, "requiredScope":"mcp:read"}
+accept admitted on mcp:read alone, no token. audit row destructive: false
+```
+
+`rawDiscoverTools` never sets `declaredScope`; `inferScope` returns `'mcp:read'`
+unconditionally. So **every known tool** classifies as read scope and the wager
+gate can fire only on the fail-closed `UNKNOWN_TOOL` path. `classify.ts:61` says
+*"tools that need wager authority say so, and are caught by `declaredScope`"* — a
+comment describing a mechanism with no producer, which is why this survived four
+months of being read.
+
+**Then the scope adjustment, and it shrank the change.** The first proposal draft
+asked the planner to invent a list of money-committing tools and decide where it
+lives. **Both were already answered and the draft had not looked.**
+`tests/agent/wager.test.ts:79-88` has held `WAGER_TOOLS` since 2026-07-27, and
+A10 forbids those names anywhere in `src`/`app` — so the producer is the adapter,
+the domain stays name-free, and the work is *give the existing judgement a second
+consumer*, not build one. Only reachable tools need runtime classification: you
+cannot call what you cannot name.
+
+**The sweep found a real gap in a guard that already existed.**
+`random_submit_market_grid` is money-affecting and is **not** in `WAGER_TOOLS`.
+Unnamed in `src`/`app` today, so nothing is wrong yet and nothing stops the next
+person naming it.
+
+**#340 was auto-closed by the #343 squash, from a sentence written to prevent
+exactly that**: *"DL-19 states it does **NOT** fix #340."* GitHub matches
+`fix #340` and never sees the negation. Caught by the before/after issue-count
+check this repo already requires. The memory note is sharpened: a **negated**
+closing verb still closes, and it is the most dangerous phrasing because it reads
+as handled. Put the number first — `#340 is not fixed here`.
+
+**Also**: PR **#341** and **#343** merged; `the-approval-can-be-answered`
+archived; **#101 closed** on a live accept.
+
+**State**: 1 active change at 0/36 · `validate --all` 0 errors · `mirror` clean ·
+25 open items, 4 blocked.
+
+**Next**: the plan is **awaiting review**. Execution starts only on explicit
+approval — the planner does not hand itself the work. When it does: section 0
+first, and its output goes in the decision log, because the current tests pass
+while the defect is live.
+
+**Watch out**: `tests/agent/answer-authority.test.ts:171-176` hand-builds
+`{ destructive: true, requiredScope: 'mcp:wager' }`. Every assertion in it is
+correct about an input production never produces. If it still passes unchanged
+after the work, the work is not done.
+
+
 ## 2026-08-17 (archive) — the approval can be answered, and #101 is closed
 
 **Did**: cleared the last gate violation, took the gate to **PASS**, archived

@@ -9,8 +9,34 @@ import type { Scope } from '../connection/scope.js';
 export interface ToolClass {
   /** Does invoking this change the user's account? */
   readonly mutating: boolean;
-  /** Can invoking this destroy or replace something that cannot be recovered? */
+  /**
+   * Does this carry a consequence a person must agree to before it happens?
+   *
+   * **This product's judgement, not the platform's.** It is true when the
+   * operation can destroy something unrecoverable *or* when it commits the
+   * user's funds. BattleGrid annotates the one write that opens a real position
+   * as *not* destructive, and keying the guard to that annotation is how the
+   * confirmation came to be skipped on the only operation that spends money
+   * (#340).
+   *
+   * The tool is deliberately not named here. A10 forbids a fund-committing tool
+   * name anywhere outside `src/infrastructure/battlegrid/`, and the guard is
+   * blunt on purpose — a name is the first step toward a call, and DL-7 of
+   * `the-approval-can-be-answered` already ruled that weakening it for a comment
+   * spends the guard for nothing. It caught this comment on the first run.
+   *
+   * Named `destructive` still, because it is what the audit column and every
+   * caller already say. What changed is who decides it.
+   */
   readonly destructive: boolean;
+  /**
+   * What BattleGrid said about the same question, kept as evidence.
+   *
+   * Recorded rather than obeyed. It has been measured wrong on five tools, and
+   * a record of the disagreement is worth more than a field that silently
+   * agrees. `undefined` where the platform offered no opinion.
+   */
+  readonly platformDestructiveHint?: boolean | undefined;
   /** The authority it needs, if any beyond a basic grant. */
   readonly requiredScope: Scope;
   /** Why it is classified this way. Carried so a refusal can explain itself. */
@@ -52,7 +78,20 @@ export interface DiscoveredTool {
    * `annotations`, and it is made elsewhere.
    */
   readonly inputSchema?: Record<string, unknown> | undefined;
-  /** Extracted from the tool's own schema/description text, when it says so. */
+  /**
+   * The authority this operation requires, when something can say.
+   *
+   * **BattleGrid publishes no per-tool scope** — a discovered tool carries
+   * `annotations`, `description`, `execution`, `inputSchema`, `name`,
+   * `outputSchema` and `title`, and none of them names an authority. So this is
+   * set by the adapter from this product's own judgement
+   * (`money-tools.ts`), which is the only place permitted to know tool names.
+   *
+   * It was declared and read here for four months with nothing setting it, while
+   * a comment in `classify.ts` described it as already working. That is why
+   * every known tool classified as `mcp:read` and the port's wager gate never
+   * fired (#340).
+   */
   readonly declaredScope?: Scope | undefined;
 }
 
