@@ -1,5 +1,78 @@
 # Journal
 
+## 2026-08-17 (execute) — both gates fire, and one blocker is left
+
+**Did**: executed `the-port-knows-what-costs-money` sections 0–6 and 8.1.
+**30/36.** Not handed to the gate — section 7 is genuinely incomplete, not
+merely blocked.
+
+**`declaredScope` has a producer for the first time.** `money-tools.ts` in the
+adapter holds the reachable fund-committing tools, `rawDiscoverTools` sets the
+field, `classify.ts` keys the consequence to it and names no tool. Measured
+through the composed path:
+
+```
+accept_entry_decision   before: mcp:read, destructive false, admitted on read scope with no token
+                        after:  mcp:wager, destructive true
+                                refused read-only, naming mcp:wager, no audit row
+                                refused with authority but no token, no audit row
+                                admitted with both, audit row destructive: true
+```
+
+**Three things went wrong and all three are recorded.**
+
+- **DE-1**: the plan's "one home" was impossible. A10 half 1 forbids a forbidden
+  tool's name anywhere under `src/`, so the two sets **cannot** share a file —
+  that is the point of the forbidden set. One home per set, imported not copied.
+- **DE-3**: A10 caught my own doc comment in `tool-class.ts` naming a released
+  tool. Same event as DL-7 of the approvals change, same answer: de-name the
+  comment, do not weaken the guard. **My own "domain names no tool" assertion
+  missed it** because it scanned one file; it now scans all of `src/domain`.
+- **DE-2**, the one worth keeping: the section 0 evidence test built
+  `DiscoveredTool`s by hand **without** `declaredScope`, so it bypassed the
+  adapter and could never have shown the fix. The fabricated-input trap this
+  change exists to remove, committed by its own evidence test. Caught only
+  because the fix landed and the test **did not move**.
+
+**Section 5 was the point of the whole change.**
+`answer-authority.test.ts:171-176` hand-built
+`{ destructive: true, requiredScope: 'mcp:wager' }`. Every assertion correct,
+about an input production never produced — which is why nobody saw this for four
+months. It now drives `buildClassificationMap`, and reverting the fix fails 3
+tests where before it failed none. 5.2 is narrow by **DE-4**: 22 files fabricate
+a *read* classification inside a fake, which is harmless; the guard forbids a
+fabricated `mcp:wager` classification beside a real money-tool name.
+
+**Section 6 records both claims and rewrites nothing.**
+`platform_destructive_hint`, nullable and **not** defaulted — a default would
+invent an answer for every historical row. Null means *not recorded*, never
+*false*, and the read path passes it through rather than coercing. That is what
+makes the two eras tellable apart without touching history (**DE-5**). The field
+is **required** on `NewAuditEntry` so a future writer cannot silently omit it;
+`tsc` named all 17 construction sites (**DE-6**).
+
+**Gates**: `tsc` · `lint` · `build` · schema clean · **2732/2738** (documented
+six-failure baseline) · `test:db` **96/96** against `grid_commander_test`, the
+working database untouched.
+
+**State**: branch `claude/confirmation-keyed-to-consequence`, pushed, **no PR
+raised** — the change is not finished. `validate --all` back to 0/15/10.
+`audit-log` manifest re-pinned in **prose and digest**. Nothing scheduled,
+nothing running, no `.env.local` in this worktree.
+
+**Next**: **7.2 is the only real blocker and it is the operator's** — a live
+accept through the product, by name, at the moment. PD-6 records why a green
+suite cannot substitute: the hazard is making accept *unreachable* without
+anyone noticing, and the surface would simply stop offering it. **7.1 needs a
+key** this worktree does not have. **7.3's offline half is already proven** in
+`money-tools.test.ts`; the live half rides with 7.2. Then 8.2–8.4, the auditor,
+and archive — which is what closes **#340**.
+
+**Watch out**: start at `/board`. It now runs `mirror` and `gh pr list`, so an
+unmerged branch shows as in-flight work rather than being rediscovered the hard
+way — which is the mistake that opened this session.
+
+
 ## 2026-08-17 (propose+plan) — #340 is wider than filed, and I had it wrong in the audit
 
 **Did**: proposed and planned `the-port-knows-what-costs-money` (**full**, 36

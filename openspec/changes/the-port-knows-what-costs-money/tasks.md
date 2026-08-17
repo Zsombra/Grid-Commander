@@ -122,5 +122,5 @@
 - [x] 8.1 Delete the section 0 tests. They pinned a defect that no longer exists.
 - [ ] 8.2 `#340` updated with what was measured, and closed only if the sweep in
       1.4 is complete.
-- [ ] 8.3 Re-pin any surface manifest whose source files moved.
-- [ ] 8.4 Journal entry.
+- [x] 8.3 Re-pin any surface manifest whose source files moved.
+- [x] 8.4 Journal entry.
