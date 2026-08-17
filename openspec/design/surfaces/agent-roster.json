@@ -1,14 +1,17 @@
 {
   "id": "agent-roster",
-  "title": "Agents \u2014 the roster and what each is bound to",
+  "title": "Agents — the roster and what each is bound to",
   "route": "/agents",
   "capability": "agent-authoring",
-  "status": "functional",
-  "generated_at_commit": "d8c877c",
+  "status": "designed",
+  "generated_at_commit": "c0e741a",
   "source_files": [
     "app/(app)/agents/page.tsx",
-    "src/presentation/components/agent-roster.tsx",
     "src/presentation/components/agent-actions.tsx",
+    "src/presentation/components/agent-roster.tsx",
+    "src/presentation/components/binding.tsx",
+    "src/presentation/components/fleet-spend.tsx",
+    "src/presentation/components/radar-pause.tsx",
     "src/presentation/components/why-not-loaded.tsx",
     "src/presentation/require-connection.tsx"
   ],
@@ -26,6 +29,11 @@
       "name": "creation",
       "shape": "CreationAvailability ('available' with remaining | 'at-capacity' | 'unknown')",
       "source": "app.listAgents.execute()"
+    },
+    {
+      "name": "deployments",
+      "shape": "DeploymentSummaryResult ('summary' with byAgent | 'unreadable')",
+      "source": "app.readDeployments.execute()"
     }
   ],
   "components": [
@@ -42,22 +50,45 @@
         "create-unknown",
         "agent-row:active",
         "agent-row:archived",
-        "agent-row:overflow-long-name"
+        "agent-row:overflow-long-name",
+        "agent-row:deployment-acting",
+        "agent-row:deployment-waiting",
+        "agent-row:deployment-holding-position",
+        "agent-row:deployment-slot-held-not-scanning",
+        "agent-row:deployment-unscanned-market",
+        "agent-row:resolution-not-qualifying",
+        "agent-row:resolution-not-qualifying-no-reason",
+        "agent-row:resolution-cooldown",
+        "agent-row:resolution-regime",
+        "agent-row:resolution-unrecognised-section",
+        "deployment-unavailable"
       ],
       "data": [
         "roster",
-        "creation"
+        "creation",
+        "deployments"
       ],
-      "actions": [],
-      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed \u2014 the classes now render). Three top-level branches rendered separately \u2014 agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name and status on one baseline row, then the binding sentence. No truncation handling.",
+      "actions": [
+        {
+          "id": "open-agent",
+          "effect": "The agent's name links to /agents/<id> — the detail page holding the binding, the brain, the money summary and the rename form"
+        }
+      ],
+      "current_implementation": "Bordered ul of li, styled with Tailwind (3.4.19, installed since this surface was first surveyed — the classes now render). Three top-level branches rendered separately — agents, empty, unreadable. The unreadable branch is role=alert and carries four lines: heading, the raw reason from the port, the why-not-loaded sentence, and a closing line stating what is unavailable. | agent-row: Bordered li; name (an underlined link to the agent detail page) and status on one baseline row, then the binding sentence. No truncation handling. | deployment line: each row states the agent's radar deployments in a four-arm standing vocabulary — 'Holding the position on X', 'Scanning X', 'Holds the X slot and is not scanning it — this agent is not active', 'In the rotation for X' — as spans joined with ' · ', or 'Not deployed — scanning no market'; since DT-0011's 2026-08-15 revision the holding-position standing wears font-medium (the other standings stay regular); when the radar is unreadable, one role=status notice covers the list and rows carry no deployment line. | resolution notes (one text-text-secondary line per deployment that has any): what the platform is letting happen — an unrecognised section named verbatim as unrecognised, 'not qualifying — the platform gives <block token>' or 'not qualifying, and the platform did not say why', 'sitting out a cooldown until <ISO>', 'regime <name> (<conviction>)' — joined with ' · '; since the same revision the quoted platform identifiers (block token, unrecognised section value) render as <code> in font-mono text-xs while regime names and timestamps stay in the sentence face; the wording is composed as prose/platform-token segments (resolutionNoteSegments) and the string form (resolutionNote) is derived from them; a null resolution renders nothing. | unscanned markets: one plain line per deployment whose slots hold no active agent — 'No active agent holds the X deployment — that market is deployed and unscanned.'",
       "constraints": [
-        "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own \u2014 or concludes something deleted it",
+        "`empty` and `unreadable` are separate branches from the port and must stay visually distinct. Branching on `length === 0` makes an account whose roster failed to load look like an account with no agents, and telling that user they have none is how someone recreates work they already own — or concludes something deleted it",
         "`unreadable` must keep stating what is unavailable as its own condition, not as a pronoun pointing at the sentence above it. It read 'nothing can be created or changed until it can' while the preceding clause was always 'could not reach BattleGrid'; once that clause started varying by cause, the antecedent disappeared. It is a capability statement, not only an error",
         "`create-unknown` renders nothing at all. An affordance whose availability we do not know must not be guessed into existence",
         "The capacity notice appears before the form, not after submission",
-        "[agent-row] The bound strategy *and its revision* must stay together \u2014 the revision is what tells a user whether this agent has picked up a recent edit",
+        "[agent-row] The bound strategy *and its revision* must stay together — the revision is what tells a user whether this agent has picked up a recent edit",
         "[agent-row] Status must not be signalled by colour alone",
-        "[agent-row] Long display names must not push the status out of view"
+        "[agent-row] Long display names must not push the status out of view",
+        "[agent-row] The name must remain the link to the agent itself. The row once offered six sub-pages and no way to open /agents/<id> — the only live route to an agent was the cancel link on its own archive page. The name holds the noun; the actions list holds the verbs",
+        "[agent-row] The deployment line uses the same words as the detail page's Deployment section — the two surfaces must not disagree about what an agent is doing",
+        "An unreadable radar renders as one notice for the whole list and NO per-row claim. A hiccup must never relabel a scanning agent as idle, nor an idle one as scanning",
+        "[agent-row] Platform tokens in the resolution notes render verbatim — AGGREGATE_BELOW_MIN stays AGGREGATE_BELOW_MIN. Two observed values from twenty rows are not a vocabulary, and a design may restyle the line but not translate the token into a sentence of ours",
+        "[agent-row] A section this product does not recognise is named as unrecognised, never restyled into scanning or idle — the naming is the honesty, not a missing label",
+        "[agent-row] A deployment whose resolution is null supports no claim in either direction and renders nothing — a design must not fill that silence with a neutral-looking placeholder"
       ],
       "children": [
         "agent-actions",
@@ -67,13 +98,13 @@
     {
       "id": "agent-actions",
       "role": "navigation",
-      "purpose": "Offer only the actions BattleGrid permits on this particular agent.",
+      "purpose": "Offer the actions BattleGrid permits on this particular agent, plus the read pages that are always available.",
       "states": [
         "editable",
         "rebindable",
         "archivable",
         "reactivatable",
-        "journal-only",
+        "reads-only",
         "not-permitted-notice"
       ],
       "data": [
@@ -98,15 +129,23 @@
           "effect": "Opens /agents/<id>/reactivate"
         },
         {
+          "id": "thinking",
+          "effect": "Opens /agents/<id>/thinking ('What it decided') — always present"
+        },
+        {
+          "id": "limits",
+          "effect": "Opens /agents/<id>/limits ('What would stop it') — always present"
+        },
+        {
           "id": "journal",
-          "effect": "Opens /agents/<id>/journal \u2014 always present"
+          "effect": "Opens /agents/<id>/journal — always present"
         }
       ],
-      "current_implementation": "nav > ul of underlined anchors, labelled `Actions for <name>`. A trailing note when an active agent is not editable.",
+      "current_implementation": "nav > ul of underlined anchors, labelled `Actions for <name>`. Four permission-gated verbs, then three always-present read links (thinking, limits, journal). A trailing note when an active agent is not editable.",
       "constraints": [
-        "There is no delete action and there must never be one. The live payload sets `capabilities.canDelete: true` while the MCP surface offers no delete tool \u2014 the flag describes what BattleGrid's own app can do. A delete button would ship an action that cannot work (findings-agents F-1)",
-        "Journal is always offered, including on agents nothing else can be done to; it is the one affordance that never depends on permission",
-        "The 'BattleGrid does not permit Grid-Commander to change this agent' note must stay attached to the action list \u2014 it explains an absence, and an absence with no explanation reads as a missing feature",
+        "There is no delete action and there must never be one. The live payload sets `capabilities.canDelete: true` while the MCP surface offers no delete tool — the flag describes what BattleGrid's own app can do. A delete button would ship an action that cannot work (findings-agents F-1)",
+        "The three read links — 'What it decided' (thinking), 'What would stop it' (limits), and Journal — are always offered, including on agents nothing else can be done to. Reading never depends on permission, and an archived agent's reasoning is worth more, not less, after retirement",
+        "The 'BattleGrid does not permit Grid-Commander to change this agent' note must stay attached to the action list — it explains an absence, and an absence with no explanation reads as a missing feature",
         "All actions are GET links to a page that asks first; none mutates on click"
       ],
       "children": []
@@ -126,7 +165,7 @@
       "current_implementation": "One <p> inside the unreadable branch of both the roster and the strategy list. The reassurance clause is fixed and outside the conditional; only the cause clause varies. Takes a `subject` string so the two callers share one sentence rather than holding two copies.",
       "constraints": [
         "The reassurance ('this does not mean X are gone') must render in BOTH states. It is the only thing on screen telling a user their work still exists, and it sits outside the branch so neither case can be written without it",
-        "`refused` and `unreachable` must not be collapsed back into one sentence. A refusal means BattleGrid was reached and declined \u2014 waiting changes nothing and the credential is the fix. Unreachable means no usable answer came back \u2014 the credential may be fine and waiting may be exactly right. Naming the wrong one sends a user to wait for an outage that is not happening",
+        "`refused` and `unreachable` must not be collapsed back into one sentence. A refusal means BattleGrid was reached and declined — waiting changes nothing and the credential is the fix. Unreachable means no usable answer came back — the credential may be fine and waiting may be exactly right. Naming the wrong one sends a user to wait for an outage that is not happening",
         "Neither state may be softened into a vague 'something went wrong'. The sentence earns its reassurance by naming a cause that is obviously external and obviously not deletion; a vaguer cause is a weaker reassurance",
         "The cause arrives as a value on the result. Nothing here may re-derive it by matching on the reason text"
       ],
@@ -151,6 +190,51 @@
       "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment: a personal one resolves the acting user from a configured key and never returns not-connected, so this page cannot render there.",
       "constraints": [
         "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    },
+    {
+      "id": "fleet-spend",
+      "role": "display",
+      "purpose": "What the whole fleet spent on model calls in the last 24 hours.",
+      "states": [
+        "amount",
+        "no-figure",
+        "unreadable"
+      ],
+      "data": [
+        "spend"
+      ],
+      "actions": [],
+      "current_implementation": "One line beneath the roster. `unreadable` says the spend could not be read and names why; `no-figure` renders when totalCost24hUsd is null — the platform answered and had no number, which is not zero; otherwise the total, with the active-agent count appended only when the count is known.",
+      "constraints": [
+        "A null total must not render as $0 — the platform answering with no figure and the fleet spending nothing are different facts.",
+        "Spend is read from list_intelligence_agents, not the detail read: the two disagree, and the list is the one that answers (see the-cost-of-an-agent-reads-differently-from-two-tools)."
+      ]
+    },
+    {
+      "id": "radar-pause",
+      "role": "display",
+      "purpose": "Say whether anything is scanning at all — the correction to every standing sentence on the page, since standing names the agent the radar would resolve to and stays true while nothing runs.",
+      "states": [
+        "pause-unknown",
+        "radar-paused",
+        "platform-paused-count",
+        "both",
+        "platform-contradicts-itself",
+        "running-says-nothing"
+      ],
+      "data": [
+        "pause"
+      ],
+      "actions": [],
+      "current_implementation": "A space-y-1 stack of role=status <p> above the deployment rows. Renders NOTHING when the pause is unknown (all four fields null) and nothing when the radar runs with no platform-paused coins. The radar's own pause and the platform's count are separate sentences; the count is stated against coinsDeployed, or says the denominator was not given. A fourth line appears only when BattleGrid reports a paused radar and a non-zero scanning count, showing both as returned.",
+      "constraints": [
+        "`pause-unknown` renders NOTHING and must never render as reassurance. A missing pause is a read that did not answer, and a 'radar: running' badge built on it would assert liveness the platform never stated (spec: An Unreadable Pause Is Not A Running Radar)",
+        "The radar's pause and the platform's count are never reduced to one claim or one badge — they are different shapes with different remedies, and an operator told only 'paused' cannot tell whether their own radar is off or the platform stopped some coins (spec: The Radar's Pause And The Platform's Are Reported Apart)",
+        "role=status, never role=alert. A paused radar is a state of the platform being reported, not a failure of the page; the alert treatment on these surfaces belongs to reads that broke",
+        "It sits ABOVE the rows and must not be moved into them. The platform reports the pause once for the fleet and carries no per-deployment pause, so a row cannot own it — and rewriting each row's standing from it would make the row say something BattleGrid did not (spec: A Resolution State The Product Does Not Recognise Is Named, Never Interpreted)",
+        "Counts are always stated against the whole they were counted over, or the surface says the whole was not given"
       ],
       "children": []
     }
@@ -184,5 +268,15 @@
       "agent-row actions in list order"
     ],
     "notes": "Per-row nav labelled `Actions for <agent name>`. Roster failure is role=alert; capacity is role=status."
+  },
+  "source_digest": {
+    "app/(app)/agents/page.tsx": "sha256:9e1ec53d79c18b58191e37daa39b658893dff2ccd70c0359f4b7551686d57a09",
+    "src/presentation/components/agent-actions.tsx": "sha256:4fdea2419f33bd95222d30b6b8bc729ce460e312046fd6f14e40b28f9ab40f0f",
+    "src/presentation/components/agent-roster.tsx": "sha256:458c5b4b9ff8209b242c25a734a340e018991de475d803fbe879ff0c98b17994",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/fleet-spend.tsx": "sha256:443f0edc2d3e16fdec4948ccc682708eddeddf2ec79c0fbfb21d24ea83fee0f0",
+    "src/presentation/components/radar-pause.tsx": "sha256:8fd8527f2cff642a016eacfff98f79773696821c963ba7e69b4fa1356a620a34",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

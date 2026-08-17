@@ -1,0 +1,252 @@
+{
+  "id": "agent-limits",
+  "title": "What would stop this agent",
+  "route": "/agents/[id]/limits",
+  "capability": "agent-understanding",
+  "status": "functional",
+  "generated_at_commit": "594c08d",
+  "source_files": [
+    "app/(app)/agents/[id]/limits/page.tsx",
+    "src/presentation/components/agent-page-heading.tsx",
+    "src/presentation/components/ceilings.tsx",
+    "src/presentation/components/loss-shape.tsx",
+    "src/presentation/components/risk-reading.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "budget",
+      "shape": "ReadBudgetResult — 'budget' {limits, unbounded, warnings, halted, sizing, block} | 'unreadable' {reason, cause}",
+      "source": "app.readBudget.execute — one get_agent_budget call, whose gauges the platform has already resolved"
+    },
+    {
+      "name": "reading",
+      "shape": "RiskReading — ceilings, geometry, management, exposure, each its own Reading<T>",
+      "source": "app.readRiskReading.execute — the agent's settings read against what makes them safe or unsafe"
+    },
+    {
+      "name": "lossShape",
+      "shape": "ReadLossShapeResult",
+      "source": "app.readLossShape.execute — how the loss behind the stop arrived"
+    },
+    {
+      "name": "roster",
+      "shape": "RosterResult",
+      "source": "app.listAgents.execute — read for the agent's name and its 24h spend, which no other read answers truthfully"
+    }
+  ],
+  "components": [
+    {
+      "id": "limits-page",
+      "role": "container",
+      "purpose": "Answer one question — what would stop this agent, and how close is it — with the limits that cannot stop it named rather than left as calm rows.",
+      "states": [
+        "read",
+        "budget-unreadable",
+        "roster-unreadable",
+        "halted",
+        "blocked",
+        "not-connected"
+      ],
+      "data": [
+        "budget",
+        "reading",
+        "lossShape",
+        "roster"
+      ],
+      "actions": [],
+      "current_implementation": "Centred column with `AgentPageHeading`, then `<Ceilings>`, `<RiskReadingPanel>` and `<LossShapePanel>`. Every reading is computed in its query; the page imports no domain (W-D) and renders four independently-failing sources.",
+      "constraints": [
+        "The four reads fail independently and one failure must not blank the others — `A Summary Assembled Around A Refusal Says What It Could Not Reach`. A design must not unify them into a single skeleton or error state.",
+        "The page imports no domain type. Readings arrive shaped by their queries.",
+        "This is a read-only surface. It offers no control that changes an agent, and adding one would change behaviour and is requires-spec-change."
+      ],
+      "children": [
+        "ceilings",
+        "sizing-panel",
+        "blocked-notice",
+        "risk-reading-panel",
+        "loss-shape-panel",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "ceilings",
+      "role": "display",
+      "purpose": "How close the agent is to each ceiling that could stop it — and which ceilings do not exist.",
+      "states": [
+        "binding-and-unbounded",
+        "all-binding",
+        "all-unbounded",
+        "halted",
+        "warnings"
+      ],
+      "data": [
+        "budget"
+      ],
+      "actions": [],
+      "current_implementation": "`<Ceilings>` (ceilings.tsx). Binding limits sort first; unbounded ones are named in their own list rather than shown as rows. A halt renders a consequence-tinted role=alert at the top.",
+      "constraints": [
+        "**A gauge with no ceiling must never render a number for its headroom.** The platform sends `remaining: 0` there, and '0 remaining' says the opposite of what it means — `A Limit Nobody Set Is Not A Limit Of Zero`.",
+        "The unbounded list is load-bearing: four calm rows read as an agent operating inside its limits when the truth may be that it has none.",
+        "Every reading is computed in `ReadBudgetQuery`; this component formats and never derives."
+      ],
+      "children": []
+    },
+    {
+      "id": "sizing-panel",
+      "role": "display",
+      "purpose": "What is left under the exposure cap, and that new entries are sized from the remainder rather than stopped by the ceiling.",
+      "states": [
+        "configured",
+        "unconfigured-absent",
+        "no-exposure-gauge-absent"
+      ],
+      "data": [
+        "budget"
+      ],
+      "actions": [],
+      "current_implementation": "`SizingPanel` in ceilings.tsx — a bordered block showing committed / left, the sentence naming the remainder as the sizing base, what the platform reports it authorizes, and the consequence: below the exchange minimum, entries stop being placed and BattleGrid does not say why. Renders nothing at all when the cap is unconfigured or absent.",
+      "constraints": [
+        "**No projected order size, and no exchange-floor comparison.** That figure is `headroom x sizePct x effectiveLeverage`; the preset is this product's to apply and the platform publishes no per-preset projection. `the-approval-can-be-answered` refused the same formula as PE-2 on the neighbouring money surface. `tests/agent/sizing-base.test.ts` scans this file with comments stripped, so the rule can be explained here without tripping its own guard. **Measured 2026-08-16 (#299): the floor is per-coin, not per-agent.** A live `EXCHANGE_MIN_NOTIONAL_UNREACHABLE` row published `{equityUsd 33.05, minEquityUsd 33.333333, smallPct 10, maxLeverage 3}` — `minEquityUsd` is `10 / (smallPct x maxLeverage)`, and `maxLeverage` resolves per coin (3 on AIXBT and MELANIA, 4 on FARTCOIN, against a configured 4). So the same agent's floor is $33.33 on one coin and $25.00 on another at the same moment. Any single figure printed here would be wrong for some coin the agent trades.",
+        "Renders nothing for an unconfigured cap — an unbounded cap has no proportion to be full of, and `0% used` would describe a limit that does not exist.",
+        "Every figure is the platform's, rendered as sent. `get_agent_budget`'s own description says of the gauges: *render them, never re-derive*.",
+        "The mechanism sentence is the point of the section. A relayout may move it but must not drop it — the remaining figure alone reads as room to keep going, which is the misreading that makes the failure invisible."
+      ],
+      "children": []
+    },
+    {
+      "id": "blocked-notice",
+      "role": "feedback",
+      "purpose": "State a budget-side stop the platform names itself, rather than leaving it to be inferred from an agent that went quiet.",
+      "states": [
+        "blocked-with-reason",
+        "blocked-without-reason",
+        "over-subscribed",
+        "absent"
+      ],
+      "data": [
+        "budget"
+      ],
+      "actions": [],
+      "current_implementation": "`BlockedNotice` in ceilings.tsx — a consequence-tinted role=alert carrying the platform's own reason and the time it began.",
+      "constraints": [
+        "role=alert must survive.",
+        "Where the platform blocked an agent and gave no reason, the notice says so. **No explanation may be substituted** — a guess here would acquire the platform's authority.",
+        "The absence of a block is not rendered as a reassurance. Nothing is shown when nothing is reported."
+      ],
+      "children": []
+    },
+    {
+      "id": "risk-reading-panel",
+      "role": "display",
+      "purpose": "Each setting shown against the thing that makes it safe or unsafe — the ceilings against their platform defaults, the exit geometry, the management preset, and the exposure cap against the account balance.",
+      "states": [
+        "read",
+        "none",
+        "unreadable"
+      ],
+      "data": [
+        "reading"
+      ],
+      "actions": [],
+      "current_implementation": "`<RiskReadingPanel>` (risk-reading.tsx). Four independent `Reading<T>` sections, each stating its own failure.",
+      "constraints": [
+        "The balance is described as **the account's**, never the agent's — one balance funds every agent, and a per-agent framing overstates the money available by the number of agents sharing it.",
+        "A derived figure says it is derived; the measurement window is stated rather than implied.",
+        "Each of the four sections fails alone. A design must not collapse them into one error state."
+      ],
+      "children": []
+    },
+    {
+      "id": "loss-shape-panel",
+      "role": "display",
+      "purpose": "How the loss behind the drawdown stop actually arrived — the curve, not just the figure.",
+      "states": [
+        "read",
+        "empty-curve",
+        "unreadable"
+      ],
+      "data": [
+        "lossShape"
+      ],
+      "actions": [],
+      "current_implementation": "`<LossShapePanel>` (loss-shape.tsx), with its own `WhyNotLoaded`.",
+      "constraints": [
+        "An empty curve is a legitimate state — the platform defines it as no settlements yet, not as missing data — and must not render as a failure."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Say whether a failed read was a refusal or an outage, because the two have different next steps.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "budget",
+        "reading",
+        "lossShape"
+      ],
+      "actions": [],
+      "current_implementation": "Shared `WhyNotLoaded`, mounted per failing source so one failure names itself without claiming the others.",
+      "constraints": [
+        "The refused/unreachable distinction is spec-bearing — telling somebody with a bad credential to wait out an outage that is not happening is the mistake this component exists to stop."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Find out what would stop this agent",
+      "steps": [
+        "open the agent's limits page",
+        "read which ceilings bind and which do not exist",
+        "read how full the exposure cap is and that entries are sized from what is left",
+        "read each setting against what makes it safe or unsafe"
+      ]
+    },
+    {
+      "name": "Understand why an agent went quiet",
+      "steps": [
+        "open the limits page",
+        "see the exposure cap filling and the remainder shrinking",
+        "read that entries are sized from the remainder and stop below the exchange minimum",
+        "or, where the platform names a block, read the block with its own reason"
+      ]
+    },
+    {
+      "name": "One source fails",
+      "steps": [
+        "open the limits page",
+        "the failing section states its reason and whether it was refused or unreachable",
+        "the other three sections still render"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "back-to-agent"
+    ],
+    "notes": "The halt notice, the warnings and the blocked notice all carry role=alert and can be on screen together. Read-only surface: no forms, no client state, full-page navigation throughout."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/limits/page.tsx": "sha256:95cc4215575f8f238630e21f8518c5352d8aa39f786792b0918df2276a9edbb2",
+    "src/presentation/components/agent-page-heading.tsx": "sha256:51458ba558f1dda6290b7ba96caaa78435b66dacd3e5b27990dfebcfacbaaedd",
+    "src/presentation/components/ceilings.tsx": "sha256:4e2709128ca0d6829aabfe3e17ef924116d8a0a783ba0adb055325f0379d0239",
+    "src/presentation/components/loss-shape.tsx": "sha256:bf22d86bec41368b7e3ede00862b75ecb28eabf32ea9c2ae46897a9be0ed5429",
+    "src/presentation/components/risk-reading.tsx": "sha256:d1f96734c2231d60ec179de42e311a5bff1baa440919b0357f687f6990a7785f",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

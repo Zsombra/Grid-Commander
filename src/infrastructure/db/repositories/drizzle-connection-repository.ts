@@ -62,6 +62,12 @@ export class DrizzleConnectionRepository
    * middle of connecting their account. `DO NOTHING` cannot be repaired by
    * adding `RETURNING`: it returns no row precisely when there was a conflict,
    * which is the only case that matters here.
+   *
+   * The connection id minted below belongs to the insert and is not returned.
+   * The connection upsert conflicts on the unique index over `user_id` and its
+   * `set` does not touch `id`, so a reconnection leaves the existing row's key
+   * in place — handing this one back would have named a row that does not
+   * exist, on the path this method exists to get right.
    */
   async upsert(connection: NewConnection): Promise<ResolvedConnection> {
     const id = this.newId();
@@ -108,7 +114,7 @@ export class DrizzleConnectionRepository
         },
       });
 
-    return { userId, connectionId: id };
+    return { userId };
   }
 
   /**

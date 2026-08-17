@@ -21,19 +21,38 @@ export interface CapabilityView {
 export class CapabilityCache {
   private map: ReadonlyMap<string, ToolClass> | null = null;
   private failed = false;
+  private inFlight: Promise<void> | null = null;
 
   constructor(private readonly source: DiscoverySource) {}
 
+  /**
+   * Single-flight: concurrent calls share one discovery read. Ten parallel
+   * tool calls used to mean ten parallel `tools/list` requests, and one
+   * failing degraded that caller's whole read (found live 2026-08-01 by the
+   * metric index, the first surface to fan out). Sequential calls still
+   * re-discover every time — freshness is per burst, not per process, so
+   * the staleness rule the server states is intact. Classifications come
+   * from platform-global annotations, which is why sharing the read across
+   * concurrent users changes nothing they could observe.
+   */
   async load(accessToken: string): Promise<CapabilityView> {
-    try {
-      const tools = await this.source.discoverTools(accessToken);
-      this.map = buildClassificationMap(tools);
-      this.failed = false;
-    } catch {
-      // Deliberately not rethrown: the product keeps working, read-only.
-      this.map = null;
-      this.failed = true;
+    if (!this.inFlight) {
+      this.inFlight = this.source
+        .discoverTools(accessToken)
+        .then((tools) => {
+          this.map = buildClassificationMap(tools);
+          this.failed = false;
+        })
+        .catch(() => {
+          // Deliberately not rethrown: the product keeps working, read-only.
+          this.map = null;
+          this.failed = true;
+        })
+        .finally(() => {
+          this.inFlight = null;
+        });
     }
+    await this.inFlight;
     return this.view();
   }
 

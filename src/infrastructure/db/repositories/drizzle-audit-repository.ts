@@ -1,8 +1,13 @@
-import { and, desc, eq, gt, isNull } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { AuditEntry, AuditOutcome } from '@/domain/audit/audit-entry.js';
 import type { AuditReader, AuditWriter, NewAuditEntry } from '@/domain/audit/audit-repository.js';
-import type { ConfirmationStore, ConfirmationToken } from '@/domain/capability/confirmation.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
+import type {
+  ConfirmationRefusalCause,
+  ConfirmationStore,
+  ConfirmationToken,
+} from '@/domain/capability/confirmation.js';
 import type { Clock } from '@/ports/clock.js';
 import { auditEntries, confirmationTokens } from '../schema/index.js';
 
@@ -25,16 +30,36 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
 
   async begin(entry: NewAuditEntry): Promise<string> {
     const id = this.newId();
-    await this.db.insert(auditEntries).values({
-      id,
-      userId: entry.userId,
-      actor: entry.actor,
-      tool: entry.tool,
-      destructive: entry.destructive,
-      outcome: 'attempted' satisfies AuditOutcome,
-      createdAt: this.clock.now(),
-      idempotencyKey: entry.idempotencyKey,
-    });
+    try {
+      await this.db.insert(auditEntries).values({
+        id,
+        userId: entry.userId,
+        actor: entry.actor,
+        tool: entry.tool,
+        destructive: entry.destructive,
+        outcome: 'attempted' satisfies AuditOutcome,
+        createdAt: this.clock.now(),
+        idempotencyKey: entry.idempotencyKey,
+      });
+    } catch (err) {
+      // The partial unique index refusing a second live attempt for this key.
+      // Catching the violation, rather than pre-reading and branching, makes
+      // the race path and the sequential path the same path: two presses both
+      // INSERT, the loser lands here. Anything else that goes wrong with the
+      // insert is not this refusal and is rethrown untouched.
+      if (entry.idempotencyKey !== null && isIdempotencyCollision(err)) {
+        const live = await this.findByIdempotencyKey(entry.userId, entry.idempotencyKey);
+        // The colliding row can only be non-failed — the index ignores failed
+        // rows — but it may have completed between the collision and this
+        // read. A vanished or since-failed row reads as `attempted`: the
+        // honest unknown, same as the outcome mapper below.
+        throw new DuplicateIdempotencyKeyError(
+          entry.tool,
+          live?.outcome === 'succeeded' ? 'succeeded' : 'attempted',
+        );
+      }
+      throw err;
+    }
     return id;
   }
 
@@ -43,14 +68,23 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
     outcome: Exclude<AuditOutcome, 'attempted'>,
     failureReason?: string,
   ): Promise<void> {
-    await this.db
+    const updated = await this.db
       .update(auditEntries)
       .set({
         outcome,
         completedAt: this.clock.now(),
         failureReason: failureReason ?? null,
       })
-      .where(eq(auditEntries.id, id));
+      .where(eq(auditEntries.id, id))
+      .returning({ id: auditEntries.id });
+    // A completion aimed at nothing must not report success: the caller would
+    // believe the record closed while it still reads `attempted`. No
+    // replacement row is manufactured — a completion is evidence about an
+    // operation that began, and inventing the beginning to justify the end
+    // is worse than the failure it hides.
+    if (updated.length === 0) {
+      throw new Error(`no audit entry "${id}" to complete`);
+    }
   }
 
   async listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]> {
@@ -58,18 +92,44 @@ export class DrizzleAuditRepository implements AuditReader, AuditWriter {
       .select()
       .from(auditEntries)
       .where(eq(auditEntries.userId, userId))
-      .orderBy(desc(auditEntries.createdAt))
+      // The id tiebreak does not make same-instant order *true* — two entries
+      // in one millisecond have no true order — but it makes it stable, which
+      // is what a reader comparing two page loads actually needs.
+      .orderBy(desc(auditEntries.createdAt), desc(auditEntries.id))
       .limit(limit);
     return rows.map(toDomain);
   }
 
   async findByIdempotencyKey(userId: string, key: string): Promise<AuditEntry | null> {
+    // The live entry — the one that holds the key. With retries there can be
+    // several rows per (user, key); the failed ones released it, and the
+    // partial index guarantees at most one row here.
     const [row] = await this.db
       .select()
       .from(auditEntries)
-      .where(and(eq(auditEntries.userId, userId), eq(auditEntries.idempotencyKey, key)));
+      .where(
+        and(
+          eq(auditEntries.userId, userId),
+          eq(auditEntries.idempotencyKey, key),
+          ne(auditEntries.outcome, 'failed'),
+        ),
+      );
     return row ? toDomain(row) : null;
   }
+}
+
+/**
+ * The unique-violation shape node-postgres raises for our partial index,
+ * wherever drizzle put it. Checked by SQLSTATE and constraint name rather than
+ * message text — a spelling in a message is exactly the kind of guard that
+ * breaks silently.
+ */
+function isIdempotencyCollision(err: unknown): boolean {
+  for (let e = err; typeof e === 'object' && e !== null; e = (e as { cause?: unknown }).cause) {
+    const { code, constraint } = e as { code?: unknown; constraint?: unknown };
+    if (code === '23505' && constraint === 'audit_entries_user_idempotency_idx') return true;
+  }
+  return false;
 }
 
 function toDomain(row: typeof auditEntries.$inferSelect): AuditEntry {
@@ -158,5 +218,26 @@ export class DrizzleConfirmationStore implements ConfirmationStore {
       expiresAt: row.expiresAt,
       consumedAt: row.consumedAt,
     };
+  }
+
+  async diagnose(
+    token: string,
+    userId: string,
+    tool: string,
+    target: string,
+  ): Promise<ConfirmationRefusalCause> {
+    const [row] = await this.db
+      .select()
+      .from(confirmationTokens)
+      .where(eq(confirmationTokens.token, token));
+    if (!row) return 'unknown';
+    // Mismatch outranks the states below: a token spent or expired *for a
+    // different action* would otherwise tell the user about a lifecycle they
+    // never touched.
+    if (row.userId !== userId || row.tool !== tool || row.target !== target) return 'mismatched';
+    if (row.consumedAt !== null) return 'already-used';
+    if (row.expiresAt.getTime() <= this.clock.now().getTime()) return 'expired';
+    // Everything matches and it looks spendable — the consume lost a race.
+    return 'already-used';
   }
 }

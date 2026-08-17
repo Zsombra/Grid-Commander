@@ -1,6 +1,9 @@
 """The probe's id table, checked against what the platform actually returned.
 
-`ID_SOURCES` maps an argument name to the tool and array field that answer it.
+`ID_SOURCES` maps an argument name to the tool, array field and row key that
+answer it. The key is named per row rather than assumed to be `id`: coins are
+identified by `ticker` and carry no id at all, which a hardcoded `"id"` lookup
+would have found silently empty.
 The first version was written from assumption and three of five rows were wrong:
 `list_entry_decisions` returns `entries` rather than `decisions`,
 `list_signal_logs` returns `entries` rather than `logs`, and the argument is
@@ -36,7 +39,7 @@ def by_name():
 class ProbeIdSources(unittest.TestCase):
     def test_every_id_source_names_a_tool_the_probe_actually_calls(self):
         tools = by_name()
-        for argument, (tool, _field) in ID_SOURCES.items():
+        for argument, (tool, _field, _key) in ID_SOURCES.items():
             assert tool in tools, f"{argument}: {tool} is not a tool"
             assert tools[tool]["classification"] == "read", f"{tool} must be a read"
             assert tools[tool].get("observed") is not None, (
@@ -45,17 +48,31 @@ class ProbeIdSources(unittest.TestCase):
 
 
     def test_every_id_source_field_exists_and_carries_an_id(self):
-        """The check that would have caught the three wrong rows."""
+        """The check that would have caught the three wrong rows.
+
+        A wrong row names a field the tool does not return — that must fail,
+        it is the silently-empty-lookup defect this file exists for. An empty
+        *list* under the right name is different: it is the account's state on
+        the day of the probe, not a defect in the row. The 2026-07-31 probe
+        recorded `list_entry_decisions.entries` as `[]` because the account's
+        agent had made no entry decisions — the field, the tool and the row
+        were all correct, and failing on it would teach people to re-probe
+        until the account looks busier. Where rows exist, they must carry an
+        `id`; where none do, the artifact already records which arguments went
+        unanswered.
+        """
         tools = by_name()
-        for argument, (tool, field) in ID_SOURCES.items():
+        for argument, (tool, field, key) in ID_SOURCES.items():
             shape = tools[tool].get("observed_shape") or {}
             assert field in shape, (
                 f"{argument}: {tool} returns {sorted(shape)}, not '{field}'"
             )
             rows = shape[field]
-            assert isinstance(rows, list) and rows, f"{argument}: {tool}.{field} was empty"
-            assert isinstance(rows[0], dict) and "id" in rows[0], (
-                f"{argument}: rows of {tool}.{field} carry no 'id'"
+            assert isinstance(rows, list), f"{argument}: {tool}.{field} is not a list"
+            if not rows:
+                continue  # the account had no rows that day — a state, not a wrong row
+            assert isinstance(rows[0], dict) and key in rows[0], (
+                f"{argument}: rows of {tool}.{field} carry no '{key}'"
             )
 
 

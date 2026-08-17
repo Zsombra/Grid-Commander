@@ -1,0 +1,59 @@
+{
+  "id": "DT-0025",
+  "surface": "recorder-trim",
+  "targets": [
+    "perform-trim",
+    "boundary"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "Recorder-trim's two rows get the confirmation shape the ceremony sweep established — stacked full-width below tablet, wrapping above it — so the destructive surface stops being the one that looks different.",
+  "rationale": "`perform-trim` records the gap in the manifest's own words: 'Still a wrapping row with no mobile full-width stack: DT-0016/0017/0018 did not reach this surface.' `boundary`, the row that asks, is in the same state — a `flex flex-wrap items-end gap-3` carrying a date input, a submit and a cancel.\n\nThis surface deserves the treatment more than the ones that got it. Trimming the record deletes signal history that cannot be recovered, and it is the confirmation most likely to be reached on a phone, where a wrapping row puts a destructive submit and a cancel side by side at thumb width. The sweep skipped it for scheduling reasons, not design ones.\n\n`boundary` carries an input as well as controls, which the other confirmation rows do not, so it is not a pure copy of DT-0016: the field stacks full-width above the controls rather than beside them, and `items-end` stops meaning anything once the row is a column. That is the one decision this ticket makes that DT-0016 did not.",
+  "design": {
+    "layout": "Both rows become `flex flex-col gap-3` below the tablet breakpoint and `tablet:flex-row tablet:flex-wrap` at and above it. In `boundary` the date field is the first item in the stack and takes full width under tablet; `tablet:items-end` is retained only above the breakpoint, where a shared baseline between a labelled field and its buttons is meaningful. Controls in both rows take `w-full tablet:w-auto`.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "row_gap": "space.3",
+      "stack_breakpoint": "breakpoint.tablet",
+      "min_height": "size.control.min",
+      "field_ground": "color.bg.raised",
+      "field_border": "color.border.default"
+    },
+    "states": {
+      "default": {
+        "content": "For `perform-trim`: the submit and cancel stack full-width under tablet, submit first, wrapping row above. The three hidden inputs carrying the confirmation binding are unaffected — they render nothing. For `boundary`: the labelled date field first at full width, then the submit, then the cancel, all full width under tablet; above it, a single wrapping row with the controls sharing the field's baseline as they do today."
+      },
+      "unreadable-date": {
+        "content": "`boundary` only. The row keeps the layout above; the unreadable-date treatment on the field itself is untouched by this ticket and keeps whatever DT-0014 gave it. Stated rather than restyled so that a reader can see it was considered — changing an error treatment while restacking a row would mix two decisions in one ticket."
+      }
+    },
+    "responsive": {
+      "mobile": "Both rows stacked, every control and the field full width, in reading order.",
+      "desktop": "Wrapping rows at natural widths; `boundary` keeps its shared baseline."
+    },
+    "content": {
+      "copy": "No copy change. The destructive submit keeps its wording exactly — this ticket does not soften or shorten it for the narrower column."
+    }
+  },
+  "acceptance": [
+    "Below breakpoint.tablet, both rows are vertical stacks with space.3 between items and every control at full width.",
+    "In `boundary` below breakpoint.tablet the date field is full width and appears above the controls, and no baseline alignment is applied.",
+    "At and above breakpoint.tablet, `boundary` is a single wrapping row and its controls share a baseline with the field, as they do today.",
+    "Rendered beside agent-archive-confirm at both viewports, `perform-trim`'s row is indistinguishable in layout.",
+    "Every control in both rows meets size.control.min at both viewports.",
+    "The `unreadable-date` treatment on the field is byte-identical before and after this ticket.",
+    "The submit's copy is unchanged at every viewport — it is not shortened for the stacked layout.",
+    "No raw pixel value for the breakpoint or the gap appears in either component."
+  ],
+  "references": [
+    "openspec/design/tickets/DT-0016.json — the treatment this applies",
+    "openspec/design/tickets/DT-0014.json — owns the field's unreadable-date treatment, untouched here",
+    "openspec/backlog/two-confirmation-row-shapes-and-an-undesigned-page.md (#183)"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-13",
+  "github_issue": null
+}

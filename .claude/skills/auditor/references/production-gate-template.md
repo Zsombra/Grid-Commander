@@ -60,7 +60,7 @@
 
 ### Quality gate commands
 <!-- Read from openspec/config.yaml quality_gates, the master plan's Phase 2
-     checklist, or docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality -->
+     checklist, or docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md → Code Quality -->
 - `<command>`: `PASS | FAIL`
 
 ### Repo-wide scans

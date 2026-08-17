@@ -11,6 +11,11 @@ import type { Clock } from '@/ports/clock.js';
  * with a server-held secret. The payload is a user id and an issue time; it
  * carries no BattleGrid authority (design W-A), so this cookie is not a
  * credential for anything outside Grid-Commander.
+ *
+ * `tools/check-route-queries.mjs` mirrors this format to mint a probe cookie
+ * — deliberately, with a behavioral tripwire: if the format here drifts, the
+ * probe's cookie is rejected, its route stops querying, and the serving
+ * check fails loudly rather than the mirror passing silently.
  */
 
 export const SESSION_COOKIE = 'gc_session';

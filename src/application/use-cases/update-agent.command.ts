@@ -2,6 +2,7 @@ import type { Agent } from '@/domain/agent/agent.js';
 import { isEditable } from '@/domain/agent/agent.js';
 import type { RejectedField } from '@/domain/agent/field-ownership.js';
 import { partitionEdit } from '@/domain/agent/field-ownership.js';
+import type { FeasibilityAdvisory } from '@/domain/agent/feasibility.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import { applyEdit, validateTradingConfig } from '@/domain/agent/trading-config.js';
 import { confirmationTarget } from '@/domain/capability/confirmation.js';
@@ -25,7 +26,16 @@ export interface UpdateAgentRequest {
 }
 
 export type UpdateAgentResult =
-  | { readonly kind: 'updated'; readonly agent: Agent }
+  | {
+      readonly kind: 'updated';
+      readonly agent: Agent;
+      /**
+       * What BattleGrid said, in the same breath, about which of this agent's
+       * armed coins its strategy can still build a stop for. `null` where the
+       * platform returned none — never `null` to mean "none can".
+       */
+      readonly feasibility: FeasibilityAdvisory | null;
+    }
   | { readonly kind: 'not-editable'; readonly reason: string }
   | { readonly kind: 'rejected'; readonly rejected: readonly RejectedField[] }
   | { readonly kind: 'invalid'; readonly issues: readonly ValidationIssue[] };
@@ -137,7 +147,15 @@ export class UpdateAgentCommand {
         target: confirmationTarget.agentEdit(req.agentId, intent(accepted, req.tradingConfigChanges)),
       },
     });
-    return { kind: 'updated', agent: updated };
+    /**
+     * Both halves of what the platform answered, carried forward.
+     *
+     * The command does not branch on `feasibility` and must not: whether an
+     * edit succeeded is not a question about what the agent can trade
+     * afterwards, and an edit that lands on a day when no coin can construct
+     * is still an edit that landed.
+     */
+    return { kind: 'updated', agent: updated.agent, feasibility: updated.feasibility };
   }
 }
 

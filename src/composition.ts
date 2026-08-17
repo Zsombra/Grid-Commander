@@ -1,10 +1,14 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
+import type { Remedy } from '@/domain/connection/remedy.js';
 import type { PersonalConfig } from './config.js';
 import { DeclaredScopes } from './domain/connection/held-scopes.js';
+import type { HeldScopes } from './domain/connection/held-scopes.js';
 import { ConnectionScopes } from './infrastructure/battlegrid/connection-scopes.js';
+import { CaptureSignalsCommand } from './application/use-cases/capture-signals.command.js';
 import { CreateAgentCommand } from './application/use-cases/create-agent.command.js';
 import { CurrentUserQuery } from './application/use-cases/current-user.query.js';
 import type { ActingUser } from './application/use-cases/current-user.query.js';
@@ -15,12 +19,20 @@ import {
   StartConnectionCommand,
 } from './application/use-cases/connect.commands.js';
 import { DescribeArchiveQuery, SetLifecycleCommand } from './application/use-cases/lifecycle.command.js';
+import { ReadFleetSpendQuery } from './application/use-cases/read-fleet-spend.query.js';
 import { ListAgentsQuery } from './application/use-cases/list-agents.query.js';
 import { ListAuditQuery } from './application/use-cases/list-audit.query.js';
 import { ReadAgentJournalQuery } from './application/use-cases/read-agent-journal.query.js';
 import { ReadCatalogQuery } from './application/use-cases/read-catalog.query.js';
 import { ReadVocabularyQuery } from './application/use-cases/read-vocabulary.query.js';
 import { ListStrategiesQuery } from './application/use-cases/list-strategies.query.js';
+import { ReadDeploymentsQuery } from './application/use-cases/read-deployments.query.js';
+import {
+  DescribeDeployQuery,
+  DescribeUndeployQuery,
+  PerformDeployCommand,
+  PerformUndeployCommand,
+} from './application/use-cases/deploy-agent.command.js';
 import { ReadStrategyQuery } from './application/use-cases/read-strategy.query.js';
 import { CompilePlanCommand } from './application/use-cases/compile-plan.command.js';
 import { ApplyPlanCommand, DescribeApplyQuery } from './application/use-cases/apply-plan.command.js';
@@ -30,16 +42,64 @@ import {
   SetStrategyActiveCommand,
 } from './application/use-cases/strategy-lifecycle.command.js';
 import { ReadSectionOptionsQuery } from './application/use-cases/read-section-options.query.js';
+import { ReadSectionLibraryQuery } from './application/use-cases/read-section-library.query.js';
+import { ComposeColumnQuery } from './application/use-cases/compose-column.query.js';
+import { ReadSignalLibraryQuery } from './application/use-cases/read-signal-library.query.js';
+import { ReadSignalQuery } from './application/use-cases/read-signal.query.js';
+import { CheckColumnQuery } from './application/use-cases/check-column.query.js';
+import {
+  DescribeRetuneQuery,
+  RetuneRuleCommand,
+} from './application/use-cases/retune-rule.command.js';
+import { PreviewCompositionQuery } from './application/use-cases/preview-composition.query.js';
+import { TryConditionQuery } from './application/use-cases/try-condition.query.js';
+import { DescribeConditionWriteQuery } from './application/use-cases/describe-condition-write.query.js';
+import { SimulateAggregateQuery } from './application/use-cases/simulate-aggregate.query.js';
+import { ReadMetricIndexQuery } from './application/use-cases/read-metric-index.query.js';
+import { ReadMetricQuery } from './application/use-cases/read-metric.query.js';
 import { DescribeEditQuery } from './application/use-cases/describe-edit.query.js';
 import { ReadThoughtLogQuery } from './application/use-cases/read-thought-log.query.js';
 import { ReadBudgetQuery } from './application/use-cases/read-budget.query.js';
+import { ReadLossShapeQuery } from './application/use-cases/read-loss-shape.query.js';
+import { ReadRiskReadingQuery } from './application/use-cases/read-risk-reading.query.js';
+import { ReadWagerAuthorityQuery } from './application/use-cases/read-wager-authority.query.js';
+import { DescribeTrimRecordQuery, TrimRecordCommand } from './application/use-cases/trim-record.command.js';
+import { ReadTradingRecordQuery } from './application/use-cases/read-trading-record.query.js';
+import { ReadTradeStoryQuery } from './application/use-cases/read-trade-story.query.js';
+import { ReadPipelineQuery } from './application/use-cases/read-pipeline.query.js';
+import { ReadApprovalQueueQuery } from './application/use-cases/read-approval-queue.query.js';
+import { DescribeDecisionAnswerQuery } from './application/use-cases/describe-decision-answer.query.js';
+import { AnswerDecisionCommand } from './application/use-cases/answer-decision.command.js';
+import { ReadAnswerAuthorityQuery } from './application/use-cases/read-answer-authority.query.js';
+import { ReadQualificationQuery } from './application/use-cases/read-qualification.query.js';
+import { ReadForwardReturnsQuery } from './application/use-cases/read-forward-returns.query.js';
+import { ReadRegimeContextQuery } from './application/use-cases/read-regime-context.query.js';
+import { ReadRecordCoverageQuery } from './application/use-cases/read-record-coverage.query.js';
+import { ReadSignalHistoryQuery } from './application/use-cases/read-signal-history.query.js';
+import { ReadStoppagesQuery } from './application/use-cases/read-stoppages.query.js';
+import { ReadExposureQuery } from './application/use-cases/read-exposure.query.js';
+import { ReadOwnEvaluationQuery } from './application/use-cases/read-own-evaluation.query.js';
 import {
   DescribeRebindQuery,
   RebindAgentCommand,
 } from './application/use-cases/rebind-agent.command.js';
 import { ResolveAuthorityQuery } from './application/use-cases/resolve-authority.query.js';
 import { UpdateAgentCommand } from './application/use-cases/update-agent.command.js';
-import { McpAccountAdapter } from './infrastructure/battlegrid/account-adapter.js';
+import { WatchArenaQuery } from './application/use-cases/watch-arena.query.js';
+import { ReadGameRulesQuery } from './application/use-cases/read-game-rules.query.js';
+import { OpenGridSessionQuery } from './application/use-cases/open-grid-session.query.js';
+import { ReadFieldQuery } from './application/use-cases/read-field.query.js';
+import { ReadCompetitorQuery } from './application/use-cases/read-competitor.query.js';
+import { ReadEvaluationQuery } from './application/use-cases/read-evaluation.query.js';
+import {
+  McpAccountAdapter,
+  McpAccountStateAdapter,
+} from './infrastructure/battlegrid/account-adapter.js';
+import { McpMarketGridAdapter } from './infrastructure/battlegrid/market-grid-adapter.js';
+import { McpExplorerAdapter } from './infrastructure/battlegrid/explorer-adapter.js';
+import { McpRadarAdapter } from './infrastructure/battlegrid/radar-adapter.js';
+import { McpMarketAdapter } from './infrastructure/battlegrid/market-adapter.js';
+import { McpPositionsAdapter } from './infrastructure/battlegrid/positions-adapter.js';
 import { McpAgentAdapter } from './infrastructure/battlegrid/agent-adapter.js';
 import { McpStrategyAdapter } from './infrastructure/battlegrid/strategy-adapter.js';
 import { McpBattleGridAdapter } from './infrastructure/battlegrid/mcp-adapter.js';
@@ -48,12 +108,20 @@ import {
   DrizzleAuditRepository,
   DrizzleConfirmationStore,
 } from './infrastructure/db/repositories/drizzle-audit-repository.js';
+import { DrizzleProposalStore } from './infrastructure/db/repositories/drizzle-proposal-store.js';
+import { DrizzleSignalRecordStore } from './infrastructure/db/repositories/drizzle-signal-record-store.js';
+import { RecordProposalCommand } from './application/use-cases/record-proposal.command.js';
+import { ReadProposalsQuery } from './application/use-cases/read-proposals.query.js';
+import { OpenProposalQuery } from './application/use-cases/open-proposal.query.js';
+import { ResolveProposalCommand } from './application/use-cases/resolve-proposal.command.js';
 import {
   DrizzleConnectionRepository,
   DrizzleTransactionStore,
 } from './infrastructure/db/repositories/drizzle-connection-repository.js';
 import type { CookieStore } from './infrastructure/http/cookie-session.js';
 import { CookieSession } from './infrastructure/http/cookie-session.js';
+import { ReadFeasibilityReplyQuery } from './application/use-cases/read-feasibility-reply.query.js';
+import { FeasibilityReplyCookie } from './infrastructure/http/feasibility-reply-cookie.js';
 import { systemClock } from './ports/clock.js';
 
 /**
@@ -81,16 +149,43 @@ let cached: Infrastructure | null = null;
 
 interface Infrastructure {
   readonly connections: DrizzleConnectionRepository;
+  /**
+   * What the user's credential may actually do.
+   *
+   * Exposed on the container rather than staying private to the MCP adapter so
+   * a surface can ask the **same** source the guard asks. Two answers to "does
+   * this connection hold wager authority" is two answers that will one day
+   * disagree — and the disagreement would show up as a control the product
+   * offers and the platform refuses.
+   */
+  readonly heldScopes: HeldScopes;
   readonly transactions: DrizzleTransactionStore;
   readonly audit: DrizzleAuditRepository;
   readonly confirmations: DrizzleConfirmationStore;
+  readonly proposals: DrizzleProposalStore;
+  readonly signalRecord: DrizzleSignalRecordStore;
   readonly battlegrid: McpBattleGridAdapter;
   readonly agents: McpAgentAdapter;
   readonly strategies: McpStrategyAdapter;
+  readonly radar: McpRadarAdapter;
+  readonly market: McpMarketAdapter;
+  readonly positions: McpPositionsAdapter;
+  readonly grid: McpMarketGridAdapter;
+  readonly explorer: McpExplorerAdapter;
   readonly sessionSecret: string;
   readonly secureCookies: boolean;
   /** Set when this deployment holds the owner's own credential. */
   readonly personal: PersonalConfig | undefined;
+  /**
+   * What a user of *this* deployment can do when its authority stops working.
+   *
+   * Held here rather than derived from `personal` at each surface, because
+   * "which deployment is this" answered in two places is two answers that can
+   * disagree — the reason it was fixed at assembly in the first place.
+   */
+  readonly remedy: Remedy;
+  /** One trivial database round trip; resolves nothing else. */
+  readonly health: () => Promise<void>;
 }
 
 function infrastructure(): Infrastructure {
@@ -103,6 +198,19 @@ function infrastructure(): Infrastructure {
   const connections = new DrizzleConnectionRepository(db, cipher, randomUUID);
   const audit = new DrizzleAuditRepository(db, systemClock, randomUUID);
   const confirmations = new DrizzleConfirmationStore(db, systemClock);
+  const proposals = new DrizzleProposalStore(db);
+  const signalRecord = new DrizzleSignalRecordStore(db, randomUUID);
+
+  // Where "what can this user do about it" is answered, once. A delegated
+  // grant can be obtained again; a configured key can only be replaced by the
+  // person who configured it.
+  const remedy: Remedy = config.personal ? 'repair-the-key' : 'reconnect';
+
+  // A delegated grant is read from the connection BattleGrid issued; a personal
+  // key carries a declaration the operator made. Two sources, one guard.
+  const heldScopes: HeldScopes = config.personal
+    ? new DeclaredScopes(config.personal.scopes)
+    : new ConnectionScopes(connections);
 
   const battlegrid = new McpBattleGridAdapter({
     config: config.battlegrid,
@@ -111,30 +219,47 @@ function infrastructure(): Infrastructure {
     // Where "what may this credential do" is answered. A delegated grant is read
     // from the connection BattleGrid issued; a personal key carries a
     // declaration the operator made. Two sources, one guard — see HeldScopes.
-    heldScopes: config.personal
-      ? new DeclaredScopes(config.personal.scopes)
-      : new ConnectionScopes(connections),
-    // And where "what can this user do about it" is answered. Same shape, same
-    // reason: a delegated grant can be obtained again, a configured key can only
-    // be replaced by the person who configured it. Fixed here so that no failure
-    // path has to work it out.
-    remedy: config.personal ? 'repair-the-key' : 'reconnect',
+    heldScopes,
+    // Fixed above so that no failure path has to work it out — and so that the
+    // surface reporting the failure names the same one this adapter does.
+    remedy,
     fetch: globalThis.fetch,
   });
 
   cached = {
     connections,
+    heldScopes,
     transactions: new DrizzleTransactionStore(db, systemClock),
     audit,
     confirmations,
+    proposals,
+    signalRecord,
     battlegrid,
     agents: new McpAgentAdapter(battlegrid),
     strategies: new McpStrategyAdapter(battlegrid),
+    radar: new McpRadarAdapter(battlegrid),
+    market: new McpMarketAdapter(battlegrid),
+    positions: new McpPositionsAdapter(battlegrid),
+    grid: new McpMarketGridAdapter(battlegrid),
+    explorer: new McpExplorerAdapter(battlegrid),
     sessionSecret: config.sessionSecret,
     secureCookies: config.secureCookies,
     personal: config.personal,
+    remedy,
+    health: async () => {
+      await db.execute(sql`select 1`);
+    },
   };
   return cached;
+}
+
+/**
+ * The health probe's whole world: is the process up, and does its database
+ * answer. Deliberately not part of `app()` — a health check that resolves a
+ * session fails for the wrong reason, so this path never touches cookies.
+ */
+export async function checkHealth(): Promise<void> {
+  await infrastructure().health();
 }
 
 /**
@@ -152,6 +277,19 @@ export function app(cookies: CookieStore) {
     secure: i.secureCookies,
   });
 
+  /**
+   * The reply an agent edit comes back with, on its way to the page that shows
+   * it. Same secret and same signing idiom as the session above — see
+   * `FeasibilityReplyCookie` for why it is signed at all when it carries no
+   * credential.
+   */
+  const feasibilityReply = new FeasibilityReplyCookie({
+    cookies,
+    secret: i.sessionSecret,
+    clock: systemClock,
+    secure: i.secureCookies,
+  });
+
   const authority = new ResolveAuthorityQuery(i.connections, i.connections, i.battlegrid, systemClock);
 
   /**
@@ -162,20 +300,37 @@ export function app(cookies: CookieStore) {
    * a delegated one resolves a session and refreshes a grant. Every route calls
    * `currentUser` and cannot tell which it got, which is the point.
    */
+  /**
+   * One adapter, two deployments, opposite tolerances.
+   *
+   * `OwnerOnlyUser` collapses an unnameable account to unknown and keeps
+   * working; `CompleteConnectionCommand` refuses the connection and releases the
+   * grant. Both ask the same question of the same tool, and building one
+   * instance is what keeps them asking it identically — two adapters over one
+   * BattleGrid tool is how two callers come to disagree about the same account.
+   */
+  const accountIdentity = new McpAccountAdapter(i.battlegrid);
+
   const currentUser: ActingUser = i.personal
-    ? new OwnerOnlyUser(i.personal.apiKey, new McpAccountAdapter(i.battlegrid))
+    ? new OwnerOnlyUser(i.personal.apiKey, accountIdentity)
     : new CurrentUserQuery(sessions, i.connections, authority);
 
   return {
     sessions,
     currentUser,
+    feasibilityReply,
     // Null on a delegated deployment. The surface uses it to disclose that a
     // deployment authenticates nobody, which is true only of the personal one.
     personal: i.personal ?? null,
+    // What a user of this deployment can do when its authority stops working.
+    // Passed to the surface so a remedy can be offered as a target where one
+    // exists, rather than only stated in prose.
+    remedy: i.remedy,
 
     startConnection: new StartConnectionCommand(i.battlegrid, i.transactions, random, systemClock),
     completeConnection: new CompleteConnectionCommand(
       i.battlegrid,
+      accountIdentity,
       i.transactions,
       i.connections,
       random,
@@ -191,17 +346,109 @@ export function app(cookies: CookieStore) {
     listAudit: new ListAuditQuery(i.audit),
 
     listAgents: new ListAgentsQuery(i.agents),
+    // The platform's own fleet total — the only place it exists (#129).
+    readFleetSpend: new ReadFleetSpendQuery(i.agents),
     createAgent: new CreateAgentCommand(i.agents),
     readCatalog: new ReadCatalogQuery(i.agents),
     updateAgent: new UpdateAgentCommand(i.agents),
+    // What the platform said, in the same breath as that update, about which of
+    // the agent's armed coins its strategy can still build a stop for. Reads no
+    // platform tool — it collects the reply the apply action set down (#291).
+    readFeasibilityReply: new ReadFeasibilityReplyQuery(feasibilityReply, systemClock),
     readThoughtLog: new ReadThoughtLogQuery(i.agents),
     readBudget: new ReadBudgetQuery(i.agents),
+    // How the distance on the drawdown gauge arrived — same port, its own
+    // read, because the figure and the curve come from one payload.
+    readLossShape: new ReadLossShapeQuery(i.agents),
+    // The same agent, asked what its settings are *against*. Two ports: three
+    // readings come from the agents surface, and the fourth — the account
+    // balance an exposure cap is measured against — is an account-level fact
+    // that no agent read carries.
+    readRiskReading: new ReadRiskReadingQuery(i.agents, new McpAccountStateAdapter(i.battlegrid)),
+    readTradingRecord: new ReadTradingRecordQuery(i.agents),
+    readTradeStory: new ReadTradeStoryQuery(i.agents),
+    readPipeline: new ReadPipelineQuery(i.agents),
+    // Answering a proposed trade: read the queue, describe one answer, perform
+    // it. Three objects because they are three different acts — and the
+    // describe is separate from the perform for the same reason the edit flow
+    // splits them: the consequence and the token it mints are formed when
+    // somebody opens the page, from a read taken at that moment.
+    readApprovalQueue: new ReadApprovalQueueQuery(i.agents, systemClock),
+    // Reads the same HeldScopes the write guard reads. It decides what to draw,
+    // never whether a write is allowed — P1, and the refusal that matters runs
+    // in beginGuardedCall on every path including ones that never render.
+    readAnswerAuthority: new ReadAnswerAuthorityQuery(i.heldScopes),
+    describeDecisionAnswer: new DescribeDecisionAnswerQuery(
+      i.agents,
+      i.confirmations,
+      random,
+      systemClock,
+    ),
+    // The only fund-committing write this product performs. It re-reads and
+    // checks all five binding conditions before the port is touched; the port's
+    // own guards — classification, scope, the confirmation consume, the audit
+    // row — run after that and are not duplicated here.
+    answerDecision: new AnswerDecisionCommand(i.agents),
+    readOwnEvaluation: new ReadOwnEvaluationQuery(i.agents),
+    readDeployments: new ReadDeploymentsQuery(i.radar, systemClock),
+    // Three ports because the question needs three answers: the gates come
+    // from the agent, the coins from the radar, and the fallback coins from
+    // the market. The use-case is the only place that knows all three.
+    readQualification: new ReadQualificationQuery(i.agents, i.radar, i.market),
+    // Same rows `readPipeline` reads as one of three stages, asked a different
+    // question: not what happened lately, but what keeps happening.
+    readStoppages: new ReadStoppagesQuery(i.agents),
+    // What it is holding, and what it could not get to the exchange. The
+    // funnel half needs no new read — the counts were always there.
+    // The clock is what turns a priced-at stamp into "4 minutes ago"; this is
+    // the only place in the product that names a real one.
+    readExposure: new ReadExposureQuery(i.positions, i.agents, systemClock),
+    // Deploy and undeploy follow the same split: the describe reads the radar
+    // fresh, states the consequence, and mints the token the perform spends.
+    // Recording what a model suggests. Deliberately holds no BattleGrid port:
+    // it cannot read a consequence or mint a confirmation, and a test asserts
+    // that by construction rather than by behaviour.
+    recordProposal: new RecordProposalCommand(i.proposals, random, systemClock),
+    readProposals: new ReadProposalsQuery(i.proposals, systemClock),
+    openProposal: new OpenProposalQuery(
+      i.proposals,
+      i.agents,
+      // Its own instance rather than the one on `app`: the describe run when a
+      // proposal is opened is the same class doing the same thing, and reaching
+      // sideways into the object under construction would make the wiring
+      // depend on declaration order.
+      new DescribeEditQuery(i.agents, i.confirmations, random, systemClock),
+      systemClock,
+    ),
+    resolveProposal: new ResolveProposalCommand(i.proposals),
+
+    // The recorder. A command that writes only to this product's own store —
+    // every platform call on its path is a read (DL-004), and the clock is
+    // injected because coverage derives gaps from the times it stamps.
+    captureSignals: new CaptureSignalsCommand(i.market, i.radar, i.signalRecord, systemClock),
+    readSignalHistory: new ReadSignalHistoryQuery(i.signalRecord),
+    readRecordCoverage: new ReadRecordCoverageQuery(i.signalRecord, systemClock),
+    // The record's first analytical question — derived from the rows at
+    // read time, like coverage, and reading only the product's own store.
+    readForwardReturns: new ReadForwardReturnsQuery(i.signalRecord),
+    // The regime those windows sat in: subjects from the record, answers
+    // from the platform's own classification, per series and isolated.
+    readRegimeContext: new ReadRegimeContextQuery(i.signalRecord, i.market),
+    // The one destructive act against the product's own store. Same ceremony
+    // as the BattleGrid writes; deliberately absent from the MCP tool table.
+    describeTrimRecord: new DescribeTrimRecordQuery(i.signalRecord, i.confirmations, random, systemClock),
+    trimRecord: new TrimRecordCommand(i.signalRecord, i.confirmations),
+
+    describeDeploy: new DescribeDeployQuery(i.radar, i.confirmations, random, systemClock),
+    performDeploy: new PerformDeployCommand(i.radar),
+    describeUndeploy: new DescribeUndeployQuery(i.radar, i.confirmations, random, systemClock),
+    performUndeploy: new PerformUndeployCommand(i.radar),
     // Mints the confirmation `updateAgent` consumes. Separate objects on
     // purpose: the thing that performs the write must not be the thing that
     // authorises it.
     describeEdit: new DescribeEditQuery(i.agents, i.confirmations, random, systemClock),
-    describeRebind: new DescribeRebindQuery(i.agents, i.confirmations, random, systemClock),
-    rebindAgent: new RebindAgentCommand(i.agents),
+    describeRebind: new DescribeRebindQuery(i.agents, i.strategies, i.confirmations, random, systemClock),
+    rebindAgent: new RebindAgentCommand(i.agents, i.strategies),
     describeArchive: new DescribeArchiveQuery(i.agents, i.confirmations, random, systemClock),
     setLifecycle: new SetLifecycleCommand(i.agents),
     readJournal: new ReadAgentJournalQuery(i.agents),
@@ -210,6 +457,34 @@ export function app(cookies: CookieStore) {
     readStrategy: new ReadStrategyQuery(i.strategies),
     readVocabulary: new ReadVocabularyQuery(i.strategies),
     readSectionOptions: new ReadSectionOptionsQuery(i.strategies),
+    // What a section *contains*, asked without a strategy — the contents are
+    // vocabulary, and only membership is a strategy's own.
+    readSectionLibrary: new ReadSectionLibraryQuery(i.strategies),
+    composeColumn: new ComposeColumnQuery(i.strategies),
+    readSignalLibrary: new ReadSignalLibraryQuery(i.strategies),
+    readSignal: new ReadSignalQuery(i.strategies),
+    readMetricIndex: new ReadMetricIndexQuery(i.strategies),
+    readMetric: new ReadMetricQuery(i.strategies),
+    checkColumn: new CheckColumnQuery(i.strategies),
+    // The scorecard write follows the same split as every other: the
+    // describe states the blast radius and mints; the perform spends.
+    describeRetune: new DescribeRetuneQuery(i.strategies, i.confirmations, random, systemClock),
+    retuneRule: new RetuneRuleCommand(i.strategies),
+    previewComposition: new PreviewCompositionQuery(i.strategies),
+    // The drafting half of the same question, and read-only for the same
+    // reason: it asks the platform to resolve a condition that does not exist
+    // yet. It saves nothing; saving is the describe below, a separate act.
+    tryCondition: new TryConditionQuery(i.strategies),
+    // Saving one. Its own instances of the compile and the apply describe,
+    // rather than the ones on `app`: reaching sideways into the object under
+    // construction would make the wiring depend on declaration order — the
+    // same reasoning `openProposal` records. Both are stateless.
+    describeConditionWrite: new DescribeConditionWriteQuery(
+      i.strategies,
+      new CompilePlanCommand(i.strategies),
+      new DescribeApplyQuery(i.confirmations, random, systemClock),
+    ),
+    simulateAggregate: new SimulateAggregateQuery(i.strategies),
     // Two use cases, not one with a flag. Compiling writes nothing; applying
     // writes to every bound agent at once.
     compilePlan: new CompilePlanCommand(i.strategies),
@@ -218,6 +493,20 @@ export function app(cookies: CookieStore) {
     forkStrategy: new ForkStrategyCommand(i.strategies),
     describeArchiveStrategy: new DescribeArchiveStrategyQuery(i.confirmations, random, systemClock),
     setStrategyActive: new SetStrategyActiveCommand(i.strategies),
+
+    watchArena: new WatchArenaQuery(i.grid),
+    // The arena's watch-only stance names both gates between this product and
+    // a stake; the account-side gate is a live read, so it needs the same
+    // account-state adapter the risk reading uses.
+    readWagerAuthority: new ReadWagerAuthorityQuery(new McpAccountStateAdapter(i.battlegrid)),
+    // The rulebook and one session, read apart from the arena list: the first
+    // is one unscoped call, the second is three calls about a session the user
+    // asked for, and neither belongs in a fan-out over fifty rows.
+    readGameRules: new ReadGameRulesQuery(i.grid),
+    openGridSession: new OpenGridSessionQuery(i.grid),
+    readField: new ReadFieldQuery(i.explorer),
+    readCompetitor: new ReadCompetitorQuery(i.explorer),
+    readEvaluation: new ReadEvaluationQuery(i.explorer),
   };
 }
 

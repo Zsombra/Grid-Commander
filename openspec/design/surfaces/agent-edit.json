@@ -1,0 +1,445 @@
+{
+  "id": "agent-edit",
+  "title": "Edit agent — form and review",
+  "route": "/agents/[id]/edit",
+  "capability": "agent-authoring",
+  "status": "functional",
+  "generated_at_commit": "1cdaa4c",
+  "source_files": [
+    "app/(app)/agents/[id]/edit/actions.ts",
+    "app/(app)/agents/[id]/edit/page.tsx",
+    "src/presentation/components/agent-edit.tsx",
+    "src/presentation/components/binding.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/money-limits.tsx",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "agent",
+      "shape": "Agent — displayName, status, revision, binding, tradingConfig",
+      "source": "app.listAgents.execute, the row matching the route id"
+    },
+    {
+      "name": "catalog",
+      "shape": "Catalog — undefaultable fields, position-management presets with the platform's own values",
+      "source": "app.readCatalog.execute — BattleGrid's live declaration, never a compiled list"
+    },
+    {
+      "name": "proposed",
+      "shape": "{ consequence, confirmationToken } plus the resolved changes",
+      "source": "app.describeEdit.execute — run only in the review branch, against the values the GET form carried"
+    },
+    {
+      "name": "query",
+      "shape": "review, problem, displayName, tc.*, pm.*, pmPreset",
+      "source": "searchParams — the GET form navigates back here carrying what was typed"
+    }
+  ],
+  "components": [
+    {
+      "id": "edit-agent-page",
+      "role": "container",
+      "purpose": "Change what an agent owns, in two requests: a form that asks, then a review that states the consequence before anything is applied.",
+      "states": [
+        "form",
+        "form-with-problem",
+        "review",
+        "review-with-problem",
+        "refused-proposal",
+        "refused-proposal-with-problem",
+        "preset-unresolvable",
+        "preset-unresolvable-with-problem",
+        "roster-unreadable",
+        "roster-unreadable-with-problem",
+        "no-such-agent",
+        "no-such-agent-with-problem",
+        "catalog-unreadable",
+        "catalog-unreadable-with-problem",
+        "not-connected"
+      ],
+      "data": [
+        "agent",
+        "catalog",
+        "proposed",
+        "query"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centered column in the form branch, max-w-2xl in the review branch, space-y-6/4, p-6. The two branches are one route split on ?review=1 — submitting the form is a GET that navigates back here, and this page then proposes the change and renders the consequence the confirmation was issued against. Since `a-bounced-reason-survives-the-agent-editor` (#255) all seven render branches mount the shared `<CarriedProblem problem={query['problem']} />` unconditionally under their h1 (the confirm branch at the top of its main), so every `-with-problem` pairing above is a real rendering; the page owns the bounced reason and no longer forwards it into the form. refused-proposal and preset-unresolvable re-render the form with THEIR OWN reason as its `problem` prop — a branch-local refusal, rendered inside the form through the same shared component, distinct from and stackable with the page-level carried banner. Typed values survive a bounce for the name, the twelve pm.* fields, and the six money boxes (`composed` wins over stored values per field — `the-round-trip-keeps-what-the-person-needs`; the money half closed by `the-bounced-money-refills-the-boxes`, whose merge reads both spellings the bounce can carry: bare names from the GET review's query, `tc.`-prefixed from the apply's backTo). catalog-unreadable renders h1 + carried banner + role=alert reason + a plain underlined link back; no-such-agent renders h1 + carried banner + underlined link to /agents.",
+      "constraints": [
+        "The two-request split is spec, not layout: 'the consequence is shown and the change is not yet made / it is made only on a further request the user initiated' — openspec/specs/agent-authoring/spec.md:520-523. A design that merges form and confirmation into one submission changes behavior and is requires-spec-change.",
+        "Every state change is a full navigation — the page renders whole from one server round trip and holds no client state. The only client code is `PerformButton` (`'use client'`, `useFormStatus`), which reports that a submit is in flight and nothing else; it is the exception the rule is stated around, not a contradiction of it. A design may not introduce client state, optimistic rendering, or a partial update.",
+        "The form submits by GET and its values ride the query string — spec'd as legitimate at openspec/specs/agent-authoring/spec.md:348-351; a design must not restyle it into something that looks like it acts."
+      ],
+      "children": [
+        "agent-edit-form",
+        "agent-edit-confirm",
+        "why-not-loaded",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "agent-edit-form",
+      "role": "input",
+      "purpose": "Everything the agent owns on one form — name, money limits, position management — plus an honest note about what is inherited and not editable here.",
+      "states": [
+        "default",
+        "with-problem",
+        "not-editable-archived",
+        "not-editable-platform"
+      ],
+      "data": [
+        "agent",
+        "catalog",
+        "query"
+      ],
+      "actions": [
+        {
+          "id": "review",
+          "effect": "GET-navigates to the same route with review=1 and every typed value in the query; the next request proposes the change"
+        },
+        {
+          "id": "back",
+          "effect": "Anchor to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "space-y-6 form: the branch-local `CarriedProblem` mount (null unless this branch formed a refusal — the bounced `?problem=` is the page's to render, per the prop's own doc), name input, MoneyLimits fieldset, PositionManagement section, then two BUTTON_SECONDARY controls ('Review the change' and 'Back to <name>') in flex flex-wrap gap-3 — no mobile full-width stack. Below the form, a 'Not editable here' section renders the binding through the shared components. The not-editable states replace the whole form with a role=alert sentence: archived names reactivation as the way back; platform-locked says BattleGrid does not permit the change.",
+      "constraints": [
+        "'Review the change' is deliberately BUTTON_SECONDARY, not primary — a method=get form composes a preview and reaches no operation (control.ts's stated rule). The primary in this flow belongs to agent-edit-confirm, one request later.",
+        "Inherited configuration MUST stay presented as inherited, not editable — openspec/specs/agent-authoring/spec.md:144-147 ('MUST NOT present strategy-owned configuration as editable from the agent').",
+        "An archived agent's refusal must keep naming reactivation as what makes changes possible again — openspec/specs/agent-authoring/spec.md:231-232.",
+        "Every control rendered must keep reaching the operation — openspec/specs/agent-authoring/spec.md:326-328; a design may not add a decorative control."
+      ],
+      "children": [
+        "problem",
+        "money-limits",
+        "position-management",
+        "binding-summary",
+        "binding-inheritance",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Two mounts of one treatment: the page-level banner carrying a bounced apply's reason on every branch, and the form-level banner carrying a refusal formed while composing.",
+      "states": [
+        "carried-present",
+        "branch-local-present",
+        "both-present",
+        "absent"
+      ],
+      "data": [
+        "query"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component in both positions since `a-bounced-reason-survives-the-agent-editor` (#255) — the hand-rolled `{problem && <p…}` copy is gone, and `tests/agent/refusals-reach-the-operator.test.ts` now fails either spelling of a hand-rolled copy (`?` or `&&`). DT-0004's treatment: rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary, role=alert, semibold 'Refused: ' prefix. The page mounts it for `query['problem']` (the bounced apply's reason); AgentEditForm mounts a second one for its `problem` prop, which since #255 carries only a branch-local refusal (unresolvable preset, refused describe) — so on those branches with a bounce in the URL, two banners stack, and that is the point: 'your apply was refused' and 'what you are composing now has a problem' are different facts (app-access scenario: a fresher refusal does not replace a carried one). The refused-describe content is often several reasons joined with ' · ', still the longest bounced-write banner in the product.",
+      "constraints": [
+        "role=alert must survive, on both mounts.",
+        "The reason shown is the one the operation returned — openspec/specs/agent-authoring/spec.md:474-475; a design must not truncate or paraphrase it.",
+        "Several joined reasons is the normal case here, not the overflow case — the block must wrap and stay readable at multi-line length.",
+        "The two mounts are one component and must stay one — restyle it in carried-problem.tsx, never per position. Collapsing the stacked pair into one banner is behavior (it deletes one of two facts) and requires-spec-change: openspec/specs/app-access/spec.md, 'A fresher refusal does not replace a carried one'.",
+        "Every render branch mounts the page-level banner — `a-problem-redirect-is-read-where-it-lands.test.ts` (derived, no exemption rows) and the CARRY_PROBLEM pin both fail a branch that drops it."
+      ],
+      "children": []
+    },
+    {
+      "id": "money-limits",
+      "role": "input",
+      "purpose": "The six questions BattleGrid will not answer for you — spending limits the platform declines to default, prefilled with the agent's current values, or with what the operator typed when a refusal bounced them back.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "agent",
+        "catalog",
+        "query"
+      ],
+      "actions": [],
+      "current_implementation": "A fieldset wearing the consequence tokens (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4) with a legend and an explanatory paragraph; money fields in a 1-col/sm:2-col grid, each with LABEL, CONTROL, and an aria-describedby hint. Which fields render is driven by undefaultableFields(catalog) — a field the platform starts defaulting stops being asked, with no release. tradingMode renders OFF first and selected, with a stated caveat that APPROVAL_REQUIRED proposals are answerable at /approvals — cancelling is built, accepting is not. The `current` prop arrives pre-merged from AgentEditForm: the bounced composition wins per field (either spelling), the agent's stored tradingConfig fills the rest — the component itself stays one prefill input for both the create and edit screens. The exposure hint is materially longer than its four neighbours (~150 characters against ~40): it names the metered quantity, the sizing behaviour and the silent refusal, so at column width it runs to roughly three lines where the others run to one, and on the three no-cap fields the bold zero warning follows it inside the same paragraph.",
+      "constraints": [
+        "Where 0 removes a limit, the warning MUST stay beside the box it is typed into — openspec/specs/agent-authoring/spec.md:366-367 ('Grid-Commander SHALL say so where that value is entered') and :391-394. The strong-tagged sentence inside the hint is that warning.",
+        "Current values MUST stay prefilled — openspec/specs/agent-authoring/spec.md:386-389: an empty box submitted is a limit removed, because tradingConfig is all-or-nothing (:370-372).",
+        "The hint is wired by aria-describedby — a relayout must keep the association.",
+        "Field controls are the shared CONTROL/LABEL constants from control.ts — styling changes go through them, not per-field classNames."
+      ],
+      "children": []
+    },
+    {
+      "id": "position-management",
+      "role": "input",
+      "purpose": "How the agent exits its positions: manage like a catalog preset, or edit the twelve values as CUSTOM — with the truth about the label said first.",
+      "states": [
+        "preset-drift",
+        "preset-match",
+        "custom",
+        "unlabelled"
+      ],
+      "data": [
+        "agent",
+        "catalog"
+      ],
+      "actions": [],
+      "current_implementation": "A section: the drift line first (role=status, rounded-gc-2 border-border-default p-3 — naming the differing fields when the agent's values are not its preset's), then the 'Manage like' select (empty option = leave it alone, presets with 'BattleGrid's own values', CUSTOM last), a semantics paragraph, and the twelve pm.* fields in a 1-col/sm:2-col grid — number/text inputs wearing CONTROL under a LABEL, and boolean fields as bare <input type=\"checkbox\"> with no className at all, inside an inline flex label. DT-0015 added a shared CHECKBOX constant ('accent-accent-default') to control.ts and the strategy editor wears it; these twelve do not, so they render at the browser's default accent while the strategy editor's render at the product's. Nothing catches it: the shared-treatment guard in tests/architecture/controls.test.ts skips controls that carry no className at all.",
+      "constraints": [
+        "Drift MUST be said, naming the differing fields — openspec/specs/agent-authoring/spec.md:593-596 ('the edit surface MUST say so, naming the differing fields — the label alone is not the truth'). role=status on that line must survive.",
+        "The choice semantics are spec: preset sends the platform's values wholesale, CUSTOM sends the fields as edited, no choice sends nothing — openspec/specs/agent-authoring/spec.md:586-590. Copy restating them must not drift from that.",
+        "Only presets whose configuration the platform supplied are offered (config !== null) — openspec/specs/agent-authoring/spec.md:548-550.",
+        "A checkbox never wears CONTROL — that string is a text box's clothes (control.ts). If these gain a treatment it is CHECKBOX, and accent-color is the whole of it: replacing the native box means re-implementing checked, indeterminate, disabled and forced-colors states the browser already renders.",
+        "The boolean rows are labels wrapping their own checkbox with the text after it — an inline row; LABEL's `block` would break it, which is why they are excluded from the label guard."
+      ],
+      "children": []
+    },
+    {
+      "id": "binding-summary",
+      "role": "display",
+      "purpose": "What the agent is bound to, in words that stay honest when the binding is broken.",
+      "states": [
+        "bound",
+        "orphaned",
+        "unrecognised-state"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "Shared BindingSummary (binding.tsx), inline text with font-medium on the strategy name or the state word. ORPHANED states only what the payload supports: the strategy can no longer be read, and the revision the configuration came from. An unrecognised state is rendered as the platform's own word, uninterpreted.",
+      "constraints": [
+        "One component for every surface that describes a binding — they drifted once (Volatilis, 2026-08-06) and a design must restyle the shared component, not fork a per-page copy.",
+        "The ORPHANED sentence must not gain copy that guesses what the state means — the operational meaning is unestablished and the component says so deliberately."
+      ],
+      "children": []
+    },
+    {
+      "id": "binding-inheritance",
+      "role": "display",
+      "purpose": "Where the inherited configuration comes from, and what may honestly be said about it while the binding is not intact.",
+      "states": [
+        "bound",
+        "not-intact"
+      ],
+      "data": [
+        "agent"
+      ],
+      "actions": [],
+      "current_implementation": "Shared BindingInheritance (binding.tsx), a plain sentence following the summary in the 'Not editable here' section. Bound: changed by editing that strategy or by rebinding. Not intact: names the materialized revision and stops.",
+      "constraints": [
+        "The not-intact sentence deliberately does not offer rebinding as the remedy — that is unestablished, per the backlog item that found it. Copy changes here are behavior."
+      ],
+      "children": []
+    },
+    {
+      "id": "agent-edit-confirm",
+      "role": "container",
+      "purpose": "What the confirmation was issued against, rendered so a person reads it — then one committing button and one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposed",
+        "agent"
+      ],
+      "actions": [
+        {
+          "id": "applyEdit",
+          "effect": "POSTs the server action with agentId, confirmationToken, and every proposed value as hidden fields (changes, tc.*, pm.*); success lands on /agents/[id], refusal redirects to the form branch with ?problem="
+        }
+      ],
+      "current_implementation": "space-y-4 form: h2 'Change <name>?', the consequence block, hidden inputs carrying the token and the resolved values, then BUTTON_PRIMARY 'Apply this to <name>' beside a BUTTON_SECONDARY anchor 'Change something else' in flex flex-wrap gap-3 — no mobile full-width stack.",
+      "constraints": [
+        "The hidden values are the confirmation binding — the token digests the proposed values, so the form must keep exactly one submit path posting exactly what was proposed (openspec/specs/agent-authoring/spec.md:507-518).",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
+        "Deliberately NOT danger-styled — DT-0002: the weight belongs on the consequence block, not the button."
+      ],
+      "children": [
+        "consequence",
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what applying this edit does, in the sentence the token was issued against, before the button that does it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposed"
+      ],
+      "actions": [],
+      "current_implementation": "rounded-gc-2 border-consequence-border p-4 text-sm with role=alert — the consequence border token but no bg-consequence-subtle fill, so it sits lighter than the archive page's fully-tinted callout.",
+      "constraints": [
+        "The text is the same string stored with the token — a design must not paraphrase, truncate, or summarize it (openspec/specs/agent-authoring/spec.md:526-527: 'the sentence recorded is the sentence the user was shown').",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell an editor whose agent did not load whether to wait or to reconnect — and that their work is not gone.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded (why-not-loaded.tsx), a plain mt-2 paragraph under the roster-unreadable heading. Two sentences, chosen by cause: BattleGrid refused the authority, or could not be reached.",
+      "constraints": [
+        "The refused/unreachable distinction is spec — openspec/specs/agent-authoring/spec.md:20-24: telling a user 'could not be reached' when the platform refused sends them to wait for an outage that is not happening. A design must keep the two texts distinct.",
+        "The reassurance ('does not mean … gone') is the point of the sentence and must survive any rewording — openspec/specs/agent-authoring/spec.md:40."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the edit: 'Apply this to <name>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs applyEdit"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. No pending/loading state between click and redirect. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",
+        "Not danger-styled — DT-0002's ruling, restated in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "The peers and the asks: 'Review the change' (a GET submit that only composes), 'Back to <name>', and 'Change something else'.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "The anchors return to /agents/[id] or /agents/[id]/edit without applying anything; the GET submit navigates into the review branch"
+        }
+      ],
+      "current_implementation": "BUTTON_SECONDARY constant from control.ts — inline-flex centering, min-h-control, bordered, DT-0004's hover (border-strong + bg-sunken over duration-fast). Worn by both a submit button (the GET form) and anchors on this route. The not-editable, catalog-unreadable and no-such-agent branches still use plain underlined prose links rather than this treatment.",
+      "constraints": [
+        "The cancel anchors must remain anchors (pure navigation, no form participation) and visible peers of their submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Edit an agent",
+      "steps": [
+        "arrive from the agent page",
+        "change name, money limits, or position management",
+        "submit 'Review the change' — a GET carrying every value",
+        "read the consequence the token was issued against",
+        "submit 'Apply this to <name>'",
+        "land on /agents/[id] with the change made"
+      ]
+    },
+    {
+      "name": "The edit is refused after apply",
+      "steps": [
+        "submit the confirm form",
+        "platform or product refuses (rejected fields, invalid values, revision moved)",
+        "redirected back to the form branch with ?problem= and every submitted value except the confirmation binding",
+        "the page-level banner states every reason; the typed name, the pm.* values, and the money values are back in their fields — the money merge reads the apply's tc.-prefixed spelling"
+      ]
+    },
+    {
+      "name": "The bounce lands on a branch with its own bad news",
+      "steps": [
+        "the apply is refused and redirects back with ?problem=",
+        "the roster or the catalog will not load, the agent is no longer in the roster, or the re-run describe refuses",
+        "whichever branch renders carries the bounced reason above its own — two facts, neither replacing the other (#255 closed the drop; this page was the derived scan's last KNOWN_SILENT row)"
+      ]
+    },
+    {
+      "name": "The proposal itself is refused",
+      "steps": [
+        "submit 'Review the change'",
+        "describeEdit refuses a field or the preset cannot be resolved",
+        "the form re-renders with that reason as its own banner, typed name, pm.* and money values preserved"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Back to <name>' or 'Change something else'",
+        "back on the agent or the form, nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form",
+      "fieldset"
+    ],
+    "focus_order": [
+      "agent-edit-form",
+      "button-secondary",
+      "button-primary"
+    ],
+    "notes": "Problem and consequence blocks and the not-editable refusals carry role=alert; the position drift line carries role=status. On a branch that both received a bounce and formed its own refusal, two role=alert banners stack and are read in document order — carried first, branch-local second. Money hints are associated via aria-describedby. The twelve position-management booleans are native checkboxes inside their own inline labels, so the label is the accessible name and the native control keeps its own checked/disabled/forced-colors rendering. Focus ring is global (focus-visible, 2px). Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/edit/actions.ts": "sha256:f165c939c717d883e1d6afd0d3d8772f07a6c15087ef9a1c971f62a4e9f578b6",
+    "app/(app)/agents/[id]/edit/page.tsx": "sha256:9d1fd8a77ec80c0b5b0a22a8951e3e3a8ffc304679909a5cedf2145ab2e417f7",
+    "src/presentation/components/agent-edit.tsx": "sha256:364bf406a60aa01b49b1ca27934e97c5113259babb98e195b92b51882d1cf2ea",
+    "src/presentation/components/binding.tsx": "sha256:0731c02a587d3044143c171587805cf3324a34dc597fe29a6c967b50343ac074",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/money-limits.tsx": "sha256:2b02a806b928cd98b12998f1ef76832fd76a452b5ac7f197af7cea97835b82b6",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

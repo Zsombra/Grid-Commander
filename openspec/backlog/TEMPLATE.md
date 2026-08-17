@@ -8,7 +8,8 @@ created: YYYY-MM-DD
 updated: YYYY-MM-DD
 change: ""
 capability: ""
-blocked_by: []
+github: ""                   # issue number mirroring this item, or `none` + a reason in the body
+blocked_by: []               # item ids, or upstream:/external:/operator:<name> for an outside wait
 tags: []
 ---
 

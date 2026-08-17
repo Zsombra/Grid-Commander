@@ -1,8 +1,8 @@
 {
-  "version": 1,
+  "version": 3,
   "status": "designed",
   "placeholder_groups": [],
-  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance.",
+  "note": "Grid-Commander's visual language. The product's job is legibility: a strategy edit reconfigures every bound agent immediately, so the system's first duty is making consequence and its absence tell apart at a glance. Revised 2026-08-13 (v2): two principles added rather than tokens. The palette and scales already carried every value these needed — what the system lacked was the rule for spending them, which is why twelve forms went silent under submission and why two callouts saying opposite things came out identical. Revised again 2026-08-13 (v3), same shape and for the same reason: DT-0022 gave the primary weight a pending treatment and the secondary weight had none, so the one secondary control that performs stayed silent. What was missing was not a colour but the rule that picks it — an indicator belongs to its label, not to the accent — plus a stated position on whether a working control may stop being pressable, which had been left implicit and was read as undecided.",
   "tokens": {
     "color": {
       "bg": {
@@ -132,6 +132,11 @@
       "6": "32px",
       "7": "48px",
       "8": "64px"
+    },
+    "size": {
+      "control": {
+        "min": "44px"
+      }
     },
     "radius": {
       "0": "0",
@@ -269,15 +274,19 @@
     }
   ],
   "principles": [
-    "Never signal state by color alone \u2014 pair it with shape, icon, or text.",
+    "Never signal state by color alone — pair it with shape, icon, or text.",
     "Every interactive element has a visible focus state at 2px offset.",
     "Text on its background meets WCAG AA (4.5:1 body, 3:1 large).",
     "Tap targets are at least 44x44px on touch viewports.",
     "Motion is decoration: respect prefers-reduced-motion, never gate feedback on it.",
-    "Consequence outranks everything on a screen. When an action reaches live agents, the count of what it reaches is the heaviest element present \u2014 never a clause inside a sentence.",
+    "Consequence outranks everything on a screen. When an action reaches live agents, the count of what it reaches is the heaviest element present — never a clause inside a sentence.",
     "Advisory is not failure. `notice` never borrows danger's colour, icon, or weight; a user who learns to fear advisories learns to abandon valid work.",
-    "Absence of effect is stated, not implied. 'Nothing has changed yet' gets the same visual commitment as a warning would \u2014 silence reads as a broken page, not as safety.",
+    "Absence of effect is stated, not implied. 'Nothing has changed yet' gets the same visual commitment as a warning would — silence reads as a broken page, not as safety.",
     "Unknown is not zero. Where the platform declined to tell us a number, that renders differently from the number nought.",
-    "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at."
+    "Nothing is styled to look disabled when retrying cannot help. A refusal explains; it does not present a dimmed control to click at.",
+    "Work in flight is stated, not implied. A control that has been pressed says so before the page it leads to arrives; the counterpart of 'absence of effect is stated', for the moment when effect is under way and nothing on screen has moved yet.",
+    "Terminal and recoverable failures are told apart by structure, not by hue. Both are red because both are bad; what differs is whether anything else on this screen can still work, and a user must be able to see that difference without reading the sentence twice.",
+    "A working control's indicator wears its label's colour, never the system's accent. The spinner is the label's companion — on the primary weight that resolves to `accent.text`, on the secondary to `text.primary`, and any weight added later answers the question without a new decision. An indicator that reached for the accent would make a working secondary louder than a resting primary beside it.",
+    "A pending treatment says a control is working; it does not decide whether the control stays pressable — and the answer is settled: controls stay pressable. `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` v2.0.0 (State & Interaction 4) states the outcome — a duplicate submit cannot produce a duplicate write — and locates the guarantee in the mechanism behind the control (single-use confirmation, idempotency key, natural idempotence), never in the control. The pressed control keeps focus because that focus is the announcement channel (DT-0022; change a-duplicate-submit-cannot-duplicate-a-write, #229). A ticket may rely on pressable-while-working as settled; reopening it means reopening that change's decision record, not asserting otherwise in a ticket."
   ]
 }

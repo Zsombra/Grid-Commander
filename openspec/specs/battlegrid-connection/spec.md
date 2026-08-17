@@ -57,25 +57,38 @@ string `'owner'` in the other.
 represented as unknown** rather than substituted. A substituted identity reads as
 a mismatch, and a mismatch reads as a refusal the user cannot act on.
 
+**That tolerance applies to acting, not to connecting.** A deployment already
+acting must survive not knowing its account id. A delegated connection being
+established has nothing to act under yet — the account is the key the workspace
+is found by — so an unknown identity there refuses the connection rather than
+being carried forward as unknown.
+
 #### Scenario: Acting under a delegated connection
 - **WHEN** the product acts for a user who connected by authorization
-- **THEN** the identity it presents to a platform-issued check is the subject
-  BattleGrid issued, not the local row id
+- **THEN** the identity it presents to a platform-issued check is the subject the
+  platform answered with when asked, not a claim carried on the authorization
+  response, and not the local row id
 
 #### Scenario: Acting under the owner's own credential
 - **WHEN** the deployment holds the owner's own key
 - **THEN** the platform's identity for that account is established from the
   platform, or reported as unknown
+- **AND** an unknown one leaves the deployment working
 
 #### Scenario: The two identifiers are not interchangeable
 - **WHEN** code compares a platform-issued claim about an account
 - **THEN** the local identifier cannot be supplied in its place
 
 ### Requirement: Read Scope Is Requested And Wager Scope Is Not
-Grid-Commander SHALL request only the scope required to read and configure. It
-MUST NOT request authority to commit funds. The authority an operation is
-measured against SHALL be the authority recorded on the user's connection, never
-an assumption about what was granted.
+
+Grid-Commander SHALL request only the scope required to read and configure when
+a user connects their account. It MUST NOT request authority to commit funds at
+connection time, and MUST NOT request it as a condition of using the product.
+The authority an operation is measured against SHALL be the authority recorded
+on the user's connection, never an assumption about what was granted.
+
+Authority to commit funds MAY be added afterwards, only by a step-up the
+operator explicitly begins, and only for the operations that require it.
 
 #### Scenario: Connecting
 - **WHEN** a user authorizes Grid-Commander
@@ -85,8 +98,7 @@ an assumption about what was granted.
 #### Scenario: A tool requiring wager authority is reached
 - **WHEN** any operation would require authority the connection does not hold
 - **THEN** the operation is refused before it is attempted
-- **AND** the user is told which authority would be needed and that
-  Grid-Commander does not currently request it
+- **AND** the user is told which authority would be needed and how to grant it
 
 #### Scenario: The grant is narrower than what was asked for
 - **WHEN** BattleGrid returns a grant carrying less authority than was requested
@@ -94,10 +106,20 @@ an assumption about what was granted.
 - **AND** an operation the grant does not cover is refused before it is
   attempted, in the same way as one requiring wager authority
 
+#### Scenario: Nothing is gated behind fund-committing authority except answering
+- **GIVEN** a connection holding read and configuration authority only
+- **WHEN** the user reads agents, strategies, decisions and records
+- **THEN** every one of those surfaces works
+- **AND** only answering a decision is unavailable
+
 ### Requirement: Configuration Authority Is Described Honestly
-Where Grid-Commander describes the access a user is granting, it SHALL state
-that the access permits creating and modifying agents and strategies. It MUST
-NOT describe that access as read-only or view-only.
+Where Grid-Commander describes the access a user is granting or has granted,
+it SHALL state that the access permits creating and modifying agents and
+strategies. It MUST NOT describe that access as read-only or view-only — on
+the consent flow or on any other surface. A surface that names authority the
+connection lacks SHALL not imply the connection is thereby harmless: where
+the missing wager scope is stated, the held write authority is stated beside
+it.
 
 #### Scenario: Presenting what is being granted
 - **WHEN** the user is shown what they are about to authorize
@@ -105,6 +127,12 @@ NOT describe that access as read-only or view-only.
   strategies
 - **AND** it distinguishes that from the ability to commit funds, which is not
   being requested
+
+#### Scenario: A surface describes the standing connection
+- **WHEN** any surface describes what the connected authority can or cannot do
+- **THEN** the access is not called read-only or view-only
+- **AND** where the absent wager scope is named, the description also names
+  the write authority the connection does hold
 
 ### Requirement: Capabilities Are Discovered From The Live Connection
 Grid-Commander SHALL determine which operations exist, and how each is
@@ -322,28 +350,43 @@ goes looking for a connect button; when there is none, the reasonable conclusion
 is that the product is broken, not that the advice was written for a deployment
 they are not running.
 
+This is why a failure that carries a remedy is shown with the sentence it
+carried, rather than being routed somewhere that composes its own. Sending an
+operator whose write just failed to the page that begins an authorization is
+correct on a deployment that can begin one, and on a deployment acting with a
+configured credential it renders "there is nothing to connect" — a true fact
+about the deployment, and an answer to a question they did not ask.
+
+**Where the remedy is something the user can reach, the surface SHALL offer it
+as a target and not only as a sentence.** A remedy stated in prose on a surface
+with nothing to click leaves the user to find the route themselves, at the moment
+they have least reason to trust the product. Where the remedy is not something a
+control can perform — a credential the operator must replace and a process they
+must restart — the surface SHALL state it and add nothing, because a control
+that cannot perform the remedy is the same false affordance this requirement
+exists to prevent.
+
+Which of the two applies is a property of the **deployment**, decided once where
+the deployment is assembled. A surface deciding it per failure is a second
+answer to a settled question, and the two will disagree.
+
+#### Scenario: A remedy the user can reach
+- **GIVEN** a deployment whose authority can be obtained again
+- **WHEN** a surface reports that authority is no longer valid
+- **THEN** it offers a way to begin that, alongside the sentence the failure
+  carried
+
+#### Scenario: A remedy no control can perform
+- **GIVEN** a deployment acting with a configured credential
+- **WHEN** a surface reports that authority is no longer valid
+- **THEN** it states the remedy and offers no control
+- **AND** it does not offer to begin an authorization the deployment cannot make
+
 #### Scenario: A configured credential is refused
-- **WHEN** the platform refuses the credential a deployment was configured with
-- **THEN** the user is told the authority is no longer valid
-- **AND** told to repair the configured credential
-- **AND** not told to reconnect
-
-#### Scenario: A delegated authority is lost
-- **WHEN** a deployment that authenticates users loses its authority for one of
-  them
-- **THEN** the user is told the authority is no longer valid
-- **AND** invited to reconnect
-
-#### Scenario: Offering to connect where there is nothing to connect
-- **WHEN** a user reaches the page that begins an authorization, on a deployment
-  acting with a configured credential
-- **THEN** they are told this deployment acts with a configured credential
-- **AND** no authorization can be started from it
-
-#### Scenario: Which remedy applies is not decided per request
-- **WHEN** the product is assembled
-- **THEN** the remedy its failures will name is fixed for that deployment
-- **AND** no request chooses it
+- **GIVEN** a deployment acting with a configured credential
+- **WHEN** its authority is refused
+- **THEN** the remedy named is to replace that credential
+- **AND** the user is not told to reconnect
 
 ### Requirement: A Tool Result Is Read From Its Envelope, Or Refused
 Grid-Commander SHALL extract the payload a tool returned from the transport
@@ -498,3 +541,316 @@ of registering again.
 #### Scenario: Authority beyond the registration
 - **WHEN** an authorization requests a scope the registration did not include
 - **THEN** the product does not depend on the platform allowing it
+
+### Requirement: The Record Carries What Each Operation Requires And Accepts, At Every Depth
+The record of the platform's surface SHALL carry, for every operation, each
+required parameter as a full path from the argument root — not the top level
+only — and, for every object the platform closes to an enumerated property
+set, that path's accepted property names and the fact that it is closed. Where
+an object path is a union of alternatives, each alternative SHALL be recorded
+distinguishably, so a check can hold a payload against the alternative it
+actually uses rather than against a merge that demands too much or accepts too
+little.
+
+A record that stops at the top level checks that a slot is filled and can never
+check what fills it. A payload can satisfy every top-level requirement and omit
+a required field three levels down; an object closed to twenty keys rejects a
+whole payload for one unaccepted twenty-first — and the record could not say
+so, which is how an edit path shipped that could never succeed.
+
+#### Scenario: A required field below the top level
+- **WHEN** an operation's declaration requires a field nested inside an object
+  or an array
+- **THEN** the record carries that requirement as a full path
+- **AND** a check can ask whether a payload satisfies it without reading the
+  declaration itself
+
+#### Scenario: An object closed to enumerated properties
+- **WHEN** an operation's declaration closes an object to an enumerated
+  property set
+- **THEN** the record carries, at that path, the accepted names and the fact
+  that the object is closed
+
+#### Scenario: An object that is a union of alternatives
+- **WHEN** an object path is declared as a union of alternative shapes
+- **THEN** each alternative's required paths and accepted set are recorded
+  distinguishably
+- **AND** a check can select the alternative a payload uses by the value that
+  discriminates them
+
+#### Scenario: The declared record is refreshed without a live call
+- **WHEN** the declared portions of the record are regenerated from the
+  committed record of what the server declares
+- **THEN** every observed response in the record is left exactly as it was
+- **AND** nothing is recorded as observed for an operation that was never
+  called
+
+### Requirement: A Constructed Payload Is Checked Against Required Paths And Accepted Sets
+For every payload Grid-Commander constructs for a platform operation, a check
+that gates a change SHALL verify that every required path in the operation's
+declaration is present and that no key appears, at any path the declaration
+closes, outside that path's accepted set. Where a payload carries an object the
+platform itself supplied and Grid-Commander passes through unaltered, the check
+SHALL exempt that object's internals explicitly — named as pass-through in the
+check — rather than by silently skipping it.
+
+#### Scenario: A required field is missing below the top level
+- **WHEN** a constructed payload satisfies every top-level requirement and
+  omits a required field nested deeper
+- **THEN** the gating check fails
+- **AND** it names the missing path
+
+#### Scenario: A key outside a closed accepted set
+- **WHEN** a constructed payload carries a key an enclosing closed object does
+  not accept
+- **THEN** the gating check fails and names the path
+- **AND** the failure states that the platform rejects the whole payload for
+  it, not just the key
+
+#### Scenario: A server-round-tripped object
+- **WHEN** a payload includes an object handed back from the platform rather
+  than built by Grid-Commander
+- **THEN** the check does not demand Grid-Commander supply that object's
+  internals
+- **AND** the exemption is visible in the check as a named pass-through, so
+  removing it is a decision rather than an accident
+
+### Requirement: A Credential In The Environment Is Not Consent To Mutate
+
+An automated check that can reach a mutating BattleGrid tool SHALL require an
+explicit instruction to perform writes, separate from the credential that makes
+them possible. The presence of a credential SHALL NOT by itself be sufficient.
+
+Authority and intent are different things. A credential exported so that a
+read-only check can run is not an agreement to fork, archive, or create
+anything on the account it belongs to, and a check that treats it as one
+performs writes nobody asked for.
+
+Which tools count as mutating SHALL be derived from BattleGrid's own
+classification rather than from a list held in this repository, because a list
+goes stale exactly when the platform changes and that is when it matters.
+
+#### Scenario: A credential is present and nothing asked for writes
+- **GIVEN** a BattleGrid credential in the environment
+- **AND** no explicit instruction to perform live writes
+- **WHEN** the verification suite runs
+- **THEN** no check reaches a mutating tool
+- **AND** the checks that would have are reported as not run
+
+#### Scenario: Writes are asked for explicitly
+- **GIVEN** a BattleGrid credential in the environment
+- **AND** an explicit instruction to perform live writes
+- **WHEN** a mutating check is run
+- **THEN** it runs
+
+#### Scenario: A check that only expects a refusal
+- **GIVEN** a check that reaches a mutating tool expecting the platform to
+  refuse it
+- **WHEN** the gating is decided
+- **THEN** it requires the same explicit instruction as any other mutating
+  check
+- **AND** the expectation of refusal does not exempt it, because whether the
+  platform still refuses is a claim about the platform
+
+#### Scenario: A new mutating check added later
+- **GIVEN** a check is added that reaches a mutating tool without the explicit
+  instruction
+- **WHEN** the guards run
+- **THEN** they fail and name the check and the tool it can reach
+
+### Requirement: A Failure Says What Happened, In The Operator's Terms
+Where a read or an operation fails, the reason Grid-Commander shows SHALL be a
+statement of what happened, not the protocol artefact that carried it.
+
+A status line, a method name, or a tool identifier is diagnostic material. It
+may accompany the reason and SHALL NOT be the whole of it — the person reading
+it has to be able to tell whether the fault is theirs, their credential's, or
+the platform's, and act accordingly.
+
+Where the distinction is available, the reason SHALL distinguish a platform that
+did not answer from one that answered and refused, because the two have
+different remedies and one of them is "wait".
+
+#### Scenario: The platform is unreachable
+- **WHEN** the platform answers with a gateway failure
+- **THEN** the reason states that the platform is not answering
+- **AND** states that this is not a fault in the operator's account or credential
+- **AND** carries the status alongside, rather than instead
+
+#### Scenario: The platform refuses the request
+- **WHEN** the platform answers with a client error other than a withdrawal of authority
+- **THEN** the reason states that the platform refused the request
+- **AND** is distinguishable from the platform being unreachable
+
+#### Scenario: An operation is refused because its classification is unknown
+- **WHEN** an operation cannot be performed because Grid-Commander could not
+  establish what it does
+- **THEN** the reason states that it could not be confirmed and so was not performed
+- **AND** does not assert what kind of operation it was
+
+### Requirement: A Recorded Proposal Carries No Authority
+
+A proposal recorded on an operator's behalf SHALL hold no credential, no
+confirmation, and no reservation against their BattleGrid account. It SHALL be
+a statement of intent and nothing that can be spent.
+
+The confirmation this product mints is a bearer capability: whatever holds one
+can complete a write it was formed for. Storing one against a future human
+decision would put an unspent authorization at rest, reachable by anything that
+reaches the store, for as long as it lives.
+
+#### Scenario: What is stored
+- **WHEN** a proposal is recorded
+- **THEN** no confirmation token is stored with it
+- **AND** no access token is stored with it
+
+#### Scenario: A proposal store that leaks
+- **GIVEN** an attacker who can read every recorded proposal
+- **WHEN** they use everything they find
+- **THEN** no change can be made to any BattleGrid account
+
+### Requirement: Authority Lost Mid-Operation Is Told Apart From A Refusal
+Where an operation fails because the account's authority is no longer valid,
+Grid-Commander SHALL say that, and SHALL NOT present it as a refusal of that
+operation.
+
+They are different facts with different futures. A refusal is about the thing
+that was attempted — a revision moved, a value was rejected — and attempting
+something else may well work. Lost authority is about the account: nothing will
+work until the credential is repaired or the connection remade. An operator who
+reads "Refused:" above a live confirmation form will press it again, because
+that is what the screen is for.
+
+Where authority is lost, the surface SHALL NOT offer the control that performs
+the operation. A control that cannot succeed is not made honest by the sentence
+above it.
+
+The sentence shown SHALL be the one the failure carried, because it is built
+with the remedy belonging to the deployment that raised it — see *A Remedy
+Named Must Exist In That Deployment*.
+
+#### Scenario: A write fails because authority is gone
+- **WHEN** an operation fails because the account's authority is no longer valid
+- **THEN** the operator is told the authority is no longer valid, with that
+  deployment's remedy
+- **AND** it is not presented as a refusal of the operation they attempted
+
+#### Scenario: Nothing to press
+- **WHEN** a surface reports that authority is no longer valid
+- **THEN** it does not render the control that performs the operation
+
+#### Scenario: A refusal is still a refusal
+- **WHEN** an operation is refused for any reason other than lost authority
+- **THEN** it is reported as a refusal, and the surface may still offer the
+  operation
+
+### Requirement: A Grant Carries Authority, Not Identity
+Grid-Commander SHALL establish which BattleGrid account a delegated connection
+acts as by an authenticated read performed with the granted authority, and MUST
+NOT require the authorization response to carry that identity.
+
+An authorization response says what the bearer may do. It is not required to say
+who they are, and BattleGrid's does not: it is plain OAuth 2.1, publishes no
+OpenID configuration, and advertises no endpoint that describes the end user. A
+product that reads identity off a grant is reading a field its authorization
+server never promised.
+
+The identity established this way SHALL be the platform's own answer, obtained
+with the authority just granted — never a value this product minted, and never a
+default standing in for one it could not obtain.
+
+#### Scenario: The grant carries no subject
+- **WHEN** BattleGrid returns a grant that names no account
+- **THEN** the connection still completes
+- **AND** the acting account is the one the platform answers with when asked
+- **AND** the absence of an identity claim on the grant is not itself a refusal
+
+#### Scenario: A returning user
+- **WHEN** a user who has connected before authorizes again
+- **THEN** the account the platform answers with is recognised as the same one
+- **AND** they land back in the workspace they already had, holding what they
+  left there
+
+#### Scenario: Two different users connect
+- **WHEN** two users each complete an authorization
+- **THEN** each acts as the account the platform named for their own credential
+- **AND** neither is recognised as the other
+
+### Requirement: A Connection Whose Account Cannot Be Identified Is Refused, And Its Grant Released
+Where Grid-Commander cannot establish which account a new delegated connection
+acts as, it SHALL store no connection, issue no session, and MUST relinquish the
+authority it was just granted at BattleGrid.
+
+A grant that has been issued is live whether or not this product managed to use
+it. Discarding it locally would leave a user holding authority they were told was
+never established — the same failure that makes local-only disconnection wrong.
+
+The user SHALL be returned to the point where a connection is started, told that
+the account could not be identified, and offered a retry. This outcome MUST NOT
+reach them as an unhandled failure.
+
+#### Scenario: The identity read cannot answer
+- **WHEN** the account read fails or names no account
+- **THEN** no connection is stored and no session is issued
+- **AND** the authority just granted is relinquished at BattleGrid
+- **AND** the user is returned with an explanation and the option to retry
+
+#### Scenario: The grant cannot be released either
+- **WHEN** relinquishing the just-granted authority also fails
+- **THEN** no connection is stored and no session is issued
+- **AND** the user is told that authority may still stand at BattleGrid
+- **AND** they are told where it can be withdrawn
+
+#### Scenario: A refusal is never a crash
+- **WHEN** a connection is refused for want of an identity
+- **THEN** the user sees the connect surface and an explanation
+- **AND** they are not shown an unhandled error
+
+### Requirement: The Coverage Around Consent Is Stated Where It Is Read
+Where Grid-Commander's checks report on the authorization path, they SHALL state
+which part of that path they do not exercise.
+
+A check list that names the connection path reads as covering it. Verifying the
+authorization server's published description, and exchanging a code for a token,
+are different assertions — and the second cannot be automated, because an
+authorization code requires a person at a consent screen. The limit is real; a
+reader believing it does not exist is not.
+
+#### Scenario: Reading what the checks cover
+- **WHEN** an operator reads the checks that name the authorization path
+- **THEN** the boundary between what is verified automatically and what requires
+  a human at a consent screen is stated there
+
+### Requirement: Fund-Committing Authority Is Granted By A Step-Up The Operator Begins
+
+Where an operation requires authority to commit funds, the product SHALL offer
+to obtain that authority only from the point of use, and only when the operator
+asks for it. The step-up SHALL state which operations the authority permits,
+that it permits committing the user's money, and that the platform's own caps
+continue to apply.
+
+The product SHALL NOT begin a step-up on its own initiative, on a schedule, in
+response to a model, or as a side effect of reading anything.
+
+#### Scenario: Answering without the authority
+- **GIVEN** a connection that does not hold authority to commit funds
+- **WHEN** the operator opens a decision awaiting an answer
+- **THEN** the decision is fully readable
+- **AND** accept and cancel are refused before they are attempted, naming the
+  authority needed and offering the step-up
+
+#### Scenario: The operator begins the step-up
+- **WHEN** the operator asks to grant fund-committing authority
+- **THEN** they are told it permits accepting and cancelling proposed trades
+- **AND** that accepting commits their money
+
+#### Scenario: The step-up is declined or abandoned
+- **GIVEN** an operator who begins and does not complete the step-up
+- **WHEN** they return to the decision
+- **THEN** the decision is still readable
+- **AND** the product has not recorded authority it does not hold
+
+#### Scenario: Nothing else begins a step-up
+- **WHEN** any read, any model-recorded proposal, or any scheduled work runs
+- **THEN** no step-up is begun
+- **AND** the connection's authority is unchanged

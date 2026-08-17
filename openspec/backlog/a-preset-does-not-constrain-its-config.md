@@ -2,10 +2,10 @@
 id: a-preset-does-not-constrain-its-config
 title: A position-management preset is a label, not a configuration
 type: question
-status: open
+status: done
 priority: p2
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-07-31
 change: ""
 capability: agent-authoring
 blocked_by: []
@@ -77,3 +77,20 @@ level down, inside a form rather than at its submit.
 
 - `agent-edit-form` — this is the substance of that item, not a detail of it
 - `trading-config-read-shape-is-not-write-shape` — the other trap in the same object
+
+## Closed 2026-07-31: answered, and the halves went their ways
+
+The question itself was answered the day it was filed, in this item's own
+body: a preset is a label beside fourteen independent values, divergence is
+possible-not-present, and `CUSTOM` means "these values are mine".
+
+What the answer demanded, tracked to completion or filed:
+
+- **Create path** — shipped 2026-07-31 (`preset-configs-are-discarded`,
+  archived): the form offers the five catalog presets + CUSTOM and a chosen
+  preset sends the platform's own fourteen values with its label.
+- **Edit path with drift display** — filed as its own feature:
+  `position-management-can-be-edited` (P3). `update_intelligence_agent`
+  accepts `tradingConfig.positionManagement`, so it is buildable; the drift
+  display ("names WALTHER, carries values that are not WALTHER's") belongs
+  to that surface.

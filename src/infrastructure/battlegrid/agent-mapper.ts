@@ -3,9 +3,26 @@ import type { Brain } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
 import type { ApprovedModel, Bound, Catalog, PositionManagementPreset } from '@/domain/agent/catalog.js';
 import type { Budget, Gauge } from '@/domain/agent/budget.js';
+import type {
+  AdvisoryCoin,
+  BlockingDial,
+  FeasibilityAdvisory,
+  FeasibilityCounts,
+} from '@/domain/agent/feasibility.js';
 import type { ActivityEvent, AgentRecord, GameResult } from '@/domain/agent/journal.js';
 import type { Performance, Point } from '@/domain/agent/performance.js';
 import type { MarketSnapshot, ThoughtEntry } from '@/domain/agent/thought.js';
+import type {
+  CoinQualification,
+  DirectionQualification,
+  EntryDecision,
+  GateBlock,
+  PerformanceReading,
+  SignalEvaluation,
+  SignalVerdict,
+  TradeOutcome,
+} from '@/ports/agents.js';
+import type { RankedCoin } from '@/ports/market.js';
 import type { TradingConfig } from '@/domain/agent/trading-config.js';
 
 /**
@@ -27,11 +44,11 @@ interface RawAgent {
   bindingState?: unknown;
   brainPreset?: unknown;
   modelId?: unknown;
+  modelDisplayName?: unknown;
+  last24hCostUsd?: unknown;
   behavior?: unknown;
   tradingConfig?: unknown;
   performance?: unknown;
-  arenaChallengeEnabled?: unknown;
-  overlayText?: unknown;
   capabilities?: unknown;
 }
 
@@ -64,12 +81,43 @@ export function mapAgent(raw: unknown): Agent {
       state: str(a.bindingState) ?? 'UNKNOWN',
     },
     brain: mapBrain(a),
+    // Both reads carry this identically, so it is safe to map wherever an
+    // agent payload arrives. Null when absent — the fallback belongs to the
+    // surface, which shows what it always showed rather than a name nobody
+    // reported.
+    modelDisplayName: str(a.modelDisplayName),
+    // Deliberately not read here. `get_intelligence_agent` answers 0 for an
+    // agent `list_intelligence_agents` prices at $0.09 at the same moment —
+    // stable across repeated samples, every other key identical — so the
+    // detail read's copy (and every write result's, which shares this shape)
+    // is left null rather than repeated as a false zero. The roster read is
+    // the one source, in `mapRosterAgent` below. See
+    // `the-cost-of-an-agent-reads-differently-from-two-tools`.
+    last24hCostUsd: null,
     tradingConfig: mapTradingConfig(a.tradingConfig),
-    arenaChallengeEnabled: a.arenaChallengeEnabled === true,
-    overlayText: str(a.overlayText),
     performance: mapPerformance(a.performance),
     permissions: mapPermissions(a.capabilities),
   };
+}
+
+/**
+ * A roster row — the one read spend may come from.
+ *
+ * `last24hCostUsd` disagrees between the two tools that return this shape:
+ * for the same agent at the same moment the list said `0.09022839` and the
+ * detail said `0`, sampled twice three seconds apart, identical both times,
+ * with every other key equal. Neither has been checked against a cost
+ * ledger, but a stable zero on an agent that ran trades today is the
+ * suspicious one, and rendering it would show an agent that is spending
+ * money — and may be about to be halted for it — as one that is not. So the
+ * list is the source, decided in
+ * `the-cost-of-an-agent-reads-differently-from-two-tools`, and this mapper
+ * is the only place the field is read. Absent stays null, never 0: a figure
+ * the platform did not send is not a spend of nothing.
+ */
+export function mapRosterAgent(raw: unknown): Agent {
+  const a = (raw ?? {}) as RawAgent;
+  return { ...mapAgent(raw), last24hCostUsd: num(a.last24hCostUsd) ?? null };
 }
 
 function mapStatus(raw: unknown): AgentStatus {
@@ -97,7 +145,9 @@ function mapBrain(a: RawAgent): Brain {
   const preset = str(a.brainPreset);
   if (preset) return { kind: 'preset', preset };
 
-  const modelId = str(a.modelId) ?? '';
+  const modelId = str(a.modelId);
+  if (!modelId) return { kind: 'unknown' };
+
   const b = (a.behavior ?? {}) as Record<string, unknown>;
   return {
     kind: 'custom',
@@ -221,11 +271,23 @@ function mapPositionPresets(raw: unknown): readonly PositionManagementPreset[] {
     const p = (entry ?? {}) as Record<string, unknown>;
     const preset = str(p['preset']);
     if (!preset) return [];
+    // The config block is the point of the preset: the platform declines to
+    // expand a label server-side, so these twelve values are what choosing
+    // "COLT" actually sends. Carried through verbatim when it is an object,
+    // null otherwise — a preset the platform did not fully describe stays
+    // visibly incomplete rather than being completed here.
+    const config = p['config'];
     return [
       {
         preset,
         label: str(p['label']) ?? preset,
         description: str(p['description']) ?? '',
+        config:
+          typeof config === 'object' && config !== null && !Array.isArray(config)
+            ? (config as Readonly<Record<string, unknown>>)
+            : null,
+        tagline: str(p['tagline']) ?? '',
+        cardSummary: str(p['cardSummary']) ?? '',
       },
     ];
   });
@@ -245,6 +307,12 @@ const BOUND_KEYS: ReadonlyArray<
 > = [
   ['balanceThresholdUsd', 'minimumTradingEquityUsd', undefined],
   ['maxLeverage', 'minimumLeverage', undefined],
+  // The registry still publishes `minimumStopLossPct` / `maximumStopLossPct`
+  // / `minimumRiskRewardRatio` at v15, but the fields they bound left the
+  // agent for the strategy, so `validateTradingConfig` never meets them in a
+  // 15-key config. Kept as a record of what the bound governs, inert until a
+  // strategy-side validator wants them — see
+  // `v15-trade-level-policy-is-declared-but-inert`.
   ['minStopLossPct', 'minimumStopLossPct', 'maximumStopLossPct'],
   ['maxStopLossPct', 'minimumStopLossPct', 'maximumStopLossPct'],
   ['maxEntryDeviationAtrMultiple', 'minimumMaxEntryDeviationAtrMultiple', 'maximumMaxEntryDeviationAtrMultiple'],
@@ -361,6 +429,7 @@ export function mapBudget(raw: unknown): Budget {
   }
 
   const haltedAt = str(inner['haltedAt']);
+  const blockedSince = str(inner['blockedSince']);
   return {
     agentId: str(inner['agentId']) ?? '',
     gauges,
@@ -371,6 +440,12 @@ export function mapBudget(raw: unknown): Budget {
     haltReason: str(inner['haltReason']),
     capitalAtRiskUsd: num(inner['capitalAtRiskUsd']) ?? null,
     headroomUsd: num(inner['headroomUsd']) ?? null,
+    // Absent stays null, never 0. A budget that did not report headroom is not
+    // a budget with no headroom, and rendering the second would say the agent
+    // is about to stop when the truth is that nobody knows.
+    effectiveNotionalUsd: num(inner['effectiveNotionalUsd']) ?? null,
+    blockedReason: str(inner['blockedReason']),
+    blockedSince: blockedSince === null ? null : new Date(blockedSince),
   };
 }
 
@@ -392,6 +467,33 @@ const GAUGE_CEILINGS: Readonly<Record<string, string>> = {
 function ceilingFor(gauge: string, budget: Record<string, unknown>): number | null {
   const key = GAUGE_CEILINGS[gauge];
   return key === undefined ? null : (num(budget[key]) ?? null);
+}
+
+/**
+ * The performance read, from the payload `get_agent_performance` returns.
+ *
+ * Not `mapPerformance` below, which maps the roster row's own performance
+ * block into the domain record — this maps the tool's baseline reading, the
+ * measure #189 settled as answering a different question.
+ *
+ * The response has arrived both under a `performance` envelope (the recorded
+ * fixture, `tests/support/performance-payloads.ts`) and bare (the 2026-08-12
+ * v18 read), so both are accepted — the same tolerance `mapBudget` has for
+ * its envelope. The curve keeps only finite numbers: a junk entry must not
+ * stretch the shape, and the caption counts settlements from what is kept.
+ */
+export function mapPerformanceReading(raw: unknown): PerformanceReading {
+  const p = ((raw ?? {}) as Record<string, unknown>);
+  const inner = (typeof p['performance'] === 'object' && p['performance'] !== null
+    ? p['performance']
+    : p) as Record<string, unknown>;
+  const rawCurve = inner['pnlCurveUsd'];
+  return {
+    realizedPnlUsd: num(inner['realizedPnlUsd']) ?? null,
+    curve: Array.isArray(rawCurve)
+      ? rawCurve.filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+      : [],
+  };
 }
 
 /**
@@ -512,4 +614,439 @@ function mapCurve(raw: unknown): readonly Point[] {
     const e = (entry ?? {}) as Record<string, unknown>;
     return { at: new Date(String(e['timestamp'] ?? 0)), value: num(e['value']) ?? 0 };
   });
+}
+
+/**
+ * One closed trade, mapped whole — shaped from the live
+ * `list_trade_outcomes` row of 2026-08-02.
+ *
+ * Every money figure is carried and none is defaulted to zero: a missing
+ * fee rendered as `0` understates a loss, and this is the surface an
+ * operator uses to decide whether an agent earns its capital. The id and
+ * the market are the two fields a row cannot be read without — a trade
+ * with neither is not a trade anyone can act on, so the read refuses
+ * rather than render a nameless line.
+ */
+export function mapTradeOutcome(raw: unknown): TradeOutcome {
+  const t = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof t['id'] === 'string' && t['id'] ? t['id'] : null;
+  if (id === null) throw new TradeOutcomePayloadError('id');
+  const coinTicker = typeof t['coinTicker'] === 'string' && t['coinTicker'] ? t['coinTicker'] : null;
+  if (coinTicker === null) throw new TradeOutcomePayloadError('coinTicker');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+
+  return {
+    id,
+    coinTicker,
+    direction: text(t['direction']) ?? 'UNKNOWN',
+    closeReason: text(t['closeReason']),
+    closedBy: text(t['closedBy']),
+    entryFillPrice: num(t['entryFillPrice']) ?? null,
+    exitFillPrice: num(t['exitFillPrice']) ?? null,
+    realizedPnl: num(t['realizedPnl']) ?? null,
+    totalFees: num(t['totalFees']) ?? null,
+    netPnl: num(t['netPnl']) ?? null,
+    slippageEntry: num(t['slippageEntry']) ?? null,
+    slippageExit: num(t['slippageExit']) ?? null,
+    effectiveLeverage: num(t['effectiveLeverage']) ?? null,
+    conviction: num(t['conviction']) ?? null,
+    openedAt: text(t['openedAt']),
+    closedAt: text(t['closedAt']),
+    durationSeconds: num(t['durationSeconds']) ?? null,
+    decisionId: text(t['decisionId']),
+    signalLogId: text(t['signalLogId']),
+  };
+}
+
+export class TradeOutcomePayloadError extends Error {
+  constructor(field: string) {
+    super(`BattleGrid returned a trade outcome with no usable "${field}"`);
+  }
+}
+
+/**
+ * A candidate the pipeline stopped — shaped from the live
+ * `list_gate_blocks` row of 2026-08-03.
+ *
+ * `reasonDetail` is carried as the platform structured it rather than
+ * flattened to prose: `INSUFFICIENT_EQUITY` is a category, and
+ * `{equityUsd: 2.18, thresholdUsd: 10}` is the answer an operator came
+ * for. `coinTicker` is genuinely nullable — an account-stage block is
+ * about the account, not a market.
+ */
+export function mapGateBlock(raw: unknown): GateBlock {
+  const b = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof b['id'] === 'string' && b['id'] ? b['id'] : null;
+  if (id === null) throw new PipelinePayloadError('gate block id');
+  return {
+    id,
+    coinTicker: typeof b['coinTicker'] === 'string' && b['coinTicker'] ? b['coinTicker'] : null,
+    gateStage: String(b['gateStage'] ?? 'UNKNOWN'),
+    reasonCode: String(b['reasonCode'] ?? 'UNSTATED'),
+    reasonDetail:
+      typeof b['reasonDetail'] === 'object' && b['reasonDetail'] !== null
+        ? (b['reasonDetail'] as Record<string, unknown>)
+        : {},
+    at: typeof b['createdAt'] === 'string' ? b['createdAt'] : null,
+  };
+}
+
+/** One evaluation that ran — live `list_signal_logs` row of 2026-08-03. */
+export function mapSignalEvaluation(raw: unknown): SignalEvaluation {
+  const e = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof e['id'] === 'string' && e['id'] ? e['id'] : null;
+  if (id === null) throw new PipelinePayloadError('signal log id');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  return {
+    id,
+    coinTicker: text(e['coinTicker']),
+    aggregateScore: num(e['aggregateScore']) ?? null,
+    // The threshold *in force when this ran*. Reading today's setting here
+    // would explain an old skip with a rule that did not apply to it.
+    minAggregateScore: num(e['effectiveMinAggregateScore']) ?? null,
+    minRequiredCount: num(e['effectiveMinRequiredCount']) ?? null,
+    triggeredSignalCount: num(e['triggeredSignalCount']) ?? null,
+    dominantBias: text(e['dominantBias']),
+    assessmentDirection: text(e['assessmentDirection']),
+    hasConflictingSignals: e['hasConflictingSignals'] === true,
+    gateStatus: text(e['evaluationGateStatus']),
+    gateReason: text(e['evaluationGateReason']),
+    terminalStatus: text(e['terminalStatus']),
+    at: text(e['evaluatedAt']) ?? text(e['createdAt']),
+  };
+}
+
+/**
+ * One signal's reading inside a decision's checklist.
+ *
+ * An entry with no `signalId` is dropped rather than mapped to a blank: the
+ * checklist is evidence, and an unidentifiable row of evidence cannot be
+ * attributed to a signal the reader could go and look up.
+ */
+function mapSignalVerdict(raw: unknown): SignalVerdict | null {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const signalId = typeof s['signalId'] === 'string' && s['signalId'] ? s['signalId'] : null;
+  if (signalId === null) return null;
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  return {
+    signalId,
+    label: text(s['label']),
+    // Kept as the platform said it. CONFIRM / WARN / REJECT today; a fourth
+    // value tomorrow renders as itself rather than as whichever of two
+    // buckets this mapper guessed.
+    verdict: text(s['verdict']),
+    interpretation: text(s['interpretation']),
+  };
+}
+
+/** A decision the agent reached — live `list_entry_decisions` row of 2026-08-03. */
+export function mapEntryDecision(raw: unknown): EntryDecision {
+  const d = (raw ?? {}) as Record<string, unknown>;
+  const id = typeof d['id'] === 'string' && d['id'] ? d['id'] : null;
+  if (id === null) throw new PipelinePayloadError('decision id');
+  const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+  const rawChecklist = Array.isArray(d['signalChecklist']) ? d['signalChecklist'] : [];
+  return {
+    id,
+    coinTicker: text(d['coinTicker']),
+    decision: String(d['decision'] ?? 'UNKNOWN'),
+    direction: text(d['direction']),
+    conviction: num(d['conviction']) ?? null,
+    entryPrice: num(d['entryPrice']) ?? null,
+    stopLoss: num(d['stopLoss']) ?? null,
+    takeProfit: num(d['takeProfit']) ?? null,
+    riskRewardRatio: num(d['riskRewardRatio']) ?? null,
+    status: text(d['status']),
+    // Whole. This is the agent explaining itself, and a truncated
+    // explanation is a different explanation.
+    reasoning: text(d['reasoning']),
+    // The evidence behind that paragraph. It arrives on the list row —
+    // `get_entry_decision` returns the same 35 keys and is never called.
+    checklist: rawChecklist
+      .map(mapSignalVerdict)
+      .filter((s): s is SignalVerdict => s !== null),
+    positionSizePct: num(d['positionSizePct']) ?? null,
+    positionSizePreset: text(d['positionSizePreset']),
+    timeHorizon: text(d['timeHorizon']),
+    atrPct: num(d['atrPct']) ?? null,
+    expiresAt: text(d['expiresAt']),
+    // Null while the decision is still answerable; set by the platform on
+    // cancel and on expiry alike (both observed 2026-08-15). Half of the
+    // liveness test — `status` is the other half.
+    closedAt: text(d['closedAt']),
+    executedAt: text(d['executedAt']),
+    executedOrderId: text(d['executedOrderId']),
+    stopLossOrderId: text(d['stopLossOrderId']),
+    takeProfitOrderId: text(d['takeProfitOrderId']),
+    at: text(d['createdAt']),
+  };
+}
+
+export class PipelinePayloadError extends Error {
+  constructor(field: string) {
+    super(`BattleGrid returned a pipeline row with no usable "${field}"`);
+  }
+}
+
+/**
+ * One coin's qualification verdict, from the live `get_agent_coin_qualification`
+ * row recorded 2026-08-06.
+ *
+ * The ticker is the only field worth refusing a row over: a verdict that cannot
+ * be attributed to a market is a paragraph about nothing. Everything else is
+ * preserved-or-null, including the two figures inside each gate — a gate the
+ * platform could not measure sends `atrPct: null`, and defaulting that to zero
+ * would render "no volatility at all", which reads as the most extreme possible
+ * failure of the very gate that was not measured.
+ */
+export function mapCoinQualification(raw: unknown): CoinQualification {
+  const v = (raw ?? {}) as Record<string, unknown>;
+  const text = (x: unknown): string | null => (typeof x === 'string' && x ? x : null);
+  const coinTicker = text(v['coinTicker']);
+  if (coinTicker === null) throw new PipelinePayloadError('qualification coinTicker');
+
+  const gates = (
+    typeof v['gates'] === 'object' && v['gates'] !== null ? v['gates'] : {}
+  ) as Record<string, unknown>;
+  const gate = (key: string): Record<string, unknown> =>
+    typeof gates[key] === 'object' && gates[key] !== null
+      ? (gates[key] as Record<string, unknown>)
+      : {};
+
+  /**
+   * A gate whose verdict is absent reads `UNSTATED`, not `FAILING`.
+   *
+   * The four states the platform sends include two that are not failures, so
+   * the safe default when it sends none is a fifth word that claims nothing —
+   * rather than borrowing one of the four and asserting something about the
+   * coin that the platform never said.
+   */
+  const verdictOf = (g: Record<string, unknown>): string => text(g['verdict']) ?? 'UNSTATED';
+
+  const aggregate = gate('aggregateScore');
+  const required = gate('requiredCount');
+  const atr = gate('atrVolatility');
+
+  return {
+    coinTicker,
+    coinName: text(v['coinName']),
+    qualifies: v['qualifies'] === true,
+    firstFailReason: text(v['firstFailReason']),
+    strategyTimeframe: text(v['strategyTimeframe']),
+    evaluatedAt: text(v['evaluatedAt']),
+    gates: {
+      aggregateScore: {
+        verdict: verdictOf(aggregate),
+        scorePercent: num(aggregate['scorePercent']) ?? null,
+        minScorePercent: num(aggregate['minScorePercent']) ?? null,
+      },
+      requiredCount: {
+        verdict: verdictOf(required),
+        count: num(required['count']) ?? null,
+        min: num(required['min']) ?? null,
+      },
+      atrVolatility: {
+        verdict: verdictOf(atr),
+        atrPct: num(atr['atrPct']) ?? null,
+        minAtrPct: num(atr['minAtrPct']) ?? null,
+      },
+    },
+    long: mapDirectionQualification(v['long']),
+    short: mapDirectionQualification(v['short']),
+  };
+}
+
+/**
+ * One direction's half of a verdict.
+ *
+ * `qualifies` defaults to false and `candidateLevels.ok` to false, because both
+ * are permissions rather than measurements: absent means the platform did not
+ * say this direction is available, and the honest reading of that is that it is
+ * not known to be. `rejectionStage` stays null in that case rather than
+ * inventing a stage, so the surface can say "not stated" instead of naming a
+ * step that never ran.
+ */
+function mapDirectionQualification(raw: unknown): DirectionQualification {
+  const d = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  const levels = (
+    typeof d['candidateLevels'] === 'object' && d['candidateLevels'] !== null
+      ? d['candidateLevels']
+      : {}
+  ) as Record<string, unknown>;
+  return {
+    qualifies: d['qualifies'] === true,
+    firstFailReason:
+      typeof d['firstFailReason'] === 'string' && d['firstFailReason']
+        ? d['firstFailReason']
+        : null,
+    candidateLevels: {
+      ok: levels['ok'] === true,
+      rejectionStage:
+        typeof levels['rejectionStage'] === 'string' && levels['rejectionStage']
+          ? levels['rejectionStage']
+          : null,
+    },
+  };
+}
+
+/**
+ * The feasibility advisory `update_intelligence_agent` returns beside the agent.
+ *
+ * **Absent is not zero.** `feasibilityAdvisory` is not in the output schema's
+ * `required` list — only `agent` is — and the tool is classified destructive,
+ * so the surface record has never observed one (`"observed": null`). The
+ * standing warning applies exactly here: declared and observed disagree in both
+ * directions on this platform, and a `=== true` on a v19 read has already
+ * turned platform silence into a confident `false` once. Anything that is not
+ * a well-formed advisory returns `null`, and `null` means *the platform did not
+ * answer* — never *nothing can be built*.
+ *
+ * **All or nothing.** A partial object is refused rather than filled in. Half
+ * an advisory rendered as opportunity language is a count over a denominator
+ * nobody returned.
+ *
+ * This is the only place the platform's spelling for any of it exists —
+ * `FEASIBLE`, `ATR_UNAVAILABLE`, `MIN_STOP_LOSS_PCT`. The domain says
+ * `feasible`, `unpriced`, `floor`.
+ */
+export function mapFeasibilityAdvisory(raw: unknown): FeasibilityAdvisory | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const a = raw as Record<string, unknown>;
+
+  const minStopLossAtrMultiple = num(a['minStopLossAtrMultiple']);
+  const maxStopLossPct = num(a['maxStopLossPct']);
+  const minRiskRewardRatio = num(a['minRiskRewardRatio']);
+  if (
+    minStopLossAtrMultiple === undefined ||
+    maxStopLossPct === undefined ||
+    minRiskRewardRatio === undefined
+  ) {
+    return null;
+  }
+
+  const counts = mapFeasibilityCounts(a['counts']);
+  if (counts === null) return null;
+
+  // `coins` absent is not an empty fleet. The field is declared required, so a
+  // payload without it is a payload this product does not recognise.
+  if (!Array.isArray(a['coins'])) return null;
+
+  const coins: AdvisoryCoin[] = [];
+  for (const entry of a['coins']) {
+    const coin = mapAdvisoryCoin(entry);
+    // One unrecognised member makes the whole advisory unreadable rather than
+    // silently shorter. A fleet of twelve reported as eleven is a false count,
+    // and a false count is the one thing this panel must never render.
+    if (coin === null) return null;
+    coins.push(coin);
+  }
+
+  return {
+    dials: { minStopLossAtrMultiple, maxStopLossPct, minRiskRewardRatio },
+    counts,
+    coins,
+  };
+}
+
+function mapFeasibilityCounts(raw: unknown): FeasibilityCounts | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const c = raw as Record<string, unknown>;
+  const total = num(c['total']);
+  const evaluated = num(c['evaluated']);
+  const buildable = num(c['buildable']);
+  const volatilityUnavailable = num(c['volatilityUnavailable']);
+  if (
+    total === undefined ||
+    evaluated === undefined ||
+    buildable === undefined ||
+    volatilityUnavailable === undefined
+  ) {
+    return null;
+  }
+  return { total, evaluated, buildable, volatilityUnavailable };
+}
+
+/**
+ * One coin, off the declared two-arm union.
+ *
+ * The arms are told apart by `status`, and a status matching neither returns
+ * `null` — not a coin with defaults. The unpriced arm is `additionalProperties:
+ * false` over `{ coinTicker, status }`, so reading numbers off it would be
+ * reading fields the platform states it will never send.
+ */
+function mapAdvisoryCoin(raw: unknown): AdvisoryCoin | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const c = raw as Record<string, unknown>;
+
+  const ticker = str(c['coinTicker']);
+  if (ticker === null) return null;
+
+  if (c['status'] === 'ATR_UNAVAILABLE') return { kind: 'unpriced', ticker };
+
+  const status =
+    c['status'] === 'FEASIBLE'
+      ? ('feasible' as const)
+      : c['status'] === 'STRUCTURAL_ONLY'
+        ? ('structural-only' as const)
+        : null;
+  if (status === null) return null;
+
+  const atrPct = num(c['atrPct']);
+  const reachableMinPct = num(c['reachableMinPct']);
+  const reachableMaxPct = num(c['reachableMaxPct']);
+  const requestedMinAtrMultiple = num(c['requestedMinAtrMultiple']);
+  const requestedMinPct = num(c['requestedMinPct']);
+  const requestedMaxPct = num(c['requestedMaxPct']);
+  if (
+    atrPct === undefined ||
+    reachableMinPct === undefined ||
+    reachableMaxPct === undefined ||
+    requestedMinAtrMultiple === undefined ||
+    requestedMinPct === undefined ||
+    requestedMaxPct === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    kind: 'priced',
+    ticker,
+    status,
+    atrPct,
+    reachableMinPct,
+    reachableMaxPct,
+    requestedMinAtrMultiple,
+    requestedMinPct,
+    requestedMaxPct,
+    blockedBy: mapBlockingDial(c['responsibleBound']),
+    // Declared `number | null`. `null` is the platform declining to quantify the
+    // shortfall, which `?? null` preserves and a `?? 0` would report as none.
+    shortfallPct: num(c['shortfallPct']) ?? null,
+  };
+}
+
+/**
+ * The platform's `responsibleBound` → the dial an operator can point at.
+ *
+ * `null` covers both the platform's own `null` and any value it starts sending
+ * that this product does not know. Both mean the same thing to a reader — no
+ * dial has been named — and inventing `ceiling` for an unrecognised bound would
+ * point someone at the wrong control.
+ */
+function mapBlockingDial(raw: unknown): BlockingDial | null {
+  if (raw === 'MIN_STOP_LOSS_PCT') return 'floor';
+  if (raw === 'MAX_STOP_LOSS_PCT') return 'ceiling';
+  return null;
+}
+
+/** One row of the platform's ranked coin list. */
+export function mapRankedCoin(raw: unknown): RankedCoin {
+  const c = (raw ?? {}) as Record<string, unknown>;
+  const ticker = typeof c['ticker'] === 'string' && c['ticker'] ? c['ticker'] : null;
+  if (ticker === null) throw new PipelinePayloadError('ranked coin ticker');
+  return {
+    ticker,
+    rank: num(c['rank']) ?? null,
+    latestMetricValue: num(c['latestMetricValue']) ?? null,
+  };
 }

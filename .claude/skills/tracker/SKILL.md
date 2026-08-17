@@ -33,18 +33,55 @@ their whole value is that every agent follows the same ones.
 
 ```bash
 python3 .claude/tools/openspec.py board
+python3 .claude/tools/openspec.py mirror     # needs gh; sees past this checkout
+gh pr list --state open                      # what is finished but unmerged
 ```
 
 Read the output, then read the last 2–3 journal entries in full — the board
 shows only their summary lines, and the **Watch out** field is usually the most
 valuable text in the repo.
 
+**`board` describes one checkout. `main` is routinely behind finished work.**
+Sessions run in parallel worktrees, each lands as a PR, and each closes its
+issues the moment they are settled — so between close-out and merge every local
+count is true about `main` and false about reality. `board`, `backlog list`,
+`validate` and `JOURNAL.md` are all blind to this; `mirror` and `gh pr list` are
+the only two commands here that are not. Run them.
+
 Report:
-1. What is in flight, and how far along.
+1. What is in flight, and how far along — **including open PRs and what each
+   one claims to settle.**
 2. What the last session said to do next, and whether that still holds.
-3. Anything the board flags as drifted — an archived change with an open item, a
-   change with no tasks, validation errors.
+3. Anything flagged as drifted — an archived change with an open item, a change
+   with no tasks, validation errors. **Check `mirror`'s drift rows against the
+   open PRs before calling any of them a record nobody updated** (see below).
 4. **One** recommended next action. Not a menu.
+
+### Drift has two causes that look identical
+
+An item reading `open` against a CLOSED issue means one of:
+
+| | what it is | what to do |
+|---|---|---|
+| **rot** | the record was never updated | write the closure |
+| **in-flight** | a PR carrying the closure has not merged | merge it, write nothing |
+
+Guessing wrong is expensive in one direction only: writing closures for work
+already done on a branch duplicates it and then conflicts with it. On 2026-08-17
+a session read nine such rows as rot and rebuilt most of a tool the unmerged PR
+had already shipped — the rows were #339's close-out.
+
+Two signals separate them, neither conclusive alone: a **same-day cluster** of
+closed issues (one session closes as it goes; rot accumulates on scattered
+dates), and an **open PR**. `mirror` prints both. When in doubt the check is two
+commands and costs nothing:
+
+```bash
+gh pr list --state open
+git log --all --oneline -20
+```
+
+`git log` alone cannot see another worktree's branch; `--all` can.
 
 If the journal's **Next** disagrees with what the board computes, say so
 explicitly and explain which you trust. That disagreement is usually where
@@ -64,7 +101,15 @@ Copy `openspec/backlog/TEMPLATE.md` to `openspec/backlog/<item-id>.md`.
    error string, a reproduction. It is what saves the next person the
    rediscovery.
 5. Set `updated` to today.
-6. `python3 .claude/tools/openspec.py validate --all`
+6. **Mirror it as a GitHub issue and link it back.** File the issue, then set
+   `github: "<number>"` in the item's frontmatter. Write the issue for someone
+   with no checkout: what is actually true (with `file:line` or a payload), why
+   it matters, what would settle it and what that needs, and where the
+   reasoning came from — the last one is what makes a wrong premise cheap to
+   correct later. Name the backlog id in the issue's first lines.
+   `github: none` is allowed for an item that only points at another, and must
+   say so in the body. Full doctrine: `.claude/references/tracking.md` §7.
+7. `python3 .claude/tools/openspec.py validate --all`
 
 **Priority is earned by consequence.** Ask what breaks if this is never done.
 If the answer is "nothing much", it is p3, whoever is asking.
@@ -143,11 +188,19 @@ because entries are essays is a journal that does not work.
 5. **Never invent status.** If you do not know whether something works, the
    entry says you do not know.
 6. **`id` always matches the filename.** Validation enforces it.
+7. **Never file a finding in only one place.** Every item is mirrored as a
+   GitHub issue and linked by `github:`. A finding that lives only in the repo
+   is invisible to the person who decides what gets worked on. Validation
+   enforces it for every open item, with no exemption by age.
+8. **When a finding turns out to be wrong, correct the issue rather than
+   filing a second one.** Keep the original under a `<details>` fold saying
+   what was wrong — a ticket whose history is deleted teaches nobody why the
+   mistake was reachable.
 
 ## Completion
 
 - [ ] Every item touched has an accurate `status` and a current `updated`.
-- [ ] Everything deferred this session is filed.
+- [ ] Everything deferred this session is filed, **and mirrored as an issue**.
 - [ ] `validate --all` reports no new errors.
 - [ ] (Mode E) Journal entry written, with all four fields.
 

@@ -1,0 +1,258 @@
+{
+  "id": "pending-proposal",
+  "title": "One proposal, opened",
+  "route": "/pending/[id]",
+  "capability": "mcp-control",
+  "status": "designed",
+  "generated_at_commit": "106ddf7",
+  "source_files": [
+    "app/(app)/pending/[id]/actions.ts",
+    "app/(app)/pending/[id]/page.tsx",
+    "src/ports/proposals.ts",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/proposal-difference.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "OpenProposalResult — proposal (consequence, dispositions, confirmationToken) | no-op | not-possible | stale | resolved | unreadable | not-found",
+      "source": "app.openProposal.execute — describes at the moment of opening, never from recorded values"
+    },
+    {
+      "name": "problem",
+      "shape": "string | null",
+      "source": "searchParams — the refusal a bounced agree returned with"
+    }
+  ],
+  "components": [
+    {
+      "id": "proposal-page",
+      "role": "container",
+      "purpose": "The ceremony's beginning: what agreeing would do, computed against the account as it is right now.",
+      "states": [
+        "proposal",
+        "no-op",
+        "not-possible",
+        "stale",
+        "resolved",
+        "unreadable",
+        "not-found",
+        "not-connected"
+      ],
+      "data": [
+        "result",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "Every branch renders through the shared Shell (max-w-3xl, space-y-4, p-6, back-link to /pending). Refusal branches are prose sentences; each says why and offers no control — 'a disabled button still implies the change is available'.",
+      "constraints": [
+        "Every branch that cannot be agreed to says why and offers NO control — never a disabled one (in-code ruling, and the mcp-control scenario 'The change is no longer possible').",
+        "The describe runs at open time; nothing on this page may render a consequence computed when the proposal was recorded (requirement: A Proposal Is Agreed To Against The World As It Is Then).",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change."
+      ],
+      "children": [
+        "shell",
+        "consequence",
+        "proposal-difference",
+        "agree",
+        "decline"
+      ]
+    },
+    {
+      "id": "shell",
+      "role": "layout",
+      "purpose": "The frame every branch shares, carrying the refusal a bounced agree returned with.",
+      "states": [
+        "with-problem",
+        "without-problem"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [
+        {
+          "id": "back",
+          "effect": "Sentence link back to /pending"
+        }
+      ],
+      "current_implementation": "h1, underlined back-link, then the problem in the danger role with a semibold 'Refused:' prefix (role=alert) — rendered here so the refusal survives whichever branch the redirect lands on. Landed by a-bounced-agree-says-why.",
+      "constraints": [
+        "The problem renders on EVERY branch — a bounced agree can land on a page that now describes a different state.",
+        "role=alert and the verbatim reason must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "What agreeing would do, in the product's one consequence vocabulary.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "h2 'What agreeing would do' plus the consequence sentence in the consequence role (DT-0007): rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-base text-text-primary — the same treatment the archive confirmation gives the same vocabulary.",
+      "constraints": [
+        "The consequence sentence is the product's own for this write and renders verbatim — 'this page must not grow a second vocabulary for the same write'.",
+        "Consequence outranks everything on a screen (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "proposal-difference",
+      "role": "display",
+      "purpose": "What was proposed beside what will actually happen — both, always; a page that merges them agrees on the operator's behalf.",
+      "states": [
+        "with-values",
+        "without-values",
+        "departs-from-proposal",
+        "would-change-nothing"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Setting/Proposed/What-happens table in a bordered scroll container, dispositions in words. DT-0007: the departs warning wears notice before the table; the nothing-would-change conclusion wears quiet after it; the carries-no-values sentence stays plain secondary prose.",
+      "constraints": [
+        "Every proposed value is listed whatever became of it — dropping an already-true value under-reports the proposal, omitting a refused one over-reports it.",
+        "Dispositions are named in words, never by colour alone.",
+        "The departs warning renders before the table — a reader who stops at the first sentence must still learn this is not what was suggested.",
+        "The table stays inside its own overflow-x-auto container."
+      ],
+      "children": []
+    },
+    {
+      "id": "agree",
+      "role": "action",
+      "purpose": "The committing half of the decision: perform the ordinary write with the ordinary confirmation.",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [
+        {
+          "id": "agree",
+          "effect": "Server action: updateAgent with the minted confirmationToken; success closes the proposal and lands on /pending; a refusal bounces back here with ?problem="
+        }
+      ],
+      "current_implementation": "`<PerformButton pendingLabel=\"Making the change…\">`, resting label 'Agree and make this change'; hidden inputs carry id, target, token and the proposed values. The component wears BUTTON_PRIMARY and carries DT-0022's pending treatment — accent ground kept while working, progressive label, aria-busy, aria-hidden indicator in accent.text. (This entry said only 'BUTTON_PRIMARY submit' until DT-0027's re-survey; the component landed with #153 and the description had not caught up.)",
+      "constraints": [
+        "Offered only on the proposal branch — never on no-op or any refusal branch.",
+        "Goes through the same confirm-and-perform path as a web-initiated change (mcp-control scenario).",
+        "Styling through BUTTON_PRIMARY, spent inside PerformButton rather than on the page.",
+        "It keeps the primary weight: this page exists to offer agreement, and the weights are what say so."
+      ],
+      "children": []
+    },
+    {
+      "id": "decline",
+      "role": "action",
+      "purpose": "The other half of the decision — an operation, not a footnote; it closes the proposal for good.",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [
+        {
+          "id": "decline",
+          "effect": "Server action: resolves the proposal declined; nothing is written to the account"
+        }
+      ],
+      "current_implementation": "`<PerformButton weight=\"secondary\" pendingLabel=\"Declining…\">` in its own form, resting label 'Decline — this closes the proposal permanently'. DT-0027: the secondary weight's pending treatment — the border and label colour are unchanged while working, and the whole visible change is the progressive label plus an aria-hidden indicator drawn in text.primary. `aria-busy` is emitted always and is true only while in flight.",
+      "constraints": [
+        "A visible peer of agree, never a text link — 'a text link beneath the agree button read as the way out of the page rather than the other half of the decision'.",
+        "The permanence stays in the label.",
+        "It keeps the secondary weight while working. Promoting it to the primary treatment would say the page is neutral between agreeing and declining, which is a visual claim about a destructive choice — `control.ts`: primary is the action the page exists to offer.",
+        "The progressive label is the state's carrier, not the indicator: the indicator is aria-hidden and is dropped entirely under prefers-reduced-motion, so a reader who never sees it loses nothing.",
+        "The loading state adds no ground and no border change — the rendered className is identical at rest and in flight, so the control cannot move at the moment the user is watching to see whether anything happened.",
+        "It stays in its own `<form action={decline}>`, separate from agree's, so its pending state is its own.",
+        "Whether it disables while pending is contested and unresolved (#229) — the treatment is deliberately drawn to read correctly either way, and no test pins either answer."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "The shared turned-away page.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
+      "constraints": [
+        "No per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Agree",
+      "steps": [
+        "open from the queue",
+        "read the consequence and the difference",
+        "Agree and make this change",
+        "land on /pending with the proposal closed"
+      ]
+    },
+    {
+      "name": "A refused agree",
+      "steps": [
+        "agree",
+        "the ordinary write refuses",
+        "return here with the reason in the Refused banner",
+        "the page re-describes against the world as it now is"
+      ]
+    },
+    {
+      "name": "Decline",
+      "steps": [
+        "Decline",
+        "the proposal closes permanently",
+        "nothing was written"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "agree",
+      "decline"
+    ],
+    "notes": "The problem banner carries role=alert. Dispositions are legible without colour. Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
+  },
+  "source_digest": {
+    "app/(app)/pending/[id]/actions.ts": "sha256:0480d002b14af650c7fbdab356fd381413cd4fbcd4396fd231f1506f06b3c269",
+    "app/(app)/pending/[id]/page.tsx": "sha256:a6ccbb3c92ee4d8775a404dfccef23b8ebdc5bc5bf3c18b0ed9df5f2ce1d705b",
+    "src/ports/proposals.ts": "sha256:016aba2d37d3be1e516da6016ace525e205ad74e5c3a58be38b1efa1770734da",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/proposal-difference.tsx": "sha256:ac9cdbb3a6e7b2e0ef74e0e44a86328b00d5499aac15c7c89765c80df24095d0",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -21,8 +21,8 @@ export function StrategyList({
 }) {
   if (result.kind === 'unreadable') {
     return (
-      <div role="alert" className="rounded border p-4 text-sm">
-        <p className="font-medium">Your strategies could not be loaded.</p>
+      <div role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+        <p className="font-semibold">Your strategies could not be loaded.</p>
         <p className="mt-1">{result.reason}</p>
         <WhyNotLoaded cause={result.cause} subject="they are" />
       </div>
@@ -68,19 +68,19 @@ export function StrategyList({
   return (
     <div className="space-y-4">
       {forking.kind === 'at-capacity' && (
-        <p role="status" className="rounded border p-3 text-sm">
+        <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
           {forking.explanation}
         </p>
       )}
 
       <ul className="space-y-3">
         {listings.map(({ strategy, governs, editable, fork }) => (
-          <li key={strategy.id} className="rounded border p-4">
+          <li key={strategy.id} className="rounded-gc-2 border border-border-default p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               {/* The name is the way in. Every row offered only actions before
                   this — four things to do to a strategy and no way to look at
                   one, because until `get_strategy` there was nothing to show. */}
-              <h3 className="font-medium">
+              <h3 className="break-words font-medium">
                 <a href={`/strategies/${strategy.id}`} className="underline">
                   {strategy.name}
                 </a>
@@ -89,10 +89,16 @@ export function StrategyList({
                 {strategy.scope === 'SYSTEM' ? 'BattleGrid' : 'Yours'} · revision {strategy.revision}
               </span>
             </div>
-            {strategy.tagline && <p className="mt-1 text-sm">{strategy.tagline}</p>}
+            {strategy.tagline && <p className="mt-1 text-sm text-text-secondary">{strategy.tagline}</p>}
 
-            {/* The blast radius, on the roster, before anything is opened. */}
-            <p className={`mt-2 text-sm ${strategy.boundAgentCount > 0 ? 'font-medium' : ''}`}>
+            {/* The blast radius, on the roster, before anything is opened.
+                Weight AND tone, per DT-0013 — the governing/zero difference
+                must not ride on font-weight alone. */}
+            <p
+              className={`mt-2 text-sm ${
+                strategy.boundAgentCount > 0 ? 'font-medium text-text-primary' : 'text-text-secondary'
+              }`}
+            >
               {governs}
             </p>
 

@@ -124,11 +124,27 @@ export function describeBlastRadius(count: number): string {
  * The roster carries a `sectionCount`. This is what the count was counting —
  * and until `get_strategy` was wired, the number was all the product had.
  */
+import type { StrategyCondition } from './condition.js';
+
 export interface StrategySection {
   /** `platform` for a source BattleGrid provides. Carried as given, not enumerated. */
   readonly kind: string;
   /** e.g. `includeMovingAverages`. The identifier the platform uses. */
   readonly sectionKey: string;
+  /**
+   * A custom table's own definition, carried whole because the platform
+   * demands it back whole.
+   *
+   * A platform section is fully named by its key, but a custom one is not:
+   * `preview_strategy_report` rejects `{kind:'custom', sectionKey}` and
+   * requires the self-contained `title` + `columns` (live, 2026-08-01 —
+   * which is how the preview surface came to refuse every strategy holding
+   * a custom table). The columns stay opaque here: their grammar belongs to
+   * the platform's column contract, not to this domain.
+   */
+  readonly title?: string | undefined;
+  readonly timeframe?: string | undefined;
+  readonly columns?: readonly Readonly<Record<string, unknown>>[] | undefined;
 }
 
 /**
@@ -148,22 +164,41 @@ export type SectionTemplate =
       readonly label: string;
       /** Category this template belongs to, as reported by the platform. Optional — absent templates are ungrouped. */
       readonly category?: string | undefined;
+      readonly columns?: TemplateColumns;
     }
   | {
       readonly kind: 'custom';
       readonly templateKey: string;
       readonly label: string;
       readonly category?: string | undefined;
+      readonly columns?: TemplateColumns;
     };
+
+/**
+ * The columns a template renders, exactly as the platform declared them.
+ *
+ * Opaque here for the same reason `StrategySection.columns` is: the column
+ * grammar belongs to the platform's column contract, which closes it to ten
+ * keys and has already widened by two in a single deployment (`bars`,
+ * `ordering`). A domain shape enumerating them would be a second opinion on a
+ * schema this product does not own, and the layer that needs the parts reads
+ * them where it can also say which ones it did not recognise.
+ *
+ * Absent means the platform's entry published none — which is not the same as a
+ * template that renders nothing, and the surfaces keep the two apart.
+ */
+export type TemplateColumns = readonly Readonly<Record<string, unknown>>[] | undefined;
 
 /**
  * One signal, and how much it counts.
  *
- * A live strategy carries 82 of these. `allocation` is its weight, `required`
+ * A live strategy carries one per platform signal — 84 on v9.0.0, and the
+ * number is the platform's to change. `allocation` is its weight, `required`
  * means the setup does not fire without it, and `params` is the signal's own
  * configuration — a threshold, a lookback — whose shape belongs to the signal
- * rather than to us. Carried opaque on purpose: inventing a union over 82
- * signals' parameters would be a second opinion on the platform's own schema.
+ * rather than to us. Carried opaque on purpose: inventing a union over every
+ * signal's parameters would be a second opinion on the platform's own schema —
+ * which is why v9 adding `threshold` to a rule's params needed no change here.
  */
 export interface SignalRule {
   readonly signalId: string;
@@ -176,8 +211,8 @@ export interface SignalRule {
  * A strategy, whole.
  *
  * Separate from `Strategy` rather than replacing it. The roster draws seventeen
- * rows and needs a name, a scope and a bound-agent count; it does not need 82
- * signal rules and a page of prose, and widening the summary would make every
+ * rows and needs a name, a scope and a bound-agent count; it does not need every
+ * signal rule and a page of prose, and widening the summary would make every
  * list read pay for the detail page. `list_strategies` and `get_strategy` are
  * two different calls returning two different amounts, and the types say so.
  */
@@ -189,12 +224,27 @@ export interface StrategyDetail {
   readonly marketReadText: string | null;
   /** When it acts. */
   readonly thresholds: StrategyThresholds;
+  /** What governs its trades — stop bounds and risk:reward floor. */
+  readonly tradeLevelPolicy: TradeLevelPolicy | null;
   /** What it weighs. */
   readonly signalRules: readonly SignalRule[];
+  /**
+   * What decides direction, above the signals.
+   *
+   * Empty is a strategy that defines none. A strategy that could not be read
+   * never reaches here at all — `StrategyDetailResult` carries that state —
+   * so an empty list here means empty rather than unknown.
+   */
+  readonly conditions: readonly StrategyCondition[];
   /** Positions currently open under it. Part of the cost of changing it. */
   readonly openPositionCount: number;
   readonly cadence: string | null;
-  readonly regimeAutoDerive: boolean;
+  /**
+   * `null` since v19.1.0, which stopped publishing it — not "does not
+   * auto-derive". A boolean here would make the platform's silence
+   * indistinguishable from its answer.
+   */
+  readonly regimeAutoDerive: boolean | null;
   readonly regimeTimeframe: string | null;
 }
 
@@ -205,10 +255,24 @@ export interface StrategyThresholds {
 }
 
 /**
+ * The stop-loss bounds and risk:reward floor that govern a strategy's trades.
+ *
+ * Moved from the agent's `tradingConfig` onto the strategy at BattleGrid v15.
+ * The compiler declares these fields but does not yet process changes to them,
+ * so the entire fleet is pinned to whatever the platform set — which is why
+ * this type is read-only and the detail page offers no editing control.
+ */
+export interface TradeLevelPolicy {
+  readonly maxStopLossPct: number;
+  readonly minStopLossAtrMultiple: number;
+  readonly minRiskRewardRatio: number;
+}
+
+/**
  * The signals that must fire for the setup to trigger at all.
  *
- * Computed here rather than in a view: it is the difference between "82 signals"
- * and "82 signals, 3 of which are mandatory", and a surface that counted it
+ * Computed here rather than in a view: it is the difference between "every signal"
+ * and "every signal, 3 of which are mandatory", and a surface that counted it
  * itself would be a second implementation of a rule.
  */
 export function requiredSignals(detail: StrategyDetail): readonly SignalRule[] {

@@ -137,15 +137,18 @@ describe('every value the product sends is one the platform accepts', () => {
     const checked = leaves(createPayload(PRESET)).filter(
       ([path]) => constants[path] !== undefined,
     );
+    // `tradingConfig.atrTimeframe` sat in this list until v14 removed the
+    // field (and its enum) from create entirely, and
+    // `tradingConfig.positionManagement.trailingType` until v17.2.0 did the
+    // same — a constrained path can leave the schema, and the sentinel list
+    // has to follow the record.
     expect(checked.map(([p]) => p)).toEqual(
       expect.arrayContaining([
         'brain.kind',
         'brain.preset',
         'tradingConfig.tradingMode',
-        'tradingConfig.atrTimeframe',
         'tradingConfig.signalTimeoutMinutes',
         'tradingConfig.positionSizePresets.sizingStrategy',
-        'tradingConfig.positionManagement.trailingType',
         'tradingConfig.positionManagement.positionManagementPreset',
       ]),
     );

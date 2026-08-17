@@ -1,7 +1,16 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { Agent } from '@/domain/agent/agent.js';
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { isEditable, isReactivatable } from '@/domain/agent/agent.js';
-import { CONTROL } from './control.js';
+import {
+  POSITION_MANAGEMENT_FIELDS,
+  positionDrift,
+  positionFieldKind,
+} from '@/domain/agent/trading-config.js';
+import { MONEY_FIELDS } from '@/presentation/form.js';
+import { BindingInheritance, BindingSummary } from './binding.js';
+import { CarriedProblem } from './carried-problem.js';
+import { BUTTON_SECONDARY, CONTROL, LABEL } from './control.js';
 import { MoneyLimits } from './money-limits.js';
 
 /**
@@ -45,7 +54,7 @@ export function AgentRenameForm({
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="agentId" value={agent.id} />
-      <label htmlFor="displayName" className="block text-sm font-medium">Name</label>
+      <label htmlFor="displayName" className={LABEL}>Name</label>
       <input
         id="displayName"
         name="displayName"
@@ -55,7 +64,7 @@ export function AgentRenameForm({
         required
         className={CONTROL}
       />
-      <button type="submit" className="rounded border px-4 py-2 text-sm">Rename</button>
+      <PerformButton pendingLabel="Renaming…">Rename</PerformButton>
     </form>
   );
 }
@@ -82,11 +91,43 @@ export function AgentEditForm({
   agent,
   catalog,
   problem,
+  composed,
 }: {
   agent: Agent;
   catalog: Catalog;
+  /**
+   * A refusal formed on the branch rendering this form — a preset the catalog
+   * cannot answer for, a describe the platform declined. Never the bounced
+   * `?problem=`: that one is the page's to render, on every branch, so the
+   * two facts stay distinct instead of the fresher sentence replacing the
+   * only record of what the click did.
+   */
   problem?: string | undefined;
+  /**
+   * What the person had entered, when they are being sent back here.
+   *
+   * Absent on a first visit, where the agent's stored values are the right
+   * defaults. Present after a refusal — and then it wins, because re-rendering
+   * from storage silently discards the edit and makes fixing one named field
+   * cost every other one.
+   */
+  composed?: Readonly<Record<string, string | undefined>> | undefined;
 }) {
+  const entered = (name: string): string | undefined => composed?.[name];
+  /**
+   * The money boxes' prefill: what was entered wins, storage fills the rest —
+   * the same precedence the position section applies. A bounce spells a money
+   * field two ways: the GET review bounces the form's own query (bare names),
+   * the apply's backTo carries the confirm form's hidden inputs
+   * (`tc.`-prefixed). Reading only one spelling is how a refusal on the apply
+   * road silently refilled every money box from storage while the name and
+   * position values survived.
+   */
+  const moneyCurrent: Record<string, unknown> = { ...(agent.tradingConfig?.fields ?? {}) };
+  for (const field of MONEY_FIELDS) {
+    const typed = entered(field) ?? entered(`tc.${field}`);
+    if (typed !== undefined) moneyCurrent[field] = typed;
+  }
   if (!isEditable(agent)) {
     return (
       <div className="space-y-4">
@@ -104,19 +145,19 @@ export function AgentEditForm({
 
   return (
     <div className="space-y-6">
-      {problem && <p role="alert" className="rounded border p-3 text-sm">{problem}</p>}
+      <CarriedProblem problem={problem} />
 
       <form method="get" className="space-y-6">
         {/* Puts the page into its confirm branch on the next request. */}
         <input type="hidden" name="review" value="1" />
 
         <div className="space-y-2">
-          <label htmlFor="displayName" className="block text-sm font-medium">Name</label>
+          <label htmlFor="displayName" className={LABEL}>Name</label>
           <input
             id="displayName"
             name="displayName"
             type="text"
-            defaultValue={agent.displayName}
+            defaultValue={entered('displayName') ?? agent.displayName}
             maxLength={80}
             required
             className={CONTROL}
@@ -130,13 +171,18 @@ export function AgentEditForm({
          * removed, not a limit left alone. An empty box would make an edit to
          * one number silently reset the other five.
          */}
-        <MoneyLimits catalog={catalog} current={agent.tradingConfig?.fields} />
+        <MoneyLimits catalog={catalog} current={moneyCurrent} />
+
+        <PositionManagement catalog={catalog} current={agent.tradingConfig?.fields} composed={composed} />
 
         <div className="flex flex-wrap gap-3">
-          <button type="submit" className="rounded border px-4 py-2 text-sm">
+          {/* Secondary, like every other submit that only asks: this form
+              composes the proposal and reaches no operation. The primary in
+              this flow belongs to `AgentEditConfirm`, one request later. */}
+          <button type="submit" className={BUTTON_SECONDARY}>
             Review the change
           </button>
-          <a href={`/agents/${agent.id}`} className="px-4 py-2 text-sm underline">
+          <a href={`/agents/${agent.id}`} className={BUTTON_SECONDARY}>
             Back to {agent.displayName}
           </a>
         </div>
@@ -144,13 +190,122 @@ export function AgentEditForm({
 
       <section className="space-y-1">
         <h2 className="font-medium">Not editable here</h2>
+        {/*
+          Through the shared components, not a sentence of its own. This copy
+          used to name the strategy and say the fields "change by editing that
+          strategy" — advice that sends an operator at a strategy an ORPHANED
+          binding says cannot be read. Four surfaces describe a binding and
+          they drifted once already.
+        */}
         <p className="text-sm">
-          Context sources, signal rules, prose and timeframe are inherited from{' '}
-          {agent.binding.strategyName}. They change by editing that strategy, or by
-          rebinding — which replaces all of them.
+          <BindingSummary binding={agent.binding} />{' '}
+          <BindingInheritance binding={agent.binding} />
         </p>
       </section>
     </div>
+  );
+}
+
+/**
+ * How an agent exits its positions, with the truth about the label.
+ *
+ * The drift line comes first because it is the fact the label hides: a
+ * preset is a name beside twelve independent values and nothing on the
+ * platform makes them agree, so an agent may name one preset and carry
+ * values that are not that preset's. The choice semantics are stated on the control:
+ * a preset sends BattleGrid's own values wholesale, CUSTOM sends the
+ * fields below as edited, and no choice sends nothing at all — position
+ * management is replaced as one object, so there is no field-at-a-time.
+ */
+export function PositionManagement({
+  composed,
+  catalog,
+  current,
+}: {
+  catalog: Catalog;
+  current: Readonly<Record<string, unknown>> | undefined;
+  /** What was entered, when returning after a refusal. Wins over `current`. */
+  composed?: Readonly<Record<string, string | undefined>> | undefined;
+}) {
+  const entered = (name: string): string | undefined => composed?.[name];
+  const pm = (current?.['positionManagement'] ?? null) as Readonly<
+    Record<string, unknown>
+  > | null;
+  const drift = pm ? positionDrift(pm, catalog) : null;
+  const label = typeof pm?.['positionManagementPreset'] === 'string'
+    ? (pm['positionManagementPreset'] as string)
+    : null;
+  const offerable = catalog.positionManagementPresets.filter((p) => p.config !== null);
+
+  return (
+    <section className="space-y-3">
+      <h2 className="font-medium">Position management</h2>
+
+      {drift && drift.differing.length > 0 ? (
+        <p role="status" className="rounded-gc-2 border border-border-default p-3 text-sm">
+          This agent names {drift.preset}, but its values differ from the
+          catalog&apos;s {drift.preset} on: {drift.differing.join(', ')}. The
+          label is not the truth here — the fields below are.
+        </p>
+      ) : drift ? (
+        <p className="text-sm">Matches the catalog&apos;s {drift.preset} exactly.</p>
+      ) : label === 'CUSTOM' ? (
+        <p className="text-sm">CUSTOM — these twelve values are this agent&apos;s own.</p>
+      ) : null}
+
+      <label className={LABEL}>
+        Manage like
+        <select name="pmPreset" defaultValue={entered('pmPreset') ?? ''} className={CONTROL}>
+          <option value="">Leave it as it is</option>
+          {offerable.map((p) => (
+            <option key={p.preset} value={p.preset}>
+              {p.label} — BattleGrid&apos;s own values
+            </option>
+          ))}
+          <option value="CUSTOM">CUSTOM — the fields below, as edited</option>
+        </select>
+      </label>
+      <p className="text-sm text-text-secondary">
+        Picking a preset sends BattleGrid&apos;s twelve values for it and the
+        fields below are ignored. Picking CUSTOM sends the fields below exactly
+        as edited. Leaving the choice alone changes nothing here.
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {POSITION_MANAGEMENT_FIELDS.map((field) => {
+          const kind = positionFieldKind(field);
+          const value = pm?.[field];
+          if (kind === 'boolean') {
+            return (
+              <label key={field} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name={`pm.${field}`}
+                  defaultChecked={
+                    entered(`pm.${field}`) === undefined
+                      ? value === true
+                      : entered(`pm.${field}`) === 'on'
+                  }
+                />
+                {field}
+              </label>
+            );
+          }
+          return (
+            <label key={field} className={LABEL}>
+              {field}
+              <input
+                type={kind === 'number' ? 'number' : 'text'}
+                step="any"
+                name={`pm.${field}`}
+                defaultValue={entered(`pm.${field}`) ?? (value === undefined ? '' : String(value))}
+                className={CONTROL}
+              />
+            </label>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -162,11 +317,11 @@ export function AgentEditForm({
  * the audit can later prove are one thing rather than three that drift. Same
  * reasoning as `RebindConfirm`.
  *
- * The submitted values ride along as hidden fields. Note the limit of that:
- * `consume(token, userId, tool, target)` matches on the agent, not on the
- * values, so a token issued for one set would be accepted with another if these
- * fields were edited. That is a product-wide property — `rebind` carries
- * `toStrategyId` the same way — and it is filed rather than half-fixed here.
+ * The submitted values ride along as hidden fields — and editing them buys
+ * nothing: the confirmation's target digests the proposed values, so a form
+ * posting different ones fails to consume the token. That property arrived
+ * with `a-confirmation-binds-to-what-was-agreed`; an earlier version of this
+ * comment predates it.
  */
 export function AgentEditConfirm({
   agent,
@@ -174,6 +329,7 @@ export function AgentEditConfirm({
   confirmationToken,
   changes,
   tradingConfigChanges,
+  positionChanges,
   action,
 }: {
   agent: Agent;
@@ -190,6 +346,13 @@ export function AgentEditConfirm({
    */
   changes: Readonly<Record<string, string | number>>;
   tradingConfigChanges: Readonly<Record<string, string | number>>;
+  /**
+   * The resolved position-management object, when the proposal carries one.
+   * Serialized as `pm.*` fields and read back by the same typed coercion the
+   * review used — String→Number and 'true'→true round-trip losslessly, so
+   * the digest the apply recomputes is the digest the token was issued for.
+   */
+  positionChanges?: Readonly<Record<string, unknown>> | null;
   action: (formData: FormData) => Promise<void>;
 }) {
   return (
@@ -208,12 +371,15 @@ export function AgentEditConfirm({
       {Object.entries(tradingConfigChanges).map(([k, v]) => (
         <input key={k} type="hidden" name={`tc.${k}`} value={v} />
       ))}
+      {Object.entries(positionChanges ?? {}).map(([k, v]) => (
+        <input key={`pm.${k}`} type="hidden" name={`pm.${k}`} value={String(v)} />
+      ))}
 
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <PerformButton pendingLabel={`Applying to ${agent.displayName}…`}>
           Apply this to {agent.displayName}
-        </button>
-        <a href={`/agents/${agent.id}/edit`} className="px-4 py-2 text-sm underline">
+        </PerformButton>
+        <a href={`/agents/${agent.id}/edit`} className={BUTTON_SECONDARY}>
           Change something else
         </a>
       </div>
@@ -243,20 +409,41 @@ export function ReactivatePrompt({
 
   return (
     <div className="space-y-4">
+      {/*
+        Split deliberately. What it returns *with* — the configuration it had
+        when archived, and the slot it takes — is a fact about reactivation and
+        is true whatever the binding says. What it returns *bound to* is a claim
+        about the binding, and this is the page where getting it wrong costs
+        most: the agent all of this was found on (`Volatilis`, 2026-08-06) is
+        ARCHIVED **and** ORPHANED, so its reactivate confirmation is exactly
+        where an operator would have read "bound to" about a strategy that
+        cannot be read.
+      */}
       <p className="text-sm">
-        It returns to your roster bound to {agent.binding.strategyName} at revision{' '}
-        {agent.binding.strategyRevision}, with the configuration it had when it was
-        archived. Reactivating takes an agent slot.
+        It returns to your roster with the configuration it had when it was archived.
+        Reactivating takes an agent slot.
+      </p>
+      <p className="text-sm">
+        <BindingSummary binding={agent.binding} />
       </p>
       {/* Capacity before the act, not after the refusal. */}
-      {atCapacity && <p role="alert" className="rounded border p-3 text-sm">{atCapacity}</p>}
-      <form action={action} className="flex flex-wrap gap-3">
+      {atCapacity && <p role="alert" className="rounded-gc-2 border border-border-default p-3 text-sm">{atCapacity}</p>}
+      {/*
+        DT-0024. The shape DT-0016 gave deploy, undeploy and rebind, applied to
+        the surface that sweep did not reach. Two confirmation shapes is worse
+        than the one wrong shape it replaced: before, nobody could mistake it
+        for a decision.
+      */}
+      <form action={action} className="flex flex-col gap-3 tablet:flex-row tablet:flex-wrap">
         <input type="hidden" name="agentId" value={agent.id} />
         <input type="hidden" name="expectedRevision" value={agent.revision} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <PerformButton
+          pendingLabel={`Reactivating ${agent.displayName}…`}
+          className="w-full tablet:w-auto"
+        >
           Reactivate {agent.displayName}
-        </button>
-        <a href={`/agents/${agent.id}`} className="px-4 py-2 text-sm underline">
+        </PerformButton>
+        <a href={`/agents/${agent.id}`} className={`${BUTTON_SECONDARY} w-full tablet:w-auto`}>
           Leave it archived
         </a>
       </form>

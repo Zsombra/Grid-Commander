@@ -1,4 +1,6 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import type { PlanReview } from '@/application/use-cases/compile-plan.command.js';
+import { BUTTON_SECONDARY } from './control.js';
 
 /**
  * The review screen.
@@ -21,6 +23,7 @@ export function PlanReviewPanel({
   changeIt,
   confirmation,
   applyBlockedBecause,
+  carry,
 }: {
   review: PlanReview;
   /**
@@ -51,6 +54,22 @@ export function PlanReviewPanel({
   };
   /** Why applying is unavailable, when it is. Always a reason the user can act on. */
   applyBlockedBecause?: string;
+  /**
+   * The composition this review was compiled from, carried through the apply.
+   *
+   * A refused apply redirects back to the editor, and without these the
+   * editor renders the blank compose form — the refusal would cost the
+   * operator the change they had already reviewed. Carried as hidden inputs
+   * so the action can rebuild the compile query and land them on a fresh
+   * review with the refusal above it. A fresh review, deliberately: the old
+   * confirmation is known-dead, and re-showing the panel it belonged to
+   * would invite a second press of a button that cannot succeed.
+   */
+  carry?: {
+    readonly tagline: string;
+    readonly sections: readonly string[];
+    readonly unknownSections: readonly string[];
+  };
 }) {
   const { viable, concerns, changedAxes, boundAgentCount, proposedRevision, summary } = review;
 
@@ -144,27 +163,32 @@ export function PlanReviewPanel({
                 it changes its digest, the confirmation stops matching, and the
                 write is refused before it reaches BattleGrid. */}
             <input type="hidden" name="plan" value={JSON.stringify(review.plan)} />
+            {carry && (
+              <>
+                <input type="hidden" name="tagline" value={carry.tagline} />
+                {carry.sections.map((s) => (
+                  <input key={s} type="hidden" name="sections" value={s} />
+                ))}
+                {carry.unknownSections.map((s) => (
+                  <input key={s} type="hidden" name="unknownSections" value={s} />
+                ))}
+              </>
+            )}
             {/*
               Not danger-styled, deliberately. Applying is the legitimate purpose
               of this page, and a user who has read the review is doing the right
               thing; styling it as a hazard teaches people to flinch at the
               correct action. The weight lives on the consequence above it.
             */}
-            <button
-              type="submit"
-              className="min-h-11 rounded-gc-2 bg-accent-default px-4 py-2 text-base font-medium text-accent-text transition-colors duration-fast hover:bg-accent-hover"
-            >
+            <PerformButton pendingLabel="Applying the change…">
               Apply this{' '}
               {boundAgentCount !== null && boundAgentCount > 0
                 ? `— reconfigures ${boundAgentCount} agent${boundAgentCount === 1 ? '' : 's'} now`
                 : 'change'}
-            </button>
+            </PerformButton>
             {/* A visible peer of Apply, not a footnote. Going back is the
                 expected outcome of a review that surprised the user. */}
-            <a
-              href={changeIt}
-              className="inline-flex min-h-11 items-center justify-center rounded-gc-2 border border-border-default px-4 py-2 text-base text-text-primary"
-            >
+            <a href={changeIt} className={BUTTON_SECONDARY}>
               Go back and change it
             </a>
           </form>

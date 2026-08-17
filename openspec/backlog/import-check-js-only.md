@@ -2,11 +2,11 @@
 id: import-check-js-only
 title: Surface source cross-check only understands JS-style imports
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-27
-updated: 2026-07-27
-change: ""
+updated: 2026-07-31
+change: the-small-debts-sweep
 capability: ""
 blocked_by: []
 tags: [harness, design-layer]
@@ -41,3 +41,7 @@ Two options, do the first regardless:
 
 Also unbuilt: a repo-wide sweep for UI files belonging to no surface at all.
 That needs a `ui_globs` config key and risks false positives in a large repo.
+
+## Closed
+
+Fixed in `the-small-debts-sweep` (2026-07-31), option 1 as the item prescribed: a surface whose sources contain no JS-family files gets an info diagnostic (`design_surface_sources_unchecked`) instead of silent non-coverage; suppressed when a missing-file error already owns the story. Extension to other stacks stays not-built, per the item.

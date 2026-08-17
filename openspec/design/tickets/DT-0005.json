@@ -1,0 +1,70 @@
+{
+  "id": "DT-0005",
+  "surface": "connect",
+  "targets": [
+    "consent-summary",
+    "not-requested"
+  ],
+  "type": "restyle",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The consent summary's two heaviest sentences take the roles that already mean them: the not-view-only warning wears consequence, the not-requested authority wears quiet.",
+  "rationale": "The consent page is the product's first interaction and its most consequential sentence \u2014 'This is not view-only access. It can create and change your agents and strategies, and those changes take effect immediately' \u2014 renders as an unstyled paragraph between a bullet list and an anonymous box. DT-0001 built the semantic roles for exactly this hierarchy: consequence is 'this reaches live agents', which is literally what that sentence says, and quiet is 'absence stated, not implied', which is literally what the Not requested block is. Neither changes a word: the wording is DescribeGrantQuery's and tests/connection/consent.test.ts guards it. The decline and failure banners on this page already wear their roles (landed by returned-with-an-explanation) and are not targeted.",
+  "design": {
+    "layout": "No layout change \u2014 the section keeps its order: heading, permissions, the consequence block, the not-requested block. The button stays below all of it; nobody is offered the way in before the words it agrees to.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "quiet_bg": "color.quiet.subtle",
+      "quiet_border": "color.quiet.border",
+      "text": "color.text.primary",
+      "radius": "radius.2",
+      "block_padding": "space.4"
+    },
+    "states": {
+      "with-not-requested": {
+        "content": "Heading, the permissions list, then the honesty sentence in the consequence role: color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, type.size.sm in color.text.primary \u2014 the visually heaviest block in the section, because it is the sentence being agreed to. Below it the not-requested block in the quiet role: color.quiet.subtle background, 1px color.quiet.border border, radius.2, space.4 padding; its h3 and both sentences unchanged. Consequence must read heavier than quiet at a glance and not by hue alone \u2014 quiet carries no heading-weight prefix, consequence's border is the darker of the two in both schemes."
+      },
+      "without-not-requested": {
+        "content": "Same, with no quiet block and no space reserved for it \u2014 the consequence block is the last thing before the form."
+      },
+      "present": {
+        "content": "The not-requested block as above: quiet role, h3 'Not requested', the withheld permissions, and the cannot-move-your-funds sentence verbatim."
+      },
+      "absent": {
+        "content": "Nothing renders and no space is reserved."
+      }
+    },
+    "responsive": {
+      "mobile": "Blocks are full width inside the shell; padding stays space.4.",
+      "desktop": "Unchanged \u2014 the section already caps at max-w-prose."
+    },
+    "motion": {
+      "none": "Static content; no motion is introduced."
+    },
+    "content": {
+      "note": "Not one word changes. The wording is DescribeGrantQuery's; the consent test fails if it softens."
+    }
+  },
+  "acceptance": [
+    "The honesty sentence renders in a consequence block: color.consequence.subtle background, color.consequence.border border, radius.2, space.4 padding",
+    "The Not requested block renders in the quiet role: color.quiet.subtle background, color.quiet.border border, radius.2, space.4 padding",
+    "The two blocks are distinguishable without hue \u2014 the consequence block sits first and carries the section's warning sentence; quiet opens with its own h3",
+    "Every word of the consent copy is unchanged \u2014 tests/connection/consent.test.ts still passes untouched",
+    "The aria-labelledby wiring on the section survives",
+    "The Not requested block still renders only when the grant names withheld permissions",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog: the-button-primitive-has-no-tokens (#108) gap 2 \u2014 second surface pass. The declined/failure banners are already role-tokened and out of scope here."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

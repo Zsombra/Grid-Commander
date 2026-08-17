@@ -1,0 +1,253 @@
+{
+  "id": "agent-new",
+  "title": "New agent — the create form and the gates in front of it",
+  "route": "/agents/new",
+  "capability": "agent-authoring",
+  "status": "functional",
+  "generated_at_commit": "1cdaa4c",
+  "source_files": [
+    "app/(app)/agents/new/page.tsx",
+    "app/(app)/agents/new/actions.ts",
+    "src/presentation/components/agent-form.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/money-limits.tsx",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "creation",
+      "shape": "CreationAvailability ('available' | 'at-capacity' | 'unknown')",
+      "source": "app.listAgents.execute()"
+    },
+    {
+      "name": "catalog",
+      "shape": "CatalogResult ('catalog' | 'unreadable')",
+      "source": "app.readCatalog.execute()"
+    },
+    {
+      "name": "strategies",
+      "shape": "ListStrategiesResult + listings ('strategies' | 'unreadable'; readable-and-empty is its own branch)",
+      "source": "app.listStrategies.execute()"
+    },
+    {
+      "name": "composed",
+      "shape": "Record<string,string> — what a refused submit carried back in the query string (problem and idempotencyKey excluded)",
+      "source": "searchParams"
+    }
+  ],
+  "components": [
+    {
+      "id": "new-agent-page",
+      "role": "container",
+      "purpose": "Create an agent — or say, before anything is composed, exactly why one cannot be created right now.",
+      "states": [
+        "form",
+        "form-prefilled-bounce",
+        "at-capacity",
+        "catalog-unreadable",
+        "strategies-unreadable",
+        "strategies-empty",
+        "with-carried-problem"
+      ],
+      "data": [
+        "creation",
+        "catalog",
+        "strategies",
+        "composed"
+      ],
+      "actions": [
+        {
+          "id": "back-to-agents",
+          "effect": "Every refusal branch links back to /agents; the strategies-empty branch links to /strategies instead"
+        }
+      ],
+      "current_implementation": "max-w-2xl centered column. Gates resolve in order before the form renders: capacity (role=status explanation, no form), catalog unreadable (role=alert naming the reason + WhyNotLoaded), strategies unreadable (role=alert, danger tokens, + WhyNotLoaded), strategies readable-and-empty (plain prose — nothing failed, there is nothing to bind to, link to /strategies). Only then the form. `?problem=` mounts CarriedProblem on EVERY branch including all four gates; bounced field values are re-read from the query (problem and idempotencyKey excluded) and passed to the form as defaults.",
+      "constraints": [
+        "The gates run BEFORE the form: a user is told an agent cannot be created before composing one, never after submitting (the page's own stated requirement)",
+        "CarriedProblem mounts on every branch. A duplicate press whose first press succeeded arrives at-capacity by construction, so the branch a bounce lands on is exactly the one that must not drop it (#240's lesson)",
+        "strategies-empty is not a failure and must not be styled as one — the account is connected, nothing errored, there is nothing to bind to; it offers /strategies, deliberately not a create-strategy call to action",
+        "catalog-unreadable branches on the failure kind, never on 'not the good case' — the cause distinguishes a refusal (fix the credential) from an outage (waiting is right), and collapsing them once sent users to wait for an outage that was not happening"
+      ],
+      "children": [
+        "agent-form",
+        "carried-problem",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "agent-form",
+      "role": "input",
+      "purpose": "Compose the agent: name, the strategy it reads, its brain, position management, and the six money answers.",
+      "states": [
+        "default",
+        "prefilled-bounce",
+        "no-presets-declared",
+        "submitting"
+      ],
+      "data": [
+        "catalog",
+        "strategies",
+        "composed"
+      ],
+      "actions": [
+        {
+          "id": "create",
+          "effect": "Submits the create server action. Success redirects to /agents/<id>. A refusal bounces back here as ?problem= with every typed field riding along. A duplicate press bounces with a sentence naming what the first press did (succeeded, or not yet recorded), and the composition deliberately does not ride that bounce"
+        }
+      ],
+      "current_implementation": "Native form posting to the create action. Name (text, required, maxLength 80), strategy select (required, nothing preselected; each option names the strategy, its scope as 'BattleGrid' or 'Yours', and its revision), Brain fieldset (preset select OR model select + three behavior enums — the union is decided server-side from which control was used; when the platform declares no presets, a role=status sentence says so and only the model route renders), Position management fieldset (CUSTOM first and default; only presets whose full config arrived are offered), MoneyLimits, PerformButton ('Creating the agent…'). A hidden idempotencyKey input, minted per render by the page.",
+      "constraints": [
+        "The strategy is NEVER preselected. The platform materializes the strategy onto the agent — it is how the agent will reason about the operator's money, and choosing one on their behalf binds funds to a policy nobody read",
+        "The hidden idempotencyKey is minted per render and carried through the form — this is the entire dedupe mechanism (a double press, a back-button replay, a second tab all resend the key they were rendered with). A design must not remove it, regenerate it client-side, or move minting into the action",
+        "Scope rides on each strategy option ('BattleGrid' / 'Yours') — it decides whether the strategy can later be edited or only forked, and must not be dropped for visual economy",
+        "An empty preset list renders the role=status sentence, never an empty select — the declaration not answering and BattleGrid having no presets are different facts",
+        "Position management offers only presets whose twelve-field config actually arrived — a label with no values behind it is the old wired-to-nothing defect wearing a new control",
+        "Every state change is a full navigation and the form holds no client state; the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else"
+      ],
+      "children": [
+        "money-limits",
+        "perform-button"
+      ]
+    },
+    {
+      "id": "money-limits",
+      "role": "input",
+      "purpose": "The six questions BattleGrid will not answer for anybody: trading mode and the five money caps.",
+      "states": [
+        "default-empty",
+        "prefilled-bounce",
+        "zero-unbounded-warning",
+        "approval-mode-note",
+        "field-set-varies-with-catalog"
+      ],
+      "data": [
+        "catalog (undefaultableFields)",
+        "composed"
+      ],
+      "actions": [],
+      "current_implementation": "Consequence-tinted fieldset shared verbatim with the edit surface. Trading mode select with OFF first and default; five required number inputs in a 2-col grid (1-col mobile), each with a label, an aria-describedby hint, and — on the three fields BattleGrid reads 0 as no-cap — a bold 'Entering 0 removes this limit' warning beside the box. On the create form the boxes start empty (no number chosen on the operator's behalf); a bounce refills them from what was typed. An APPROVAL_REQUIRED note sends the operator to /approvals, names the fifteen-minute window, says a proposal can be cancelled or accepted there, and states that accepting opens a position with real money and asks for that permission the first time — the requirement 'An Unanswerable Trading Mode Says So' was retired by the-approval-can-be-answered because its disclosure had become false. The replacement then carried the same falsehood in narrower words until the verifier pass on that change (DL-18); it now names both halves, and answering-is-not-disclaimed.test.ts fails if the disclaimer returns. The exposure hint is materially longer than its four neighbours (~150 characters against ~40): it names the metered quantity, the sizing behaviour and the silent refusal, so at column width it runs to roughly three lines where the others run to one, and on the three no-cap fields the bold zero warning follows it inside the same paragraph.",
+      "constraints": [
+        "OFF stays first and default — it is the only answer that makes the other five harmless, and this ordering is the difference between creating something that reasons and something that spends",
+        "The zero-removes-this-limit warning renders beside the box it is typed into, not in a paragraph above the form",
+        "The fields are derived from undefaultableFields(catalog), never enumerated — if BattleGrid starts defaulting one it stops being asked, without anyone editing this file",
+        "One component serves create and edit; the zero-means-unbounded wording must not fork between the screen that creates an agent and the screen that changes it",
+        "No money box may carry a suggested value on a first visit — a pre-filled loss cap is this product choosing a number on the operator's behalf"
+      ],
+      "children": []
+    },
+    {
+      "id": "carried-problem",
+      "role": "feedback",
+      "purpose": "Keep the reason a bounced write carried back visible, whichever branch renders next.",
+      "states": [
+        "absent",
+        "refused"
+      ],
+      "data": [
+        "composed.problem"
+      ],
+      "actions": [],
+      "current_implementation": "Shared component; renders nothing without a problem, otherwise a role=alert danger-tinted paragraph with the bold 'Refused: ' prefix (DT-0004's ruling — named as well as tinted).",
+      "constraints": [
+        "Every branch mounts it unconditionally — rendering nothing when there is no problem is the mechanism that makes that safe, and it must stay",
+        "The 'Refused:' prefix is load-bearing: a refusal must be named as well as tinted"
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Tell a user their work still exists, and say accurately why it could not be shown.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "result.cause"
+      ],
+      "actions": [],
+      "current_implementation": "The shared sentence, rendered under both unreadable gates with subjects 'BattleGrid's catalogue is' and 'your strategies are'.",
+      "constraints": [
+        "refused and unreachable must not be collapsed — naming the wrong one sends a user to wait for an outage that is not happening",
+        "The cause arrives as a value on the result; nothing here may re-derive it from the reason text"
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request with no authority.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "user.message"
+      ],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared component rendered in place of the page body. Reachable only on a delegated deployment.",
+      "constraints": [
+        "One page for every cause; they differ in cause and not in remedy (design W-C)"
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Create an agent",
+      "steps": [
+        "pass the four gates (capacity, catalog, strategies readable, strategies non-empty)",
+        "compose: name, strategy, brain, position preset, six money answers",
+        "Create agent",
+        "redirect to /agents/<id>"
+      ]
+    },
+    {
+      "name": "A refused create keeps what was typed",
+      "steps": [
+        "submit",
+        "refusal bounces to /agents/new?problem= with fields riding along",
+        "CarriedProblem names the refusal; every control re-fills from the bounce",
+        "fix the named field, submit again with a fresh idempotency key"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "carried problem (when present)",
+      "name",
+      "strategy",
+      "brain preset or model + behavior enums",
+      "position preset",
+      "money limits in grid order",
+      "create button"
+    ],
+    "notes": "Labels are htmlFor-bound; money hints are aria-describedby. Carried problems and the two unreadable gates are role=alert; capacity and the no-presets sentence are role=status. Money boxes use inputMode=decimal."
+  },
+  "source_digest": {
+    "app/(app)/agents/new/page.tsx": "sha256:4130dc5b25ec3596c1f6642ee8d26fe3283ac5cb1e1cefb68e9435a41059233b",
+    "app/(app)/agents/new/actions.ts": "sha256:3c351aa8e804b7af989d137187883f637fbe415fc529be75a4406de78f0219bd",
+    "src/presentation/components/agent-form.tsx": "sha256:017e280bedb3829f03c0de1bf5419d379d4f29907f8d9b50bb7c43add39e76d5",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/money-limits.tsx": "sha256:2b02a806b928cd98b12998f1ef76832fd76a452b5ac7f197af7cea97835b82b6",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

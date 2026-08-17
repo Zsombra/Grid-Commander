@@ -1,0 +1,243 @@
+{
+  "id": "connect",
+  "title": "Connect a BattleGrid account",
+  "route": "/connect",
+  "capability": "battlegrid-connection",
+  "status": "designed",
+  "generated_at_commit": "106ddf7",
+  "source_files": [
+    "app/connect/actions.ts",
+    "app/connect/page.tsx",
+    "src/application/use-cases/describe-grant.query.ts",
+    "src/presentation/components/consent-summary.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/nothing-to-connect.tsx",
+    "src/presentation/components/perform-button.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "grant",
+      "shape": "{ permissions: string[], notRequested: string[] }",
+      "source": "DescribeGrantQuery — the one source of the consent wording; tests/connection/consent.test.ts fails if it softens"
+    },
+    {
+      "name": "declined",
+      "shape": "string | null",
+      "source": "searchParams — the OAuth error value the callback returned when the user declined at BattleGrid"
+    },
+    {
+      "name": "failure",
+      "shape": "'incomplete' | 'untrusted' | string | null",
+      "source": "searchParams — the callback's own refusal of a response it could not use"
+    }
+  ],
+  "components": [
+    {
+      "id": "connect-page",
+      "role": "container",
+      "purpose": "Say exactly what is being granted, before anyone is sent anywhere.",
+      "states": [
+        "consent",
+        "consent-with-declined",
+        "consent-with-failure",
+        "nothing-to-connect",
+        "consent-with-declined-and-failure"
+      ],
+      "data": [
+        "grant",
+        "declined",
+        "failure"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-6, p-6 — the standard shell. On a personal deployment the whole page is the nothing-to-connect component instead; no consent and no button are offered because there is nothing to grant. Both ?declined= and ?error= render when both are present — the notice above the danger banner, in that order — so the two are not exclusive states.",
+      "constraints": [
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else.",
+        "On a personal deployment neither the consent summary nor the start button may render — the button would build an /authorize URL with an empty client_id (requirement: A Remedy Named Must Exist In That Deployment)."
+      ],
+      "children": [
+        "declined",
+        "failure",
+        "consent-summary",
+        "start-authorization"
+      ]
+    },
+    {
+      "id": "declined",
+      "role": "feedback",
+      "purpose": "Acknowledge the decline the user chose at BattleGrid, in the platform's own value, with the retry visible below.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "declined"
+      ],
+      "actions": [],
+      "current_implementation": "Notice role (rounded-gc-2 border-notice-border bg-notice-subtle p-4 text-sm text-text-primary), role=status — the user chose; nothing failed. Landed by returned-with-an-explanation.",
+      "constraints": [
+        "role=status must survive — a decline is advisory, never announced as an error.",
+        "Wears notice, never danger — 'a user who learns to fear advisories learns to abandon valid work' (system.json principle).",
+        "The platform's error value renders verbatim.",
+        "Every message states nothing was stored — spec scenario 'The user declines' promises the explanation with the retry."
+      ],
+      "children": []
+    },
+    {
+      "id": "failure",
+      "role": "feedback",
+      "purpose": "Say why a returned authorization could not be used — incomplete, untrusted, or a value named verbatim.",
+      "states": [
+        "incomplete",
+        "untrusted",
+        "unknown",
+        "absent"
+      ],
+      "data": [
+        "failure"
+      ],
+      "actions": [],
+      "current_implementation": "Danger role (rounded-gc-2 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary), role=alert, opening with a semibold 'No connection was made:' prefix. Landed by returned-with-an-explanation.",
+      "constraints": [
+        "role=alert must survive.",
+        "Unknown error values render verbatim, never invented into a friendlier sentence.",
+        "States that nothing was stored and that starting again is safe."
+      ],
+      "children": []
+    },
+    {
+      "id": "consent-summary",
+      "role": "display",
+      "purpose": "What Grid-Commander will be able to do, in words that are true — including that this is not view-only access.",
+      "states": [
+        "with-not-requested",
+        "without-not-requested"
+      ],
+      "data": [
+        "grant"
+      ],
+      "actions": [],
+      "current_implementation": "aria-labelledby section: h2, plain bullet list of permissions, then DT-0005's hierarchy — the honesty sentence in the consequence role (rounded-gc-2 border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary) and the Not requested block in quiet. Wording verbatim from DescribeGrantQuery, guarded by tests/connection/consent.test.ts.",
+      "constraints": [
+        "The wording comes from DescribeGrantQuery and must render verbatim — requirement 'Configuration Authority Is Described Honestly' forbids calling this read-only, and tests/connection/consent.test.ts fails if it softens.",
+        "The honesty sentence ('This is not view-only access…') must not be demoted below the permissions it qualifies, hidden behind interaction, or reduced to fine print.",
+        "'Grid-Commander connecting does not give it the ability to move your funds' stays with the not-requested list, now scoped to this grant rather than to the product — a step-up can ask for that authority later, and the second sentence says so.",
+        "aria-labelledby wiring on the section must survive."
+      ],
+      "children": [
+        "not-requested"
+      ]
+    },
+    {
+      "id": "not-requested",
+      "role": "display",
+      "purpose": "The authority deliberately not asked for — wager scope — so the absence is stated, not implied.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "grant"
+      ],
+      "actions": [],
+      "current_implementation": "DT-0005: quiet role — rounded-gc-2 border-quiet-border bg-quiet-subtle p-4 — h3 'Not requested', the withheld permissions, and the cannot-move-your-funds sentence verbatim. Visibly lighter than the consequence block above it.",
+      "constraints": [
+        "Rendered only when the grant names withheld permissions — an empty box would claim an absence the query did not state.",
+        "The cannot-move-your-funds sentence renders verbatim."
+      ],
+      "children": []
+    },
+    {
+      "id": "start-authorization",
+      "role": "action",
+      "purpose": "Send the user to BattleGrid to authorize — the page's one action, and the retry after a decline.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "startAuthorization",
+          "effect": "Server action: builds the authorization URL and redirects to BattleGrid"
+        }
+      ],
+      "current_implementation": "A form with a single BUTTON_PRIMARY submit, 'Continue to BattleGrid'. No pending state between click and redirect (the product-wide gap, #153).",
+      "constraints": [
+        "Exactly one way in — no second control may start an authorization.",
+        "Styling goes through BUTTON_PRIMARY in control.ts.",
+        "Sits below the consent summary — nobody is offered the button before the words it agrees to."
+      ],
+      "children": []
+    },
+    {
+      "id": "nothing-to-connect",
+      "role": "feedback",
+      "purpose": "On a personal deployment: there is no authorization to grant, and the remedy for a broken key is named from the one source.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "back",
+          "effect": "Sentence link back to /"
+        }
+      ],
+      "current_implementation": "Own full-page shell: h1 'There is nothing to connect', two explanatory paragraphs (the remedy sentence from describeRemedy — same source as the failure message), and an underlined sentence link back to the agents.",
+      "constraints": [
+        "The remedy sentence comes from describeRemedy('repair-the-key') and must not be paraphrased — two copies would become two answers.",
+        "No consent summary and no start button may render here."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Connect an account",
+      "steps": [
+        "read what will be granted and what is not requested",
+        "Continue to BattleGrid",
+        "authorize there",
+        "return connected, on /agents"
+      ]
+    },
+    {
+      "name": "Decline and come back",
+      "steps": [
+        "decline at BattleGrid",
+        "return to /connect with the decline acknowledged in notice",
+        "the consent summary and button below are the retry"
+      ]
+    },
+    {
+      "name": "A response the product refuses",
+      "steps": [
+        "callback rejects an incomplete or untrusted response",
+        "return to /connect with the failure stated in danger",
+        "nothing stored; starting again is safe"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "start-authorization"
+    ],
+    "notes": "Decline carries role=status, failures role=alert. The consent section is aria-labelledby its heading. Every state is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
+  },
+  "source_digest": {
+    "app/connect/actions.ts": "sha256:09a7bb3c966c529924769e29b5f5c3c7d955d3ca74c4a2a9ac11ea750b4df52d",
+    "app/connect/page.tsx": "sha256:5b56be07c173db06436adede1b207cc483013371d3b504e6e7eec19c076125e5",
+    "src/application/use-cases/describe-grant.query.ts": "sha256:243fb14462428141517b2c606f07830627299f25909afb4ef0994c1ddb3b3b13",
+    "src/presentation/components/consent-summary.tsx": "sha256:137b5f60c14e6b5d3e8490e1f7f53e05c0712652d886694b242e81d2ccaa8039",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/nothing-to-connect.tsx": "sha256:e3c8f30cb813115ed9b615a759779e21be5892a17c803f2a1b4ca58146f4cd67",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa"
+  }
+}

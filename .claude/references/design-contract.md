@@ -73,7 +73,7 @@ behavior change costs a rollback.
 |---|---|---|
 | `openspec/specs/<cap>/spec.md` | **What the UI does.** Behavior: states, actions, flows. | archiver |
 | `openspec/design/` | **What the UI looks like.** Tokens, surfaces, tickets. | design agent |
-| `docs/specs/UI_COMPONENT_REVIEW_CHECKLIST.md` | **How UI code must be built.** Engineering standards: structure, a11y floor, responsive rules. | checklist-generator |
+| `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md` | **How UI code must be built.** Engineering standards: structure, a11y floor, responsive rules. | checklist-generator |
 
 All three bind. A component can satisfy its design ticket, pass the review
 checklist, and still violate its spec — the auditor checks all three.
@@ -124,6 +124,7 @@ One file per surface (a route, screen, or major panel):
   "status": "functional",
   "generated_at_commit": "a1b2c3d",
   "source_files": ["src/routes/checkout/payment.tsx"],
+  "source_digest": { "src/routes/checkout/payment.tsx": "sha256:9f86d0…" },
   "viewports": ["mobile", "desktop"],
   "data": [
     { "name": "savedCards", "shape": "Card[]", "source": "GET /api/cards" }
@@ -180,14 +181,35 @@ the developer agent's veto, stated up front instead of discovered in review.
 
 ### Staleness
 
-`generated_at_commit` plus `source_files` lets the tool detect drift:
+`source_digest` — one hash per file in `source_files` — is what decides it:
 
 ```bash
 python3 .claude/tools/openspec.py validate --all
 ```
 
-If those files changed since that commit, the surface is stale and the design
-agent is reading fiction. Re-run the `ui-surveyor` skill before designing.
+If a described file differs from the content it was surveyed at, the surface is
+stale and names which file. Re-run the `ui-surveyor` skill before designing.
+
+**Freshness is a question about content, so content is what answers it.** A
+commit hash was the pin until 2026-08-13, and it only worked while the history
+it named survived. Under squash-merge it does not: a branch's commits are
+discarded when the PR lands, and twelve of twenty-four manifests were found
+pinned to hashes absent from the repository. `git diff` fails the same way for
+"that commit is not here" as it succeeds for "nothing changed", so those
+surfaces had been unable to go stale, silently. See #192.
+
+A digest survives squash, rebase, amend, and a fresh clone with no history at
+all. Line endings are normalised and file order does not matter, because
+neither is a change to what the surface describes.
+
+`generated_at_commit` stays as provenance — roughly when the survey happened —
+and decides nothing.
+
+**A manifest with no digest is `never verified`, not fresh.** It is not stale
+either: both would be claims about a comparison that did not happen. Do **not**
+back-fill a digest from the files as they now stand — that records today's
+content as though it had been surveyed, turning an unverifiable surface into a
+confidently wrong one. Re-survey it.
 
 **An incomplete `source_files` is the drift the commit check cannot see** — the
 manifest looks fresh while describing only part of the surface. Three checks
@@ -378,8 +400,40 @@ executor            implements presentation only, ticket by ticket
 /verify             checks acceptance criteria, then status: implemented
      │
      ▼
+/surface again      re-pin the manifests the round just invalidated
+     │
+     ▼
 tickets/done/       moved on archive
 ```
+
+### The last step is not optional, and it is not the first step repeated
+
+A round that does its job **changes the files its manifests describe**, so it
+stales them on commit. That is structural, not sloppiness: the survey the round
+depends on happens before the design, and the source it recorded is exactly what
+implementation then edits.
+
+So `/surface` appears twice, deliberately. The first pass is *input* — what the
+design agent reads. The second is *bookkeeping* — re-pinning
+`generated_at_commit` and recording the treatments that landed, once they have
+landed.
+
+**Do not close a staleness item before the implementation commits.** It reopens
+within the hour. This was learned by doing it: a staleness item was closed
+mid-round, and the round's own commit invalidated eight surfaces immediately
+(backlog `a-design-round-stales-the-manifests-it-designed-against`).
+
+**Do not re-pin against an uncommitted working tree** either. Pinning a hash to
+content that is not at that hash is the silent drift the check exists to catch,
+and it is worse than the warning: a manifest that looks fresh and is not.
+
+**Why this is a convention and not a check.** The obvious guard — "a surface
+with an `implemented` ticket must not be stale" — cannot work, and it is worth
+saying so before someone writes it. A manifest is pinned to a commit hash, and
+the hash of the commit being written does not exist until it is written, so the
+re-pin is *necessarily* a second commit. Any check demanding freshness would
+fail on the intermediate state that the process requires. The warning already
+fires; what was missing was knowing whose job it is and when.
 
 Tickets are **presentation work inside an existing change**, not changes of
 their own. A restyle does not modify behavior, so it has no delta spec and

@@ -13,7 +13,8 @@
 
 export type Brain =
   | { readonly kind: 'preset'; readonly preset: string }
-  | { readonly kind: 'custom'; readonly modelId: string; readonly behavior: Behavior };
+  | { readonly kind: 'custom'; readonly modelId: string; readonly behavior: Behavior }
+  | { readonly kind: 'unknown' };
 
 export interface Behavior {
   readonly risk: Risk;
@@ -69,7 +70,12 @@ const WIRE_KIND = { preset: 'PRESET', custom: 'CUSTOM' } as const;
  * no branch that can emit both shapes.
  */
 export function brainToArgument(brain: Brain): Record<string, unknown> {
-  return brain.kind === 'preset'
-    ? { kind: WIRE_KIND.preset, preset: brain.preset }
-    : { kind: WIRE_KIND.custom, modelId: brain.modelId, behavior: { ...brain.behavior } };
+  if (brain.kind === 'preset') {
+    return { kind: WIRE_KIND.preset, preset: brain.preset };
+  }
+  if (brain.kind === 'custom') {
+    return { kind: WIRE_KIND.custom, modelId: brain.modelId, behavior: { ...brain.behavior } };
+  }
+  // unknown brain must never reach a write — the form does not produce one
+  throw new Error('brainToArgument called with an unknown brain');
 }

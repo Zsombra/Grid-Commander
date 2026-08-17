@@ -2,11 +2,11 @@
 id: strategy-metric-editor
 title: Section contents cannot be edited — only which sections are included
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-30
-updated: 2026-07-30
-change: ""
+updated: 2026-08-06
+change: the-inside-of-a-section-is-composable
 capability: strategy-authoring
 blocked_by: [strategy-section-editor]
 tags: [ui]
@@ -47,3 +47,26 @@ drill into a template to see its default columns. For each column:
    to validate the column before including it in the compile request
 
 This is a deeper progressive-disclosure surface and should be its own change.
+
+## Built — `the-inside-of-a-section-is-composable` (2026-08-06)
+
+`/strategies/sections` lists every template the vocabulary advertises;
+`/strategies/sections/[sectionKey]` opens one to the columns it renders, each
+seeded into a column editor, with `get_metric_construction_hints` explaining the
+metric and `get_strategy_column_contract` compiling what you compose.
+
+Two things the fix above did not anticipate:
+
+- **The columns were already on the wire.** `list_strategy_vocabulary`'s
+  `templates[]` carry them; the mapper kept `sectionKey` and `label` and dropped
+  the rest. `get_strategy_section_template` was never needed — and is recorded
+  never-called, so nothing models it.
+- **The composed column cannot be saved, and not for want of time.** The compile
+  request closes a platform section to `{kind, sectionKey}` and carries no
+  columns for it: its contents are the platform's. A column of your own travels
+  only inside a `{kind: custom}` section — a table that needs a title, the
+  timeframe-inertia law, the create-by-definition / modify-by-key loop, and the
+  strategy's existing custom tables round-tripped. That is the remaining half
+  and it is a change of its own; the surface says so on the page, the way
+  `/strategies/[id]/conditions` does. **Not yet filed** — this change's report
+  hands it to whoever lands these together.

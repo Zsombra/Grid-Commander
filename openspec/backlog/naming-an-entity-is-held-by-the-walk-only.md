@@ -1,7 +1,7 @@
 ---
 id: naming-an-entity-is-held-by-the-walk-only
 type: debt
-status: open
+status: done
 priority: P2
 capability: app-access
 created: 2026-07-29
@@ -46,3 +46,21 @@ beside a navigation fix.
 Until then the honest statement is that naming is verified by walking. It was
 walked on 2026-07-29 for all five strategy routes and all eight agent routes, and
 every one named its subject.
+
+## Closed 2026-07-31 — `pages-name-what-they-render`
+
+The rendering layer exists. `tests/rendering/support/render.ts` resolves what
+an awaited server component returned into rendered text and headings —
+expanding arrays, fragments, intrinsics and nested components, and throwing
+on anything it cannot expand, because a walker that skips is the vacuity this
+item warned about. `support/fake-acting.ts` is the acting()-shaped mini
+composition over the suite's fakes, so pages exercise the production
+query/describe paths. Sixteen per-branch assertions cover the agent detail /
+limits / archive / reactivate / deploy / undeploy pages and the strategy
+detail / archive / restore pages — each branch's heading asserted to carry
+its entity's name, and the legitimately-anonymous branches ("No such agent")
+asserted for what they must say instead. The mock seam is exactly one
+module: `@/presentation/session.js`, where Next's cookies live.
+
+Coverage grows one describe-block per page; edit/journal/thinking/fork/
+rebind join on their next touch.

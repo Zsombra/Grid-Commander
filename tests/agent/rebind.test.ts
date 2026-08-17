@@ -15,14 +15,14 @@ const agent: Agent = {
     state: 'BOUND',
   },
   brain: { kind: 'preset', preset: 'ROMMEL' },
+  modelDisplayName: null,
+  last24hCostUsd: null,
   tradingConfig: null,
-  arenaChallengeEnabled: false,
-  overlayText: null,
   performance: null,
   permissions: { canEdit: true, canArchive: true, canEditOverlay: true },
 };
 
-const target = { id: 's-new', name: 'Momentum Breakout' };
+const target = { id: 's-new', name: 'Momentum Breakout', revision: 7 };
 
 /** A5 — rebinding states that it replaces, not merges. */
 describe('names_the_replacement', () => {
@@ -72,8 +72,8 @@ describe('names_the_replacement', () => {
  * written without its values. Same assertions, one construction.
  */
 describe('refuses_a_token_for_another_pair', () => {
-  const target_ = (r: { agentId: string; toStrategyId: string }) =>
-    confirmationTarget.agentRebind(r.agentId, r.toStrategyId);
+  const target_ = (r: { agentId: string; toStrategyId: string; toStrategyRevision: number }) =>
+    confirmationTarget.agentRebind(r.agentId, r.toStrategyId, r.toStrategyRevision);
 
   it('binds the target to both the agent and the destination strategy', () => {
     const t = target_(planRebind(agent, target));
@@ -87,8 +87,15 @@ describe('refuses_a_token_for_another_pair', () => {
   });
 
   it('produces a different target for a different destination', () => {
-    const elsewhere = target_(planRebind(agent, { id: 's-other', name: 'Other' }));
+    const elsewhere = target_(planRebind(agent, { id: 's-other', name: 'Other', revision: 7 }));
     expect(elsewhere).not.toBe(target_(planRebind(agent, target)));
+  });
+
+  it('produces a different target for a different destination revision', () => {
+    // The race this binding closes: the destination moved between reading and
+    // confirming, and a pair-bound token would still have spent.
+    const moved = target_(planRebind(agent, { ...target, revision: 8 }));
+    expect(moved).not.toBe(target_(planRebind(agent, target)));
   });
 
   it('is not merely the verb', () => {
@@ -100,7 +107,7 @@ describe('refuses_a_token_for_another_pair', () => {
 
 describe('rebinding to the strategy already bound', () => {
   it('is recognised as a no-op', () => {
-    expect(isNoOp(planRebind(agent, { id: 's-old', name: 'Volatilis — imported' }), agent)).toBe(true);
+    expect(isNoOp(planRebind(agent, { id: 's-old', name: 'Volatilis — imported', revision: 1 }), agent)).toBe(true);
   });
 
   it('is not confused with a real move', () => {

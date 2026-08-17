@@ -60,6 +60,9 @@ const LONDON = {
   minAggregateScore: 0.5,
   minRequiredCount: 0,
   minAtrPct: 0.5,
+  maxStopLossPct: 5,
+  minStopLossAtrMultiple: 1,
+  minRiskRewardRatio: 1.5,
   forkedFromStrategyId: null,
   revision: 2,
   isActive: true,
@@ -163,6 +166,26 @@ describe('a strategy arrives whole', () => {
       minRequiredCount: 0,
       minAtrPct: 0.5,
     });
+  });
+
+  it('carries the trade-level policy', async () => {
+    const result = await wire(LONDON).readStrategy(who);
+    if (result.kind !== 'strategy') throw new Error('expected a strategy');
+    expect(result.detail.tradeLevelPolicy).toEqual({
+      maxStopLossPct: 5,
+      minStopLossAtrMultiple: 1,
+      minRiskRewardRatio: 1.5,
+    });
+  });
+
+  it('returns null policy when the platform omits the fields', async () => {
+    const without = { ...LONDON } as Record<string, unknown>;
+    delete without['maxStopLossPct'];
+    delete without['minStopLossAtrMultiple'];
+    delete without['minRiskRewardRatio'];
+    const result = await wire(without).readStrategy(who);
+    if (result.kind !== 'strategy') throw new Error('expected a strategy');
+    expect(result.detail.tradeLevelPolicy).toBeNull();
   });
 
   it('carries what it weighs, in the order given', async () => {
@@ -391,7 +414,9 @@ describe('a copy that cannot be made is not offered on the strategy either', () 
       sections: [],
       marketReadText: null,
       thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
+      tradeLevelPolicy: null,
       signalRules: [],
+      conditions: [],
       openPositionCount: 0,
       cadence: null,
       regimeAutoDerive: false,

@@ -5,9 +5,10 @@ type: debt
 status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-08-10
 change: ""
 capability: app-access
+github: "89"
 blocked_by: []
 tags: [deployment, verification]
 ---
@@ -62,9 +63,45 @@ The blast radius is bounded: it fails at `docker build` or at first `docker run`
 loudly, before anything is serving. It cannot fail quietly in production — which
 is why it is P1 and not P0.
 
+## Attempted 2026-08-05: a daemon is not enough
+
+Tried in an environment that **does** have Docker — client and daemon both,
+29.3.1, `dockerd` starts clean. The build still cannot run, and the reason is
+narrower and more useful than "no daemon":
+
+```
+FROM node:22-alpine AS deps
+  → failed to resolve source metadata for docker.io/library/node:22-alpine:
+    Get "https://production.cloudfront.docker.com/registry-v2/…": Forbidden
+```
+
+The agent proxy confirms it as a policy denial rather than a transient failure:
+
+```
+recentRelayFailures: [{
+  kind: "connect_rejected",
+  detail: "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+  host: "production.cloudfront.docker.com:443"
+}]
+```
+
+`registry-1.docker.io/v2/` itself answers 401 — the normal unauthenticated
+reply — so **manifests resolve and blobs do not**. Docker Hub serves layer
+blobs from that CDN, so every pull fails at the first `FROM` regardless of the
+image, and no images are cached locally. Not worked around: circumventing the
+environment's egress policy is not a fix.
+
+**So the requirement is sharper than "somewhere with a daemon".** It needs an
+environment whose egress allows `production.cloudfront.docker.com` (or a
+mirror), or one with `node:22-alpine` already in its image cache. A session with
+Docker but the default network policy gets exactly this far and no further —
+worth knowing before spending the setup time again.
+
+Everything below still stands: what was proven, what is left, and why it is P1.
+
 ## Fix
 
-Run it, somewhere with a daemon:
+Run it, somewhere with a daemon **and registry egress**:
 
 ```bash
 docker build -t grid-commander .
@@ -80,8 +117,27 @@ switching without evidence trades a known size for an unknown reason.
 Record the result in the journal either way. A build that worked is worth as much
 as one that did not, because right now neither is known.
 
-## Resolution
+## Resolved 2026-08-10 — built, run, and proven
 
-- **Build**: Successfully built on `node:22-alpine` without musl-libc incompatibility issues for `sharp` or `swc`. The final optimized production image compiles cleanly.
+The blocker was never the Dockerfile. Built on the first attempt that could
+reach a registry.
+
 - **Defect fixed**: `docker-entrypoint.sh` contained Windows CRLF line endings which caused the `migrate` entrypoint to fail with `no such file or directory` under Alpine's `/bin/sh`. Converted to LF.
-- **Run**: Verified container database migrations succeed (`schema ok — 1 migration(s) applied`) and Next.js boots cleanly on port 3000, serving full routes and assets.
+- **Built**: 355MB, `node:22-alpine`, from `mirror.gcr.io` (the Docker Hub CDN
+  is still policy-blocked; the mirror is not — the issue anticipated exactly
+  this out). No issues with musl-libc incompatibility for `sharp` or `swc`.
+- **Alpine runs it**: the standalone server boots in 374ms on musl.
+- **The gate holds in the real image**: serve against an unmigrated database
+  refuses with exit 1 and the documented message; `migrate` applies the
+  journal; serve then boots.
+- **It serves**: `/` 307 → `/connect`; `/agents` `/strategies` `/audit`
+  `/connect` `/pending` all 200 — the same answers the 2026-08-05
+  hand-assembled layout gave, now from the image itself.
+- **`commander` owns its process**: `whoami` inside the container answers
+  `commander`, and it can read everything copied `--chown`ed to it.
+
+The sandbox-specific build recipe (mirror pull + `--network=host` + explicit
+proxy build-args, because this docker CLI does not auto-forward proxy env into
+BuildKit) is recorded in #89's closing comment and the journal — it is
+environment lore, not repository configuration, which is why nothing in the
+repo changed (other than the CRLF fix).

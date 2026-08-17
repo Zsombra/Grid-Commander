@@ -1,0 +1,155 @@
+{
+  "id": "explorer-evaluation",
+  "title": "What it read",
+  "route": "/explorer/[agentId]/evaluations/[logId]",
+  "capability": "agent-comparison",
+  "status": "designed",
+  "generated_at_commit": "fa151ca",
+  "source_files": [
+    "app/(app)/explorer/[agentId]/evaluations/[logId]/page.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "detail",
+      "shape": "EvaluationDetail — score, bias, chain, attributions, signals[] | none | unreadable",
+      "source": "app.readEvaluation.execute — the public projection; ownerView/llmPartialReasoning are nulled by the platform and never rendered as placeholders"
+    }
+  ],
+  "components": [
+    {
+      "id": "evaluation-page",
+      "role": "container",
+      "purpose": "The bottom of the explorer stack: every signal one agent consulted on one candidate, and the chain the candidate then followed.",
+      "states": [
+        "detail",
+        "conflict",
+        "none",
+        "unreadable",
+        "not-connected"
+      ],
+      "data": [
+        "detail"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centered column: score line, the conflict sentence as plain prose when signals disagreed, the chain card, attributions, the module-grouped scorecard, back link. The none branch says the platform lists this evaluation but publishes nothing further — not a failure.",
+      "constraints": [
+        "None (the platform publishes no detail) and unreadable (the read failed) must never render alike.",
+        "No placeholder is rendered for owner-private telemetry — an empty reasoning slot would say the agent explained nothing when it was not published.",
+        "No client JS."
+      ],
+      "children": [
+        "chain",
+        "attributions",
+        "signals"
+      ]
+    },
+    {
+      "id": "chain",
+      "role": "display",
+      "purpose": "Gate → attempt → decision → execution → outcome, each stage the platform's own words, absent stages absent.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "detail"
+      ],
+      "actions": [],
+      "current_implementation": "One tokened card; a stage the platform did not record is absent, not empty; the execution message renders whitespace-pre-wrap, unparsed.",
+      "constraints": [
+        "A stage the platform did not record is absent, never rendered as an empty row.",
+        "The execution message is the platform's own words, unparsed."
+      ],
+      "children": []
+    },
+    {
+      "id": "attributions",
+      "role": "display",
+      "purpose": "What each contributing signal was worth to the aggregate score.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "detail"
+      ],
+      "actions": [],
+      "current_implementation": "Plain list, signal name or id, attribution percent, own score.",
+      "constraints": [
+        "Rendered only when the platform published attributions."
+      ],
+      "children": []
+    },
+    {
+      "id": "signals",
+      "role": "display",
+      "purpose": "Every signal consulted, module by module — the untriggered ones are the point.",
+      "states": [
+        "grouped",
+        "empty",
+        "fired",
+        "not-fired"
+      ],
+      "data": [
+        "detail"
+      ],
+      "actions": [],
+      "current_implementation": "Module groups with fired-counts; each row a tokened left rail (border-border-default since the-rails-join-too), Fired/Did-not-fire stated in words, the platform's sentence, indicator values in secondary text.",
+      "constraints": [
+        "Untriggered signals are never filtered — what an agent looked at and dismissed is as much its strategy as what fired.",
+        "Fired / did not fire is stated in words, never by colour alone.",
+        "The per-signal sentence is the platform's, unparaphrased."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "The shared turned-away page.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "BUTTON_SECONDARY anchor to /connect (DT-0006)"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component; treatment owned by DT-0006.",
+      "constraints": [
+        "No per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Read a leader's read",
+      "steps": [
+        "arrive from the competitor page",
+        "read the chain",
+        "read what fired and what was dismissed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main"
+    ],
+    "focus_order": [
+      "signals"
+    ],
+    "notes": "Unreadable carries role=alert. Fired state legible without colour. No client JS."
+  },
+  "source_digest": {
+    "app/(app)/explorer/[agentId]/evaluations/[logId]/page.tsx": "sha256:197b5858c696298029291e0176914c83214f14156ae85fbe3c55154b7d9b8c81",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

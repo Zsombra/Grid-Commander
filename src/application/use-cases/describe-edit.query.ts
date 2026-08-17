@@ -120,11 +120,6 @@ export function describeEdit(
     parts.push(`Renames "${currentName}" to "${displayName}".`);
   }
 
-  const overlay = changes['overlayText'];
-  if (typeof overlay === 'string') {
-    parts.push('Replaces the overlay text.');
-  }
-
   const config = changes['tradingConfig'];
   if (config !== undefined) {
     // Deliberately the heaviest sentence here. Everything else on this screen
@@ -147,6 +142,22 @@ export function describeEdit(
      */
     const money = describeMoney(config);
     if (money.length > 0) parts.push(`Sets ${sentenceList(money)}.`);
+
+    /**
+     * Position management, named the way it was chosen. A preset means the
+     * platform's own values ride wholesale; CUSTOM means the twelve the
+     * operator edited. Either way the digest binds the values themselves —
+     * this sentence is what the person reads, not what protects them.
+     */
+    const pm = (config as Record<string, unknown>)['positionManagement'];
+    if (typeof pm === 'object' && pm !== null) {
+      const label = (pm as Record<string, unknown>)['positionManagementPreset'];
+      parts.push(
+        label === 'CUSTOM' || typeof label !== 'string'
+          ? 'Position management becomes twelve custom values.'
+          : `Position management becomes BattleGrid's own ${label} configuration.`,
+      );
+    }
   }
 
   return parts.length === 0 ? null : parts.join(' ');

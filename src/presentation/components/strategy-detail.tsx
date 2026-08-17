@@ -1,3 +1,4 @@
+import { StrategyConditions } from './strategy-conditions.js';
 import type { StrategyDetail } from '@/domain/strategy/strategy.js';
 import { requiredSignals, weightedSignals } from '@/domain/strategy/strategy.js';
 
@@ -63,6 +64,13 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
             ))}
           </ul>
         )}
+        <p className="text-sm">
+          <a href={`/strategies/${summary.id}/preview`} className="underline">
+            Preview what an agent reads
+          </a>{' '}
+          — the report rendered live from this composition, without saving
+          anything.
+        </p>
       </section>
 
       <section className="space-y-2">
@@ -88,6 +96,58 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
         </dl>
       </section>
 
+      {detail.tradeLevelPolicy && (
+        <section className="space-y-2">
+          <h2 className="text-base font-medium text-text-primary">Trade-level policy</h2>
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Threshold
+              label="Stop-loss floor (ATR×)"
+              value={detail.tradeLevelPolicy.minStopLossAtrMultiple}
+            />
+            <Threshold
+              label="Stop-loss ceiling (%)"
+              value={detail.tradeLevelPolicy.maxStopLossPct}
+            />
+            <Threshold
+              label="Risk:reward minimum"
+              value={detail.tradeLevelPolicy.minRiskRewardRatio}
+            />
+          </dl>
+          {/* Claimed no wider than the payload backs: the platform *declares*
+              the multiple; whether live trades are held to it has never been
+              observed, and the fleet's realized record argues against assuming
+              it. Enforcement language here would be a claim no read supports.
+              The measured half is named, not computed — a strategy binds
+              several agents, and each agent's trading record already derives
+              its realized moves from its own closed fills. */}
+          <p className="text-base text-text-primary">
+            The floor is the platform&rsquo;s own reading of where noise ends: by its
+            declaration, a stop closer than{' '}
+            {detail.tradeLevelPolicy.minStopLossAtrMultiple}&times; the ATR sits inside
+            ordinary market movement. That is what the platform declares, not what it
+            has been observed to hold live trades to. How far trades actually move is
+            measured on each agent&rsquo;s trading record, from its own closed trades.
+          </p>
+          <p role="note" className="text-sm text-text-secondary">
+            These values are set by the platform. The compiler does not yet
+            process changes to them, so they cannot be edited through this
+            product.
+          </p>
+        </section>
+      )}
+
+      <StrategyConditions conditions={detail.conditions} />
+      {/* The other half of the same question. This section says what the
+          strategy's conditions are; the link asks what a different one would
+          do, resolved live by BattleGrid and saved nowhere. Offered whether or
+          not the strategy defines any — a strategy with none is exactly the one
+          whose author has never seen the layer work. */}
+      <p className="text-sm">
+        <a href={`/strategies/${summary.id}/conditions`} className="underline">
+          Draft a condition and see how it would resolve
+        </a>
+      </p>
+
       <section className="space-y-2">
         <h2 className="text-base font-medium text-text-primary">What it weighs</h2>
         <p className="text-sm text-text-secondary">
@@ -107,6 +167,9 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
                   <th className="p-2 font-medium text-text-primary">Weight</th>
                   <th className="p-2 font-medium text-text-primary">Required</th>
                   <th className="p-2 font-medium text-text-primary">Parameters</th>
+                  <th className="p-2 font-medium text-text-primary">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -119,6 +182,14 @@ export function StrategyDetailView({ detail }: { detail: StrategyDetail }) {
                         would hide that. */}
                     <td className="p-2 text-text-primary">{rule.required ? 'required' : '—'}</td>
                     <td className="p-2 text-text-secondary">{describeParams(rule.params)}</td>
+                    <td className="p-2">
+                      <a
+                        href={`/strategies/${summary.id}/rules/${rule.signalId}`}
+                        className="underline"
+                      >
+                        Retune
+                      </a>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -168,7 +239,7 @@ function Threshold({ label, value }: { label: string; value: number | null }) {
  *
  * The shape belongs to the signal — a threshold, a lookback, something not yet
  * invented — so this names keys and values rather than interpreting them. An
- * interpretation would be a second opinion on 82 signals' schemas.
+ * interpretation would be a second opinion on every signal's schema.
  */
 function describeParams(params: Readonly<Record<string, unknown>>): string {
   const entries = Object.entries(params);

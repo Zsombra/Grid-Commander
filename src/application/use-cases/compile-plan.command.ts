@@ -8,7 +8,7 @@ import {
   proposedRevision,
   type Concern,
 } from '@/domain/strategy/compiled-plan.js';
-import type { StrategiesPort } from '@/ports/strategies.js';
+import type { AuthoringRefusal, StrategiesPort } from '@/ports/strategies.js';
 import { digestOf } from '@/domain/capability/digest.js';
 
 export interface CompilePlanRequest {
@@ -33,7 +33,12 @@ export interface PlanReview {
 
 export type CompilePlanResult =
   | { readonly kind: 'review'; readonly review: PlanReview }
-  | { readonly kind: 'rejected'; readonly reason: string };
+  | {
+      readonly kind: 'rejected';
+      readonly reason: string;
+      /** The platform's structured account, where it gave one. Null means it did not. */
+      readonly refusal: AuthoringRefusal | null;
+    };
 
 /**
  * Compile a proposed change.
@@ -48,7 +53,8 @@ export class CompilePlanCommand {
 
   async execute(req: CompilePlanRequest): Promise<CompilePlanResult> {
     const result = await this.strategies.compilePlan(req);
-    if (result.kind === 'rejected') return { kind: 'rejected', reason: result.reason };
+    if (result.kind === 'rejected')
+      return { kind: 'rejected', reason: result.reason, refusal: result.refusal };
 
     const { approvedPlan, reviewContext, planToken } = result;
 

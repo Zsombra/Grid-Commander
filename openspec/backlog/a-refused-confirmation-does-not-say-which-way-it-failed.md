@@ -1,11 +1,11 @@
 ---
 id: a-refused-confirmation-does-not-say-which-way-it-failed
 type: debt
-status: open
+status: done
 priority: P3
 capability: battlegrid-connection
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-07-31
 change: a-confirmation-binds-to-what-was-agreed
 ---
 
@@ -51,3 +51,7 @@ Care needed on one point: **the message must not confirm a guess.** Telling some
 "issued for something else" when they submitted a token they never had would
 report on a token's existence. `unknown` and `mismatched` should read the same to
 the caller even if they are distinguished internally for the audit.
+
+## Closed
+
+Fixed in `the-small-debts-sweep` (2026-07-31): `ConfirmationStore.diagnose()` — a read-only post-mortem after a failed consume (consume stays the single atomic spender) — and the guard raises four distinct messages, each naming its next step. Guard tests cover all four causes.

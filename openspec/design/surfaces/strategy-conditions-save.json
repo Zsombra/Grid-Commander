@@ -1,0 +1,444 @@
+{
+  "id": "strategy-conditions-save",
+  "title": "Save a condition — whole-list ceremony",
+  "route": "/strategies/[id]/conditions/save",
+  "capability": "strategy-authoring",
+  "status": "needs-redesign",
+  "generated_at_commit": "6441015",
+  "source_files": [
+    "app/(app)/strategies/[id]/conditions/save/actions.ts",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/strategy-conditions.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/condition-form.ts",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "{ kind: 'listing' | 'no-such-condition' | 'inexpressible' | 'drift' | 'refused' | 'proposal' | 'strategy-missing' | 'unreadable', ... }",
+      "source": "app.describeConditionWrite.execute — reads the strategy fresh, composes the entire condition list with the edit applied, has BattleGrid compile it (which writes nothing), and mints the token against the text on screen"
+    },
+    {
+      "name": "proposal",
+      "shape": "{ strategyId, consequence, conditionKey, standing, listKeys: (string|null)[], dangling: string[], plan, confirmationToken }",
+      "source": "the 'proposal' arm of describeConditionWrite — consequence is the stored string the confirmation was issued against"
+    },
+    {
+      "name": "existing",
+      "shape": "StrategyCondition[] — { conditionKey, name, verdict, definition }",
+      "source": "the strategy read fresh — the conditions as the platform sent them"
+    },
+    {
+      "name": "parsed",
+      "shape": "DraftFromForm — 'blank' | 'draft' | 'from-existing' | 'malformed'",
+      "source": "draftFromQuery(searchParams) in condition-form.ts — the drafted edit, read off the query string it was tried under"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal a rejected saveConditions redirected back with; the rest of the query is the edit, round-tripped so a refusal returns to a describe over the same edit. Since #317 the round trip keeps **every** value of a repeated param rather than the first, so a hand-edited query comes back whole. It steers nothing new — `draftFromQuery` reads every field through `one()` — but a draft the operator edited by hand is no longer silently truncated on the way back from a refusal"
+    }
+  ],
+  "components": [
+    {
+      "id": "save-condition-page",
+      "role": "container",
+      "purpose": "The write half of condition authoring: show what the strategy defines, describe what saving an edit would leave it defining, and carry the one committing form.",
+      "states": [
+        "listing",
+        "listing-with-malformed-draft",
+        "no-such-condition",
+        "inexpressible",
+        "drift",
+        "refused",
+        "proposal",
+        "strategy-missing",
+        "unreadable",
+        "not-connected",
+        "prose-names-it"
+      ],
+      "data": [
+        "result",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl (wider than the confirm pages) centered column, space-y-6, p-6. Six of the eight post-connection branches share a `head` fragment: h1 'Save a condition to <name>' plus the problem banner when one arrived — so listing, no-such-condition, inexpressible, drift, refused and proposal each carry the banner from one rendering rather than six. `listing` (no edit, or a malformed one) explains that BattleGrid has no per-condition tool so saving anything resubmits the whole list, then shows the current list. `no-such-condition` says the named key is not defined (role=alert, rounded-gc-2 plain border, p-3) above the list. `inexpressible` renders h2 'Part of this draft cannot be sent to BattleGrid' over a role=alert list prefixed 'Not understood by Grid-Commander:', and states nothing was compiled and nothing was saved. `drift` — BattleGrid's compiled post-state does not match what was submitted — renders h2 'BattleGrid would save something other than what was submitted', lists the reasons, and states no confirmation was minted. `refused` renders h2 'BattleGrid refused this change — here is why' over the compiler's reason whole, then 'Nothing was written.' as a plain sentence. `strategy-missing` and `unreadable` are the two branches that render BEFORE `head` is built — they mirror the other strategy pages, and unreadable leads back to the strategy since without a fresh read there is nothing to compose against. Since `a-refusal-lands-where-someone-reads-it` (#240) both mount `<CarriedProblem>` directly under their h1, so a bounced save whose next read fails shows the read failure AND the word of the click — the problem is read before the earliest branch, and every one of the eight post-connection branches now carries it (six through `head`, two directly). One state added: `prose-names-it`, for a compile refused because the strategy's own market-read prose references the condition by marker. It names the marker and the platform's nearest key where one was given, with BattleGrid's own sentence beneath.",
+      "constraints": [
+        "The whole list is the subject, never one condition — openspec/specs/strategy-authoring/spec.md:1166-1169 ('No tool writes one condition; the only path submits the whole array … A surface that spoke of writing one condition would be describing an operation the platform does not offer'). Copy and layout must keep saying what the strategy would be left defining.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
+        "Each failure arm states that nothing was compiled / written / saved — 'Absence of effect is stated, not implied' (system.json principle); those sentences must keep visual commitment.",
+        "The inexpressible arm is Grid-Commander's own refusal to guess — spec.md:1172-1175 ('a composed condition carrying a form this product did not understand SHALL NOT be written back at all'); it must stay visually distinct from a platform refusal."
+      ],
+      "children": [
+        "problem",
+        "malformed",
+        "existing",
+        "consequence",
+        "list-keys",
+        "dangling",
+        "save-conditions",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted save back — the apply failed after the describe was agreed to.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component (carried-problem.tsx) since `a-refusal-lands-where-someone-reads-it` (#240) — the inline `{problem ? … : null}` copy is gone. It renders inside the shared `head` fragment on the six branches that build one, and directly on `strategy-missing` and `unreadable`, so all eight post-connection branches carry a bounced reason. DT-0004's treatment: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix. Because the edit round-trips in the query, the banner sits above a fresh describe of the same edit against the strategy as it now stands.",
+      "constraints": [
+        "role=alert must survive.",
+        "A refusal returns to the surface acted from with the edit preserved — spec.md:1177-1179; the banner and the re-described edit must stay on one page.",
+        "One component, restyled in carried-problem.tsx and never per page — the derived scan (`a-problem-redirect-is-read-where-it-lands.test.ts`) resolves the `head` fragment and fails any `<main>` region that drops the reason, and the product-wide guard fails a hand-rolled copy in either spelling."
+      ],
+      "children": []
+    },
+    {
+      "id": "malformed",
+      "role": "feedback",
+      "purpose": "Tell the operator their draft does not describe a definition yet — a half-filled form, not a platform refusal.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "parsed"
+      ],
+      "actions": [
+        {
+          "id": "finishInComposer",
+          "effect": "Underlined link back to /strategies/[id]/conditions carrying the same query (minus any problem), so the draft is finished where it was composed"
+        }
+      ],
+      "current_implementation": "h2 'This draft is not finished' over a ul with role=alert (rounded-gc-2, plain border-border-default, p-3) listing the row-level problems from draftFromQuery — Grid-Commander's own wording, e.g. 'Row 2 compares spread to nothing — give it a number.' Followed by the composer link and the sentence 'nothing was compiled and nothing was saved.' Rendered inside the listing state so the list below does not read as the draft having been forgotten.",
+      "constraints": [
+        "These problems are ours to say and said as ours — a malformed draft never reaches BattleGrid, so this block must not look like a platform answer.",
+        "Plain border, not danger — the fix is on the page the operator is already looking at; 'notice never borrows danger's colour' (system.json principle).",
+        "The link back to the composer must carry the draft's query — losing it turns a half-filled form into a blank one."
+      ],
+      "children": []
+    },
+    {
+      "id": "existing",
+      "role": "display",
+      "purpose": "Show what the strategy defines now — the baseline every edit is an edit of.",
+      "states": [
+        "empty",
+        "populated"
+      ],
+      "data": [
+        "existing"
+      ],
+      "actions": [
+        {
+          "id": "remove",
+          "effect": "Underlined link per condition to this same route with ?remove=<key> — starts a describe of the list without it"
+        },
+        {
+          "id": "change",
+          "effect": "Underlined link per condition to the composer seeded from that condition (?try=1&from=<key>…), carrying its key, name and verdict so a bare click does not demote a directional call to a building block"
+        }
+      ],
+      "current_implementation": "h2 'What <name> defines now'. Empty: a text-sm text-text-secondary sentence — 'This strategy defines no conditions. Anything saved here would be its first.' Populated: a ul of rounded-gc-2 border cards, each with the condition's name, its key in text-xs uppercase with either '· a named building block' or '· calls <verdict>', the definition drawn by ConditionStructure, and the two links. Since 2026-08-16 (#167) these rows are the shared ConditionCard from strategy-conditions.tsx rather than a second copy of it — `blockNote` asks for the annotation, `actions` carries the two links — so a condition whose definition uses a form the product does not model now also draws that component's 'What is shown is incomplete' caveat beneath the structure.",
+      "constraints": [
+        "Empty must stay distinguishable from unreadable — spec.md:318-321 ('the strategy is shown as having no conditions … distinguished from a strategy whose conditions could not be read'); the empty sentence must not be dropped for whitespace.",
+        "A null verdict is a named building block, not an absence — spec.md:760-762 ('MUST NOT be presented as a way the strategy calls direction'); the '· a named building block' annotation must survive.",
+        "The remove and change links are behavior (they start describes) — a design may restyle them but not collapse them into one control or hide them behind interaction that needs client JS."
+      ],
+      "children": [
+        "condition-structure"
+      ]
+    },
+    {
+      "id": "condition-structure",
+      "role": "display",
+      "purpose": "Draw one condition's definition as the structure it is — nesting shown, negation said as negation, references named.",
+      "states": [
+        "comparison",
+        "between",
+        "label-is",
+        "label-in",
+        "group-all",
+        "group-any",
+        "group-n-of",
+        "negation",
+        "reference",
+        "dangling-reference",
+        "unrecognised"
+      ],
+      "data": [
+        "existing"
+      ],
+      "actions": [],
+      "current_implementation": "Shared ConditionStructure component (strategy-conditions.tsx), recursive: groups render a heading ('All 3 must hold', 'Any of 2 must hold', 'Must NOT hold', '2 of 3 must hold') over an ml-4 border-l indented ul of members; comparisons read as words ('spread is below 0.5', 'regime is between 1 and 3', 'trend is “UP”'); a reference shows its key, and a reference to a key not defined here appends '— no condition with this key is defined here' in text-text-secondary; an unrecognised form renders 'Not understood by Grid-Commander: <reason>'.",
+      "constraints": [
+        "Nesting is drawn, not flattened — spec.md:723-725 ('The presentation MUST show that nesting rather than flatten it'); a member of a NOT means the opposite of the same member outside it.",
+        "NOT is said as negation, never as a count — '0 of 1 must hold' reads as a mistake (the component's own ruling).",
+        "A dangling reference is never silently omitted — the reader must not see a shorter condition than the one that exists.",
+        "Shared with every surface that draws a condition — restyle it once, in the component, or the two renderings of the grammar will disagree about a negation eventually."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what agreeing does — the edit, the whole list, and how many agents are reconfigured — in the exact text the confirmation was issued against.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "whitespace-pre-line rounded-gc-2 border border-border-default p-4 text-sm with role=alert — the stored multi-line consequence string, rendered verbatim. Plain border, not the consequence-subtle treatment DT-0004 gave the agent ceremonies.",
+      "constraints": [
+        "The text is the string the token was minted against — never a second wording of it; a design must not paraphrase, truncate, or summarize (spec.md:1222-1226: the list, whether the edit added/replaced/removed, what it strands, and the bound-agent count are 'part of the text the confirmation is issued against').",
+        "The bound-agent count is stated whether zero or many — spec.md:1241-1243 ('never omitted'); 'Unknown is not zero' (system.json principle).",
+        "whitespace-pre-line must survive — the stored string carries its own line structure.",
+        "Consequence outranks everything on a screen (system.json principle).",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "list-keys",
+      "role": "display",
+      "purpose": "Name every condition the strategy would be left defining, because the platform takes the list whole.",
+      "states": [
+        "populated",
+        "populated-with-standing",
+        "empty"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "h2 'The whole list that would be submitted', a text-text-secondary sentence stating every entry is resubmitted and the resulting count, then an ordered list of keys — the edited key annotated with '— <standing>' (added / replaced / removed phrasing from the describe). A key-less entry renders as '(an entry with no key)'. Empty: 'None — the strategy would define no conditions at all.'",
+      "constraints": [
+        "The list is stated, not just the edit — spec.md:1245-1249 ('all three are named as what the strategy would be left defining … the text says the platform takes the condition list whole').",
+        "The empty case is a real, submittable outcome (removing the last condition) and must keep its own sentence — silence reads as a broken page.",
+        "The standing annotation tells the operator whether their draft joined or replaced — spec.md:1188-1192; it must stay attached to the key it describes."
+      ],
+      "children": []
+    },
+    {
+      "id": "dangling",
+      "role": "feedback",
+      "purpose": "Name every reference the edit would leave with nothing to resolve — shown, not blocked.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "h2 'These references would have nothing to resolve', a ul with role=alert (plain border-border-default) — '<key> is referred to by a condition in the list above and defined by none of them' — and a text-text-secondary coda: 'Shown, not blocked. Whether BattleGrid accepts a dangling reference is its ruling to make, and it will say so in its own words.'",
+      "constraints": [
+        "Shown and never blocking — spec.md:1238-1239 ('A dangling reference SHALL be shown and SHALL NOT block the write'); a design must not style this as an error that implies the submit is disabled.",
+        "Only references the EDIT strands appear here — pre-existing dangling references are the strategy's own and are reported where it is read (spec.md:1234-1236); a design must not merge the two.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "save-conditions",
+      "role": "container",
+      "purpose": "Carry the agreement: apply exactly the plan that was reviewed, and no other.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "saveConditions",
+          "effect": "POSTs the server action with strategyId, the compiled plan as JSON, the confirmationToken, and the draft query; success lands on the strategy read fresh, any failure redirects back here with the edit preserved and ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3; four hidden inputs (strategyId, plan JSON, confirmationToken, draft). The plan travels through the form because what is applied must be what was reviewed — it is not trusted; the confirmation is bound to strategy:<id>#<intentDigest>, so a plan altered in transit digests differently and the write is refused before BattleGrid is asked.",
+      "constraints": [
+        "The hidden binding is the ceremony — the form must keep exactly one submit path, and the plan/token pairing must not be redesigned into separate steps (spec.md:1210-1213: a confirmation cannot be spent on a different plan).",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the write. Labelled 'Save this condition list' — the list, because the list is what is written.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs saveConditions"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, DT-0004 hover/active. No pending/loading state between click and redirect — same class of gap as #153; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "The label names the list, not the single condition — renaming it to 'Save this condition' would misdescribe the operation (spec.md:1166-1169).",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Decline the change and return to the strategy, leaving everything as it is.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /strategies/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004 hover. Label 'Leave things as they are'. Beneath the form, every state also carries plain underlined links 'Back to <name>' and 'Compose a condition'.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Reassure someone staring at a failed read that the strategy still exists, by naming the accurate external cause.",
+      "states": [
+        "refused-cause",
+        "unreachable-cause",
+        "absent"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state; the way back is the strategy, because without a fresh read there is nothing to compose an edit against.",
+      "constraints": [
+        "The two causes must stay distinguishable — a 401 is not an outage.",
+        "The reassurance sentence is the point and must not be cut for space."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, connect link as an anchor wearing BUTTON_SECONDARY (DT-0006). Inherited by every authenticated page.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Save a drafted condition",
+      "steps": [
+        "arrive from the composer with the draft in the query",
+        "the describe compiles the whole list with the draft applied",
+        "read the consequence, the resulting list, and anything stranded",
+        "submit 'Save this condition list'",
+        "land on the strategy read fresh, showing the list as the platform now holds it"
+      ]
+    },
+    {
+      "name": "Remove a condition",
+      "steps": [
+        "click 'Remove it from the strategy' on the list",
+        "the describe compiles the list without it, naming any reference left dangling",
+        "submit, or leave things as they are"
+      ]
+    },
+    {
+      "name": "The draft is not finished",
+      "steps": [
+        "arrive with a half-filled draft",
+        "'This draft is not finished' lists the rows' problems in our words",
+        "follow 'Finish it in the composer' with the draft intact"
+      ]
+    },
+    {
+      "name": "BattleGrid refuses the compile",
+      "steps": [
+        "the describe runs and the compiler declines",
+        "the platform's reason, whole, with 'Nothing was written.'",
+        "the current list below, unchanged"
+      ]
+    },
+    {
+      "name": "The apply is refused after agreement",
+      "steps": [
+        "submit the reviewed plan",
+        "the apply fails (revision moved, token expired, platform declined)",
+        "redirected back with the edit preserved and ?problem=",
+        "a fresh describe of the same edit under the refusal banner"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "The problem banner, consequence, malformed/inexpressible/drift/dangling lists and the refused reason carry role=alert — so most branches announce two alerts when a reason rides in, the carried one first; since #240 that includes `strategy-missing` and `unreadable`, which mount the carried banner directly. Focus ring is global (focus-visible, 2px). Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight; the draft travels as a query string an operator can keep, share, or edit by hand."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/conditions/save/actions.ts": "sha256:9a8190da580ee65e4b365c7945f497f26ea24af5025e83f404d30022d29f6c3e",
+    "app/(app)/strategies/[id]/conditions/save/page.tsx": "sha256:e03ff5b65eb30550da36f3638d30e5473a2fb80ef1d7d4a167986408ccf57fc9",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/strategy-conditions.tsx": "sha256:0182476630a84224f09a0e383557ca9d37d0d4c5a5912bcc89aba90afbdf8af8",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/condition-form.ts": "sha256:2aabaef56623b6a4be80583301e0d32baa1ae3ab48d1fd20b8601abde677aedc",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
+  }
+}

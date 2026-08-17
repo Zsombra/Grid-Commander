@@ -114,33 +114,36 @@ describe('the product sends what BattleGrid requires', () => {
   }
 });
 
-describe('the two enveloped tools are wrapped, not built', () => {
+describe('the enveloped tools are wrapped, not built', () => {
   /**
-   * `compile_strategy_plan` and `apply_strategy_plan` each require exactly one
-   * argument, `request`, and neither method constructs it — the private `call()`
-   * helper wraps the payload for the tools in `ENVELOPED`. So the thing to check
-   * is that the set still contains them, not that the key appears at the call
-   * site. Getting this wrong in the checker reported two working calls as
-   * broken, which is how a guard earns its way into being ignored.
+   * `compile_strategy_plan`, `apply_strategy_plan` and
+   * `update_strategy_signal_rule` each require exactly one argument,
+   * `request`, and no method constructs it — the private `call()` helper
+   * wraps the payload for the tools in `ENVELOPED`. So the thing to check
+   * is that the set still contains them, not that the key appears at the
+   * call site. Getting this wrong in the checker reported two working calls
+   * as broken, which is how a guard earns its way into being ignored.
    */
   it('requires exactly the one argument the wrapper supplies', () => {
-    for (const tool of ['compile_strategy_plan', 'apply_strategy_plan']) {
+    for (const tool of ['compile_strategy_plan', 'apply_strategy_plan', 'update_strategy_signal_rule']) {
       expect(byName.get(tool)?.input_required, tool).toEqual(['request']);
     }
   });
 
-  it('still wraps both of them', () => {
-    expect(STRATEGIES).toMatch(/ENVELOPED\s*=\s*new Set<string>\(\[TOOLS\.compile, TOOLS\.apply\]\)/);
+  it('still wraps all of them', () => {
+    expect(STRATEGIES).toMatch(
+      /ENVELOPED\s*=\s*new Set<string>\(\[TOOLS\.compile, TOOLS\.apply, TOOLS\.updateRule\]\)/,
+    );
     expect(STRATEGIES).toMatch(/ENVELOPED\.has\(tool\) \? \{ request: payload \}/);
   });
 
   it('wraps every tool it calls that needs wrapping', () => {
     /**
-     * Four tools take a bare `request` envelope, not two: the pair above plus
-     * `get_strategy_section_template` and `update_strategy_signal_rule`, neither
-     * of which the product calls today. The first version of this assertion
-     * claimed only two existed and failed on the truth — a checker asserting a
-     * fact about the platform it had not looked up.
+     * Four tools take a bare `request` envelope: the pair above plus
+     * `update_strategy_signal_rule` (called since the-scorecard-is-tunable)
+     * and `get_strategy_section_template` (still uncalled). The first version
+     * of this assertion claimed only two existed and failed on the truth — a
+     * checker asserting a fact about the platform it had not looked up.
      *
      * The invariant that matters is narrower and survives: any enveloped tool
      * the product *calls* must be in `ENVELOPED`. Adding a call to either of the
@@ -165,7 +168,9 @@ describe('the two enveloped tools are wrapped, not built', () => {
     const called = needsWrapping.filter((name) => (AGENTS + STRATEGIES).includes(`'${name}'`));
     const unwrapped = called.filter((name) => !enveloped.has(alias.get(name) ?? ''));
 
-    expect(called, 'the product should still be calling the two it wraps').toHaveLength(2);
+    // Three since the-scorecard-is-tunable took up update_strategy_signal_rule
+    // — the moment the comment above anticipated.
+    expect(called, 'the product should still be calling the three it wraps').toHaveLength(3);
     expect(unwrapped, 'these are called but never wrapped as { request }').toEqual([]);
   });
 });
@@ -184,6 +189,8 @@ describe('the product reads fields the tool actually returns', () => {
     { tool: 'list_intelligence_agents', field: 'agents' },
     { tool: 'list_intelligence_agents', field: 'slotUsage' },
     { tool: 'list_strategies', field: 'strategies' },
+    { tool: 'get_open_orders', field: 'orders' },
+    { tool: 'get_agents_hub', field: 'summary' },
   ];
 
   for (const { tool, field } of READS) {
@@ -209,6 +216,16 @@ describe('the product does not read fields no tool returns', () => {
   });
 });
 
+/**
+ * The value the probe writes when a tool carries no annotation.
+ *
+ * Named rather than written inline, so the proof at the bottom can assert this
+ * is a word `tools/probe_mcp_surface.py` can actually emit. Compared against a
+ * value the producer never writes, the rule below is a question nothing can
+ * answer yes to — and it would stay green forever.
+ */
+const UNCLASSIFIED = 'unclassified';
+
 describe('classification comes from the server, and the product agrees', () => {
   it('treats every tool the server calls destructive as destructive', () => {
     // The product never hardcodes a classification — it reads annotations at
@@ -222,6 +239,95 @@ describe('classification comes from the server, and the product agrees', () => {
     // An unannotated tool is treated as destructive by the guard. That is the
     // safe reading, but it would silently gate off working capability, so it is
     // worth knowing the moment it appears.
-    expect(surface.tools.filter((t) => t.classification === 'unclassified')).toEqual([]);
+    expect(surface.tools.filter((t) => t.classification === UNCLASSIFIED)).toEqual([]);
+  });
+});
+
+/**
+ * The checkers, fed the shapes they exist to catch.
+ *
+ * Audited 2026-08-10 by mutation (GitHub #87). `sends()` replaced with
+ * `() => true` left this file **green across all thirteen conformance checks**
+ * while asserting nothing whatsoever.
+ *
+ * That is the permissive failure, and it is the one a corpus floor cannot see.
+ * These rules are shaped as *nothing required is missing*, so `missing` is empty
+ * both when every argument is built and when the matcher has stopped being able
+ * to tell. The surface-length floor at the top of the file stays satisfied
+ * throughout, because counting the tools on the surface says nothing about
+ * whether the call sites were read.
+ *
+ * So each checker below is given an input it must accept and one it must reject.
+ *
+ *   node tools/mutate-guard.mjs tests/architecture/mcp-conformance.test.ts \
+ *     'new RegExp(`[{,\\s]${key}\\s*:`).test(block)' 'true'
+ */
+describe('the checkers catch what they were written for', () => {
+  it('sees an argument that is built at the call site', () => {
+    expect(sends("this.call('t', { agentId: id, expectedRevision: rev })", 'agentId')).toBe(true);
+    expect(sends("this.call('t', { agentId: id, expectedRevision: rev })", 'expectedRevision')).toBe(true);
+    // Leading brace and leading comma both count as a key position.
+    expect(sends('{ strategyId: s }', 'strategyId')).toBe(true);
+  });
+
+  it('does not see one that is absent', () => {
+    // Without this the rule is satisfied by a `sends` that returns true for
+    // everything — which is exactly how it was found, green and asserting
+    // nothing across thirteen checks.
+    expect(sends("this.call('t', { agentId: id })", 'expectedRevision')).toBe(false);
+    // A name that merely appears is not a name that is sent. `expectedRevision`
+    // read off an input is not `expectedRevision:` built into the payload.
+    expect(sends('const v = input.expectedRevision;', 'expectedRevision')).toBe(false);
+  });
+
+  it('reads the call, not the type signature above it', () => {
+    /**
+     * The miss this file's own comment records. A method whose *parameter type*
+     * declares `expectedRevision: number` satisfied the check even after the
+     * argument had been deleted from the call — and most required arguments
+     * share a name with a parameter, so most of the file was affected.
+     */
+    const source = [
+      "  async updateAgent(input: { expectedRevision: number; agentId: string }): Promise<void> {",
+      "    return this.call('update_intelligence_agent', { agentId: input.agentId });",
+      '  }',
+      '',
+      '  async somethingElse(): Promise<void> {',
+      "    return this.call('other', { expectedRevision: 1 });",
+      '  }',
+    ].join('\n');
+
+    const block = argsAt(source, 'updateAgent');
+    expect(sends(block, 'agentId'), 'the argument the call builds').toBe(true);
+    expect(sends(block, 'expectedRevision'), 'declared in the signature, not sent').toBe(false);
+  });
+
+  it('refuses a method it cannot find rather than reporting it clean', () => {
+    // Returning '' here would make every required argument look missing, which
+    // is loud; returning the whole file would make every one look present,
+    // which is not. It throws instead.
+    expect(() => argsAt('async other() { this.call("t", {}) }', 'absent')).toThrow(/no method/);
+    expect(() => argsAt('async lonely() { return 1; }', 'lonely')).toThrow(/never calls/);
+  });
+
+  it('has a classification to compare against, so the unclassified rule can fire', () => {
+    /**
+     * `leaves nothing unclassified` matches nothing today — there are no
+     * unclassified tools — so the literal it compares against could be anything
+     * at all and the check would stay green. A rule with nothing to find cannot
+     * be proven by what it finds, only by showing the field it reads is real.
+     */
+    const values = new Set(surface.tools.map((t) => t.classification));
+    expect(values.size, 'every tool carries the same classification — the field is not being read').toBeGreaterThan(1);
+    expect([...values]).toContain('read');
+    expect([...values]).toContain('destructive');
+    expect(surface.tools.filter((t) => t.classification === 'read').length).toBeGreaterThan(50);
+
+    // And the word the rule asks about is one the producer can write. Without
+    // this, changing the literal to anything the probe never emits leaves the
+    // rule green while asking a question with no possible yes — which is what
+    // the mutation run found, and the reason this assertion exists.
+    const probe = readFileSync('tools/probe_mcp_surface.py', 'utf8');
+    expect(probe, 'the guard and the probe must mean the same word').toContain(`"${UNCLASSIFIED}"`);
   });
 });

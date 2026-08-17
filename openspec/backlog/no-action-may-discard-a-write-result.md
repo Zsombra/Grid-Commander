@@ -2,11 +2,11 @@
 id: no-action-may-discard-a-write-result
 title: Nothing checks that a server action reads the result of its write
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-07-29
-updated: 2026-07-30
-change: renaming-an-agent-is-offered-and-cannot-work
+updated: 2026-07-31
+change: a-dropped-write-result-fails-the-gate
 capability: app-access
 blocked_by: []
 tags: [guard, server-actions]
@@ -70,3 +70,12 @@ The requirement — *The Outcome Of A Write Reaches The Person Who Asked For It*
 is stated generally and guarded specifically, which is the shape of gap this
 project has now been bitten by four times. A derived check over every
 `'use server'` export is the fix, not another per-action assertion.
+
+## Closed 2026-07-31
+
+The derived check exists: `tests/architecture/write-results.test.ts` scans
+`app/**/*.tsx` for statement-position `await app.<name>.execute(` and holds
+every hit against a two-way `KNOWN_DROPPED` ledger with per-site verdicts. It
+found five current drops — two benign (single-arm results, refusals throw),
+three real (`three-actions-silence-their-refusals`, P2). New instances fail
+the suite; fixed instances fail it until their ledger row is deleted.

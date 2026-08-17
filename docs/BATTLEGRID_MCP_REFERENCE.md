@@ -1,7 +1,7 @@
 # BattleGrid MCP — complete library reference
 
 Generated from a live `tools/list`, `prompts/list` and `resources/list` against
-`https://mcp.battlegrid.trade/mcp` (server `battlegrid v3.0.0`, protocol `2025-06-18`) on 2026-07-27.
+`https://mcp.battlegrid.trade/mcp` (server `battlegrid v19.2.0`, protocol `2025-06-18`) on 2026-08-16.
 Reconnaissance only — no wager tool was called.
 
 > The server instructs clients to rediscover capabilities from the live connection,
@@ -9,7 +9,7 @@ Reconnaissance only — no wager tool was called.
 > dump alongside this file (`battlegrid-mcp-capabilities.json`) is the diffable artifact;
 > regenerate both rather than trusting them blindly.
 
-**110 tools · 5 prompts · 3 resources · 0 resource templates**
+**114 tools · 5 prompts · 3 resources · 0 resource templates**
 
 ## Scopes
 
@@ -18,7 +18,7 @@ Reconnaissance only — no wager tool was called.
 | `mcp:read` | Discovery **and non-financial configuration writes** — creates agents, authors strategies. Not view-only. |
 | `mcp:wager` | Commits funds or grants autonomous authority. |
 
-**16 of 110 tools require `mcp:wager`**; the remaining 94 are `mcp:read`.
+**16 of 114 tools require `mcp:wager`**; the remaining 98 are `mcp:read`.
 
 Platform caps on MCP-signed wagers: **10 per day**, **$500/day** (`mcpSignedWagerDailyCountLimit`, `mcpSignedWagerDailyVolumeLimitUsd`).
 
@@ -51,13 +51,13 @@ Platform caps on MCP-signed wagers: **10 per day**, **$500/day** (`mcpSignedWage
 
 ## Every tool carries MCP annotations — use them, not name heuristics
 
-All 110 tools declare `readOnlyHint`, `destructiveHint`, `idempotentHint`
+All 114 tools declare `readOnlyHint`, `destructiveHint`, `idempotentHint`
 and `openWorldHint`, plus `execution.taskSupport` (`forbidden` on every tool — none may be
 run as a detached task).
 
 | Classification | Count |
 |---|---:|
-| Read-only (`readOnlyHint: true`) | 83 |
+| Read-only (`readOnlyHint: true`) | 87 |
 | Mutating (`readOnlyHint: false`) | 27 |
 | Destructive (`destructiveHint: true`) | 10 |
 | Requires `mcp:wager` | 16 |
@@ -88,6 +88,7 @@ money. Scope `mcp:read` accordingly — it is configuration authority, not view 
 
 ## Contents
 
+- [Server instructions](#server-instructions)
 - [Market Grid — playing the game](#market-grid--playing-the-game)
 - [Account, ranking & leaderboard](#account-ranking--leaderboard)
 - [Market data & context](#market-data--context)
@@ -103,6 +104,282 @@ money. Scope `mcp:read` accordingly — it is configuration authority, not view 
 - [Public agent explorer (other players)](#public-agent-explorer-other-players)
 - [Prompts](#prompts)
 - [Resources](#resources)
+
+
+## Server instructions
+
+What the server tells every connecting client, verbatim from the
+`initialize` handshake. It addresses the connected account by name, so the
+greeting differs per operator and nothing else here should.
+
+````text
+You are connected to BattleGrid as Fibonacci — a real-time crypto prediction gaming platform. Discover the current tools, prompts, and resources from this live MCP connection before acting; cached capability lists are not authoritative after a deployment.
+
+## Game Types
+
+**Market Grid** (main game): Predict UP or DOWN for each coin in the pool. One coin must be your Captain (2x score multiplier). Sessions have USDC entry fees.
+
+## Three Workflows
+
+### Workflow A: Play the Game
+
+1. `get_account_state()` — Check balance, rank, agent slots, wager status, and trading wallet status
+2. `list_market_grid_sessions({ status: "PENDING" })` — Find an open game
+3. `get_market_grid_session({ sessionId })` — Get the coin pool (note each coin's "id" field, e.g., "SOL", "BTC")
+4. `get_market_context({ sessionId })` — Get comprehensive market data (indicators, rankings, trends) for the session
+5. `check_market_grid_submission({ sessionId })` — Check if already submitted
+6. `submit_market_grid({ sessionId, grid, reasoning, confidenceScore, modelName, pickReasoning })` — Submit predictions. reasoning (your analysis), confidenceScore (0.0–1.0), modelName, and pickReasoning (per-coin reasoning array) are all required.
+7. `get_market_grid_results({ sessionId })` — Check results (only available after session status is SETTLED)
+8. `get_mcp_reasoning_journal({ sessionId })` — Review your captured reasoning for this session
+
+**Also available**: `list_game_presets()`, `get_leaderboard()`, `update_market_grid()`, `get_market_grid_player_grid()`, `random_submit_market_grid()`
+
+### Workflow B: Manage Agents
+
+1. `list_intelligence_agents()` — See your agents
+2. `get_intelligence_agent({ agentId })` — Get full agent config (behavior profile, context sources, overlay text)
+3. `list_approved_models()` — List valid LLM models for agent creation/update (use returned modelId values)
+4. `create_intelligence_agent({ ... })` — Create a new agent (use modelId from `list_approved_models()`; REQUIRED strategyId — discover via list_strategies). The avatar is server-minted automatically.
+5. `update_intelligence_agent({ agentId, ... })` — Update agent config (rebind via strategyId requires confirm:true)
+6. `get_agent_automation_status({ agentId })` — See what games the agent is deployed to
+7. `get_agent_journal({ agentId })` — Monitor agent performance (thoughts, activity, session summaries)
+8. `generate_agent_grid({ sessionId, agentId })` — Generate a grid using an agent's strategy
+9. `submit_agent_grid({ sessionId, agentId })` — Submit the generated grid
+
+**Deploy Agents to Presets** (session-start-aware auto-play schedules — also editable in the web Deploy modal):
+10. `get_deployment_policy({ presetId })` — Read the preset's current slots + conditions, plus the authoringContext (the exact session starts/occurrences this preset schedules + the resolved next session)
+11. `upsert_deployment_policy({ presetId, slots })` — Create/replace the full slot set: one default/fallback slot plus regime / exact-session-start / one-time-occurrence rule slots (lowest priority wins; at most one default). Requires mcp:wager (autonomous-wager authority)
+13. `preview_deployment_resolution({ presetId, slots, simulatedRegime? })` — Dry-run which agent/slot resolves for the NEXT session (result keyed by status: RESOLVED/IDLE/WARMING/NO_SESSION); no LLM, no writes
+14. `test_generate_deployment_grid({ presetId, slots, simulatedRegime? })` — Generate a sample grid with the resolved agent (incurs LLM cost + writes thought/activity records; never wagers)
+15. `delete_deployment_policy({ presetId, confirm })` — Destructive: remove the policy, un-deploying all agents from the preset (requires confirm:true; mcp:wager — revokes autonomous-wager authority)
+
+**Agent Grid Two-Step Pattern**: generate_agent_grid creates a recommendation cached for 10 minutes (Redis). Review the agent's picks, confidence, and reasoning. Then call submit_agent_grid to confirm and pay. If the cache expires, regenerate. The two steps sit either side of the money line and their scopes reflect that: generation is `mcp:read` (a proposal — no funds move, no session is entered, though it does spend a billed LLM call), while submission is `mcp:wager`. A read-only credential can therefore draft and show a grid, but the owner must supply wager authority to place it.
+
+#### Discover & Author Strategies
+
+All strategy discovery and non-financial configuration writes require `mcp:read`; they never require `mcp:wager`. Treat `mcp:read` as write-capable account/configuration authority, not view-only access.
+
+1. **Choose the operation and revision**
+   - `list_strategies({ includeInactive? })` — list visible SYSTEM strategies and owned PRIVATE strategies with lifecycle, quota, usage, and revisions. Use `includeInactive:true` when preparing RESTORE.
+   - `get_strategy({ strategyId, includeInactive? })` — load the complete report, dense signal scorecard, gates, usage counts, and current `revision`. Omitted/false is active-visible only. For RESTORE preparation, use `includeInactive:true`; that path reveals only an owned PRIVATE strategy, never another user's inactive row. Thread every returned revision into the next revisioned call.
+2. **Discover report vocabulary progressively from live tools**
+   - `list_strategy_categories()` → `list_strategy_vocabulary({ category })` → `get_metric_construction_hints({ metric })` → `get_strategy_column_contract({ column, sectionTimeframe? })`.
+   - Use `get_strategy_section_template({ request: canonicalTemplateSelector })` for a listed template and `preview_strategy_report(canonicalPreviewPayload)` for a point-in-time rendered preview. Do not guess metric, transform, parameter, output, template, or enabled-timeframe facts.
+3. **Discover signals at the strategy timeframe**
+   - `list_strategy_signals({ module?, query? })` → `get_strategy_signal_definition({ signalId, timeframe })`.
+   - Availability is structural, not a promise of live market data or a future trigger.
+4. **Review draft-only guidance when useful**
+   - `derive_strategy_rule_view({ sections, rules? })` returns report perception, server defaults, and suggestions without reading or writing a strategy.
+   - Suggestions and reset-to-default choices only modify the next sparse plan input. They persist only through unified `apply_strategy_plan` (or web Save); no suggestion/reset mutation tool exists.
+5. **Compile one complete plan**
+   - Call `compile_strategy_plan({ request: canonicalCompilePayload })`, where the nested request contains exactly one strict `CREATE`, `UPDATE`, or `RESTORE` branch plus a required bounded `coinSelection`, `intentSummary`, and `assumptions`.
+   - CREATE supplies the full aggregate; UPDATE supplies at least one changed axis and `expectedRevision`; RESTORE targets an owned inactive revision and may include repair axes. Signal overrides are sparse: an omitted signal/axis stays unchanged, omitted `params` preserves canonical params byte-for-byte, and present `params` replaces them only after strict validation.
+6. **Review before confirming**
+   - Inspect `approvedPlan`: complete post-state, proposed revision, dense scorecard, viability, mismatches, canonical diff, catalog digest, expiry, and bound-agent impact.
+   - Inspect `reviewContext`: exact column contracts, point-in-time report preview and coin scope, assumptions, open-position observation, provisional CREATE/RESTORE quota/name admission, and confirmation summary. Admission is advisory until the writer transaction; open positions are awareness only and do not block an edit.
+   - Compilation writes nothing. Preview/compile have a 15-second deadline, 16,000-estimated-token preview cap, and 256,000-byte result cap, and a 256,000-byte plan cap; the plan token expires after five minutes. Recompile after expiry, catalog drift, revision drift, or a changed bound-agent fence.
+7. **Apply only the exact reviewed plan**
+   - After explicit user approval, call `apply_strategy_plan({ request: { plan, planToken, confirm:true } })`. Build `plan` from the compiled `approvedPlan` by copying `operation`; `postState.id` as `strategyId`; `expiresAt`; `expectedRevision` for UPDATE/RESTORE; `explicitRuleOverrides` as `rules`; and from `postState`: `name`, `description`, `tagline`, `timeframe`, `marketReadText`, `sections`, `conditions` (each carrying its own `verdict` AND its own `required` — both mandatory keys; `required: false` is advisory, `required: true` blocks the trade evaluation when that condition reads FALSE), `minAggregateScore`, `minRequiredCount`, `minAtrPct`, `minStopLossAtrMultiple`, `maxStopLossPct`, `minRiskRewardRatio` — all byte-identical, `sections` including every generated `custom:` key.
+   - Send nothing else. The server re-derives the dense scorecard, diff, viability, mismatches, creation seed, proposed revision, and bound-agent impact, and rejects the call if the result does not match the digest the token bound. `diff`, `viability`, `mismatches`, `signalRules`, `creationSeed`, `proposedRevision`, `bindingImpact`, `authoringCatalogDigest`, and any `reviewContext` field are rejected as unknown keys. Never rebuild a dense scorecard client-side.
+   - CREATE, UPDATE, and repaired RESTORE commit atomically. Changed configuration reaches every bound agent immediately. Use the returned full strategy and revision for the next operation.
+
+The direct server contracts for `get_strategy_section_template`, `update_strategy_signal_rule`, `compile_strategy_plan`, and `apply_strategy_plan` use the strict outer envelope `{ request: canonicalPayload }`. Therefore a focused rule edit is `update_strategy_signal_rule({ request: canonicalRuleUpdate })`. When live discovery through a multi-account proxy exposes account selection for one of these calls, use the strict sibling envelope `{ account, request }`; the proxy removes only `account` and forwards the unchanged `{ request }`. Never put `account` inside `request` or flatten request fields beside it. Other tools keep the input shape reported by live discovery.
+
+Focused lifecycle tools: `fork_strategy` requires `sourceRevision`; `archive_strategy` requires `expectedRevision` and `confirm:true`; `restore_strategy` is only the thin unchanged-content path for an already-viable inactive strategy. If it returns `REPAIR_REQUIRED`, keep the strategy inactive and use the RESTORE compile/review/apply flow. `update_strategy_signal_rule` is a thin one-rule wrapper that requires `required`; omit `params` to preserve them, or supply the full strict replacement. Every mutation returns the next full strategy revision.
+
+#### Discover Setup Options
+- `get_trading_config_catalog()` — signal presets + position-mgmt presets + trading defaults + valid bounds (min/max ranges).
+- `get_context_sources_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` — live per-source values for an agent.
+- `get_context_source_full_preview({ sessionId, gameType, sourceKey })` — full content + token count for one source.
+- `get_agent_prompt_context_preview({ agentId, gameType, sessionId?, primaryTimeframe? })` — the assembled prompt the agent receives.
+
+### Workflow C: Trading Signals & Decisions
+
+**Prerequisites**: (1) Agent wallet provisioned via web UI (browser-local key signing), (2) Trading configured via update_intelligence_agent({ tradingConfig: { tradingMode: "APPROVAL_REQUIRED", ... } }).
+
+#### Configure Trading
+- `update_intelligence_agent({ agentId, tradingConfig: { tradingMode, maxLeverage, ... } })`
+  Enable APPROVAL_REQUIRED mode and set risk parameters.
+
+#### Customize Signals
+- `get_strategy({ strategyId })` — read the bound strategy's complete dense scorecard and revision.
+- `list_strategy_signals(...)` then `get_strategy_signal_definition(...)` — discover live signal semantics and strict parameters.
+- `update_strategy_signal_rule({ request: canonicalRuleUpdate })` — focused one-rule strategy edit, or use the whole-plan workflow above for coordinated changes. Agent-scoped rule mutation/reset tools are not registered.
+- `simulate_aggregate_score({ signals, gate })`
+  Stateless what-if: preview the weighted aggregate score and gate routing for a set of {label, score, allocation} signals.
+
+#### Market Regime
+- `get_regime_snapshot({ symbol?, timeframe? })`
+  Current regime for a coin at a timeframe: regime + conviction + duration + classified context (trend/volatility/momentum/structural bias). `symbol` defaults to "BTC"; `timeframe` defaults to "4h" (the interval the deployment gate matches on) — pass any coin/timeframe (e.g. "1h", "1d"). Returns a "no regime" notice when none is classified.
+- `get_regime_history({ symbol?, timeframe?, bars? })`
+  Regime time-series for a coin at a timeframe — e.g. "1h", "4h", "1d"; bars 1-500, default 240. `symbol` defaults to "BTC", `timeframe` defaults to "4h"; pass any. Read from the MDS per-bar projection for that timeframe — may be sparse or empty on a cold cache.
+
+#### Monitor Signals
+- `list_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias? })`
+  View recent signal evaluations with composite scores and dominant bias.
+- `get_signal_log({ agentId, logId })`
+  Full scorecard detail for a specific signal evaluation including all evaluated signals with scores, comparison coins, candidate trade levels, and linked entry decision.
+- `get_signal_performance({ agentId })`
+  Aggregate stats: total evaluations, enter/skip counts, avg composite score, avg conviction.
+- `list_trade_outcomes({ agentId, page?, limit? })`
+  View realized trade outcomes with entry/exit fills, P&L, fees, slippage, and close reason.
+
+#### Manage Entry Decisions
+- `list_entry_decisions({ agentId, page?, limit?, status?, coinTicker?, decision? })`
+  View recent entry decisions. Filter by PENDING to see actionable decisions.
+- `get_entry_decision({ agentId, decisionId })`
+  Full detail for a specific entry decision including signal checklist with LLM verdicts, position sizing, risk/reward ratio, execution status, and reasoning.
+- `accept_entry_decision({ agentId, decisionId })` [requires mcp:wager]
+  Accept a PENDING ENTER decision for execution (APPROVAL_REQUIRED mode).
+- `cancel_entry_decision({ agentId, decisionId })` [requires mcp:wager]
+  Deny/cancel a PENDING ENTER decision (APPROVAL_REQUIRED mode).
+
+#### Monitor Live Trades
+- `list_user_active_positions()`
+  All your agents' open positions across every session — totals, per-agent groups, and per-position live P&L (unrealizedPnlUsd, roePct, markPrice). Check pricingStatus/generatedAtMs for mark-price freshness.
+- `list_session_agent_positions({ marketGridSessionId })`
+  The same live-P&L position view, scoped to one Market Grid session.
+- `get_agent_open_positions({ agentId, coinTicker? })`
+  Public entry-only view of a given agent's open positions (no live mark price or unrealized P&L — use list_user_active_positions for live P&L on your own agents).
+- `get_position_audit_history({ agentId, positionId })`
+  Execution audit trail for a position — SL/TP replacement + cancellation events.
+- `list_pending_approvals()`
+  Every decision across your agents awaiting your approval (AWAITING_APPROVAL). Use before accept_entry_decision / cancel_entry_decision. Returns the full queue (no pagination).
+- `list_gate_blocks({ agentId, page?, limit? })`
+  Paginated pipeline rejections — why an evaluation was gate-blocked, including ones that ended after the model was called. Use to debug an agent that isn't trading.
+- `get_decision_order_attribution()`
+  Map executed orders back to their originating entry decisions (decisionId → orderId, agent, coin, direction, conviction).
+
+#### Control Live Trades
+- `close_agent_position({ decisionId, confirm })` [requires mcp:wager]
+  DESTRUCTIVE — submits a reduce-only market order that closes the position and realizes its P&L. Irreversible; pass confirm:true to proceed.
+- `override_agent_protection({ decisionId, effectiveStopLoss, effectiveStopLossOrderId })` [requires mcp:wager]
+  Manually override the agent's stop-loss on an OPEN execution (SL-only). Get effectiveStopLossOrderId from get_position_audit_history.
+
+#### Review & Research (read-only)
+
+**Review your own agents:**
+- `get_trade_chart({ agentId, logId })` — candle + entry/exit/SL/TP overlay for one of your agent's signal logs (status READY/UNAVAILABLE/NOT_FOUND).
+- `get_trade_outcome_by_decision({ decisionId })` — realized outcome (P&L, close reason, fees) for one of your decisions (null until settled).
+- `get_agent_game_history({ agentId, timeframe?, page?, limit? })` — one agent's Market Grid game history (1D/7D/30D/LIFETIME).
+- `get_user_agent_game_history({ timeframe?, page?, limit? })` — game history aggregated across ALL your agents.
+- `get_agent_thought_log({ agentId, page?, limit? })` / `get_user_thought_log({ page?, limit? })` — reasoning journals (one agent / all agents).
+- `get_agent_activity_feed({ agentId, page?, limit? })` / `get_user_activity_feed({ page?, limit? })` — activity feeds (one agent / all agents).
+- `get_agent_explorer({ timeframe, sortBy, search?, limit? })` — agent explorer/discovery list (DAILY/WEEKLY/MONTHLY/ALL_TIME; NET_PNL/WIN_RATE/TRADE_COUNT): resume entries with public config + KPIs, plus your agents' positions in the sort.
+- `get_agent_unrealized_pnl({ agentId })` — live unrealized P&L snapshot for an agent (null when flat).
+- `get_agent_decision_context({ coinTicker })` — the pre-decision market/signal context your agents evaluate for a coin.
+
+**Inspect any public agent:**
+- `get_public_agent_signal_logs({ agentId, page?, limit?, coinTicker?, dominantBias?, direction? })` — public signal logs.
+- `get_public_agent_signal_log_detail({ agentId, logId })` — full pipeline detail for one log.
+- `get_public_agent_signal_performance({ agentId })` — aggregate signal performance.
+- `get_public_agent_trade_chart({ agentId, logId })` — candle + overlay for one public log.
+- `get_public_agent_realized_trades({ agentId, timeframe?, page?, limit?, coinTicker?, direction?, tradeOutcome?, closeReason? })` — public realized trades.
+- `get_public_agent_game_history({ agentId, timeframe?, page?, limit? })` — public Market Grid game history.
+
+**Research the market:**
+- `get_coin_metadata()` — the tradable coin universe + per-coin metadata.
+- `get_coin_market_context({ tickers, strategyTimeframe, modules? })` — full per-coin market context (the indicator-module GFM sections agents use) for one or more SPECIFIC coins (1–100 canonical tickers; 15m/1h/4h). For session/whole-universe context use `get_market_context`.
+- `get_coin_candles({ ticker, interval, limit? })` — recent closed candles (1m…1w).
+- `get_coin_performance_history({ ticker, interval, count? })` — historical performance-metrics time-series.
+- `get_top_ranked_coins({ metric, interval, limit? })` — top coins by abs_change / rsi_activity / volume.
+- `get_macd_heatmap({ timeframe?, exchange?, limit? })` — full MACD heatmap (15m/1h/4h/1d).
+- `get_coin_signal_preview({ ticker, interval, agentId? })` — preview the signal pipeline for a coin (optionally agent-weighted with one of your agents).
+
+**Live exchange orders** (slower — query the exchange directly; may fail if it's unreachable):
+- `get_open_orders()` — your current open (resting) orders on the exchange.
+- `get_order_status({ orderId })` — live status of one order by id.
+
+## Grid Format (Critical — submissions are rejected if wrong)
+
+```json
+{
+  "sessionId": "session-uuid",
+  "grid": [
+    { "coinId": "SOL", "position": 0, "prediction": "UP", "isCaptain": true },
+    { "coinId": "BTC", "position": 1, "prediction": "DOWN", "isCaptain": false },
+    { "coinId": "ETH", "position": 2, "prediction": "UP", "isCaptain": false }
+  ]
+}
+```
+
+**Validation rules:**
+- Grid size MUST match the session's coin pool size exactly
+- Each coinId MUST use the "id" field from the coin pool (e.g., "SOL", "BTC", "ETH"). NEVER use the "name" (e.g., "Solana") or any other field
+- Positions MUST be sequential: 0, 1, 2, ...
+- Exactly ONE cell MUST have isCaptain: true
+- prediction MUST be "UP" or "DOWN"
+
+## Market Context Modules
+
+`get_market_context` returns GFM markdown sections — the same data Intelligence Agents see. Module 1 (Price Action) is included by default and can be deselected like any other module. Select additional modules via the `modules` parameter:
+
+| Module | Key | What it provides |
+|--------|-----|-----------------|
+| Candle Breakdown | `subTimeframe` | Lower-rung closed-bar change% + volume trajectories, close efficiency ratio, volume max-share |
+| RSI | `rsi` | RSI-14 + RSI-7 4-period trajectories, OB/OS zones |
+| MACD | `macd` | Histogram trajectory, crossover detection |
+| Volume | `volume` | Volume ratio + OBV trajectories |
+| Volatility | `volatility` | ATR trajectory, high/low deviation |
+| Bollinger Bands | `bollingerBands` | %B trajectory, band width + touch, CCI trajectory |
+| Moving Averages | `movingAverages` | SMA20/50/200 + EMA5/13/20 distances, MA alignment |
+| Stochastic | `stochastic` | Stochastic K trajectory, K/D values, OB/OS zone |
+| Funding Rates | `fundingRates` | Rate trajectory, annualized rate, mark premium |
+| Open Interest | `openInterest` | OI trajectory, velocity, OI-Price regime |
+| Relative Strength | `relativeStrength` | PPO + ROC trajectories, peer ranks |
+| Support & Resistance | `supportResistance` | Swing levels, distance%, price zone |
+| Trend Strength | `trendStrength` | ADX trajectory, trend strength zone |
+| Money Flow Index | `mfi` | MFI-14 trajectory, volume-weighted OB/OS zone |
+| Higher Timeframe | `higherTimeframe` | HTF trend context (ADX, RSI, MA alignment) |
+| Regime Context | `regimeContext` | Regime detection (trend/volatility/momentum from HTF) |
+| Structure Zones | `structureZones` | Price structure zones (FVG, order blocks, zone confluence) |
+| Crowd Intelligence | `crowdIntelligence` | Crowd sentiment and positioning data |
+
+Default: `["rsi", "relativeStrength"]`. Pass all 18 for comprehensive analysis.
+
+## Captain Selection Strategy
+
+Your captain gets 2x score multiplier on price movement amplitude — pick the coin with highest expected volatility to maximize point capture. High ADX, expanding ATR, or breakout setups signal strong directional moves worth the 2x multiplier.
+
+## Session Lifecycle
+
+PENDING (submit here) → LIVE (in progress) → RESOLVING (market closed, awaiting settlement) → SETTLED (check results). Terminal off-path states: CANCELLED (voided) and SETTLEMENT_QUARANTINED (settlement exhausted its retry budget; awaiting operator intervention).
+
+## Reasoning Journals
+
+Two separate journals track different kinds of reasoning:
+
+- **`get_mcp_reasoning_journal({ sessionId })`** — Your own reasoning. When you submit a grid with `reasoning`, `confidenceScore`, and `modelName`, the server saves it. Use this tool to review your past analysis for a session.
+- **`get_agent_journal({ agentId })`** — Intelligence Agent performance. Shows an agent's thought log (decisions + reasoning), activity events, and session summaries. Use this to monitor how your automated agents are performing.
+
+## Paid Games
+
+Check balance and readiness with get_account_state(). It returns mcpWagerEnabled (signer policy) and tradingWalletProvisioned (agent wallet). Agent Wagers is a one-time setup at Profile > Wallet tab. Server handles payment automatically on submit. Daily limits: 50 operations, $500 USD.
+
+## Request Budget (size your fan-out before you send it)
+
+You get **3 requests/second sustained, with up to 120 banked while you are idle** — a full bank refills in 40s. Research turns are bursty by nature, so the bank exists to serve exactly that: an idle pause pays for the sweep that follows.
+
+Every response tells you where you stand, so you never have to discover the ceiling by hitting it:
+
+| Header | Meaning |
+|--------|---------|
+| `RateLimit-Limit` | The bank ceiling |
+| `RateLimit-Remaining` | Requests you can still spend right now — **read this on successful responses and size the next batch against it** |
+| `RateLimit-Reset` | Seconds until the bank is full again (when another full-size turn is affordable) |
+| `Retry-After` | On a 429 only: seconds until that one request may be retried |
+
+If you plan a fan-out wider than `RateLimit-Remaining`, split it across turns or pace it — a 429 arrives too late to steer a batch you have already dispatched. Over-budget calls return HTTP 429 with a JSON-RPC `-32000` error and run no tool.
+
+## Key Tips
+
+- Always research coins before predicting — use `get_market_context({ sessionId, modules: ["rsi", "macd", "volume", "trendStrength"] })` or pass all 18 modules for comprehensive analysis
+- Use `get_account_state()` to check if you're ready to play (balance + rank + agent slots + wager status)
+- Don't predict all UP or all DOWN — analyze each coin individually
+- If update is needed, use update_market_grid (not submit again)
+- Always provide `reasoning`, `confidenceScore`, and `modelName` when submitting for traceability — review with `get_mcp_reasoning_journal()`
+- Use `get_agent_journal({ agentId })` to monitor how your agents are performing
+````
 
 
 ## Market Grid — playing the game
@@ -287,7 +564,7 @@ Get the authenticated user's complete account state: play balance (USDC), game s
 (level, rank, win rate), and intelligence agent slot usage. Use this to check if you're
 ready to play.
 
-Returns: `username`, `balance`, `stats`, `agentSlots`, `mcpWagerEnabled`, `tradingWalletProvisioned`
+Returns: `username`, `avatarUrl`, `bio`, `balance`, `stats`, `agentSlots`, `agents`, `mcpWagerEnabled`, `tradingWalletProvisioned`
 
 _No parameters._
 
@@ -314,14 +591,16 @@ Returns: `filter`, `leaderboard`, `currentUser`, `generatedAt`
 
 *Get Market Context* — read-only · open-world
 
-Get comprehensive market context with 21 selectable modules. Provide sessionId for session-
+Get comprehensive market context with 25 selectable modules. Provide sessionId for session-
 scoped context, or primaryTimeframe (5m, 15m, 1h, 4h, 1d) for general market research —
 exactly one of the two. Returns GFM markdown sections — the same format Intelligence Agents
-use during auto-play. Available modules: subTimeframe, rsi, macd, volume, volatility,
-bollingerBands, movingAverages, stochastic, fundingRates, openInterest, relativeStrength,
-supportResistance, trendStrength, mfi, higherTimeframe, regimeContext, structureZones,
-crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence. Default: ["rsi",
-"relativeStrength"]. Module 1 (Price Action) is always included.
+use during auto-play. Available modules: priceAction, subTimeframe, rsi, macd, volume,
+volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest,
+relativeStrength, supportResistance, trendStrength, mfi, higherTimeframe, regimeContext,
+structureZones, crowdIntelligence, cvd, cvdCrowdConvergence, mtfConfluence, perpSpotFlow,
+marketBreadth, referencePairs. Default: ["priceAction", "rsi", "relativeStrength"]. Module 1
+(Price Action) is selectable like any other module — included by default, omitted when your
+list leaves it out.
 
 Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coins`, `sections`
 
@@ -329,7 +608,7 @@ Returns: `sessionId`, `presetDisplayName`, `gridSize`, `primaryTimeframe`, `coin
 |---|---|:--:|---|
 | `sessionId` | string |  | Market Grid session UUID (provide this OR primaryTimeframe) |
 | `primaryTimeframe` | enum(5m|15m|1h|4h|1d) |  | Candle timeframe for sessionless market research (provide this OR sessionId) |
-| `modules` | array<enum(subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages|stochastic,…)> |  | Indicator modules to include. Available: subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, openI… |
+| `modules` | array<enum(priceAction|subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages,…)> |  | Indicator modules to include. Available: priceAction, subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundin… |
 
 ### `get_coin_market_context`
 
@@ -346,7 +625,7 @@ Returns: `strategyTimeframe`, `coins`
 |---|---|:--:|---|
 | `tickers` | array<string> | YES | 1-100 canonical coin tickers from get_coin_metadata (the "ticker" field, e.g. "BTC", "ETH", "PEPE"). Case-sensitive — do NOT alter casing. The k-pref… |
 | `strategyTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | Strategy timeframe — an enabled platform timeframe (e.g. 5m, 15m, 1h, 4h, 1d). |
-| `modules` | array<enum(subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages|stochastic,…)> |  | Indicator modules. Available: subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, openInterest, re… |
+| `modules` | array<enum(priceAction|subTimeframe|rsi|macd|volume|volatility|bollingerBands|movingAverages,…)> |  | Indicator modules. Available: priceAction, subTimeframe, rsi, macd, volume, volatility, bollingerBands, movingAverages, stochastic, fundingRates, ope… |
 
 ### `get_coin_metadata`
 
@@ -524,11 +803,8 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -540,11 +816,9 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.positionManagement.positionManagementPreset` | enum(COLT|WEBLEY|BERETTA|LUGER|WALTHER|CUSTOM) | YES | Position management preset: COLT (patient/wide), BERETTA (balanced), LUGER (aggressive/tight), WALTHER (hair-trigger/max-tight), CUSTOM (manual) — re… |
 | `tradingConfig.positionManagement.enabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.breakEvenEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.breakEvenTriggerTpProgressPct` | number | YES |  |
+| `tradingConfig.positionManagement.breakEvenTriggerR` | number | YES |  |
 | `tradingConfig.positionManagement.trailingEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.trailingType` | enum(ATR|FIXED) | YES |  |
-| `tradingConfig.positionManagement.trailingAtrMultiple` | number | YES |  |
-| `tradingConfig.positionManagement.trailingFixedPct` | number | YES |  |
+| `tradingConfig.positionManagement.trailingGivebackPct` | number | YES |  |
 | `tradingConfig.positionManagement.trailingBufferPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayEnabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.timeDecayGracePeriodMinutes` | integer | YES |  |
@@ -552,9 +826,6 @@ Returns: `agent`, `slotUsage`
 | `tradingConfig.positionManagement.timeDecayTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayMaxTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
-| `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
-| `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
-| `arenaChallengeEnabled` | boolean |  | Whether this agent participates in Root Challenge Rounds. Omit to use the create default. |
 | `idempotencyKey` | string |  | Caller-generated key, 8-255 chars. A retry with the same key returns the original result rather than repeating the command. |
 
 ### `update_intelligence_agent`
@@ -562,13 +833,12 @@ Returns: `agent`, `slotUsage`
 *Update Intelligence Agent* — **writes** · **destructive** · non-idempotent
 
 Update an existing private intelligence agent: display name, brain (model/behavior or
-preset), trading configuration, and challenge participation. Supply at least one mutable
-field. A complete tradingConfig is optional for non-config updates. Requires
-expectedRevision from the latest read for optimistic concurrency; SYSTEM agents are
-immutable. Strategy REBINDING is not part of this command — use rebind_intelligence_agent,
-which is separately confirmed.
+preset), and trading configuration. Supply at least one mutable field. A complete
+tradingConfig is optional for non-config updates. Requires expectedRevision from the latest
+read for optimistic concurrency; SYSTEM agents are immutable. Strategy REBINDING is not part
+of this command — use rebind_intelligence_agent, which is separately confirmed.
 
-Returns: `agent`
+Returns: `agent`, `feasibilityAdvisory`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -581,7 +851,7 @@ Returns: `agent`
 | `behavior.conviction` | enum(CAUTIOUS|MEASURED|BOLD) |  | Signal confidence threshold |
 | `modelId` | string |  | New LLM model ID |
 | `brainPreset` | enum(MONTGOMERY|KESSELRING|CHUIKOV|EISENHOWER|ZHUKOV|NIMITZ|BRADLEY|ROMMEL,…) |  | Named BRAIN preset (MONTGOMERY/KESSELRING/CHUIKOV/EISENHOWER/ZHUKOV/NIMITZ/BRADLEY/ROMMEL/PATTON/YAMAMOTO) — replaces modelId + behavior when supplie… |
-| `tradingConfig` | object |  | Optional complete trading configuration. When provided, every nested field is required. Omit it for a non-config update. |
+| `tradingConfig` | object |  | Optional complete trading configuration. When provided, every field in THIS schema is required. This schema is narrower than the tradingConfig an age… |
 | `tradingConfig.tradingMode` | enum(OFF|APPROVAL_REQUIRED|FULL_EXECUTION) | YES | OFF = no signals, APPROVAL_REQUIRED = evaluate + require manual accept, FULL_EXECUTION = auto-execute — required when tradingConfig is provided |
 | `tradingConfig.minAllocationUsd` | number | YES | Minimum order size in USD (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.maxDailyTrades` | integer | YES | Maximum trades per day (1-registry maximum) — required when tradingConfig is provided |
@@ -591,11 +861,8 @@ Returns: `agent`
 | `tradingConfig.maxConcurrentExposureUsd` | number | YES | Ceiling on capital simultaneously at risk, USD (0 = unset) |
 | `tradingConfig.maxCumulativeDrawdownUsd` | number | YES | Cumulative realized-loss stop, USD (0 = no stop) |
 | `tradingConfig.maxDailyLossUsd` | number | YES | Per-UTC-day realized-loss stop, USD (0 = no daily limit) |
-| `tradingConfig.maxStopLossPct` | number | YES | Maximum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minStopLossPct` | number | YES | Minimum stop-loss percentage (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.signalTimeoutMinutes` | enum(5|10|15) | YES | Signal approval window in minutes (5, 10, or 15) — APPROVAL_REQUIRED mode — required when tradingConfig is provided |
 | `tradingConfig.maxEntryDeviationAtrMultiple` | number | YES | Max entry price deviation as ATR multiple (registry-bound) — required when tradingConfig is provided |
-| `tradingConfig.minRiskRewardRatio` | number | YES | Minimum risk:reward ratio (registry-bound) — required when tradingConfig is provided |
 | `tradingConfig.minTradeConviction` | number | YES | Agent-level trade conviction base 0-1 — the default bar a deployment inherits; required when tradingConfig is provided |
 | `tradingConfig.gridMinConfidence` | number | YES | Agent-level grid confidence base 0-1 — the default bar a deployment slot inherits; required when tradingConfig is provided |
 | `tradingConfig.positionSizePresets` | object | YES | Position sizing presets with monotonic ordering constraint — required when tradingConfig is provided |
@@ -607,11 +874,9 @@ Returns: `agent`
 | `tradingConfig.positionManagement.positionManagementPreset` | enum(COLT|WEBLEY|BERETTA|LUGER|WALTHER|CUSTOM) | YES | Position management preset: COLT (patient/wide), BERETTA (balanced), LUGER (aggressive/tight), WALTHER (hair-trigger/max-tight), CUSTOM (manual) — re… |
 | `tradingConfig.positionManagement.enabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.breakEvenEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.breakEvenTriggerTpProgressPct` | number | YES |  |
+| `tradingConfig.positionManagement.breakEvenTriggerR` | number | YES |  |
 | `tradingConfig.positionManagement.trailingEnabled` | boolean | YES |  |
-| `tradingConfig.positionManagement.trailingType` | enum(ATR|FIXED) | YES |  |
-| `tradingConfig.positionManagement.trailingAtrMultiple` | number | YES |  |
-| `tradingConfig.positionManagement.trailingFixedPct` | number | YES |  |
+| `tradingConfig.positionManagement.trailingGivebackPct` | number | YES |  |
 | `tradingConfig.positionManagement.trailingBufferPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayEnabled` | boolean | YES |  |
 | `tradingConfig.positionManagement.timeDecayGracePeriodMinutes` | integer | YES |  |
@@ -619,9 +884,6 @@ Returns: `agent`
 | `tradingConfig.positionManagement.timeDecayTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayMaxTightenPct` | number | YES |  |
 | `tradingConfig.positionManagement.timeDecayStaleThresholdTpProgressPct` | number | YES |  |
-| `tradingConfig.atrMatchesStrategyTimeframe` | boolean | YES | When true, atrTimeframe is forced to match the bound strategy timeframe — required when tradingConfig is provided |
-| `tradingConfig.atrTimeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES | ATR sample timeframe used for trailing-stop math — required when tradingConfig is provided |
-| `arenaChallengeEnabled` | boolean |  | Enable or disable Root Challenge Round participation. |
 
 ### `rebind_intelligence_agent`
 
@@ -898,6 +1160,52 @@ Returns: `filter`, `stats`, `aggregations`, `entries`, `currentUser`, `generated
 | `search` | string |  | Filter by agent name (substring match) |
 | `limit` | integer |  | Entries to return (1-100) (default `100`) |
 
+### `get_agents_hub`
+
+*Get Agents Hub* — read-only
+
+Where every agent you own is right now, in one call. Each roster row carries the server-
+computed `hubStatus` at its declared precedence — AWAITING_APPROVAL, then IN_TRADE, then
+RADAR_ARMED, then ARENA_DEPLOYED, then IDLE — alongside the itemized footprint behind it:
+the open positions (symbol, side, leverage), the radar coins with their coinId, and the
+arena presets with their gamePresetId, so you can jump straight to get_radar_deployment or
+get_deployment_policy. Each list's length equals its matching count field. Rows also carry
+realized net P&L, trailing-24h LLM spend, and the read-only permission envelope (strategy
+name, trading mode, leverage and daily-trade ceilings, exposure budget, sizing preset,
+timeframes) — null exactly when the agent is ARCHIVED. `summary` totals the roster and adds
+the daily conversational-message meter. Prefer this over rebuilding the same picture from
+list_intelligence_agents + list_radar_deployments + list_deployment_policies +
+list_pending_approvals + list_user_active_positions: the status precedence is decided here,
+once.
+
+Returns: `rows`, `summary`
+
+_No parameters._
+
+### `get_agent_conviction_calibration`
+
+*Get Agent Conviction Calibration* — read-only
+
+Does one of your agents' STATED conviction actually predict its outcomes — the feedback loop
+for every conviction bar you can set (the agent base in tradingConfig.minTradeConviction, a
+deployment slot's minConviction, a per-coin rule's). Groups the agent's closed trades over
+the rolling window into the decide_trade prompt's own rubric bands (LOW / MODERATE / HIGH —
+fixed boundaries, not quantiles, so two agents are comparable) per asset class, and
+separately by the arena deployment rule that fired them, so you can see whether the bull-
+rule slot really trades better than the bear one. Every group is discriminated on readiness:
+below the minimum sample size a group carries INSUFFICIENT_DATA and a sampleSize and NO rate
+at all — there is deliberately no win rate to read off a sample too small to support one. A
+READY group adds winRate (and its pre-computed percent), average net P&L, and the provenance
+mix naming which inheritance layer's bar each trade passed. `slices` is empty when the agent
+closed no trades in the window; `deploymentRules` is empty when no closed trade carries an
+arena rule stamp — conversational and radar trades never do.
+
+Returns: `calibration`
+
+| Param | Type | Req | Description |
+|---|---|:--:|---|
+| `agentId` | string | YES | Intelligence agent UUID you own |
+
 ### `get_agent_decision_context`
 
 *Get Agent Decision Context* — read-only
@@ -959,7 +1267,7 @@ Returns: `sourceKey`, `displayName`, `content`, `estimatedTokenCount`, `tokenCou
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `gameType` | enum(MARKET_GRID|COIN_GRID) | YES | Game type. |
-| `sourceKey` | enum(includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages|includeStochastic,…) | YES | Context source key — one of the toggleable modules or "sessionContext". |
+| `sourceKey` | enum(includePriceAction|includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages,…) | YES | Context source key — one of the toggleable modules or "sessionContext". |
 | `sessionId` | string |  | Session to preview against. Provide this OR primaryTimeframe. |
 | `primaryTimeframe` | enum(5m|15m|1h|4h|1d) |  | Timeframe. Provide this OR sessionId. |
 
@@ -1045,11 +1353,11 @@ _No parameters._
 List compact report-authoring vocabulary for one category, including metrics, transforms,
 timeframe references, budgets, enabled timeframes, and template summaries.
 
-Returns: `category`, `metrics`, `transforms`, `timeframeRefs`, `budgets`, `timeframes`, `templates`
+Returns: `category`, `metrics`, `transforms`, `timeframeRefs`, `budgets`, `previewExecutionLimits`, `timeframes`, `rankedTimeframes`, `templates`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
-| `category` | enum(momentum|trend|volatility|volumeFlow|derivatives|structure|regime|crowd,…) | YES | One canonical metric family returned by list_strategy_categories. |
+| `category` | enum(price|momentum|trend|volatility|volumeFlow|derivatives|structure|regime,…) | YES | One canonical metric family returned by list_strategy_categories. |
 
 ### `get_metric_construction_hints`
 
@@ -1062,7 +1370,7 @@ Returns: `metric`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
-| `metric` | enum(RSI14|RSI7|MACD|STOCH_K|STOCH_D|MFI14|PPO|ROC12,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
+| `metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|SPOT_CLOSE_CB,…) | YES | Canonical metric key returned by list_strategy_vocabulary. |
 
 ### `get_strategy_column_contract`
 
@@ -1076,11 +1384,12 @@ Returns: `contract`
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `column` | object | YES |  |
-| `column.metric` | enum(RSI14|RSI7|MACD|STOCH_K|STOCH_D|MFI14|PPO|ROC12,…) | YES |  |
+| `column.metric` | enum(OPEN|HIGH|LOW|CLOSE|LAST|MARK|ORACLE|SPOT_CLOSE_CB,…) | YES |  |
 | `column.transformId` | string | YES |  |
+| `column.chainedTransformId` | string |  |  |
 | `column.timeframe` | anyOf[object | object] | YES |  |
 | `column.timeframe` *(anyOf variant 1)* | object | |  |
-| `column.timeframe<1>.rel` | enum(anchor|lower|higher|regime) | YES |  |
+| `column.timeframe<1>.rel` | enum(anchor|lower|regime) | YES |  |
 | `column.timeframe` *(anyOf variant 2)* | object | |  |
 | `column.timeframe<2>.abs` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES |  |
 | `column.window` | integer |  |  |
@@ -1088,6 +1397,8 @@ Returns: `contract`
 | `column.side` | enum(support|resistance) |  |  |
 | `column.inputs` | array<object> |  |  |
 | `column.inputs[].metric` | ? | YES |  |
+| `column.bars` | enum(closed|all) |  |  |
+| `column.ordering` | enum(hi|lo|far|near) |  |  |
 | `sectionTimeframe` | ? |  |  |
 
 ### `get_strategy_section_template`
@@ -1104,7 +1415,7 @@ Returns: `template`
 | `request` | anyOf[object | object] | YES |  |
 | `request` *(anyOf variant 1)* | object | |  |
 | `request<1>.kind` | string | YES |  |
-| `request<1>.sectionKey` | enum(includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages|includeStochastic,…) | YES |  |
+| `request<1>.sectionKey` | enum(includePriceAction|includeSubTimeframe|includeRsi|includeMacd|includeVolume|includeVolatility|includeBollingerBands|includeMovingAverages,…) | YES |  |
 | `request` *(anyOf variant 2)* | object | |  |
 | `request<2>.kind` | string | YES |  |
 | `request<2>.templateKey` | string | YES |  |
@@ -1114,16 +1425,29 @@ Returns: `template`
 *Preview Strategy Report* — read-only · open-world
 
 Render a bounded live-market preview for a draft report and required bounded coin selection.
-Returns server-owned token and budget usage without saving or mutating strategy state.
+Returns server-owned budget usage — including the estimated-token budget as used/cap —
+without saving or mutating strategy state. The preview execution limits (result byte cap,
+deadline) are served by discovery, not by this result.
 
-Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUsage`, `rankScopingNote`
+Returns: `renderedSections`, `tokenCountModel`, `budgetUsage`, `conditionOutcomes`, `conditionColumns`, `conditionVerdictTally`, `markerConditions`, `marketReadPreview`, `marketReadMarkers`, `conditionsTableText`, `tradeConditionsBlockText`, `rankScopingNote`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
 | `timeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES |  |
-| `regimeAutoDerive` | boolean | YES |  |
-| `regimeTimeframe` | anyOf[? | null] |  |  |
 | `sections` | array<anyOf[object | object]> | YES |  |
+| `conditions` | array<object> |  |  |
+| `conditions[].conditionKey` | string | YES |  |
+| `conditions[].name` | string | YES |  |
+| `conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `conditions[].definition` *(anyOf variant 2)* | object | |  |
+| `conditions[].definition<2>.kind` | string | YES |  |
+| `conditions[].definition<2>.op` | enum(ALL|ANY|NOT|N_OF) | YES |  |
+| `conditions[].definition<2>.n` | integer |  |  |
+| `conditions[].definition<2>.members` | array<?> | YES |  |
+| `conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `conditions[].required` | boolean | YES |  |
+| `marketReadText` | string |  |  |
+| `marketReadLensTicker` | string |  |  |
 | `coinSelection` | anyOf[object | object] | YES |  |
 | `coinSelection` *(anyOf variant 1)* | object | |  |
 | `coinSelection<1>.mode` | string | YES |  |
@@ -1131,7 +1455,7 @@ Returns: `renderedSections`, `estimatedTokenCount`, `tokenCountModel`, `budgetUs
 | `coinSelection<1>.category` | enum(ALL|CRYPTO|L1|MEMES|DEFI|TRADFI|STOCKS|INDICES,…) |  |  |
 | `coinSelection` *(anyOf variant 2)* | object | |  |
 | `coinSelection<2>.mode` | string | YES |  |
-| `coinSelection<2>.tickers` | array<string> | YES |  |
+| `coinSelection<2>.tickers` | array<?> | YES |  |
 
 ### `list_strategy_signals`
 
@@ -1213,13 +1537,25 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<1>.description` | string |  |  |
 | `request<1>.tagline` | string |  |  |
 | `request<1>.timeframe` | enum(1m|3m|5m|15m|30m|1h|2h|4h,…) | YES |  |
-| `request<1>.regimeAutoDerive` | boolean | YES |  |
-| `request<1>.regimeTimeframe` | anyOf[? | null] |  |  |
 | `request<1>.marketReadText` | string |  |  |
 | `request<1>.minAggregateScore` | number |  |  |
 | `request<1>.minRequiredCount` | integer |  |  |
 | `request<1>.minAtrPct` | number |  |  |
+| `request<1>.minStopLossAtrMultiple` | number |  |  |
+| `request<1>.maxStopLossPct` | number |  |  |
+| `request<1>.minRiskRewardRatio` | number |  |  |
 | `request<1>.sections` | array<anyOf[object | object]> | YES |  |
+| `request<1>.conditions` | array<object> |  |  |
+| `request<1>.conditions[].conditionKey` | string | YES |  |
+| `request<1>.conditions[].name` | string | YES |  |
+| `request<1>.conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `request<1>.conditions[].definition` *(anyOf variant 2)* | object | |  |
+| `request<1>.conditions[].definition<2>.kind` | string | YES |  |
+| `request<1>.conditions[].definition<2>.op` | enum(ALL|ANY|NOT|N_OF) | YES |  |
+| `request<1>.conditions[].definition<2>.n` | integer |  |  |
+| `request<1>.conditions[].definition<2>.members` | array<?> | YES |  |
+| `request<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `request<1>.conditions[].required` | boolean | YES |  |
 | `request<1>.rules` | array<object> |  |  |
 | `request<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request<1>.rules[].allocation` | integer | YES |  |
@@ -1236,13 +1572,15 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<2>.description` | ? |  |  |
 | `request<2>.tagline` | ? |  |  |
 | `request<2>.timeframe` | ? |  |  |
-| `request<2>.regimeAutoDerive` | ? |  |  |
-| `request<2>.regimeTimeframe` | ? |  |  |
 | `request<2>.marketReadText` | string |  |  |
 | `request<2>.minAggregateScore` | ? |  |  |
 | `request<2>.minRequiredCount` | ? |  |  |
 | `request<2>.minAtrPct` | ? |  |  |
+| `request<2>.minStopLossAtrMultiple` | ? |  |  |
+| `request<2>.maxStopLossPct` | ? |  |  |
+| `request<2>.minRiskRewardRatio` | ? |  |  |
 | `request<2>.sections` | ? |  |  |
+| `request<2>.conditions` | ? |  |  |
 | `request<2>.rules` | ? |  |  |
 | `request` *(anyOf variant 3)* | object | |  |
 | `request<3>.operation` | string | YES |  |
@@ -1255,13 +1593,15 @@ Returns: `approvedPlan`, `reviewContext`, `planToken`
 | `request<3>.description` | ? |  |  |
 | `request<3>.tagline` | ? |  |  |
 | `request<3>.timeframe` | ? |  |  |
-| `request<3>.regimeAutoDerive` | ? |  |  |
-| `request<3>.regimeTimeframe` | ? |  |  |
 | `request<3>.marketReadText` | ? |  |  |
 | `request<3>.minAggregateScore` | ? |  |  |
 | `request<3>.minRequiredCount` | ? |  |  |
 | `request<3>.minAtrPct` | ? |  |  |
+| `request<3>.minStopLossAtrMultiple` | ? |  |  |
+| `request<3>.maxStopLossPct` | ? |  |  |
+| `request<3>.minRiskRewardRatio` | ? |  |  |
 | `request<3>.sections` | ? |  |  |
+| `request<3>.conditions` | ? |  |  |
 | `request<3>.rules` | ? |  |  |
 
 ### `apply_strategy_plan`
@@ -1286,16 +1626,23 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<1>.strategyId` | string | YES |  |
 | `request.plan<1>.expiresAt` | string | YES |  |
 | `request.plan<1>.sections` | array<anyOf[object | object]> | YES |  |
-| `request.plan<1>.regimeTimeframe` | anyOf[? | null] | YES |  |
 | `request.plan<1>.name` | string | YES |  |
 | `request.plan<1>.description` | string | YES |  |
 | `request.plan<1>.tagline` | string | YES |  |
 | `request.plan<1>.timeframe` | ? | YES |  |
-| `request.plan<1>.regimeAutoDerive` | boolean | YES |  |
 | `request.plan<1>.marketReadText` | string | YES |  |
+| `request.plan<1>.conditions` | array<object> | YES |  |
+| `request.plan<1>.conditions[].conditionKey` | string | YES |  |
+| `request.plan<1>.conditions[].name` | string | YES |  |
+| `request.plan<1>.conditions[].definition` | anyOf[anyOf[anyOf[object | object | object | object] | object] | object] | YES |  |
+| `request.plan<1>.conditions[].verdict` | anyOf[enum(UP|DOWN|NEITHER) | null] | YES |  |
+| `request.plan<1>.conditions[].required` | boolean | YES |  |
 | `request.plan<1>.minAggregateScore` | number | YES |  |
 | `request.plan<1>.minRequiredCount` | integer | YES |  |
 | `request.plan<1>.minAtrPct` | number | YES |  |
+| `request.plan<1>.minStopLossAtrMultiple` | number | YES |  |
+| `request.plan<1>.maxStopLossPct` | number | YES |  |
+| `request.plan<1>.minRiskRewardRatio` | number | YES |  |
 | `request.plan<1>.rules` | array<object> | YES |  |
 | `request.plan<1>.rules[].signalId` | enum(rsi_oversold|rsi_overbought|rsi_bull_divergence|rsi_bear_divergence|macd_bull_cross|macd_bear_cross|macd_bull_divergence|macd_bear_divergence,…) | YES |  |
 | `request.plan<1>.rules[].allocation` | integer | YES |  |
@@ -1306,34 +1653,38 @@ Returns: `strategy`, `appliedImpact`
 | `request.plan<2>.strategyId` | ? | YES |  |
 | `request.plan<2>.expiresAt` | ? | YES |  |
 | `request.plan<2>.sections` | ? | YES |  |
-| `request.plan<2>.regimeTimeframe` | ? | YES |  |
 | `request.plan<2>.expectedRevision` | integer | YES |  |
 | `request.plan<2>.name` | ? | YES |  |
 | `request.plan<2>.description` | ? | YES |  |
 | `request.plan<2>.tagline` | ? | YES |  |
 | `request.plan<2>.timeframe` | ? | YES |  |
-| `request.plan<2>.regimeAutoDerive` | ? | YES |  |
 | `request.plan<2>.marketReadText` | ? | YES |  |
+| `request.plan<2>.conditions` | ? | YES |  |
 | `request.plan<2>.minAggregateScore` | ? | YES |  |
 | `request.plan<2>.minRequiredCount` | ? | YES |  |
 | `request.plan<2>.minAtrPct` | ? | YES |  |
+| `request.plan<2>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<2>.maxStopLossPct` | ? | YES |  |
+| `request.plan<2>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<2>.rules` | ? | YES |  |
 | `request.plan` *(anyOf variant 3)* | object | |  |
 | `request.plan<3>.operation` | string | YES |  |
 | `request.plan<3>.strategyId` | ? | YES |  |
 | `request.plan<3>.expiresAt` | ? | YES |  |
 | `request.plan<3>.sections` | ? | YES |  |
-| `request.plan<3>.regimeTimeframe` | ? | YES |  |
 | `request.plan<3>.expectedRevision` | integer | YES |  |
 | `request.plan<3>.name` | ? | YES |  |
 | `request.plan<3>.description` | ? | YES |  |
 | `request.plan<3>.tagline` | ? | YES |  |
 | `request.plan<3>.timeframe` | ? | YES |  |
-| `request.plan<3>.regimeAutoDerive` | ? | YES |  |
 | `request.plan<3>.marketReadText` | ? | YES |  |
+| `request.plan<3>.conditions` | ? | YES |  |
 | `request.plan<3>.minAggregateScore` | ? | YES |  |
 | `request.plan<3>.minRequiredCount` | ? | YES |  |
 | `request.plan<3>.minAtrPct` | ? | YES |  |
+| `request.plan<3>.minStopLossAtrMultiple` | ? | YES |  |
+| `request.plan<3>.maxStopLossPct` | ? | YES |  |
+| `request.plan<3>.minRiskRewardRatio` | ? | YES |  |
 | `request.plan<3>.rules` | ? | YES |  |
 | `request.planToken` | string | YES |  |
 | `request.confirm` | boolean | YES |  |
@@ -1554,11 +1905,13 @@ _No parameters._
 
 *List Gate Blocks* — read-only
 
-Paginated pre-signal pipeline rejections for one of your agents — the gate stage, reason
-code, quantified reason detail, and linked thought log for each candidate that never reached
-signal evaluation. This is the first place to look when an agent isn't trading.
+Paginated pipeline rejections for one of your agents — the gate stage, reason code, reason
+detail, and linked thought log for each evaluation that ended without a trade decision. Most
+are pre-model admission gates; EVALUATION-stage rows ended after the model was called and
+carry its terminal rejection text. This is the first place to look when an agent isn't
+trading.
 
-Returns: `entries`, `total`
+Returns: `entries`, `total`, `summary`
 
 | Param | Type | Req | Description |
 |---|---|:--:|---|
@@ -1864,14 +2217,11 @@ Returns: `presetId`, `slotCount`, `revision`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |
@@ -1895,6 +2245,26 @@ Returns: `presetId`, `deleted`
 | `presetId` | string | YES | Game preset UUID |
 | `expectedRevision` | integer | YES | The policy revision you read. A stale value is a conflict — nothing is deleted. |
 | `confirm` | boolean | YES | Must be true — deleting removes the ENTIRE policy and un-deploys every agent from this preset. |
+
+### `list_deployment_policies`
+
+*List Deployment Policies* — read-only
+
+Read every Arena deployment policy you own, plus the fleet roll-up — the whole arena side of
+your deployments in one call, with no preset id needed. Each policy carries its ordered
+slots (agent, rules of engagement, per-coin rules, entry strategy, conditions), its
+`revision` to echo as `expectedRevision` on the next write, the server-computed `resolution`
+for the canonical next pending session, the live regime at the effective anchor, and the
+preset's identity (display name, badge, timeframe, entry fee, current player count).
+`presetIsActive: false` marks an admin-retired arena: the policy is dormant — it schedules
+no sessions and never fires — rather than deleted. `summary` counts your policies across
+every next-entry state (deployed, scheduled, sittingOut, warming, noSession, retired,
+unconfigured) plus the distinct agents scheduled. Use `get_deployment_policy` for one
+preset's authoring context (its session catalog and coin pool).
+
+Returns: `policies`, `summary`
+
+_No parameters._
 
 ### `preview_deployment_resolution`
 
@@ -1920,14 +2290,11 @@ Returns: `resolution`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |
@@ -1959,14 +2326,11 @@ Returns: `result`
 | `request.slots[].coinRules` | array<object> | YES |  |
 | `request.slots[].coinRules[].coinId` | string | YES |  |
 | `request.slots[].coinRules[].tradeEnabled` | boolean|null | YES |  |
-| `request.slots[].coinRules[].challengeEnabled` | boolean|null | YES |  |
 | `request.slots[].coinRules[].minConviction` | anyOf[number | null] | YES |  |
 | `request.slots[].minConfidence` | anyOf[number | null] | YES |  |
 | `request.slots[].tradingEnabled` | boolean | YES |  |
 | `request.slots[].minConviction` | anyOf[number | null] | YES |  |
-| `request.slots[].challengeEnabled` | boolean|null | YES |  |
-| `request.slots[].earlyEntryEnabled` | boolean|null | YES |  |
-| `request.slots[].reassessmentEnabled` | boolean|null | YES |  |
+| `request.slots[].entryStrategy` | enum(STANDARD|TWO_LOOK) | YES |  |
 | `request.slots[].priority` | anyOf[integer | null] | YES |  |
 | `request.slots[].isDefault` | boolean | YES |  |
 | `request.slots[].conditions` | array<anyOf[object | object | object]> | YES |  |
@@ -2006,9 +2370,38 @@ scanning, idle) with the idle split by reason (warming, sittingOut, needsAttenti
 onDutyNow, agentsActive, and coinCap (your live per-user coin limit). Use this to see your
 whole Radar fleet in one call.
 
-Returns: `policies`, `summary`
+Returns: `policies`, `summary`, `blockedAgents`
 
 _No parameters._
+
+### `get_radar_activity`
+
+*Get Radar Activity* — read-only
+
+Read the transition journal and evaluation curve for one coin you have deployed — the
+surface that answers "why did my radar agent not fire". `events` is newest-first and carries
+one row per CHANGED discrete fact (never one per sweep): gate crossings with the gate they
+name, verdict flips, fire dispositions (FIRED, or the edge consumed/deferred/preserved and
+why), on-duty rotations, regime and section changes, and the policy-lifecycle rows. Each row
+carries the margins AS OBSERVED at that instant — score, required count and ATR against the
+minimums in force then, with the server's per-gate verdicts already projected — so a later
+agent edit cannot falsify history, and the from→to `prev*` fields make every row self-
+contained. `samples` is the bounded per-sweep score/threshold ring for the agent named by
+`samplesAgentId` — chronological (oldest first), the order a progression curve is drawn in;
+an empty array is a legitimate state (fresh deploy, rotation, ring expiry), not an error.
+`filter` narrows BEFORE the page limit: KEY drops the ambient section/regime/baseline rows,
+FIRES keeps only dispositions. Page with the opaque `nextCursor`; it encodes (occurredAt,
+id) because a timestamp alone would skip or duplicate rows when a page boundary cuts through
+one sweep's same-instant batch.
+
+Returns: `events`, `samples`, `samplesAgentId`, `samplesAgentName`, `nextCursor`
+
+| Param | Type | Req | Description |
+|---|---|:--:|---|
+| `coinId` | string | YES | Coin id (coins.id — a text identifier, not a UUID). Discover via get_coin_metadata. |
+| `limit` | integer |  | Journal rows per page, 1-200 (default 50). (default `50`) |
+| `cursor` | string |  | Opaque `nextCursor` from the previous page. It encodes (occurredAt, id) — a timestamp alone would skip or duplicate rows when a page boundary cuts th… |
+| `filter` | enum(ALL|KEY|FIRES) |  | ALL (everything), KEY (drops the ambient rows — section, regime, and baseline observations), or FIRES (fire dispositions only). Applied BEFORE the pa… (default `ALL`) |
 
 ### `upsert_radar_deployment`
 
@@ -2020,11 +2413,12 @@ regime flips. `request.slots` is the complete slot set and replaces whatever is 
 slot binds an agentId, a minConviction trade bar (0-1, or null to inherit the agent's base),
 and is either the single DEFAULT slot (isDefault:true, priority:null, conditions:[]) which
 always matches as the catch-all, or a RULE slot (isDefault:false, a unique positive priority
-where lowest wins, and 1-2 conditions). A condition is a time window {kind:"time_window",
-fromHour:0-23, toHour:1-24 with fromHour<toHour — same-day UTC only, no overnight wrap,
-days:[0-6, 0=Sunday, UTC]} or a regime {kind:"regime", regimes:[...], minConviction?}. A
-slot may carry at most one of each kind; with both, BOTH must match (AND). Set
-`request.enabled` false to pause without losing slots, true to resume.
+where lowest wins, and 1-2 conditions). A condition is an hour set {kind:"hours",
+hours:[0-23], days:[0-6, 0=Sunday]} — both UTC, both non-empty and without duplicates, and
+both plain membership, so a gapped schedule like hours:[7,13] is one condition and an
+overnight one like hours:[23,0,1] needs no special form — or a regime {kind:"regime",
+regimes:[...], minConviction?}. A slot may carry at most one of each kind; with both, BOTH
+must match (AND). Set `request.enabled` false to pause without losing slots, true to resume.
 `request.expectedRevision` is the revision you read — pass null only for a first deploy; a
 stale value is a CONFLICT and nothing is written. Returns the new revision.
 
@@ -2278,12 +2672,34 @@ Returns: `snapshot`
 
 ## Prompts
 
+Bodies as the server renders them with no argument values supplied — every
+declared argument is optional, but the `arguments` key is not: omitting it
+entirely is refused `-32602`.
+
 ### `play-market-grid`
 
 End-to-end workflow for playing a Market Grid prediction game
 
 Arguments: `strategy`?  
 _(`?` marks optional)_
+
+*user:*
+
+```text
+Help me play a Market Grid game on BattleGrid. Follow these steps:
+
+1. **Find a game**: Call list_market_grid_sessions with status "PENDING" to find upcoming sessions
+2. **Pick a session**: Choose one based on the entry fee and coin pool. Call get_market_grid_session to see full details
+3. **Check balance**: If it's a paid game, call get_account_state to verify I have enough USDC and check my rank
+4. **Research coins**: Call get_market_context with the sessionId to get comprehensive market data (indicators, rankings, trends)
+5. **Check existing submission**: Call check_market_grid_submission to see if I've already submitted
+6. **Build predictions**: Based on your analysis, decide UP or DOWN for each coin. Pick the strongest conviction as captain (2x multiplier)
+7. **Submit**: Call submit_market_grid with the grid. Include your reasoning text, confidenceScore (0.0-1.0), and modelName so your analysis is saved to the reasoning journal for review.
+
+Choose the best strategy based on current market conditions.
+
+Show your analysis for each coin and explain your reasoning before submitting.
+```
 
 ### `analyze-market`
 
@@ -2292,12 +2708,46 @@ Deep market analysis for informed predictions
 Arguments: `sessionId`?  
 _(`?` marks optional)_
 
+*user:*
+
+```text
+Perform a broad market analysis for BattleGrid predictions:
+
+1. Call list_market_grid_sessions with status "PENDING" to find upcoming games
+2. For each available session, call get_market_context with all modules to analyze the coin pools
+3. Call get_account_state to check your readiness
+
+Provide a market overview with:
+- Overall market sentiment (bullish/bearish/neutral)
+- Top coins to watch and why
+- Recommended predictions (UP/DOWN) for the most active coins
+- Best candidates for captain pick (highest conviction)
+```
+
 ### `check-performance`
 
 Review your game results, stats, and leaderboard standing
 
 Arguments: —  
 _(`?` marks optional)_
+
+*user:*
+
+```text
+Review my BattleGrid performance:
+
+1. Call get_account_state to see my balance, level, rank, win rate, and agent slot usage
+2. Call get_leaderboard with metric "PROFIT" and timeframe "WEEKLY" to see where I stand
+3. Call list_market_grid_sessions with status "SETTLED" and limit 5 to find my recent games
+4. For each recent settled session, call get_market_grid_results to see how I did
+
+Summarize:
+- My overall win rate and accuracy
+- Profit/loss trend
+- Leaderboard position
+- Strengths and areas to improve
+- Suggestions for better prediction strategy
+```
 
 ### `strategy-guide`
 
@@ -2306,12 +2756,65 @@ Learn BattleGrid game mechanics, rules, and strategies
 Arguments: —  
 _(`?` marks optional)_
 
+*user:*
+
+```text
+Explain how BattleGrid works and give me strategy tips. Use the tools to show real examples:
+
+1. Call list_game_presets to show available game types and configurations
+2. Call list_market_grid_sessions with status "PENDING" and limit 3 to show example upcoming games
+3. Call get_account_state to check my current balance and rank
+
+Then explain:
+
+**Market Grid Rules:**
+- You get a pool of coins (3-10) and predict UP or DOWN for each
+- One coin must be your "Captain" which gets a 2x score multiplier
+- Score is based on how accurately your predictions match actual price movements
+- Sessions have a fixed timeframe (e.g., 1 hour) after which results are calculated
+
+**Strategy Tips:**
+- Use get_market_context with a sessionId to study trends and indicators before predicting
+- Strong trends are more reliable than choppy markets
+- Pick your highest-conviction prediction as captain
+- Diversify: don't predict all UP or all DOWN
+
+**Paid Games:**
+- Entry fees are in USDC
+- Check balance with get_account_state before joining
+- Payouts are distributed to top performers based on the payout structure
+- Enable server-signed wagers in Profile > Wallet tab (Agent Wagers) for paid games
+```
+
 ### `author-strategy`
 
 Discover, compile, review, and atomically apply a BattleGrid strategy
 
 Arguments: `operation`?, `strategyId`?  
 _(`?` marks optional)_
+
+*user:*
+
+```text
+Help me author a BattleGrid strategy through the live server contracts.
+
+Do not rely on a cached tool list or copy a catalog, formula, default, signal description, or example from this prompt. Discover the current tool schemas and server-owned vocabulary live, then follow this sequence:
+
+1. **Establish operation and revision.** For UPDATE, call list_strategies and get_strategy({ strategyId }); the default detail read is active-visible only. For RESTORE, call list_strategies({ includeInactive:true }) and get_strategy({ strategyId, includeInactive:true }); the explicit inactive detail path can reveal only an owned PRIVATE strategy. Use the returned current revision as expectedRevision. CREATE has no prior revision.
+2. **Discover report construction progressively.** Call list_strategy_categories, then list_strategy_vocabulary for one returned category, get_metric_construction_hints for selected metrics, and get_strategy_column_contract for every proposed column. Use get_strategy_section_template({ request: canonicalTemplateSelector }) only for templates listed by the server. Use only enabled timeframes returned by live discovery. Call preview_strategy_report(canonicalPreviewPayload) for the bounded point-in-time render.
+3. **Discover scorecard signals at the proposed strategy timeframe.** Call list_strategy_signals, then get_strategy_signal_definition for each candidate signal with that timeframe. Treat availability as structural only; it does not promise live data or a trigger.
+4. **Optionally derive draft guidance.** Call derive_strategy_rule_view({ sections, rules? }) with self-contained draft sections and optional sparse rules. Suggestions and report-default resets are draft information only. Copy only selected sparse changes into the plan input; no suggestion or reset call persists anything.
+5. **Compile exactly one strict plan.** Call compile_strategy_plan({ request: canonicalCompilePayload }); the nested request contains operation CREATE, UPDATE, or RESTORE; a required bounded coinSelection; a bounded intentSummary and assumptions; and only the authoring axes to propose. UPDATE must include at least one changed axis. RESTORE targets an owned inactive revision and may include the repair axes needed to produce one viable active target. For sparse rule overrides, an omitted signal remains unchanged, omitted params preserve canonical params byte-for-byte, and present params are the complete strict replacement. Never submit a raw dense signalRules seed.
+6. **Review before mutation.** Show me the complete approvedPlan post-state, proposed revision, dense scorecard, viability, report-versus-scorecard mismatches, canonical diff, expiry, and bound-agent impact. Separately show the reviewContext's exact column outputs, point-in-time report preview and coin scope, open-position observation, provisional CREATE/RESTORE quota/name admission, assumptions, and confirmation summary. Admission is advisory until apply's writer transaction; open positions are awareness only. Compilation writes nothing.
+7. **Ask for explicit approval.** Do not call apply_strategy_plan until I approve the exact reviewed plan. The token expires after five minutes; preview/compile have a 15-second deadline, a 16,000-estimated-token preview cap, and a 256,000-byte result cap, and a 256,000-byte plan cap. Recompile after expiry, catalog drift, revision drift, or a changed bound-agent materialization fence.
+8. **Apply without reconstruction.** After approval, call apply_strategy_plan({ request: { plan, planToken, confirm:true } }). Build plan by copying, byte-identical from the compiled approvedPlan: operation, postState.id as strategyId, expiresAt, expectedRevision for UPDATE/RESTORE, explicitRuleOverrides as rules, and postState's name, description, tagline, timeframe, marketReadText, sections (including every generated custom: key), conditions (each carrying its own verdict), minAggregateScore, minRequiredCount, minAtrPct, minStopLossAtrMultiple, maxStopLossPct, minRiskRewardRatio. Send nothing else: the server re-derives the scorecard, diff, viability, mismatches, seed, revision, and bound-agent impact, and rejects diff/viability/mismatches/signalRules/creationSeed/proposedRevision/bindingImpact/authoringCatalogDigest/reviewContext as unknown keys. Do not recalculate fields. Report the full returned strategy, committed revision, changed axes, and applied impact; use that returned revision for any next mutation.
+
+The four calls get_strategy_section_template, update_strategy_signal_rule, compile_strategy_plan, and apply_strategy_plan use the strict direct-server envelope { request: canonicalPayload }. If live tool discovery through a multi-account proxy exposes account selection for one of them, use the strict sibling envelope { account, request }; the proxy strips only account and forwards the unchanged { request }. Never place account inside request or flatten the canonical request fields. Other tools keep the input shape reported by live discovery.
+
+Lifecycle shortcuts remain revisioned: fork_strategy requires sourceRevision; archive_strategy requires expectedRevision and confirm:true; restore_strategy is only for unchanged already-viable inactive content. If restore_strategy returns REPAIR_REQUIRED, do not activate or edit first—use one RESTORE compile/review/apply plan. For a single focused edit, call update_strategy_signal_rule({ request: canonicalRuleUpdate }); it is a thin unified-update wrapper where required is mandatory, omitted params preserve the existing object, and present params replace it after strict validation.
+
+All discovery and non-financial strategy configuration uses mcp:read, not mcp:wager. Treat that scope as account-and-configuration authority. Changed strategy axes propagate to bound agents immediately, and every successful mutation returns the full next revision.
+```
 
 
 ## Resources
@@ -2321,3 +2824,130 @@ _(`?` marks optional)_
 | `game-rules` | `battlegrid://rules/overview` |  |
 | `grid-format` | `battlegrid://reference/grid-format` |  |
 | `quick-start` | `battlegrid://guide/quick-start` |  |
+
+### `battlegrid://rules/overview`
+
+*text/markdown*
+
+```text
+# BattleGrid Game Rules
+
+## Market Grid
+- **Objective**: Predict whether each coin in the pool will go UP or DOWN over a fixed timeframe
+- **Grid**: Array of cells, one per coin in the pool
+- **Captain**: Exactly one cell must be marked as captain (2x score multiplier)
+- **Scoring**: Based on accuracy of predictions vs actual price movements
+- **Payout**: Top performers share the prize pool based on the session's payout structure
+- **Entry fee**: Ranges from free ($0) to paid (USDC). Fee is transferred automatically on submission.
+
+## Game Session Lifecycle
+1. **PENDING** — Session created, accepting submissions. Submit your grid during this phase.
+2. **LIVE** — Game is in progress. Price data is being tracked. No new submissions (some sessions allow updates).
+3. **RESOLVING** — Timeframe ended, market closed, calculating final scores and rankings.
+4. **SETTLED** — Results are final. Rankings, scores, and payouts are available.
+5. **CANCELLED** — Session was cancelled (rare). Entry fees are refunded.
+
+## Key Concepts
+- **Entry Fee**: USDC amount required to join a session.
+- **Wager**: The entry fee transfer from your wallet to the game pool.
+- **Payout**: USDC distributed to top-ranking players after settlement.
+- **XP/Points**: Earned by playing games, contributing to your player level and rank.
+- **Leaderboard**: Rankings by profit, volume, score, or game-specific KPIs.
+```
+
+### `battlegrid://reference/grid-format`
+
+*text/markdown*
+
+````text
+# Grid Format Reference
+
+## Market Grid Cell
+```json
+{
+  "coinId": "SOL",
+  "position": 0,
+  "prediction": "UP",
+  "isCaptain": true
+}
+```
+
+**Fields:**
+- `coinId` (string) — The coin's **internal ticker**, exactly as `get_market_grid_session` returns it in the pool's `id` field (e.g. `SOL`, `BTC`, `kPEPE`). It is NOT a UUID — copy the value, never construct one.
+- `position` (integer, 0-based) — Grid slot index
+- `prediction` ("UP" | "DOWN") — Your price direction prediction
+- `isCaptain` (boolean) — Exactly ONE cell must be true. Captain gets 2x score multiplier.
+
+**Validation Rules:**
+- Grid size must match the session's coin pool size
+- Each coinId must appear exactly once
+- Positions must be sequential (0, 1, 2, ...)
+- Exactly one isCaptain must be true
+````
+
+### `battlegrid://guide/quick-start`
+
+*text/markdown*
+
+````text
+# BattleGrid Quick Start Guide
+
+## Play Your First Game in 6 Steps
+
+### 1. Find a Game
+```
+list_market_grid_sessions({ status: "PENDING" })
+```
+Look for sessions with a $0 entry fee to start risk-free.
+
+### 2. Get Session Details
+```
+get_market_grid_session({ sessionId: "..." })
+```
+Note the coin pool — these are the coins you'll predict.
+
+### 3. Research the Coins
+```
+get_market_context({ sessionId: "..." })
+```
+Get comprehensive market data including indicators, rankings, and trends for all coins in the session.
+
+### 4. Submit Your Predictions
+```
+submit_market_grid({
+  sessionId: "...",
+  grid: [
+    { coinId: "SOL", position: 0, prediction: "UP", isCaptain: true },
+    { coinId: "BTC", position: 1, prediction: "DOWN", isCaptain: false },
+    { coinId: "ETH", position: 2, prediction: "UP", isCaptain: false }
+  ],
+  reasoning: "BTC showing bearish divergence on RSI, SOL breaking above resistance with volume...",
+  confidenceScore: 0.75,
+  modelName: "your-model-name"
+})
+```
+Pick your strongest conviction as captain for the 2x multiplier! Include reasoning fields so your analysis is saved to the journal.
+
+### 5. Check Results
+```
+get_market_grid_results({ sessionId: "..." })
+```
+After the session settles, see your ranking and score.
+
+### 6. Review Your Reasoning
+```
+get_mcp_reasoning_journal({ sessionId: "..." })
+```
+Review the reasoning you submitted for this session — useful for improving future predictions.
+
+## Tips for Better Predictions
+- **Study trends**: Use get_market_context with modules like rsi, macd, volume, bollingerBands, movingAverages, fundingRates, trendStrength — pass all 18 for comprehensive analysis
+- **Captain wisely**: Put the 2x multiplier on your most confident pick
+- **Track performance**: Use get_account_state to monitor your stats and rank
+
+## Paid Games
+1. Check balance: `get_account_state()`
+2. Ensure you have USDC for the entry fee
+3. Enable server-signed wagers: Profile > Wallet tab > Agent Wagers
+4. Submit normally — the platform handles the payment automatically
+````

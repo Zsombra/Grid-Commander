@@ -2,11 +2,11 @@
 id: brain-presets-are-hardcoded-and-short-one
 title: BRAIN_PRESETS is a hand-written list, and the schema has one it lacks
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-29
-updated: 2026-07-29
-change: every-value-sent-is-one-the-platform-accepts
+updated: 2026-08-06
+change: brain-presets-are-read-not-remembered
 capability: agent-authoring
 blocked_by: []
 tags: [battlegrid, agent-authoring, catalog]
@@ -61,4 +61,8 @@ Option 2 is cheaper and catches drift; option 1 removes the class.
 
 - change `every-value-sent-is-one-the-platform-accepts` — added the probe
   recording that makes either fix checkable
+- change `brain-presets-are-read-not-remembered` — takes option 1, and argues
+  in its proposal why option 2 was not enough. Step 1 above is *not* answered
+  by it: the value is excluded rather than explained, and the question moved to
+  `preset-custom-in-the-preset-branch-is-unestablished`
 - `brain-with-no-model` — the other open question about the brain union

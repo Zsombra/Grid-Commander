@@ -1,0 +1,325 @@
+{
+  "id": "approvals-decision",
+  "title": "One proposed trade, and the answer to it",
+  "route": "/approvals/[agentId]/[id]",
+  "capability": "agent-understanding",
+  "status": "functional",
+  "generated_at_commit": "339a087",
+  "source_files": [
+    "app/(app)/approvals/[agentId]/[id]/actions.ts",
+    "app/(app)/approvals/[agentId]/[id]/page.tsx",
+    "src/presentation/answer-refusal.ts",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "result",
+      "shape": "DescribeDecisionAnswerResult — 'answerable' {description} | 'no-longer-answerable' {status, closedAt} | 'gone' | 'unreadable' {reason, cause}",
+      "source": "app.describeDecisionAnswer.execute — a fresh read taken when the page opens, which is also what mints the confirmation"
+    },
+    {
+      "name": "authority",
+      "shape": "'held' | 'absent'",
+      "source": "app.readAnswerAuthority.execute — decides whether a confirmation is minted at all"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal a bounced cancel came back with, worded by explainAnswerRefusal"
+    }
+  ],
+  "components": [
+    {
+      "id": "decision-page",
+      "role": "container",
+      "purpose": "Describe one proposed trade against the platform as it is right now, and offer the one answer this product can currently give.",
+      "states": [
+        "answerable-with-authority",
+        "answerable-without-authority",
+        "expired",
+        "no-longer-waiting",
+        "gone",
+        "unreadable",
+        "with-problem",
+        "not-connected"
+      ],
+      "data": [
+        "result",
+        "authority",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-3xl centred column, space-y-4, p-6 — the confirmation-page skeleton. h1 naming the trade, a 'Back to waiting trades' link, `<CarriedProblem>`, then the levels `<dl>`, the proportion sentence, the reasoning section, and either the cancel form or the step-up block.",
+      "constraints": [
+        "**Accept is never rendered alone.** The two verbs are requested together and cancel is drawn first — the harmless answer nearest the reasoning, so accept is not what a hurried click lands on. When the connection lacks fund-committing authority **neither** is drawn, because gating by not-rendering is UI checklist item 5 and system.json principle 10: a greyed-out control says the product could do this if the operator found the right lever, on the surface where that belief is most expensive. tests/rendering/approvals.test.ts asserts accept appears only alongside cancel. A design may restyle either control and must not separate them, reorder them, or render one in a state where the other is absent. **This constraint was inverted until 2026-08-17**: it read 'accept is rendered nowhere' and forbade adding one, which was true only for the window between cancel shipping (4.5) and the accept surface shipping (5.2/5.3). A design round running against it would have removed a live money control.",
+        "Gate by not rendering, never by disabling — UI checklist item 5 and system.json principle 10. Without authority there is no control at all, not a greyed-out one.",
+        "No currency amount (PE-2). The proportion is what the platform sent and is what is shown.",
+        "The describe runs when the page is opened, so the levels, the consequence and the token bound to both come from one read taken while somebody is looking. A design must not cache, defer, or pre-render it — a consequence computed earlier is a claim about a world that may have moved.",
+        "The page renders whole from one server round trip and holds no client state; the only client code is PerformButton."
+      ],
+      "children": [
+        "problem",
+        "levels",
+        "proportion",
+        "reasoning",
+        "answer-forms",
+        "step-up-block",
+        "expired-notice",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "levels",
+      "role": "display",
+      "purpose": "The entry, stop, target and conviction the operator judges — and the three values the answer is bound to.",
+      "states": [
+        "complete",
+        "partial"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "A `<dl>` in a 2-up grid, 4-up from sm. A level the platform did not set reads 'not set' rather than being omitted or shown as zero.",
+      "constraints": [
+        "These three levels are the change-detector standing in for the revision BattleGrid does not publish on a decision. The values shown here are carried into the perform and recomputed into the confirmation target, so a design must not round, truncate, abbreviate or reformat them — 57.73495777 is the value that must match.",
+        "'not set' is a real state and must never render as 0. A zero here would be a price the agent never chose, and would then refuse every answer.",
+        "Conviction sits beside the levels deliberately: it is what the operator weighs the levels against."
+      ],
+      "children": []
+    },
+    {
+      "id": "proportion",
+      "role": "display",
+      "purpose": "What the trade would stake, as the proportion the platform sent.",
+      "states": [
+        "known",
+        "not-recorded"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "A text-sm secondary paragraph naming the percentage, the preset in parentheses, and that BattleGrid sets the actual size at the moment a trade is accepted.",
+      "constraints": [
+        "No currency amount may be derived here. The formula is known and reconstructs observed fills exactly — that is why the rule exists, not why it can be broken (PE-2; the open question is backlog #305).",
+        "The sentence must keep naming what the percentage is a percentage *of*. A bare percentage is accurate and useless.",
+        "The 'BattleGrid sets the actual size' clause is load-bearing: two decisions accepted back to back size differently, and an operator who does not know that will read the proportion as a fixed amount."
+      ],
+      "children": []
+    },
+    {
+      "id": "reasoning",
+      "role": "display",
+      "purpose": "The model's own paragraph, unedited — the evidence the operator is actually judging.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "whitespace-pre-wrap text-sm secondary under its own heading; the section is absent entirely when the platform sent none.",
+      "constraints": [
+        "Never paraphrased, never truncated, never summarised.",
+        "Model-authored and unbounded — must wrap rather than clip, and must not be collapsed behind a disclosure that hides it by default."
+      ],
+      "children": []
+    },
+    {
+      "id": "answer-forms",
+      "role": "action",
+      "purpose": "Both answers to the proposal, each after stating what it costs. Cancel first; accept only ever beside it.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "loading"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [
+        {
+          "id": "cancel",
+          "effect": "POSTs cancelDecision with the agent id, decision id, its own cancel-scoped confirmation token and the three levels as shown; success lands on /approvals with a note, a refusal returns here with ?problem=, a lost authority lands on /approvals/authority"
+        },
+        {
+          "id": "accept",
+          "effect": "POSTs acceptDecision with the same payload but an accept-scoped token; opens a real position. Success says BattleGrid was asked to open it and that the size and fill are on the agent’s positions, never in the answer — the ack echoes nothing. Refusal and authority paths are identical to cancel, because both verbs share one implementation."
+        }
+      ],
+      "current_implementation": "Two sections, cancel then accept, each a consequence block (consequence tokens, the DT-0007 role) carrying the sentence stored on that verb’s token, then its own <form> with six hidden inputs and one <PerformButton> — “Cancel this proposal — the agent will not offer it again” and “Accept — open this position with real money”. Built 2026-08-17, after the Phase D gate was crossed by an audited cancel; before that the section carried a sentence saying accepting was unavailable.",
+      "constraints": [
+        "Rendered only when authority is held **and** every requested verb minted a token. No `?? ''` fallback: tests/agent/concurrency.test.ts forbids defaulting an identifier into existence, and an empty token would render a form that could only ever be refused.",
+        "**Both answers or neither, and cancel first.** An accept standing alone would be a surface whose only available answer spends money — the arrangement the gate exists to prevent. The order is part of the rule: the money-moving verb is never nearest the reasoning, nor where a hurried click lands. Asserted by “offers accept only alongside cancel, never alone”.",
+        "**Two forms, never one with two buttons.** The confirmation target names the verb first so a decline can never be spent opening a position; a shared form would carry one token and hand that guarantee back.",
+        "**The six hidden inputs are duplicated across the two forms on purpose.** Extracting them into a shared child moved them where a-form-sends-what-its-action-reads.test.ts cannot see, turning a checked pair into an unchecked one. Six repeated lines is the cheaper cost.",
+        "**No currency figure on the accept (PE-2).** The platform sizes only at acceptance, and the decision row carries no leverage either (#305), so the proportion is not sufficient to derive an amount from. Asserted by “names no amount on the accept, only the proportion”.",
+        "The three level inputs carry what was shown. The confirmation target is recomputed from them, so a tampered hidden field fails the binding rather than passing it."
+      ],
+      "children": []
+    },
+    {
+      "id": "step-up-block",
+      "role": "feedback",
+      "purpose": "Say which authority is missing and offer to grant it, from the point of use.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "authority"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Goes to /approvals/authority carrying a validated in-product return path"
+        }
+      ],
+      "current_implementation": "A quiet-token block — visibly lighter than the consequence treatment it stands in for — stating that answering needs authority this connection does not hold, that BattleGrid requires it for cancelling as well as accepting, and one underlined link.",
+      "constraints": [
+        "Quiet, not danger and not notice: the connection is in its normal, intended state and nothing has failed. This is the product working as designed.",
+        "The decision above stays fully readable in this branch — the requirement says so explicitly, and a design must not gate the reading on the authority.",
+        "The `next` parameter must stay an in-product path; an absolute URL would let a crafted link bounce somebody off-site carrying this product's appearance."
+      ],
+      "children": []
+    },
+    {
+      "id": "expired-notice",
+      "role": "feedback",
+      "purpose": "Say that the window closed and nobody answered — and that this is not a cancel the operator performed.",
+      "states": [
+        "expired",
+        "answered-elsewhere"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Replaces the whole answer section. EXPIRED reads that the fifteen-minute window closed before anyone answered and that nothing was cancelled and nothing was bought; any other closed status names the platform's own word for it and says it may have been answered elsewhere. Both are followed by the sentence that the agent will not re-propose it.",
+      "constraints": [
+        "Must never be worded as a cancel that happened. The product did nothing here, and crediting it with an act the agent's own record will contradict is the failure this branch exists to prevent.",
+        "No control is offered on this branch — not a disabled one and not a 'try again'.",
+        "The platform's own status word is reported uninterpreted when it is not EXPIRED; this product does not guess what a status it has not observed means."
+      ],
+      "children": []
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted cancel back here, in words that name what moved.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "Shared `CarriedProblem`. The sentences come from `explainAnswerRefusal` (src/presentation/answer-refusal.ts) — one per refusal cause, each of which states that nothing was sent to BattleGrid.",
+      "constraints": [
+        "Every refusal sentence must keep saying that nothing reached BattleGrid. Leaving that implicit is how somebody ends up checking the platform to find out whether they own a position.",
+        "A levels-moved refusal names which level moved and from what to what — the requirement obliges it, and 'something changed' is not actionable.",
+        "role=alert must survive; restyle the shared component, never per page.",
+        "The wording lives in the presentation layer, not the route: app/ does not import the domain (boundary W-D), and AnswerRefusal is a domain type."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Distinguish a refused read from an unreachable one, on the branch where the decision could not be read at all.",
+      "states": [
+        "refused",
+        "unreachable"
+      ],
+      "data": [
+        "result"
+      ],
+      "actions": [],
+      "current_implementation": "Shared `WhyNotLoaded`, plus a sentence that an unreadable decision is not the same as an expired one.",
+      "constraints": [
+        "The 'not the same as expired' sentence is load-bearing here: the window may still be running and the operator may still be able to act, so despair is the wrong conclusion to leave them with."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Cancel a proposal",
+      "steps": [
+        "arrive from the queue",
+        "read the levels, the proportion and the agent's reasoning",
+        "read the consequence sentence",
+        "submit the cancel",
+        "land on /approvals with a note that nothing was bought or sold"
+      ]
+    },
+    {
+      "name": "The trade moved underneath the operator",
+      "steps": [
+        "submit the cancel",
+        "the re-read shows a different entry, stop or target",
+        "refused before anything is sent",
+        "back here with the moved level named, from what to what, and a freshly described decision"
+      ]
+    },
+    {
+      "name": "It expired first",
+      "steps": [
+        "open a decision whose window has closed",
+        "told it expired unanswered, explicitly not that a cancel was performed",
+        "no control offered"
+      ]
+    },
+    {
+      "name": "The connection cannot answer",
+      "steps": [
+        "open a decision on a read-only connection",
+        "read all of it",
+        "no control at all",
+        "follow the step-up if wanted"
+      ]
+    },
+    {
+      "name": "Authority was withdrawn between render and submit",
+      "steps": [
+        "open a decision with the authority held",
+        "the grant is revoked at BattleGrid",
+        "submit the cancel",
+        "refused before the attempt, landing on the step-up rather than a crash page"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "back-link",
+      "cancel-submit"
+    ],
+    "notes": "The problem banner carries role=alert. Focus ring is global (focus-visible, 2px). Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
+  },
+  "source_digest": {
+    "app/(app)/approvals/[agentId]/[id]/actions.ts": "sha256:9b5dd6c6ccd65ccc31046f6573694303bdfc60434c1be6b4b351fdd1faa1ee18",
+    "app/(app)/approvals/[agentId]/[id]/page.tsx": "sha256:651638afb3e61b762089fe9954cdd12ea6777628a343d0fa0ae71ae55e6bfda9",
+    "src/presentation/answer-refusal.ts": "sha256:c76f4b03a1cb775c5d70bb518c9c26192bb086654d30e7e3f1716a992454c26d",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

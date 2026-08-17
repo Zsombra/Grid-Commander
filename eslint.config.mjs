@@ -19,26 +19,50 @@ export default tseslint.config(
       // passes on a fresh checkout and fails afterwards, which is a worse
       // property for a gate than simply failing.
       'next-env.d.ts',
+      // Git worktrees live *inside* the repository here, so a worktree is a
+      // second full checkout — its own `src/`, its own `node_modules`, its own
+      // `.next` — sitting under the root eslint is pointed at. Linting from the
+      // root with one open reported **63,337 errors across 1,208 files**, all
+      // of them someone else's checkout, and took long enough to time out a
+      // two-minute run.
+      //
+      // This is the `next-env.d.ts` reason above, with a different trigger:
+      // lint's result depended on whether a worktree existed. A gate whose
+      // answer changes with the state of an unrelated directory is not a gate.
+      // The sessions that hit it both concluded the failures were theirs.
+      '.claude/worktrees/**',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
-  // P6 — the MCP SDK may be imported in exactly one place.
+  // P6 — the MCP SDK may be imported in exactly two places, one per direction.
+  //
+  // This product speaks MCP twice, in opposite directions:
+  //
+  //   as a CLIENT of BattleGrid   → src/infrastructure/battlegrid/
+  //   as a SERVER to the operator → src/mcp/ and bin/
+  //
+  // The original rule named only the first, because for months there was
+  // only the first. Its reason — "reach BattleGrid through BattleGridPort"
+  // — still binds every file: nothing outside the adapter may call the
+  // platform. The server side calls nothing outward at all; it answers a
+  // model that connected to us. Widening for that is not a weakening, and
+  // the ignore list stays exact so a third place fails here.
   {
     files: ['**/*.ts', '**/*.tsx'],
-    ignores: ['src/infrastructure/battlegrid/**'],
+    ignores: ['src/infrastructure/battlegrid/**', 'src/mcp/**', 'bin/**', 'tests/mcp/**', 'tests/live/mcp-*.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         paths: [{
           name: '@modelcontextprotocol/sdk',
           message:
-            'P6: reach BattleGrid through BattleGridPort. The MCP SDK is imported only in src/infrastructure/battlegrid/.',
+            'P6: reach BattleGrid through BattleGridPort. The MCP SDK is imported in src/infrastructure/battlegrid/ (client) and src/mcp/ or bin/ (server), nowhere else.',
         }],
         patterns: [{
           group: ['@modelcontextprotocol/sdk/*'],
           message:
-            'P6: reach BattleGrid through BattleGridPort. The MCP SDK is imported only in src/infrastructure/battlegrid/.',
+            'P6: reach BattleGrid through BattleGridPort. The MCP SDK is imported in src/infrastructure/battlegrid/ (client) and src/mcp/ or bin/ (server), nowhere else.',
         }],
       }],
     },
@@ -94,7 +118,12 @@ export default tseslint.config(
   {
     files: ['tools/**/*.mjs', '*.config.mjs'],
     languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+      },
     },
     rules: {
       'no-console': 'off',

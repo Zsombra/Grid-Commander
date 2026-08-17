@@ -1,8 +1,11 @@
-import { redirect } from 'next/navigation';
+import { PerformButton } from '@/presentation/components/perform-button.js';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
 import { REPAIR_REQUIRED_GUIDANCE } from '@/application/use-cases/strategy-lifecycle.command.js';
-import { requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { restoreStrategy } from './actions.js';
 
 /**
  * Bring an archived strategy back.
@@ -18,20 +21,26 @@ export default async function RestoreStrategyPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ outcome?: string }>;
+  searchParams: Promise<{ outcome?: string; problem?: string }>;
 }) {
   const { app, user } = await acting();
   if (user.kind === 'not-connected') return <NotConnected result={user} />;
 
   const { id } = await params;
-  const { outcome } = await searchParams;
+  const { outcome, problem } = await searchParams;
   const { result, listings } = await app.listStrategies.execute(user.authority);
 
   if (result.kind === 'unreadable') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this strategy</h1>
-        <p role="alert" className="text-sm">{result.reason}</p>
+        {/* A bounced submit rode in with its reason; this branch must not eat
+            it — it is the only record of what the click did (or did not) do. */}
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{result.reason}</p>
+        {/* An archived strategy is the one a user most readily believes has
+            been deleted, so the sentence carries the most weight here. */}
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         {/* The roster, not the strategy. Nothing here can claim the strategy is
             there to go back to — the read that would have said so is the one
             that failed. The list explains why. */}
@@ -47,6 +56,7 @@ export default async function RestoreStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
           <a href="/strategies" className="underline">Back to your strategies</a>
         </p>
@@ -56,13 +66,33 @@ export default async function RestoreStrategyPage({
 
   const { strategy } = listing;
 
+  // State before address. A `?outcome=repair-required` bookmark outlives the
+  // state it described: opened after the strategy was restored it said
+  // "needs rebuilding" about something already active, with the state read
+  // sitting right here unconsulted. Whatever is true now wins.
+  if (strategy.isActive) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Cannot restore</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
+        <p className="text-sm">
+          <a href={`/strategies/${strategy.id}`} className="underline">
+            Back to {strategy.name}
+          </a>
+        </p>
+      </main>
+    );
+  }
+
   if (outcome === 'repair-required') {
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">{strategy.name} needs rebuilding first</h1>
+        <CarriedProblem problem={problem} />
         {/* role="status", not "alert": nothing failed. The platform declined and
             said what would work instead. */}
-        <p role="status" className="rounded border p-4 text-sm">
+        <p role="status" className="rounded-gc-2 border border-border-default p-4 text-sm">
           {REPAIR_REQUIRED_GUIDANCE}
         </p>
         <p className="flex flex-wrap gap-3 text-sm">
@@ -78,23 +108,10 @@ export default async function RestoreStrategyPage({
     );
   }
 
-  if (strategy.isActive) {
-    return (
-      <main className="mx-auto max-w-2xl space-y-4 p-6">
-        <h1 className="text-xl font-medium">Cannot restore</h1>
-        <p role="alert" className="text-sm">{strategy.name} is not archived.</p>
-        <p className="text-sm">
-          <a href={`/strategies/${strategy.id}`} className="underline">
-            Back to {strategy.name}
-          </a>
-        </p>
-      </main>
-    );
-  }
-
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
       <h1 className="text-xl font-medium">Restore {strategy.name}?</h1>
+      <CarriedProblem problem={problem} />
       <p className="text-sm">
         It returns to your strategies, editable, at revision {strategy.revision}.
         No agent is bound to an archived strategy, so nothing is reconfigured by
@@ -106,40 +123,15 @@ export default async function RestoreStrategyPage({
       </p>
       <form action={restoreStrategy} className="flex flex-wrap gap-3">
         <input type="hidden" name="strategyId" value={strategy.id} />
-        <button type="submit" className="rounded border px-4 py-2 text-sm">
+        <PerformButton pendingLabel={`Restoring ${strategy.name}…`}>
           Restore {strategy.name}
-        </button>
+        </PerformButton>
         {/* The strategy, not the roster — declining leaves the user where they
             were rather than at the top of a list of seventeen. */}
-        <a href={`/strategies/${strategy.id}`} className="px-4 py-2 text-sm underline">
+        <a href={`/strategies/${strategy.id}`} className={BUTTON_SECONDARY}>
           Leave it archived
         </a>
       </form>
     </main>
-  );
-}
-
-export async function restoreStrategy(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const strategyId = requiredText(formData, 'strategyId');
-  const { listings } = await app.listStrategies.execute(user.authority);
-  const listing = listings.find((l) => l.strategy.id === strategyId);
-  if (!listing) redirect('/strategies');
-
-  const result = await app.setStrategyActive.execute({
-    ...user.authority,
-    strategy: listing.strategy,
-    active: true,
-  });
-
-  // `repair-required` comes back as its own case rather than an error, and is
-  // carried to the page so it can be explained rather than thrown away.
-  redirect(
-    result.kind === 'repair-required'
-      ? `/strategies/${strategyId}/restore?outcome=repair-required`
-      : '/strategies',
   );
 }

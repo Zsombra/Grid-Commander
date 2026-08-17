@@ -1,10 +1,13 @@
 name: Spec Layer
 
+# Manual trigger only, by the operator's decision (2026-08-01): the
+# account's Actions are billing-blocked and will stay that way, so automatic
+# runs produced seven ~2s failures on every push and PR — red noise that
+# meant nothing. Verification is `./scripts/ci.sh`, locally, as policy
+# (docs/CI_WITHOUT_BILLING.md, option D). The jobs stay defined so a single
+# dispatch proves them the day the account is ever unblocked.
 on:
-  pull_request:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -16,7 +19,11 @@ jobs:
   # maintained — a script nothing exercises is not a fallback.
   matrix:
     name: checks (py${{ matrix.python }})
-    runs-on: ubuntu-latest
+    # `CI_RUNNER` (Settings > Secrets and variables > Actions > Variables) routes
+    # every job to a self-hosted runner when set (e.g. `self-hosted`). Unset, the
+    # expression falls back to GitHub-hosted — byte-identical to the old pin.
+    # See docs/SELF_HOSTED_RUNNER.md for registration and machine requirements.
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +40,7 @@ jobs:
 
   tests:
     name: tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +72,11 @@ jobs:
 
   app:
     name: app
-    runs-on: ubuntu-latest
+    # Routed separately from CI_RUNNER: this is the one job that needs Docker
+    # (the postgres service below). A Docker-less self-hosted runner greens the
+    # other six via CI_RUNNER while this stays GitHub-hosted; point
+    # CI_APP_RUNNER at a Docker-capable runner to bring it over too.
+    runs-on: ${{ vars.CI_APP_RUNNER || 'ubuntu-latest' }}
 
     # The repositories had never executed a statement. Everything they promise —
     # single-use confirmations, single-use OAuth state, the uniqueness one
@@ -77,7 +88,12 @@ jobs:
         env:
           POSTGRES_USER: gridcommander
           POSTGRES_PASSWORD: gridcommander
-          POSTGRES_DB: gridcommander
+          # Named disposable on purpose: tests/db/support.ts refuses to run its
+          # truncating suite against any database whose name does not say
+          # test/scratch/throwaway (guard of 2026-08-13). This job predates the
+          # guard and was pointed at `gridcommander`, so the first dispatched
+          # run would have failed on the guard rather than the tests.
+          POSTGRES_DB: gridcommander_test
         ports:
           - 5432:5432
         options: >-
@@ -143,7 +159,7 @@ jobs:
       - name: Apply migrations
         run: npm run db:migrate
         env:
-          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander_test
 
       # The build proves the application can be assembled. This proves it can be
       # *started* from what .env.example documents, which is a different claim
@@ -158,7 +174,7 @@ jobs:
       - name: Serving is gated
         run: ./scripts/check-serving.sh
         env:
-          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander_test
 
       # `npm test` above needs no database and does not run these. This step is
       # the only place they run, and it fails rather than skips when
@@ -167,11 +183,11 @@ jobs:
       - name: Database tests
         run: npm run test:db
         env:
-          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander
+          DATABASE_URL: postgres://gridcommander:gridcommander@localhost:5432/gridcommander_test
 
   validate:
     name: validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 

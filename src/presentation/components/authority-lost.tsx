@@ -1,0 +1,77 @@
+import type { Remedy } from '@/domain/connection/remedy.js';
+import { BUTTON_SECONDARY } from '@/presentation/components/control.js';
+
+/**
+ * The account's authority is gone, said where the operator was standing.
+ *
+ * Not a refusal, and deliberately not dressed as one. A refusal is about the
+ * thing attempted — a revision moved, a value was rejected — and something else
+ * may still work; this is about the account, and nothing will work until the
+ * credential is repaired or the connection remade. The page that renders this
+ * renders no form, because a control that cannot succeed is not made honest by
+ * the sentence above it.
+ *
+ * The sentence is passed in rather than composed here, and that is the whole
+ * point. `ConnectionRevokedError` is built with the remedy belonging to the
+ * deployment that raised it — "reconnect" where a connection can be made,
+ * "repair the configured credential" where the key is configuration — so
+ * repeating it verbatim is what keeps a personal deployment from being told to
+ * go and click a connect button it does not have.
+ *
+ * For the same reason this does not *redirect* anywhere. Sending the operator to
+ * `/connect` is right on a delegated deployment and lands a personal one on
+ * "there is nothing to connect", which is a true fact about the deployment and
+ * no answer at all to "the write I just submitted failed".
+ *
+ * It does offer a **target** where one exists, which is a different thing from
+ * redirecting and is what DT-0006 ruled for `NotConnected` one step earlier: a
+ * remedy is a target, not a sentence. The deployment's remedy is decided once
+ * at assembly and passed in, so this surface never works out which deployment
+ * it is running on — it is told, by the same value the adapter was given.
+ *
+ * On `repair-the-key` nothing is added. There is no target: the operator must
+ * replace an environment variable and restart the process, and a control that
+ * cannot perform the remedy is the false affordance the requirement forbids.
+ * The sentence already names the variable.
+ */
+export function AuthorityLost({ reason, remedy }: { reason: string; remedy: Remedy }) {
+  return (
+    <main className="mx-auto max-w-2xl space-y-4 p-6">
+      <h1 className="text-xl font-medium text-text-primary">
+        Your BattleGrid authority is no longer valid
+      </h1>
+      {/*
+        DT-0023. The leading edge is the whole visual difference from
+        `CarriedProblem`, which keeps its uniform hairline. Both stay red
+        because both are bad; what differs is scope — a refusal is a block
+        inside a page that still works, and this is the page. Moving either to
+        `warning` or `notice` would have said a refusal is advisory, which the
+        system's own principle forbids, so the distinction is structural.
+
+        Decorative: the same difference is carried by the heading and by the
+        closing paragraph, so nothing is lost to a reader who cannot see it.
+      */}
+      <p
+        role="alert"
+        className="rounded-gc-2 border border-l-4 border-danger-default bg-danger-subtle p-4 text-sm text-text-primary"
+      >
+        {reason}
+      </p>
+      <p className="text-sm text-text-secondary">
+        Nothing was changed. Until this is fixed, no operation on this account
+        can succeed — including the one you just tried.
+      </p>
+
+      {/* Secondary, not primary, and for the same reason `NotConnected` is:
+          this is navigation to where a grant is obtained, not the commit. The
+          operation that failed is deliberately not offered again. */}
+      {remedy === 'reconnect' ? (
+        <p className="text-sm">
+          <a href="/connect" className={BUTTON_SECONDARY}>
+            Connect your BattleGrid account again
+          </a>
+        </p>
+      ) : null}
+    </main>
+  );
+}

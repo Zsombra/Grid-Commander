@@ -90,11 +90,30 @@ export function loadConfig(): AppConfig {
   /**
    * The OAuth client is required only when the OAuth path is wired.
    *
-   * A personal deployment never builds an authorization URL, and demanding a
-   * registered `client_id` for one would force the operator to invent a value —
-   * which is the fabrication this product refuses, and the exact ceremony the
-   * personal path exists to remove. Registration is the thing being avoided; it
-   * cannot be a precondition for avoiding it.
+   * A personal deployment never builds an authorization URL, so demanding a
+   * registered `client_id` for one would require a value with nothing to say —
+   * and inventing one is the fabrication this product refuses. That reasoning
+   * stands. Its stated premise did not.
+   *
+   * **Corrected 2026-08-13.** This comment used to end: *"Registration is the
+   * thing being avoided; it cannot be a precondition for avoiding it."* That
+   * described registration as ceremony an operator would have to submit to.
+   * `docs/battlegrid-oauth-metadata.json` — committed, and re-verified by the
+   * `oauth-live` gate on every CI run — has recorded the opposite for as long as
+   * both have existed:
+   *
+   *     "registration_endpoint": "https://mcp.battlegrid.trade/register",
+   *     "token_endpoint_auth_methods_supported": ["client_secret_post", "none"]
+   *
+   * Registration is one unauthenticated POST returning a public client with no
+   * secret. It was walked on 2026-08-13 and answered 201. So the premise was
+   * contradicted by a file in this repository, checked by this repository's CI,
+   * the whole time — the same shape as the performance comment corrected in
+   * #189: a careful argument that outlived its evidence, with the correction
+   * already sitting somewhere nobody connected to it.
+   *
+   * The conclusion survives on the honest reason: a personal deployment does not
+   * do OAuth, so it needs no client — not because registering one would be hard.
    */
   const oauth = (name: string): string => (personal ? (optional(name) ?? '') : required(name));
 

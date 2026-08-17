@@ -1,0 +1,63 @@
+{
+  "id": "DT-0017",
+  "surface": "agent-undeploy-confirm",
+  "targets": [
+    "consequence",
+    "perform-undeploy"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The undeploy confirmation's consequence takes the consequence role, and its buttons stop being unreachable on a narrow screen.",
+  "rationale": "DT-0016's ruling, one page over, and for the same reason: this consequence says the agent stops scanning a market it may hold a position in, and it currently wears the anonymous border DT-0004 retired. Undeploy is the sibling of deploy in every other respect — same shell, same shared buttons, same confirmation binding — so the two disagreeing about how a consequence looks is drift rather than a decision. The reversibility this page's copy states ('the agent stays configured and can be redeployed') is carried by the words; it is not a reason to lighten the block, because what the block announces is that scanning stops now.",
+  "design": {
+    "layout": "Unchanged in order; the action row stacks under the tablet breakpoint and sits inline above it.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "danger_bg": "color.danger.subtle",
+      "danger_border": "color.danger.default",
+      "block_radius": "radius.2",
+      "block_padding": "space.4",
+      "row_gap": "space.3",
+      "text": "color.text.primary",
+      "breakpoint": "breakpoint.tablet"
+    },
+    "states": {
+      "default": {
+        "content": "consequence: the block takes the consequence role — color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, color.text.primary; role=alert stays and the sentence stays verbatim. perform-undeploy: column at space.3 gap, wrapped row at breakpoint.tablet, both controls full width below it and auto above — the archive page's treatment."
+      }
+    },
+    "responsive": {
+      "mobile": "Buttons stacked, each full width, each at the size.control.min floor.",
+      "desktop": "Inline row, unchanged from today."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The consequence block renders on color.consequence.subtle with a 1px color.consequence.border border at radius.2, and keeps role=alert",
+    "The consequence sentence renders verbatim",
+    "At a 320px viewport the submit and cancel are stacked, each full width, each at least size.control.min tall",
+    "At tablet width and above the two controls sit inline as they do today",
+    "The submit remains accent-styled, never danger",
+    "Zero copy changes anywhere on the page",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog 166. DT-0016's ruling applied to the sibling page; decides nothing new."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

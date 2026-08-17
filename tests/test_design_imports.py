@@ -55,6 +55,95 @@ class SurfaceImportTest(ProjectTestCase):
 
         self.assertIn("src/row/index.tsx", self.imports_reported(result))
 
+    # -- the project's own import spellings --------------------------------
+    #
+    # Both of these are how the check spent its whole life matching nothing
+    # here (#230): this codebase imports through the `@/` alias (337 alias
+    # vs 23 relative imports) and with `.js` specifiers that name `.ts`
+    # files. Every fixture above uses extension-less relative specs, so the
+    # suite proved a check that worked on a project shaped unlike this one.
+
+    def test_an_alias_import_resolves_through_tsconfig_paths(self):
+        self.project.write("tsconfig.json",
+                           '{"compilerOptions": {"paths": {"@/*": ["./src/*"]}}}\n')
+        self.project.write("src/Panel.tsx", 'import { Row } from "@/Row";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        self.assertCode(result, CODE, "warning")
+        self.assertIn("src/Row.tsx", self.imports_reported(result))
+
+    def test_a_js_specifier_resolves_to_the_ts_file_that_emitted_it(self):
+        self.project.write("src/Panel.tsx", 'import { Row } from "./Row.js";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        self.assertIn("src/Row.tsx", self.imports_reported(result))
+
+    def test_alias_and_extension_rewrite_compose(self):
+        # The shape this repository actually writes on every page:
+        # `import { X } from '@/presentation/x.js'` naming an `x.tsx`.
+        self.project.write("tsconfig.json",
+                           '{"compilerOptions": {"paths": {"@/*": ["./src/*"]}}}\n')
+        self.project.write("src/Panel.tsx", 'import { Row } from "@/Row.js";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        self.assertIn("src/Row.tsx", self.imports_reported(result))
+
+    def test_a_jsonc_tsconfig_still_yields_the_aliases(self):
+        self.project.write("tsconfig.json",
+                           '{\n'
+                           '  // the alias, commented the way tsconfig.json really is\n'
+                           '  "compilerOptions": {"paths": {"@/*": ["./src/*"]}}\n'
+                           '}\n')
+        self.project.write("src/Panel.tsx", 'import { Row } from "@/Row";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        self.assertIn("src/Row.tsx", self.imports_reported(result))
+
+    # -- degradation: the check narrows, it never disappears ---------------
+
+    def test_no_tsconfig_still_checks_relative_imports(self):
+        self.project.write("src/Panel.tsx",
+                           'import { Row } from "@/Row";\n'
+                           'import { Cell } from "./Cell";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+        self.project.write("src/Cell.tsx", "export const Cell = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        reported = self.imports_reported(result)
+        self.assertIn("src/Cell.tsx", reported)
+        self.assertNotIn("src/Row.tsx", reported)
+
+    def test_a_malformed_tsconfig_degrades_the_same_way(self):
+        self.project.write("tsconfig.json", "{not json at all\n")
+        self.project.write("src/Panel.tsx",
+                           'import { Row } from "@/Row";\n'
+                           'import { Cell } from "./Cell";\n')
+        self.project.write("src/Row.tsx", "export const Row = () => null;\n")
+        self.project.write("src/Cell.tsx", "export const Cell = () => null;\n")
+
+        result = self.survey("src/Panel.tsx")
+
+        reported = self.imports_reported(result)
+        self.assertIn("src/Cell.tsx", reported)
+        self.assertNotIn("src/Row.tsx", reported)
+
+    def test_an_alias_import_of_a_plain_utility_is_ignored(self):
+        self.project.write("tsconfig.json",
+                           '{"compilerOptions": {"paths": {"@/*": ["./src/*"]}}}\n')
+        self.project.write("src/Panel.tsx", 'import { format } from "@/money";\n')
+        self.project.write("src/money.ts", "export const format = (n) => String(n);\n")
+
+        self.assertNoCode(self.survey("src/Panel.tsx"), CODE)
+
     # -- what it deliberately ignores --------------------------------------
 
     def test_a_plain_utility_is_not_part_of_the_surface(self):
@@ -115,3 +204,34 @@ class SurfaceImportTest(ProjectTestCase):
         result = self.survey("src/Gone.tsx")
 
         self.assertCode(result, "design_source_file_missing", "error")
+
+
+class UncheckedStackTest(ProjectTestCase):
+    """A stack the cross-check cannot read says so instead of staying silent."""
+
+    UNCHECKED = "design_surface_sources_unchecked"
+
+    def test_a_surface_with_no_js_family_sources_reports_the_gap(self):
+        self.project.write("app/views/panel.html.erb", "<h1>Rows</h1>\n")
+        self.project.surface(
+            source_files=["app/views/panel.html.erb"], components=[COMPONENT]
+        )
+        result = self.project.validate()
+        self.assertCode(result, self.UNCHECKED, "info")
+
+    def test_a_js_surface_stays_silent_about_the_gap(self):
+        self.project.write("src/Panel.tsx", "export const Panel = () => null;\n")
+        self.project.surface(source_files=["src/Panel.tsx"], components=[COMPONENT])
+        result = self.project.validate()
+        codes = [d["code"] for d in result.diagnostics()]
+        self.assertNotIn(self.UNCHECKED, codes)
+
+    def test_a_missing_source_is_the_louder_fact(self):
+        # When the file does not exist at all, the error owns the story; the
+        # info about an unchecked stack would just be noise beside it.
+        self.project.surface(
+            source_files=["app/views/gone.html.erb"], components=[COMPONENT]
+        )
+        result = self.project.validate()
+        codes = [d["code"] for d in result.diagnostics()]
+        self.assertNotIn(self.UNCHECKED, codes)

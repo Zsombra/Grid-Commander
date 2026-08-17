@@ -39,7 +39,7 @@ deltas worth reviewing, does the executor actually re-read them, does
 `/archive` merge cleanly, does `/handoff` capture anything useful.
 
 Escalate to a `full`-track change only after `standard` feels smooth — that
-path also needs `docs/specs/` checklists, which do not exist yet.
+path also needs `docs/checklists/` checklists, which do not exist yet.
 
 ## Outcome (2026-07-27)
 
@@ -59,5 +59,5 @@ merged "validation runs on every pull request" into the source of truth on the
 strength of a local test alone.
 
 **Residual: the `full` track is still unexercised** — planner, auditor, and the
-production gate have never run, and remain blocked on `docs/specs/` checklists.
+production gate have never run, and remain blocked on `docs/checklists/` checklists.
 Re-open or file fresh when a change genuinely warrants `full`.

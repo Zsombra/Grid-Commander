@@ -1,6 +1,10 @@
 import type { AuditEntry, AuditOutcome } from '@/domain/audit/audit-entry.js';
 import type { AuditReader, AuditWriter, NewAuditEntry } from '@/domain/audit/audit-repository.js';
-import type { ConfirmationStore, ConfirmationToken } from '@/domain/capability/confirmation.js';
+import type {
+  ConfirmationRefusalCause,
+  ConfirmationStore,
+  ConfirmationToken,
+} from '@/domain/capability/confirmation.js';
 import type { Connection } from '@/domain/connection/connection.js';
 import type {
   ConnectionReader,
@@ -10,7 +14,9 @@ import type {
   OAuthTransactionStore,
   ResolvedConnection,
 } from '@/domain/connection/connection-repository.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type { Clock } from '@/ports/clock.js';
+import type { RadarPause } from '@/domain/agent/deployment.js';
 
 /**
  * In-memory doubles for every port.
@@ -42,6 +48,17 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
   constructor(private readonly clock: Clock) {}
 
   async begin(entry: NewAuditEntry): Promise<string> {
+    // Mirrors the real repository's partial unique index: at most one
+    // non-failed entry per (user, key). A failed attempt released its key.
+    if (entry.idempotencyKey !== null) {
+      const live = await this.findByIdempotencyKey(entry.userId, entry.idempotencyKey);
+      if (live) {
+        throw new DuplicateIdempotencyKeyError(
+          entry.tool,
+          live.outcome === 'succeeded' ? 'succeeded' : 'attempted',
+        );
+      }
+    }
     const id = `audit-${++this.seq}`;
     this.entries.push({
       id,
@@ -78,12 +95,20 @@ export class FakeAuditStore implements AuditReader, AuditWriter {
   async listForUser(userId: string, limit: number): Promise<readonly AuditEntry[]> {
     return this.entries
       .filter((e) => e.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .sort(
+        // Same tiebreak as the real repository: stable within one millisecond.
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+      )
       .slice(0, limit);
   }
 
   async findByIdempotencyKey(userId: string, key: string): Promise<AuditEntry | null> {
-    return this.entries.find((e) => e.userId === userId && e.idempotencyKey === key) ?? null;
+    // The live entry, per the port contract: failed attempts released the key.
+    return (
+      this.entries.find(
+        (e) => e.userId === userId && e.idempotencyKey === key && e.outcome !== 'failed',
+      ) ?? null
+    );
   }
 }
 
@@ -92,6 +117,34 @@ export class FakeConfirmationStore implements ConfirmationStore {
   constructor(private readonly clock: Clock) {}
 
   async issue(token: ConfirmationToken): Promise<void> {
+    /**
+     * A token is issued once. Overwriting an unconsumed one is not a store
+     * behaviour to imitate — it is the store losing an outstanding agreement.
+     *
+     * This was a plain `Map.set`, so a fixture minting a duplicate id replaced
+     * the earlier entry and **retargeted an agreement someone still held**. It
+     * cost five days of `live-write-probe-confirmation-flake`: two consecutive
+     * runs failing at different consumptions, no product defect anywhere, and
+     * nothing in the failure pointing at the fake.
+     *
+     * A real store keys on 32 random bytes and will never see this. If it
+     * somehow did, silently discarding the first is the worst of the available
+     * behaviours — so the fake refuses instead of modelling something the
+     * platform cannot do.
+     */
+    const held = this.tokens.get(token.token);
+    // Outstanding means **still spendable** — unconsumed *and* unexpired, the
+    // same pair `consume` checks. A stricter rule than that refuses honest
+    // re-use: `call-path.test.ts` walks each refusal cause by re-issuing one id
+    // as expired, then consumed, then mismatched, and nothing is lost by
+    // overwriting a token no one could spend.
+    const spendable = held && held.consumedAt === null && held.expiresAt.getTime() > this.clock.now().getTime();
+    if (spendable) {
+      throw new Error(
+        `confirmation "${token.token}" is already outstanding for ${held.tool} on ${held.target}; ` +
+          'issuing it again would silently retarget an agreement someone still holds',
+      );
+    }
     this.tokens.set(token.token, token);
   }
 
@@ -110,6 +163,22 @@ export class FakeConfirmationStore implements ConfirmationStore {
     const consumed = { ...found, consumedAt: this.clock.now() };
     this.tokens.set(token, consumed);
     return consumed;
+  }
+
+  async diagnose(
+    token: string,
+    userId: string,
+    tool: string,
+    target: string,
+  ): Promise<ConfirmationRefusalCause> {
+    const found = this.tokens.get(token);
+    if (!found) return 'unknown';
+    if (found.userId !== userId || found.tool !== tool || found.target !== target) {
+      return 'mismatched';
+    }
+    if (found.consumedAt !== null) return 'already-used';
+    if (found.expiresAt.getTime() <= this.clock.now().getTime()) return 'expired';
+    return 'already-used';
   }
 }
 
@@ -150,7 +219,7 @@ export class FakeConnectionStore implements ConnectionReader, ConnectionWriter {
       createdAt: this.clock.now(),
     });
     this.secrets.set(userId, { accessToken: c.accessToken, refreshToken: c.refreshToken });
-    return { userId, connectionId: id };
+    return { userId };
   }
 
   async markRevoked(userId: string): Promise<void> {
@@ -185,3 +254,41 @@ export class FakeTransactionStore implements OAuthTransactionStore {
     return tx;
   }
 }
+
+/**
+ * A radar answer that reports no pause at all.
+ *
+ * The default for every fixture that is not about the pause. All four fields
+ * null, which is what `RadarPause` means by "the platform did not say" — and
+ * `RadarPauseNote` renders nothing for it, so a fixture written before the
+ * pause existed keeps exactly the meaning it had.
+ *
+ * Deliberately not a *running* radar. `{ radarPaused: false }` would be a
+ * fixture asserting the platform said something it did not, and the whole
+ * contract here is that absence and "not paused" are different answers. A test
+ * that wants a running radar says so, with `radarRunning()`.
+ */
+export const NO_PAUSE_REPORTED: RadarPause = {
+  radarPaused: null,
+  platformPaused: null,
+  coinsDeployed: null,
+  scanning: null,
+};
+
+/** A radar the platform reports as running, with its counts. */
+export const radarRunning = (over: Partial<RadarPause> = {}): RadarPause => ({
+  radarPaused: false,
+  platformPaused: 0,
+  coinsDeployed: 3,
+  scanning: 3,
+  ...over,
+});
+
+/** A radar the platform reports as paused, with every coin platform-paused. */
+export const radarPausedFleet = (over: Partial<RadarPause> = {}): RadarPause => ({
+  radarPaused: true,
+  platformPaused: 3,
+  coinsDeployed: 3,
+  scanning: 0,
+  ...over,
+});

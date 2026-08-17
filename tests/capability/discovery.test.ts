@@ -67,4 +67,59 @@ describe('CapabilityCache', () => {
   it('reports degraded before any load has happened', () => {
     expect(new CapabilityCache(failing).view().degraded).toBe(true);
   });
+
+  /**
+   * Single-flight. Ten parallel tool calls used to mean ten parallel
+   * `tools/list` requests, and one failing degraded that caller's whole
+   * read (live, 2026-08-01 — the metric index was the first fan-out to hit
+   * it). Concurrent loads share one discovery; sequential loads still
+   * re-discover, so a changed platform still governs the next burst.
+   */
+  describe('single_flight', () => {
+    it('concurrent loads share one discovery read', async () => {
+      let discoveries = 0;
+      const counting: DiscoverySource = {
+        discoverTools: async () => {
+          discoveries += 1;
+          await new Promise((r) => setTimeout(r, 5));
+          return [{ name: 'known', annotations: { readOnlyHint: true } }];
+        },
+      };
+      const cache = new CapabilityCache(counting);
+      const views = await Promise.all([cache.load('at'), cache.load('at'), cache.load('at')]);
+      expect(discoveries).toBe(1);
+      for (const view of views) expect(view.degraded).toBe(false);
+    });
+
+    it('sequential loads still re-discover — freshness is per burst', async () => {
+      let discoveries = 0;
+      const counting: DiscoverySource = {
+        discoverTools: async () => {
+          discoveries += 1;
+          return [{ name: 'known', annotations: { readOnlyHint: true } }];
+        },
+      };
+      const cache = new CapabilityCache(counting);
+      await cache.load('at');
+      await cache.load('at');
+      expect(discoveries).toBe(2);
+    });
+
+    it('a shared failed discovery degrades every waiter, then clears', async () => {
+      let calls = 0;
+      const flaky: DiscoverySource = {
+        discoverTools: async () => {
+          calls += 1;
+          if (calls === 1) throw new Error('tools/list unavailable');
+          return [{ name: 'known', annotations: { readOnlyHint: true } }];
+        },
+      };
+      const cache = new CapabilityCache(flaky);
+      const [a, b] = await Promise.all([cache.load('at'), cache.load('at')]);
+      expect(a?.degraded).toBe(true);
+      expect(b?.degraded).toBe(true);
+      // The failure does not stick: the next burst discovers again.
+      expect((await cache.load('at')).degraded).toBe(false);
+    });
+  });
 });

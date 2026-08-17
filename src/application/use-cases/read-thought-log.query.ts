@@ -24,7 +24,7 @@ export type ReadThoughtLogResult =
   | {
       readonly kind: 'decisions';
       readonly decisions: readonly Decision[];
-      /** The account's total, which exceeds what one page returns. */
+      /** The account's total — never less than this page, and a short history can fit in it whole (#293). */
       readonly total: number;
     }
   | { readonly kind: 'none' }

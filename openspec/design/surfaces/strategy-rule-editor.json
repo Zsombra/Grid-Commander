@@ -1,0 +1,492 @@
+{
+  "id": "strategy-rule-editor",
+  "title": "Retune a signal rule",
+  "route": "/strategies/[id]/rules/[signalId]",
+  "capability": "strategy-authoring",
+  "status": "needs-redesign",
+  "generated_at_commit": "6441015",
+  "source_files": [
+    "app/(app)/strategies/[id]/rules/[signalId]/actions.ts",
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx",
+    "src/presentation/components/authority-lost.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "rule",
+      "shape": "{ signalId, allocation, required, params }",
+      "source": "app.readStrategy.execute — the strategy read fresh; the rule being retuned must already be among its signalRules"
+    },
+    {
+      "name": "declared",
+      "shape": "SignalParameter[] — { key, min, max, defaultValue, description }",
+      "source": "app.readSignal.execute — the signal's declared parameter contract, read fresh; gives the form its fields, bounds and defaults"
+    },
+    {
+      "name": "proposal",
+      "shape": "{ strategyId, strategyName, signalId, expectedRevision, intent: { allocation, required, ruleParams }, consequence, confirmationToken }",
+      "source": "app.describeRetune.execute — refuses a signal the strategy does not weigh and a no-op, states the blast radius with the platform's propagation wording, and mints the token; consequence is the string stored with it"
+    },
+    {
+      "name": "query",
+      "shape": "{ a?, req?, p_<key>?, problem?, authority? }",
+      "source": "searchParams, read through the page's own `one()` helper (first value of an array, empty string treated as absent) — the composed choice; its presence (a) is what flips the page from tuning form to described proposal"
+    },
+    {
+      "name": "authority",
+      "shape": "string | undefined",
+      "source": "searchParams — since `a-lost-authority-is-not-a-refusal`, the sentence a performRetune that came back `authority-lost` redirected with. Its mere presence replaces the entire page with `<AuthorityLost>`; it is read before any strategy read runs. The sentence is the deployment's own remedy wording, carried verbatim rather than composed here"
+    }
+  ],
+  "components": [
+    {
+      "id": "retune-rule-page",
+      "role": "container",
+      "purpose": "Change one signal rule on a strategy — allocation, the Required flag, its declared parameters — behind the describe-then-perform ceremony.",
+      "states": [
+        "tuning-form",
+        "tuning-form-with-problem",
+        "proposal",
+        "proposal-with-problem",
+        "params-not-numeric",
+        "params-not-numeric-with-problem",
+        "cannot-retune",
+        "cannot-retune-with-problem",
+        "not-a-rule",
+        "not-a-rule-with-problem",
+        "no-such-strategy",
+        "no-such-strategy-with-problem",
+        "unreadable",
+        "unreadable-with-problem",
+        "authority-lost",
+        "not-connected",
+        "allocation-not-a-number",
+        "allocation-not-a-number-with-problem",
+        "tuning-form-recomposing"
+      ],
+      "data": [
+        "rule",
+        "query",
+        "authority"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Two steps on one route: without ?a= the page is the tuning form; with it, the describe runs and the page is the proposal. Since `a-lost-authority-is-not-a-refusal` there is a branch above all of that: after the not-connected check and *before* the strategy is read, `one(q, 'authority')` is tested, and any value returns `<AuthorityLost reason={authority} />` — a whole page of its own, no strategy read, no form, none of the states below reachable. `not-a-rule` renders when the strategy does not weigh the signal: '\"<name>\" does not weigh <signalId>. Only a rule the strategy already carries can be retuned here.' — a plain text-sm paragraph with no role at all, no form, one link back. `params-not-numeric` renders when a p_ param does not parse: h1 'Those parameters do not read as numbers', a bare `role=alert text-sm` explanation, and a 'Compose it again' link back to the bare form (the typed values are discarded — see gap). `cannot-retune` covers every non-proposal describe answer (strategy-missing, not-a-rule, no-op, refused) as one h1 plus a bare `role=alert text-sm` reason and two links ('Choose differently', 'Back to the strategy'). `unreadable` shows a bare `role=alert text-sm` reason with WhyNotLoaded beneath it; `no-such-strategy` mirrors the platform saying it is not there. Worth stating because the three strategy lifecycle ceremonies just diverged from it: DT-0019/0020/0021 gave archive, restore and fork's failure sentences the danger role, and this page was not in that sweep — every failure sentence here is still `role=\"alert\" className=\"text-sm\"` body text, and the only tinted blocks on the page are the two inline problem banners and AuthorityLost's own. The `a` query value is parsed with no validation — a non-numeric value rides into the describe as NaN and is left to the describe to refuse. Since `a-refusal-lands-where-someone-reads-it` (#240) the shared `<CarriedProblem>` is mounted unconditionally on all eight post-authority branches — the two hand-rolled copies are gone, and the branch that used to bite (`cannot-retune`: a bounced refusal whose re-describe now answers no-op or not-a-rule) carries the word of the click above its own answer. The `authority` arm never had that defect: it is checked first, so nothing can swallow it. Two states added: `allocation-not-a-number` names the value the address carried and describes nothing; `tuning-form-recomposing` is the form reached with `edit=1`, which prefers the query's values over the stored rule so a refusal can return the choice.",
+      "constraints": [
+        "The two-step ceremony is spec — openspec/specs/strategy-authoring/spec.md:530-540 ('only through describe-then-perform … The describe SHALL read the strategy fresh, refuse a signal that is not among its rules and a change that changes nothing'). A design must not collapse compose and confirm into one step.",
+        "A no-op and an absent signal are refused without a token — spec.md:554-561; both land in the cannot-retune state and no confirm form may be drawn there.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
+        "'Nothing is styled to look disabled when retrying cannot help' (system.json principle) — cannot-retune, not-a-rule and authority-lost offer links or prose, never dimmed controls.",
+        "A lost authority is not a refusal of this retune and must not be folded into the problem banner or the cannot-retune state — spec: it is about the account, not the attempt, and the page renders no form for it. Merging the two is behavior and requires-spec-change.",
+        "The authority check runs before the strategy read, so `authority-lost` renders without any BattleGrid read succeeding. A design must not assume the strategy name, the rule, or the signal contract is available on that state — none of it has been read."
+      ],
+      "children": [
+        "authority-lost",
+        "problem",
+        "describe-retune",
+        "consequence",
+        "perform-retune",
+        "why-not-loaded"
+      ]
+    },
+    {
+      "id": "authority-lost",
+      "role": "feedback",
+      "purpose": "Say that the account's authority is gone, where the operator was standing — a fact about the account, not about the retune they tried.",
+      "states": [
+        "remedy-reconnect",
+        "remedy-repair-the-key"
+      ],
+      "data": [
+        "authority",
+        "remedy"
+      ],
+      "actions": [
+        {
+          "id": "reconnect",
+          "effect": "Anchor to /connect, where a new grant is obtained. Rendered only on remedy-reconnect. It navigates and submits nothing, and it is not the operation that failed — that control stays absent on both branches."
+        }
+      ],
+      "current_implementation": "Shared `AuthorityLost` component (src/presentation/components/authority-lost.tsx), also mounted by the agent deploy, undeploy and rebind pages and the strategy rule editor. It replaces the whole page rather than banding the top of one: its own `<main className=\"mx-auto max-w-2xl space-y-4 p-6\">`, h1 'Your BattleGrid authority is no longer valid' in text-text-primary, the carried sentence in `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert — the same treatment CarriedProblem wears — then a text-sm text-text-secondary paragraph: 'Nothing was changed. Until this is fixed, no operation on this account can succeed — including the one you just tried.' **Since `a-remedy-is-a-target-not-a-sentence` (#182) it also takes the deployment's `remedy` and branches on it.** On `reconnect` it appends a `<p className=\"text-sm\">` holding a BUTTON_SECONDARY anchor to /connect reading 'Connect your BattleGrid account again'. On `repair-the-key` it appends nothing, because replacing an environment variable and restarting a process is not something a link can do. The remedy value is fixed once at src/composition.ts (`config.personal ? 'repair-the-key' : 'reconnect'`) and passed down, so the component never works out which deployment it is on. Nothing has designed any of this; it was built wearing existing tokens, and the anchor reuses the primitive NotConnected already uses for the same purpose rather than introducing a treatment.",
+      "constraints": [
+        "The sentence is passed in and printed verbatim, remedy included — a design must not template it or prefix it. The remedy is **also offered as a target where the deployment has one**: the component links to /connect on `remedy-reconnect` and draws nothing on `remedy-repair-the-key`. A design must not draw that link unconditionally — that is how a personal deployment gets told to press a connect button it does not have — and must not remove it from the reconnect branch, where DT-0006's ruling holds: a remedy is a target, not a sentence.",
+        "role=alert must survive on the reason.",
+        "The two branches are one component and one treatment. The difference between them is whether the anchor renders, not how the page looks. A design that gave the two deployments different layouts would be designing for a distinction the operator can neither see nor change.",
+        "No form may be drawn on this state — the control that performs the operation cannot succeed, and is not made honest by the sentence above it. The /connect anchor on the remedy-reconnect branch is not that control: it is the remedy, it submits nothing, and it was added by `a-remedy-is-a-target-not-a-sentence` (#182). Drawing anything that performs the failed operation is behavior and requires-spec-change.",
+        "It renders as a whole page, not as a banner over the retune form — this is about the account, not the attempt, and folding it into the problem banner's shape would say the opposite.",
+        "'Nothing was changed' is the load-bearing sentence for someone who just submitted a write; it must not be cut for space or demoted below the fold.",
+        "Shared by four pages (agent deploy/undeploy/rebind, this one) — restyle it in the component, never per page."
+      ],
+      "children": [
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted retune back — rendered over a fresh describe of the same choice.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "query"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component (carried-problem.tsx) since `a-refusal-lands-where-someone-reads-it` (#240) — the two inline `{problem ? … : null}` copies are gone, and the component is mounted unconditionally on all eight post-authority branches (it renders null without a problem). DT-0004's danger treatment: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix. Because performRetune redirects back with the whole choice (a, req, p_*) plus problem, the banner usually appears on the proposal state — the describe has re-run against the strategy as it now stands — but a re-describe that now answers cannot-retune, not-a-rule or params-not-numeric carries it too, so the operator's click is never silent whichever branch answers. It never carries a lost authority: that arm redirects with `?authority=` instead and renders `authority-lost` above every branch, deliberately, because 'the revision moved' and 'nothing on this account can work' are not the same claim.",
+      "constraints": [
+        "role=alert must survive.",
+        "A platform refusal returns to the surface acted from with the reason — spec.md:539-540 and spec.md:563-567 ('the platform's revision refusal is shown on the surface acted from, and the user is returned to a fresh describe'); banner and re-described choice must stay on one page.",
+        "One component, restyled in carried-problem.tsx and never per page — the derived scan (`a-problem-redirect-is-read-where-it-lands.test.ts`) fails any `<main>` region here that drops the reason, and the product-wide guard fails a hand-rolled copy in either spelling.",
+        "A lost authority must not be routed through this banner — it has its own query key, its own page, and no form. Collapsing the two is behavior and requires-spec-change."
+      ],
+      "children": []
+    },
+    {
+      "id": "describe-retune",
+      "role": "container",
+      "purpose": "Compose the change — allocation, Required, parameters — and ask what it would do, committing nothing.",
+      "states": [
+        "default",
+        "with-signal-link",
+        "params-contract-unreadable"
+      ],
+      "data": [
+        "rule",
+        "declared"
+      ],
+      "actions": [
+        {
+          "id": "describe",
+          "effect": "method=get submit — puts the choice in the query and re-renders this route as the described proposal; nothing reaches any write tool"
+        },
+        {
+          "id": "back",
+          "effect": "Anchor wearing BUTTON_SECONDARY back to /strategies/[id]"
+        },
+        {
+          "id": "whatThisSignalDoes",
+          "effect": "Underlined link to /strategies/signals/[signalId], rendered only when the signal contract was readable"
+        }
+      ],
+      "current_implementation": "Intro paragraph states the current values ('Currently allocation 2, required') and that changing it reaches every bound agent immediately. A method=get form, space-y-3 text-sm: the allocation select, the Required checkbox row, one text input per declared parameter, then a flex flex-wrap gap-3 row where the submit ('See what this change would do') wears BUTTON_SECONDARY — per control.ts, a submit that only asks a question is secondary — beside the back anchor. When the signal's contract could not be read (and it declares nothing readable), a role=alert paragraph says only the allocation and Required flag can be retuned right now.",
+      "constraints": [
+        "The submit stays secondary — control.ts's decided rule: 'primary is the action the page exists to offer; secondary is its peer and every submit that only asks a question.' A method=get compose reaches no operation. Restyling it as primary contradicts the constant's ruling.",
+        "The params-contract-unreadable paragraph keeps role=alert, and the degraded form (allocation + Required only) must still work — the platform declining to describe parameters must not block the rest of the rule.",
+        "The 'reaches every agent bound … immediately' sentence is the pre-ceremony warning; it must stay before the form, not after it."
+      ],
+      "children": [
+        "allocation",
+        "required",
+        "params"
+      ]
+    },
+    {
+      "id": "allocation",
+      "role": "input",
+      "purpose": "Pick the signal's weight, 0–3.",
+      "states": [
+        "default",
+        "focused"
+      ],
+      "data": [
+        "rule"
+      ],
+      "actions": [
+        {
+          "id": "select",
+          "effect": "Sets a= in the composed query"
+        }
+      ],
+      "current_implementation": "LABEL constant ('Allocation (weight, 0–3)') wrapping a select wearing CONTROL, options 0–3, defaultValue the rule's current allocation.",
+      "constraints": [
+        "The 0–3 range is the platform's scale, not a style choice — options must not be added, removed, or renamed by a design.",
+        "Styling changes go through the CONTROL and LABEL constants in control.ts."
+      ],
+      "children": []
+    },
+    {
+      "id": "required",
+      "role": "input",
+      "purpose": "Flag whether the setup is gated on this signal firing.",
+      "states": [
+        "checked",
+        "unchecked",
+        "focused"
+      ],
+      "data": [
+        "rule"
+      ],
+      "actions": [
+        {
+          "id": "toggle",
+          "effect": "Sets req=1 in the composed query"
+        }
+      ],
+      "current_implementation": "A native checkbox with NO className at all, in an inline `<label className=\"block\">` row — 'Required — the setup is gated on this signal firing' — defaultChecked from the rule. Deliberately not wearing LABEL: control.ts says a label wrapping a checkbox with its text after it is an inline row, and `block` would break it. It also does not wear the `CHECKBOX` constant DT-0015 added to control.ts for the strategy editor's section checkboxes, so this box renders at the browser's default accent while those render at the product's; `tests/architecture/controls.test.ts` does not catch it because a control with no className is skipped as deliberately unstyled. The row carries no min-height, so it is not held to the 44px tap-target floor the section rows took in DT-0015.",
+      "constraints": [
+        "The explanatory clause ('the setup is gated on this signal firing') is what makes the flag legible — it must not be shortened to the bare word 'Required'.",
+        "Never signal state by color alone (system.json principle) — the checked state already carries a shape; keep it.",
+        "If this box is given a treatment it comes from the shared `CHECKBOX` constant in control.ts, not a per-page className — and `CHECKBOX` is accent-color only by decision (DT-0015: replacing the native box means re-implementing checked, indeterminate, disabled and forced-colors states the browser already draws correctly)."
+      ],
+      "children": []
+    },
+    {
+      "id": "params",
+      "role": "input",
+      "purpose": "Set the signal's declared strict parameters, inside the platform's own bounds.",
+      "states": [
+        "default",
+        "focused",
+        "prefilled",
+        "absent",
+        "with-description"
+      ],
+      "data": [
+        "declared",
+        "rule"
+      ],
+      "actions": [
+        {
+          "id": "type",
+          "effect": "Sets p_<key>= in the composed query; every declared parameter must read as a number before the describe runs"
+        }
+      ],
+      "current_implementation": "One text input per declared parameter, each under a LABEL naming the key with its bounds appended when the platform declared any ('(30–70)', '(…–70)'), wearing CONTROL, defaultValue the rule's stored value falling back to the declared default. The parameter's own description renders beneath in block font-normal text-text-secondary — dropping the label's weight rather than inheriting it. No inputs render when the signal declares none.",
+      "constraints": [
+        "Fields, bounds and defaults come from the platform's declared contract read fresh — spec.md:530-532 ('the signal's declared strict parameters'); a design must not invent fields or hide declared ones.",
+        "The bounds annotation must stay attached to the parameter it bounds.",
+        "The description's lighter weight is deliberate — it is not part of the parameter's name.",
+        "Styling changes go through the CONTROL and LABEL constants in control.ts."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State the blast radius — strategy, signal, proposed values, and how many bound agents are reconfigured immediately — in the exact text the confirmation was issued against.",
+      "states": [
+        "default",
+        "with-params-line"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "rounded-gc-2 border border-border-default p-4 text-sm with role=alert — a plain border, not DT-0004's consequence-subtle treatment. Beneath it, when parameters travel, a plain text-sm line restates them ('Parameters: period=14 · threshold=30').",
+      "constraints": [
+        "The text is the string stored with the token — never a second wording; spec.md:534-536 ('state the consequence with the strategy's bound-agent count and the platform's own propagation wording').",
+        "The bound-agent count is stated for zero as plainly as for many — 'Unknown is not zero' (system.json principle).",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "perform-retune",
+      "role": "container",
+      "purpose": "Carry the retune decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performRetune",
+          "effect": "POSTs the server action with strategyId, signalId, expectedRevision, allocation, required, paramsJson and confirmationToken; success lands on the strategy read fresh; `authority-lost` redirects back here with ?authority=<reason> and nothing else, which renders the whole page as AuthorityLost; any other refusal redirects back here with the choice (a, req, p_*) preserved and ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3; up to seven hidden inputs carry the described values and the token — the perform sends precisely what was described, and the token is bound to those exact values. Since `a-lost-authority-is-not-a-refusal` the action tests `authority-lost` before `refused`, and that arm deliberately drops the composed choice from the redirect: there is no point returning someone to a form on an account where no call can succeed.",
+      "constraints": [
+        "The hidden binding is the ceremony — the token binds the exact values (spec.md:549-552: a confirmation minted for allocation 1 refuses a perform at allocation 3 before the platform tool is reached); the form must keep exactly one submit path.",
+        "The authority-lost arm carries no choice back and offers no form — a design that restores the composed choice to that redirect draws a control that cannot work.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
+        "Success is proven by the re-read — spec.md:569-571; the redirect to the strategy page must survive any redesign."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the retune. Named with the signal: 'Retune <signalId>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performRetune"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (size.control.min, 44px, tokenised by DT-0003), rounded-gc-2, DT-0004 hover/active. No pending/loading state between click and redirect — same class of gap as #153; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: the weight belongs on the consequence block, not on flinching at the legitimate action.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Decline the change and return to the strategy, leaving the rule as it is.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /strategies/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004 hover. Label 'Leave things as they are' on the proposal; the tuning form's back anchor ('Back to the strategy') wears the same constant. Where this is an anchor it can never be pending — it submits nothing. Where a surface uses it as a GET submit (the deploy chooser's ask), it can, and system.json's declared `disabled` and `loading` states are unimplemented there too (#153). Recorded on button-primary rather than here, because that is the control a perform runs through.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Reassure someone staring at a failed read that the strategy still exists, by naming the accurate external cause.",
+      "states": [
+        "refused-cause",
+        "unreachable-cause",
+        "absent"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state — which the page keeps distinct from `missing`, the platform saying the strategy is not there.",
+      "constraints": [
+        "The two causes must stay distinguishable — a 401 is not an outage.",
+        "Unreadable and missing are different truths and must not be merged into one look."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, connect link as an anchor wearing BUTTON_SECONDARY (DT-0006). Inherited by every authenticated page.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Retune a rule",
+      "steps": [
+        "arrive from the strategy page",
+        "adjust allocation, Required, parameters — prefilled from the rule itself",
+        "submit 'See what this change would do' (a GET; nothing is written)",
+        "read the consequence with the bound-agent count",
+        "submit 'Retune <signalId>'",
+        "land on the strategy read fresh, showing the new value"
+      ]
+    },
+    {
+      "name": "The change would change nothing",
+      "steps": [
+        "compose values equal to the rule's current values",
+        "the describe refuses as a no-op; no token is minted",
+        "'Cannot retune' with the reason and a way back to choose differently"
+      ]
+    },
+    {
+      "name": "Retune is refused after agreement",
+      "steps": [
+        "submit the described change",
+        "the platform refuses (revision moved, not permitted)",
+        "redirected back with the choice preserved and ?problem=",
+        "a fresh describe of the same choice under the refusal banner"
+      ]
+    },
+    {
+      "name": "The authority is gone when the retune is submitted",
+      "steps": [
+        "submit the described change",
+        "the platform answers authority-lost — the credential is revoked or unrefreshable",
+        "redirected back here with ?authority=<the deployment's own remedy sentence> and no choice",
+        "the whole page is 'Your BattleGrid authority is no longer valid': the sentence, 'Nothing was changed', and no form"
+      ]
+    },
+    {
+      "name": "A parameter does not read as a number",
+      "steps": [
+        "compose with a non-numeric parameter",
+        "'Those parameters do not read as numbers'",
+        "follow 'Compose it again' back to the form (values are not preserved)"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave things as they are'",
+        "back on /strategies/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "allocation",
+      "required",
+      "params",
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "The problem banner (tuning form and proposal only), the consequence, the params-contract-unreadable notice, AuthorityLost's reason and every refusal reason carry role=alert — except the not-a-rule explanation, which carries no role at all. On `authority-lost` the page is AuthorityLost's own `<main>`, so none of the focus order below applies: there is nothing focusable on it but the shared section nav above. Focus ring is global (focus-visible, 2px). The compose step is a method=get form, so a composed choice is a URL; every state change is a full navigation, and the only client code is PerformButton, reporting submit-in-flight."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/rules/[signalId]/actions.ts": "sha256:ae338a50d069cbb30d98da74bd428670ebfc436bd154fa4069d7dd5df88b49aa",
+    "app/(app)/strategies/[id]/rules/[signalId]/page.tsx": "sha256:2980b0710f48805a29e8decb5d6dd5a5493223c982398e3969ff363cd766a8f2",
+    "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f"
+  }
+}

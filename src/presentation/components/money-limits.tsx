@@ -1,6 +1,6 @@
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { undefaultableFields, UNBOUNDED_AT_ZERO } from '@/domain/agent/catalog.js';
-import { CONTROL } from './control.js';
+import { CONTROL, LABEL } from './control.js';
 
 /**
  * The six questions BattleGrid will not answer for you.
@@ -26,11 +26,14 @@ export function MoneyLimits({
 }: {
   catalog: Catalog;
   /**
-   * The agent's values, when editing rather than composing.
+   * The agent's values when editing — or, on the create form, what the
+   * operator typed before a refusal bounced it back. Same reasoning either
+   * way: the numbers already exist and the operator chose them.
    *
-   * One component for both, so the zero-means-unbounded warning cannot drift
-   * between the screen that creates an agent and the screen that changes it —
-   * which is exactly the drift `zero-does-not-mean-nothing` was written about.
+   * One component for both screens, so the zero-means-unbounded warning cannot
+   * drift between the screen that creates an agent and the screen that changes
+   * it — which is exactly the drift `zero-does-not-mean-nothing` was written
+   * about.
    */
   current?: Readonly<Record<string, unknown>> | undefined;
 }) {
@@ -55,7 +58,7 @@ export function MoneyLimits({
 
       {asked.has('tradingMode') && (
         <div className="space-y-1">
-          <label htmlFor="tradingMode" className="block text-sm text-text-primary">
+          <label htmlFor="tradingMode" className={LABEL}>
             Trading mode
           </label>
           {/*
@@ -74,6 +77,35 @@ export function MoneyLimits({
           <p className="text-sm text-text-secondary">
             You can change this later. Starting at <strong>Off</strong> lets you
             read what the agent decides before any of it costs anything.
+          </p>
+          {/*
+            This used to disclose that the mode was unanswerable here — the
+            requirement "An Unanswerable Trading Mode Says So", now retired,
+            because the disclosure had become false. What replaces it is not
+            silence but the thing the disclosure was standing in for: where the
+            proposals go, and how long there is to answer them.
+
+            **Both halves are now built** (change `the-approval-can-be-answered`,
+            sections 4 and 5), so the sentence names both. It said "accepting is
+            not yet available here and still happens on battlegrid.trade" for the
+            window between cancel shipping and accept shipping, and went on saying
+            it afterwards — sending operators off the product for something the
+            product does. That is the exact failure the retired requirement
+            existed to prevent, committed by its own replacement, and
+            `answering-is-not-disclaimed.test.ts` now fails if this copy claims
+            an answer is unavailable.
+
+            Accepting is named as needing permission rather than as unavailable:
+            it does need a step-up the operator grants, and that is a different
+            statement from "go elsewhere".
+          */}
+          <p className="text-sm text-text-secondary">
+            <strong>Approval required</strong> means the agent proposes a trade and waits.
+            Proposals appear under <a href="/approvals" className="underline">Waiting</a>,
+            where you can cancel one or accept it; the window is fifteen minutes, after
+            which a proposal expires and the agent does not offer it again. Accepting
+            opens a position with real money, so it asks you to grant that permission
+            the first time.
           </p>
         </div>
       )}
@@ -100,7 +132,7 @@ export function MoneyLimits({
             name="maxConcurrentExposureUsd"
             current={value('maxConcurrentExposureUsd')}
             label="Most it may have at risk at once"
-            hint="The total of everything open at the same time."
+            hint="Margin, not position size. BattleGrid sizes each new trade from what is left — and once that falls under 10, the next trade is refused without saying why."
           />
         )}
         {asked.has('balanceThresholdUsd') && (
@@ -163,7 +195,7 @@ function Money({
 
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm text-text-primary">
+      <label htmlFor={name} className={LABEL}>
         {label}
       </label>
       <input

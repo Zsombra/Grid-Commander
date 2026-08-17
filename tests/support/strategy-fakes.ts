@@ -1,13 +1,37 @@
-import type { Strategy, StrategyDetail, StrategyQuota } from '@/domain/strategy/strategy.js';
+import type {
+  SectionTemplate,
+  Strategy,
+  StrategyDetail,
+  StrategyQuota,
+} from '@/domain/strategy/strategy.js';
+import type { TickerOutcomes } from '@/domain/strategy/condition-outcome.js';
 import type { Confirmation } from '@/domain/capability/confirmation.js';
 import type {
+  CoinSelection,
+  ColumnCheckOutcome,
+  ColumnContract,
+  ColumnControls,
+  ColumnProposal,
+  ColumnRefusal,
   CompileResult,
+  ForkResult,
   LifecycleResult,
+  MetricHints,
+  MetricListResult,
+  MetricSummary,
+  ReportPreview,
+  ReportPreviewOutcome,
+  RuleMembership,
+  SignalDefinition,
+  SignalListResult,
+  SignalSummary,
   StrategiesPort,
   StrategyDetailResult,
   StrategyListResult,
   VocabularyResult,
+  PreviewLimits,
   VocabularyTemplatesResult,
+  SimulationResult,
 } from '@/ports/strategies.js';
 
 /**
@@ -41,11 +65,154 @@ export class FakeStrategiesPort implements StrategiesPort {
   detail: StrategyDetail | null = null;
   detailReadable = true;
 
+  signals: SignalSummary[] = [];
+  signalsReadable = true;
+  /** Keyed by signal id; a listed id with no entry makes the definition read throw. */
+  signalDefinitions = new Map<string, SignalDefinition>();
+
+  async listSignals(): Promise<SignalListResult> {
+    if (!this.signalsReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return { kind: 'signals', signals: this.signals };
+  }
+
+  async signalDefinition(params: { signalId: string }): Promise<SignalDefinition> {
+    const definition = this.signalDefinitions.get(params.signalId);
+    if (!definition) throw new Error(`no definition staged for ${params.signalId}`);
+    return definition;
+  }
+
+  /** Stage a signal in both the list and the definition store. */
+  stageSignal(definition: SignalDefinition) {
+    this.signals.push(definition.summary);
+    this.signalDefinitions.set(definition.summary.id, definition);
+  }
+
+  metrics: MetricSummary[] = [];
+  metricsReadable = true;
+  /** Keyed by metric id; a listed id with no entry makes the hints read throw. */
+  hints = new Map<string, MetricHints>();
+  columnOutcome: ColumnCheckOutcome = { kind: 'refused', refusal: aColumnRefusal() };
+
+  async listMetrics(): Promise<MetricListResult> {
+    if (!this.metricsReadable) {
+      return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
+    }
+    return { kind: 'metrics', metrics: this.metrics };
+  }
+
+  async metricHints(params: { metric: string }): Promise<MetricHints> {
+    const staged = this.hints.get(params.metric);
+    if (!staged) throw new Error(`no hints staged for ${params.metric}`);
+    return staged;
+  }
+
+  async columnContract(params: { column: ColumnProposal }): Promise<ColumnCheckOutcome> {
+    this.calls.push({ op: 'column-contract', payload: { ...params.column } });
+    return this.columnOutcome;
+  }
+
+  /** Stage a metric in both the index and the hints store. */
+  stageMetric(hints: MetricHints) {
+    this.metrics.push(hints.summary);
+    this.hints.set(hints.summary.id, hints);
+  }
+
+  previewOutcome: ReportPreviewOutcome = {
+    kind: 'preview',
+    preview: aReportPreview(),
+  };
+  membership: RuleMembership[] = [];
+
+  async previewReport(params: {
+    timeframe: string;
+    sections: readonly { kind: string; sectionKey: string }[];
+    coinSelection: CoinSelection;
+    conditions?: readonly Readonly<Record<string, unknown>>[] | undefined;
+  }): Promise<ReportPreviewOutcome> {
+    this.calls.push({
+      op: 'preview',
+      payload: {
+        timeframe: params.timeframe,
+        coinSelection: { ...params.coinSelection },
+        // Recorded so a test can assert the round trip actually happens: the
+        // platform resolves only the conditions it is given, so a preview that
+        // forgets them renders an empty outcome list and looks fine.
+        ...(params.conditions !== undefined ? { conditions: params.conditions } : {}),
+      },
+    });
+    return this.previewOutcome;
+  }
+
+  async deriveRuleView(): Promise<readonly RuleMembership[]> {
+    return this.membership;
+  }
+
+  /** Set per test. The platform's own arithmetic, stubbed. */
+  simulation: SimulationResult = {
+    kind: 'simulation',
+    simulation: {
+      aggregateScorePercent: 65,
+      gatePercent: 50,
+      wouldRoute: true,
+      attributions: [
+        { label: 'rsi_overbought', scorePercent: 100, allocation: 1, attributionPercent: 22 },
+      ],
+    },
+  };
+
+  async simulateAggregate(): Promise<SimulationResult> {
+    return this.simulation;
+  }
+
+  /** Set to make the rule write refuse with this message. */
+  ruleWriteRefusal: string | null = null;
+
+  async updateSignalRule(params: {
+    strategyId: string;
+    expectedRevision: number;
+    signalId: string;
+    allocation: number;
+    required: boolean;
+    ruleParams?: Readonly<Record<string, unknown>> | undefined;
+    confirmation: Confirmation;
+  }): Promise<Readonly<Record<string, unknown>>> {
+    this.calls.push({
+      op: 'update-rule',
+      payload: {
+        strategyId: params.strategyId,
+        expectedRevision: params.expectedRevision,
+        signalId: params.signalId,
+        allocation: params.allocation,
+        required: params.required,
+        ...(params.ruleParams !== undefined ? { params: params.ruleParams } : {}),
+      },
+      target: params.confirmation.target,
+    });
+    if (this.ruleWriteRefusal) throw new Error(this.ruleWriteRefusal);
+    const current = this.strategies.find((s) => s.id === params.strategyId);
+    if (current) {
+      this.strategies = this.strategies.map((s) =>
+        s.id === params.strategyId ? { ...s, revision: s.revision + 1 } : s,
+      );
+    }
+    return { strategy: { id: params.strategyId, revision: (current?.revision ?? 0) + 1 } };
+  }
+
+  /**
+   * The platform's own condition array, as `readStrategy` would hand it back
+   * for the preview round trip. Empty by default, matching `aDetail()`.
+   */
+  conditionsAsGiven: readonly Readonly<Record<string, unknown>>[] = [];
+
   async readStrategy(): Promise<StrategyDetailResult> {
     if (!this.detailReadable) {
       return { kind: 'unreadable', reason: 'BattleGrid did not respond', cause: 'unreachable' };
     }
-    return this.detail ? { kind: 'strategy', detail: this.detail } : { kind: 'missing' };
+    return this.detail
+      ? { kind: 'strategy', detail: this.detail, conditionsAsGiven: this.conditionsAsGiven }
+      : { kind: 'missing' };
   }
 
   async listStrategies(): Promise<StrategyListResult> {
@@ -59,7 +226,13 @@ export class FakeStrategiesPort implements StrategiesPort {
     // Compiling is recorded so a test can prove it happened *and* that nothing
     // moved as a result.
     this.calls.push({ op: 'compile', payload: params.request });
-    return this.compileResult ?? { kind: 'rejected', reason: 'no compile result configured' };
+    return (
+      this.compileResult ?? {
+        kind: 'rejected',
+        reason: 'no compile result configured',
+        refusal: null,
+      }
+    );
   }
 
   async applyPlan(params: {
@@ -78,12 +251,22 @@ export class FakeStrategiesPort implements StrategiesPort {
     return { strategy: { id: params.strategyId }, appliedImpact: { boundAgentCount: current?.boundAgentCount ?? 0 } };
   }
 
-  async forkStrategy(params: { strategyId: string; sourceRevision: number }): Promise<Strategy> {
+  /** Set to make the fork refuse with this reason — the platform's answer, whole. */
+  forkRefusal: string | null = null;
+
+  async forkStrategy(params: {
+    strategyId: string;
+    sourceRevision: number;
+    name?: string | undefined;
+  }): Promise<ForkResult> {
     this.calls.push({ op: 'fork', payload: { ...params } });
+    if (this.forkRefusal !== null) return { kind: 'refused', reason: this.forkRefusal };
     const source = this.strategies.find((s) => s.id === params.strategyId);
+    // The platform's naming, mirrored: a chosen name wins, blank is not a name.
+    const chosen = params.name !== undefined && params.name.trim() !== '' ? params.name : null;
     const fork: Strategy = {
       id: `${params.strategyId}-fork`,
-      name: `${source?.name ?? 'Strategy'} (fork)`,
+      name: chosen ?? `${source?.name ?? 'Strategy'} (fork)`,
       tagline: source?.tagline ?? null,
       description: source?.description ?? null,
       revision: 1,
@@ -94,7 +277,7 @@ export class FakeStrategiesPort implements StrategiesPort {
       forkedFromStrategyId: params.strategyId,
     };
     this.strategies = [...this.strategies, fork];
-    return fork;
+    return { kind: 'forked', strategy: fork };
   }
 
   async setActive(params: { strategyId: string; active: boolean }): Promise<LifecycleResult> {
@@ -120,18 +303,68 @@ export class FakeStrategiesPort implements StrategiesPort {
     };
   }
 
+  /**
+   * `null` exercises the honest branch — the platform not publishing limits is
+   * a state a surface has to handle, and it is the one v5 was always in.
+   * Overridden per-test where the limits themselves are the subject.
+   */
+  previewLimits: PreviewLimits | null = { maxResultBytes: 256000, deadlineMs: 15000 };
+
+  /**
+   * The templates the vocabulary advertises.
+   *
+   * Overridable because two properties now hang off this list that the default
+   * cannot show at once: a template whose columns the platform published, and
+   * one whose entry carried none. The default carries both, so the ordinary
+   * case exercises the ordinary distinction.
+   */
+  templates: SectionTemplate[] = [
+    {
+      kind: 'platform',
+      sectionKey: 'includeRsi',
+      label: 'RSI',
+      category: 'momentum',
+      columns: [
+        { metric: 'RSI14', transformId: 'value', timeframe: { rel: 'anchor' } },
+        { metric: 'RSI14', transformId: 'trajectory', timeframe: { rel: 'anchor' }, window: 4 },
+      ],
+    },
+    // No `columns` key at all — the platform published none for this one, which
+    // is a different claim from publishing an empty list.
+    { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
+    {
+      kind: 'platform',
+      sectionKey: 'includeMovingAverages',
+      label: 'Moving Averages',
+      category: 'trend',
+    },
+  ];
+
   async listVocabularyTemplates(): Promise<VocabularyTemplatesResult> {
     if (!this.vocabularyTemplatesReadable) {
       return { kind: 'unreadable', reason: 'vocabulary unavailable', cause: 'unreachable' };
     }
-    return {
-      kind: 'templates',
-      templates: [
-        { kind: 'platform', sectionKey: 'includeRsi', label: 'RSI', category: 'momentum' },
-        { kind: 'platform', sectionKey: 'includeMacd', label: 'MACD', category: 'momentum' },
-        { kind: 'platform', sectionKey: 'includeMovingAverages', label: 'Moving Averages', category: 'trend' },
-      ],
-    };
+    return { kind: 'templates', limits: this.previewLimits, templates: this.templates };
+  }
+
+  /**
+   * The declared column controls.
+   *
+   * Values lifted from the recorded schema of `get_strategy_column_contract`
+   * (server v11.0.0) rather than invented, so a page rendering them renders what
+   * the platform really pins. A test wanting the withheld branch empties one —
+   * which is the state a failed discovery leaves behind.
+   */
+  controls: ColumnControls = {
+    relativeTimeframes: ['anchor', 'lower', 'higher', 'regime'],
+    absoluteTimeframes: ['15m', '1h', '4h'],
+    bars: ['closed', 'all'],
+    ordering: ['hi', 'lo', 'far', 'near'],
+    sides: ['support', 'resistance'],
+  };
+
+  async columnControls(): Promise<ColumnControls> {
+    return this.controls;
   }
 }
 
@@ -148,6 +381,23 @@ export function aStrategy(overrides: Partial<Strategy> = {}): Strategy {
     boundAgentCount: 0,
     forkedFromStrategyId: null,
     ...overrides,
+  };
+}
+
+/** A detail wrapping a summary — what `readStrategy` answers with. */
+export function aDetail(summary: Strategy = aStrategy()): StrategyDetail {
+  return {
+    summary,
+    sections: [],
+    marketReadText: null,
+    thresholds: { minAggregateScore: null, minRequiredCount: null, minAtrPct: null },
+    tradeLevelPolicy: null,
+    signalRules: [],
+    conditions: [],
+    openPositionCount: 0,
+    cadence: null,
+    regimeAutoDerive: false,
+    regimeTimeframe: null,
   };
 }
 
@@ -172,6 +422,10 @@ export function anApprovedPlan(overrides: Record<string, unknown> = {}): Record<
       minAggregateScore: 0.5,
       minRequiredCount: 0,
       minAtrPct: 0.5,
+      // Required by the live apply schema; observed in the real postState
+      // 2026-07-31 (empty on a strategy with no conditions authored).
+      conditions: [],
+      conditionVerdicts: [],
       isActive: true,
     },
     explicitRuleOverrides: [],
@@ -179,6 +433,293 @@ export function anApprovedPlan(overrides: Record<string, unknown> = {}): Record<
     mismatches: [{ code: 'ACTIVE_SIGNAL_MODULE_NOT_IN_REPORT', message: 'advisory' }],
     diff: { changedAxes: ['IDENTITY'] },
     bindingImpact: { boundAgentCount: 0 },
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `list_strategy_signals` entry of 2026-08-01. */
+export function aSignal(overrides: Partial<SignalSummary> = {}): SignalSummary {
+  return {
+    id: 'rsi_oversold',
+    module: 'RSI',
+    direction: 'LONG',
+    name: 'Oversold',
+    description: 'RSI-14 falls below 30 — price in oversold territory',
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `get_strategy_signal_definition` payload of 2026-08-01. */
+export function aSignalDefinition(overrides: Partial<SignalDefinition> = {}): SignalDefinition {
+  return {
+    summary: aSignal(),
+    moduleName: 'RSI',
+    moduleDescription: 'Relative Strength Index — momentum oscillator on 0–100.',
+    detects: 'RSI has fallen into oversold territory.',
+    fires: 'Triggers when RSI(14) drops below the threshold.',
+    exampleSetup: 'Threshold = 30',
+    examples: [
+      { scenario: 'RSI = 27', outcome: 'fires, Bullish, score 0.10' },
+      { scenario: 'RSI = 32', outcome: 'does not fire' },
+    ],
+    bestFor: 'Mean-reversion entries inside ranges.',
+    watchOut: 'In strong downtrends RSI can stay <30 for many bars.',
+    parameters: [
+      {
+        key: 'threshold',
+        description: 'RSI oversold boundary in 0–100 index points.',
+        min: 1,
+        max: 50,
+        defaultValue: 30,
+      },
+    ],
+    indicators: ['RSI(14)'],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live vocabulary `metrics` entry of 2026-08-01. */
+export function aMetric(overrides: Partial<MetricSummary> = {}): MetricSummary {
+  return {
+    id: 'RSI14',
+    label: 'RSI (14)',
+    family: 'momentum',
+    unit: 'oscillator',
+    precision: 1,
+    range: [0, 100],
+    timeframeMode: 'candle',
+    transformIds: ['value', 'trajectory', 'classifyZone', 'spread', 'rank'],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `get_metric_construction_hints` payload of 2026-08-01. */
+export function aMetricHints(overrides: Partial<MetricHints> = {}): MetricHints {
+  return {
+    summary: aMetric(),
+    transforms: [
+      {
+        id: 'value',
+        label: 'Value',
+        parameters: [
+          {
+            key: 'offset',
+            required: false,
+            defaultValue: '0',
+            description: 'Bars before the latest value; 0 selects the current resolved value.',
+          },
+        ],
+        calculationSummary: 'Select one value at the requested offset.',
+        formula: 'output = base[t - offset]',
+        nullBehavior: 'Returns null when the requested slot is absent or the source value is null.',
+        operandRequired: false,
+        chainSuccessors: [],
+      },
+      {
+        id: 'spread',
+        label: 'Spread vs metric',
+        parameters: [
+          {
+            key: 'inputs',
+            required: true,
+            defaultValue: null,
+            description: 'Exactly one candle-backed operand metric.',
+          },
+        ],
+        calculationSummary: 'Measure the signed percentage gap between the base and one operand metric.',
+        formula: 'output = (base - inputs[0]) / inputs[0] × 100',
+        nullBehavior: 'Returns null when either operand is null or the second operand is zero.',
+        operandRequired: true,
+        chainSuccessors: ['trajectory', 'aggregate'],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** Shaped from the live column contract of 2026-08-01 (RSI14/value/anchor). */
+export function aColumnContract(overrides: Partial<ColumnContract> = {}): ColumnContract {
+  return {
+    formula: 'output = RSI14[t - 0]',
+    calculationSummary: 'Select one value at the requested offset.',
+    nullBehavior: 'Returns null when the requested slot is absent or the source value is null.',
+    nullSentinel: '—',
+    outputs: [
+      {
+        header: 'RSI14',
+        meaning: 'RSI14: latest value.',
+        unit: 'oscillator',
+        nullable: true,
+      },
+    ],
+    effectiveParameters: { offset: 0, window: null },
+    requiresSectionTimeframe: true,
+    ...overrides,
+  };
+}
+
+/** Shaped from the live teaching refusal of 2026-08-01 (spread with a CLOSE operand). */
+export function aColumnRefusal(overrides: Partial<ColumnRefusal> = {}): ColumnRefusal {
+  return {
+    message:
+      "spread operand 'CLOSE' is not a legal relational operand for base 'RSI14' — it must declare a numeric output in the base's OWN unit",
+    authoringCode: 'REPORT_COLUMN_OPERAND_UNSUPPORTED',
+    path: ['column', 'inputs', 0, 'metric'],
+    received: '"CLOSE"',
+    allowedValues: ['ADX', 'CCI20', 'MFI14', 'RSI7', 'STOCH_D', 'STOCH_K'],
+    allowedRule: null,
+    ...overrides,
+  };
+}
+
+/** Shaped from the live `preview_strategy_report` payload of 2026-08-01 (Dunkirk). */
+export function aReportPreview(overrides: Partial<ReportPreview> = {}): ReportPreview {
+  return {
+    sections: [
+      {
+        sectionKey: 'includePriceAction',
+        title: 'Price Action',
+        text: 'Schema: 1h candles. last: the last traded price (live, not a bar close).',
+      },
+      {
+        sectionKey: 'includeRsi',
+        title: 'RSI',
+        text: 'RSI(14) on 1h closes. rsi14: latest value.',
+      },
+    ],
+    tokenCountModel: 'o200k_base',
+    budget: [
+      { name: 'sections', used: 5, cap: 32 },
+      { name: 'distinctTimeframes', used: 3, cap: 8 },
+      // v9 publishes the token estimate here rather than as its own field.
+      { name: 'estimatedTokens', used: 1767, cap: 16000 },
+    ],
+    // Empty by default, matching a preview of a strategy that defines no
+    // conditions — which is what `aDetail()` is. A test wanting outcomes says
+    // so, so the two empty states never get confused in a fixture.
+    conditionOutcomes: [],
+    ...overrides,
+  };
+}
+
+/**
+ * How one coin's conditions resolved — the domain shape of the live
+ * `conditionOutcomes` row observed 2026-08-04.
+ *
+ * Carries all three of the things that must not flatten: clause-level evidence
+ * (observed against required), a provisional outcome, and a threshold group
+ * whose `counts` include an unresolved third state.
+ */
+export function aTickerOutcome(overrides: Partial<TickerOutcomes> = {}): TickerOutcomes {
+  return {
+    ticker: 'BTC',
+    outcomes: [
+      {
+        conditionKey: 'ALL_AGREE_UP',
+        name: 'Regime, HTF and ADX agree — up',
+        outcome: 'FALSE',
+        provisional: true,
+        counts: null,
+        evidence: [
+          {
+            kind: 'clause',
+            sectionKey: 'includeRegimeContext',
+            header: 'regTrend_now',
+            op: 'is',
+            operand: 'ranging',
+            literal: 'trending up',
+            outcome: 'FALSE',
+          },
+        ],
+      },
+      {
+        conditionKey: 'FOUR_OF_FOUR',
+        name: 'Four of four',
+        outcome: 'TRUE',
+        provisional: false,
+        counts: { trueCount: 4, total: 4, unresolvedCount: 0 },
+        evidence: [],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/**
+ * **Berlin's real `FULL_SEND_DOWN`**, copied from `get_strategy` on 2026-08-04.
+ *
+ * Not invented, and the hardest shape either account holds: a threshold group
+ * mixing references, a nested negation, and plain clauses. If a change flattens
+ * nesting or loses the negation, this is the payload that catches it — and the
+ * consequence of losing the negation is a page that reads "flow must be rising"
+ * for a rule saying the exact opposite.
+ *
+ * Here rather than in one test file because two suites now need the same bytes:
+ * `conditions.test.ts` reads it into the domain, and `condition-draft.test.ts`
+ * writes it back out and demands the result be identical. A round-trip check
+ * against a *second copy* of the fixture would pass while the two copies drifted,
+ * which is the one way that check could be wrong.
+ */
+export function berlinFullSendDown(): Record<string, unknown> {
+  return {
+    conditionKey: 'FULL_SEND_DOWN',
+    name: 'Full send — down',
+    verdict: 'DOWN',
+    required: false,
+    definition: {
+      kind: 'group',
+      op: 'N_OF',
+      n: 3,
+      members: [
+        { kind: 'conditionRef', conditionKey: 'REGIME_DOWN' },
+        { kind: 'conditionRef', conditionKey: 'WINDOW_OPEN' },
+        { kind: 'group', op: 'NOT', members: [{ kind: 'conditionRef', conditionKey: 'FLOW_UP' }] },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeHigherTimeframe', header: 'MAalign_htf' },
+          op: 'is',
+          label: 'bearish',
+        },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeOpenInterest', header: 'oiRegime' },
+          op: 'is',
+          label: 'new shorts',
+        },
+        {
+          kind: 'clause',
+          column: { sectionKey: 'includeCvd', header: 'CVD_trend' },
+          op: 'is',
+          label: 'falling',
+        },
+      ],
+    },
+  };
+}
+
+/** One of the four building blocks `FULL_SEND_DOWN` is assembled from. */
+export function berlinRegimeDown(): Record<string, unknown> {
+  return {
+    conditionKey: 'REGIME_DOWN',
+    name: 'Regime trending down',
+    verdict: null,
+    required: false,
+    definition: {
+      kind: 'clause',
+      column: { sectionKey: 'includeRegimeContext', header: 'regTrend_now' },
+      op: 'is',
+      label: 'trending down',
+    },
+  };
+}
+
+/** Shaped from the live `derive_strategy_rule_view` row of 2026-08-01. */
+export function aMembership(overrides: Partial<RuleMembership> = {}): RuleMembership {
+  return {
+    signalId: 'rsi_oversold',
+    inReport: true,
+    status: 'IN_REPORT',
+    defaultAllocation: 2,
     ...overrides,
   };
 }

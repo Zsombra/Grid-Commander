@@ -4,10 +4,12 @@ import { isApprovedModel, isKnownBrainPreset } from '@/domain/agent/catalog.js';
 import type { ValidationIssue } from '@/domain/agent/trading-config.js';
 import {
   buildTradingConfig,
+  positionManagementForPreset,
   positionManagementFrom,
   positionSizePresetsFrom,
   validateTradingConfig,
 } from '@/domain/agent/trading-config.js';
+import { DuplicateIdempotencyKeyError } from '@/domain/errors.js';
 import type { AgentsPort } from '@/ports/agents.js';
 
 export interface CreateAgentRequest {
@@ -22,7 +24,12 @@ export interface CreateAgentRequest {
    * the catalog — and this command already has it.
    */
   readonly money: Readonly<Record<string, unknown>>;
-  readonly arenaChallengeEnabled?: boolean | undefined;
+  /**
+   * A position-management preset from the catalog, or `CUSTOM`, or absent —
+   * the last two both mean the product-assembled values. A named preset means
+   * the platform's own twelve values for it, never a substitute.
+   */
+  readonly positionPreset?: string | undefined;
   readonly idempotencyKey?: string | undefined;
 }
 
@@ -30,7 +37,14 @@ export type CreateAgentResult =
   | { readonly kind: 'created'; readonly agent: Agent }
   | { readonly kind: 'at-capacity'; readonly explanation: string }
   | { readonly kind: 'invalid'; readonly issues: readonly ValidationIssue[] }
-  | { readonly kind: 'no-catalog'; readonly reason: string };
+  | { readonly kind: 'no-catalog'; readonly reason: string }
+  /**
+   * This key already has a live attempt. `succeeded` means the agent exists —
+   * the earlier press worked. `attempted` means the earlier press has no
+   * recorded outcome, so it may have landed; the caller should say to check
+   * the roster rather than either crashing or quietly trying again.
+   */
+  | { readonly kind: 'duplicate'; readonly originalOutcome: 'succeeded' | 'attempted' };
 
 /**
  * Create an agent, refusing before the platform has to.
@@ -83,7 +97,18 @@ export class CreateAgentCommand {
     }
 
     if (req.brain.kind === 'preset' && !isKnownBrainPreset(catalog, req.brain.preset)) {
-      issues.push({ field: 'brain.preset', reason: `"${req.brain.preset}" is not a brain preset.` });
+      // Two different refusals. The presets are read from the create tool's own
+      // declaration, so an empty set means it could not be read — and telling
+      // an operator their choice "is not a brain preset" on the strength of a
+      // read that failed blames them for it. `DescribeDeployQuery` draws the
+      // same line for timeframes, in the same words.
+      issues.push({
+        field: 'brain.preset',
+        reason:
+          catalog.brainPresets.length === 0
+            ? 'BattleGrid did not declare which brain presets it accepts, so none can be validated.'
+            : `"${req.brain.preset}" is not a brain preset.`,
+      });
     }
     if (req.brain.kind === 'custom' && !isApprovedModel(catalog, req.brain.modelId)) {
       issues.push({
@@ -109,9 +134,32 @@ export class CreateAgentCommand {
      * whatever a partial send omits, so this either produces a complete one or
      * refuses and says which questions have no answer.
      */
+    /**
+     * A named preset is the platform's values or a refusal — never a fallback.
+     *
+     * `positionManagementForPreset` answers only when the catalog carried the
+     * preset *and* its configuration; anything else is a validation issue in
+     * the same shape as an unknown brain preset. Falling back to the CUSTOM
+     * assembly here would create an agent labeled COLT carrying values that
+     * are not COLT's — the exact lie the requirement forbids.
+     */
+    const preset = req.positionPreset;
+    let positionManagement = positionManagementFrom(catalog, 'CUSTOM');
+    if (preset !== undefined && preset !== 'CUSTOM') {
+      const fromCatalog = positionManagementForPreset(catalog, preset);
+      if (fromCatalog === null) {
+        issues.push({
+          field: 'positionPreset',
+          reason: `"${preset}" is not a position-management preset the catalog describes.`,
+        });
+      } else {
+        positionManagement = fromCatalog;
+      }
+    }
+
     const built = buildTradingConfig(catalog, {
       ...req.money,
-      positionManagement: positionManagementFrom(catalog, 'CUSTOM'),
+      positionManagement,
       positionSizePresets: positionSizePresetsFrom(catalog),
     });
 
@@ -130,16 +178,27 @@ export class CreateAgentCommand {
     // Narrowed by the guard above: `incomplete` always produced an issue.
     if (built.kind !== 'config') return { kind: 'invalid', issues };
 
-    const agent = await this.agents.createAgent({
-      userId: req.userId,
-      accessToken: req.accessToken,
-      displayName: req.displayName,
-      brain: req.brain,
-      strategyId: req.strategyId,
-      tradingConfig: built.config,
-      arenaChallengeEnabled: req.arenaChallengeEnabled,
-      idempotencyKey: req.idempotencyKey,
-    });
-    return { kind: 'created', agent };
+    try {
+      const agent = await this.agents.createAgent({
+        userId: req.userId,
+        accessToken: req.accessToken,
+        displayName: req.displayName,
+        brain: req.brain,
+        strategyId: req.strategyId,
+        tradingConfig: built.config,
+        idempotencyKey: req.idempotencyKey,
+      });
+      return { kind: 'created', agent };
+    } catch (err) {
+      // Only the duplicate, and only from the create itself. A second press of
+      // the same form is a refusal with a next step, not an exception — the
+      // outcome travels as a field so nothing downstream parses a message.
+      // Everything else still propagates: this catch must not become the place
+      // where unrelated failures go quiet.
+      if (err instanceof DuplicateIdempotencyKeyError) {
+        return { kind: 'duplicate', originalOutcome: err.originalOutcome };
+      }
+      throw err;
+    }
   }
 }

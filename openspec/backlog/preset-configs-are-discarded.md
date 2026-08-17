@@ -2,11 +2,11 @@
 id: preset-configs-are-discarded
 title: The catalog ships each preset's fourteen values and the mapper drops them
 type: feature
-status: open
+status: done
 priority: p2
 created: 2026-07-29
-updated: 2026-07-29
-change: every-value-sent-is-one-the-platform-accepts
+updated: 2026-07-31
+change: preset-configs-are-discarded
 capability: agent-authoring
 blocked_by: []
 tags: [battlegrid, agent-authoring, catalog]
@@ -71,3 +71,16 @@ master switch is off, and not informed either.
 - `agent-edit-form` — the surface this feeds
 - change `every-value-sent-is-one-the-platform-accepts` — declared this out of
   scope, being a defect fix
+
+## Closed 2026-07-31
+
+All four fix points landed (change `preset-configs-are-discarded`): the mapper
+carries `config`/`tagline`/`cardSummary`, the create form offers the catalog
+presets that arrived with their configuration (plus CUSTOM, the default),
+choosing one sends the platform's own fourteen values with the label beside
+them, and an unanswerable preset name is refused like an unknown brain preset.
+
+On fix #4 (revisit `OURS`): kept. The three booleans remain the product's own
+answers **for the CUSTOM path only** — a chosen preset answers all three
+itself, five times over, and the preset path takes none of `OURS`. The list
+stays exactly as honest as before, now with a smaller blast radius.

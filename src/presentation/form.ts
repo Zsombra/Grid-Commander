@@ -1,6 +1,32 @@
 import type { CompiledPlan } from '@/domain/strategy/compiled-plan.js';
+import { compileUpdateIntent } from '@/domain/strategy/compiled-plan.js';
+
+/**
+ * The compile UPDATE request, for the route layer (which may not import the
+ * domain — W-D). One re-export, same reasoning as `presetPosition`.
+ */
+export const updateCompileIntent = compileUpdateIntent;
 import type { Behavior } from '@/domain/agent/brain.js';
 import { isConviction, isOutlook, isRisk } from '@/domain/agent/brain.js';
+import type { Catalog } from '@/domain/agent/catalog.js';
+import {
+  POSITION_MANAGEMENT_FIELDS,
+  positionFieldKind,
+  positionManagementForPreset,
+} from '@/domain/agent/trading-config.js';
+
+/**
+ * The catalog's own values for a named preset, for the route layer — which
+ * may not import the domain (W-D) and so reaches the one rule it needs
+ * through here, exactly as it reaches `editIntent`. Null when the catalog
+ * cannot answer, and the caller refuses rather than substituting.
+ */
+export function presetPosition(
+  catalog: Catalog,
+  preset: string,
+): Readonly<Record<string, unknown>> | null {
+  return positionManagementForPreset(catalog, preset);
+}
 
 /**
  * Reading a submitted form without inventing what it did not contain.
@@ -36,6 +62,16 @@ export function optionalText(form: FormData, field: string): string | null {
 export function requiredInteger(form: FormData, field: string): number {
   const raw = form.get(field);
   if (typeof raw !== 'string') throw new FormError(field, `${field} is required`);
+  const value = Number(raw);
+  if (!Number.isInteger(value)) throw new FormError(field, `${field} must be a whole number`);
+  return value;
+}
+
+/** An integer or null — empty string round-trips as null. */
+export function nullableInteger(form: FormData, field: string): number | null {
+  const raw = form.get(field);
+  if (typeof raw !== 'string') throw new FormError(field, `${field} is required`);
+  if (raw === '') return null;
   const value = Number(raw);
   if (!Number.isInteger(value)) throw new FormError(field, `${field} must be a whole number`);
   return value;
@@ -155,6 +191,95 @@ export const MONEY_FIELDS = [
   'balanceThresholdUsd',
   'minAllocationUsd',
 ] as const;
+
+/**
+ * The position-management object, off its `pm.*` transport fields.
+ *
+ * One typed coercion for both requests that read it — the review (query
+ * string) and the apply (FormData) — because the confirmation is bound to a
+ * digest of the values, and two coercions that disagree about `"3"` versus
+ * `3` refuse every honest edit (DL-5, applied before it can bite here).
+ *
+ * All-or-nothing: absent entirely means "no position change" and returns
+ * null; present but missing a field is a malformed submission and refuses.
+ * A partial object must never reach the platform — `positionManagement` is
+ * replaced wholesale, so an omission is a silent reset.
+ */
+const PM_KEYS = ['positionManagementPreset', ...POSITION_MANAGEMENT_FIELDS] as const;
+
+export function positionFromTransport(
+  source: { get(name: string): string | null | undefined },
+): Record<string, unknown> | null {
+  const raw = new Map<string, string>();
+  for (const key of PM_KEYS) {
+    const value = source.get(`pm.${key}`);
+    if (typeof value === 'string' && value !== '') raw.set(key, value);
+  }
+  if (raw.size === 0) return null;
+
+  const out: Record<string, unknown> = {};
+  for (const key of PM_KEYS) {
+    const value = raw.get(key);
+    const kind = positionFieldKind(key);
+    if (kind === 'boolean') {
+      // A checkbox submits nothing when unchecked; the confirm form writes
+      // 'true'/'false' explicitly. Both spellings land here, and 'false' —
+      // like absence — is false.
+      out[key] = value === 'true' || value === 'on';
+      continue;
+    }
+    if (value === undefined) {
+      throw new FormError(`pm.${key}`, `position management arrived without "${key}"`);
+    }
+    if (kind === 'text') {
+      out[key] = value;
+      continue;
+    }
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      throw new FormError(`pm.${key}`, `"${key}" must be a number`);
+    }
+    out[key] = parsed;
+  }
+  return out;
+}
+
+/**
+ * One composed intent, split into the two arguments `UpdateAgentCommand` takes.
+ *
+ * `tradingConfig` cannot travel inside `changes`. It is the platform's one
+ * partial-is-destructive field: every one of its twenty members is required
+ * once the object is present, and a send that omits nineteen does not error —
+ * it resets them to BattleGrid's defaults. `UpdateAgentCommand` guards that by
+ * merging `tradingConfigChanges` onto the agent's current config, checking the
+ * merge is complete and validating it against the catalog. A caller that puts
+ * the object in `changes` instead walks straight past all three.
+ *
+ * Shared rather than written twice because it already was. The edit form split
+ * it inline; `/pending/[id]` did not, so a model proposing `tradingMode: OFF`
+ * would, on agreement, have cleared every loss cap the agent ran under. Found
+ * by walking the live loop — the proposal the whole change exists to serve is
+ * the one that triggered it.
+ *
+ * The digest is unaffected: `confirmationTarget.agentEdit` sorts keys, so
+ * `{tradingConfig: X}` and `{...rest, tradingConfig: X}` bind identically —
+ * which is what lets the split happen after the token was minted.
+ */
+export function editArguments(intent: Readonly<Record<string, unknown>>): {
+  readonly changes: Readonly<Record<string, unknown>>;
+  readonly tradingConfigChanges: Readonly<Record<string, unknown>> | undefined;
+} {
+  const { tradingConfig, ...changes } = intent;
+  return {
+    changes,
+    // Absent, not empty — `editIntent` is careful about that distinction and
+    // discarding it here would undo it.
+    tradingConfigChanges:
+      typeof tradingConfig === 'object' && tradingConfig !== null
+        ? (tradingConfig as Readonly<Record<string, unknown>>)
+        : undefined,
+  };
+}
 
 export function editIntent(
   source: { get(name: string): string | null | undefined },

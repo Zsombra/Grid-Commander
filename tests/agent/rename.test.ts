@@ -68,15 +68,33 @@ describe('the token is not minted by the thing that spends it', () => {
  */
 describe('the surface says what happened', () => {
   const page = readFileSync('app/(app)/agents/[id]/edit/page.tsx', 'utf8');
+  // The action lives beside the page since `the-build-checks-what-next-
+  // generates` — Next's page contract forbids exporting it from the page.
+  const action = readFileSync('app/(app)/agents/[id]/edit/actions.ts', 'utf8');
 
   it('reads the result of the write instead of discarding it', () => {
     // The original defect, stated directly: `await …execute({…}); redirect(…)`.
-    expect(page).toMatch(/const result = await app\.updateAgent\.execute/);
-    expect(page).toMatch(/result\.kind === 'updated'/);
+    //
+    // The execute moved inside `spending()` when this action came under the
+    // confirmation-refusal wrapper, so it no longer sits adjacent to its
+    // binding. The property asserted is unchanged — the action *reads* its
+    // result — and only its spelling moved, so the matcher follows it rather
+    // than the assertion being dropped. Same shape, and same reasoning, as
+    // `reads()` in `tests/agent/refusals-reach-the-operator.test.ts`.
+    //
+    // The gap is bounded deliberately: an unbounded one would let
+    // `const result` bind something else entirely and still match an execute
+    // further down the file, which is how a scanner stops being one.
+    expect(action).toMatch(
+      /const result = await (?:spending\([\s\S]{0,80})?app\.updateAgent\.execute/,
+    );
+    expect(action).toMatch(/result\.kind === 'updated'/);
   });
 
   it('surfaces the reason the operation gave', () => {
-    expect(page).toMatch(/problem=/);
+    // The bounce carries the reason as `problem` — inline in a template, or
+    // through URLSearchParams when the composition rides along with it.
+    expect(action).toMatch(/problem=|URLSearchParams\(\{ problem \}\)/);
   });
 
   it('renders a refusal where the operator will see it', () => {
@@ -86,6 +104,7 @@ describe('the surface says what happened', () => {
 
   it('stays out of the domain', () => {
     expect(page, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
+    expect(action, 'app/ may not import the domain').not.toMatch(/@\/domain\//);
   });
 
   /**
@@ -95,8 +114,7 @@ describe('the surface says what happened', () => {
    * spends it.
    */
   it('spends a token it did not mint', () => {
-    expect(page).toMatch(/requiredText\(formData, 'confirmationToken'\)/);
-    const action = page.slice(page.indexOf('export async function applyEdit'));
+    expect(action).toMatch(/requiredText\(formData, 'confirmationToken'\)/);
     expect(action, 'the action that applies must not also propose').not.toMatch(
       /describeEdit\.execute/,
     );

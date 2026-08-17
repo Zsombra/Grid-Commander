@@ -5,7 +5,7 @@ type: risk
 status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-08-01
 change: ""
 capability: ""
 blocked_by: []
@@ -191,3 +191,70 @@ Since GitHub-hosted runners remain blocked at the organization/account level, lo
 - `powershell -ExecutionPolicy Bypass -File scripts/check-local.ps1` (Windows PowerShell master runner covering Python unit tests, OpenSpec validation, TypeScript typecheck, ESLint, Vitest, and Next.js build).
 - `./scripts/check.sh` (POSIX Bash runner for Linux/macOS).
 
+## Repo side done (2026-07-31)
+
+The operator chose the self-hosted route. `validate.yml` now reads
+`runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}` on all jobs — unset, the
+behavior is exactly the old pin; set to `self-hosted`, every job routes to a
+registered runner with no further commit. Setup handout (registration, machine
+requirements, the public-repo security controls, verification, revert):
+`docs/SELF_HOSTED_RUNNER.md`.
+
+Searched the repo and the operator's mail for evidence of an
+already-registered runner: none found — the "self-hosted checker a previous
+agent built" is `scripts/check.sh`, which verifies locally and cannot green
+the board. What remains is operator-only: register the runner (Settings →
+Actions → Runners) and set the `CI_RUNNER` repository variable.
+
+## Direction change (2026-07-31, operator): GitHub-hosted, not self-hosted
+
+The operator has dropped the self-hosted-runner route ("we ain't gonna be
+doing the CI locally — make it in a way GitHub can understand"). What that
+means by side:
+
+**Repo side: there is nothing left to do, and that is verified.** The
+workflow is plain GitHub Actions — 7 jobs covering every local gate;
+`runs-on` reads `${{ vars.CI_RUNNER || 'ubuntu-latest' }}`, so with the
+variables unset (they are unset) every job targets GitHub-hosted runners
+exactly as before the routing change. The moment execution is restored,
+CI is green-able with no commit. Re-verified today on PR #12's head: all
+jobs still die in ~2s with empty check-run output — the account-level
+signature, unchanged.
+
+**Account side: the one remaining step is settling the GitHub billing.**
+No repository content, workflow edit, or agent session can do it.
+`docs/SELF_HOSTED_RUNNER.md` stays in the tree as reference but is no
+longer the plan.
+
+## The bill will not be paid (2026-07-31, operator) — decision sheet written
+
+Settling the account is off the table entirely. The workaround options are
+documented, ranked, and step-by-stepped in **`docs/CI_WITHOUT_BILLING.md`**:
+
+- **A. Transfer the repository to a clean GitHub account** (recommended —
+  zero cost, zero commits, the workflow already targets `ubuntu-latest`,
+  `workflow_dispatch` exists for the first proving run).
+- **B. Third-party CI** (Cirrus/CircleCI free tiers; small port because
+  every job wraps committed scripts).
+- **C. Self-hosted runner** (already declined — no machine; repo side stays
+  wired if that changes).
+- **D. Local-only as explicit policy** (today's reality; if chosen, this
+  item closes as "accepted risk").
+
+Every option needs an owner action (account creation/transfer, app install,
+or a policy decision); none is executable from a session. This item stays
+open until the operator picks one.
+
+## Closed 2026-08-01 — by decision, not by fix (`ci-is-local-by-policy`)
+
+The operator chose local-only verification as policy (option D of
+`docs/CI_WITHOUT_BILLING.md`): the bill stays unpaid, the repo stays put,
+and CI is `./scripts/ci.sh` — every gate the workflow ran, one command,
+loud skips. `validate.yml` is `workflow_dispatch`-only now, ending the
+seven-red-crosses noise on every PR while keeping the jobs provable the day
+the account is ever unblocked.
+
+Accepted residual, stated plainly: green means "green where ci.sh was run".
+The session journal records each run; nothing enforces it but discipline.
+That is the trade the decision makes, and it is recorded here rather than
+implied.

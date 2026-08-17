@@ -1,10 +1,10 @@
 {
   "id": "audit-log",
-  "title": "Audit \u2014 every write made on your behalf",
+  "title": "Audit — every write made on your behalf",
   "route": "/audit",
   "capability": "app-access",
-  "status": "functional",
-  "generated_at_commit": "52ea2b5",
+  "status": "designed",
+  "generated_at_commit": "fa151ca",
   "source_files": [
     "app/(app)/audit/page.tsx",
     "src/presentation/components/audit-list.tsx",
@@ -17,7 +17,7 @@
   "data": [
     {
       "name": "entries",
-      "shape": "AuditEntry[] \u2014 { createdAt, tool, destructive, actor, outcome, failureReason }",
+      "shape": "AuditEntry[] — { createdAt, tool, destructive, actor, outcome, failureReason }",
       "source": "app.readAudit.execute()"
     },
     {
@@ -49,11 +49,11 @@
         "unresolvedCount"
       ],
       "actions": [],
-      "current_implementation": "Unstyled table in an overflow-x-auto wrapper, sr-only caption, four columns. Empty state is a single sentence. Tailwind class names present but Tailwind is not installed.",
+      "current_implementation": "Unstyled table in an overflow-x-auto wrapper, sr-only caption, four columns. Empty state is a single sentence. Styled with Tailwind (3.4.19, installed since this surface was first surveyed).",
       "constraints": [
-        "`attempted` must never be styled as a failure. It means an operation started and we never learned how it ended \u2014 which is exactly what an audit log should say, and collapsing it into 'failed' loses the distinction that makes the log trustworthy",
-        "'you' and 'the assistant, answering you' are different levels of intent and must stay distinguishable. Telling them apart is what makes this log useful to someone reading carefully (design A-E)",
-        "`destructive` is marked with a word, not only a colour or icon \u2014 colour is never the only signal",
+        "`attempted` must never be styled as a failure. It means an operation started and we never learned how it ended — which is exactly what an audit log should say, and collapsing it into 'failed' loses the distinction that makes the log trustworthy",
+        "'you' and 'the assistant, answering you' are different levels of intent and must stay distinct. `actor-assistant` is now historical-only — nothing can write an assistant row since the assistant's removal (`only-mcp-control`) — but the state must keep rendering: rows from before the removal exist, and collapsing the branch would render them as 'you', a false statement about who acted on the one surface whose entire job is saying who acted",
+        "`destructive` is marked with a word, not only a colour or icon — colour is never the only signal",
         "The unresolved-count banner is role=status and must not block or obscure the table",
         "The table must remain a real table with its caption and column scopes; it is the one screen users will read down a column",
         "Timestamps must stay machine-readable in `<time datetime>` regardless of display format",
@@ -105,5 +105,10 @@
       "table"
     ],
     "notes": "Table has an sr-only caption and scoped column headers. Unresolved count is role=status. Horizontal scroll is on a wrapper so the table itself is not clipped."
+  },
+  "source_digest": {
+    "app/(app)/audit/page.tsx": "sha256:be066129a5e33843de497455a99eb3b462897765f3ce79e7b1c4847bd8f6d334",
+    "src/presentation/components/audit-list.tsx": "sha256:d11ba36f45738eee4d27bdcc07b756c87e897124a8f72f03f0d66f74a684ce6e",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
   }
 }

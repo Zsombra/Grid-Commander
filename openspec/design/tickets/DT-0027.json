@@ -1,0 +1,80 @@
+{
+  "id": "DT-0027",
+  "surface": "pending-proposal",
+  "targets": [
+    "decline"
+  ],
+  "type": "tokens",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The secondary weight gets the pending treatment the primary got in DT-0022, so the one secondary control in this product that performs — Decline, which closes a proposal permanently — stops being silent between click and redirect. Defines the look for the weight and applies it to the one control that reaches it. Also states, rather than leaves open, whether a working control may stop being pressable.",
+  "rationale": "#153 gave every perform submit a pending state and one was left out: `/pending/[id]`'s 'Decline — this closes the proposal permanently'. It mutates, there is no undo, and it gives no sign it is working. It was not swept in because `PerformButton` wears `BUTTON_PRIMARY`, and promoting a deliberately secondary control to the page's main weight is a visual claim — this page exists to offer agreement, and making both controls primary would say it is neutral between agreeing and declining. That is a design decision, so the implementation lane correctly refused to make it and filed #227 instead.\n\n**Why this ticket targets `decline` and not a `button-secondary` primitive.** Every surface manifest declares `button-primary` with a `loading` state and `button-secondary` without one, and that is accurate rather than an oversight: no other secondary control performs. Cancels are anchors and previews are GET submits, neither of which reaches an operation — the same line `control.ts` already draws for which weight a button wears. Writing this treatment against some surface's `button-secondary` would style a state that button will never enter, which is the fiction DT-0003 refused for the ghost and danger variants and which the previous round re-learned when it added `disabled` to seventeen surfaces and then removed it. The rule belongs in `system.json`; the treatment belongs on the one component that genuinely enters the state.\n\n**The indicator's colour was the open question and it now has a general answer.** `accent.text` is white — correct on the primary's accent ground, invisible on a bordered transparent control. `accent.default` would work but would make a working secondary louder than a resting primary sitting beside it, which inverts the weights at the exact moment the user is reading them. The answer taken is `text.primary`, and the reason generalises: **the indicator wears its label's colour.** On the primary that resolves to `accent.text`, on the secondary to `text.primary`, and any weight added later answers without another round trip. Added to `system.json` as a principle (v3) rather than as a token, because the palette already carried both values — what was missing was the rule for picking between them.\n\n**The secondary keeps no ground, and that is the whole difference from DT-0022.** The primary's loading state keeps its accent ground deliberately: a working control is not an unavailable one, and a spinner on a grey box reads as a stuck disabled button. The secondary has no ground to keep, so there is nothing to hold — it keeps its `border.default` edge and its `text.primary` label unchanged, and the only thing that changes is the label's wording and the indicator's arrival. That is a smaller visual event than the primary's, correctly: a smaller control doing a quieter job.\n\n**The disabled trigger (#228) is not an open question. It is a contradiction, and this ticket does not resolve it.** The first draft of this ticket ruled that the design system does not ask for disabling, and that was wrong to assert. `docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md`, State & Interaction 4, says in the project's own words: **'Submit controls disable while in flight.'** That is not inherited boilerplate — the generator's template says 'Buttons prevent duplicate submits during async operations', so this wording was written for Grid-Commander. It is binding, it is read by the executor, planner and auditor, and `design-contract.md` 2 puts it above any design ticket: a checklist wins, and the instruction is to say so rather than quietly pick one.\n\nSo the record is: the checklist requires disabling, DT-0022 deliberately declined to enter the state and shipped that way across fourteen perform submits, and `openspec/specs/` is silent. Two binding records disagree and nothing reconciled them — which means the product has been in violation of its own UI checklist since #153 landed, and #228's premise that 'nobody has decided' is false. Filed separately, because it is much larger than this control and older than this round.\n\nWhat that means here is narrow and deliberate. **This ticket takes no position on the trigger.** The treatment is drawn so it reads correctly whether or not the control is disabled while pending: it changes no ground, so there is no conflict with a disabled ground; the indicator and the progressive label are additive. No acceptance criterion requires a `disabled` prop and none forbids one, and no test written for this ticket locks in either answer — locking in the status quo would harden a checklist violation, and locking in the checklist's answer would be a behaviour change made from the design lane, which is the exact failure this contract exists to prevent. Whoever resolves the contradiction changes one prop and nothing in this treatment moves.",
+  "design": {
+    "layout": "No layout change in either state, for the reason DT-0022 gives one weight along: the control keeps its box, its min-height and its place in the column. Decline sits in its own form beneath agree and must not move when pressed — a control that resizes on submission shifts the page at the exact moment the user is watching to see whether anything happened.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "resting_border": "color.border.default",
+      "resting_text": "color.text.primary",
+      "loading_border": "color.border.default",
+      "loading_text": "color.text.primary",
+      "loading_indicator": "color.text.primary",
+      "indicator_gap": "space.2",
+      "min_height": "size.control.min",
+      "indicator_size": "Whatever the primary's indicator already ships. DT-0022 named type.size.sm (14px) and the implementation spent stock size-4 (16px); the system emits no spacing or fontSize scale, so type.size.sm was never a utility. The two weights must match, so this ticket adopts the shipped value and records the 2px deviation rather than repeating a token reference that cannot be spent.",
+      "indicator_spin": "Stock animate-spin, 1s linear. DT-0022 named motion.duration.normal (220ms), but that is a transition token — Tailwind's duration-* sets transition-duration and no animation-duration utility is generated, so the primary's indicator never honoured it either. Recorded rather than restated: closing this properly means a keyframe or a token, and that is a separate ticket, not a silent third claim."
+    },
+    "states": {
+      "default": {
+        "content": "Unchanged. The bordered transparent control DT-0002 landed and DT-0004 gave its pointer response: border.default edge, text.primary label, radius.2, size.control.min floor, hover to border.strong on bg.sunken. Nothing in this ticket touches the resting look."
+      },
+      "loading": {
+        "content": "The ground and the border do not change — there is no ground to keep and no reason to add one, and tinting a secondary control on submission would give it a weight the page deliberately withheld. The label is replaced by its progressive form ('Declining…' for 'Decline — this closes the proposal permanently'), and a circular indicator at the primary's size sits space.2 before it, rotating over motion.duration.normal with linear easing, drawn in color.text.primary — the label's own colour, per the system principle. The rotation is decoration and is suppressed under prefers-reduced-motion, where the label change alone carries the state. The control stays pressable: aria-busy says it is working, and nothing here removes the affordance."
+      }
+    },
+    "responsive": {
+      "mobile": "Inherits whatever width the surface's row gives the control, as the primary does. Indicator and label stay centred as a unit — BUTTON_SECONDARY already carries inline-flex and its centring, so a full-width control does not read as left-aligned text with a floating dot.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "indicator": "motion.duration.normal, linear, rotation only — no fade, no size change, nothing that alters the control's box. Hidden entirely under prefers-reduced-motion rather than paused: a spinner frozen mid-rotation reads as a broken image."
+    },
+    "content": {
+      "pending_label": "Declining…",
+      "constants": "The treatment lives in the BUTTON_SECONDARY constant in src/presentation/components/control.ts, beside the disabled and loading rules DT-0022 put in BUTTON_PRIMARY. Per control.ts's own stated rule, styling changes go through the constant and never per page.",
+      "wiring": "The indicator and aria-busy are wired in exactly one component. Whether that is a weight prop on PerformButton or a sibling is the implementation's call, but a second copy of the hook and the aria wiring is two places to forget aria-busy, and the ticket's acceptance is written against the outcome rather than the mechanism.",
+      "accessibility": "aria-busy on the control while pending. The indicator is decorative and must be aria-hidden; the label is what a screen reader announces, which is why the progressive label is required and the spinner is not."
+    }
+  },
+  "acceptance": [
+    "BUTTON_SECONDARY in src/presentation/components/control.ts gains no new class, and its doc comment says why: the constant already carries the border, the label colour and the inline-flex centring that the loading state keeps, and unlike `disabled` there is no CSS pseudo-class for `loading` to hang a rule on. The whole treatment is the indicator and the label swap, which live in the component. Stated so the next reader concludes it was decided rather than forgotten. No raw hex, rgb or opacity value appears in the constant.",
+    "The loading indicator on the decline submit spends color.text.primary — it does not use color.accent.text (invisible on this control) or color.accent.default.",
+    "The control's border and background are byte-identical between the default and loading states: the loading treatment adds no fill and changes no border colour.",
+    "The rendered box size is identical in default and loading — same min-height and no width change from the label swap, measured at desktop width rather than eyeballed.",
+    "A rendering test driving tests/rendering/support/form-status.ts setPending(true) on the decline submit shows the label 'Declining…' and aria-busy true on the control; the same test at setPending(false) shows the resting label 'Decline — this closes the proposal permanently' and aria-busy not true. Not 'absent' — DT-0022's wiring emits aria-busy={pending} unconditionally, so the attribute is present and false at rest, and an absence assertion would fail against correct code.",
+    "The indicator is aria-hidden, and is either not rendered or not animated under prefers-reduced-motion; the progressive label is present either way.",
+    "The primary and secondary indicators render at identical size and identical gap from their label — the two weights' spinners are the same object in two colours, not two spinners.",
+    "The loading treatment renders correctly whether or not the control is disabled while pending — it adds no rule that assumes one answer, and no test written for this ticket asserts that a disabled prop is present or absent. That trigger is contested (see rationale) and this ticket does not settle it in either direction.",
+    "aria-busy and the indicator are wired in exactly one component: a search for aria-busy across src/presentation and app returns one component file.",
+    "The decline submit is rendered inside its own <form action={decline}> element, separate from the agree form, so at runtime its useFormStatus reads only its own form. Checkable structurally — exactly one rendered form contains the decline text, and no rendered form contains both it and 'Agree and make this change'. The runtime independence itself is NOT assertable in this harness: tests/setup/form-status.ts mocks useFormStatus suite-wide, so setPending(true) drives every consumer on the page at once. Do not write a test that appears to prove it.",
+    "tests/architecture/every-perform-says-it-is-working.test.ts no longer records the decline submit as an uncovered gap: its doc comment and its scope are updated so that every perform submit, in either weight, is covered by the rule.",
+    "No page file or surface stylesheet names the treatment; it resolves through the control.ts constant."
+  ],
+  "references": [
+    "openspec/design/tickets/DT-0022.json — the primary weight's pending treatment, which this is one weight along",
+    "openspec/design/system.json — principle 'A working control's indicator wears its label's colour' (v3)",
+    "openspec/design/system.json — principle 'A pending treatment says a control is working; it does not decide whether the control stays pressable' (v3)",
+    "docs/checklists/UI_COMPONENT_REVIEW_CHECKLIST.md — State & Interaction 4, 'Submit controls disable while in flight', which contradicts DT-0022 and outranks both tickets under design-contract 2",
+    ".claude/references/design-contract.md — 2, the precedence rule that makes the checklist win",
+    "openspec/changes/archive/2026-08-13-the-tickets-this-round-wrote/tasks.md:14 — task 1.3, where the non-disabling was recorded as done without noting the conflict",
+    "openspec/design/system.json — principle 'Work in flight is stated, not implied' (v2)",
+    "openspec/backlog/a-secondary-perform-cannot-say-it-is-working.md (#227) — the gap this closes",
+    "openspec/backlog/may-a-submit-disable-itself-while-it-is-in-flight.md (#228) — the question this answers on design grounds and explicitly leaves open on product grounds",
+    "src/presentation/components/control.ts — 'primary is the action the page exists to offer', the rule that kept Decline secondary",
+    "openspec/design/tickets/DT-0003.json — the precedent for not designing unrendered variants, which is why this targets decline rather than a button-secondary primitive"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-14",
+  "github_issue": null
+}

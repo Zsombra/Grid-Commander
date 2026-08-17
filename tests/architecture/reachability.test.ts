@@ -53,6 +53,80 @@ const uiFiles = [...appFiles, ...presentationFiles];
 const read = (f: string) => readFileSync(f, 'utf8');
 
 /**
+ * The form and action matchers, declared once.
+ *
+ * The form-tag spelling appeared **five times** in this file, the
+ * bound-to-action and GET predicates four times each. The comment beside
+ * `mutates()` says the sibling checks share a definition so "the two cannot
+ * drift apart" — which is only true if they actually share it, and they were
+ * five copies that happened to still agree.
+ *
+ * Audited 2026-08-10 by mutation (GitHub #87): killing the open-tag scan left
+ * `binds every form to a function` green having examined no forms, and killing
+ * the extractor left `leaves no server action that nothing submits to` green
+ * having enumerated no actions. The vacuity check at the bottom of this file
+ * retyped the form regex, so it guarded its own copy — the defect
+ * `identifiers.test.ts` had. All of them now call these.
+ */
+
+/** Every `<form …>` open tag's attribute text. `[^>]*` spans newlines. */
+const formAttrs = (src: string): string[] =>
+  [...src.matchAll(/<form\b([^>]*)>/g)].map((m) => m[1] as string);
+
+/** Whole forms — `[attrs, inner]` from open tag through close. */
+const formBlocks = (src: string): Array<readonly [string, string]> =>
+  [...src.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)].map(
+    (m) => [m[1] as string, m[2] as string] as const,
+  );
+
+/**
+ * A GET form navigates — its fields go to the query string and it asks for a
+ * page. It reaches no operation by design, so every rule here excludes it.
+ */
+const navigates = (attrs: string): boolean => /method=["']get["']/i.test(attrs);
+
+/**
+ * Bound to a Server Action: `action={fn}`. The lookahead excludes
+ * `action={`…`}` — a template is a URL being built, not a function.
+ */
+const boundToAction = (attrs: string): boolean => /action=\{(?!`)/.test(attrs);
+
+/** The Server Actions a file exports, by name — empty unless it says 'use server'. */
+const serverActionsIn = (src: string): string[] =>
+  src.includes("'use server'")
+    ? [...src.matchAll(/export\s+async\s+function\s+(\w+)\s*\(/g)].map((m) => m[1] as string)
+    : [];
+
+/** Whether this source binds a form to the named action. */
+const submitsTo = (src: string, name: string): boolean =>
+  new RegExp(`action=\\{\\s*${name}\\b`).test(src);
+
+/**
+ * Function-level `'use server'` directives — an action declared inside a
+ * function body rather than at module level. Legal to Next, invisible to
+ * `serverActionsIn` above and to the form-field cross-check: both enumerate
+ * actions by exported declaration, and a page module cannot export an action
+ * without violating the page contract the build gate enforces. So an action
+ * in this shape is unscannable permanently — three shipped that way and were
+ * covered by nothing (#263). The convention is a colocated `actions.ts` with
+ * the directive at module level, which is the shape every scanner reads.
+ */
+const inlineDirectives = (src: string): string[] =>
+  [
+    ...src.matchAll(
+      /(?:function\s+(\w+)\s*\([^)]*\)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>)\s*\{\s*['"]use server['"]/g,
+    ),
+  ].map((m) => (m[1] ?? m[2]) as string);
+
+/**
+ * Hrefs inside a fragment, as written — relative ones included. The leading-`/`
+ * scans elsewhere in this file could not see `href=".."`, which is how a
+ * decline landed on the roster.
+ */
+const hrefsIn = (fragment: string): string[] =>
+  [...fragment.matchAll(/href=\{?["'`]([^"'`]+)/g)].map((m) => m[1] as string);
+
+/**
  * Every route the application serves, from the filesystem.
  *
  * A `page.tsx` under `app/` is a route; `(group)` segments are organisational
@@ -139,18 +213,13 @@ describe('every form the interface renders can be submitted', () => {
     const unbound: string[] = [];
 
     for (const file of uiFiles) {
-      const src = read(file);
-      for (const m of src.matchAll(/<form\b[^>]*>/g)) {
-        const tag = m[0];
-        // A GET form navigates — it puts its fields in the query string and
-        // asks for a page. That is a legitimate way to submit a question, and
-        // it reaches no operation by design. Only a form that means to *do*
-        // something needs an action bound to it.
-        if (/method=["']get["']/i.test(tag)) continue;
-        const bound = /action=\{(?!`)/.test(tag);
-        if (bound) continue;
+      for (const attrs of formAttrs(read(file))) {
+        // Only a form that means to *do* something needs an action bound to it
+        // — a GET form submits a question, and that is legitimate.
+        if (navigates(attrs)) continue;
+        if (boundToAction(attrs)) continue;
         unbound.push(
-          `${file}: ${/action=/.test(tag) ? 'submits to a URL' : 'has no action'} — ${tag.replace(/\s+/g, ' ').slice(0, 90)}`,
+          `${file}: ${/action=/.test(attrs) ? 'submits to a URL' : 'has no action'} — <form${attrs.replace(/\s+/g, ' ').slice(0, 84)}>`,
         );
       }
     }
@@ -162,19 +231,28 @@ describe('every form the interface renders can be submitted', () => {
     const orphans: string[] = [];
 
     for (const file of uiFiles) {
-      const src = read(file);
-      if (!src.includes("'use server'")) continue;
-
-      for (const m of src.matchAll(/export\s+async\s+function\s+(\w+)\s*\(/g)) {
-        const name = m[1] as string;
-        const referenced = uiFiles.some((other) =>
-          new RegExp(`action=\\{\\s*${name}\\b`).test(read(other)),
-        );
+      for (const name of serverActionsIn(read(file))) {
+        const referenced = uiFiles.some((other) => submitsTo(read(other), name));
         if (!referenced) orphans.push(`${file}: ${name}`);
       }
     }
 
     expect(orphans, 'these operations exist and no rendered form reaches them').toEqual([]);
+  });
+
+  it('declares no action inside a function body, where no scanner can see it', () => {
+    const hidden: string[] = [];
+
+    for (const file of uiFiles) {
+      for (const name of inlineDirectives(read(file))) hidden.push(`${file}: ${name}`);
+    }
+
+    expect(
+      hidden,
+      "a function-level 'use server' directive hides the action from every scanner in this " +
+        'suite and from the form-field cross-check — declare it exported in a colocated ' +
+        'actions.ts instead',
+    ).toEqual([]);
   });
 });
 
@@ -482,7 +560,16 @@ describe('every capability is reachable from wherever you already are', () => {
   it('derived a section list that is neither empty nor everything', () => {
     // The derivation must find the real sections. Empty would pass the check
     // above vacuously; the whole route table would fail it for the wrong reason.
-    expect(TOP_LEVEL).toEqual(['/agents', '/audit', '/strategies']);
+    expect(TOP_LEVEL).toEqual([
+      '/agents',
+      '/approvals',
+      '/arena',
+      '/audit',
+      '/explorer',
+      '/pending',
+      '/recorder',
+      '/strategies',
+    ]);
   });
 
   /**
@@ -524,13 +611,12 @@ describe('every control the interface renders reaches an operation', () => {
 
     for (const file of uiFiles) {
       const src = read(file);
-      for (const form of src.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)) {
-        const attrs = form[1] as string;
+      for (const [attrs, inner] of formBlocks(src)) {
         // Navigates rather than acting — its values are read from the query
         // string, and no Server Action is involved.
-        if (/method=["']get["']/i.test(attrs)) continue;
+        if (navigates(attrs)) continue;
 
-        for (const control of (form[2] as string).matchAll(
+        for (const control of inner.matchAll(
           /<(?:input|select|textarea)\b[^>]*?\bname=["']([^"']+)["']/gs,
         )) {
           found.push({ file, name: control[1] as string });
@@ -639,9 +725,7 @@ describe('nothing is reachable only by passing through a mutation', () => {
    */
   function mutates(pageFile: string): boolean {
     return renderSet(pageFile).some((file) =>
-      [...read(file).matchAll(/<form\b[^>]*>/g)].some(
-        (m) => !/method=["']get["']/i.test(m[0]) && /action=\{(?!`)/.test(m[0]),
-      ),
+      formAttrs(read(file)).some((attrs) => !navigates(attrs) && boundToAction(attrs)),
     );
   }
 
@@ -828,11 +912,16 @@ describe('a page about one thing can get back to it', () => {
 
   /**
    * **Derived, never listed.** A route is one entity when its last segment is
-   * dynamic: `/agents/[id]`, `/strategies/[id]`. Writing the two down would pass
-   * while a third entity was added with the same hole — the mistake every check
-   * in this file carries a comment about.
+   * dynamic and nothing above it is: `/agents/[id]`, `/strategies/[id]`.
+   * Writing the two down would pass while a third entity was added with the
+   * same hole — the mistake every check in this file carries a comment about.
+   *
+   * The second clause arrived with `/agents/[id]/undeploy/[coin]`: a dynamic
+   * segment *under* an entity parameterizes an operation on that entity — the
+   * page is about the agent, and it is `scoped` to it below, not an entity of
+   * its own.
    */
-  const entityRoutes = served.filter((r) => /\/\[[^\]]+\]$/.test(r));
+  const entityRoutes = served.filter((r) => /\/\[[^\]]+\]$/.test(r) && !/\[[^\]]+\]\//.test(r));
 
   /** A page is scoped to an entity when an entity route is a strict prefix. */
   const scoped = pageFiles.flatMap((file) => {
@@ -879,7 +968,17 @@ describe('a page about one thing can get back to it', () => {
   it('derived the entities, and the pages scoped to them', () => {
     // The derivation must find the real ones. Empty passes the check above
     // vacuously; everything fails it for a reason unrelated to getting back.
-    expect([...entityRoutes].sort()).toEqual(['/agents/[id]', '/strategies/[id]']);
+    expect([...entityRoutes].sort()).toEqual([
+      '/agents/[id]',
+      '/arena/[id]',
+      '/explorer/[agentId]',
+      '/pending/[id]',
+      '/recorder/[ticker]',
+      '/strategies/[id]',
+      '/strategies/metrics/[metric]',
+      '/strategies/sections/[sectionKey]',
+      '/strategies/signals/[id]',
+    ]);
     // An entity's own page is the destination, never in the set that must reach
     // it. Getting this wrong would demand every entity page link to itself.
     for (const entity of entityRoutes) {
@@ -917,15 +1016,13 @@ describe('a page about one thing can get back to it', () => {
     for (const { file, route, entity } of scoped) {
       const list = listOf(entity);
       for (const source of renderSet(file)) {
-        for (const form of read(source).matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g)) {
-          const attrs = form[1] as string;
+        for (const [attrs, inner] of formBlocks(read(source))) {
           // A GET form navigates and reaches no operation, so it has nothing to
           // decline — the same exclusion the sibling checks make.
-          if (/method=["']get["']/i.test(attrs)) continue;
-          if (!/action=\{(?!`)/.test(attrs)) continue;
+          if (navigates(attrs)) continue;
+          if (!boundToAction(attrs)) continue;
 
-          for (const link of (form[2] as string).matchAll(/href=\{?["'`]([^"'`]+)/g)) {
-            const href = link[1] as string;
+          for (const href of hrefsIn(inner)) {
             // Resolved the way a browser resolves it, against a concrete URL
             // standing in for this route. Reading the attribute as written is
             // what let `..` pass for a way back.
@@ -948,22 +1045,138 @@ describe('a page about one thing can get back to it', () => {
   it('is looking inside forms that actually exist', () => {
     // Vacuity: if no scoped page had an action-bound form, the check above would
     // pass on a product where every confirmation cancelled to the roster.
+    // Through the same matchers the rule uses — this used to retype the form
+    // regex, so it vouched for a copy while the live one could die unnoticed.
     const withForms = scoped.filter(({ file }) =>
       renderSet(file).some((source) =>
-        [...read(source).matchAll(/<form\b([^>]*)>/g)].some(
-          (m) => !/method=["']get["']/i.test(m[1] as string) && /action=\{(?!`)/.test(m[1] as string),
-        ),
+        formAttrs(read(source)).some((attrs) => !navigates(attrs) && boundToAction(attrs)),
       ),
     );
     expect(withForms.map((w) => w.route).sort()).toEqual([
       '/agents/[id]/archive',
+      '/agents/[id]/deploy',
       '/agents/[id]/edit',
       '/agents/[id]/reactivate',
       '/agents/[id]/rebind',
+      '/agents/[id]/undeploy/[coin]',
       '/strategies/[id]/archive',
+      '/strategies/[id]/conditions/save',
       '/strategies/[id]/edit',
       '/strategies/[id]/fork',
       '/strategies/[id]/restore',
+      '/strategies/[id]/rules/[signalId]',
     ]);
+  });
+});
+
+/**
+ * The form and action matchers, fed what they exist to catch.
+ *
+ * This file was #87's best-defended — 14 of 17 kills caught — and its three
+ * survivors were exactly the matchers nothing below had ever been fed: the form
+ * scans, the server-action extractor, and the in-form href extractor. The two
+ * headline rules they feed were green with them dead, which on this file means
+ * "every form submits somewhere" and "every action is reachable" were being
+ * asserted by nobody.
+ *
+ * Reproduce any row with:
+ *
+ *   node tools/mutate-guard.mjs tests/architecture/reachability.test.ts '<find>' '<replace>'
+ */
+describe('the form and action matchers catch what they were written for', () => {
+  it('finds a form however the tag is written', () => {
+    expect(formAttrs('<form action={save}>')).toEqual([' action={save}']);
+    // Broken across lines by a formatter — `[^>]*` must span them.
+    expect(formAttrs('<form\n  method="post"\n  action={save}\n>')).toHaveLength(1);
+    expect(formAttrs('<form>')).toEqual(['']);
+    expect(formAttrs('<div className="form">no form here</div>')).toEqual([]);
+  });
+
+  it('reads a whole form, so a rule can see what is inside it', () => {
+    const src = '<form action={apply}><a href="..">Go back</a></form>';
+    const blocks = formBlocks(src);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]?.[0]).toBe(' action={apply}');
+    expect(blocks[0]?.[1]).toContain('href=".."');
+    expect(formBlocks('<formation>troops</formation>')).toEqual([]);
+  });
+
+  it('excludes a GET form and nothing else', () => {
+    expect(navigates(' method="get" action="/search"')).toBe(true);
+    expect(navigates(' method="GET"')).toBe(true);
+    // The permissive direction: an exclusion that matched every form would
+    // silence all three rules built on it, and no count would notice.
+    expect(navigates(' method="post"')).toBe(false);
+    expect(navigates(' action={save}')).toBe(false);
+  });
+
+  it('tells a bound action from a URL being built', () => {
+    expect(boundToAction(' action={save}')).toBe(true);
+    expect(boundToAction(' action={ save }')).toBe(true);
+    // A template is a URL, not a function — the defect the rule exists for.
+    expect(boundToAction(' action={`/api/${id}`}')).toBe(false);
+    expect(boundToAction(' action="/api/submit"')).toBe(false);
+    expect(boundToAction(' method="post"')).toBe(false);
+  });
+
+  it('extracts the actions only from a file that declares them', () => {
+    const actions = "'use server';\nexport async function saveAgent(f: FormData) {}\nexport async function dropAgent(f: FormData) {}\nasync function helper() {}";
+    expect(serverActionsIn(actions)).toEqual(['saveAgent', 'dropAgent']);
+    // Same exports, no 'use server' — these are not actions and enumerating
+    // them would report every ordinary async export as an orphan.
+    expect(serverActionsIn('export async function saveAgent() {}')).toEqual([]);
+    expect(serverActionsIn("'use server';\nconst x = 1;")).toEqual([]);
+  });
+
+  it('sees a directive inside a function body, which is the shape no other scanner can', () => {
+    // The exact shape the three hidden actions shipped in — a page-level
+    // function, unexported because the page contract forbids exporting it.
+    // The rule has nothing to find in the live tree, so this fixture is the
+    // proof it can find anything at all.
+    expect(
+      inlineDirectives("async function agree(formData: FormData) {\n  'use server';\n  const x = 1;\n}"),
+    ).toEqual(['agree']);
+    expect(inlineDirectives("function startAuthorization() { 'use server'; }")).toEqual([
+      'startAuthorization',
+    ]);
+    // The arrow spelling of the same hiding place.
+    expect(
+      inlineDirectives("const decline = async (formData: FormData) => {\n  'use server';\n}"),
+    ).toEqual(['decline']);
+    // The convention: module-level directive, exported declarations. Reporting
+    // this would report every actions.ts in the product.
+    expect(
+      inlineDirectives("'use server';\nexport async function saveAgent(f: FormData) {}"),
+    ).toEqual([]);
+    // An ordinary function is not an action, whatever its body does.
+    expect(inlineDirectives('async function helper() {\n  return 1;\n}')).toEqual([]);
+  });
+
+  it('finds the form that submits to an action, and not a name that merely extends it', () => {
+    expect(submitsTo('<form action={saveAgent}>', 'saveAgent')).toBe(true);
+    expect(submitsTo('<form action={ saveAgent }>', 'saveAgent')).toBe(true);
+    // `save` must not be satisfied by `savePlan` — the boundary is what stops
+    // one wired form vouching for every action sharing its prefix.
+    expect(submitsTo('<form action={savePlan}>', 'save')).toBe(false);
+    expect(submitsTo('const saveAgent = 1;', 'saveAgent')).toBe(false);
+  });
+
+  it('reads a relative href, which is the one the leading-slash scans cannot see', () => {
+    // `href=".."` from /strategies/[id]/edit resolves to the roster — the
+    // shipped defect the declined-confirmation rule exists for. A matcher
+    // requiring a leading slash reports this fragment clean.
+    expect(hrefsIn('<a href="..">Go back and change it</a>')).toEqual(['..']);
+    expect(hrefsIn('<a href="/agents">roster</a>')).toEqual(['/agents']);
+    expect(hrefsIn('<a href={`/agents/${id}`}>agent</a>')).toEqual(['/agents/${id}']);
+    expect(hrefsIn('<button>not a link</button>')).toEqual([]);
+  });
+
+  it('is proving the matchers the rules actually run', () => {
+    // Reachability, not spelling: the live scans must find real forms and real
+    // actions in the tree, or everything above proves helpers nothing uses.
+    const allAttrs = uiFiles.flatMap((f) => formAttrs(read(f)));
+    expect(allAttrs.filter((a) => !navigates(a) && boundToAction(a)).length).toBeGreaterThan(10);
+    const allActions = uiFiles.flatMap((f) => serverActionsIn(read(f)));
+    expect(allActions.length).toBeGreaterThan(8);
   });
 });

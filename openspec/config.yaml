@@ -16,7 +16,7 @@ context: |
   strategies through it.
 
   Tech stack: TypeScript, Node, Next.js (App Router), PostgreSQL, Drizzle
-  Package manager: pnpm
+  Package manager: npm (package-lock.json is the lockfile; CI runs npm ci)
   Architecture: Clean Architecture, lightly applied — the domain must not
   import the MCP client; BattleGrid sits behind a port
 
@@ -67,8 +67,11 @@ rules:
 design_sync: none
 
 # Commands the executor and auditor must run and pass. Leave empty to fall back
-# to the Quality Gate section of docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md.
+# to the Quality Gate section of docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md.
 quality_gates:
-  - [e.g. npm run type-check]
-  - [e.g. npm run lint]
-  - [e.g. npm test]
+  - npm run typecheck
+  - npm run lint
+  - npm test
+  - npm run build
+  - npm run db:generate && git diff --quiet drizzle/   # schema matches migrations
+  - npm run test:db   # needs DATABASE_URL; CI provides postgres, locally skip if absent

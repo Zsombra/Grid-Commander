@@ -27,7 +27,7 @@ export function AuditList({
   return (
     <div className="space-y-3">
       {unresolvedCount > 0 && (
-        <p role="status" className="rounded border p-3 text-sm">
+        <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
           {unresolvedCount} operation{unresolvedCount === 1 ? '' : 's'} started but never
           reported an outcome. They may or may not have taken effect on BattleGrid.
         </p>
@@ -37,27 +37,29 @@ export function AuditList({
         <table className="w-full text-sm">
           <caption className="sr-only">Operations performed on your behalf, newest first</caption>
           <thead>
-            <tr>
-              <th scope="col" className="text-left">When</th>
-              <th scope="col" className="text-left">Operation</th>
-              <th scope="col" className="text-left">Caused by</th>
-              <th scope="col" className="text-left">Outcome</th>
+            <tr className="border-b border-border-default">
+              <th scope="col" className="py-2 pr-4 text-left font-semibold text-text-secondary">When</th>
+              <th scope="col" className="py-2 pr-4 text-left font-semibold text-text-secondary">Operation</th>
+              <th scope="col" className="py-2 pr-4 text-left font-semibold text-text-secondary">Caused by</th>
+              <th scope="col" className="py-2 pr-4 text-left font-semibold text-text-secondary">Outcome</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border-subtle">
             {entries.map((e) => (
               <tr key={e.id}>
-                <td>
+                <td className="py-2 pr-4">
                   <time dateTime={e.createdAt.toISOString()}>
                     {e.createdAt.toISOString().replace('T', ' ').slice(0, 19)}
                   </time>
                 </td>
-                <td>
+                <td className="py-2 pr-4">
                   <code>{e.tool}</code>
-                  {/* Colour is never the only signal — the word is there too. */}
-                  {e.destructive && <span className="ml-2 rounded border px-1">destructive</span>}
+                  {/* Colour is never the only signal — the word is there too.
+                      The chip wears the consequence role: destructive-ness is
+                      blast radius (DT-0012). */}
+                  {e.destructive && <span className="ml-2 rounded-gc-2 border border-consequence-border bg-consequence-subtle px-1">destructive</span>}
                 </td>
-                <td>
+                <td className="py-2 pr-4">
                   {/*
                     Nothing can write an `assistant` row any more — that
                     capability was removed in `only-mcp-control`. This branch
@@ -67,7 +69,11 @@ export function AuditList({
                   */}
                   {e.actor === 'assistant' ? 'the assistant, answering you' : 'you'}
                 </td>
-                <td>{outcomeLabel(e)}</td>
+                {/* Failed is tinted beside its word; attempted deliberately is
+                    not — unknown is neither failure nor success (DT-0012). */}
+                <td className={`py-2 pr-4${e.outcome === 'failed' ? ' text-danger-default' : ''}`}>
+                  {outcomeLabel(e)}
+                </td>
               </tr>
             ))}
           </tbody>

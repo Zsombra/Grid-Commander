@@ -1,8 +1,15 @@
-import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
 import { NotConnected } from '@/presentation/require-connection.js';
 import { AgentEditConfirm, AgentEditForm } from '@/presentation/components/agent-edit.js';
-import { editIntent, MONEY_FIELDS, requiredText } from '@/presentation/form.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import {
+  editIntent,
+  MONEY_FIELDS,
+  positionFromTransport,
+  presetPosition,
+} from '@/presentation/form.js';
+import { applyEdit } from './actions.js';
 
 /**
  * Change what an agent owns, in two requests.
@@ -46,7 +53,16 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Could not load this agent</h1>
+        {/* On every branch, unconditionally — a bounced apply can land while
+            *any* of the seven is the one that answers, and the reason in the
+            URL is the only record of what that click did. The branch's own
+            failure below is a different fact and both are owed. */}
+        <CarriedProblem problem={query['problem']} />
         <p role="alert" className="text-sm">{roster.reason}</p>
+        {/* Said before the form is refused rather than after: an editor who
+            cannot see their agent should know whether to wait or to reconnect,
+            and those are opposite actions. */}
+        <WhyNotLoaded cause={roster.cause} subject="this agent is" />
       </main>
     );
   }
@@ -56,6 +72,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">No such agent</h1>
+        <CarriedProblem problem={query['problem']} />
         <p className="text-sm">
           <a href="/agents" className="underline">Back to your agents</a>
         </p>
@@ -67,6 +84,7 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+        <CarriedProblem problem={query['problem']} />
         {/*
           The form asks the catalog which limits BattleGrid refuses to default.
           Without it this page cannot know what to ask for, and guessing would
@@ -89,7 +107,15 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
-        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={query['problem']} />
+        {/* The bounced reason renders here, not through the form's `problem`
+            prop — that prop now carries only a refusal formed on the branch
+            rendering it, so the two facts cannot double-render as one. */}
+        <CarriedProblem problem={query['problem']} />
+        <AgentEditForm
+          agent={agent}
+          catalog={catalog.catalog}
+          composed={query}
+        />
       </main>
     );
   }
@@ -105,7 +131,56 @@ export default async function EditAgentPage({
     { get: (name) => query[name] ?? null },
     { name: ['displayName'], money: MONEY_FIELDS },
   );
+
+  /**
+   * The position choice, resolved to values *here*, before anything is
+   * described. A preset resolves to the catalog's own twelve values (a
+   * preset the catalog cannot answer for is refused); CUSTOM reads the
+   * fields as typed, through the same coercion the apply will use; no
+   * choice contributes nothing. The confirmation is bound to the resolved
+   * values, so what the person agrees to is what will be sent — the label
+   * is never sent alone.
+   */
+  const pmChoice = query['pmPreset'] ?? '';
+  let position: Record<string, unknown> | null = null;
+  if (pmChoice === 'CUSTOM') {
+    position = positionFromTransport({
+      get: (name) =>
+        name === 'pm.positionManagementPreset' ? 'CUSTOM' : (query[name] ?? null),
+    });
+  } else if (pmChoice !== '') {
+    const resolved = presetPosition(catalog.catalog, pmChoice);
+    if (!resolved) {
+      return (
+        <main className="mx-auto max-w-3xl space-y-6 p-6">
+          <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
+          <CarriedProblem problem={query['problem']} />
+          <AgentEditForm
+            agent={agent}
+            catalog={catalog.catalog}
+            problem={`The catalog does not carry a configuration for "${pmChoice}", so choosing it would send values nobody stated.`}
+            composed={query}
+          />
+        </main>
+      );
+    }
+    position = { ...resolved };
+  }
+
+  if (position) {
+    intent['tradingConfig'] = {
+      ...((intent['tradingConfig'] ?? {}) as Record<string, unknown>),
+      positionManagement: position,
+    };
+  }
   const { tradingConfig: proposedConfig, ...proposedChanges } = intent;
+  // The flat money fields ride as tc.* hidden inputs; the position object has
+  // its own pm.* transport, so it is split out rather than stringified flat.
+  const flatConfig = Object.fromEntries(
+    Object.entries((proposedConfig ?? {}) as Record<string, unknown>).filter(
+      ([key]) => key !== 'positionManagement',
+    ),
+  );
 
   const proposed = await app.describeEdit.execute({
     ...user.authority,
@@ -123,89 +198,24 @@ export default async function EditAgentPage({
     return (
       <main className="mx-auto max-w-3xl space-y-6 p-6">
         <h1 className="text-xl font-medium">Edit {agent.displayName}</h1>
-        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} />
+        <CarriedProblem problem={query['problem']} />
+        <AgentEditForm agent={agent} catalog={catalog.catalog} problem={why} composed={query} />
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
+      <CarriedProblem problem={query['problem']} />
       <AgentEditConfirm
         agent={agent}
         consequence={proposed.proposal.consequence}
         confirmationToken={proposed.proposal.confirmationToken}
         changes={proposedChanges as Record<string, string | number>}
-        tradingConfigChanges={(proposedConfig ?? {}) as Record<string, string | number>}
+        tradingConfigChanges={flatConfig as Record<string, string | number>}
+        positionChanges={position}
         action={applyEdit}
       />
     </main>
   );
 }
-
-
-/**
- * Apply what was agreed to.
- *
- * This spends a token it did not mint. The token came back on the form the
- * previous request rendered, which is the only arrangement in which a
- * confirmation attests to anything: a person read the consequence, then pressed
- * a button.
- */
-export async function applyEdit(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const agentId = requiredText(formData, 'agentId');
-  const confirmationToken = requiredText(formData, 'confirmationToken');
-
-  /**
-   * Read by name, never by sweeping the form.
-   *
-   * This iterated `formData.entries()` and skipped the two keys it knew about,
-   * which meant Next's own `$ACTION_ID_…` field arrived as a proposed change:
-   *
-   *     $ACTION_ID_405…: "$ACTION_ID_405…" is not a field this agent owns.
-   *
-   * Found by driving the real button in a browser — a hand-built request does
-   * not carry that field, and no unit test would have invented it. `partitionEdit`
-   * refused it rather than sending it, which is the layered defence working, but
-   * a denylist of framework internals can never be complete. An allowlist can.
-   */
-  const intent = editIntent(
-    {
-      // `tc.` marks a trading-config field, so the two sets cannot be confused by
-      // a name that appears in both. Stripped here, because the digest is over
-      // the intent's own field names — the prefix is transport.
-      get: (name) => {
-        const value = formData.get(
-          (MONEY_FIELDS as readonly string[]).includes(name) ? `tc.${name}` : name,
-        );
-        return typeof value === 'string' ? value : null;
-      },
-    },
-    { name: ['displayName'], money: MONEY_FIELDS },
-  );
-
-  const { tradingConfig, ...changes } = intent;
-
-  const result = await app.updateAgent.execute({
-    ...user.authority,
-    agentId,
-    changes,
-    ...(tradingConfig ? { tradingConfigChanges: tradingConfig as Record<string, unknown> } : {}),
-    confirmationToken,
-  });
-
-  if (result.kind === 'updated') redirect(`/agents/${agentId}`);
-
-  const reasons =
-    result.kind === 'rejected'
-      ? result.rejected.map((r) => `${r.field}: ${r.reason}`)
-      : result.kind === 'invalid'
-        ? result.issues.map((i) => `${i.field}: ${i.reason}`)
-        : [result.reason];
-
-  redirect(`/agents/${agentId}/edit?problem=${encodeURIComponent(reasons.join(' · '))}`);
-}
-

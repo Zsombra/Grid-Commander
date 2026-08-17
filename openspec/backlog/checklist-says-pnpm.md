@@ -2,11 +2,11 @@
 id: checklist-says-pnpm
 title: The architecture checklist's quality gate names a package manager this project does not use
 type: debt
-status: open
+status: done
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-07-31
+change: quality-gates-are-real
 capability: ""
 blocked_by: []
 tags: [checklists, tooling]
@@ -16,7 +16,7 @@ tags: [checklists, tooling]
 
 ## What
 
-`docs/specs/ARCHITECTURE_REVIEW_CHECKLIST.md`, Quick Reference Card:
+`docs/checklists/ARCHITECTURE_REVIEW_CHECKLIST.md`, Quick Reference Card:
 
 > **Quality Gate** — `pnpm typecheck` and `pnpm lint` pass before every commit
 
@@ -39,7 +39,7 @@ correction is the problem: the next one may correct it differently.
 ## Fix
 
 Two lines in the Quick Reference Card, plus the same substitution anywhere else
-in `docs/specs/` that names `pnpm`. Run the checklist-generator in UPDATE mode
+in `docs/checklists/` that names `pnpm`. Run the checklist-generator in UPDATE mode
 rather than hand-editing, so the version header moves with the change.
 
 While there: the gate as stated covers typecheck and lint only. `prove-it-runs`

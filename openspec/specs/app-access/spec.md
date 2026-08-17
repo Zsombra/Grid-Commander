@@ -28,13 +28,24 @@ NOT allow a request to act for a user other than the one it identified.
 
 #### Scenario: A session naming a user who does not exist
 - **WHEN** a session identifies a user with no record
-- **THEN** the request is refused and the session discarded
-- **AND** it is not treated as a new user
+- **THEN** the request is refused, and no user is created from it
+- **AND** the page still renders — refusing is a read, and a read does not
+  mutate cookies; the stale cookie is left to its TTL and is replaced or
+  cleared only by the flows that may write cookies (completing a
+  connection, disconnecting)
 
 #### Scenario: A session that was not issued by Grid-Commander
 - **WHEN** a session value arrives that this product did not issue
 - **THEN** it is refused
 - **AND** no user is identified from it
+
+#### Scenario: A signed-in request can reach the database
+- **WHEN** a request carrying a valid signed session reaches a
+  session-resolving route in a served deployment
+- **THEN** the route answers without a server error
+- **AND** the serving check proves the application's own pool committed a
+  transaction while answering — a database that boots but cannot be queried
+  is a failed check, not a quiet gap
 
 ### Requirement: A Session Is Not A BattleGrid Credential
 The value that identifies a request's user SHALL NOT be, contain, or be derived
@@ -399,3 +410,261 @@ configuration specific to one deployment.
 - **THEN** every deployment-specific value is supplied to it at run time
 - **AND** absent required configuration, it refuses to start, as it does anywhere
   else
+
+### Requirement: A Health Check That Checks The Database
+
+The product SHALL answer an unauthenticated health probe that resolves no
+session and performs one trivial database round trip: 200 with
+`{"status":"ok"}` when the database answers, 503 with
+`{"status":"unavailable"}` when it does not. The response MUST NOT carry
+version, schema, or configuration detail.
+
+#### Scenario: Healthy
+- **WHEN** `/api/health` is requested and the database answers
+- **THEN** the response is 200 `{"status":"ok"}` with nothing else in it
+
+#### Scenario: The database has gone away
+- **GIVEN** the database is unreachable
+- **WHEN** `/api/health` is requested
+- **THEN** the response is 503 `{"status":"unavailable"}`
+- **AND** no session is resolved on the way
+
+#### Scenario: No cookie required
+- **WHEN** `/api/health` is requested with no cookies at all
+- **THEN** the answer is the same as with any cookie
+
+### Requirement: A Failed Read Says What It Does Not Mean
+Where a surface renders the outcome of a read that produced nothing,
+Grid-Commander SHALL tell the user what the failure does *not* establish, and
+SHALL name the cause the read carried out rather than one inferred from the
+message.
+
+A reason says what failed. It does not say that the user's work survived it, and
+an operator looking at an empty panel where their agents should be has no way to
+tell a transient outage from something that deleted them. The reassurance is the
+whole point of the sentence, and it earns the right to be believed by naming a
+cause that is obviously external and obviously not deletion.
+
+**A refusal and an outage are opposite, and MUST be distinguished.** BattleGrid
+answering *no* means waiting changes nothing and the authority is what needs
+fixing; no answer at all means the authority may be perfectly good and waiting
+may be exactly right. The distinction SHALL be carried from where the read
+happened, with the error in hand, and MUST NOT be re-derived by matching on the
+words of a message — a view that does that is a second, worse copy of a
+judgement already made, and it starts lying the first time a message is
+reworded.
+
+**The reassurance SHALL name its subject.** "This does not mean your agents are
+gone" is a different sentence from "this does not mean your strategies are
+gone", and a surface that names neither has told the user only that something
+went wrong. Each surface states what it was reading.
+
+**This SHALL be enforced by a check that derives the surfaces from the source.**
+A list of the surfaces that render a failed read is a list that passes while the
+next one is written, and that is how thirty of thirty-six branches came to print
+a reason and stop while a shared component for saying more sat unused. The check
+SHALL ask what a branch renders, not what its file mentions.
+
+**Where a surface should not carry the sentence, the exemption SHALL be stated
+and checked.** A branch that says nothing and is caught by nothing is
+indistinguishable from one that was forgotten. An exemption SHALL carry its
+reason, SHALL fail when it names a branch that no longer exists, and SHALL fail
+when the branch it names has since started carrying the sentence.
+
+#### Scenario: A read that could not reach the platform
+- **WHEN** a surface renders a read that produced nothing because no usable
+  answer came back
+- **THEN** it says the failure does not mean the thing it was reading is gone
+- **AND** names being unable to reach BattleGrid as the cause
+
+#### Scenario: A read the platform refused
+- **GIVEN** BattleGrid was reached and declined the request
+- **WHEN** the surface renders
+- **THEN** it says the authority was refused rather than that the platform
+  could not be reached
+- **AND** the user is not told to wait out an outage that is not happening
+
+#### Scenario: The subject of the reassurance
+- **WHEN** a surface says a failure does not mean something is gone
+- **THEN** it names what it was reading
+- **AND** the sentence it forms is grammatical
+
+#### Scenario: A new surface that renders a failed read
+- **WHEN** a surface is written that renders a read producing nothing, and it
+  says only what went wrong
+- **THEN** this fails a check that gates a change, naming the branch
+
+#### Scenario: A surface where the sentence would be untrue
+- **GIVEN** a read that never involved BattleGrid, such as one of
+  Grid-Commander's own records
+- **WHEN** the surface renders its failure
+- **THEN** it does not name BattleGrid as the cause
+- **AND** the reason it carries no shared reassurance is recorded where the
+  check can read it, rather than left to silence
+
+#### Scenario: An exemption that has been overtaken
+- **GIVEN** a recorded exemption whose branch has been removed, or which now
+  renders the shared explanation
+- **WHEN** the checks that gate a change run
+- **THEN** they fail, naming the exemption to delete
+
+### Requirement: A Confirmation Pressed Twice Writes Once
+Pressing a perform submit more than once SHALL NOT produce more than one write.
+Grid-Commander MAY achieve this by any means that holds — a single-use
+confirmation, an idempotency key under which a repeat cannot create a second
+object and is answered with the original outcome, an operation that is
+naturally idempotent, or the platform's own refusal of the duplicate. It MUST
+NOT rely on the control becoming unpressable, because a control cannot be
+unpressable in a second tab, on a replayed POST, or before the page has
+hydrated. Where the key is the means, the guarantee claimed is the one that is
+measured: the product's own ledger dedupes today, and the key is also offered
+to the platform, whose honouring of it is untested (#238).
+
+Stated as an outcome rather than a mechanism because the mechanism differs per
+surface and each one is separately checkable. `docs/checklists/` states the same
+property as an engineering standard; this is the behaviour it exists to secure.
+
+#### Scenario: A confirmation is presented a second time
+- **WHEN** a submit spending a single-use confirmation is pressed twice
+- **THEN** exactly one write is attempted against BattleGrid
+- **AND** the second press changes nothing further
+
+#### Scenario: A write with no confirmation to spend
+- **WHEN** a submit performs a write that mints no confirmation — creating an
+  agent, forking a strategy
+- **THEN** a duplicate submission still cannot produce a duplicate object
+- **AND** the protection is a property of the request rather than of the button,
+  so it holds for a resubmitted form and a replayed POST
+
+#### Scenario: The control stays pressable while the write is in flight
+- **WHEN** a perform submit is working
+- **THEN** it says so, and remains focusable and operable
+- **AND** its accessible name still carries the state, so the change is
+  announced to someone who is standing on the control
+
+### Requirement: A Refused Confirmation Reaches The Person Who Spent It
+When a confirmation is refused — already used, expired, mismatched, or
+unrecognised — Grid-Commander SHALL tell the operator which of those happened,
+on a surface they can act from. It MUST NOT surface the refusal as an
+unhandled failure, because the most common cause is a second press whose
+**first** press succeeded, and a page reporting a broken server to someone whose
+change landed is worse than silence.
+
+#### Scenario: A confirmation that was already spent
+- **WHEN** a confirmation is presented that has already been consumed
+- **THEN** the operator is told the confirmation was already used and that the
+  change may have landed
+- **AND** they are told to check its state rather than to retry
+
+#### Scenario: The four causes are told apart
+- **WHEN** a confirmation is refused
+- **THEN** the reason distinguishes already-used, expired, mismatched and
+  unrecognised
+- **AND** each names the next step it earns, because they differ: an expired
+  confirmation means review again and nothing is wrong, while a mismatched one
+  means the values moved since the consequence was read
+
+#### Scenario: The refusal lands where the operator was standing
+- **WHEN** a refusal returns the operator to a surface
+- **THEN** it is a surface that can act on it, carrying the reason
+- **AND** the reason survives whichever state that surface now describes
+
+#### Scenario: The landing surface is a checked property, not a remembered one
+- **WHEN** any surface sends a refusal's reason onward as a `problem`
+  parameter
+- **THEN** a check that gates a change derives the destination from the
+  redirect itself and fails unless the page serving it reads the parameter
+  and renders it on every branch that page can take
+- **AND** the check's derivation is exercised against a planted offender it
+  must report, so the two roads this scenario was written for cannot go
+  silently dark again by the check itself going blind
+
+#### Scenario: A fresher refusal does not replace a carried one
+- **WHEN** a bounced reason lands on a surface whose rendering branch forms a
+  refusal of its own — a value it cannot resolve, a proposal the platform
+  declined
+- **THEN** both are rendered as distinct facts, in the product's one shared
+  refusal treatment
+- **AND** neither stands in for the other, because "your apply was refused"
+  and "what you are composing now has a problem" earn different next actions
+  from the operator
+
+### Requirement: An Unanticipated Failure Lands On The Product's Own Page
+Where a render or a submitted action fails in a way no handler anticipated,
+Grid-Commander SHALL show the operator its own page, in its own words. It MUST
+NOT surface a framework error page.
+
+That page SHALL say what is actually known: that something failed which the
+product did not anticipate, and that **nothing on the page can say whether the
+operator's last action landed**. It SHALL point at the activity log as the
+record that can answer, and MUST NOT advise retrying — a retry against an
+unknown outcome is the one instruction known to be wrong. Where the platform
+runtime supplies an opaque reference for the failure, it SHALL be shown so a
+report can name it; the raw error text SHALL NOT be, because an unanticipated
+error's message was not written for the operator.
+
+The floor is a floor, not a route: failures that already have authored routes —
+refusal bounces, redirects, carried reasons — SHALL keep reaching their own
+surfaces, not this page.
+
+#### Scenario: A page fails to render
+- **WHEN** rendering a page throws something no handler anticipated
+- **THEN** the operator sees the product's own page, not a framework error page
+- **AND** it says the product did not anticipate this failure
+
+#### Scenario: A submitted action fails unexpectedly
+- **WHEN** a submitted action throws something no handler anticipated
+- **THEN** the same product page renders
+- **AND** it says nothing here can tell whether the action landed
+- **AND** it points at the activity log as the record that can
+
+#### Scenario: No retry is offered
+- **WHEN** the unanticipated-failure page renders
+- **THEN** it offers no control that retries or re-submits anything
+
+#### Scenario: The failure can be named in a report
+- **WHEN** the runtime supplies an opaque reference for the failure
+- **THEN** the page shows it
+- **AND** the raw error message is not shown
+
+#### Scenario: The root layout itself fails
+- **WHEN** the failure is in the outermost layout the product renders
+- **THEN** the operator still sees the product's own words, with the same
+  posture, rather than a blank or framework page
+
+#### Scenario: Anticipated failures keep their routes
+- **WHEN** a failure occurs that has an authored route — a refusal bounce, a
+  redirect, a carried reason
+- **THEN** it reaches its own surface as before
+- **AND** the unanticipated-failure page does not intercept it
+
+### Requirement: A Gating Check Fails When Its Own Scan Goes Blind
+Where a check that gates a change enforces its rule by scanning source for
+offenders — so that finding nothing is the passing state — the check SHALL
+fail when the scan stops reading what it claims to scan, not only when an
+offender appears. A vacuity guard SHALL exercise the rule's own machinery:
+either a planted offender the scan must report, or a floor computed from what
+the scan itself produced. A guard that counts an independent pattern proves
+the sources exist, not that the scanner reads them, and does not satisfy this
+requirement.
+
+Three checks in this repository went blind and reported clean trees before
+this was written; each was found by a person noticing an absence, which is the
+discovery mode this requirement exists to remove.
+
+#### Scenario: The scanner breaks while the sources stand
+- **WHEN** an offender scan's machinery stops matching the idiom it reads —
+  a shape it did not expect, a refactor of the spelling it keyed on
+- **AND** the files it scans are otherwise unchanged
+- **THEN** a check fails, rather than the tree reporting clean
+
+#### Scenario: A planted offender goes unreported
+- **WHEN** a scan is pointed at a fixture carrying a known offender
+- **AND** the scan does not report it
+- **THEN** the check fails, naming the fixture it lost
+
+#### Scenario: The guard can itself fail
+- **WHEN** a converted guard's scanner is deliberately mutated in the way it
+  would actually break
+- **THEN** the guard fails under the mutation and passes on revert, and the
+  measurement is recorded with the change that converted it

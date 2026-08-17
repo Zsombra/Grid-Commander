@@ -2,11 +2,11 @@
 id: no-health-endpoint
 title: There is no health endpoint for a platform to check
 type: feature
-status: open
+status: done
 priority: p3
 created: 2026-07-28
-updated: 2026-07-28
-change: ""
+updated: 2026-08-01
+change: "a-health-check-that-checks"
 capability: app-access
 blocked_by: []
 tags: [deployment, operations]
@@ -48,3 +48,12 @@ the database — `select 1`. Two things to get right:
 
 Worth doing before running more than one replica behind anything that balances.
 Not worth doing to deploy once.
+
+## Done (2026-08-01)
+
+`a-health-check-that-checks` (lite, archived): `GET /api/health` — no
+session, no cookie, one `select 1` through the application's own pool.
+200 `{"status":"ok"}` / 503 `{"status":"unavailable"}`, nothing else in
+the body. Probed by the serving gate on every CI run, deliberately *after*
+the transaction-accounting helper (probing it first hands that helper a
+counter it did not expect to move — found and fixed on the first gate run).

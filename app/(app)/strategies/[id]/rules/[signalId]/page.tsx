@@ -1,0 +1,362 @@
+import { PerformButton } from '@/presentation/components/perform-button.js';
+import { acting } from '@/presentation/session.js';
+import {
+  BUTTON_SECONDARY,
+  CONTROL,
+  LABEL,
+} from '@/presentation/components/control.js';
+import { NotConnected } from '@/presentation/require-connection.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import type { SignalParameter } from '@/ports/strategies.js';
+import { AuthorityLost } from '@/presentation/components/authority-lost.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { performRetune } from './actions.js';
+
+/**
+ * The address that re-opens the composer holding what was composed.
+ *
+ * `edit=1` is what tells the page to show the form rather than describe — see
+ * `composing`. Without it, carrying the values back would skip the form and
+ * re-run the describe that just refused.
+ */
+function composeAgain(
+  q: Record<string, string | string[] | undefined>,
+  declared: readonly { readonly key: string }[],
+): URLSearchParams {
+  const again = new URLSearchParams({ edit: '1' });
+  const a = one(q, 'a');
+  if (a !== undefined) again.set('a', a);
+  if (one(q, 'req') === '1') again.set('req', '1');
+  for (const p of declared) {
+    const v = one(q, `p_${p.key}`);
+    if (v !== undefined) again.set(`p_${p.key}`, v);
+  }
+  return again;
+}
+
+/**
+ * Retuning one signal rule: the scorecard write, behind the ceremony.
+ *
+ * Two steps on one route, the deploy pattern. Without a proposal in the
+ * query the page is the tuning form — allocation, the Required flag, and
+ * the signal's declared parameters prefilled from the rule itself. With a
+ * proposal, the describe runs: it reads the strategy fresh, refuses a
+ * signal the strategy does not weigh and a change that changes nothing,
+ * states the blast radius with the platform's own propagation wording, and
+ * mints the token the confirm form spends. The consequence on screen is
+ * the string stored with the token.
+ */
+
+const ALLOCATIONS = [0, 1, 2, 3] as const;
+
+function one(q: Record<string, string | string[] | undefined>, key: string): string | undefined {
+  const v = q[key];
+  const s = Array.isArray(v) ? v[0] : v;
+  return s !== undefined && s.length > 0 ? s : undefined;
+}
+
+/** The declared parameters, read as numbers; null when one does not parse. */
+function paramsFrom(
+  declared: readonly SignalParameter[],
+  q: Record<string, string | string[] | undefined>,
+): Readonly<Record<string, number>> | null | undefined {
+  if (declared.length === 0) return undefined;
+  const out: Record<string, number> = {};
+  for (const p of declared) {
+    const raw = one(q, `p_${p.key}`);
+    if (raw === undefined) return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    out[p.key] = n;
+  }
+  return out;
+}
+
+export default async function RetuneRulePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string; signalId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { id, signalId } = await params;
+  const q = await searchParams;
+  const { app, user } = await acting();
+  if (user.kind === 'not-connected') return <NotConnected result={user} />;
+
+  // Authority, not this retune. Rendered before the strategy is read, because
+  // there is nothing to read when no call can succeed — and no form, because a
+  // control that cannot work is not made honest by the sentence above it.
+  const authority = one(q, 'authority');
+  if (authority) return <AuthorityLost reason={authority} remedy={app.remedy} />;
+
+  // Read before the earliest branch: a refused retune can bounce back to a
+  // page whose strategy has since gone missing or unreadable, and the refusal
+  // must survive whichever state this surface now describes (#240).
+  const problem = one(q, 'problem');
+
+  const read = await app.readStrategy.execute({ ...user.authority, strategyId: id });
+  if (read.kind === 'missing') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">No such strategy</h1>
+        <CarriedProblem problem={problem} />
+        <p className="text-sm">
+          <a href="/strategies" className="underline">Back to strategies</a>
+        </p>
+      </main>
+    );
+  }
+  if (read.kind === 'unreadable') {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">The strategy could not be read</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="text-sm">{read.reason}</p>
+        {/* Distinct from the `missing` branch above, which is the platform
+            saying the strategy is not there. This one says nothing at all. */}
+        <WhyNotLoaded cause={read.cause} subject="this strategy is" />
+        <p className="text-sm">
+          <a href={`/strategies/${id}`} className="underline">Back to the strategy</a>
+        </p>
+      </main>
+    );
+  }
+
+  const { summary } = read.detail;
+  const rule = read.detail.signalRules.find((r) => r.signalId === signalId);
+  if (!rule) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Not one of this strategy&apos;s rules</h1>
+        <CarriedProblem problem={problem} />
+        <p className="text-sm">
+          &quot;{summary.name}&quot; does not weigh {signalId}. Only a rule the
+          strategy already carries can be retuned here.
+        </p>
+        <p className="text-sm">
+          <a href={`/strategies/${id}`} className="underline">Back to {summary.name}</a>
+        </p>
+      </main>
+    );
+  }
+
+  // The signal's declared parameters give the form its fields, bounds and
+  // defaults — the platform's own contract, read fresh.
+  const signal = await app.readSignal.execute({ ...user.authority, signalId });
+  const declared = signal.kind === 'signal' ? signal.definition.parameters : [];
+
+  const allocationRaw = one(q, 'a');
+
+  /**
+   * Show the form, rather than describe.
+   *
+   * `a` being absent used to be the only signal, which meant a link back to the
+   * form could not carry what was typed — carrying `a` skipped the form and
+   * re-ran the describe. `edit=1` says "compose again, with these values",
+   * so a refusal can return the choice instead of the stored rule.
+   */
+  const composing = allocationRaw === undefined || one(q, 'edit') === '1';
+
+  if (composing) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">
+          Retune {signalId} on {summary.name}
+        </h1>
+        <p className="text-sm">
+          Currently allocation {rule.allocation}
+          {rule.required ? ', required' : ', not required'}. Changing it reaches
+          every agent bound to this strategy immediately.
+          {signal.kind === 'signal' ? (
+            <>
+              {' '}
+              <a href={`/strategies/signals/${signalId}`} className="underline">
+                What this signal does
+              </a>
+            </>
+          ) : null}
+        </p>
+        <CarriedProblem problem={problem} />
+        <form method="get" className="space-y-3 text-sm">
+          <label className={LABEL}>
+            Allocation (weight, 0–3)
+            <select name="a" className={CONTROL} defaultValue={String(rule.allocation)}>
+              {ALLOCATIONS.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <input
+                type="checkbox"
+                name="req"
+                value="1"
+                defaultChecked={one(q, 'req') === undefined ? rule.required : one(q, 'req') === '1'}
+              /> Required —
+            the setup is gated on this signal firing
+          </label>
+          {declared.map((p) => (
+            <label key={p.key} className={LABEL}>
+              {p.key}
+              {p.min !== null || p.max !== null ? ` (${p.min ?? '…'}–${p.max ?? '…'})` : ''}
+              <input
+                type="text"
+                name={`p_${p.key}`}
+                className={CONTROL}
+                defaultValue={String(
+                  one(q, `p_${p.key}`) ??
+                    (rule.params as Record<string, unknown> | null)?.[p.key] ??
+                    p.defaultValue ??
+                    '',
+                )}
+              />
+              {/* The parameter's own description, not part of its name — so it
+                  drops the label's weight rather than inheriting it. */}
+              {p.description ? (
+                <span className="block font-normal text-text-secondary">{p.description}</span>
+              ) : null}
+            </label>
+          ))}
+          {declared.length === 0 && signal.kind !== 'signal' ? (
+            <p role="alert">
+              The signal&apos;s parameter contract could not be read, so only the
+              allocation and Required flag can be retuned right now.
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            <button type="submit" className={BUTTON_SECONDARY}>
+              See what this change would do
+            </button>
+            <a href={`/strategies/${id}`} className={BUTTON_SECONDARY}>
+              Back to the strategy
+            </a>
+          </div>
+        </form>
+      </main>
+    );
+  }
+
+  const ruleParams = paramsFrom(declared, q);
+  if (ruleParams === null) {
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Those parameters do not read as numbers</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="text-sm">
+          Every declared parameter needs a numeric value before the change can
+          be described.
+        </p>
+        <p className="text-sm">
+          {/* Back to what was composed, not to the stored rule. The refusal
+              path below already preserves the choice; these two disagreeing
+              was the bug. */}
+          <a href={`/strategies/${id}/rules/${signalId}?${composeAgain(q, declared).toString()}`} className="underline">
+            Compose it again
+          </a>
+        </p>
+      </main>
+    );
+  }
+
+  /**
+   * Checked here, not by the platform.
+   *
+   * `?a=banana` used to reach `describeRetune` as `NaN` and rely on BattleGrid
+   * to refuse it. The platform refusing is a true answer to the wrong question:
+   * it says the request was malformed, where this page already knew *which*
+   * value was and could say so. The shape is `/recorder/trim`'s unreadable
+   * date — name the value it could not read.
+   */
+  const allocation = Number.parseInt(allocationRaw, 10);
+  if (!Number.isInteger(allocation)) {
+    // The allocation itself is deliberately not carried back — it is the value
+    // that could not be read, and returning it would re-fill the field with the
+    // thing to fix.
+    const again = composeAgain(q, declared);
+    again.delete('a');
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">That allocation does not read as a number</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          {`“${allocationRaw}” is not a whole number, so nothing was described and nothing was sent to BattleGrid.`}
+        </p>
+        <p className="text-sm">
+          <a href={`/strategies/${id}/rules/${signalId}?${again.toString()}`} className="underline">
+            Compose it again
+          </a>
+        </p>
+      </main>
+    );
+  }
+
+  const intent = {
+    allocation,
+    required: one(q, 'req') === '1',
+    ruleParams,
+  };
+  const described = await app.describeRetune.execute({
+    ...user.authority,
+    strategyId: id,
+    signalId,
+    intent,
+  });
+
+  if (described.kind !== 'proposal') {
+    const reason =
+      described.kind === 'strategy-missing'
+        ? 'The strategy is no longer visible to this account.'
+        : described.kind === 'not-a-rule' || described.kind === 'no-op'
+          ? described.reason
+          : described.reason;
+    return (
+      <main className="mx-auto max-w-2xl space-y-4 p-6">
+        <h1 className="text-xl font-medium">Cannot retune</h1>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="text-sm">{reason}</p>
+        <p className="text-sm">
+          <a href={`/strategies/${id}/rules/${signalId}`} className="underline">Choose differently</a>
+          {' · '}
+          <a href={`/strategies/${id}`} className="underline">Back to the strategy</a>
+        </p>
+      </main>
+    );
+  }
+
+  const { proposal } = described;
+  return (
+    <main className="mx-auto max-w-2xl space-y-4 p-6">
+      <h1 className="text-xl font-medium">
+        Retune {proposal.signalId} on {proposal.strategyName}?
+      </h1>
+      <CarriedProblem problem={problem} />
+      <p role="alert" className="rounded-gc-2 border border-border-default p-4 text-sm">{proposal.consequence}</p>
+      {intent.ruleParams !== undefined ? (
+        <p className="text-sm">
+          Parameters:{' '}
+          {Object.entries(intent.ruleParams)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(' · ')}
+        </p>
+      ) : null}
+      <form action={performRetune} className="flex flex-wrap gap-3">
+        <input type="hidden" name="strategyId" value={proposal.strategyId} />
+        <input type="hidden" name="signalId" value={proposal.signalId} />
+        <input type="hidden" name="expectedRevision" value={proposal.expectedRevision} />
+        <input type="hidden" name="allocation" value={proposal.intent.allocation} />
+        <input type="hidden" name="required" value={proposal.intent.required ? '1' : '0'} />
+        {proposal.intent.ruleParams !== undefined ? (
+          <input type="hidden" name="paramsJson" value={JSON.stringify(proposal.intent.ruleParams)} />
+        ) : null}
+        <input type="hidden" name="confirmationToken" value={proposal.confirmationToken} />
+        <PerformButton pendingLabel={`Retuning ${proposal.signalId}…`}>
+          Retune {proposal.signalId}
+        </PerformButton>
+        <a href={`/strategies/${proposal.strategyId}`} className={BUTTON_SECONDARY}>
+          Leave things as they are
+        </a>
+      </form>
+    </main>
+  );
+}

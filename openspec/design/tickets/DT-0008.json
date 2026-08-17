@@ -1,0 +1,67 @@
+{
+  "id": "DT-0008",
+  "surface": "explorer-field",
+  "targets": [
+    "agents"
+  ],
+  "type": "restyle",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The field's cards take the token border, and the this-is-not-the-whole-field sentence takes the notice role \u2014 the precedent treatment for the 67-box sweep (#155).",
+  "rationale": "The field cards wear bare 'rounded border' \u2014 Tailwind's 4px radius and default grey, neither a token, the input defect control.ts documents surviving on boxes. The tokened spelling the newer surfaces wear (rounded-gc-2, border.default) is the decision; this ticket states it once on the surface with the most cards, so the mechanical sweep (#155) executes a decided treatment instead of deciding one per file. The partial-field sentence is this page's load-bearing honesty \u2014 'BattleGrid counts N but returned M; this is not the whole field' is the difference between a partial view and a wrong one \u2014 and it currently has the weight of a caption; it takes notice (advisory, never danger: nothing failed, the platform under-returned). The win-rate caveat stays plain secondary prose \u2014 it is a reading instruction, not an event.",
+  "design": {
+    "layout": "Unchanged \u2014 heading, form, caveats, card list, vendors.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "card_border": "color.border.default",
+      "card_radius": "radius.2",
+      "notice_bg": "color.notice.subtle",
+      "notice_border": "color.notice.border",
+      "text": "color.text.primary",
+      "block_padding": "space.4"
+    },
+    "states": {
+      "cards": {
+        "content": "Each card: 1px color.border.default border, radius.2, existing space.3 padding and vertical rhythm unchanged. No background change \u2014 the lift is the themed border, not a panel. This is the precedent treatment for the border sweep (backlog 155 \u2014 unhashed here because the raw-colour check reads a hashed issue number as a hex literal)."
+      },
+      "empty": {
+        "content": "Unchanged \u2014 'BattleGrid returned no agents for this window', plain prose."
+      },
+      "partial-field": {
+        "content": "The sentence takes the notice role: color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, color.text.primary. Advisory, never danger \u2014 the platform under-returned; nothing failed."
+      },
+      "win-rate-caveat": {
+        "content": "Unchanged in role \u2014 stays plain prose, demoted to color.text.secondary so a standing reading instruction does not compete with the notice above it."
+      }
+    },
+    "responsive": {
+      "mobile": "Cards full width; nothing else moves.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "Every field card wears border color.border.default at radius.2 \u2014 'rounded border' appears nowhere in app/(app)/explorer/page.tsx",
+    "The partial-field sentence renders in a notice block (color.notice.subtle / color.notice.border) and never in danger",
+    "The win-rate caveat renders in color.text.secondary as plain prose",
+    "Zero copy changes anywhere on the page",
+    "Rates still render 'not measured' when absent, and every rate keeps its trade count beside it",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog #155 \u2014 this ticket is the precedent its mechanical sweep executes. Backlog #108 gap 2, fourth surface pass."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

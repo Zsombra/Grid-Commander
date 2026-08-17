@@ -1,6 +1,11 @@
 import type { CreationAvailability } from '@/application/use-cases/list-agents.query.js';
+import type { DeploymentSummaryResult } from '@/application/use-cases/read-deployments.query.js';
+import type { AgentDeployment } from '@/domain/agent/deployment.js';
+import { isRecognisedSection } from '@/domain/agent/deployment.js';
 import type { RosterResult } from '@/ports/agents.js';
 import { AgentActions } from './agent-actions.js';
+import { BindingSummary } from './binding.js';
+import { RadarPauseNote } from './radar-pause.js';
 import { WhyNotLoaded } from './why-not-loaded.js';
 
 /**
@@ -14,14 +19,16 @@ import { WhyNotLoaded } from './why-not-loaded.js';
 export function AgentRoster({
   roster,
   creation,
+  deployments,
 }: {
   roster: RosterResult;
   creation: CreationAvailability;
+  deployments: DeploymentSummaryResult;
 }) {
   if (roster.kind === 'unreadable') {
     return (
-      <div role="alert" className="rounded border p-4 text-sm">
-        <p className="font-medium">Your roster could not be loaded.</p>
+      <div role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+        <p className="font-semibold">Your roster could not be loaded.</p>
         <p className="mt-1">{roster.reason}</p>
         <WhyNotLoaded cause={roster.cause} subject="your agents are" />
         {/*
@@ -48,9 +55,28 @@ export function AgentRoster({
           choosing the strategy it will read and reason with.
         </p>
       ) : (
+        <>
+          {/* One notice for the list, and then no row claims either way — a
+              radar hiccup must not relabel a scanning agent as idle. */}
+          {deployments.kind === 'unreadable' && (
+            <div role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
+              <p>Whether these agents are deployed could not be read: {deployments.reason}</p>
+              {/* The rows below claim nothing either way, so the only thing a
+                  reader can take from that silence is that the radar was
+                  turned off. It was not. */}
+              <WhyNotLoaded cause={deployments.cause} subject="their deployments are" />
+            </div>
+          )}
+          {/* One notice for the list, exactly as the unreadable branch above
+              is one notice for the list. Every row below carries a standing,
+              and a paused radar makes each of them read as activity that is
+              not happening — the same correction the agent page mounts, from
+              the same component, because the deployment spec's own reason for
+              computing standing once applies to qualifying it once. */}
+          {deployments.kind === 'summary' && <RadarPauseNote pause={deployments.pause} />}
         <ul className="space-y-3">
           {roster.agents.map((agent) => (
-            <li key={agent.id} className="rounded border p-4">
+            <li key={agent.id} className="rounded-gc-2 border border-border-default p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 {/**
                  * The name is the link to the agent, and it was not one.
@@ -62,24 +88,222 @@ export function AgentRoster({
                  * it. Here rather than in `AgentActions` because a person looks
                  * for the thing itself under its name, not in a list of verbs.
                  */}
-                <h3 className="font-medium">
+                <h3 className="break-words font-medium">
                   <a href={`/agents/${agent.id}`} className="underline">
                     {agent.displayName}
                   </a>
                 </h3>
                 <span className="text-xs uppercase">{agent.status}</span>
               </div>
+              {/* The binding as BattleGrid states it, through the same
+                  component the agent's own page uses. This line hard-coded the
+                  word "Bound" and never read `binding.state`. */}
               <p className="mt-1 text-sm">
-                Bound to <span className="font-medium">{agent.binding.strategyName}</span>{' '}
-                at revision {agent.binding.strategyRevision}
+                <BindingSummary binding={agent.binding} />
               </p>
+              {/* Acting, or configured-and-waiting — the fact the ACTIVE badge
+                  hides. Same words as the detail page, so the two surfaces
+                  cannot disagree about what an agent is doing. */}
+              {deployments.kind === 'summary' && (
+                <>
+                  <p className="mt-1 text-sm">
+                    {(deployments.byAgent[agent.id] ?? []).length > 0
+                      ? (deployments.byAgent[agent.id] ?? []).map((d, i) => (
+                          <span key={`st-${d.coinTicker}-${d.timeframe}`}>
+                            {i > 0 && ' · '}
+                            {/* DT-0011: the one standing with money behind it
+                                takes weight. The words carry the fact; weight
+                                is the signal, because colour alone is
+                                forbidden and the other standings stay plain. */}
+                            <span
+                              className={
+                                d.standing === 'holding-position' ? 'font-medium' : undefined
+                              }
+                            >
+                              {rosterStanding(d)}
+                            </span>
+                          </span>
+                        ))
+                      : 'Not deployed — scanning no market'}
+                  </p>
+                  {/* What the platform is letting happen, which the standing
+                      above cannot say. Fifteen of twenty markets on this
+                      account were "Scanning" and not qualifying at the same
+                      time; the standing was true and the row was misleading. */}
+                  {(deployments.byAgent[agent.id] ?? []).map((d) => {
+                    const segments = resolutionNoteSegments(d);
+                    return segments === null ? null : (
+                      <p
+                        key={`res-${d.coinTicker}-${d.timeframe}`}
+                        className="mt-1 text-sm text-text-secondary"
+                      >
+                        {d.coinTicker} ({d.timeframe}):{' '}
+                        {segments.map((part, i) => (
+                          <span key={`part-${String(i)}`}>
+                            {i > 0 && ' · '}
+                            {part.map((seg, j) =>
+                              seg.kind === 'platform-token' ? (
+                                /* DT-0011: quoted evidence wears quoting
+                                   dress. Mono marks "from the platform, not
+                                   our sentence" — it keeps an ALL_CAPS token
+                                   from reading as this product shouting. */
+                                <code key={`seg-${String(j)}`} className="font-mono text-xs">
+                                  {seg.text}
+                                </code>
+                              ) : (
+                                <span key={`seg-${String(j)}`}>{seg.text}</span>
+                              ),
+                            )}
+                          </span>
+                        ))}
+                      </p>
+                    );
+                  })}
+                  {/* The other half of the same join: a market whose slots hold
+                      nobody active. It rides on the agent's row because this is
+                      the only place the product describes a policy at all. */}
+                  {unscanned(deployments.byAgent[agent.id] ?? []).map((d) => (
+                    <p key={`${d.coinTicker}-${d.timeframe}`} className="mt-1 text-sm">
+                      No active agent holds the {d.coinTicker} deployment ({d.timeframe}) — that
+                      market is deployed and unscanned.
+                    </p>
+                  ))}
+                </>
+              )}
               <AgentActions agent={agent} />
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   );
+}
+
+/**
+ * One deployment, in a row's worth of words.
+ *
+ * `slot-held-not-scanning` is the case this row used to render as "Scanning
+ * SP500 (15m)": the radar names the slot whatever the agent's lifecycle, and
+ * the row read the radar alone. It says what is true of the pair — the slot is
+ * held, and nothing is being scanned through it — and stops there. *Why* an
+ * agent is out of lifecycle is on its status badge two lines up; asserting
+ * anything more about what BattleGrid does with an archived agent's slot would
+ * be inventing platform behaviour.
+ */
+function rosterStanding(d: AgentDeployment): string {
+  if (d.standing === 'holding-position') {
+    return `Holding the position on ${d.coinTicker} (${d.timeframe})`;
+  }
+  if (d.standing === 'on-duty') return `Scanning ${d.coinTicker} (${d.timeframe})`;
+  if (d.standing === 'slot-held-not-scanning') {
+    return `Holds the ${d.coinTicker} slot (${d.timeframe}) and is not scanning it — this agent is not active`;
+  }
+  return `In the rotation for ${d.coinTicker} (${d.timeframe})`;
+}
+
+/**
+ * What the platform is letting happen here, appended to the standing.
+ *
+ * A separate sentence from `rosterStanding` because it answers a separate
+ * question. "Scanning HYPE (15m)" was true on 2026-08-13 for fifteen markets
+ * that were also **not qualifying**, each with the platform's own reason — and
+ * an operator reading the row had no way to know.
+ *
+ * Nothing here is translated. `AGGREGATE_BELOW_MIN` is shown as
+ * `AGGREGATE_BELOW_MIN`, because two block values from twenty rows on one
+ * account is not a vocabulary, and rendering an unseen token as a sentence of
+ * ours would invent a meaning for a value whose range is unknown. The same rule
+ * covers `section`: a state this product does not recognise is *named* as
+ * unrecognised, never shown as scanning or idle.
+ *
+ * `null` yields nothing at all. A deployment the platform resolved nothing for
+ * supports no statement in either direction — the same rule the occupancy line
+ * follows for an agent whose lifecycle was never read.
+ */
+/**
+ * One piece of a resolution note: this product's own prose, or a value quoted
+ * verbatim from the platform. The distinction exists for DT-0011's mono
+ * ruling — quoted evidence wears quoting dress — and it is decided here,
+ * where the sentence is composed, so the renderer cannot re-classify a token
+ * by matching on its text.
+ */
+export interface NoteSegment {
+  readonly text: string;
+  readonly kind: 'prose' | 'platform-token';
+}
+
+export function resolutionNoteSegments(
+  d: AgentDeployment,
+): readonly (readonly NoteSegment[])[] | null {
+  const r = d.resolution;
+  if (!r) return null;
+
+  const parts: NoteSegment[][] = [];
+
+  if (!isRecognisedSection(r.section) && r.section !== null) {
+    // Declared by the platform and never observed here — `BLOCKED` is the one
+    // in the record. Named rather than interpreted, which is what lets it
+    // arrive honestly without having been modelled in advance.
+    parts.push([
+      { text: 'the platform reports a state this product does not recognise: ', kind: 'prose' },
+      { text: r.section, kind: 'platform-token' },
+    ]);
+  }
+
+  if (r.qualified === false) {
+    parts.push(
+      r.qualificationBlock
+        ? [
+            { text: 'not qualifying — the platform gives ', kind: 'prose' },
+            { text: r.qualificationBlock, kind: 'platform-token' },
+          ]
+        : [{ text: 'not qualifying, and the platform did not say why', kind: 'prose' }],
+    );
+  }
+
+  // Whether it is still running was decided in the read, against the injected
+  // clock. This only words it — see `tests/architecture/boundaries.test.ts`.
+  // The timestamp is this product's own wording around a time, not a quoted
+  // platform identifier, so it is prose (DT-0011).
+  if (r.cooldownActive === true && r.cooldownUntil) {
+    parts.push([
+      { text: `sitting out a cooldown until ${r.cooldownUntil.toISOString()}`, kind: 'prose' },
+    ]);
+  }
+
+  if (r.regime) {
+    // Regime names are presented as description inside the sentence, so they
+    // stay prose — only quoted refusal/anomaly identifiers take the token
+    // dress, or the note line becomes typography soup (DT-0011).
+    parts.push([
+      {
+        text: r.regimeConviction
+          ? `regime ${r.regime} (${r.regimeConviction})`
+          : `regime ${r.regime}`,
+        kind: 'prose',
+      },
+    ]);
+  }
+
+  return parts.length > 0 ? parts : null;
+}
+
+/**
+ * The note as one string — derived from the segments so the wording has a
+ * single source. `tests/agent/radar-resolution.test.ts` pins the sentences
+ * through this; the renderer reads the segments.
+ */
+export function resolutionNote(d: AgentDeployment): string | null {
+  const parts = resolutionNoteSegments(d);
+  return parts === null
+    ? null
+    : parts.map((part) => part.map((s) => s.text).join('')).join(' · ');
+}
+
+/** The markets on this row that nothing active is deployed on. */
+function unscanned(deployments: readonly AgentDeployment[]): readonly AgentDeployment[] {
+  return deployments.filter((d) => d.occupancy === 'no-active-agent');
 }
 
 function CreateAffordance({ creation }: { creation: CreationAvailability }) {
@@ -88,7 +312,7 @@ function CreateAffordance({ creation }: { creation: CreationAvailability }) {
   if (creation.kind === 'at-capacity') {
     // Before the form, not after submission.
     return (
-      <p role="status" className="rounded border p-3 text-sm">
+      <p role="status" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-3 text-sm text-text-primary">
         {creation.explanation}
       </p>
     );

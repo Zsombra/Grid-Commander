@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { VETERAN_PERFORMANCE } from '../support/performance-payloads.js';
-import { AgentPayloadError, mapAgent, mapCatalog, mapSlotUsage } from '@/infrastructure/battlegrid/agent-mapper.js';
+import {
+  AgentPayloadError,
+  mapAgent,
+  mapCatalog,
+  mapRosterAgent,
+  mapSlotUsage,
+} from '@/infrastructure/battlegrid/agent-mapper.js';
 
 /**
  * Shaped from the real `list_intelligence_agents` response recorded in
@@ -21,7 +27,11 @@ const livePayload = {
   strategyRevision: 1,
   bindingState: 'BOUND',
   modelId: 'anthropic/claude-sonnet-4.6',
+  modelDisplayName: 'Claude Sonnet 4.6',
+  provider: null,
   behavior: { risk: 'AGGRESSIVE', outlook: 'REALIST', conviction: 'MEASURED' },
+  activeGameCount: 0,
+  hasActiveAssignments: false,
   contextSources: { includeRsi: true, includeMacd: true },
   tradingConfig: { maxLeverage: 5, maxDailyLossUsd: 300 },
   arenaChallengeEnabled: false,
@@ -54,6 +64,17 @@ describe('mapping a live agent payload', () => {
     expect(brain.kind === 'preset' && brain.preset).toBe('ROMMEL');
   });
 
+  it('maps unknown as unknown when payload carries neither preset nor modelId', () => {
+    const brain = mapAgent({ ...livePayload, modelId: undefined, brainPreset: undefined }).brain;
+    expect(brain.kind).toBe('unknown');
+  });
+
+  it('still maps custom when only modelId is present and brainPreset is absent', () => {
+    const brain = mapAgent({ ...livePayload, modelId: 'anthropic/claude-opus-5', brainPreset: undefined }).brain;
+    expect(brain.kind).toBe('custom');
+    expect(brain.kind === 'custom' && brain.modelId).toBe('anthropic/claude-opus-5');
+  });
+
   it('keeps the trading config whole, because the way back needs every field', () => {
     // F-6: a partial config does not error, it resets the omitted fields.
     expect(mapAgent(livePayload).tradingConfig?.fields).toEqual({
@@ -76,23 +97,40 @@ describe('mapping a live agent payload', () => {
 
   /**
    * `performance` used to be on this list, and taking it off was the point of
-   * `performance-was-already-in-the-payload`.
+   * `performance-was-already-in-the-payload`. `last24hCostUsd` and
+   * `modelDisplayName` came off it in `the-brains-name-and-the-spend-are-read`
+   * for the same reason: surfaces asked — the limits page says what spend is
+   * doing, and the brain line shows the platform's name for the model.
    *
    * The rule the list encodes — a field that governs no mutation does not belong
    * in a domain type — is right, and its conclusion was one step too wide. It
-   * held for avatar urls and telemetry and it does not hold for the agent's
-   * record, because *understanding* an agent is a purpose of this product and
-   * not a side effect of authoring it. The block arrived on every roster read
-   * for the life of the product and was thrown away every time.
+   * held for avatar urls and it does not hold for the agent's record or its
+   * spend, because *understanding* an agent is a purpose of this product and
+   * not a side effect of authoring it.
    *
    * The rest of the list stands, so this still guards something. Widening it by
-   * deleting the assertion would have been the easy way through.
+   * deleting the assertion would have been the easy way through. `provider` is
+   * here deliberately: observed null on the only agent measured, so the pair
+   * "provider + modelDisplayName" is not a pair — only one of them answers,
+   * and nothing renders the one that never has
+   * (`the-payload-carries-more-than-is-read`).
    */
   it('drops presentation and telemetry the rules never consult', () => {
     const json = JSON.stringify(mapAgent(livePayload));
-    for (const noise of ['avatarUrl', 'last24hCostUsd', 'userId']) {
+    for (const noise of ['avatarUrl', 'userId', 'provider', 'activeGameCount', 'hasActiveAssignments']) {
       expect(json, `${noise} should not reach the domain`).not.toContain(noise);
     }
+  });
+
+  it('carries the platform’s human name for the brain, on every read', () => {
+    // Both reads carry it identically — only the spend diverges — so the
+    // shared mapper reads it and the bare word CUSTOM stops being all a
+    // surface can say.
+    expect(mapAgent(livePayload).modelDisplayName).toBe('Claude Sonnet 4.6');
+  });
+
+  it('maps no name when the payload reports none, rather than inventing one', () => {
+    expect(mapAgent({ ...livePayload, modelDisplayName: undefined }).modelDisplayName).toBeNull();
   });
 
   it('keeps the record the payload carries', () => {
@@ -120,6 +158,38 @@ describe('mapping a live agent payload', () => {
 
   it('refuses a payload with no id', () => {
     expect(() => mapAgent({ ...livePayload, id: undefined })).toThrow(AgentPayloadError);
+  });
+});
+
+/**
+ * The two reads return the same thirty keys and disagree on exactly one
+ * value: for the same agent at the same moment, `list_intelligence_agents`
+ * said `last24hCostUsd: 0.09022839` and `get_intelligence_agent` said `0` —
+ * stable across repeated samples. So spend is read by the roster mapping
+ * only, and the shared mapper leaves it null however loudly the payload
+ * offers a number. See `the-cost-of-an-agent-reads-differently-from-two-tools`.
+ */
+describe('spend is read from the roster row and nowhere else', () => {
+  it('the roster mapping carries the figure', () => {
+    expect(mapRosterAgent(livePayload).last24hCostUsd).toBe(1.23);
+  });
+
+  it('the shared mapping leaves it null even when the payload carries one', () => {
+    // This is the detail read's shape, and the detail read's copy of this
+    // field is the one observed answering a false zero. Null says "this read
+    // does not answer spend"; passing the number through would put the
+    // untrusted copy one refactor away from a surface.
+    expect(mapAgent(livePayload).last24hCostUsd).toBeNull();
+  });
+
+  it('a roster row with no figure maps null, never zero', () => {
+    // A figure the platform did not send is not a spend of nothing — the
+    // same distinction the budget gauges draw for `remaining: 0`.
+    expect(mapRosterAgent({ ...livePayload, last24hCostUsd: undefined }).last24hCostUsd).toBeNull();
+  });
+
+  it('a measured zero is carried as zero, not discarded as absent', () => {
+    expect(mapRosterAgent({ ...livePayload, last24hCostUsd: 0 }).last24hCostUsd).toBe(0);
   });
 });
 

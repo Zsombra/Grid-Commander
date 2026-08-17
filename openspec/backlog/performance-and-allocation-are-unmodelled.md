@@ -1,18 +1,204 @@
 ---
 id: performance-and-allocation-are-unmodelled
-title: get_agent_performance and get_agent_fund_allocation have never returned a figure
-type: question
-status: open
-priority: p2
+title: get_agent_fund_allocation reported zero for money the platform reported as committed
+type: bug
+status: done
+priority: p3
 created: 2026-07-29
-updated: 2026-07-29
-change: performance-was-already-in-the-payload
+updated: 2026-08-16
+change: ""
 capability: agent-understanding
+github: "107"
 blocked_by: []
 tags: [battlegrid, agent-understanding, mapping]
 ---
 
-# get_agent_performance and get_agent_fund_allocation have never returned a figure
+# get_agent_fund_allocation reported zero for money the platform reported as committed
+
+> **Split 2026-08-13.** The title named two tools. **They have gone different
+> ways and can no longer share an item.**
+>
+> - **`get_agent_performance` answers.** It has real figures on this account and
+>   the premise that it never answers is now the *product's* defect, not the
+>   platform's. That is [[the-performance-design-rests-on-a-dead-premise]] (#189),
+>   which supersedes this item's performance half entirely.
+> - **`get_agent_fund_allocation` is what is left**, and the finding is
+>   sharper than "never returned a figure": it returned **zero for an agent
+>   holding $17.45 of margin**.
+>
+> Original title: *"get_agent_performance and get_agent_fund_allocation have
+> never returned a figure"*. Everything below is kept.
+
+## CONFIRMED 2026-08-16 — measured against open positions, with a negative control
+
+**The blocker is gone and the finding is now a defect, not a question.** Every
+re-check since 2026-07-29 was uninformative for the same reason: the account was
+flat, so `committedUsd: 0` was the *correct* answer and could not falsify
+anything. On 2026-08-16 the account held three open positions across two agents,
+and the tool was read against them.
+
+Read live over the authenticated MCP connector at v19.1.0, all within one minute
+(`generatedAtMs 1786839673543`), no writes:
+
+| agent | open positions | `marginedUsd` | `capitalAtRiskUsd` | `committedUsd` | verdict |
+|---|---|---|---|---|---|
+| Undertow | 2 | 8.511903 | 8.55 | **0** | **wrong** |
+| Breakwater | 1 | 4.298067 | 4.50 | **0** | **wrong** |
+| Vanguard | 0 | — | — | 0 | correct — negative control |
+
+Two independent tools corroborate the non-zero on both trading agents:
+`list_user_active_positions` reports the margin per agent and
+`get_agent_budget` reports the same figure as `capitalAtRiskUsd` and as
+`gauges.exposure.fill`. `get_agent_fund_allocation` returns zero on **every**
+field for all three:
+
+```
+get_agent_fund_allocation(Undertow)    availableUsd 0  committedUsd 0
+                                       lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+get_agent_fund_allocation(Breakwater)  availableUsd 0  committedUsd 0
+                                       lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+get_agent_fund_allocation(Vanguard)    availableUsd 0  committedUsd 0    <- flat, so correct
+```
+
+**Vanguard is the control that makes the other two readable.** It holds no
+position, and there the zero agrees with every other tool. So the tool is not
+returning a constant that happens to be right sometimes — it is returning zero
+where zero is wrong and zero where zero is right, which is what "unwired" looks
+like rather than "stale".
+
+**The lifetime fields are dead too.** `lifetimeAllocatedUsd` and
+`lifetimeRecalledUsd` are 0 on all three agents, on an account with 15 games,
+$150 total wagered, and live trades in the same hour.
+
+### What this settles
+
+- The premise reproduces **on a second agent** (Breakwater), which is what the
+  2026-08-15 accept-path work established as the bar for a sizing claim.
+- It is an **upstream defect**, not a mapping gap. Per
+  [[upstream-defects-are-answered-in-product]] the move is client-side: source
+  committed and available funds from `get_agent_budget`
+  (`capitalAtRiskUsd`, `headroomUsd`, `gauges.exposure`) and
+  `list_user_active_positions` (`marginedUsd`), both of which answer correctly,
+  and stop reading `get_agent_fund_allocation` for anything but
+  `perTradePushEnabled` and `haltedAt`.
+- The item can move off `question` once that read is re-sourced.
+
+### One anomaly recorded, not concluded
+
+`get_agent_budget.accountEquityUsd` reads **0** on both trading agents while
+`get_account_state` reports `balance.usdc 38.573919` and
+`tradingWalletProvisioned: true`. The tool's own description calls it "owner
+account equity". These may be two different pots — play balance versus trading
+wallet equity — so this is **observed, not judged**. It is not folded into the
+verdict above. See [[battlegrid-declared-vs-observed]]; if it is a second
+instance of the same wiring gap it deserves its own item.
+
+
+## CLOSED 2026-08-16 — confirmed, mitigated, guarded, and the anomaly rehomed
+
+Everything this item exists to establish is established, and the product-side
+answer is already in the tree. Closing on our own evidence, per
+[[upstream-defects-are-answered-in-product]] — no upstream report is drafted.
+
+**The defect is confirmed** by the 2026-08-16 measurement above: zero committed
+on two agents demonstrably holding margin, with a flat third agent as the
+negative control that distinguishes "unwired" from "stale".
+
+**The mitigation is already shipped, and was shipped before this confirmation.**
+`read-budget.query.ts` sources `committedUsd` from `get_agent_budget`'s exposure
+gauge (`sizingBase`, preferring `gauge.used` over `capitalAtRiskUsd` because it
+is the figure the platform resolved against the cap). Verified live the same
+day: `gauges.exposure.fill 11.95` against `list_user_active_positions.totals.
+marginedUsd 11.9419` on Undertow with three positions open. The correct source
+agrees; the wrong one does not.
+
+**The mitigation is enforced, not just done.** `tests/architecture/
+no-population-constants.test.ts` — *"the account balance is reported, never
+divided"* — fails if any file under `src/` or `app/` so much as names
+`get_agent_fund_allocation`, and carries a vacuity guard asserting the tool is
+still on the surface record, so the rule cannot quietly become an assertion
+about nothing. `grep` confirms the product reaches it from nowhere.
+
+**The `accountEquityUsd` anomaly is settled and moved.** This item recorded it
+as "observed, not judged", leaving open that equity and play balance might be
+two different pots. That is now closed off: read at v19.2.0 on 2026-08-16,
+`accountEquityUsd` is **0** while the trading wallet holds **$11.94 of live
+margin** — so it is wrong under the trading-wallet reading as well as the play-
+balance one, and there is no pot for which zero is the answer. A second field in
+the same payload reads zero the same way (`openUnrealizedPnlUsd` **0** against
+`list_user_active_positions.totals.unrealizedPnlUsd` **0.177854**, all three
+positions `LIVE`).
+
+Both are now [[two-budget-fields-read-zero-against-live-money]] (**#336**),
+filed rather than folded in, because they belong to a *different tool* — one
+this product calls and depends on. The distinction is the whole point: the
+answer to `get_agent_fund_allocation` is "never call it", and the answer to
+`get_agent_budget` cannot be, so the rule there has to name fields instead.
+
+**What is not closed by this**, and is tracked elsewhere: the performance half
+of the original title, superseded by #189; the unmapped-field survey, #110.
+
+## Status 2026-08-13 — the finding stands, and cannot be re-measured today
+
+Re-read in the read-only sweep:
+
+```
+get_agent_performance(Undertow)      realizedPnlUsd -0.84   pnlCurveUsd 41 points
+get_agent_fund_allocation(Undertow)  availableUsd 0  committedUsd 0
+                                     lifetimeAllocatedUsd 0  lifetimeRecalledUsd 0
+list_user_active_positions           openPositionCount 0    marginedUsd 0
+```
+
+**`committedUsd: 0` is correct right now.** The account holds no open position,
+so zero committed and zero margined agree. The 2026-08-10 contradiction —
+`committedUsd: 0` against the platform's own `marginedUsd: 17.45` for the same
+agent, seconds apart — **cannot be reproduced until a position is open again.**
+
+That is worth stating precisely, because it changes what a re-check means:
+a reading of zero today is *not* evidence the tool has been fixed, and must not
+be recorded as one. Only a reading taken while `openPositionCount > 0` can
+distinguish the two. The 2026-08-10 evidence remains the decisive measurement.
+
+**The item is conditional from here.** It stays open, and the only read that can
+settle it either way is one taken while a position is open: when
+`list_user_active_positions` shows a non-zero `marginedUsd`, call
+`get_agent_fund_allocation` in the same minute. Until then a re-check can only
+report agreement, and agreement is not an answer to this item's question.
+
+The title was moved to past tense on 2026-08-13 for that reason. As written it
+asserted a present-tense mismatch that no read taken today can support. What it
+records -- `committedUsd: 0` against `marginedUsd: 17.45`, 2026-08-10 -- is
+unchanged.
+
+## Update 2026-08-06: the zeros are a baseline, not a bug
+
+The second account settles what "every figure zero" meant. `get_agent_performance`
+and `get_agent_budget` report P&L **against the agent's risk-budget baseline**,
+not against its trade history:
+
+| | account 1, Fade Master II | account 2, `THE .0` |
+|---|---|---|
+| `maxConcurrentExposureUsd` | 0 | 250 |
+| `get_agent_performance.realizedPnlUsd` | **0** | **-0.23** |
+| `pnlCurveUsd` points | **0** | **26** |
+| trade record net P&L | -4.47 (18 trades) | -0.236 (26 trades) |
+
+Where a budget is configured the tool is **correct to the cent** and its curve
+has one point per closed trade. Where none is (`maxConcurrentExposureUsd: 0`)
+there is no baseline to measure from, and it reports zeros.
+
+So this was never a populated-vs-empty payload problem. The shape was always
+right; the *condition* for it carrying figures is a configured budget, which
+none of account 1's agents has. Corrected in `docs/MCP_SERVER.md` and
+`src/ports/agents.ts`, both of which stated it as a platform defect.
+
+`read_trading_record` still derives from the closed trades, and should: it
+answers the same way whether or not a budget was ever set.
+
+One field is genuinely wrong, though — **`accountEquityUsd: 0` on both
+accounts**, including one holding $49.13. Nothing in this product renders it,
+and nothing should until it is understood.
+
 
 Both tools are now **called**, on twelve agents across two accounts — one with 97
 games and 18 trades. Neither has ever answered with a populated value.
@@ -72,3 +258,225 @@ presenting a reconciled number nobody has reconciled.
   declared these out of scope, with this evidence
 - `the-journal-can-never-show-anything` — where this item was first filed, under
   a premise the older account disproved
+
+## Re-triaged P3, 2026-07-31
+
+Everything buildable here shipped or stands guard: the roster block is
+modelled (`performance-was-already-in-the-payload`), the product captions
+its figure with its source, and `tests/agent/performance.test.ts` is the
+tripwire that fires the day either tool returns a populated value. The P&L
+discrepancy stays a real question, but it waits on evidence no session can
+fabricate — a populated account or platform documentation. Nothing P2-sized
+remains to do.
+
+---
+
+# Re-measured 2026-08-06 — the two tools have separated
+
+They were filed as a pair and they no longer behave as one.
+
+## `get_agent_performance` works, and the tripwire should be re-read
+
+Account 2, `THE .0`, budget configured (`maxConcurrentExposureUsd: 250`):
+
+```json
+{"agentId":"26a60e91-…","realizedPnlUsd":-0.3,"drawdownUsd":0.69,
+ "maxCumulativeDrawdownUsd":0,
+ "pnlCurveUsd":[0,-0.01,-0.12,0.08,0,-0.09,-0.09,0.2,0.06,0.02,0.39,0.3,0.24,
+                0.17,0.13,-0.02,-0.02,-0.02,-0.05,-0.17,0.16,0.17,0.04,-0.05,
+                -0.12,-0.23,-0.3],
+ "haltedAt":null}
+```
+
+Twenty-seven curve points, a signed figure, a live drawdown. This is a working
+tool, and it confirms the 2026-08-06 correction above rather than adding to it:
+where a risk budget exists the tool answers, where none does it reports zeros
+because there is no baseline to measure from.
+
+`tests/agent/performance.test.ts` asserts the emptiness. That assertion is
+still correct **for account 1**, whose agents have no budget — but it should be
+read as "this account's agents have no baseline", not as "this tool does not
+answer". If it is ever pointed at a budgeted agent it will fail, and it will be
+right to.
+
+## `get_agent_fund_allocation` is still empty on an account that trades
+
+Same agent, same moment, 26 closed trades behind it:
+
+```json
+{"agentId":"26a60e91-…","availableUsd":0,"committedUsd":0,
+ "lifetimeAllocatedUsd":0,"lifetimeRecalledUsd":0,
+ "haltedAt":null,"perTradePushEnabled":true}
+```
+
+Every figure zero, on the one account where the sibling tool answers to the
+cent. So the budget-baseline explanation does **not** cover this one: the
+budget is configured, the exposure cap is $250, and `lifetimeAllocatedUsd` is
+still 0.
+
+Which retires an inference this repository has already had to correct once —
+`lifetimeAllocatedUsd: 0` was read as "never funded" on account 2 and that was
+wrong. It is now measured as 0 on an agent that has demonstrably traded, so the
+field means something other than what its name suggests, or is not populated on
+this platform. Either way it stays unmodelled, and now for an observed reason
+rather than an assumed one.
+
+## Where that leaves the item
+
+Still p3, still open, and narrower: **one tool of the two is a live question.**
+`get_agent_performance` is answered. `get_agent_fund_allocation` has now been
+called on twelve agents across two accounts, including one with a configured
+budget and a trading history, and has never returned a non-zero figure.
+
+`accountEquityUsd: 0` is also still 0 in `get_agent_budget` on this account —
+third observation, still unexplained, still rendered nowhere.
+
+## Re-confirmed live, 2026-08-10 — the tool is wrong, not empty
+
+`get_agent_fund_allocation` on **Undertow**, holding five open positions at that
+moment, answered `availableUsd: 0, committedUsd: 0, lifetimeAllocatedUsd: 0`.
+`list_user_active_positions` seconds earlier reported **`marginedUsd: 17.45`**
+for the same agent.
+
+"Never returned a figure" is consistent with an idle account. This is not: two
+reads of the same platform, at the same time, about the same agent, disagreeing
+by $17.45. The tool whose stated job is *funds committed to in-flight wagers and
+trade margin* reports zero committed while the platform's own positions read
+reports the margin.
+
+Same shape as `get_agent_performance` answering zeros on agents with real closed
+losses — two nominally authoritative money tools, both answering zero where the
+platform's own alternative answers correctly. Nothing should be built on either.
+
+## Re-confirmed 2026-08-12 — both agents at once, v17.2.0
+
+Fourth measurement, and the first that catches the disagreement on **two
+agents in the same minute**. `list_user_active_positions` reported
+`marginedUsd: 11.07` for Undertow (3 open positions) and `marginedUsd:
+11.05` for Breakwater (3 open positions). `get_agent_fund_allocation`
+called seconds later answered all-zero for both — `availableUsd: 0,
+committedUsd: 0, lifetimeAllocatedUsd: 0, lifetimeRecalledUsd: 0`. The
+wrongness survived the v11 → v17 platform upgrades untouched.
+
+The linked change `performance-was-already-in-the-payload` shipped and
+archived long ago; the `change:` link is cleared because what this item
+still tracks — the allocation tool answering zero against live margin,
+and `accountEquityUsd: 0` — was never that change's scope. What would
+settle it: a BattleGrid-side fix or documentation of what
+`get_agent_fund_allocation` actually measures.
+
+## 2026-08-12 (v18.2.0) — the two tools have come apart
+
+Probed read-only against **v18.2.0**. The item's premise now holds for only one
+of the two.
+
+**`get_agent_performance` answers, with real figures.** Three agents, one call
+each:
+
+| agent | realizedPnlUsd | drawdownUsd | pnlCurveUsd |
+|---|---|---|---|
+| Undertow | −0.84 | 1.9 | **41 points** |
+| Breakwater | +0.30 | 0.41 | **25 points** |
+| Vanguard | 0 | 0 | empty |
+
+Vanguard's empty curve is not a failure: v18's own description says *"An empty
+curve means no settlements yet, not missing data"*, and Vanguard has settled
+nothing. So the tool is answering correctly on all three.
+
+This is the fact the whole `performance.ts` design was built against, and it has
+reversed. Filed separately as `the-performance-design-rests-on-a-dead-premise`
+because it is a product decision to revisit, not just an observation.
+
+**`get_agent_fund_allocation` still reads all-zero** — `availableUsd`,
+`committedUsd`, `lifetimeAllocatedUsd`, `lifetimeRecalledUsd` all 0 for
+Undertow. But **the disagreement could not be reproduced today**, because
+`list_user_active_positions` also reads zero across the account
+(`openPositionCount: 0`, `marginedUsd: 0`). Zero against zero is agreement, not
+a contradiction.
+
+So the allocation half is **untestable until a position is open**. The previous
+readings (four measurements, most recently 2026-08-12 morning with ~$11
+margined on each of two agents) remain the evidence; today adds only that the
+tool still returns zeros when zero is also the right answer.
+
+**Next reading**: when `list_user_active_positions` shows a non-zero
+`marginedUsd`, call `get_agent_fund_allocation` in the same minute. That is the
+only configuration in which this item can be settled either way.
+
+## Re-checked 2026-08-13, ~20:00 UTC -- zero is the right answer, so zero proves nothing
+
+Second read of the day, read-only, against the account whose `get_account_state`
+answers `username: "Fibonacci"`, at v18.2.0. `get_agent_fund_allocation(Undertow)`
+returns, under the key `allocation`:
+
+```
+agentId               <Undertow>
+availableUsd          0
+committedUsd          0
+lifetimeAllocatedUsd  0
+lifetimeRecalledUsd   0
+haltedAt              null
+perTradePushEnabled   false
+```
+
+`list_user_active_positions` returns the keys `[activeCoinTickers, agents,
+positions, totals, userId]`, and `totals` is zero throughout:
+`openPositionCount: 0`, `activeAgentCount: 0`, `pricedPositionCount: 0`,
+`unpricedPositionCount: 0`, `longCount: 0`, `shortCount: 0`, `marginedUsd: 0`.
+
+**The platform reports nothing committed, and the allocation tool reports
+nothing committed. That is agreement, not a discrepancy.** The item's claim is
+neither confirmed nor falsified by this read. It is untestable while no position
+is open, which is the state the account has been in for both of today's reads.
+
+Worth writing plainly, because this repository's recurring error runs the other
+way: *"the read returned zero" is not "the read is broken" when zero is the
+right answer.* Two matching zeros are evidence of nothing here except that the
+account is flat.
+
+**What the mismatch evidence actually covers.** The comparison in the title
+dates from 2026-08-10, the first reading that records margin open at the same
+moment (five positions, `marginedUsd: 17.45`), and from 2026-08-12, which
+repeats it on two agents at ~$11 each. The original 2026-07-29 filing reports
+zeros across twelve agents but does not record whether any position was open at
+the time, so those zeros cannot be classified either way -- they may have been
+the same agreement seen today. The mismatch rests on the two August readings,
+not on the sweep that opened the item.
+
+Two smaller observations from the same read, neither of them the finding:
+
+- The payload arrives under an `allocation` key. Earlier entries in this item
+  quote the inner object without that envelope.
+- `perTradePushEnabled: false` for Undertow, where account 2's agent read `true`
+  on 2026-08-06. Not investigated; outside this item's question.
+
+**One citation checked while auditing this entry does not hold.** Lines 126-128
+say `tests/agent/performance.test.ts` fails the day a future account populates
+these tools, and call that the cheapest possible trigger. It cannot. The
+assertion at `tests/agent/performance.test.ts:142-148` reads a frozen literal --
+`EMPTY_PERFORMANCE_TOOL_RESPONSE`, defined at
+`tests/support/performance-payloads.ts:102-111` -- so it fails only if someone
+edits the fixture, never because the live tool started answering. The
+performance half is superseded by #189 either way; recorded here so the tripwire
+is not counted on again.
+
+## Re-checked 2026-08-15 — still flat, still untestable
+
+Session-start tripwire sweep: `list_user_active_positions` totals zero
+throughout (`openPositionCount: 0`, `marginedUsd: 0`, `activeAgentCount: 0`).
+The settling paired read remains untakeable; `get_agent_fund_allocation`
+deliberately not called, per the 2026-08-13 rule that a zero/zero pair is
+agreement and proves nothing.
+
+A second sweep the same local day (2026-08-14T21:51Z / 04:51 local) read
+identically — totals zero throughout, paired read again untaken.
+
+## Re-checked 2026-08-14 — still flat, still untestable
+
+`list_user_active_positions` totals read zero throughout (`openPositionCount: 0`,
+`marginedUsd: 0`, `activeAgentCount: 0`). The settling read — calling
+`get_agent_fund_allocation` while margin is open — remains untakeable, so
+`get_agent_fund_allocation` was deliberately not called: another zero/zero pair
+would be agreement, which this item has already established proves nothing.
+This line exists only so the watch reads as current. The 2026-08-10 and
+2026-08-12 contradictions remain the decisive evidence.

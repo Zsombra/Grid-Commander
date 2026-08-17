@@ -1,0 +1,472 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  aBudget,
+  anAgent,
+  aTradeOutcome,
+  FakeAccountStatePort,
+  FakeAgentsPort,
+  liveTradingConfig,
+} from '../support/agent-fakes.js';
+import { actingWith } from './support/fake-acting.js';
+import { rendered } from './support/render.js';
+
+/**
+ * A setting rendered against the thing that makes it safe or unsafe.
+ *
+ * Rendered rather than asserted on the query, for the reason `binding.test.ts`
+ * gives: the property is what a person reads. Three claims here are copy
+ * claims and only exist on the page — that a derived figure says it is derived,
+ * that a window is stated rather than implied, and that a stop-out is not
+ * described as a loss.
+ */
+
+let current: { app: unknown; user: unknown };
+
+vi.mock('@/presentation/session.js', () => ({
+  acting: async () => current,
+  requestApp: async () => (current as { app: unknown }).app,
+}));
+
+const params = <T extends Record<string, string>>(p: T): Promise<T> => Promise.resolve(p);
+
+function world(agents: FakeAgentsPort) {
+  current = actingWith({ agents }) as typeof current;
+  return current;
+}
+
+/**
+ * The page's text with runs of whitespace collapsed.
+ *
+ * The resolver joins adjacent text nodes with a space, so `against a default of{' '}
+ * {10}` arrives as `of  10`. That is an artefact of how the tree is walked, not
+ * of what a reader sees, and asserting on it would make every test here a test
+ * of the harness's spacing.
+ */
+async function limitsPage(id: string) {
+  const Page = (await import('../../app/(app)/agents/[id]/limits/page.js')).default;
+  const r = rendered(await Page({ params: params({ id }) }));
+  const resolved = await r;
+  return { ...resolved, text: resolved.text.replace(/\s+/g, ' ') };
+}
+
+/** `maxDailyTrades: 30` against the catalog's declared default of 10. */
+function withTrades(outcomes: ReturnType<typeof aTradeOutcome>[] = []): FakeAgentsPort {
+  const agents = new FakeAgentsPort([anAgent({ id: 'a1', tradingConfig: liveTradingConfig() })]);
+  if (outcomes.length > 0) {
+    agents.tradeOutcomes = { kind: 'outcomes', outcomes, total: outcomes.length };
+  }
+  return agents;
+}
+
+const stopped = (id: string, exit: number, net: number) =>
+  aTradeOutcome({
+    id,
+    closeReason: 'STOP_LOSS',
+    direction: 'LONG',
+    entryFillPrice: 100,
+    exitFillPrice: exit,
+    netPnl: net,
+    closedAt: '2026-08-05T00:00:00.000Z',
+    durationSeconds: 5400,
+  });
+
+beforeEach(() => {
+  world(withTrades());
+});
+
+describe('a ceiling against the platform’s own default', () => {
+  it('sets the agent’s value beside the default and states the multiple', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('maxDailyTrades');
+    expect(r.text).toContain('against a default of 10');
+    expect(r.text).toContain('3 ×');
+  });
+
+  it('names the fields BattleGrid declines to default, rather than comparing them', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('BattleGrid declares no default for');
+    expect(r.text).toContain('maxDailyLossUsd');
+    // The reason, not just the fact — it will not decide how much may be lost.
+    expect(r.text).toContain('how much an agent may lose');
+    // The value, not only the name. These are the money fields, and naming
+    // them while withholding their numbers would make the most consequential
+    // settings the only unreadable ones on the panel.
+    expect(r.text).toContain('$250');
+  });
+
+  /**
+   * The item's own headline, and the trap underneath it.
+   *
+   * `maxStopLossPct: 1` against a declared default of 5 is exactly the reading
+   * this panel exists to give — and since v15 it is set on the *strategy*. The
+   * comparison stays; what must not happen is it sitting among the settings an
+   * operator can change from this page.
+   */
+  it('shows a field the agent cannot set apart, and says where it is set', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('maxStopLossPct');
+    expect(r.text).toContain('against a default of 5%');
+    expect(r.text).toContain('set on its strategy');
+    expect(r.text).toContain('changing them here is not possible');
+  });
+});
+
+describe('how its trades ended', () => {
+  it('states the share and the median move for the ending that repeats', async () => {
+    world(withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]));
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('STOP_LOSS');
+    expect(r.text).toContain('100 %');
+    expect(r.text).toContain('Median move');
+    // −1, −1, −2 → median −1. A real minus sign, U+2212.
+    expect(r.text).toContain('−1%');
+  });
+
+  /**
+   * The claim the whole surface rests on. BattleGrid publishes an aggregate of
+   * its own that has answered zeros on agents with real losses, so a figure
+   * this product added up and a figure the platform published are different
+   * claims and the page must not blur them.
+   */
+  it('says the figures are its own arithmetic, not BattleGrid’s', async () => {
+    world(withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]));
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('Computed by Grid-Commander');
+    expect(r.text).toContain('not published by BattleGrid');
+  });
+
+  it('states the window it summarised rather than implying a whole history', async () => {
+    world(withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]));
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('from 3 closed trades');
+    expect(r.text).toContain('2026-08-05');
+  });
+
+  it('shows the trades themselves below the threshold, rather than only withholding', async () => {
+    world(withTrades([stopped('a', 99, -1), stopped('b', 98, -2)]));
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('Too few to state a median');
+    expect(r.text).not.toContain('Median move');
+    // The moves an operator would otherwise be told nothing about.
+    expect(r.text).toContain('−1%, −2%');
+  });
+
+  it('states how many trades carried no measurable move', async () => {
+    world(
+      withTrades([
+        stopped('a', 99, -1),
+        stopped('b', 99, -1),
+        stopped('c', 98, -2),
+        aTradeOutcome({ id: 'd', closeReason: 'STOP_LOSS', entryFillPrice: null }),
+      ]),
+    );
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('carried no measurable move');
+  });
+
+  /**
+   * `HYPE` closed at +$0.0731 with `closeReason: STOP_LOSS`, because position
+   * management had trailed the stop into profit. The page must count it under
+   * its ending and as a win — reporting a protected winner as a loss, on the
+   * screen built to explain losses, is the failure this holds against.
+   */
+  it('shows a stop-out that closed in profit as a win under its own ending', async () => {
+    world(withTrades([stopped('hype', 101, 0.0731), stopped('b', 99, -1)]));
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('STOP_LOSS');
+    expect(r.text).toContain('1 W/ 1 L');
+  });
+
+  it('says an agent has closed nothing, rather than showing an empty fold', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('closed nothing yet');
+  });
+});
+
+describe('what ends a position early', () => {
+  it('names the two switches, beside the life they produced', async () => {
+    const agents = new FakeAgentsPort([
+      anAgent({
+        id: 'a1',
+        tradingConfig: liveTradingConfig({
+          positionManagement: {
+            positionManagementPreset: 'WALTHER',
+            enabled: true,
+            trailingEnabled: true,
+            timeDecayEnabled: false,
+          },
+        }),
+      }),
+    ]);
+    const outcomes = [stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)];
+    agents.tradeOutcomes = { kind: 'outcomes', outcomes, total: outcomes.length };
+    world(agents);
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('Trailing stop:');
+    expect(r.text).toContain('Time decay:');
+    // Beside the switches, not two sections away — the pairing is the point.
+    expect(r.text).toContain('positions last a median of');
+  });
+
+  it('claims no position life for an agent that has closed nothing', async () => {
+    const agents = new FakeAgentsPort([
+      anAgent({
+        id: 'a1',
+        tradingConfig: liveTradingConfig({
+          positionManagement: { positionManagementPreset: 'WALTHER', enabled: true },
+        }),
+      }),
+    ]);
+    world(agents);
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('Trailing stop:');
+    expect(r.text).toContain('not lasted long enough to measure');
+  });
+
+  it('says the values govern nothing when management is off', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('govern nothing');
+  });
+});
+
+/**
+ * The load-bearing property, at the surface.
+ *
+ * One read failing must not take the page's other answers with it — otherwise
+ * an operator with a slow catalog read is told their agent has nothing to
+ * report, which is the "unreadable is not empty" rule failing in the one place
+ * it was written for.
+ */
+describe('one read failing hides neither of the others', () => {
+  it('still shows the trade geometry when the catalog cannot be read', async () => {
+    const agents = withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]);
+    agents.catalogReadable = false;
+    world(agents);
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('This could not be read');
+    // The shared explanation, not a hand-rolled one.
+    expect(r.text).toContain('This does not mean');
+    // And the trades still answer.
+    expect(r.text).toContain('Computed by Grid-Commander');
+    expect(r.text).toContain('STOP_LOSS');
+  });
+
+  it('still compares the ceilings when the trade record cannot be read', async () => {
+    const agents = withTrades();
+    agents.tradeOutcomes = {
+      kind: 'unreadable',
+      reason: 'BattleGrid did not respond',
+      cause: 'unreachable',
+    };
+    world(agents);
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('BattleGrid did not respond');
+    expect(r.text).toContain('against a default of 10');
+  });
+
+  it('keeps the gauges above it when every new section fails', async () => {
+    const agents = withTrades();
+    agents.catalogReadable = false;
+    agents.tradeOutcomes = {
+      kind: 'unreadable',
+      reason: 'BattleGrid did not respond',
+      cause: 'unreachable',
+    };
+    world(agents);
+
+    const r = await limitsPage('a1');
+    // The budget read is untouched by any of it, so what would stop the agent
+    // still renders — the panel is an addition to that page, not a gate on it.
+    expect(r.text).toContain('Loss in a day');
+  });
+});
+
+/**
+ * The exposure cap against the money behind it, as a person reads it.
+ *
+ * The fixture is the live account of 2026-08-10: a $43.67 balance under an
+ * agent carrying a $250 cap.
+ */
+describe('what it may risk, against the money behind it', () => {
+  it('sets the cap against the balance and states that it cannot bind', async () => {
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('maxConcurrentExposureUsd');
+    expect(r.text).toContain('against a balance of');
+    expect(r.text).toContain('$43.6674');
+    // The finding, said rather than left as a ratio to interpret.
+    expect(r.text).toContain('cannot stop this agent');
+  });
+
+  it('names the balance as the account’s, not the agent’s', async () => {
+    // One balance funds every agent, so a per-agent reading would overstate it
+    // by the number of agents sharing it.
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('shared by every agent');
+    expect(r.text).toContain('no per-agent split');
+  });
+
+  it('says nothing to compare when the platform reports no funded account', async () => {
+    const agents = withTrades();
+    const account = new FakeAccountStatePort();
+    account.state = { ...account.state, hasAccount: false, balanceUsd: null };
+    current = actingWith({ agents, accountState: account }) as typeof current;
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('no funded account');
+    expect(r.text).toContain('not a balance of zero');
+    expect(r.text).not.toContain('cannot stop this agent');
+  });
+
+  it('keeps the other three sections when the balance cannot be read', async () => {
+    const agents = withTrades([stopped('a', 99, -1), stopped('b', 99, -1), stopped('c', 98, -2)]);
+    const account = new FakeAccountStatePort();
+    account.readable = false;
+    current = actingWith({ agents, accountState: account }) as typeof current;
+
+    const r = await limitsPage('a1');
+    expect(r.text).toContain('This does not mean');
+    expect(r.text).toContain('Computed by Grid-Commander');
+    expect(r.text).toContain('against a default of 10');
+  });
+});
+
+/**
+ * What is left under the exposure cap, on the page.
+ *
+ * Rendered rather than asserted on the query for this file's own stated reason:
+ * the property is what a person reads. The sentence that names the mechanism —
+ * that entries are sized from the remainder rather than stopped by the cap —
+ * exists only here, and it is the whole point of the section.
+ */
+describe('the fill side of the exposure cap', () => {
+  beforeEach(() => vi.resetModules());
+
+  const withCap = (over: Parameters<typeof aBudget>[0] = {}) => {
+    const agents = withTrades();
+    agents.budgetResult = {
+      kind: 'budget',
+      budget: aBudget({
+        gauges: { exposure: { used: 8.55, remaining: 36.45, ceiling: 45, breached: false } },
+        capitalAtRiskUsd: 8.55,
+        headroomUsd: 36.45,
+        effectiveNotionalUsd: 36.45,
+        ...over,
+      }),
+    };
+    return agents;
+  };
+
+  it('shows what is committed and what is left', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('8.55 committed');
+    expect(r.text).toContain('36.45 left');
+  });
+
+  it('names the remainder as the base new trades are sized from', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('sizes each new trade from what is left');
+    expect(r.text).toContain('36.45 of position is currently authorized');
+    // The consequence the block never states.
+    expect(r.text).toContain('Below the exchange minimum they stop being placed');
+  });
+
+  /**
+   * The figure this surface is forbidden from inventing. `headroom x pct x
+   * leverage` reconstructs observed fills exactly, which is why it is refused —
+   * PE-2, on the neighbouring money surface, for the same reason.
+   */
+  it('projects no size for a specific next trade', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toMatch(/next (trade|order|entry) would/i);
+    expect(r.text).not.toContain('10.93');
+    expect(r.text).not.toMatch(/floor is/i);
+  });
+
+  it('shows no fill for a cap the platform reports unconfigured', async () => {
+    world(
+      withCap({
+        gauges: { exposure: { used: 0, remaining: null, ceiling: null, breached: false } },
+        headroomUsd: null,
+        effectiveNotionalUsd: null,
+      }),
+    );
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('What is left to trade with');
+    expect(r.text).not.toContain('0 committed');
+  });
+
+  it('states a platform-reported block with its own reason', async () => {
+    world(withCap({ blockedReason: 'DAILY_LOSS_LIMIT', blockedSince: new Date('2026-08-16T04:00:00Z') }));
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('budget blocked: DAILY_LOSS_LIMIT');
+    expect(r.text).toContain('2026-08-16 04:00 UTC');
+  });
+
+  it('invents no reason where the platform gave none', async () => {
+    world(withCap({ blockedReason: null, blockedSince: new Date('2026-08-16T04:00:00Z') }));
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('gave no reason for it');
+  });
+
+  it('describes no block where the platform reports none', async () => {
+    world(withCap());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('budget blocked');
+  });
+});
+
+/**
+ * The budget read failing, on the page.
+ *
+ * Verifier finding #3. The query-level failure was covered twice and the
+ * architecture guard proves the branch carries its explanation, but nothing
+ * asserted what a person actually sees: no fill invented, and the three
+ * sections fed by other reads still standing. The neighbouring test covers the
+ * *balance* failing, which is a different read with a different consequence.
+ */
+describe('the limits page when the budget cannot be read', () => {
+  beforeEach(() => vi.resetModules());
+
+  const unreadableBudget = () => {
+    const agents = withTrades([stopped('a', 99, -1)]);
+    agents.budgetResult = { kind: 'unreadable', reason: 'upstream 500', cause: 'unreachable' };
+    return agents;
+  };
+
+  it('states the failure and says whether it was refused or unreachable', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    expect(r.text).toContain('This does not mean this agent’s limits are gone');
+    expect(r.text).toContain('could not reach BattleGrid');
+  });
+
+  it('invents no fill for a cap it could not read', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    expect(r.text).not.toContain('What is left to trade with');
+    expect(r.text).not.toContain('committed');
+    expect(r.text).not.toContain('sizes each new trade from what is left');
+  });
+
+  it('keeps the sections fed by the other reads', async () => {
+    world(unreadableBudget());
+    const r = await limitsPage('a1');
+
+    // Risk reading and loss shape come from their own calls and must survive.
+    expect(r.text).toContain('against a default of 10');
+  });
+});

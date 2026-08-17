@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { RevisionConflictError } from '@/domain/errors.js';
+import { ToolRefusedError } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { McpStrategyAdapter, StrategyPayloadError } from '@/infrastructure/battlegrid/strategy-adapter.js';
 import type { BattleGridPort, ToolCallRequest } from '@/ports/battlegrid.js';
 
@@ -168,15 +170,74 @@ describe('the strict outer envelope', () => {
 });
 
 describe('restoring can need repair', () => {
-  it('reports REPAIR_REQUIRED as its own outcome', async () => {
-    const { adapter } = adapterOver(() => ({ status: 'REPAIR_REQUIRED' }));
+  /**
+   * The refusal channel, because it is the only one possible: both lifecycle
+   * tools declare an output whose sole property is `strategy` (held by
+   * mcp-conformance), so this used to be read from `payload['status']` — a
+   * key that could never exist. The whole repair-required surface — the
+   * LifecycleResult case, REPAIR_REQUIRED_GUIDANCE, the restore page's
+   * careful state — was unreachable for the life of the product.
+   */
+  it('reports a REPAIR_REQUIRED refusal as its own outcome, in the platform words', async () => {
+    const detail = '{"code":"REPAIR_REQUIRED","message":"Sections no longer valid."}';
+    const { adapter } = adapterOver(() => {
+      throw new ToolRefusedError('restore_strategy', detail);
+    });
     const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('repair-required');
+    expect(result.kind === 'repair-required' && result.reason).toBe(detail);
+  });
+
+  it('recognises it from prose too, when the refusal is not JSON', async () => {
+    const { adapter } = adapterOver(() => {
+      throw new ToolRefusedError('restore_strategy', 'REPAIR_REQUIRED: rebuild via compile');
+    });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
+    expect(result.kind).toBe('repair-required');
+  });
+
+  it('a payload carrying status could never arrive and no longer decides anything', async () => {
+    // The historical defect, replayed: this exact payload used to produce
+    // repair-required. The declared output has no such key, so a mapper that
+    // honoured it was agreeing with nothing. It now falls through to the
+    // strategy mapping and fails loudly as unreadable rather than inventing
+    // an outcome.
+    const { adapter } = adapterOver(() => ({ status: 'REPAIR_REQUIRED' }));
+    await expect(
+      adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true }),
+    ).rejects.toBeInstanceOf(StrategyPayloadError);
   });
 
   it('reports an ordinary restore as changed', async () => {
     const { adapter } = adapterOver(() => ({ strategy: { ...LIVE, isActive: true } }));
     const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
     expect(result.kind).toBe('changed');
+  });
+});
+
+describe('the platform saying no reaches the caller as its reason', () => {
+  it('an ordinary refusal is refused, not thrown', async () => {
+    const { adapter } = adapterOver(() => {
+      throw new ToolRefusedError('restore_strategy', '{"code":"CONFLICT","message":"Revision 3 is stale."}');
+    });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
+    expect(result.kind === 'refused' && result.reason).toContain('stale');
+  });
+
+  it('a moved revision is refused with the conflict stated', async () => {
+    const { adapter } = adapterOver(() => {
+      throw new RevisionConflictError('restore_strategy', 3, null);
+    });
+    const result = await adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true });
+    expect(result.kind).toBe('refused');
+  });
+
+  it('a transport failure still throws — no answer is not a refusal', async () => {
+    const { adapter } = adapterOver(() => {
+      throw new Error('socket hang up');
+    });
+    await expect(
+      adapter.setActive({ ...who, strategyId: 's1', expectedRevision: 3, active: true }),
+    ).rejects.toThrow('socket hang up');
   });
 });

@@ -1,0 +1,74 @@
+{
+  "id": "DT-0014",
+  "surface": "recorder-trim",
+  "targets": [
+    "boundary",
+    "consequence",
+    "receipt",
+    "nothing-to-trim"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The trim ceremony's message blocks catch up with the house roles the other confirmation pages already wear: the what-would-go block takes consequence, the rejected date takes danger, the receipt takes notice, and nothing-to-trim takes quiet.",
+  "rationale": "This page was built after the role sweeps and inherited the button constants but not the block roles — its survey records the drift plainly: the consequence block and the unreadable-date alert wear the anonymous border DT-0004 retired. Nothing here is a new decision; every treatment is a decided one landing on the page that missed it. The what-becomes-unknowable sentence is the heaviest fact on the page (spec: signal-recording spec.md:207-209) and takes the consequence role like plan-review and the archive page. The unreadable-date paragraph reports a rejected input — a failed attempt, not advisory — and takes danger like every bounced attempt since DT-0004; its role=alert already says so. The receipt is a note the redirect carried back, the same shape as the pending pages' ?note=, and those took notice ('a-bounced-agree-says-why'); role=status stays. 'Nothing to trim' is the product's absence-of-effect sentence, and the system principle is explicit — absence gets the same visual commitment as a warning — which is exactly what the quiet role exists for. The problem banner already wears danger with the 'Refused:' prefix and is not touched.",
+  "design": {
+    "layout": "Unchanged — the confirmation-page shell, one state body at a time.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "consequence_bg": "color.consequence.subtle",
+      "consequence_border": "color.consequence.border",
+      "danger_bg": "color.danger.subtle",
+      "danger_border": "color.danger.default",
+      "notice_bg": "color.notice.subtle",
+      "notice_border": "color.notice.border",
+      "quiet_bg": "color.quiet.subtle",
+      "quiet_border": "color.quiet.border",
+      "block_radius": "radius.2",
+      "block_padding": "space.4",
+      "text": "color.text.primary"
+    },
+    "states": {
+      "default": {
+        "content": "boundary: the GET form, its CONTROL-wrapped date input and both buttons are unchanged — they already wear the shared constants. consequence: the block takes the consequence role — color.consequence.subtle background, 1px color.consequence.border border, radius.2, space.4 padding, color.text.primary, the domain's sentence verbatim, role=alert kept; it must not become lighter than the buttons below it. receipt: the receipt sentence's block takes notice — color.notice.subtle background, 1px color.notice.border border, radius.2, space.4 padding, role=status kept, the counts legible as text, not decoration. nothing-to-trim: the reason paragraph takes quiet — color.quiet.subtle background, 1px color.quiet.border border, radius.2, space.4 padding, role=status kept; an answer, visually committed, never danger-adjacent."
+      },
+      "unreadable-date": {
+        "content": "The paragraph takes danger: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary. role=alert stays. It keeps quoting the unparsable value and pointing back at the picker — a rejected input is a bounced attempt, not an advisory."
+      }
+    },
+    "responsive": {
+      "mobile": "Blocks full width inside the existing centered column; nothing else moves.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The what-would-go block renders on color.consequence.subtle with a 1px color.consequence.border border and keeps role=alert and the verbatim sentence",
+    "The unreadable-date paragraph renders on color.danger.subtle with a 1px color.danger.default border and keeps role=alert",
+    "The receipt block renders on color.notice.subtle with a 1px color.notice.border border and keeps role=status. SUPERSEDED IN PART 2026-08-13 (see references): 'with its counts intact' no longer holds — the approved change the-receipt-states-what-remains removed the counts from the receipt on purpose (#168). Check the tokens and the role; do not restore the counts",
+    "The nothing-to-trim reason renders on color.quiet.subtle with a 1px color.quiet.border border and keeps role=status",
+    "The problem banner, both buttons, and the date control are unchanged",
+    "Zero copy changes anywhere on the page — as a constraint on THIS restyle, which introduced none. SUPERSEDED 2026-08-13 as a standing rule: the-receipt-states-what-remains changed the receipt copy by approved behaviour change. This line never froze the page's copy against future work",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "SUPERSESSION, 2026-08-13. The change `the-receipt-states-what-remains` (#168, approved and implemented) removed the counts from the trim receipt: figures carried in an editable address were a claim nobody could check, on a receipt for a permanent act. The surviving coverage is derived from the record instead. That retires the CONTENT half of two acceptance lines here — 'with its counts intact' and 'zero copy changes' — and nothing else. THE TOKEN RULING IS LIVE AND UNCHANGED: the paragraph still wears role=status and `rounded-gc-2 border border-notice-border bg-notice-subtle` at app/(app)/recorder/trim/page.tsx:48, and every treatment in `design` remains the ticket's standing decision. A design round that read the acceptance at face value and restored the counts would re-introduce exactly the defect #168 was filed for. Recorded per backlog item dt-0014-acceptance-outlived-the-receipt-it-described (#193); this is bookkeeping, not a new design decision."
+    },
+    {
+      "kind": "note",
+      "value": "Backlog 157 (the design lane's tail) — the survey found this page missed the role sweeps (it was built after them). Every treatment restates a decided ruling: DT-0004 (consequence/danger), the pending pages' notice for redirect notes, and the system principle on absence for quiet."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-16",
+  "github_issue": null
+}

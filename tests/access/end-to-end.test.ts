@@ -8,6 +8,7 @@ import { CookieSession, type CookieStore } from '@/infrastructure/http/cookie-se
 import { McpAgentAdapter } from '@/infrastructure/battlegrid/agent-adapter.js';
 import { McpBattleGridAdapter } from '@/infrastructure/battlegrid/mcp-adapter.js';
 import { SequentialRandom } from '../support/agent-fakes.js';
+import { aDetail, aStrategy, FakeStrategiesPort } from '../support/strategy-fakes.js';
 import { FakeAuditStore, FakeClock, FakeConfirmationStore, FakeConnectionStore } from '../support/fakes.js';
 import { ConnectionScopes } from '@/infrastructure/battlegrid/connection-scopes.js';
 
@@ -161,6 +162,11 @@ async function wire() {
     },
   };
 
+  // The rebind destination, as the platform would answer for it. A fake port
+  // rather than the adapter: this file's subject is the confirmation path.
+  const strategies = new FakeStrategiesPort();
+  strategies.detail = aDetail(aStrategy({ id: 's-new', name: 'Momentum Breakout', revision: 2 }));
+
   const authority = new ResolveAuthorityQuery(connections, vault, battlegrid, clock);
 
   return {
@@ -171,8 +177,8 @@ async function wire() {
     sessions,
     currentUser: new CurrentUserQuery(sessions, connections, authority),
     listAgents: new ListAgentsQuery(agents),
-    describeRebind: new DescribeRebindQuery(agents, confirmations, new SequentialRandom(), clock),
-    rebindAgent: new RebindAgentCommand(agents),
+    describeRebind: new DescribeRebindQuery(agents, strategies, confirmations, new SequentialRandom(), clock),
+    rebindAgent: new RebindAgentCommand(agents, strategies),
   };
 }
 
@@ -216,6 +222,7 @@ describe('a request travels the whole path', () => {
         ...user.authority,
         agentId: 'a1',
         toStrategyId: 's-new',
+        toStrategyRevision: 2,
         expectedRevision: 4,
         confirmationToken: '',
       }),
@@ -236,7 +243,6 @@ describe('a request travels the whole path', () => {
       ...user.authority,
       agentId: 'a1',
       toStrategyId: 's-new',
-      toStrategyName: 'Momentum Breakout',
     });
     if (proposal.kind !== 'proposal') throw new Error('expected a proposal');
 
@@ -244,10 +250,12 @@ describe('a request travels the whole path', () => {
       ...user.authority,
       agentId: 'a1',
       toStrategyId: 's-new',
+      toStrategyRevision: proposal.proposal.rebind.toStrategyRevision,
       expectedRevision: proposal.proposal.rebind.expectedRevision,
       confirmationToken: proposal.proposal.confirmationToken,
     });
 
+    if (result.kind !== 'rebound') throw new Error('expected the rebind to land');
     expect(result.agent.binding.strategyId).toBe('s-new');
 
     const sent = app.platform.calls.find((c) => c.tool === 'rebind_intelligence_agent');
@@ -268,7 +276,6 @@ describe('a request travels the whole path', () => {
       ...user.authority,
       agentId: 'a1',
       toStrategyId: 's-new',
-      toStrategyName: 'Momentum Breakout',
     });
     if (proposal.kind !== 'proposal') throw new Error('expected a proposal');
 
@@ -278,6 +285,7 @@ describe('a request travels the whole path', () => {
         agentId: 'a1',
         // A different destination than the one confirmed.
         toStrategyId: 's-elsewhere',
+        toStrategyRevision: 2,
         expectedRevision: 4,
         confirmationToken: proposal.proposal.confirmationToken,
       }),

@@ -29,10 +29,11 @@ export interface ActingUser {
  * The one gate between an HTTP request and everything else. Every route calls
  * it; nothing else resolves a session or a token.
  *
- * A session naming a user with no record is refused and the session discarded —
- * not treated as a first visit. A signed cookie is evidence of a previous
- * session, not evidence of a BattleGrid grant, and identity in this product
- * comes only from BattleGrid confirming one. See design W-G.
+ * A session naming a user with no record is refused — not treated as a first
+ * visit, and not discarded here: this runs during render, and a read must not
+ * mutate cookies. A signed cookie is evidence of a previous session, not
+ * evidence of a BattleGrid grant, and identity in this product comes only
+ * from BattleGrid confirming one. See design W-G.
  */
 export class CurrentUserQuery implements ActingUser {
   constructor(
@@ -47,9 +48,16 @@ export class CurrentUserQuery implements ActingUser {
 
     const connection = await this.connections.findByUserId(result.session.userId);
     if (!connection) {
-      // The session points at nobody. Discard it rather than leaving a cookie
-      // that will be re-presented and re-rejected on every request.
-      await this.sessions.clear();
+      /**
+       * The session points at nobody: refused, and nothing more. This used to
+       * clear the cookie here — and clearing is a *write*, which Next.js
+       * forbids during a server-component render, so every page 500'd for
+       * anyone holding a stale cookie. Found by check-serving's authenticated
+       * probe on its first run. The cookie identifies no one, costs one
+       * indexed lookup per request until its TTL, and is replaced or cleared
+       * by the flows that may write cookies: completing a connection,
+       * disconnecting.
+       */
       return notConnected();
     }
 

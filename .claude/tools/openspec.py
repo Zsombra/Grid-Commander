@@ -23,9 +23,25 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+
+# The board, the journal and half the backlog are written with em-dashes and
+# arrows, and Windows hands Python a cp1252 stdout. Printing "→" then raises
+# UnicodeEncodeError and the command dies with a traceback instead of an answer
+# — on `board`, which CLAUDE.md names as where every session starts.
+#
+# Re-encode rather than sanitise the text: the characters are deliberate, and a
+# tool that strips them to survive its own console teaches the next writer to
+# avoid them. `errors="replace"` keeps the output readable on a console that
+# genuinely cannot render one.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass  # not a reconfigurable stream (a pipe under an older runtime)
 
 # --------------------------------------------------------------------------
 # Root resolution
@@ -383,7 +399,7 @@ class Change:
                 "path": pattern,
                 "status": state,
                 "requires": requires,
-                "existing": [str(p.relative_to(self.root)) for p in paths],
+                "existing": [repo_path(p, self.root) for p in paths],
             })
         return out
 
@@ -421,11 +437,38 @@ def _as_list(value) -> list:
     return [value] if str(value).strip() else []
 
 
+#: A `github:` value that names an issue. The bare number, not a URL — a URL
+#: carries the repo, and an item that moves repos would then carry a link to
+#: the old one. `none` is handled separately as a deliberate opt-out.
+GITHUB_REF = re.compile(r"\d+")
+
 ITEM_TYPES = ("bug", "feature", "debt", "chore", "question", "risk")
 ITEM_STATUSES = ("open", "in-progress", "blocked", "done", "wontfix")
 ITEM_PRIORITIES = ("p0", "p1", "p2", "p3")
 OPEN_STATUSES = ("open", "in-progress", "blocked")
 PRIORITY_ORDER = {p: i for i, p in enumerate(ITEM_PRIORITIES)}
+
+#: `blocked_by` named other backlog items and nothing else, so an item waiting on
+#: someone outside this repository had no way to say so. The validator then told
+#: it to "set status: open", and it did — which is why a board of thirty items
+#: read as thirty pieces of available work when a third of them were waiting on
+#: BattleGrid, on other players, or on a live authorisation only the operator can
+#: give. Three namespaces name the wait:
+#:
+#:   upstream:<name>  — the platform must change      (upstream:battlegrid)
+#:   external:<name>  — someone outside must act      (external:market-grid-players)
+#:   operator:<name>  — the operator must authorise   (operator:live-write-authorization)
+#:
+#: A token is not a free-text excuse. `blocked` on an external cause carries two
+#: obligations, both enforced by review rather than by the parser: the body must
+#: explain the wait, and it must state the **tripwire** — the observable change
+#: that would end it. `market-grid-payloads-that-only-fill-once-someone-plays` is
+#: the model: eight reads proved polling had nothing to find, so it names the
+#: condition (`playersNeeded < minimumPlayers`) and says outright not to poll.
+#:
+#: The point is not bookkeeping. An item that cannot say it is waiting gets
+#: re-read every session by someone deciding whether to take it.
+EXTERNAL_BLOCKER = re.compile(r"(upstream|external|operator):[a-z0-9][a-z0-9-]*")
 
 
 class BacklogItem:
@@ -447,6 +490,9 @@ class BacklogItem:
         self.updated = str(meta.get("updated", "")).strip()
         self.blocked_by = _as_list(meta.get("blocked_by", []))
         self.tags = _as_list(meta.get("tags", []))
+        # The mirror on GitHub. `""` means unmirrored; `none` is a deliberate
+        # opt-out that must say why in the body. See tracking.md §7.
+        self.github = str(meta.get("github", "")).strip()
 
     @staticmethod
     def _title_from_body(body: str) -> str:
@@ -470,7 +516,7 @@ class BacklogItem:
             "priority": self.priority, "change": self.change or None,
             "capability": self.capability or None, "blockedBy": self.blocked_by,
             "tags": self.tags, "created": self.created, "updated": self.updated,
-            "path": str(self.path.relative_to(self.root)),
+            "path": repo_path(self.path, self.root),
         }
 
 
@@ -494,6 +540,105 @@ def find_archived(root: Path, change: str):
                  if n == change or re.sub(r"^\d{4}-\d{2}-\d{2}-", "", n) == suffix), None)
 
 
+def mirror_check(root: Path) -> dict:
+    """Compare every item's `status:` against its issue's state on GitHub.
+
+    `validate` enforces that an open item *has* a `github:` number and never
+    compares the two states, so an item could read `status: open, priority: p2`
+    while its issue was CLOSED and every check in the repository passed. That
+    happened (#309), for a day, and the board's `NEXT:` line recommended work
+    GitHub already considered finished — three sessions read it.
+
+    **This is deliberately not part of `validate`.** `validate` is offline and
+    must stay that way: it runs in CI, in hooks, and on a laptop with no `gh`
+    credential, and a check that needs the network would either fail there or
+    teach people to ignore its warnings. This is its own command, run when
+    someone wants the answer.
+
+    **Three directions, and only two of them are drift.**
+
+      A. item open/in-progress/blocked, issue CLOSED  — drift
+      B. item done, issue OPEN                        — drift
+      C. issue OPEN with no item at all               — usually in-flight
+
+    C is the noisy one #309 warned about. Every session's tracking lands as a
+    PR and its issues close immediately, so between filing and merge an issue
+    legitimately has no item on `main`. Run against a working tree it is quiet;
+    run against `main` mid-flight it is not. So C reports and does not fail
+    unless `--strict` says to.
+    """
+    items = load_backlog(root)
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "list", "--state", "all", "--limit", "400",
+             "--json", "number,state,closedAt"],
+            capture_output=True, text=True, check=True, cwd=str(root),
+        ).stdout
+    except FileNotFoundError:
+        return {"error": "gh is not installed — this check needs the GitHub CLI"}
+    except subprocess.CalledProcessError as err:
+        return {"error": f"gh failed: {(err.stderr or '').strip()[:200]}"}
+
+    rows = json.loads(out)
+    state = {str(r["number"]): r["state"] for r in rows}
+    # Close dates, for the in-flight diagnosis below. Genuine rot accumulates on
+    # scattered dates; one session's close-out shares one.
+    closed_on = {str(r["number"]): (r.get("closedAt") or "")[:10] for r in rows}
+    closed_drift, done_drift, unmirrored = [], [], []
+    seen = set()
+
+    for item in items:
+        # `""` is unmirrored and `none` is the deliberate opt-out; both are
+        # already `validate`'s business, and neither has a state to compare.
+        if item.github in ("", "none"):
+            continue
+        seen.add(item.github)
+        gh_state = state.get(item.github)
+        if gh_state is None:
+            continue
+        if item.is_open and gh_state == "CLOSED":
+            closed_drift.append({"item": item.id, "status": item.status,
+                                 "issue": item.github,
+                                 "closedOn": closed_on.get(item.github, "")})
+        if item.status == "done" and gh_state == "OPEN":
+            done_drift.append({"item": item.id, "status": item.status,
+                               "issue": item.github})
+
+    for num, gh_state in sorted(state.items(), key=lambda kv: int(kv[0])):
+        if gh_state == "OPEN" and num not in seen:
+            unmirrored.append({"issue": num})
+
+    return {"itemsScanned": len(items), "issuesKnown": len(state),
+            "itemOpenIssueClosed": closed_drift, "itemDoneIssueOpen": done_drift,
+            "issueOpenNoItem": unmirrored, "openPullRequests": open_pull_requests(root)}
+
+
+def open_pull_requests(root: Path) -> list:
+    """Open PRs, so drift can be read as in-flight work rather than as rot.
+
+    This is the half `mirror` was missing. It reported nine rows on 2026-08-17
+    that were an exact fingerprint of an unmerged session — seven items open
+    against issues all closed within four hours of one day, plus two orphan
+    issues — and a reader took them for accumulated rot and began rebuilding a
+    tool the unmerged PR had already shipped.
+
+    The evidence was right and the reading was wrong, so the fix belongs in the
+    output rather than only in the documentation: docs get skimmed, output gets
+    read. Failure is soft — a missing or unauthenticated `gh` costs the hint,
+    never the check.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--state", "open", "--json", "number,title,headRefName"],
+            capture_output=True, text=True, check=True, cwd=str(root), timeout=60,
+        ).stdout
+        return [{"number": str(r["number"]), "title": r["title"],
+                 "branch": r.get("headRefName", "")} for r in json.loads(out)]
+    except (FileNotFoundError, subprocess.CalledProcessError,
+            subprocess.TimeoutExpired, json.JSONDecodeError, KeyError):
+        return []
+
+
 def validate_backlog(root: Path, strict: bool) -> list:
     found = []
     items = load_backlog(root)
@@ -501,7 +646,7 @@ def validate_backlog(root: Path, strict: bool) -> list:
     active = set(list_changes(root))
 
     for item in items:
-        rel = str(item.path.relative_to(root))
+        rel = repo_path(item.path, root)
         if not item.meta:
             found.append(diag("error", "backlog_missing_frontmatter",
                               f"{item.slug}: no `---` frontmatter block", rel,
@@ -520,13 +665,21 @@ def validate_backlog(root: Path, strict: bool) -> list:
                                   f"{', '.join(allowed)}", rel))
 
         for dep in item.blocked_by:
-            if dep and dep not in ids:
+            if not dep or dep in ids or EXTERNAL_BLOCKER.fullmatch(dep):
+                continue
+            if ":" in dep:
+                found.append(diag("error", "backlog_blocked_by_malformed",
+                                  f"{item.id}: blocked_by '{dep}' is not a known external "
+                                  f"namespace", rel,
+                                  "use upstream:<name>, external:<name> or operator:<name>"))
+            else:
                 found.append(diag("warning", "backlog_blocked_by_unknown",
                                   f"{item.id}: blocked_by '{dep}' is not a backlog item", rel))
         if item.status == "blocked" and not item.blocked_by:
             found.append(diag("warning", "backlog_blocked_without_cause",
                               f"{item.id}: status is blocked but blocked_by is empty", rel,
-                              "name the blocker, or explain it in the body and set status: open"))
+                              "name the blocker — a backlog item, or upstream:/external:/"
+                              "operator:<name> for a wait outside this repository"))
 
         if item.change:
             arch = find_archived(root, item.change)
@@ -551,6 +704,33 @@ def validate_backlog(root: Path, strict: bool) -> list:
         if item.capability and not main_spec_path(root, item.capability).is_file():
             found.append(diag("warning", "backlog_capability_not_found",
                               f"{item.id}: capability '{item.capability}' has no spec yet", rel))
+
+        # Every open item is mirrored as a GitHub issue, so a finding is visible
+        # to someone who has not cloned the repo. The backlog stays canonical —
+        # this is a mirror, not a second tracker (tracking.md §7).
+        #
+        # Uniform, with no date exemption. There was one while twenty-eight
+        # items predated the rule; they were backfilled 2026-08-10, and a
+        # scoped rule would then have exempted only one case that still
+        # matters — an old item **reopened** later, which needs a mirror
+        # exactly as a new one does.
+        #
+        # Enforced rather than documented, for the reason `failure-is-explained`
+        # gives about its own rule: thirty hand-rolled branches accumulated
+        # because nothing stopped the thirty-first.
+        if item.is_open and not item.github:
+            found.append(diag("warning", "backlog_not_mirrored",
+                              f"{item.id}: open with no GitHub issue", rel,
+                              "file one and set `github: <number>`, or `github: none` "
+                              "with a reason in the body"))
+        elif item.github and item.github != "none" and not GITHUB_REF.fullmatch(item.github):
+            found.append(diag("error", "backlog_github_malformed",
+                              f"{item.id}: github '{item.github}' is not an issue number "
+                              f"or 'none'", rel, "use the bare number, e.g. `github: 87`"))
+        elif item.github == "none" and item.is_open and "github" not in item.body.lower():
+            found.append(diag("warning", "backlog_optout_unexplained",
+                              f"{item.id}: opts out of a GitHub issue without saying why", rel,
+                              "an opt-out is a claim — state it in the body"))
         if strict and item.is_open and not item.updated:
             found.append(diag("warning", "backlog_never_updated",
                               f"{item.id}: no `updated` date", rel))
@@ -609,21 +789,120 @@ def surface_components(surface: dict) -> dict:
     return {c.get("id"): c for c in surface.get("components", []) if isinstance(c, dict)}
 
 
-def git_changed_since(root: Path, commit: str, files: list) -> list:
-    """Which of `files` changed since `commit`. Empty list when git can't answer."""
-    if not commit or not files:
-        return []
+def repo_path(path: Path, root: Path) -> str:
+    r"""A repo-relative path, always with forward slashes.
+
+    `str(Path)` gives the platform's separator, so on Windows every diagnostic
+    named `src\useThings.ts` while every assertion — and every reader — expected
+    `src/useThings.ts`. Six harness tests could not pass there, and CI runs
+    Linux, so the suite was green everywhere it was looked at (#196).
+
+    Normalised where the path becomes a string rather than at each of the six
+    assertions: these strings are read by humans, matched by tests, and written
+    into JSON, and `/` is right for all three. It is what `openspec/` uses
+    everywhere else, including `source_files` in every surface manifest.
+    """
+    return str(path.relative_to(root)).replace("\\", "/")
+
+
+def file_digests(root: Path, files: list) -> dict:
+    """A digest per file a manifest describes, as they stand.
+
+    Freshness is a question about content — have these files changed since the
+    surveyor read them — and a commit hash only answers it while the history it
+    names survives. Under squash-merge it does not: a branch's commits are
+    discarded when the PR lands, and on 2026-08-13 twelve of twenty-four
+    manifests pinned to hashes absent from the repository. `git diff` fails the
+    same way for "that commit is not here" as it succeeds for "nothing
+    changed", so those surfaces could not go stale, silently.
+
+    So the pin is the content. Nothing about git can invalidate it — squash,
+    rebase, amend, or a fresh clone with no history at all.
+
+    Line endings are normalised: a checkout convention is not a change to what
+    a surface describes, and this repository hands Windows CRLF for LF-stored
+    files. Per-file hashes are sorted before the final hash, so reordering
+    `source_files` is not a change either. A path that cannot be read
+    contributes a marker rather than raising — that surface is stale, and
+    validation still completes.
+    """
+    import hashlib
+
+    out = {}
+    for rel_path in files:
+        try:
+            raw = (root / rel_path).read_bytes().replace(b"\r\n", b"\n")
+            out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        except OSError:
+            # A listed file that cannot be read is a change, and says which.
+            out[rel_path] = "missing"
+    return out
+
+
+def digest_at_commit(root: Path, commit: str, files: list) -> dict | None:
+    """The same per-file digests, over the content at `commit`. None if unreadable.
+
+    Used once, to migrate manifests that already name a commit that resolves.
+    Their surveyed content is recoverable, so their freshness is preserved
+    rather than reset — resetting it would assert that today's files are what
+    was surveyed, which is the failure this whole change is about.
+    """
+    import hashlib
     import subprocess
+
+    out = {}
+    for rel_path in files:
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(root), "show", f"{commit}:{rel_path}"],
+                capture_output=True, timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if result.returncode != 0:
+            return None
+        raw = result.stdout.replace(bytes([13, 10]), bytes([10]))  # CRLF -> LF, escape-free
+        out[rel_path] = "sha256:" + hashlib.sha256(raw).hexdigest()
+    return out
+
+
+def changed_against_digest(root: Path, recorded: dict, files: list) -> list:
+    """Which of `files` differ from what was surveyed, named individually.
+
+    Recorded per file rather than as one hash over the set, so this can say
+    *which* file moved. A single combined digest cannot be decomposed, and
+    "8 source files differ" when one of them does is the kind of true-but-
+    useless number that gets a warning class ignored.
+
+    A file the manifest does not list is not a change — the surface never
+    claimed to describe it. A listed file that has vanished is.
+    """
+    now = file_digests(root, files)
+    return sorted(p for p in files if now.get(p) != recorded.get(p))
+
+
+# A manifest's prose claims are invisible to the digest comparison — the text
+# travels with every re-pin, unread. This pair backs the one claim measured
+# false at scale (14 of 24 manifests, #243): a manifest saying "no client JS"
+# while a file it lists opens with 'use client'. The corrected wording names
+# the exception ("the only client code is …") and does not match the claim.
+
+NO_CLIENT_JS_CLAIM = re.compile(r"no client js", re.IGNORECASE)
+USE_CLIENT_DIRECTIVE = re.compile(r"""^\s*(['"])use client\1\s*;?\s*$""")
+
+
+def declares_use_client(path: Path) -> bool:
+    """True when the head of `path` carries a 'use client' directive line.
+
+    A directive is only a directive before the first statement, so only the
+    first few lines are read. A file that cannot be read declares nothing —
+    a listed file's absence is the staleness check's finding, not this one's.
+    """
     try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", f"{commit}..HEAD", "--", *files],
-            capture_output=True, text=True, timeout=15,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if result.returncode != 0:
-        return []
-    return [line for line in result.stdout.splitlines() if line.strip()]
+        head = path.read_text(encoding="utf-8", errors="replace").splitlines()[:5]
+    except OSError:
+        return False
+    return any(USE_CLIENT_DIRECTIVE.match(line) for line in head)
 
 
 # A surface's `source_files` is hand-assembled by an agent reading code, so an
@@ -643,10 +922,14 @@ VIEW_LOGIC_RE = re.compile(
     r"^use[A-Z]|view|model|store|context|state|hook|provider|reducer|controller",
     re.IGNORECASE,
 )
+# Captures ANY specifier; classification happens at resolution. This regex
+# used to capture only `./`-relative specs, and in a codebase importing
+# through the `@/` alias (337 alias vs 23 relative imports) the cross-check
+# built on it matched nothing at all, for its whole life (#230).
 IMPORT_RE = re.compile(
-    r"""(?:^|\s)(?:import|export)\s[^;\n]*?from\s*['"](\.{1,2}/[^'"]+)['"]"""
-    r"""|(?:^|\s)import\s*['"](\.{1,2}/[^'"]+)['"]"""
-    r"""|require\(\s*['"](\.{1,2}/[^'"]+)['"]\s*\)""",
+    r"""(?:^|\s)(?:import|export)\s[^;\n]*?from\s*['"]([^'"]+)['"]"""
+    r"""|(?:^|\s)import\s*['"]([^'"]+)['"]"""
+    r"""|require\(\s*['"]([^'"]+)['"]\s*\)""",
     re.MULTILINE,
 )
 TYPE_IMPORT_RE = re.compile(r"^\s*(?:import|export)\s+type\s")
@@ -665,19 +948,115 @@ def _is_ui_file(path: Path) -> bool:
     return path.suffix in LOGIC_EXTS and bool(VIEW_LOGIC_RE.search(path.stem))
 
 
-def _resolve_import(importer: Path, spec: str):
-    """Resolve a relative import to a file on disk, or None."""
-    base = (importer.parent / spec).resolve()
-    if base.is_file():
-        return base
-    for ext in RESOLVE_EXTS:
-        candidate = base.with_name(base.name + ext)
-        if candidate.is_file():
-            return candidate
-    for ext in UI_EXTS:
-        candidate = base / ("index" + ext)
-        if candidate.is_file():
-            return candidate
+# The toolchain rewrites these on resolution: a `.js` specifier names the
+# `.ts`/`.tsx` file that emitted it (`moduleResolution: "bundler"`;
+# next.config.ts carries the same map for webpack). A resolver that only
+# appends extensions tries `perform-button.js.tsx` and finds nothing — the
+# second blindness #230's measurement surfaced, hidden by fixtures that all
+# used extension-less specifiers.
+_EXTENSION_ALIAS = {
+    ".js": (".ts", ".tsx", ".js"),
+    ".jsx": (".tsx", ".jsx"),
+    ".mjs": (".mts", ".mjs"),
+}
+
+
+def _strip_jsonc(text: str):
+    """tsconfig.json is JSONC. String-aware, because a `//` in a path is a path."""
+    out, i, in_string = [], 0, False
+    while i < len(text):
+        c = text[i]
+        if in_string:
+            out.append(c)
+            if c == "\\" and i + 1 < len(text):
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == '"':
+                in_string = False
+            i += 1
+            continue
+        if c == '"':
+            in_string = True
+            out.append(c)
+            i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "/":
+            while i < len(text) and text[i] != "\n":
+                i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "*":
+            i += 2
+            while i + 1 < len(text) and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+_ALIAS_CACHE: dict = {}
+
+
+def _alias_map(root: Path) -> dict:
+    """`compilerOptions.paths` from tsconfig.json — read, never assumed.
+
+    Hard-coding `@/` here would be the same one-step-behind assumption the
+    relative-only regex was. Unreadable or absent configuration degrades the
+    check to relative imports; it never disables it.
+    """
+    key = str(root)
+    if key not in _ALIAS_CACHE:
+        aliases = {}
+        ts = root / "tsconfig.json"
+        if ts.is_file():
+            try:
+                config = json.loads(_strip_jsonc(ts.read_text(encoding="utf-8")))
+                paths = (config.get("compilerOptions") or {}).get("paths") or {}
+                for pattern, targets in paths.items():
+                    if pattern.endswith("*") and isinstance(targets, list):
+                        aliases[pattern[:-1]] = [t[:-1] if t.endswith("*") else t
+                                                 for t in targets if isinstance(t, str)]
+            except (OSError, ValueError):
+                pass
+        _ALIAS_CACHE[key] = aliases
+    return _ALIAS_CACHE[key]
+
+
+def _resolve_import(importer: Path, spec: str, root: Path = None):
+    """Resolve an import the way the project's toolchain would, or None.
+
+    Relative specs resolve against the importer; alias specs through the
+    tsconfig `paths` map; bare package specs resolve to nothing on purpose.
+    """
+    if spec.startswith("."):
+        bases = [(importer.parent / spec).resolve()]
+    elif root is not None:
+        bases = []
+        for prefix, targets in _alias_map(root).items():
+            if spec.startswith(prefix):
+                rest = spec[len(prefix):]
+                bases.extend((root / t / rest).resolve() for t in targets)
+        if not bases:
+            return None
+    else:
+        return None
+    for base in bases:
+        if base.is_file():
+            return base
+        for ext in _EXTENSION_ALIAS.get(base.suffix, ()):
+            candidate = base.with_suffix(ext)
+            if candidate.is_file():
+                return candidate
+        for ext in RESOLVE_EXTS:
+            candidate = base.with_name(base.name + ext)
+            if candidate.is_file():
+                return candidate
+        for ext in UI_EXTS:
+            candidate = base / ("index" + ext)
+            if candidate.is_file():
+                return candidate
     return None
 
 
@@ -686,7 +1065,7 @@ def local_ui_imports(root: Path, source_files: list) -> set:
     transitive closure. Adding a missing file makes it a root on the next run,
     so the tree is walked a layer at a time instead of dragging in every util.
 
-    Silently returns nothing for stacks without JS-style relative imports.
+    Silently returns nothing for stacks without JS-style imports.
     """
     found = set()
     for rel in source_files:
@@ -704,11 +1083,10 @@ def local_ui_imports(root: Path, source_files: list) -> set:
                 spec = next((g for g in match.groups() if g), None)
                 if not spec:
                     continue
-                target = _resolve_import(path, spec)
+                target = _resolve_import(path, spec, root)
                 if target and _is_ui_file(target):
                     try:
-                        found.add(str(target.relative_to(root)).replace("\\", "/"))
-
+                        found.add(repo_path(target, root))
                     except ValueError:
                         pass       # import escaped the repo
     return found
@@ -754,12 +1132,26 @@ def _walk_strings(node, path="") -> list:
     return out
 
 
+def app_routes(root: Path) -> set:
+    """Routes served by `app/**/page.*`, route-group segments stripped."""
+    app = root / "app"
+    out = set()
+    if not app.is_dir():
+        return out
+    for name in ("page.tsx", "page.jsx", "page.js"):
+        for page in app.rglob(name):
+            parts = [s for s in page.parent.relative_to(app).parts
+                     if not (s.startswith("(") and s.endswith(")"))]
+            out.add("/" + "/".join(parts))
+    return out
+
+
 def validate_design(root: Path, strict: bool) -> list:
     found = []
     base = design_dir(root)
     if not base.is_dir():
         return found
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     # -- design system -----------------------------------------------------
     system_path = base / "system.json"
@@ -826,6 +1218,17 @@ def validate_design(root: Path, strict: bool) -> list:
                               f"{', '.join(gone[:3])}", rel(path),
                               "re-run the ui-surveyor skill; the surface has moved or been deleted"))
 
+        # A stack this check cannot read must say so: silence is
+        # indistinguishable from "the list is complete", which is worse than
+        # an honest "not supported here" (import-check-js-only).
+        if sources and not gone and not any((root / s).suffix in UI_EXTS for s in sources):
+            found.append(diag(
+                "info", "design_surface_sources_unchecked",
+                f"{path.stem}: no JS-family source files — the import "
+                "cross-check did not run on this surface", rel(path),
+                "completeness of source_files is unverified on this stack; "
+                "review it by hand when the surface changes"))
+
         missing_imports = sorted(local_ui_imports(root, sources) - set(sources))
         if missing_imports:
             found.append(diag(
@@ -846,13 +1249,65 @@ def validate_design(root: Path, strict: bool) -> list:
                     "the component was renamed or never existed — the design agent will "
                     "write tickets against nothing"))
 
-        changed = git_changed_since(root, data.get("generated_at_commit", ""), sources)
-        if changed:
-            found.append(diag("warning", "design_surface_stale",
-                              f"{path.stem}: {len(changed)} source file(s) changed since "
-                              f"{data.get('generated_at_commit', '')[:7]} — "
-                              f"{', '.join(changed[:3])}", rel(path),
-                              "re-run the ui-surveyor skill before designing against it"))
+        # Freshness is decided by content. A commit hash only answered it while
+        # the history it named survived, and under squash-merge it does not —
+        # twelve of twenty-four manifests once pinned to hashes absent from the
+        # repository, and the check reported nothing at all for them.
+        recorded = data.get("source_digest")
+        if sources and not recorded:
+            found.append(diag(
+                "warning", "design_surface_never_verified",
+                f"{path.stem}: no source digest — this surface has never been checked, and "
+                "cannot be until it is re-surveyed",
+                rel(path),
+                "run the ui-surveyor skill. Its content at survey time is not recoverable, so "
+                "a digest must NOT be back-filled from the files as they now stand — that "
+                "would record today as though it had been surveyed."))
+        elif sources:
+            changed = changed_against_digest(root, recorded, sources)
+            if changed:
+                found.append(diag("warning", "design_surface_stale",
+                                  f"{path.stem}: {len(changed)} source file(s) differ from what "
+                                  f"was surveyed — {', '.join(changed[:3])}", rel(path),
+                                  "re-run the ui-surveyor skill before designing against it"))
+
+        # A constraint is what the design agent must not break, and prose is
+        # what the digest comparison cannot see: fourteen manifests carried
+        # "No client JS" across re-pins while their own recorded sources
+        # opened with 'use client' (#243). The corrected wording names the
+        # exception instead of denying it, so it does not match the claim.
+        if sources and NO_CLIENT_JS_CLAIM.search(
+                path.read_text(encoding="utf-8", errors="replace")):
+            declaring = sorted(s for s in sources if declares_use_client(root / s))
+            if declaring:
+                found.append(diag(
+                    "warning", "design_surface_denies_client_js",
+                    f"{path.stem}: claims \"no client JS\" while its recorded "
+                    f"source(s) declare 'use client' — {', '.join(declaring[:3])}",
+                    rel(path),
+                    "state the exception instead of denying it — name the client "
+                    "component and what it may do, keeping the design veto"))
+
+    # -- route coverage ----------------------------------------------------
+    # A diagnostic can only attach to a manifest that exists, so a route
+    # nobody surveyed is invisible to every per-surface check above — the
+    # import cross-check was the only mechanism that could have wandered into
+    # one, and #230 measured it matching nothing. One aggregate info row: at
+    # 22 uncovered routes today, a per-route warning would drown the health
+    # count and teach people to skip the class.
+    routes = app_routes(root)
+    if routes:
+        covered = {s.get("route") for s in surfaces.values() if s.get("route")}
+        uncovered = sorted(routes - covered)
+        if uncovered:
+            head = ", ".join(uncovered[:3])
+            more = f" (+{len(uncovered) - 3} more)" if len(uncovered) > 3 else ""
+            found.append(diag(
+                "info", "design_routes_uncovered",
+                f"{len(uncovered)} of {len(routes)} app route(s) have no surface "
+                f"manifest — {head}{more}", "app",
+                "`design` lists them all; a route with no manifest is invisible to "
+                "staleness detection — /surface the ones the design lane should see"))
 
     # -- tickets -----------------------------------------------------------
     ticketed_surfaces = set()
@@ -960,7 +1415,16 @@ def design_summary(root: Path) -> dict:
     tickets.sort(key=lambda t: (PRIORITY_ORDER.get(t["priority"], 9), t["id"]))
     system_path = design_dir(root) / "system.json"
     system, _ = load_json(system_path) if system_path.is_file() else (None, None)
+    routes = app_routes(root)
+    covered = set()
+    for path, data, _err in load_design(root, "surfaces"):
+        r = (data or {}).get("route")
+        if r:
+            covered.add(r)
     return {"surfaces": surfaces, "tickets": tickets,
+            "routes": {"total": len(routes),
+                       "covered": len(routes & covered),
+                       "uncovered": sorted(routes - covered)},
             "system": {"status": (system or {}).get("status", "missing"),
                        "placeholderGroups": (system or {}).get("placeholder_groups", [])}}
 
@@ -1112,7 +1576,7 @@ def diag(severity: str, code: str, message: str, target: str = "", fix: str = ""
 def validate_change(root: Path, change: Change, strict: bool) -> list:
     found: list = []
     deltas = change.delta_paths()
-    rel = lambda p: str(p.relative_to(root))  # noqa: E731
+    rel = lambda p: repo_path(p, root)  # noqa: E731
 
     meta_rel = f"openspec/changes/{change.name}/.openspec.yaml"
     if not change.meta_path.is_file():
@@ -1335,7 +1799,7 @@ def validate_main_specs(root: Path, strict: bool) -> list:
     for path in sorted(base.glob("**/spec.md")):
         cap = str(path.parent.relative_to(base)).replace("\\", "/")
         doc = SpecDoc(path)
-        rel = str(path.relative_to(root))
+        rel = repo_path(path, root)
         if not doc.purpose:
             found.append(diag("warning", "main_spec_no_purpose", f"{cap}: main spec has no `## Purpose`", rel))
         elif "TBD" in doc.purpose:
@@ -1500,7 +1964,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         except ValueError as exc:
             return {"archived": False, "specs_updated": [], "operations": [],
                     "status": gate + [diag("error", "merge_conflict", str(exc),
-                                           str(delta.relative_to(root)))]}
+                                           repo_path(delta, root))]}
         planned.append((main_spec_path(root, cap), text))
         operations.extend(ops)
 
@@ -1512,7 +1976,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
     if target.exists():
         return {"archived": False, "specs_updated": [], "operations": operations,
                 "status": gate + [diag("error", "archive_target_exists",
-                                       f"{target.relative_to(root)} already exists")]}
+                                       f"{repo_path(target, root)} already exists")]}
 
     if gate:
         return {"archived": False, "specs_updated": [], "operations": operations, "status": gate}
@@ -1521,7 +1985,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
         "change": change.name,
         "archived_as": target_name,
         "operations": operations,
-        "specs_updated": [str(p.relative_to(root)) for p, _ in planned],
+        "specs_updated": [repo_path(p, root) for p, _ in planned],
         "status": [],
     }
 
@@ -1533,7 +1997,7 @@ def archive_change(root: Path, change: Change, apply: bool, strict: bool,
     # Write specs first; only move the change folder once every write succeeded.
     for path, text in planned:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\n")
 
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(change.dir), str(target))
@@ -1686,6 +2150,49 @@ def render_diagnostics(found: list) -> str:
 # CLI
 # --------------------------------------------------------------------------
 
+def in_flight_hint(closed_drift: list, unmirrored: list, prs: list) -> list:
+    """Say what the drift rows probably mean, where the reader will see them.
+
+    Drift in the item-open/issue-closed direction has two causes that look
+    identical in a table and want opposite responses:
+
+      rot        the record was never updated       -> write the closure
+      in-flight  a PR carrying the closure has not merged -> merge it, write nothing
+
+    Guessing wrong is expensive in one direction only. Writing closures for work
+    that is already closed on a branch duplicates it and then conflicts with it,
+    which is what happened on 2026-08-17 (#341's journal entry).
+
+    Two signals separate them, and neither is conclusive alone:
+
+      * a **same-day cluster** of closures — one session closes its issues as it
+        goes, so its drift shares a date; rot accumulates on scattered ones
+      * an **open PR** — the thing that would carry the missing closures
+
+    So this reports rather than concludes, and always names the cheap check.
+    """
+    lines = ["  --"]
+    dates = {}
+    for row in closed_drift:
+        day = row.get("closedOn") or "unknown"
+        dates.setdefault(day, []).append(row["issue"])
+    cluster = max(dates.items(), key=lambda kv: len(kv[1])) if dates else None
+    if cluster and len(cluster[1]) > 1:
+        lines.append(f"  {len(cluster[1])} of these closed on {cluster[0]} "
+                     f"(#{', #'.join(cluster[1])}) — a same-day cluster is usually")
+        lines.append("  one session's close-out sitting unmerged, not a record nobody updated.")
+    if prs:
+        lines.append(f"  {len(prs)} open PR(s) could be carrying the missing writes:")
+        for pr in prs[:5]:
+            lines.append(f"    #{pr['number']}  {pr['title'][:64]}")
+        if len(prs) > 5:
+            lines.append(f"    ... and {len(prs) - 5} more")
+    lines.append("  Before writing any closure, check what is already done elsewhere:")
+    lines.append("    gh pr list --state open")
+    lines.append("    git log --all --oneline -20")
+    return lines
+
+
 def main(argv: list) -> int:
     parser = argparse.ArgumentParser(prog="openspec.py", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1736,6 +2243,12 @@ def main(argv: list) -> int:
     p_status = sub.add_parser("status", help="artifact graph for a change", parents=[common])
     p_status.add_argument("change", nargs="?")
 
+    p_mirror = sub.add_parser("mirror",
+                              help="compare each item's status against its GitHub issue (needs gh)",
+                              parents=[common])
+    p_mirror.add_argument("--strict", action="store_true",
+                          help="also fail on an open issue with no item (noisy mid-flight)")
+
     p_validate = sub.add_parser("validate", help="validate deltas and main specs", parents=[common])
     p_validate.add_argument("change", nargs="?")
     p_validate.add_argument("--all", action="store_true", help="validate every active change")
@@ -1770,6 +2283,37 @@ def main(argv: list) -> int:
                 bar = f"{r['completedTasks']}/{r['totalTasks']}" if r["totalTasks"] else "—"
                 print(f"  {r['name']:<34} {r['track']:<9} tasks {bar:>7}  {r['state']}")
         return 0
+
+    if args.command == "mirror":
+        result = mirror_check(root)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        if "error" in result:
+            if not args.json:
+                print(f"  {result['error']}")
+            return 2
+        a = result["itemOpenIssueClosed"]
+        b = result["itemDoneIssueOpen"]
+        c = result["issueOpenNoItem"]
+        if not args.json:
+            print(f"  {result['itemsScanned']} items, {result['issuesKnown']} issues")
+            for row in a:
+                print(f"  DRIFT  {row['item']} is {row['status']} — issue #{row['issue']} is CLOSED")
+            for row in b:
+                print(f"  DRIFT  {row['item']} is done — issue #{row['issue']} is OPEN")
+            for row in c:
+                print(f"  UNMIRRORED  issue #{row['issue']} is OPEN with no item"
+                      " (expected while its branch is unmerged)")
+            if not a and not b and not c:
+                print("  clean — every mirrored item agrees with its issue")
+            elif not a and not b:
+                print(f"  no drift; {len(c)} open issue(s) without an item")
+            if a or c:
+                for line in in_flight_hint(a, c, result.get("openPullRequests") or []):
+                    print(line)
+        if a or b:
+            return 1
+        return 1 if (c and args.strict) else 0
 
     if args.command == "board":
         changes = [Change(root, n) for n in list_changes(root)]
@@ -1898,6 +2442,12 @@ def main(argv: list) -> int:
             if not summary["surfaces"]:
                 print("  (none — run /surface after building a UI)")
             print("")
+            routes = summary.get("routes") or {}
+            if routes.get("total"):
+                print(f"ROUTES   {routes['covered']} of {routes['total']} covered by a surface")
+                for r in routes.get("uncovered", []):
+                    print(f"  {r}")
+                print("")
         print(f"TICKETS   {len(tickets)}")
         if not tickets:
             print("  (none)")
@@ -1913,7 +2463,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({"entries": entries, "root": str(root)}, indent=2))
         elif not entries:
-            print(f"no journal entries. Create {journal_path(root).relative_to(root)} "
+            print(f"no journal entries. Create {repo_path(journal_path(root), root)} "
                   f"and add one — see .claude/references/tracking.md")
         else:
             for e in entries:
@@ -1930,7 +2480,7 @@ def main(argv: list) -> int:
         if args.json:
             print(json.dumps({
                 "change": change.name, "track": change.track, "skipSpecs": change.skip_specs,
-                "changeRoot": str(change.dir.relative_to(root)),
+                "changeRoot": repo_path(change.dir, root),
                 "artifacts": artifacts,
                 "progress": {"complete": done, "total": total},
                 "isComplete": bool(total) and done == total,

@@ -1,0 +1,86 @@
+{
+  "id": "DT-0019",
+  "surface": "strategy-archive-confirm",
+  "targets": [
+    "archive-strategy-page"
+  ],
+  "type": "restyle",
+  "priority": "p3",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The archive ceremony's failure sentences stop being body text and take the danger role every other ceremony wears.",
+  "rationale": "The three strategy lifecycle ceremonies render their failure sentences as bare `role=\"alert\" className=\"text-sm\"` — body text, distinguishable from ordinary prose only by a screen reader. DT-0004 decided what a failed attempt looks like (danger.subtle on danger.default, the state named as well as tinted) and every ceremony built or swept since wears it; these three predate the sweep and were surveyed only after it. The sentences here are the platform's own words about why a strategy could not be retired, restored or copied — what the operator came to read — and they currently carry less weight than the paragraph explaining what a blank fork name does. The carried-problem banner is not restyled: it is CarriedProblem's and already correct. Where both are present the two share the danger role deliberately, because they are the same kind of fact — one about the attempt that bounced here, one about the read that failed on arrival — and the outcome requirement exists for exactly the case where both are true.",
+  "design": {
+    "layout": "Unchanged — one branch body at a time.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "danger_bg": "color.danger.subtle",
+      "danger_border": "color.danger.default",
+      "block_radius": "radius.2",
+      "block_padding": "space.4",
+      "text": "color.text.primary"
+    },
+    "states": {
+      "proposal": {
+        "content": "Unchanged — the ceremony body as it renders today."
+      },
+      "proposal-with-problem": {
+        "content": "Unchanged — the ceremony body as it renders today. The carried banner renders above it, unchanged — it is CarriedProblem's, and both being visible is the case the outcome requirement exists for."
+      },
+      "refused": {
+        "content": "the failure sentence takes the danger role: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary, role=alert kept, the platform's wording verbatim."
+      },
+      "refused-with-problem": {
+        "content": "the failure sentence takes the danger role: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary, role=alert kept, the platform's wording verbatim. The carried banner renders above it, unchanged — it is CarriedProblem's, and both being visible is the case the outcome requirement exists for."
+      },
+      "no-such-strategy": {
+        "content": "Unchanged — a strategy that is not in the list is an answer, not a failure; plain prose with its way back."
+      },
+      "no-such-strategy-with-problem": {
+        "content": "Unchanged — a strategy that is not in the list is an answer, not a failure; plain prose with its way back. The carried banner renders above it, unchanged — it is CarriedProblem's, and both being visible is the case the outcome requirement exists for."
+      },
+      "unreadable": {
+        "content": "the failure sentence takes the danger role: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary, role=alert kept, the platform's wording verbatim. WhyNotLoaded's reassurance renders immediately after the block, verbatim and untinted — the tint says something failed; only the words say what did not."
+      },
+      "unreadable-with-problem": {
+        "content": "the failure sentence takes the danger role: color.danger.subtle background, 1px color.danger.default border, radius.2, space.4 padding, color.text.primary, role=alert kept, the platform's wording verbatim. WhyNotLoaded's reassurance renders immediately after the block, verbatim and untinted — the tint says something failed; only the words say what did not. The carried banner renders above it, unchanged — it is CarriedProblem's, and both being visible is the case the outcome requirement exists for."
+      },
+      "not-connected": {
+        "content": "Unchanged — the shared component, DT-0006's treatment."
+      }
+    },
+    "responsive": {
+      "mobile": "Blocks full width in the existing centered column.",
+      "desktop": "Unchanged."
+    },
+    "motion": {
+      "none": "Static content; no motion introduced."
+    },
+    "content": {
+      "note": "Zero copy changes."
+    }
+  },
+  "acceptance": [
+    "The archive page's unreadable-branch reason renders on color.danger.subtle with a 1px color.danger.default border, and keeps role=alert",
+    "WhyNotLoaded's reassurance renders immediately after that block, verbatim and outside the danger tint — a sentence whose whole job is 'your work is not gone' must not itself be dressed as a failure",
+    "Any refused-describe reason on this page renders in the same treatment",
+    "A no-such-strategy branch stays plain prose — it is an answer, not a failure",
+    "The carried-problem banner is unchanged; where both render, both are visible",
+    "Zero copy changes anywhere on the page",
+    "No raw color, spacing, or size literal is introduced"
+  ],
+  "references": [
+    {
+      "kind": "note",
+      "value": "Backlog 166. Applies DT-0004's danger role to the three lifecycle ceremonies the sweep missed."
+    },
+    {
+      "kind": "note",
+      "value": "Corrected 2026-08-12, after implementation: this ticket first said the reassurance renders *inside* the danger block. It does not, and should not — it renders immediately after it. Caught by the post-round re-survey reading the code against the acceptance, which is what that pass is for. The criterion was wrong, not the implementation."
+    }
+  ],
+  "created": "2026-08-12",
+  "updated": "2026-08-12",
+  "github_issue": null
+}

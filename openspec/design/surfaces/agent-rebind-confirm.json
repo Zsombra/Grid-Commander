@@ -1,0 +1,339 @@
+{
+  "id": "agent-rebind-confirm",
+  "title": "Rebind agent confirmation",
+  "route": "/agents/[id]/rebind",
+  "capability": "agent-authoring",
+  "status": "needs-redesign",
+  "generated_at_commit": "6441015",
+  "source_files": [
+    "app/(app)/agents/[id]/rebind/actions.ts",
+    "app/(app)/agents/[id]/rebind/page.tsx",
+    "src/presentation/components/authority-lost.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/rebind-confirm.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "proposal",
+      "shape": "{ rebind: { agentId, agentName, fromStrategyName, toStrategyId, toStrategyName, toStrategyRevision, expectedRevision }, consequence, confirmationToken }",
+      "source": "app.describeRebind.execute — the destination's name and revision come back from the platform, never from the URL"
+    },
+    {
+      "name": "to",
+      "shape": "string | undefined",
+      "source": "searchParams — the destination strategy id; all the query supplies"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the reason the previous attempt was not performed. Two arms redirect here: destination-moved, and (since `the-outcome-reaches-the-person`) refused — BattleGrid's own refusal of the rebind, which used to escape as a thrown error and render a framework error page instead of a reason. A third failure shape, a lost account authority, deliberately does NOT arrive here; it travels as ?authority="
+    },
+    {
+      "name": "authority",
+      "shape": "string | undefined",
+      "source": "searchParams — since `a-lost-authority-is-not-a-refusal`, the sentence a performRebind whose account authority is gone redirected back with (carrying ?to= as well, which the page then ignores). Read before anything else and, when present, it replaces the whole page with <AuthorityLost>."
+    }
+  ],
+  "components": [
+    {
+      "id": "rebind-page",
+      "role": "container",
+      "purpose": "Ask one question — replace this agent's configuration with another strategy's? — with the consequence stated as replacement, never merge.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "refused",
+        "refused-with-problem",
+        "no-destination",
+        "no-destination-with-problem",
+        "authority-lost",
+        "not-connected"
+      ],
+      "data": [
+        "proposal",
+        "to",
+        "problem",
+        "authority"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6. Branch order: not-connected, then authority-lost, then ?to=, then the describe. Without ?to= it renders 'Choose a strategy to rebind to', a sentence saying strategy browsing is not built yet, and — since `the-outcome-reaches-the-person` — a BUTTON_SECONDARY 'Back to the agent' anchor, so it is no longer a dead end. refused renders h1 'Cannot rebind' + the reason (role=alert, untinted text) and the same BUTTON_SECONDARY exit. All three describe-reaching branches mount `<CarriedProblem>` unconditionally — it renders null when there is no carried reason, so every `-with-problem` pairing above is a real rendering rather than a variant somebody has to remember. On refused two alerts stack — the carried reason for the click that bounced, then this page's own fresh failure. No roster read: the agent's name comes from the proposal, so there is no separate no-such-agent branch — an unknown agent surfaces as the describe's refusal. NEW since `a-lost-authority-is-not-a-refusal`: `authority-lost` is a fourth top-level branch, taken before ?to= is even looked at, that returns the shared `<AuthorityLost>` and nothing else — no proposal, no form, no exit link, and deliberately no CarriedProblem.",
+      "constraints": [
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
+        "The destination named in the consequence is read from the platform — openspec/specs/agent-authoring/spec.md:165-168 ('its name and its revision — never taken from the caller'). A design must not surface the URL's id as if it were the destination's identity.",
+        "Every describe-reaching branch renders the carried reason, not just the one that can offer a form — `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` in this file. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "Where two alerts stack (carried reason above this page's own failure reason), both must stay readable as separate claims.",
+        "The exits on the no-destination and refused branches must stay visible targets, not prose links — they are the only way out of those branches.",
+        "The authority-lost branch renders no form, no carried problem and no exit, on purpose — 'a control that cannot work is not made honest by the sentence above it' (authority-lost.tsx). A design that gives this branch the confirmation or an exit back changes behavior and is requires-spec-change."
+      ],
+      "children": [
+        "problem",
+        "rebind-confirm",
+        "button-secondary",
+        "authority-lost",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show why the previous attempt was not performed — the destination moved, or BattleGrid refused it — above whatever this request could compose.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the ternary that used to be inline on this page. Carries DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix so the state is named as well as tinted — and returns null when `problem` is undefined, which is what lets every branch mount it unconditionally. Two arms now feed it: destination-moved and the command's new refused arm.",
+      "constraints": [
+        "role=alert must survive.",
+        "The pairing is spec: the fresh proposal and the reason it was needed arrive together — openspec/specs/agent-authoring/spec.md:189-194 ('the user is told the destination changed while they were reading, and is offered a fresh proposal'). The banner must stay adjacent to the re-described proposal, not become a toast or a separate page.",
+        "The reason is platform-authored and unbounded — the block must wrap rather than clip, and must not truncate or paraphrase.",
+        "Shared by eleven pages now (agent deploy/undeploy/rebind/archive/reactivate, strategy archive/restore/fork, both /pending surfaces, recorder trim) — restyle it in the component, never per page. `tests/agent/refusals-reach-the-operator.test.ts` fails any file that hand-rolls it again.",
+        "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
+        "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state."
+      ],
+      "children": []
+    },
+    {
+      "id": "rebind-confirm",
+      "role": "container",
+      "purpose": "The confirmation for the most destructive thing this product can do: one committing button, one visible way out, and the consequence read first.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "performRebind",
+          "effect": "POSTs the server action with agentId, confirmationToken, toStrategyId, toStrategyRevision, expectedRevision; success lands on /agents/[id]; a moved destination or a platform refusal both redirect back here with ?to= and ?problem=; a lost account authority redirects back with ?to= and ?authority= instead, which renders the page as AuthorityLost with no form"
+        }
+      ],
+      "current_implementation": "Shared RebindConfirm (rebind-confirm.tsx): space-y-4 form, h2 'Rebind <agent> to <strategy>?', the consequence block, five hidden inputs carrying the confirmation binding, then the buttons in flex flex-col gap-3 tablet:flex-row tablet:flex-wrap. DT-0018 has landed: the row stacks full-width below the `tablet` breakpoint and only becomes a wrapping row above it. The missing `agentId` hidden input — the behavior gap this manifest recorded last time, which made every submit throw `FormError: agentId is required` and render a framework error page — is fixed: the field is now rendered, with a comment naming the failure.",
+      "constraints": [
+        "The hidden binding (agent, destination, destination revision) is the confirmation ceremony — openspec/specs/agent-authoring/spec.md:166-168 ('the confirmation SHALL be bound to the agent, the destination, and the destination's revision as described'). The form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
+        "The stacking breakpoint is `tablet`; both controls carry `w-full tablet:w-auto` so the commit and its peer are the same width when stacked. A design must not restore a wrapping row at mobile width — this button's label is the longest in the product ('Replace <agent>'s configuration with <strategy>'s'), so it wraps to several lines and a peer beside it is unreadable narrow.",
+        "Adding or removing a hidden field is behavior, not presentation — requires-spec-change."
+      ],
+      "children": [
+        "consequence",
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State that rebinding replaces the agent's inherited configuration in full — replacement, never merge — before the button that does it.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [],
+      "current_implementation": "role=alert div, rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary. DT-0018 has landed: the anonymous border-border-default this was built with is gone and the block now wears the house consequence role. Two paragraphs, unchanged: a font-medium lead 'This replaces configuration. It is not a merge.' then the platform-derived consequence sentence.",
+      "constraints": [
+        "The replacement framing is spec — openspec/specs/agent-authoring/spec.md:162-165 ('MUST state that the agent's inherited configuration will be replaced in full, and MUST NOT describe it as a change of strategy alone') and :171-174. The lead sentence must not be softened or dropped.",
+        "The consequence text is the same string the token was issued against and stored with — a design must not paraphrase, truncate, or summarize it.",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive.",
+        "When a bounce carried a problem, the danger-tinted banner sits directly above this consequence-tinted block — since DT-0018 both are tinted, so the two roles must stay separable at a glance; 'notice never borrows danger's colour' (system.json principle) binds the pair."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the rebind, named so it agrees to something in particular: 'Replace <agent>'s configuration with <strategy>'s'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performRebind"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px, DT-0003's token), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. Since DT-0018 it carries `w-full tablet:w-auto`, so it fills the stacked row on mobile. No pending/loading state between click and redirect. system.json declares this primitive with states [default, hover, active, focused, disabled, loading]; `disabled` and `loading` are declared there as names with no treatment and are implemented by nothing in control.ts, so no form in the product can reach them (#153). The harness half of that is now solved — tests/rendering/support/form-status.ts reaches both states — so what is missing is the look, which is this round's to decide. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated both in control.ts and in rebind-confirm.tsx's own comment: the weight is on the consequence above, and a hazard-coloured control trains a flinch at the action the page exists to offer.",
+        "The label names the operation and both parties — 'OK' or 'Confirm' would be a button that agrees to nothing in particular. Copy changes here are behavior.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Every way out of this route: 'Keep it bound to <current strategy>' beside the commit, and 'Back to the agent' on the no-destination and refused branches.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "proposal"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /agents/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004's hover (border-strong + bg-sunken over duration-fast). Worn in three places since `the-outcome-reaches-the-person`: the cancel inside RebindConfirm, and the exits the no-destination and refused branches gained. The cancel additionally carries `w-full tablet:w-auto` since DT-0018; the two branch exits were untouched by that ticket and still sit inside a text-sm <p>, so each is a 44px box in a prose paragraph. Where this is an anchor it can never be pending — it submits nothing. Where a surface uses it as a GET submit (the deploy chooser's ask), it can, and system.json's declared `disabled` and `loading` states are unimplemented there too (#153). Recorded on button-primary rather than here, because that is the control a perform runs through.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle).",
+        "The no-destination and refused branches have no other exit — a design must not demote these to prose links."
+      ],
+      "children": []
+    },
+    {
+      "id": "authority-lost",
+      "role": "feedback",
+      "purpose": "Say that the account's BattleGrid authority is gone — not that this rebind was refused — where the operator was standing when their submit failed.",
+      "states": [
+        "remedy-reconnect",
+        "remedy-repair-the-key"
+      ],
+      "data": [
+        "authority",
+        "remedy"
+      ],
+      "actions": [
+        {
+          "id": "reconnect",
+          "effect": "Anchor to /connect, where a new grant is obtained. Rendered only on remedy-reconnect. It navigates and submits nothing, and it is not the operation that failed — that control stays absent on both branches."
+        }
+      ],
+      "current_implementation": "Shared `AuthorityLost` component (src/presentation/components/authority-lost.tsx), also mounted by the agent deploy, undeploy and rebind pages and the strategy rule editor. It replaces the whole page rather than banding the top of one: its own `<main className=\"mx-auto max-w-2xl space-y-4 p-6\">`, h1 'Your BattleGrid authority is no longer valid' in text-text-primary, the carried sentence in `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert — the same treatment CarriedProblem wears — then a text-sm text-text-secondary paragraph: 'Nothing was changed. Until this is fixed, no operation on this account can succeed — including the one you just tried.' **Since `a-remedy-is-a-target-not-a-sentence` (#182) it also takes the deployment's `remedy` and branches on it.** On `reconnect` it appends a `<p className=\"text-sm\">` holding a BUTTON_SECONDARY anchor to /connect reading 'Connect your BattleGrid account again'. On `repair-the-key` it appends nothing, because replacing an environment variable and restarting a process is not something a link can do. The remedy value is fixed once at src/composition.ts (`config.personal ? 'repair-the-key' : 'reconnect'`) and passed down, so the component never works out which deployment it is on. Nothing has designed any of this; it was built wearing existing tokens, and the anchor reuses the primitive NotConnected already uses for the same purpose rather than introducing a treatment.",
+      "constraints": [
+        "It renders instead of the ceremony, not above it — a design must not turn this into a banner over the proposal. The reason the page has no form is that no call on this account can succeed.",
+        "The sentence is passed in and printed verbatim, remedy included — a design must not template it or prefix it. The remedy is **also offered as a target where the deployment has one**: the component links to /connect on `remedy-reconnect` and draws nothing on `remedy-repair-the-key`. A design must not draw that link unconditionally — that is how a personal deployment gets told to press a connect button it does not have — and must not remove it from the reconnect branch, where DT-0006's ruling holds: a remedy is a target, not a sentence.",
+        "The two branches are one component and one treatment. The difference between them is whether the anchor renders, not how the page looks. A design that gave the two deployments different layouts would be designing for a distinction the operator can neither see nor change.",
+        "It must stay visually distinct from CarriedProblem even though both currently wear danger: one says this attempt was refused and something else may work, the other says nothing will. If a design keeps them identical it should say that is a decision.",
+        "role=alert must survive on the reason.",
+        "Shared with agent deploy, agent undeploy and the strategy rule editor — restyle it in the component, never per page."
+      ],
+      "children": [
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, and since DT-0006 the connect link is an anchor wearing BUTTON_SECONDARY — the way in as a target, not a sentence, at the 44px floor with secondary's hover. Used by every authenticated page, so this treatment is inherited everywhere. This is the one branch that does not mount CarriedProblem — it renders before searchParams are read.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Rebind an agent",
+      "steps": [
+        "arrive carrying ?to=<strategyId>",
+        "read that this replaces, not merges, in the platform-derived sentence",
+        "submit 'Replace <agent>'s configuration with <strategy>'s'",
+        "land on /agents/[id] rebound"
+      ]
+    },
+    {
+      "name": "The destination moved while reading",
+      "steps": [
+        "submit",
+        "the fresh read finds a different revision (or cannot read the destination)",
+        "nothing is attempted; redirected back here with ?to= and ?problem=",
+        "the problem banner (shared CarriedProblem) states the reason above a freshly described proposal"
+      ]
+    },
+    {
+      "name": "BattleGrid refuses the rebind itself",
+      "steps": [
+        "submit",
+        "the platform rejects it — revision moved underneath, not permitted (CONFLICT, live-confirmed 2026-08-12)",
+        "the command's refused arm returns the reason instead of letting it escape as a thrown error",
+        "redirected back here with ?to= and ?problem=; the banner states the reason above the fresh proposal, or above 'Cannot rebind' if the re-describe fails too"
+      ]
+    },
+    {
+      "name": "The account's authority is gone",
+      "steps": [
+        "submit 'Replace <agent>'s configuration with <strategy>'s'",
+        "the platform answers that the connection or credential is no longer valid",
+        "performRebind's authority-lost arm — checked before destination-moved and refused — redirects back here with ?to= and ?authority=",
+        "the page renders <AuthorityLost> alone and ignores the ?to=: the reason, and that nothing was changed and nothing on this account can succeed until it is fixed. No form to retry with, and no exit link."
+      ]
+    },
+    {
+      "name": "No proposal can be made",
+      "steps": [
+        "the describe refuses (not rebindable, a no-op, destination unavailable)",
+        "'Cannot rebind' states the reason; no token is minted",
+        "'Back to the agent' is the way out"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Keep it bound to <current strategy>'",
+        "back on /agents/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "The carried problem, consequence, refusal and authority-lost messages all carry role=alert; on a bounced branch two of them are adjacent. The authority-lost branch has an alert and no focusable element at all — it is the one state on this surface with nothing to tab to. Focus ring is global (focus-visible, 2px). Every state change is a full navigation; the only client code is PerformButton, which reports that a submit is in flight and nothing else."
+  },
+  "source_digest": {
+    "app/(app)/agents/[id]/rebind/actions.ts": "sha256:b0bfa6dd40c3a759bfc5b40843cf77fef81c3fc2acf5f56b1755e45166dcf8ae",
+    "app/(app)/agents/[id]/rebind/page.tsx": "sha256:16ad99bba0df18a36501ba4ec71a1eaa3080aa8b4b524ba6544da10d4d6737cb",
+    "src/presentation/components/authority-lost.tsx": "sha256:6733caf69a6a7944440733b9642c548eadc820453f47bd37a5568c5ced72b1e8",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/rebind-confirm.tsx": "sha256:cd10c1579610beed5e892c856a7ce134b2af3083052df96527cf36e1b8d197fc",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "DT-0022",
+  "surface": "agent-deploy-confirm",
+  "targets": [
+    "button-primary"
+  ],
+  "type": "tokens",
+  "priority": "p2",
+  "status": "implemented",
+  "behavior_impact": "none",
+  "spec_change": "",
+  "intent": "The button primitive's declared disabled and loading states get a treatment, so a form that has been pressed can say so. Defines the look only; when a control enters either state is the implementation's call and, for disabled, a behavioural one this ticket deliberately does not make.",
+  "rationale": "system.json has declared the button with states [default, hover, active, focused, disabled, loading] since DT-0001 and given neither a treatment. Eleven surface manifests record the same consequence in the same words — 'No pending/loading state between click and redirect' — and the backlog item behind it (#153) has sat at p3 because the fix looked like a test-harness migration across 36 files. It is not: the harness reaches both states already through tests/rendering/support/form-status.ts. The only thing missing was the look, which is this system's to decide and nobody else's.\n\nDT-0003 established that treatments are not written for what nothing renders — 'defining treatments for variants nothing shows is designing fiction' — and the ghost and danger variants are still undefined for exactly that reason. These two states are the opposite case. They are declared by the primitive, recorded as a gap on eleven surfaces, reachable by the harness, and blocking a filed change whose sole remaining obstacle is this ticket.\n\nNo new tokens. The palette already carries every value: bg.sunken, text.disabled and border.subtle for a control that is not spendable, and motion.duration.normal for the one thing that moves. A new token here would be a fifth name for a grey the system already has.\n\nWhat this ticket does not decide: whether the perform button becomes disabled while its submit is in flight. That removes an affordance rather than restyling one, and the product has explicit spec scenarios about what happens when a confirmation is resubmitted (agent-authoring spec.md:183, strategy-authoring spec.md:134 — confirmation tokens are single-use and consume is the single atomic spender). Styling the state is presentation; entering it is behaviour. The implementation change for #153 must decide that through /propose, and this ticket is not a licence for it.\n\nA known consequence, recorded rather than silenced: this ticket styles a **shared primitive** but a ticket carries one surface, so every other surface whose button-primary can now reach `loading` has no ticket of its own covering it. `validate` says so on DT-0003 and DT-0004, which styled the same constant on agent-archive-confirm before the state existed. The alternative was to stop declaring `loading` on those surfaces, which would under-report a state their buttons genuinely reach — a worse trade than two advisory warnings that name the real situation. The treatment is decided once, in control.ts and perform-button.tsx, and applies wherever the primitive is worn.",
+  "design": {
+    "layout": "No layout change in any state. The control keeps its box, its min-height and its place in the row; a button that resized on submission would move the cancel beside it at the exact moment the user is watching to see whether anything happened.",
+    "tokens": {
+      "source": "openspec/design/system.json",
+      "disabled_background": "color.bg.sunken",
+      "disabled_text": "color.text.disabled",
+      "disabled_border": "color.border.subtle",
+      "loading_background": "color.accent.default",
+      "loading_text": "color.accent.text",
+      "loading_indicator": "color.accent.text",
+      "indicator_size": "type.size.sm",
+      "indicator_duration": "motion.duration.normal",
+      "indicator_gap": "space.2",
+      "min_height": "size.control.min"
+    },
+    "states": {
+      "default": {
+        "content": "Unchanged. accent.default ground, accent.text label, radius.2, size.control.min floor."
+      },
+      "hover": {
+        "content": "Unchanged — accent.hover, as DT-0004 set it."
+      },
+      "focused": {
+        "content": "Unchanged. The focus-visible ring at 2px offset is untouched and must remain reachable in every state below, including disabled: a control that cannot be spent can still be the thing a keyboard user is standing on."
+      },
+      "active": {
+        "content": "Unchanged — treatment untouched by this ticket."
+      },
+      "disabled": {
+        "content": "Ground drops to bg.sunken, label to text.disabled, border to border.subtle. Cursor not-allowed. No opacity: dimming a bordered control on an already-tinted panel muddies its contrast against the panel rather than against the page, and text.disabled is a stated value where an opacity is an accident. Label text does not change — a disabled control says what it would have done, not what is wrong with it. Pairs colour with cursor and with the label's unchanged wording, per 'never signal state by colour alone'."
+      },
+      "loading": {
+        "content": "Keeps the accent ground and accent.text label rather than dimming: the control is working, not unavailable, and a spinner on a grey box reads as a stuck disabled button. The label is replaced by its progressive form, supplied per surface by the ticket that uses it ('Archiving…' for 'Archive it'), and a circular indicator at type.size.sm sits space.2 before it, rotating over motion.duration.normal with linear easing. The rotation is decoration and is suppressed under prefers-reduced-motion, where the label change alone carries the state — the label is the load-bearing signal and the spinner is the ornament, never the other way round."
+      }
+    },
+    "responsive": {
+      "mobile": "Both new states inherit whatever width the surface's row gives the control — full-width under tablet on the surfaces DT-0016/0017/0018 restyled. The indicator and label stay centred as a unit so a full-width button does not read as left-aligned text with a floating dot.",
+      "desktop": "Unchanged."
+    },
+    "content": {
+      "constants": "Both treatments live in the BUTTON_PRIMARY constant in src/presentation/components/control.ts, spent through the disabled: variant and a loading class the component applies. Per control.ts's own stated rule, styling changes go through the constant and never per page — seven copies of a token-based className is the same defect one layer along.",
+      "accessibility": "The loading state carries aria-busy on the control. The indicator is decorative and must be aria-hidden; the label is what a screen reader announces, which is why the label and not the spinner is required."
+    }
+  },
+  "acceptance": [
+    "BUTTON_PRIMARY in src/presentation/components/control.ts carries a disabled treatment spending color.bg.sunken, color.text.disabled and color.border.subtle through generated utilities, and no raw hex or opacity value appears in the constant.",
+    "The disabled treatment includes cursor not-allowed and leaves the label text unchanged.",
+    "The focus-visible ring renders in the disabled and loading states as well as the default one.",
+    "The loading treatment keeps color.accent.default as the ground and color.accent.text as the label — it does not reuse the disabled greys.",
+    "A rendering test driving tests/rendering/support/form-status.ts setPending(true) shows the progressive label and aria-busy on the control; the same test at setPending(false) shows the resting label and no aria-busy.",
+    "The rotating indicator is aria-hidden and is not rendered, or is not animated, under prefers-reduced-motion; the progressive label is present either way.",
+    "The control's rendered box size is identical in default, disabled and loading — measured, not eyeballed: same min-height and no width change from the label swap at desktop width.",
+    "No surface stylesheet or page file names either treatment; both resolve through the control.ts constant."
+  ],
+  "references": [
+    "openspec/design/system.json — principle 'Work in flight is stated, not implied' (v2)",
+    "openspec/design/system.json — principle 'Never signal state by color alone'",
+    "openspec/backlog/a-submitted-confirmation-gives-no-sign-it-is-working.md (#153)",
+    "tests/rendering/support/form-status.ts — reaches both states without a browser",
+    "openspec/design/tickets/DT-0003.json — the precedent for not designing unrendered variants"
+  ],
+  "created": "2026-08-13",
+  "updated": "2026-08-13",
+  "github_issue": null
+}

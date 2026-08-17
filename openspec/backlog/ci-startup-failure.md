@@ -5,7 +5,7 @@ type: bug
 status: done
 priority: p1
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-07-31
 change: ""
 capability: ""
 blocked_by: []
@@ -111,3 +111,14 @@ exist". Those are different problems and only one of them is GitHub's.
    the new `reachability` guard on a clean checkout. It reads the filesystem, so
    a case-sensitivity or path difference on the runner is the one plausible
    CI-only failure in this change.
+
+## Resolution — superseded (2026-07-31)
+
+Closed as superseded by `ci-creates-no-runs` (P1), which carries the sharper
+framing established in `52ea2b5`: `validate.yml` is not *failing*, it is not
+*running* — no runner is ever allocated (`runner_id: 0`), on every commit,
+including on `main`. The account-level cause (billing) and the fix paths
+(settle the account, or register a self-hosted runner with an
+`ubuntu-latest`-matching label) live on that item. Nothing in this item's
+startup_failure framing is still actionable on its own. `HANDOFF.md` already
+recorded this item as "Superseded; can be closed" on 2026-07-30.

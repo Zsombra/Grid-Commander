@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * This product reaches BattleGrid, and nothing else.
@@ -27,7 +28,7 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.tsx?$/.test(full)) out.push(full);
+    else if (/\.tsx?$/.test(full)) out.push(slashed(full));
   }
   return out;
 }
@@ -63,8 +64,21 @@ describe('the application has one outbound destination', () => {
     const hosts = outboundHosts();
     const distinct = [...new Set(hosts.map((h) => h.host))].sort();
 
+    /**
+     * One entry per file, however many times the file spells the host.
+     *
+     * The claim is *which files can reach a host*, so the file is the unit. Left
+     * undeduplicated, this listed `src/config.ts` twice the moment a comment in
+     * it quoted a BattleGrid URL — a failure about how a host is written rather
+     * than about what the application reaches, which is the exact confusion the
+     * rest of this directory carries warnings about. The set of hosts, which is
+     * what the rule is actually for, was unchanged.
+     */
+    const filesReaching = (host: string): string =>
+      [...new Set(hosts.filter((x) => x.host === host).map((x) => x.file.replace(/\\/g, '/')))].join(', ');
+
     expect(
-      distinct.map((h) => `${h}  (${hosts.filter((x) => x.host === h).map((x) => x.file.replace(/\\/g, '/')).join(', ')})`),
+      distinct.map((h) => `${h}  (${filesReaching(h)})`),
       'every host the application can reach',
     ).toEqual(['mcp.battlegrid.trade  (src/config.ts)']);
 
@@ -90,6 +104,33 @@ describe('the application has one outbound destination', () => {
  * So the dependency list is checked too, and derived: any package that exists to
  * call somebody's service fails, rather than a named ban on one of them.
  */
+/**
+ * Vendors whose npm packages are, by construction, clients for that vendor's
+ * hosted API. Matched as a scoped-package owner or an exact name, so
+ * `@anthropic-ai/sdk` fails and a BattleGrid model id — which is a *string*,
+ * naming a brain the platform runs — is untouched.
+ *
+ * Named at module scope so the proof at the bottom can feed it a violation.
+ * `dependencies` holds no vendor client, and never has, so this rule reports
+ * nothing whether it works or not: audited 2026-08-10 by mutation (GitHub #87),
+ * emptying the list left the file green. That is the shape of rule most worth
+ * proving and least likely to be — there is no violation in the tree to notice
+ * its death, and by the time there is one it is too late.
+ */
+const VENDOR_CLIENTS = [
+  '@anthropic-ai',
+  'openai',
+  '@google-cloud',
+  '@google/generative-ai',
+  'cohere-ai',
+  '@mistralai',
+  'replicate',
+  'groq-sdk',
+];
+
+const isVendorClient = (name: string): boolean =>
+  VENDOR_CLIENTS.some((v) => name === v || name.startsWith(`${v}/`));
+
 describe('no dependency brings a second destination with it', () => {
   const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
     dependencies?: Record<string, string>;
@@ -97,29 +138,8 @@ describe('no dependency brings a second destination with it', () => {
   const runtime = Object.keys(pkg.dependencies ?? {});
 
   it('ships no vendor API client as a runtime dependency', () => {
-    /**
-     * Vendors whose npm packages are, by construction, clients for that
-     * vendor's hosted API. Matched as a scoped-package owner or an exact name,
-     * so `@anthropic-ai/sdk` fails and a BattleGrid model id — which is a
-     * *string*, naming a brain the platform runs — is untouched.
-     */
-    const VENDOR_CLIENTS = [
-      '@anthropic-ai',
-      'openai',
-      '@google-cloud',
-      '@google/generative-ai',
-      'cohere-ai',
-      '@mistralai',
-      'replicate',
-      'groq-sdk',
-    ];
-
-    const offenders = runtime.filter((name) =>
-      VENDOR_CLIENTS.some((v) => name === v || name.startsWith(`${v}/`)),
-    );
-
     expect(
-      offenders,
+      runtime.filter(isVendorClient),
       'these call a service that is not BattleGrid — see app-access, one destination',
     ).toEqual([]);
   });
@@ -153,5 +173,69 @@ describe('a model identifier is not a destination', () => {
   it('and reaches none of them from here', () => {
     const hosts = outboundHosts().map((h) => h.host);
     expect(hosts.some((h) => h.includes('anthropic'))).toBe(false);
+  });
+});
+
+/**
+ * The predicate, fed the packages it exists to catch.
+ *
+ * This is the half the file's own comment says covers what a text scan cannot
+ * see — and it was the half that could not fail. `dependencies` contains no
+ * vendor client, so `offenders` was `[]` whether the rule worked or not, and
+ * emptying `VENDOR_CLIENTS` entirely left the file green (GitHub #87).
+ *
+ * A rule whose subject is absent from the project cannot be proven by what it
+ * finds in the project. It has to be handed one.
+ */
+describe('the vendor rule catches what it was written for', () => {
+  it('catches a scoped client by its owner', () => {
+    expect(isVendorClient('@anthropic-ai/sdk')).toBe(true);
+    expect(isVendorClient('@google-cloud/aiplatform')).toBe(true);
+    expect(isVendorClient('@mistralai/mistralai')).toBe(true);
+  });
+
+  it('catches an unscoped client by its exact name', () => {
+    expect(isVendorClient('openai')).toBe(true);
+    expect(isVendorClient('groq-sdk')).toBe(true);
+    expect(isVendorClient('replicate')).toBe(true);
+  });
+
+  it('leaves this product’s actual dependencies alone', () => {
+    // Without this the rule is satisfied by a predicate returning true for
+    // everything, which would fail the suite loudly — but only once someone
+    // ran it, and a rule that cannot distinguish is not a rule.
+    for (const name of ['next', 'react', 'postgres', 'drizzle-orm', 'zod']) {
+      expect(isVendorClient(name), name).toBe(false);
+    }
+  });
+
+  it('does not mistake a model identifier for a package', () => {
+    /**
+     * The distinction the whole file turns on. `anthropic/claude-sonnet-4` is a
+     * string naming a brain BattleGrid runs, billed to BattleGrid, reached by
+     * BattleGrid. It is not this product calling an API, and a rule that
+     * confused the two would forbid the catalogue.
+     *
+     * It passes because the vendor entry is the npm scope `@anthropic-ai`, not
+     * the word `anthropic` — the leading `@` is doing real work here.
+     *
+     * The bound of the claim, found by asserting more than was true: a model id
+     * under a vendor whose **package** name is unscoped, `openai/gpt-5`, *does*
+     * match. That is not a defect, because this predicate is only ever handed
+     * keys of `dependencies` and an unscoped npm name cannot contain a slash.
+     * Asserting otherwise would pin behaviour the rule does not have and does
+     * not need.
+     */
+    expect(isVendorClient('anthropic/claude-sonnet-4')).toBe(false);
+    expect(isVendorClient('anthropic')).toBe(false);
+  });
+
+  it('is a predicate the dependency list is actually run through', () => {
+    // Reachability rather than spelling: the rule above filters `runtime` with
+    // this exact function, and `runtime` is a list that exists.
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      dependencies?: Record<string, string>;
+    };
+    expect(Object.keys(pkg.dependencies ?? {}).length).toBeGreaterThan(5);
   });
 });

@@ -11,6 +11,7 @@ import {
 import type { Catalog } from '@/domain/agent/catalog.js';
 import { buildTradingConfig } from '@/domain/agent/trading-config.js';
 import { anAgent, defaultCatalog, FakeAgentsPort } from '../support/agent-fakes.js';
+import { readText } from '../support/source-tree.js';
 
 /**
  * What an agent is allowed to do with money.
@@ -86,10 +87,12 @@ describe('the platform decides which questions it will not answer', () => {
   });
 
   it('covers every field the write schema requires', () => {
-    // All twenty. `tradingConfig` is all-or-nothing: BattleGrid rejects a
-    // partial one and resets what a partial send omits, so a field missing from
-    // this list is a field silently wiped on every create.
-    expect(TRADING_CONFIG_FIELDS).toHaveLength(20);
+    // All fifteen — twenty at v13, eighteen at v14, and v15 moved the three
+    // trade-level policy fields onto the strategy.
+    // `tradingConfig` is all-or-nothing: BattleGrid rejects a partial one and
+    // resets what a partial send omits, so a field missing from this list is a
+    // field silently wiped on every create.
+    expect(TRADING_CONFIG_FIELDS).toHaveLength(15);
     expect(TRADING_CONFIG_FIELDS).toContain('positionManagement');
     expect(TRADING_CONFIG_FIELDS).toContain('positionSizePresets');
   });
@@ -107,7 +110,9 @@ describe('a config is complete or it is refused', () => {
     expect(built.kind).toBe('config');
     if (built.kind !== 'config') return;
     expect(built.config.fields['maxLeverage']).toBe(1);
-    expect(built.config.fields['maxStopLossPct']).toBe(5);
+    // v15 removed maxStopLossPct from the write set; maxDailyTrades is the
+    // surviving field the catalog still defaults.
+    expect(built.config.fields['maxDailyTrades']).toBe(10);
   });
 
   it('carries every required field, so nothing is silently reset', () => {
@@ -195,7 +200,7 @@ describe('creating an agent', () => {
 });
 
 describe('the safe answer is the default answer', () => {
-  const form = () => readFileSync('src/presentation/components/money-limits.tsx', 'utf8');
+  const form = () => readText('src/presentation/components/money-limits.tsx');
 
   it('offers OFF, and offers it first', () => {
     // The only answer that makes the other five harmless: an agent that does
@@ -208,6 +213,47 @@ describe('the safe answer is the default answer', () => {
     const source = form();
     expect(source).toMatch(/defaultValue=\{value\('tradingMode'\) \?\? 'OFF'\}/);
     expect(source.indexOf('value="OFF"')).toBeLessThan(source.indexOf('value="FULL_EXECUTION"'));
+  });
+
+  /**
+   * The mode says where its proposals go, and what can be done with them.
+   *
+   * **This guard has now asserted three different things, and the sequence is
+   * the lesson.** It first asserted the selector disclosed accept and cancel
+   * were unbuilt, under "An Unanswerable Trading Mode Says So". When cancel
+   * shipped it was rewritten to assert that *accepting* was still unbuilt and
+   * still happened on battlegrid.trade. Then accept shipped — sections 5 and
+   * 7.4 — and that assertion went on passing, holding a false sentence in place
+   * on the money surface for as long as anyone cared to read it.
+   *
+   * A test that pins copy pins it whether or not it is still true. This one was
+   * even made whitespace-tolerant "because the sentence wraps across lines",
+   * which is also why a line-based grep for the claim found nothing. Both halves
+   * exist now and the assertion says so; `answering-is-not-disclaimed.test.ts`
+   * is the guard that fails if the disclaimer ever comes back, in this file or
+   * any other.
+   */
+  it('sends approval-required to the queue and names both answers', () => {
+    const source = form();
+    // Where the proposals go, as a link rather than a description of one.
+    expect(source).toContain('/approvals');
+    // The window, because an operator who does not know it is short will miss it.
+    expect(source).toContain('fifteen minutes');
+    // Both halves, named. Whitespace-tolerant: the sentence wraps in the JSX.
+    expect(source).toMatch(/cancel one or accept it/);
+    // The consequence of the half that costs money, on the surface about money.
+    expect(source).toMatch(/opens a position with real money/);
+
+    // The negatives read the **rendered copy**, not the file. The comment above
+    // the paragraph quotes the retired sentence in order to record why it is
+    // gone, and a check that could not tell naming a forbidden thing from doing
+    // it would force that explanation out of the file the rule governs — which
+    // is how a later reader deletes a rule as mysterious. Same reasoning as the
+    // PE-2 scan and `answering-is-not-disclaimed.test.ts`.
+    const copy = source.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(copy).toMatch(/cancel one or accept it/); // the strip kept the copy
+    expect(copy).not.toMatch(/not yet\s+available/);
+    expect(copy).not.toContain('battlegrid.trade');
   });
 
   /**
@@ -232,12 +278,17 @@ describe('the safe answer is the default answer', () => {
     expect(source).not.toMatch(/type="number"[\s\S]{0,220}?defaultValue="/);
   });
 
-  it('passes nothing to prefill when composing', () => {
-    // The create form renders `MoneyLimits` with no `current`, so every box is
-    // empty there whatever the edit form does.
+  it('passes only what the operator themselves typed when composing', () => {
+    // This pinned "no `current` at create" until the refused-create bounce
+    // (#245): the create form now passes `current={composed}` — what a refusal
+    // carried back, which is the operator's own typing and nothing else. A
+    // first visit carries nothing, so every box is still empty; either way the
+    // prefill can only come from a value the operator chose, which is the
+    // property this test has always held. A literal here would be the product
+    // choosing a loss cap on their behalf, and still fails.
     const create = readFileSync('src/presentation/components/agent-form.tsx', 'utf8');
-    expect(create).toMatch(/<MoneyLimits\s+catalog=\{[^}]*\}\s*\/>/);
-    expect(create).not.toMatch(/<MoneyLimits[^>]*current=/);
+    expect(create).toMatch(/<MoneyLimits\s+catalog=\{catalog\}\s+current=\{composed\}\s*\/>/);
+    expect(create).not.toMatch(/<MoneyLimits[^>]*current=\{\{/);
   });
 
   it('requires every money field it renders', () => {
@@ -254,11 +305,14 @@ describe('the safe answer is the default answer', () => {
 describe('the route stays out of the domain', () => {
   it('passes answers and lets the use case assemble the config', () => {
     // Architecture policy: no file under app/ imports the domain. Assembling a
-    // config needs the catalog, and the command already has it.
+    // config needs the catalog, and the command already has it. The action
+    // lives beside the page since `the-build-checks-what-next-generates`.
     const page = readFileSync('app/(app)/agents/new/page.tsx', 'utf8');
+    const action = readFileSync('app/(app)/agents/new/actions.ts', 'utf8');
     expect(page).not.toMatch(/@\/domain\//);
-    expect(page).toMatch(/money: moneyAnswers\(formData\)/);
-    expect(page, 'the defect, stated directly').not.toMatch(/tradingConfig: null/);
+    expect(action).not.toMatch(/@\/domain\//);
+    expect(action).toMatch(/money: moneyAnswers\(formData\)/);
+    expect(action, 'the defect, stated directly').not.toMatch(/tradingConfig: null/);
   });
 });
 
@@ -317,7 +371,7 @@ describe('zero does not mean nothing', () => {
 });
 
 describe('the form says what zero does, where it is typed', () => {
-  const form = () => readFileSync('src/presentation/components/money-limits.tsx', 'utf8');
+  const form = () => readText('src/presentation/components/money-limits.tsx');
 
   it('warns that zero removes the limit', () => {
     expect(form()).toMatch(/Entering 0 removes this limit/);
@@ -335,6 +389,68 @@ describe('the form says what zero does, where it is typed', () => {
 
   it('derives which fields warn rather than listing them', () => {
     expect(form()).toMatch(/UNBOUNDED_AT_ZERO as readonly string\[\]\)\.includes\(name\)/);
+  });
+});
+
+describe('a limit is described by what the platform meters', () => {
+  const form = () => readText('src/presentation/components/money-limits.tsx');
+
+  /** The exposure field's `hint=` value, whatever it currently says. */
+  const exposureHint = () => {
+    const source = form();
+    const field = source.indexOf('name="maxConcurrentExposureUsd"');
+    expect(field, 'the exposure field is gone').toBeGreaterThan(-1);
+    const hint = /hint="([^"]+)"/.exec(source.slice(field));
+    expect(hint, 'the exposure field has no hint').not.toBeNull();
+    return hint![1]!;
+  };
+
+  /**
+   * Measured live at BattleGrid v19.2.0 on 2026-08-16, and the reason this
+   * block exists: `maxConcurrentExposureUsd` is metered on **margin**, not
+   * notional. Undertow's `gauges.exposure.fill` read `8.55` while its
+   * `currentNotionalUsd` was `29.48` under a cap of `45`; Breakwater reproduced
+   * it at `4.5` against `12.91`. The hint said "the total of everything open at
+   * the same time", which describes the number the gauge does *not* count.
+   *
+   * These assert the **claim**, not the sentence. Pinning the exact wording is
+   * how a restyle's acceptance criteria rotted in #320 — a later rewrite that
+   * is still true should not fail here.
+   */
+  it('names the quantity the cap actually counts', () => {
+    expect(exposureHint()).toMatch(/margin/i);
+  });
+
+  it('does not describe the cap as a total of what is open', () => {
+    // The original defect, kept as its own assertion so a regression to it is
+    // named rather than merely uncovered.
+    expect(exposureHint()).not.toMatch(/total of everything open/i);
+  });
+
+  it('says the cap sizes the next trade rather than stopping it', () => {
+    // A ceiling that trips and a base that sizes are different mechanisms.
+    // BattleGrid shrinks each successive order against remaining headroom.
+    expect(exposureHint()).toMatch(/sizes each new trade|sized from|what is left/i);
+  });
+
+  it('names the refusal the operator would otherwise have to infer', () => {
+    // Zero of the account's 5,521 lifetime gate blocks names exposure, so an
+    // agent that has gone quiet gives the operator nothing to search for.
+    const hint = exposureHint();
+    expect(hint).toMatch(/refused|refuses/i);
+    expect(hint).toMatch(/10/);
+  });
+
+  it('still composes with the zero warning as one paragraph', () => {
+    // The field is in UNBOUNDED_AT_ZERO, so the bold "Entering 0 removes this
+    // limit" is appended to whatever the hint says. Scenario "A value that
+    // removes the limit" must not regress because this copy changed.
+    expect(UNBOUNDED_AT_ZERO as readonly string[]).toContain('maxConcurrentExposureUsd');
+    expect(exposureHint().trimEnd()).toMatch(/\.$/);
+  });
+
+  it('leaves the label alone, because the label was already right', () => {
+    expect(form()).toMatch(/label="Most it may have at risk at once"/);
   });
 });
 

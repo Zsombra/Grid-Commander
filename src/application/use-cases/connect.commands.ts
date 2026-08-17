@@ -4,8 +4,13 @@ import type {
   OAuthTransactionStore,
 } from '@/domain/connection/connection-repository.js';
 import { expiryFromResponse } from '@/domain/connection/connection.js';
-import { REQUESTED_SCOPES } from '@/domain/connection/scope.js';
-import { ConnectionRevokedError, UntrustedCallbackError } from '@/domain/errors.js';
+import { REQUESTED_SCOPES, STEP_UP_SCOPES } from '@/domain/connection/scope.js';
+import {
+  AccountUnidentifiedError,
+  ConnectionRevokedError,
+  UntrustedCallbackError,
+} from '@/domain/errors.js';
+import type { AccountPort } from '@/ports/account.js';
 import type { BattleGridPort } from '@/ports/battlegrid.js';
 import type { Clock } from '@/ports/clock.js';
 
@@ -30,7 +35,9 @@ export interface Randomness {
  *
  * Nothing about the user is created here. A connection exists only once
  * BattleGrid has confirmed the grant — so an abandoned or failed flow leaves
- * nothing behind.
+ * nothing behind. That is also what makes an abandoned **step-up** safe: the
+ * operator who starts one and walks away has changed nothing, and the product
+ * has not recorded authority it does not hold.
  */
 export class StartConnectionCommand {
   constructor(
@@ -40,7 +47,15 @@ export class StartConnectionCommand {
     private readonly clock: Clock,
   ) {}
 
-  async execute(): Promise<StartConnectionResponse> {
+  /**
+   * @param req.stepUp Ask for fund-committing authority as well as the standing
+   * scope. **Only ever true because an operator asked for it at the point of
+   * use.** Nothing may pass this on a schedule, on a model's suggestion, or as
+   * a side effect of reading — the requirement forbids it, and
+   * `tests/connection/step-up.test.ts` asserts the default stays read-only so
+   * that a caller has to name the widening to get it.
+   */
+  async execute(req: { stepUp?: boolean } = {}): Promise<StartConnectionResponse> {
     const state = this.random.token(32);
     const codeVerifier = this.random.token(64);
     const now = this.clock.now();
@@ -56,7 +71,7 @@ export class StartConnectionCommand {
       authorizationUrl: this.battlegrid.buildAuthorizationUrl({
         state,
         codeChallenge: this.random.codeChallengeS256(codeVerifier),
-        scopes: REQUESTED_SCOPES,
+        scopes: req.stepUp === true ? STEP_UP_SCOPES : REQUESTED_SCOPES,
       }),
       state,
     };
@@ -68,10 +83,22 @@ export interface CompleteConnectionRequest {
   readonly code: string;
 }
 
+/**
+ * The identity to act as, and nothing else.
+ *
+ * `connectionId` and `isReturningUser` were here too, and the callback route —
+ * the only production caller — read neither (PG-003). `isReturningUser` was then
+ * *widened*, to keep reporting a returning user when the identity race below is
+ * lost, which is the worst state for an unread field to be in: the change reads
+ * as having been made for a consumer, and there was none to make it for.
+ *
+ * Neither fact is lost. Whether a subject has connected before is a
+ * `findUserIdBySubject` away, and the connection row is reachable by user — so
+ * whichever surface eventually wants either can ask the store that owns it,
+ * rather than inherit an answer computed for nobody a release earlier.
+ */
 export interface CompleteConnectionResponse {
   readonly userId: string;
-  readonly connectionId: string;
-  readonly isReturningUser: boolean;
 }
 
 /**
@@ -79,10 +106,16 @@ export interface CompleteConnectionResponse {
  *
  * The connection is the identity: a returning user is recognised by their
  * BattleGrid subject and lands back in the same workspace.
+ *
+ * **The subject is asked for, not read off the grant.** BattleGrid is plain
+ * OAuth 2.1 and its token response names no account — an authorization says what
+ * the bearer may do, and is not obliged to say who they are. So the account is
+ * established by a read performed with the authority just granted.
  */
 export class CompleteConnectionCommand {
   constructor(
     private readonly battlegrid: BattleGridPort,
+    private readonly account: AccountPort,
     private readonly transactions: OAuthTransactionStore,
     private readonly connections: ConnectionReader & ConnectionWriter,
     private readonly random: Randomness,
@@ -107,7 +140,28 @@ export class CompleteConnectionCommand {
       codeVerifier: tx.codeVerifier,
     });
 
-    const existingUserId = await this.connections.findUserIdBySubject(grant.subject);
+    // Who does this authority act as? The grant cannot say, so ask — with the
+    // authority itself, which is the only credential that can answer for it.
+    //
+    // `grant.scopes` is passed because there is nowhere else to get it. The
+    // guard that decides whether a call may go out reads a user's authority
+    // from their stored connection, and this read is what *produces* that
+    // connection — so the lookup finds nothing, reads it as no authority at
+    // all, and refuses a call whose grant is holding exactly the scope it
+    // wants. Found by the first real delegated authorization (2026-08-13);
+    // invisible to every offline test, because they fake this port, and to
+    // both live probes, because a personal deployment takes its scopes from
+    // configuration instead.
+    const identity = await this.account.subjectFor(grant.accessToken, grant.scopes);
+    if (identity.kind !== 'subject') {
+      // Nothing is stored without an account to store it under. A placeholder
+      // would make every unidentified connection collide on one key, and the
+      // second user to arrive would be recognised as the first — landing in a
+      // stranger's workspace with a stranger's BattleGrid connection.
+      throw await this.refuseUnidentified(grant.accessToken, identity.reason);
+    }
+
+    const existingUserId = await this.connections.findUserIdBySubject(identity.subject);
 
     // A proposal, not a decision. Between this read and the write below, another
     // callback for the same new subject can create the identity first — so the
@@ -118,20 +172,39 @@ export class CompleteConnectionCommand {
 
     const resolved = await this.connections.upsert({
       userId: proposedUserId,
-      battlegridSubject: grant.subject,
+      battlegridSubject: identity.subject,
       scopes: grant.scopes,
       accessToken: grant.accessToken,
       refreshToken: grant.refreshToken,
       accessTokenExpiresAt: expiryFromResponse(grant.expiresIn, now),
     });
 
-    return {
-      userId: resolved.userId,
-      connectionId: resolved.connectionId,
-      // Returning by the only measure that survives the race: the identity that
-      // came back is not the one just minted for it.
-      isReturningUser: existingUserId !== null || resolved.userId !== proposedUserId,
-    };
+    return { userId: resolved.userId };
+  }
+
+  /**
+   * Give back the authority we cannot use.
+   *
+   * The grant is live at this point — the user consented, the code was
+   * exchanged, and BattleGrid holds an active authorization. Dropping it locally
+   * would leave them holding authority they were told was never established,
+   * which is the same mistake `DisconnectCommand` refuses to make in the other
+   * direction.
+   *
+   * A failed release is not swallowed and not retried: it changes what the user
+   * must be told, so it is carried out as `released: false`.
+   */
+  private async refuseUnidentified(
+    accessToken: string,
+    reason: string,
+  ): Promise<AccountUnidentifiedError> {
+    let released = true;
+    try {
+      await this.battlegrid.revoke(accessToken);
+    } catch {
+      released = false;
+    }
+    return new AccountUnidentifiedError(released, reason);
   }
 }
 

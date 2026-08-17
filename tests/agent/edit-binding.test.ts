@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DescribeEditQuery } from '@/application/use-cases/describe-edit.query.js';
 import { UpdateAgentCommand } from '@/application/use-cases/update-agent.command.js';
@@ -12,7 +13,8 @@ import { FakeAuditStore, FakeClock, FakeConfirmationStore } from '../support/fak
 import { beginGuardedCall } from '@/infrastructure/battlegrid/call-path.js';
 import { ConfirmationRequiredError } from '@/domain/errors.js';
 import { digestOf } from '@/domain/capability/digest.js';
-import { editIntent, MONEY_FIELDS } from '@/presentation/form.js';
+import { editArguments, editIntent, MONEY_FIELDS } from '@/presentation/form.js';
+import { slashed } from '../support/source-tree.js';
 
 /**
  * A confirmation authorises the change it described, and no other.
@@ -346,13 +348,20 @@ describe('the two requests agree on what was submitted', () => {
      * through `editIntent` and nowhere else. It had a `pick` for the query and a
      * `numberish` for the form; both are gone, and their absence is the check.
      */
+    // One reader per request, and the requests live in two modules now: the
+    // review branch on the page, the apply in the colocated actions.ts
+    // (`the-build-checks-what-next-generates`).
     const page = readFileSync('app/(app)/agents/[id]/edit/page.tsx', 'utf8');
-    expect(page.match(/editIntent\(/g) ?? [], 'both requests, one reader').toHaveLength(2);
-    expect(page, 'the form-side coercion is gone').not.toMatch(/function numberish/);
-    expect(page, 'the query-side filter is gone').not.toMatch(/function pick/);
-    expect(page, 'Number\\(\\) on a money field would be a second coercion').not.toMatch(
-      /Number\(/,
-    );
+    const action = readFileSync('app/(app)/agents/[id]/edit/actions.ts', 'utf8');
+    expect(page.match(/editIntent\(/g) ?? [], 'the review request, one reader').toHaveLength(1);
+    expect(action.match(/editIntent\(/g) ?? [], 'the apply request, one reader').toHaveLength(1);
+    for (const [where, source] of [['page', page], ['action', action]] as const) {
+      expect(source, `the form-side coercion is gone (${where})`).not.toMatch(/function numberish/);
+      expect(source, `the query-side filter is gone (${where})`).not.toMatch(/function pick/);
+      expect(source, `Number() on a money field would be a second coercion (${where})`).not.toMatch(
+        /Number\(/,
+      );
+    }
   });
 
   it('digests differently for different amounts', () => {
@@ -360,5 +369,137 @@ describe('the two requests agree on what was submitted', () => {
     expect(digestOf(fromQuery({ maxDailyLossUsd: '25' }))).not.toBe(
       digestOf(fromQuery({ maxDailyLossUsd: '25000' })),
     );
+  });
+});
+
+/**
+ * The one pair that is walked against a real account, driven here instead.
+ *
+ * `tests/live/write-probe.test.ts` is the only place `update_intelligence_agent`
+ * is exercised against the live platform carrying a trading-config change, and
+ * it described an empty `tradingConfig` while submitting `maxDailyTrades: 7`.
+ * Two intents, two digests, and a token the apply could not spend — so the write
+ * was refused by this product's own guard before a request was built, and the
+ * step could never reach `updated`. The guard was right; the pair was wrong. It
+ * predates the narrowing of the target from the bare agent id to a digest of the
+ * intent, and nothing ran the probe afterwards to notice.
+ *
+ * That is the reason this block exists at all rather than the fix being left to
+ * a live run. A probe that may only be run deliberately, against somebody's real
+ * BattleGrid account, is not evidence of anything on the days nobody runs it —
+ * so the pair it walks is pinned where the whole suite can see it.
+ */
+describe("the live write probe's trading-limit pair", () => {
+  /** Exactly what the probe describes, and — after the split — what it submits. */
+  const LIMIT_INTENT = { tradingConfig: { maxDailyTrades: 7 } } as const;
+
+  it('mints a confirmation its own submission can spend', async () => {
+    const h = harness();
+    // Split by the product's own function, which is what the probe now calls.
+    // Composing the two halves here would prove something about this test.
+    const { changes, tradingConfigChanges } = editArguments(LIMIT_INTENT);
+    const { result, spent } = await proposeThenApply(h, LIMIT_INTENT, {
+      changes: { ...changes },
+      ...(tradingConfigChanges ? { tradingConfigChanges: { ...tradingConfigChanges } } : {}),
+    });
+
+    expect(result.kind, 'the probe cannot assert "updated" on a write the guard refuses').toBe(
+      'updated',
+    );
+    expect(spent, 'the describe and the apply must form the same target').not.toBeNull();
+
+    // And the merge the probe asserts on afterwards: the one field it named,
+    // with the money caps it never mentioned still standing.
+    const sent = h.port.agents.get('a1')?.tradingConfig?.fields ?? {};
+    expect(sent['maxDailyTrades']).toBe(7);
+    expect(sent['maxDailyLossUsd'], 'a limit edit must not clear the caps').toBe(300);
+    expect(sent['tradingMode'], 'nor re-enable trading').toBe('OFF');
+  });
+
+  it('was refused while the describe and the apply disagreed', async () => {
+    /**
+     * The defect, run deliberately, so the test above is not merely asserting
+     * that a fake agrees with itself. An empty `tradingConfig` is a different
+     * intent from one carrying a value — `editIntent` keeps absent and empty
+     * apart on purpose, and the digest keeps them apart too.
+     */
+    const h = harness();
+    const { spent, boundTo } = await proposeThenApply(
+      h,
+      { tradingConfig: {} },
+      { changes: {}, tradingConfigChanges: { maxDailyTrades: 7 } },
+    );
+
+    expect(spent, 'a token for "some config change" must not authorise this one').toBeNull();
+    expect(boundTo, 'the write bound the value it was about to send').toMatch(/^agent:a1#/);
+  });
+
+  it('composes both halves from one intent, through the shared split', () => {
+    /**
+     * The pair above is the probe's pair only while the probe forms it that
+     * way. What regresses is not the binding — it is a second literal written
+     * beside the first, at a different moment, which is precisely what was
+     * there. So the property is stated against the source directly.
+     *
+     * Comments are stripped first: this file and that one both describe the
+     * defect on purpose, and only code can reintroduce it. Same treatment, and
+     * the same reason, as `live-writes.test.ts`.
+     */
+    const code = readFileSync('tests/live/write-probe.test.ts', 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+
+    expect(code, 'the probe splits its intent the way the product does').toContain(
+      'editArguments(',
+    );
+    expect(
+      code,
+      'an empty tradingConfig describes a change the probe does not apply',
+    ).not.toMatch(/tradingConfig:\s*\{\s*\}/);
+  });
+});
+
+describe('no caller composes a target inline', () => {
+  /**
+   * The guard `confirmation.ts` has claimed since the binding landed, written
+   * down at last. `agentEdit` cannot be called without the intent — that is
+   * what makes the binding load-bearing — but only while every target goes
+   * through the builders. A caller composing `agent:${id}#${digest}` by hand
+   * re-opens the seam: it can compose the string from values the person never
+   * saw, and the compiler has no opinion about string contents.
+   */
+  const TARGET_SHAPES = [
+    /agent:\$\{/,
+    /->strategy:\$\{/,
+    /strategy:\$\{[^}]*\}#\$\{/,
+    /*
+     * Added with `the-approval-can-be-answered`. This is the target that
+     * authorises spending money, so it is the one that would matter most if a
+     * caller composed it from values the operator never saw — and the verb is
+     * part of the string, which means a hand-built one could also turn an
+     * agreement to decline into an agreement to buy.
+     */
+    /decision:\$\{/,
+  ];
+
+  function tsFilesUnder(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return tsFilesUnder(path);
+      return entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') ? [slashed(path)] : [];
+    });
+  }
+
+  it('every target-shaped template literal lives in the builder file', () => {
+    const composers = tsFilesUnder('src').filter((file) => {
+      const source = readFileSync(file, 'utf8');
+      return TARGET_SHAPES.some((shape) => shape.test(source));
+    });
+    expect(
+      composers,
+      'targets are built with confirmationTarget, never composed at a call site',
+    ).toEqual(['src/domain/capability/confirmation.ts']);
+    // The builder itself must register — an empty match list would mean the
+    // shapes drifted and this scan went blind, not that the code got cleaner.
   });
 });

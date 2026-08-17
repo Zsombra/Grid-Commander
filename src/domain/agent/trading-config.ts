@@ -139,15 +139,16 @@ export interface EditResult {
  *
  * **But the read is wider than the write, and that is not symmetrical.**
  * `get_intelligence_agent` returns twenty-three fields;
- * `update_intelligence_agent` accepts twenty and declares
- * `additionalProperties: false`. The three extra — `strategyTimeframe`,
- * `regimeAutoDerive`, `regimeTimeframe` — are real facts about an agent and are
- * not writable.
+ * `update_intelligence_agent` accepts eighteen (twenty before v14 dropped the
+ * two ATR fields) and declares `additionalProperties: false`. The extras —
+ * `strategyTimeframe`, `regimeAutoDerive`, `regimeTimeframe`, and since v14
+ * `atrTimeframe` and `atrMatchesStrategyTimeframe` — are real facts about an
+ * agent and are not writable.
  *
  * This function used to be `{ ...current.fields, ...changes }`, which passed all
  * twenty-three straight back, so **every edit was rejected outright**, for the
  * life of this product. The projection onto `TRADING_CONFIG_FIELDS` is the fix:
- * that list is already the twenty names a create is assembled from, so there is
+ * that list is already the names a create is assembled from, so there is
  * no second list to keep in sync.
  *
  * Completeness is checked here too. The create path has always refused an
@@ -205,8 +206,8 @@ export type BuildResult =
  * A complete `tradingConfig`, from what the platform defaults plus what the
  * operator answered.
  *
- * **Complete or nothing.** BattleGrid requires all twenty fields whenever the
- * object is supplied and resets what a partial send omits (findings-agents
+ * **Complete or nothing.** BattleGrid requires all eighteen fields whenever
+ * the object is supplied and resets what a partial send omits (findings-agents
  * F-6), so there is no "set the loss cap and leave the rest". Either every
  * field has a value or this refuses and says which do not.
  *
@@ -266,32 +267,34 @@ export function buildTradingConfig(
  *   `smallPct`/`mediumPct`/`largePct` from the platform's own catalog;
  *   VOLATILITY_AUTO would derive sizes from ATR and make those three inert.
  *   MANUAL is the value that matches what is actually sent.
- * - `trailingType: ATR` — the enum is `ATR | FIXED`, and all five position
- *   management presets the platform ships use ATR. None uses FIXED.
  * - The three feature switches — `false`. The platform *does* default the
  *   master switch, `positionMgmtEnabled`, to false. With the block off, its
  *   sub-switches are moot, and off is the only completion coherent with the one
  *   value the platform was willing to state.
+ *
+ * `trailingType: ATR` lived here until BattleGrid v17.2.0 removed the field
+ * outright — trailing is a single giveback model now, with no type to choose.
  */
 const OURS: Readonly<Record<string, unknown>> = {
   sizingStrategy: 'MANUAL',
-  trailingType: 'ATR',
   breakEvenEnabled: false,
   trailingEnabled: false,
   timeDecayEnabled: false,
 };
 
 /**
- * The position-management block, all fifteen fields of it.
+ * The position-management block, all thirteen fields of it.
  *
- * A preset is a *label the caller supplies alongside* the fourteen values, not
+ * A preset is a *label the caller supplies alongside* the twelve values, not
  * a shorthand the server expands — established against the live server, see
  * `a-preset-does-not-constrain-its-config`. So choosing "COLT" means sending
- * COLT's fourteen values *and* the label; it does not mean sending the label
+ * COLT's twelve values *and* the label; it does not mean sending the label
  * and letting BattleGrid fill in the rest.
  *
  * Where a value has a platform default it is read; where it does not it comes
- * from `OURS`, which says so.
+ * from `OURS`, which says so. The fallback literals mirror the catalog's own
+ * defaults as read live at v17.2.0, so a silent catalog completes to the same
+ * numbers a spoken one states.
  */
 export function positionManagementFrom(
   catalog: Catalog,
@@ -302,11 +305,9 @@ export function positionManagementFrom(
     positionManagementPreset: preset,
     enabled: d['positionMgmtEnabled'] ?? false,
     breakEvenEnabled: OURS['breakEvenEnabled'],
-    breakEvenTriggerTpProgressPct: d['positionMgmtBreakevenTriggerTpProgressPct'] ?? 50,
+    breakEvenTriggerR: d['positionMgmtBreakevenTriggerR'] ?? 1,
     trailingEnabled: OURS['trailingEnabled'],
-    trailingType: OURS['trailingType'],
-    trailingAtrMultiple: d['positionMgmtTrailingAtrMultiple'] ?? 3,
-    trailingFixedPct: d['positionMgmtTrailingFixedPct'] ?? 1,
+    trailingGivebackPct: d['positionMgmtTrailingGivebackPct'] ?? 40,
     trailingBufferPct: d['positionMgmtTrailingBufferPct'] ?? 0.25,
     timeDecayEnabled: OURS['timeDecayEnabled'],
     timeDecayGracePeriodMinutes: d['positionMgmtTimeDecayGracePeriodMinutes'] ?? 60,
@@ -314,8 +315,98 @@ export function positionManagementFrom(
     timeDecayTightenPct: d['positionMgmtTimeDecayTightenPct'] ?? 5,
     timeDecayMaxTightenPct: d['positionMgmtTimeDecayMaxTightenPct'] ?? 50,
     timeDecayStaleThresholdTpProgressPct:
-      d['positionMgmtTimeDecayStaleThresholdTpProgressPct'] ?? 50,
+      d['positionMgmtTimeDecayStaleThresholdTpProgressPct'] ?? 25,
   };
+}
+
+/**
+ * The platform's own values for a named preset, with its label beside them.
+ *
+ * Exactly what the catalog stated and nothing else: choosing "COLT" means
+ * BattleGrid's twelve COLT values, not this product's recollection of them,
+ * and not the assembled defaults with a COLT sticker. Returns null when the
+ * catalog cannot answer — the preset is unknown, or arrived without its
+ * configuration — and the caller refuses rather than substituting.
+ */
+export function positionManagementForPreset(
+  catalog: Catalog,
+  preset: string,
+): Readonly<Record<string, unknown>> | null {
+  const found = catalog.positionManagementPresets.find((p) => p.preset === preset);
+  if (!found || found.config === null) return null;
+  return { positionManagementPreset: found.preset, ...found.config };
+}
+
+/**
+ * The twelve behavioural fields a position-management object carries,
+ * beside its label. One list, exported, because the edit transport, the
+ * drift comparison, and the tests all need the same answer to "which
+ * fields" — a second list is a drift of its own.
+ *
+ * Fourteen until BattleGrid v17.2.0, which replaced the typed trailing pair
+ * (`trailingType`/`trailingAtrMultiple`/`trailingFixedPct`) with a single
+ * `trailingGivebackPct` and the take-profit break-even trigger with an
+ * R-multiple.
+ */
+export const POSITION_MANAGEMENT_FIELDS = [
+  'enabled',
+  'breakEvenEnabled',
+  'breakEvenTriggerR',
+  'trailingEnabled',
+  'trailingGivebackPct',
+  'trailingBufferPct',
+  'timeDecayEnabled',
+  'timeDecayGracePeriodMinutes',
+  'timeDecayIntervalMinutes',
+  'timeDecayTightenPct',
+  'timeDecayMaxTightenPct',
+  'timeDecayStaleThresholdTpProgressPct',
+] as const;
+
+/**
+ * What kind of value each field carries — the form's control types and the
+ * transport's coercion both read this, so they cannot disagree about what
+ * `"true"` or `"3"` means on the way in versus the way out.
+ */
+export function positionFieldKind(field: string): 'boolean' | 'text' | 'number' {
+  if (
+    field === 'enabled' ||
+    field === 'breakEvenEnabled' ||
+    field === 'trailingEnabled' ||
+    field === 'timeDecayEnabled'
+  ) {
+    return 'boolean';
+  }
+  if (field === 'positionManagementPreset') return 'text';
+  return 'number';
+}
+
+/**
+ * Whether an agent's values still are what its label claims.
+ *
+ * A preset is a label beside twelve independent values — nothing on the
+ * platform makes them agree (`a-preset-does-not-constrain-its-config`,
+ * answered live). So a surface showing the label alone would lie
+ * confidently the day they diverge. `null` when there is no claim to check:
+ * the agent is `CUSTOM` (its values are deliberately its own), names no
+ * preset, or the catalog cannot say what the preset means.
+ */
+export function positionDrift(
+  current: Readonly<Record<string, unknown>> | null | undefined,
+  catalog: Catalog,
+): { readonly preset: string; readonly differing: readonly string[] } | null {
+  if (!current) return null;
+  const preset = current['positionManagementPreset'];
+  if (typeof preset !== 'string' || preset === '' || preset === 'CUSTOM') return null;
+  const claimed = catalog.positionManagementPresets.find((p) => p.preset === preset);
+  if (!claimed || claimed.config === null) return null;
+
+  const differing = POSITION_MANAGEMENT_FIELDS.filter(
+    // Strict inequality on the raw values: both sides are platform JSON, so
+    // 3 and "3" differing is a fact worth surfacing, not noise to coerce away.
+    (field) => current[field] !== claimed.config?.[field],
+  );
+  return { preset, differing };
 }
 
 /** The three size percentages and the strategy that picks between them. */

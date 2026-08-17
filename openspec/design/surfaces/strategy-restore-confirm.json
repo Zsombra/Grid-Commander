@@ -1,0 +1,324 @@
+{
+  "id": "strategy-restore-confirm",
+  "title": "Restore strategy confirmation",
+  "route": "/strategies/[id]/restore",
+  "capability": "strategy-authoring",
+  "status": "designed",
+  "generated_at_commit": "6441015",
+  "source_files": [
+    "app/(app)/strategies/[id]/restore/actions.ts",
+    "app/(app)/strategies/[id]/restore/page.tsx",
+    "src/application/use-cases/strategy-lifecycle.command.ts",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/why-not-loaded.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "listing",
+      "shape": "{ strategy: { id, name, revision, isActive } }",
+      "source": "app.listStrategies.execute — the roster read that locates the strategy; its failure is a distinct page state"
+    },
+    {
+      "name": "outcome",
+      "shape": "'repair-required' | undefined",
+      "source": "searchParams — set by a restoreStrategy the platform declined as repair-required; any other value is ignored"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the reason a rejected restoreStrategy redirected back with. Two producers: a platform `refused`, and — since `the-outcome-reaches-the-person` — the action's own pre-perform re-read failing or the strategy having left the roster, both prefixed 'Nothing was attempted: …'. `repair-required` deliberately does NOT ride this field; it has its own ?outcome="
+    },
+    {
+      "name": "REPAIR_REQUIRED_GUIDANCE",
+      "shape": "string (constant)",
+      "source": "strategy-lifecycle.command.ts — the fixed guidance sentence: stays archived, rebuild via a RESTORE compile plan"
+    }
+  ],
+  "components": [
+    {
+      "id": "restore-strategy-page",
+      "role": "container",
+      "purpose": "Ask one question — bring this archived strategy back? — without promising the platform will say yes.",
+      "states": [
+        "proposal",
+        "proposal-with-problem",
+        "repair-required",
+        "repair-required-with-problem",
+        "not-archived",
+        "not-archived-with-problem",
+        "no-such-strategy",
+        "no-such-strategy-with-problem",
+        "unreadable",
+        "unreadable-with-problem",
+        "not-connected"
+      ],
+      "data": [
+        "listing",
+        "outcome",
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the confirmation-page skeleton. Five post-connection branches, and since `the-outcome-reaches-the-person` all five mount `<CarriedProblem>` unconditionally as the first thing under the h1; it renders null when nothing rode in, so each `-with-problem` pairing above is a real rendering rather than a per-branch decision. The proposal state carries two plain text-sm paragraphs instead of a platform-minted consequence block: what restoring does (editable, at revision N, no agent reconfigured because none can be bound to an archived strategy) and that BattleGrid may decline. DT-0020 restyled exactly one sentence on this page — `unreadable`'s: the roster read's reason is now `rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary` with role=alert, with WhyNotLoaded's reassurance following as a separate plain `mt-2` paragraph beneath the block rather than inside it, and the way out is the roster; an archived strategy is the one a user most readily believes deleted, so that reassurance carries the most weight here. Two sentences were deliberately left plain and still are: `not-archived` (h1 'Cannot restore', then a bare `role=alert text-sm` '<name> is not archived.') because that is a statement of fact about the strategy rather than a failed attempt, and the repair-required guidance block, which keeps role=status and its plain border. Note: the repair-required branch is checked before the isActive check, so a stale ?outcome=repair-required on a strategy that has since been restored shows 'needs rebuilding' rather than 'not archived'. The `repair-required-with-problem` pairing is the one to look at hardest: a role=alert danger banner sits directly above a role=status guidance block, and the page is deliberately saying two different things about two different moments. State is now consulted before the address: the isActive branch precedes the ?outcome=repair-required branch, so a stale bookmark on a restored strategy renders 'not archived' rather than 'needs rebuilding first'.",
+      "constraints": [
+        "Every branch renders the carried reason, not just the ones that can offer a form — the branch that drops it loses the only record of what the click did, and `tests/agent/refusals-reach-the-operator.test.ts` asserts one `<CarriedProblem>` per `<main>` on this page. A design that suppresses it on a terminal branch changes behavior and is requires-spec-change.",
+        "On the repair-required branch the carried danger banner and the guidance block must stay visually separable — the guidance is not a failure and must not be pulled into the banner's palette by proximity ('notice never borrows danger's colour', system.json principle).",
+        "The unreadable reason keeps role=alert and the danger treatment DT-0020 landed; the 'is not archived' sentence and the repair-required guidance were deliberately left out of that sweep and must stay out of it — one is a fact about the strategy, the other is the platform declining and saying what would work. Tinting either as danger reverses a decided ruling.",
+        "WhyNotLoaded's reassurance must survive verbatim wherever it renders relative to the danger block — on this page above all, because an archived strategy is the one a user most readily believes deleted.",
+        "Restoring MUST NOT be presented as guaranteed — openspec/specs/strategy-authoring/spec.md:238 ('Restoring MUST NOT be presented as guaranteed where the platform may refuse it'). The paragraph saying BattleGrid may decline is spec-required content, not filler.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
+        "'Absence of effect is stated, not implied' (system.json principle) — the sentence that nothing is reconfigured by restoring must keep visual commitment."
+      ],
+      "children": [
+        "problem",
+        "repair-required",
+        "why-not-loaded",
+        "restore-strategy"
+      ]
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the reason that bounced a submitted restore back to the person who clicked it — whether the platform refused it or nothing was attempted at all.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx), extracted by `the-outcome-reaches-the-person` from the copy that used to be inline on this page. DT-0004's danger treatment unchanged — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert and a semibold 'Refused: ' prefix — and it returns null for a falsy `problem`, which is what lets all five branches mount it unconditionally. Its prop now takes `string | null | undefined` (widened by `a-lost-authority-is-not-a-refusal` so a caller reading a parsed query, which yields null, is not tempted to hand-roll a copy); rendering is unchanged. On the unreadable branch it now sits above a block wearing the identical treatment, since DT-0020 gave that page's own reason the danger role too.",
+      "constraints": [
+        "role=alert must survive.",
+        "The reason is BattleGrid's, verbatim — no re-diagnosis. The action's own 'Nothing was attempted: …' sentences ride the same field and take the same treatment.",
+        "Shared by six ceremony pages (agent deploy/undeploy/rebind, strategy archive/restore/fork) — restyle it in the component, never per page.",
+        "It must stay distinguishable from the repair-required guidance it can render directly above — one is a failed attempt, the other is the platform declining and saying what would work."
+      ],
+      "children": []
+    },
+    {
+      "id": "repair-required",
+      "role": "feedback",
+      "purpose": "Tell the user the strategy needs rebuilding before it can come back — a declined restore explained as guidance, not failure.",
+      "states": [
+        "default",
+        "absent"
+      ],
+      "data": [
+        "REPAIR_REQUIRED_GUIDANCE"
+      ],
+      "actions": [
+        {
+          "id": "compileChange",
+          "effect": "Underlined link to /strategies/[id]/edit — the RESTORE arm of the compile pipeline, the one path that can rebuild it"
+        },
+        {
+          "id": "back",
+          "effect": "Underlined link back to /strategies/[id]"
+        }
+      ],
+      "current_implementation": "Its own full-page branch: h1 '<name> needs rebuilding first', a `<CarriedProblem>` mount (usually null here — the two arms are set by different redirects and only collide when a stale ?problem= is still on the URL), then the fixed guidance sentence in a rounded-gc-2 border border-border-default p-4 block with role=status — status, not alert, because nothing failed: the platform declined and said what would work instead. Two underlined text links follow in a flex flex-wrap gap-3 row ('Compile a change for it', 'Back to <name>') — plain links, not buttons.",
+      "constraints": [
+        "role=status, not role=alert, must survive — this state is deliberately not an error. 'Advisory is not failure. notice never borrows danger's colour, icon, or weight' (system.json principle).",
+        "Spec-required shape — spec.md:254-257: 'the user is told it needs rebuilding rather than being told it failed' AND 'they are directed to the path that can rebuild it'. The link to the compile pipeline must survive any redesign.",
+        "The guidance wording is the shared REPAIR_REQUIRED_GUIDANCE constant — rendering it differently here than where else it appears would make the same platform answer read as two different situations.",
+        "'Nothing is styled to look disabled when retrying cannot help' (system.json principle) — no restore form is offered in this state, and none should be drawn."
+      ],
+      "children": []
+    },
+    {
+      "id": "why-not-loaded",
+      "role": "feedback",
+      "purpose": "Reassure someone staring at a failed read that their archived strategy still exists, by naming the accurate external cause.",
+      "states": [
+        "refused-cause",
+        "unreachable-cause",
+        "absent"
+      ],
+      "data": [],
+      "actions": [],
+      "current_implementation": "Shared WhyNotLoaded component (why-not-loaded.tsx), rendered only in the unreadable state — one plain `mt-2` paragraph, a sibling *after* DT-0020's danger block rather than inside it; the component itself was untouched by that ticket. The page's own comment: an archived strategy is the one a user most readily believes has been deleted, so this sentence carries the most weight on this page of all.",
+      "constraints": [
+        "The two causes must stay distinguishable — a 401 is not an outage.",
+        "The reassurance sentence is the point and must not be cut for space."
+      ],
+      "children": []
+    },
+    {
+      "id": "restore-strategy",
+      "role": "container",
+      "purpose": "Carry the restore decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "listing"
+      ],
+      "actions": [
+        {
+          "id": "restoreStrategy",
+          "effect": "POSTs the server action with strategyId; success lands on /strategies, repair-required redirects back here with ?outcome=repair-required, any other refusal with ?problem=, and a pre-perform re-read that fails or a strategy that has left the roster also redirects back here with ?problem= prefixed 'Nothing was attempted: …'"
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3 — buttons wrap; no mobile w-full stack. One hidden input (strategyId) — deliberately no confirmation token and no consequence block: restore is the recovery arm, creates nothing and reconfigures no agent, so it does not wear the archive ceremony. Since `the-outcome-reaches-the-person` the action reads its own re-read: an unreadable roster and a strategy no longer in it each bounce back to this route with a 'Nothing was attempted: …' problem, where they used to redirect to /strategies unexplained.",
+      "constraints": [
+        "A click that reached no operation still lands somewhere that says so — the two 'Nothing was attempted: …' paths must not be redesigned back into a silent redirect to the roster.",
+        "The form must keep exactly one submit path.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts).",
+        "Both non-success arms carry the platform's reason back to this page — a design must not collapse repair-required and refused into one look; they are different states with different remedies."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the restore. Named with the strategy: 'Restore <name>'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [
+        "listing"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs restoreStrategy"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, DT-0004 hover/active. No pending/loading state between click and redirect — the same class of gap filed as #153 for the agent ceremonies; behavior, not styling. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts — not a per-page className.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Leave the strategy archived and go back to it — to the strategy, not the roster, so declining costs nothing.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [
+        "listing"
+      ],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /strategies/[id] without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, DT-0004 hover. Label 'Leave it archived'.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Must keep pointing at the strategy, not the roster — spec.md:240-243's declining rule applies to both directions of the lifecycle.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, connect link as an anchor wearing BUTTON_SECONDARY (DT-0006). Inherited by every authenticated page.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Restore a strategy",
+      "steps": [
+        "arrive from the archived strategy's page",
+        "read what restoring does and that the platform may decline",
+        "submit 'Restore <name>'",
+        "land on /strategies with the strategy back"
+      ]
+    },
+    {
+      "name": "The platform says it needs rebuilding",
+      "steps": [
+        "submit",
+        "platform answers repair-required",
+        "redirected back with ?outcome=repair-required",
+        "'<name> needs rebuilding first' with the guidance and a link into the compile pipeline"
+      ]
+    },
+    {
+      "name": "Restore is refused after submit",
+      "steps": [
+        "submit",
+        "platform refuses for any other reason",
+        "redirected back with ?problem=",
+        "problem banner states the reason above the still-usable form"
+      ]
+    },
+    {
+      "name": "Nothing could be attempted",
+      "steps": [
+        "submit",
+        "the action's re-read of the roster fails, or the strategy is no longer in it",
+        "redirected back here with ?problem= 'Nothing was attempted: …'",
+        "whichever branch renders next carries that sentence — including the branch reporting its own fresh read failure"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Leave it archived'",
+        "back on /strategies/[id], nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "button-primary",
+      "button-secondary"
+    ],
+    "notes": "The carried problem (shared CarriedProblem, mounted on all five branches) and the not-archived/unreadable reasons carry role=alert; the repair-required guidance deliberately carries role=status instead — so the repair-required branch can announce an alert and a status together, in that order, and the difference is the point. Since DT-0020 only the unreadable reason is tinted to match its role: the not-archived sentence announces as an alert while rendering as body text, which is a deliberate split between what is announced and what is emphasised. Focus ring is global (focus-visible, 2px). Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight — so these are read in document order rather than as live-region updates."
+  },
+  "source_digest": {
+    "app/(app)/strategies/[id]/restore/actions.ts": "sha256:f57b18ce0af925e78f4cca9a3658bc9eb3235a49636471baa04db236c4098c86",
+    "app/(app)/strategies/[id]/restore/page.tsx": "sha256:ed9edaf9b0e9cdf94d2d4e8e4b178be294d80992fcff8aa1a141a91a1b3de3ed",
+    "src/application/use-cases/strategy-lifecycle.command.ts": "sha256:c302d00af84f9d4a6b4c3d0d15930f3df2bf37ef8f5b1326515574011d5bc380",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/why-not-loaded.tsx": "sha256:633b4365fa143b8816fb8d87d6bb2ae47b2bd75e1499da359990a8e2b2d335ab",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

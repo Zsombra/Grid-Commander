@@ -1,9 +1,11 @@
-import { redirect } from 'next/navigation';
 import { acting } from '@/presentation/session.js';
-import { compiledPlan, requiredText } from '@/presentation/form.js';
+import { updateCompileIntent } from '@/presentation/form.js';
 import { PlanReviewPanel } from '@/presentation/components/plan-review.js';
 import { NotConnected } from '@/presentation/require-connection.js';
-import { CONTROL } from '@/presentation/components/control.js';
+import { WhyNotLoaded } from '@/presentation/components/why-not-loaded.js';
+import { CarriedProblem } from '@/presentation/components/carried-problem.js';
+import { BUTTON_SECONDARY, CHECKBOX, CONTROL, LABEL } from '@/presentation/components/control.js';
+import { apply } from './actions.js';
 /**
  * Compose a change, compile it, and review what applying would do.
  *
@@ -22,6 +24,7 @@ export default async function EditStrategyPage({
     tagline?: string;
     sections?: string | string[];
     unknownSections?: string | string[];
+    problem?: string;
   }>;
 }) {
   const { app, user } = await acting();
@@ -30,6 +33,10 @@ export default async function EditStrategyPage({
   const { id } = await params;
   const sp = await searchParams;
   const compile = sp.compile;
+  // The refusal a bounced apply carried back. Read on every branch this page
+  // can render, because until it was, this route was the one where #232
+  // converted a crash into silence (#240).
+  const problem = sp.problem;
   const tagline = sp.tagline ?? '';
   const selectedKeys = toArray(sp.sections);
   const unknownSectionParams = toArray(sp.unknownSections);
@@ -40,8 +47,9 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">No such strategy</h1>
+        <CarriedProblem problem={problem} />
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
       </main>
     );
@@ -51,8 +59,16 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Strategy could not be read</h1>
+        <CarriedProblem problem={problem} />
+        {/* The reason the read gave, and the reassurance every other unreadable
+            branch states. This one could not comply until the query stopped
+            dropping them — the words existed, and stopped one layer down. */}
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">
+          {result.reason}
+        </p>
+        <WhyNotLoaded cause={result.cause} subject="this strategy is" />
         <p className="text-sm">
-          <a href="/strategies" className="underline">Back to your strategies</a>
+          <a href="/strategies" className={BUTTON_SECONDARY}>Back to your strategies</a>
         </p>
       </main>
     );
@@ -64,13 +80,17 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           Cannot edit this strategy right now
         </h1>
-        <p role="alert" className="text-sm">
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="rounded-gc-2 border border-notice-border bg-notice-subtle p-4 text-sm text-text-primary">
           The vocabulary a strategy is composed from comes from BattleGrid, and it
           could not be read. Composing a change without it would mean guessing at
           values the platform will reject.
         </p>
+        {/* Why it could not be read — the platform's words, not a paraphrase. */}
+        <p className="text-sm text-text-secondary">{result.reason}</p>
+        <WhyNotLoaded cause={result.cause} subject="the vocabulary is" />
         <p className="text-sm">
-          <a href={`/strategies/${id}`} className="underline">Back to strategy</a>
+          <a href={`/strategies/${id}`} className={BUTTON_SECONDARY}>Back to strategy</a>
         </p>
       </main>
     );
@@ -106,17 +126,23 @@ export default async function EditStrategyPage({
 
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
+        <CarriedProblem problem={problem} />
         <div>
           <h1 className="text-2xl font-medium text-text-primary">Edit {strategy.name}</h1>
-          <p className="mt-1 text-sm font-medium">
-            {strategy.boundAgentCount === 0
-              ? 'No agents are bound to this strategy.'
-              : `${strategy.boundAgentCount} agent${strategy.boundAgentCount === 1 ? '' : 's'} would be reconfigured by an applied change.`}
-          </p>
+          {/* The blast radius met a page earlier — the same fact wears the same
+              clothes it wears on the review (DT-0015): consequence when agents
+              are reached, plain when none are. */}
+          {strategy.boundAgentCount === 0 ? (
+            <p className="mt-1 text-sm font-medium">No agents are bound to this strategy.</p>
+          ) : (
+            <p className="mt-2 rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm font-medium text-text-primary">
+              {`${strategy.boundAgentCount} agent${strategy.boundAgentCount === 1 ? '' : 's'} would be reconfigured by an applied change.`}
+            </p>
+          )}
         </div>
         <form method="get" className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="tagline" className="block text-sm font-medium">Tagline</label>
+            <label htmlFor="tagline" className={LABEL}>Tagline</label>
             <input
               id="tagline"
               name="tagline"
@@ -128,6 +154,32 @@ export default async function EditStrategyPage({
 
           <fieldset className="space-y-4">
             <legend className="text-sm font-medium">Sections</legend>
+            {/* This checklist says which sections, and nothing about what any
+                of them reads. The library behind this link is where a section's
+                own columns are — the question an author actually has while
+                ticking these boxes. */}
+            <p className="text-xs text-text-secondary">
+              What each section reads — its columns, their metrics and
+              transforms — is in{' '}
+              <a href="/strategies/sections" className="underline">the section library</a>.
+            </p>
+            {/* The ceilings a preview of this composition runs under, published
+                by the platform's own discovery since v9.0.0. Shown here rather
+                than on the preview page because this is where a section is
+                added — by the time a preview is refused for being too large,
+                the refusal already says so in the platform's words.
+
+                Absent when the platform does not publish them, and never
+                defaulted: an invented ceiling would be read as the platform's,
+                and an author would compose against a number nobody enforces. */}
+            {result.limits ? (
+              <p className="text-xs text-text-secondary">
+                A preview of this composition may render up to{' '}
+                {result.limits.maxResultBytes.toLocaleString('en-US')} bytes and run for{' '}
+                {Math.round(result.limits.deadlineMs / 1000)} seconds. Past either, BattleGrid
+                refuses the preview rather than truncating it.
+              </p>
+            ) : null}
             {result.categories.map((cat) => {
               const catTemplates = result.templates.filter((t) => t.category === cat.category);
               if (catTemplates.length === 0) return null;
@@ -146,12 +198,13 @@ export default async function EditStrategyPage({
                           (s) => s.sectionKey === template.sectionKey,
                         );
                       return (
-                        <label key={key} className="flex items-center gap-2 text-sm">
+                        <label key={key} className="flex min-h-control items-center gap-2 text-sm tablet:min-h-0">
                           <input
                             type="checkbox"
                             name="sections"
                             value={key}
                             defaultChecked={checked}
+                            className={CHECKBOX}
                           />
                           {template.label}
                         </label>
@@ -176,12 +229,13 @@ export default async function EditStrategyPage({
                         (s) => s.sectionKey === template.sectionKey,
                       );
                     return (
-                      <label key={key} className="flex items-center gap-2 text-sm">
+                      <label key={key} className="flex min-h-control items-center gap-2 text-sm tablet:min-h-0">
                         <input
                           type="checkbox"
                           name="sections"
                           value={key}
                           defaultChecked={checked}
+                          className={CHECKBOX}
                         />
                         {template.label}
                       </label>
@@ -208,7 +262,11 @@ export default async function EditStrategyPage({
               a page load. */}
           <input type="hidden" name="compile" value="1" />
 
-          <button type="submit" className="rounded border px-4 py-2 text-sm">
+          {/* Secondary on purpose. Compiling is effect-free and the review it
+              produces carries the only primary in this flow — DT-0002's Apply.
+              Two accent buttons in one journey would put the same weight on
+              looking and on doing. */}
+          <button type="submit" className={BUTTON_SECONDARY}>
             Compile — see what this would do, without doing it
           </button>
         </form>
@@ -267,18 +325,17 @@ export default async function EditStrategyPage({
         ? ['Only the tagline changes']
         : ['Only the sections change'];
 
-  // Held in one place: it is both what is compiled and what `describeApply`
-  // digests to check the screen still matches the plan.
-  const intent = {
-    operation: 'UPDATE' as const,
+  // Held in one place — the domain builder the conformance guard also calls,
+  // so what is checked is what is sent. It is both what is compiled and what
+  // `describeApply` digests to check the screen still matches the plan.
+  const intent = updateCompileIntent({
     strategyId: id,
     expectedRevision: strategy.revision,
     intentSummary,
     assumptions,
-    coinSelection: { mode: 'ranked' as const, limit: 9 },
     tagline,
     sections,
-  };
+  });
 
   const compiled = await app.compilePlan.execute({ ...user.authority, request: intent });
 
@@ -288,8 +345,11 @@ export default async function EditStrategyPage({
         <h1 className="text-2xl font-medium text-text-primary">
           BattleGrid could not compile this change to {strategy.name}
         </h1>
-        <p role="alert" className="text-sm">{compiled.reason}</p>
-        <p className="text-sm">Nothing was changed.</p>
+        <CarriedProblem problem={problem} />
+        <p role="alert" className="rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary">{compiled.reason}</p>
+        {/* The absence of effect, visually committed — quiet, never danger's
+            palette (DT-0015, system principle on absence). */}
+        <p className="rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-sm text-text-primary">Nothing was changed.</p>
         <p className="flex flex-wrap gap-3 text-sm">
           {/* Both, and in this order. The reason usually names what to change,
               so the first thing offered is another attempt. */}
@@ -314,6 +374,7 @@ export default async function EditStrategyPage({
     return (
       <main className="mx-auto max-w-2xl space-y-6 p-6">
         <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
+        <CarriedProblem problem={problem} />
         {/* The review still renders — the user should see what was compiled even
             when it cannot be applied, because the reason usually names what to
             change. */}
@@ -331,12 +392,15 @@ export default async function EditStrategyPage({
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6">
       <h1 className="text-2xl font-medium text-text-primary">Review: {strategy.name}</h1>
+      {/* A refused apply lands back on this recompiled review, reason first. */}
+      <CarriedProblem problem={problem} />
       <PlanReviewPanel
         review={compiled.review}
         action={apply}
         // The compose form, which is what "change it" means. Without compile in
         // the query it renders the section checklist at the strategy's current state.
         changeIt={`/strategies/${strategy.id}/edit`}
+        carry={{ tagline, sections: selectedKeys, unknownSections: unknownSectionParams }}
         confirmation={{
           strategyId: id,
           confirmationToken: proposal.proposal.confirmationToken,
@@ -350,33 +414,6 @@ export default async function EditStrategyPage({
   );
 }
 
-/**
- * Apply the plan that was reviewed — not a freshly compiled one.
- *
- * The compiled plan travels through the form rather than being recompiled here.
- * Recompiling would produce a plan with the same intent digest and possibly
- * different contents, and "what is applied is what was reviewed" is a
- * requirement rather than an aspiration.
- *
- * Carrying it through the browser is safe because it is not trusted: the
- * confirmation is bound to `strategy:<id>#<intentDigest>`, so a plan altered in
- * transit produces a different digest, the confirmation fails to consume, and
- * the write is refused before it reaches BattleGrid.
- */
-export async function apply(formData: FormData) {
-  'use server';
-  const { app, user } = await acting();
-  if (user.kind === 'not-connected') redirect('/connect');
-
-  const strategyId = requiredText(formData, 'strategyId');
-  await app.applyPlan.execute({
-    ...user.authority,
-    strategyId,
-    plan: compiledPlan(formData, 'plan'),
-    confirmationToken: requiredText(formData, 'confirmationToken'),
-  });
-  redirect('/strategies');
-}
 
 function toArray(val: string | string[] | undefined): string[] {
   if (!val) return [];

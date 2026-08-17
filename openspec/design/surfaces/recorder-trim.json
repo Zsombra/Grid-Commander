@@ -1,0 +1,372 @@
+{
+  "id": "recorder-trim",
+  "title": "Trim the signal record — choose, confirm, receipt",
+  "route": "/recorder/trim",
+  "capability": "signal-recording",
+  "status": "needs-redesign",
+  "generated_at_commit": "6441015",
+  "source_files": [
+    "app/(app)/recorder/trim/actions.ts",
+    "app/(app)/recorder/trim/page.tsx",
+    "src/presentation/components/carried-problem.tsx",
+    "src/presentation/components/control.ts",
+    "src/presentation/components/perform-button.tsx",
+    "src/presentation/components/signal-record.tsx",
+    "src/presentation/require-connection.tsx"
+  ],
+  "viewports": [
+    "mobile",
+    "desktop"
+  ],
+  "data": [
+    {
+      "name": "described",
+      "shape": "{ kind: 'nothing-to-trim', reason } | { proposal: { before, preview: { runs }, consequence, confirmationToken } }",
+      "source": "app.describeTrimRecord.execute — renders as often as the page does and deletes nothing; only the submitted form performs (openspec/specs/signal-recording/spec.md:243-245, 'A describe is never a perform')"
+    },
+    {
+      "name": "before",
+      "shape": "string | undefined — YYYY-MM-DD from the date picker; anything else renders the unreadable-date state",
+      "source": "searchParams — the GET form's boundary choice"
+    },
+    {
+      "name": "problem",
+      "shape": "string | undefined",
+      "source": "searchParams — the refusal reason a rejected performTrim redirected back with"
+    },
+    {
+      "name": "trimmed",
+      "shape": "string | undefined",
+      "source": "searchParams — the receipt sentence a completed trim redirected here with"
+    }
+  ],
+  "components": [
+    {
+      "id": "trim-record-page",
+      "role": "container",
+      "purpose": "Forget part of the record deliberately: choose a boundary, read what would become unknowable, confirm it, get the receipt.",
+      "states": [
+        "choose-boundary",
+        "choose-boundary-unreadable-date",
+        "describe-confirm",
+        "describe-confirm-with-problem",
+        "nothing-to-trim",
+        "receipt",
+        "not-connected"
+      ],
+      "data": [
+        "described",
+        "before",
+        "problem",
+        "trimmed",
+        "coverage"
+      ],
+      "actions": [],
+      "current_implementation": "max-w-2xl centered column, space-y-4, p-6 — the same skeleton as every confirmation page. Server-rendered page whose only client code is PerformButton (submit-in-flight); every state change is a full navigation. Which of the four bodies renders is decided in order: receipt (trimmed param present), choose-boundary (no readable date, with or without a rejected one to report), nothing-to-trim, then describe-confirm. DT-0014 has landed: every message block on this page now wears a house role rather than the anonymous border it was built with — consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim — so the page no longer states four different kinds of fact in one voice.",
+      "constraints": [
+        "The trim is a describe→confirm→perform ceremony — openspec/specs/signal-recording/spec.md:203-209 ('through the same describe→confirm→perform ceremony as its other destructive acts'). A design must not collapse choosing, confirming, and performing into fewer steps.",
+        "The description renders before anything is offered — openspec/specs/signal-recording/spec.md:219-224 ('WHEN an operator chooses a boundary date THEN the page states the runs, captures, failed attempts, coins and date span that would go'). The consequence must stay readable before the button that performs.",
+        "Rendering the description deletes nothing however many times it renders — openspec/specs/signal-recording/spec.md:243-245. Choosing a boundary must remain a GET navigation, never a POST.",
+        "The page renders whole from one server round trip and holds no client state — the only client code is PerformButton ('use client', useFormStatus), which reports that a submit is in flight and nothing else. A design requiring further client-side interactivity changes behavior and is requires-spec-change.",
+        "This page has no `?authority=` branch and needs none: the trim is a local record operation keyed on userId, and `TrimRecordResult` is `trimmed | refused` with no authority-lost arm. The `<AuthorityLost>` page the three agent ceremonies gained in `a-lost-authority-is-not-a-refusal` does not apply here — a design must not invent one for symmetry.",
+        "DT-0014's four roles are the page's grammar and all four are implemented: consequence for what would go, danger for a rejected date, notice for the receipt, quiet for nothing-to-trim. A ticket that gives two of them the same treatment reverts the ticket."
+      ],
+      "children": [
+        "boundary",
+        "problem",
+        "consequence",
+        "perform-trim",
+        "nothing-to-trim",
+        "receipt",
+        "not-connected"
+      ]
+    },
+    {
+      "id": "boundary",
+      "role": "input",
+      "purpose": "Choose the date before which the record is forgotten — a question about the record, not yet an act.",
+      "states": [
+        "default",
+        "unreadable-date"
+      ],
+      "data": [
+        "before"
+      ],
+      "actions": [
+        {
+          "id": "describe",
+          "effect": "GET ?before=YYYY-MM-DD — navigates to the description of what that boundary would take. Deletes nothing."
+        },
+        {
+          "id": "leave",
+          "effect": "Anchor to /recorder without submitting anything"
+        }
+      ],
+      "current_implementation": "method=get form, flex flex-wrap items-end gap-3. A LABEL-wrapped native date input wearing CONTROL (required), a BUTTON_PRIMARY submit 'Describe what would go', and a BUTTON_SECONDARY anchor 'Leave the record alone'. In the unreadable-date state a role=alert paragraph above the form quotes the unparsable value and points back at the picker; since DT-0014 it wears danger — rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary — because a rejected input is a bounced attempt, not an advisory. The form and both controls were untouched by that ticket.",
+      "constraints": [
+        "The form must stay method=get — choosing a boundary is a question, and the describe it navigates to is effect-free by spec (openspec/specs/signal-recording/spec.md:243-245). A POST here would present choosing as committing.",
+        "Control and label treatments come from the CONTROL and LABEL constants in control.ts, shared product-wide — not a per-page className.",
+        "The unreadable-date paragraph keeps role=alert.",
+        "The submit label must keep saying what it does and does not do — 'Describe what would go' is a look, not a delete; a label that reads like the destructive act would collapse the ceremony's first step."
+      ],
+      "children": []
+    },
+    {
+      "id": "problem",
+      "role": "feedback",
+      "purpose": "Show the refusal that bounced a submitted trim back to the person who clicked it.",
+      "states": [
+        "present",
+        "absent"
+      ],
+      "data": [
+        "problem"
+      ],
+      "actions": [],
+      "current_implementation": "The shared `CarriedProblem` component (src/presentation/components/carried-problem.tsx). CHANGED since the last survey: the inline `{problem ? … : null}` copy this page held is gone and the component is imported — the two-spellings risk this manifest flagged is closed, and `tests/agent/refusals-reach-the-operator.test.ts` now fails any file that hand-rolls the paragraph again. The treatment is unchanged, DT-0004's danger: rounded-gc-2 border border-danger-default bg-danger-subtle p-4 text-sm text-text-primary with role=alert, opening with a semibold 'Refused: ' prefix, returning null when there is no problem. Untouched by DT-0014, which left it alone by name. What did NOT change is where it is mounted: the describe-confirm branch only, which is where `performTrim` always bounces to (the redirect carries `before=` back, so the describe re-runs). The other three branches still mount nothing.",
+      "constraints": [
+        "role=alert must survive.",
+        "The refusal reason is the platform/domain's wording for why nothing was deleted (openspec/specs/signal-recording/spec.md:226-229, 'nothing is deleted and the refusal says why') and must be shown, not summarized.",
+        "This is a failed attempt, not advisory — it takes a stronger role than the nothing-to-trim answer and shares its palette with nothing else on the page.",
+        "Shared by eleven pages now (agent deploy/undeploy/rebind/archive/reactivate, strategy archive/restore/fork, both /pending surfaces, recorder trim) — restyle it in the component, never per page. A ticket that restyles the bounced-write banner reaches all eleven at once, which is the point of the extraction.",
+        "Rendering nothing when there is no problem is load-bearing — a design must not give it a reserved empty slot or a placeholder.",
+        "The 'Refused: ' prefix is part of the treatment — a design may restyle the prefix but must not drop the naming of the state."
+      ],
+      "children": []
+    },
+    {
+      "id": "consequence",
+      "role": "feedback",
+      "purpose": "State what becomes unknowable, before the button that makes it so.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "described"
+      ],
+      "actions": [],
+      "current_implementation": "role=alert paragraph, rounded-gc-2 border border-consequence-border bg-consequence-subtle p-4 text-sm text-text-primary — the domain's consequence sentence verbatim. DT-0014 moved it off the anonymous border it was built with onto the house consequence role, the one plan-review and the agent archive page already wore; it is the heaviest fact on the page and now reads as such.",
+      "constraints": [
+        "The text is the describe's verbatim consequence sentence — the spec makes its content binding (openspec/specs/signal-recording/spec.md:207-209: 'The description SHALL state what becomes unknowable: how many runs, captures and failed attempts go, across which coins, spanning which dates, and that nothing trimmed can ever be re-recorded'). A design must not paraphrase, truncate, or collapse it behind a disclosure.",
+        "Consequence outranks everything on a screen (system.json principle) — this block must not become lighter than the buttons below it.",
+        "role=alert must survive."
+      ],
+      "children": []
+    },
+    {
+      "id": "perform-trim",
+      "role": "container",
+      "purpose": "Carry the trim decision: one committing button, one visible way out.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "described"
+      ],
+      "actions": [
+        {
+          "id": "performTrim",
+          "effect": "POSTs the server action with before, describedRuns, confirmationToken; success redirects to the receipt state, refusal redirects back here with ?problem="
+        }
+      ],
+      "current_implementation": "flex flex-wrap gap-3 form; three hidden inputs carry the confirmation binding (before as ISO instant, describedRuns, confirmationToken). Still a wrapping row with no mobile full-width stack: DT-0016/0017/0018 gave the three agent ceremonies the flex-col…tablet:flex-row treatment and did not reach this page, so the product's confirmation rows are now two shapes rather than one. No pending/loading state between click and redirect — the same gap filed as #153 for the archive page.",
+      "constraints": [
+        "The hidden binding (before, describedRuns, confirmationToken) is the confirmation ceremony — openspec/specs/signal-recording/spec.md:215-217 ('the confirmation SHALL be bound to the boundary and the described extent, so agreement to one trim cannot authorise a different one'). The form must keep exactly one submit path.",
+        "A submit without the minted confirmation, or with one minted for a different boundary or extent, deletes nothing (openspec/specs/signal-recording/spec.md:226-229) — a design must not add a second control that could bypass the binding.",
+        "Cancel must remain a visible peer of the submit, never a text link beneath it (DT-0002 ruling, restated in control.ts)."
+      ],
+      "children": [
+        "button-primary",
+        "button-secondary"
+      ]
+    },
+    {
+      "id": "button-primary",
+      "role": "action",
+      "purpose": "Commit the trim. Named with the described extent: 'Trim <N> runs permanently'.",
+      "states": [
+        "default",
+        "hover",
+        "focused",
+        "active",
+        "loading"
+      ],
+      "data": [
+        "described"
+      ],
+      "actions": [
+        {
+          "id": "submit",
+          "effect": "Runs performTrim"
+        }
+      ],
+      "current_implementation": "BUTTON_PRIMARY constant from control.ts — accent.default bg, min-h-control (44px), rounded-gc-2, hover to accent.hover over duration-fast, active holds hover at duration-instant. The label carries the run count and the word 'permanently', pluralized. DT-0022 added the primitive's `disabled` treatment to this constant — bg.sunken ground, text.disabled label, border.subtle edge and cursor not-allowed, stated rather than an opacity. DT-0022 defined the primitive's `disabled` treatment on this constant, but **nothing in the product enters it** — so it is not listed as a state of this surface. system.json declares it and DT-0022 styles it; a surface claiming a state it cannot reach is the same fiction DT-0003 refused for the ghost and danger variants.",
+      "constraints": [
+        "Deliberately NOT danger-styled — DT-0002's ruling, restated in control.ts: trimming after reading the description is the legitimate action; the weight belongs on the consequence block. A design ticket restyling this as danger contradicts a decided ruling.",
+        "The label must keep the described run count and 'permanently' — it is the extent the confirmation is bound to, said back at the moment of commitment.",
+        "Styling changes go through the BUTTON_PRIMARY constant in control.ts, shared by every committing submit in the product — not a per-page className.",
+        "44px minimum tap target (system.json principle).",
+        "Focus ring comes from the one global rule in globals.css — do not add a per-element ring."
+      ],
+      "children": []
+    },
+    {
+      "id": "button-secondary",
+      "role": "navigation",
+      "purpose": "Walk away with the record whole.",
+      "states": [
+        "default",
+        "hover",
+        "focused"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "navigate",
+          "effect": "Returns to /recorder without submitting anything"
+        }
+      ],
+      "current_implementation": "An anchor wearing BUTTON_SECONDARY — inline-flex centering, min-h-control, hover to border-border-strong + bg-bg-sunken over duration-fast, active holds it at duration-instant. Two wordings on this page: 'Leave the record alone' beside the boundary form, 'Keep the record whole' beside the perform form.",
+      "constraints": [
+        "Must remain an anchor (pure navigation, no form participation) and must remain a visible peer of the submit.",
+        "Styling changes go through the BUTTON_SECONDARY constant in control.ts.",
+        "44px minimum tap target (system.json principle)."
+      ],
+      "children": []
+    },
+    {
+      "id": "nothing-to-trim",
+      "role": "feedback",
+      "purpose": "Say that the chosen boundary would take nothing, and offer the two sensible next moves.",
+      "states": [
+        "default"
+      ],
+      "data": [
+        "described"
+      ],
+      "actions": [
+        {
+          "id": "chooseAnother",
+          "effect": "Anchor back to /recorder/trim to pick a different date"
+        },
+        {
+          "id": "back",
+          "effect": "Anchor to /recorder"
+        }
+      ],
+      "current_implementation": "h1 'Nothing to trim', the describe's reason as a role=status paragraph, then two underlined text links separated by a middot: 'Choose a different date' and 'Back to the record'. Since DT-0014 the reason wears quiet — rounded-gc-2 border border-quiet-border bg-quiet-subtle p-4 text-sm text-text-primary — rather than being a bare text-sm line: this is the page's absence-of-effect sentence, and the system principle gives absence the same visual commitment as a warning without letting it near danger's palette. The two links deliberately stayed text links rather than becoming targets, which is the precedent DT-0015 then cited for the strategy editor's two-choice rows.",
+      "constraints": [
+        "role=status must survive — this is an answer, not an error.",
+        "Both links must stay, and in this order: another attempt first, the way out second.",
+        "Quiet, never danger — the boundary took nothing, which is a fact about the record and not a failure of the request."
+      ],
+      "children": []
+    },
+    {
+      "id": "receipt",
+      "role": "feedback",
+      "purpose": "State what the record holds now, after a trim — read from the record, never from the address.",
+      "states": [
+        "coverage",
+        "never-recorded",
+        "unreadable"
+      ],
+      "data": [
+        "coverage"
+      ],
+      "actions": [
+        {
+          "id": "back",
+          "effect": "Anchor to /recorder, which renders the same coverage read"
+        }
+      ],
+      "current_implementation": "h1 'Record trimmed', then a role=status notice paragraph saying the reading is taken as the page renders and is not a copy of what the trim reported, then <RecordCoverage> — the same component /recorder uses, carrying its own three arms (per-series rows with counts and gaps / 'Recording has not started.' / 'The record could not be read.' with the reason and the does-not-mean-empty sentence). Then an underlined 'Back to the record' link. Since DT-0014 the notice paragraph wears rounded-gc-2 border border-notice-border bg-notice-subtle.",
+      "constraints": [
+        "No figure on this page may come from the query string. The ?trimmed= parameter is a marker only — it carries no counts, and rendering one from it would restore the forgeable receipt that `the-receipt-states-what-remains` removed.",
+        "The three arms of RecordCoverage may not borrow each other's wording: 'could not be read' must never render as 'nothing is recorded'.",
+        "Server-rendered and holds no client state; every state change is a full navigation."
+      ],
+      "children": []
+    },
+    {
+      "id": "not-connected",
+      "role": "feedback",
+      "purpose": "Turn away a request without authority, with the one remedy that works: connect.",
+      "states": [
+        "default"
+      ],
+      "data": [],
+      "actions": [
+        {
+          "id": "connect",
+          "effect": "Navigates to /connect"
+        }
+      ],
+      "current_implementation": "Shared NotConnected component (require-connection.tsx): h1 + message, connect link an anchor wearing BUTTON_SECONDARY (DT-0006) at the 44px floor. Used by every authenticated page, so this treatment is inherited everywhere.",
+      "constraints": [
+        "Every no-authority cause renders this same page by design (see design W-C) — a design must not invent per-cause variants."
+      ],
+      "children": []
+    }
+  ],
+  "flows": [
+    {
+      "name": "Trim the record",
+      "steps": [
+        "arrive from the recorder",
+        "pick a boundary date, 'Describe what would go'",
+        "read the consequence — runs, captures, failures, what becomes unknowable",
+        "submit 'Trim N runs permanently'",
+        "receipt states what was removed",
+        "back to the record, coverage begins where the trim left it"
+      ]
+    },
+    {
+      "name": "The boundary takes nothing",
+      "steps": [
+        "pick a date before the record begins",
+        "'Nothing to trim' with the reason",
+        "choose a different date or go back"
+      ]
+    },
+    {
+      "name": "The trim is refused after submit",
+      "steps": [
+        "submit",
+        "confirmation fails to consume (boundary or extent moved)",
+        "redirected back to the description with ?problem=",
+        "problem banner states the reason above the still-usable form"
+      ]
+    },
+    {
+      "name": "Walk away",
+      "steps": [
+        "click 'Keep the record whole'",
+        "back on /recorder, nothing changed"
+      ]
+    }
+  ],
+  "accessibility": {
+    "landmarks": [
+      "main",
+      "form"
+    ],
+    "focus_order": [
+      "boundary date input",
+      "describe button",
+      "leave-alone link",
+      "(after describe) trim button",
+      "keep-whole link"
+    ],
+    "notes": "problem, consequence, and the unreadable-date paragraph carry role=alert; the receipt and nothing-to-trim reasons carry role=status. Since DT-0014 those roles are also carried visually — danger, consequence, notice, quiet — so the four kinds of fact are no longer told apart by their ARIA role alone. Every state change is a full navigation — the only client code is PerformButton, reporting submit-in-flight — so each state is reached in normal document order rather than a live region."
+  },
+  "source_digest": {
+    "app/(app)/recorder/trim/actions.ts": "sha256:6010a94d3db12924a50f496f24d669f81b9ec1decd8b49bc7e628da7765620ae",
+    "app/(app)/recorder/trim/page.tsx": "sha256:9a5775abdd074f9e9a769380bdc0a4232e581c78e0dfcdefb494955c7ec2f959",
+    "src/presentation/components/carried-problem.tsx": "sha256:5dba5198e7c52d662856a75eaa3aad8bb91558703552cbbd91f52efc5e64d83f",
+    "src/presentation/components/control.ts": "sha256:7d56dd9b8650e693478a4dc0e5852f735da753b025f67187b444015737698253",
+    "src/presentation/components/perform-button.tsx": "sha256:cc2c702c7df3aed972fff10c3e30ba04c59af7697635159255dcf0233db93cfa",
+    "src/presentation/components/signal-record.tsx": "sha256:3b87067fb5bf9456459524d6a7e7cf9db40108f0b2c0e58b4ca76f5fad51161e",
+    "src/presentation/require-connection.tsx": "sha256:72c784f4d1182cf75b5c40fab46098aa789047eb60fb33c2a8c3d548187d9637"
+  }
+}

@@ -335,6 +335,26 @@ def _(p, t):
     p.backlog(change="a-change", status="open")
 
 
+@case("backlog_not_mirrored", "warning")
+def _(p, t):
+    # Created on the day the mirror rule landed, so it is in scope for it.
+    p.backlog(created="2026-08-10", github="")
+
+
+@case("backlog_github_malformed")
+def _(p, t):
+    # A URL rather than the bare number. Deliberate: a URL carries the repo,
+    # and an item that outlives a move would point at the old one.
+    p.backlog(created="2026-08-10", github="https://github.com/o/r/issues/87")
+
+
+@case("backlog_optout_unexplained", "warning")
+def _(p, t):
+    # Opting out is a claim, and a claim with no stated reason is silence.
+    p.backlog(created="2026-08-10", github="none",
+              body="# An item\n\n## What\n\nA thing, with no reason for the opt-out.\n")
+
+
 @case("backlog_in_progress_without_change", "warning")
 def _(p, t):
     p.backlog(status="in-progress", change="")
@@ -417,6 +437,14 @@ def _(p, t):
                            "states": ["default"]}])
 
 
+@case("design_surface_sources_unchecked", "info")
+def _(p, t):
+    p.write("app/views/panel.html.erb", "<h1>Rows</h1>\n")
+    p.surface(source_files=["app/views/panel.html.erb"],
+              components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
+                           "states": ["default"]}])
+
+
 @case("design_component_not_found", "warning")
 def _(p, t):
     p.write("src/Panel.tsx", "export const Panel = () => null;\n")
@@ -427,14 +455,36 @@ def _(p, t):
 
 @case("design_surface_stale", "warning")
 def _(p, t):
-    if not git_available():
-        raise unittest.SkipTest("git is not installed")
+    # No git. Freshness is decided by content now, which is the point: the
+    # commit-based check could not answer for a manifest whose commit had been
+    # squashed away, and half of them had been.
     p.write("src/Panel.tsx", "export const Panel = () => null;\n")
-    first = p.git_init_and_commit("first")
+    digest = openspec.file_digests(p.root, ["src/Panel.tsx"])
     p.write("src/Panel.tsx", "export const Panel = () => 'changed';\n")
-    p.git_init_and_commit("second")
-    p.surface(source_files=["src/Panel.tsx"], generated_at_commit=first,
+    p.surface(source_files=["src/Panel.tsx"], source_digest=digest,
               components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
+                           "states": ["default"]}])
+
+
+@case("design_surface_never_verified", "warning")
+def _(p, t):
+    # A manifest predating digests. Neither fresh nor stale — both would be
+    # claims about a comparison that never happened.
+    p.write("src/Panel.tsx", "export const Panel = () => null;\n")
+    p.surface(source_files=["src/Panel.tsx"],
+              components=[{"id": "panel", "role": "display", "purpose": "Shows rows",
+                           "states": ["default"]}])
+
+
+@case("design_surface_denies_client_js", "warning")
+def _(p, t):
+    # The denial and the directive in one manifest: prose the digest check
+    # carries forward unread, contradicted by the head of a listed source.
+    p.write("src/Perform.tsx", "'use client';\nexport const Perform = () => null;\n")
+    digest = openspec.file_digests(p.root, ["src/Perform.tsx"])
+    p.surface(source_files=["src/Perform.tsx"], source_digest=digest,
+              notes="No client JS: every state change is a full navigation.",
+              components=[{"id": "perform", "role": "display", "purpose": "Submits things",
                            "states": ["default"]}])
 
 
@@ -483,6 +533,15 @@ def _(p, t):
 @case("design_orphan_surface", "info")
 def _(p, t):
     p.surface(status="functional")
+
+
+@case("design_routes_uncovered", "info")
+def _(p, t):
+    # One covered route, one not: the diagnostic is about the difference, so
+    # the fixture carries both and the covered one must not be what fires.
+    p.surface(status="functional", route="/covered")
+    p.write("app/covered/page.tsx", "export default function P() { return null; }\n")
+    p.write("app/things/page.tsx", "export default function P() { return null; }\n")
 
 
 # --------------------------------------------------------------------------
@@ -671,6 +730,48 @@ def emitted_codes() -> tuple:
         else:
             dynamic += 1
     return literal, dynamic
+
+
+class MirrorRuleTest(ProjectTestCase):
+    """The mirror rule's shape, beyond "the code fires".
+
+    A fixture proves a code *can* fire. It does not prove the rule accepts what
+    it is supposed to accept — and a rule that fires on everything is routed
+    around within a week. Both directions are asserted here for the reason
+    GitHub #87 records: ten of sixteen architecture guards passed green with
+    their matcher dead, because nothing ever fed them a case they were
+    supposed to accept *or* reject.
+    """
+
+    def test_accepts_a_linked_item(self):
+        self.project.backlog(created="2026-08-10", github="87")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_github_malformed")
+
+    def test_accepts_an_explained_opt_out(self):
+        self.project.backlog(
+            created="2026-08-10", github="none",
+            body="# An item\n\n## What\n\nPoints at another item; no GitHub issue of its own.\n")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_optout_unexplained")
+
+    def test_flags_an_old_item_too(self):
+        # No date exemption. There was one while twenty-eight items predated
+        # the rule; they were backfilled on 2026-08-10 and the scoping came
+        # out, because the only case it still covered was the one that most
+        # needs a mirror — an old item reopened later.
+        self.project.backlog(slug="an-old-item", created="2026-07-27", github="")
+        self.assertCode(self.project.run(*VALIDATE), "backlog_not_mirrored", "warning")
+
+    def test_flags_an_item_with_no_created_date(self):
+        # A malformed item is caught rather than exempted — the direction a
+        # date comparison used to get wrong by treating "" as very old.
+        self.project.backlog(created="", github="")
+        self.assertCode(self.project.run(*VALIDATE), "backlog_not_mirrored", "warning")
+
+    def test_does_not_flag_a_closed_item(self):
+        # A finished item needs no mirror; the issue it had is closed with it.
+        self.project.backlog(created="2026-08-10", github="", status="done")
+        self.assertNoCode(self.project.run(*VALIDATE), "backlog_not_mirrored")
 
 
 class CodeCoverageTest(unittest.TestCase):

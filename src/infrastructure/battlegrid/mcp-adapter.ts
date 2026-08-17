@@ -5,7 +5,7 @@ import type { HeldScopes } from '@/domain/connection/held-scopes.js';
 import type { Scope } from '@/domain/connection/scope.js';
 import { isScope } from '@/domain/connection/scope.js';
 import type { Remedy } from '@/domain/connection/remedy.js';
-import { ConnectionRevokedError } from '@/domain/errors.js';
+import { ConnectionRevokedError, PlatformUnavailableError } from '@/domain/errors.js';
 import type {
   BattleGridPort,
   TokenGrant,
@@ -234,7 +234,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ token, client_id: this.deps.config.clientId }),
     });
-    if (!res.ok) throw new Error(`revocation failed with ${res.status}`);
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
   }
 
   async discoverTools(accessToken: string): Promise<readonly DiscoveredTool[]> {
@@ -251,7 +251,7 @@ export class McpBattleGridAdapter implements BattleGridPort {
     const view = await this.capabilities.load(request.accessToken);
     const classification = view.classify(request.tool);
 
-    const heldScopes = await this.scopesFor(request.userId);
+    const heldScopes = await this.scopesFor(request.userId, request.grantedScopes);
 
     const auditEntryId = await beginGuardedCall(
       { audit: this.deps.audit, confirmations: this.deps.confirmations, heldScopes },
@@ -291,6 +291,55 @@ export class McpBattleGridAdapter implements BattleGridPort {
     }
   }
 
+  /**
+   * The server version the platform's `initialize` handshake names, or null.
+   *
+   * The one consumer is the signal recorder, which stamps each capture run
+   * with the generation that answered — the platform redeploys often, changes
+   * semantics without changing its tool count, and a longitudinal record that
+   * cannot name its generation cannot be trusted across one.
+   *
+   * Null-on-any-failure is the contract, not error-swallowing: a version the
+   * handshake did not yield is recorded as unknown, and a capture must never
+   * fail because this metadata read hiccuped. The one live reader of this
+   * value before now (`tests/live/surface-freshness.test.ts`) parses the
+   * same both-encodings answer — plain JSON or an SSE frame — and so does
+   * this.
+   */
+  async serverVersion(accessToken: string): Promise<string | null> {
+    try {
+      const res = await this.deps.fetch(this.deps.config.mcpUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'grid-commander', version: '1.0.0' },
+          },
+        }),
+      });
+      if (!res.ok) return null;
+      const raw = await res.text();
+      const frame = raw.startsWith('event:')
+        ? (raw.split('\n').find((l) => l.startsWith('data: ')) ?? '').slice('data: '.length)
+        : raw;
+      const info = (JSON.parse(frame) as { result?: { serverInfo?: Record<string, unknown> } })
+        .result?.serverInfo;
+      const version = info?.['version'];
+      return typeof version === 'string' && version.length > 0 ? version : null;
+    } catch {
+      return null;
+    }
+  }
+
   // -- internals ---------------------------------------------------------
 
   /**
@@ -306,7 +355,23 @@ export class McpBattleGridAdapter implements BattleGridPort {
    * it stopped being true. See PG-004: whatever answers this must be entitled to,
    * never a convenient constant.
    */
-  private async scopesFor(userId: string): Promise<readonly Scope[]> {
+  /**
+   * The authority this call is measured against.
+   *
+   * A caller may supply it, and exactly one does: the account read that
+   * establishes which account an authorization grant acts as. It runs before a
+   * connection is stored, so there is no row to read the scopes from — see
+   * `ToolCallRequest.grantedScopes`.
+   *
+   * The lookup stays the default rather than the fallback: an operation
+   * performed by a connected user must be measured against what their
+   * connection actually holds, never against something a caller asserted.
+   */
+  private async scopesFor(
+    userId: string,
+    granted?: readonly Scope[] | undefined,
+  ): Promise<readonly Scope[]> {
+    if (granted) return granted;
     return this.deps.heldScopes.forUser(userId);
   }
 
@@ -349,7 +414,9 @@ export class McpBattleGridAdapter implements BattleGridPort {
     if (res.status === 401 || res.status === 403) {
       throw new ConnectionRevokedError(this.deps.remedy);
     }
-    if (!res.ok) throw new Error(`${method} failed with ${res.status}`);
+    // The sentence an operator reads, not the status line that produced it.
+    // `unreadable(err)` carries `err.message` through to every surface.
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
     const body = (await res.json()) as JsonRpcResponse;
     if (body.error) throw new Error(body.error.message);
     return body.result;
@@ -361,25 +428,26 @@ export class McpBattleGridAdapter implements BattleGridPort {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(body),
     });
-    if (!res.ok) throw new Error(`token request failed with ${res.status}`);
+    if (!res.ok) throw new PlatformUnavailableError(res.status);
     const json = (await res.json()) as {
       access_token: string;
       refresh_token?: string;
       expires_in?: number;
       scope?: string;
-      sub?: string;
     };
 
     const scopes = (json.scope ?? '').split(' ').filter(isScope);
 
-    // A grant with no subject cannot establish an identity. Defaulting it to ''
-    // would make every such grant collide on the same key, and the second user
-    // to connect would be recognised as the first — landing in a stranger's
-    // workspace with a stranger's BattleGrid connection. Refuse instead.
-    if (!json.sub) {
-      throw new Error('BattleGrid returned a grant with no subject; cannot establish identity');
-    }
-
+    // No identity is read here, and none is expected. BattleGrid is plain OAuth
+    // 2.1 — no OpenID configuration, no userinfo endpoint — so `sub` is not a
+    // field it omits, it is a field its authorization server never had.
+    //
+    // This function used to require one and throw without it, which refused
+    // every grant this product was ever issued. The reasoning behind that throw
+    // was sound and now lives beside the refusal it justifies, in
+    // `CompleteConnectionCommand`: an unidentified connection must not be stored
+    // under a placeholder key. What was wrong was only asking this layer, which
+    // is handed a token response and has no way to find out.
     return {
       accessToken: json.access_token,
       refreshToken: json.refresh_token ?? null,
@@ -387,7 +455,6 @@ export class McpBattleGridAdapter implements BattleGridPort {
       // fallback rather than this layer inventing a comfortable number.
       expiresIn: json.expires_in,
       scopes,
-      subject: json.sub,
     };
   }
 }
