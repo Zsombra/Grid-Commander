@@ -2,7 +2,7 @@
 id: the-docker-stack-is-untracked
 title: The whole product runs on Docker but the compose file that does it is untracked
 type: debt
-status: open
+status: done
 priority: p2
 created: 2026-08-17
 updated: 2026-08-17
@@ -67,3 +67,19 @@ plus a `.env.example` note on `POSTGRES_*`. No behaviour change, no spec delta.
 
 The `Dockerfile` already states the intended commands in its header comment. This
 item is only about the missing compose file, not about redesigning any of it.
+
+## Resolved — 2026-08-17
+
+Landed as the `lite` change `the-stack-runs-from-one-command`. `docker-compose.yml` is
+tracked at the repository root with all three defect comments intact, and
+`.env.example` documents the `POSTGRES_*` variables it reads plus the
+two-`DATABASE_URL` trap that once pointed the app at the wrong server.
+
+Verified rather than assumed: `docker compose config` valid; the volume mount is an
+**ancestor** of the image's own `PGDATA` (`/var/lib/postgresql` vs
+`/var/lib/postgresql/18/docker`), with `PG_VERSION 18` read back off the volume; and
+`compose ps` confirms the running stack is the one this file declares.
+
+**Still out of scope**: running the recorder as a compose service. The runtime image
+copies `.next/standalone`, `drizzle` and two `tools/` scripts — not `bin/` — so that
+needs a `Dockerfile` change. See [[the-consolidated-database-diverges-from-native]].

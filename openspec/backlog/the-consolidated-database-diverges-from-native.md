@@ -2,7 +2,7 @@
 id: the-consolidated-database-diverges-from-native
 title: The signal record was copied into Docker but a host process still writes to the native database
 type: risk
-status: open
+status: done
 priority: p2
 created: 2026-08-17
 updated: 2026-08-17
@@ -69,3 +69,45 @@ Unrelated to `the-port-knows-what-costs-money`; found while running its producti
 gate and recorded there as note 4. The near-miss in that gate is adjacent and worth
 reading with this: an inherited `DATABASE_URL` pointed the truncating `test:db` suite
 at the live native database.
+
+## Resolved — 2026-08-17
+
+**The writer was found**: a Windows scheduled task `GridCommanderRecorder`, running
+hourly (`PT1H`) from `C:/Users/rafae/grid-commander/record.ps1` — a **separate checkout
+dated 2026-08-11** — with `DATABASE_URL` hardcoded to native 5432. A user-scope
+`DATABASE_URL` environment variable pointed there too.
+
+**The divergence was bidirectional**, so no wholesale dump could have fixed it:
+
+| table | native | docker | direction |
+|---|---|---|---|
+| `signal_readings` | 167,496 | 165,816 | native ahead by 1,680 |
+| `signal_captures` | 2,020 | 2,000 | native ahead by 20 |
+| `signal_capture_runs` | 104 | 103 | native ahead by 1 |
+| `audit_entries` | 3,193 | 3,708 | **docker** ahead by 515 |
+
+Native was also at **4 migrations against Docker's 6**, so restoring native over the
+container would have reverted the schema.
+
+**Fixed by row-level sync, not replacement.** Each table exported to CSV, staged, then
+`INSERT ... ON CONFLICT DO NOTHING` with **no conflict target**, so every unique
+constraint was respected rather than only the primary key. The signal tables had
+identical columns; `audit_entries` was inserted with an explicit column list so
+native's 22 rows landed with `platform_destructive_hint` NULL — correct, since the
+platform's claim was not recorded for them.
+
+**Then the recorder was repointed at 5433** and run through its own scheduled task:
+
+```
+native  167,496 -> 167,496   (frozen)
+docker  167,496 -> 169,176   (+1,680, one new capture run)
+LastTaskResult: 0            (previously 3221225786 - terminated)
+```
+
+Docker is now the single authority and the recorder writes only there. The two `#340`
+disagreement audit rows survived the sync intact.
+
+**Two things this surfaced but did not fix**: the recorder runs from a five-day-old
+checkout at `ee65fea` with `record.ps1` untracked, and its log is written as UTF-16 by
+PowerShell's `*>>` redirect. Native is deliberately left in place as the
+pre-consolidation fallback.

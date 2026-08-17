@@ -1,5 +1,62 @@
 # Journal
 
+## 2026-08-17 (infra) — the stack is committed, and the database has one authority
+
+**Did**: resolved **#346** and **#347**. Shipped the `lite` change
+`the-stack-runs-from-one-command` (compose file tracked, `.env.example` documents
+`POSTGRES_*`), and made the Docker database the single authority for the signal record.
+
+**The divergence had a name and a schedule.** A Windows scheduled task
+`GridCommanderRecorder` ran hourly from `C:/Users/rafae/grid-commander/record.ps1` — a
+**separate checkout dated 2026-08-11** — with `DATABASE_URL` hardcoded to native 5432,
+while the product read the container. A user-scope `DATABASE_URL` pointed there too.
+
+**It was bidirectional, so no dump could have fixed it.** Native was ahead by 1,680
+`signal_readings` / 20 captures / 1 run; **Docker was ahead by 515 `audit_entries`**,
+because the product had been writing there all session. Native was also at 4
+migrations against Docker's 6 — restoring native over the container would have
+reverted the schema.
+
+Fixed by row-level sync: CSV export, staging table, `INSERT ... ON CONFLICT DO NOTHING`
+with **no conflict target** so every unique constraint was honoured rather than only
+the primary key. `audit_entries` took an explicit column list so native's 22 rows
+landed with `platform_destructive_hint` NULL — not recorded, which is true of them.
+
+Then `record.ps1` was repointed at 5433 and run through its own task:
+
+```
+native  167,496 -> 167,496   (frozen)
+docker  167,496 -> 169,176   (+1,680, one new run)
+LastTaskResult: 0            (previously 3221225786 - terminated)
+```
+
+**State**: **0 active changes** · `validate --all` 0 errors / 15 warnings · 209
+archived changes · 26 open backlog items. Docker stack serving on :3000, database on
+5433, recorder writing to it hourly. Native left in place as the pre-consolidation
+fallback. PR #348 carries both this leg and the #340 archive.
+
+**Next**: `/board`. The two live positions on Fibonacci (ETH SHORT, SOL SHORT) are the
+operator's.
+
+**Watch out**:
+- **A backslash pair collapses inside a shell heredoc even when it is quoted.**
+  `C:\Users\...` arrived halved and Python read `\U` as an escape. Raw strings, or
+  forward slashes in prose, or build the escape from `chr(92)`.
+- **The recorder writes from a five-day-old checkout** at `ee65fea` with `record.ps1`
+  untracked and `package-lock.json` modified. It works, but it is not the code in this
+  repository. Running it as a compose service needs a `Dockerfile` change: the runtime
+  image copies `.next/standalone`, `drizzle` and two `tools/` scripts — **not `bin/`**.
+- **Its log is UTF-16**, written by PowerShell's `*>>`, so `tail` shows every character
+  space-separated. Not corruption.
+- **`docker compose config` passing does not prove the volume is right.** The mount has
+  to be checked against the image's *own* `PGDATA`; `postgres:18` reports
+  `/var/lib/postgresql/18/docker`, so the mount belongs on the parent. Confirmed by
+  reading `PG_VERSION` back off the volume rather than trusting the config.
+- **An `ON CONFLICT DO NOTHING` with a named target would have been wrong here.**
+  Migration 0004 replaced the `(user_id, idempotency_key)` unique index with a
+  partial one, and native still had the old shape — a primary-key-only conflict clause
+  would have thrown on the index instead of skipping.
+
 ## 2026-08-17 (archive) — the port knows what costs money, proven on live money
 
 **Did**: closed section 7 of `the-port-knows-what-costs-money` live, took the
