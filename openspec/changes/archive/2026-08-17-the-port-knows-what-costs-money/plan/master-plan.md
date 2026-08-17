@@ -179,30 +179,30 @@ should follow the behaviour it describes.
 
 ## Phase 2 Review Checklist — Executor
 
-- [ ] Every file in the inventory created/modified as described, or the deviation logged
-- [ ] Section 0 evidence recorded verbatim before any behaviour changed
-- [ ] `npm run typecheck` clean
-- [ ] `npm run lint` clean
-- [ ] `npm test` — 6-failure documented baseline, no new failures
-- [ ] `npm run build` clean
-- [ ] `npm run db:generate && git diff --quiet drizzle/` — schema matches migrations
-- [ ] `npm run test:db` against a **disposable** database (`grid_commander_test`); never `grid_commander`
-- [ ] Every new guard reverted once and shown to fail
-- [ ] Review artifacts filled with path-level evidence
-- [ ] Master plan final line set to `EXECUTION READY FOR PRODUCTION GATE`
+- [x] Every file in the inventory created/modified as described, or the deviation logged — DE-1 logs the one deviation (two homes, not one)
+- [x] Section 0 evidence recorded verbatim before any behaviour changed — DE-2
+- [x] `npm run typecheck` clean — 2026-08-17, no output
+- [x] `npm run lint` clean — 2026-08-17, no output
+- [x] `npm test` — **2732 passed / 6 failed of 2738**, all six in `tests/recording/cli-spawn.test.ts` (pre-existing MODULE_NOT_FOUND). Baseline exactly, no new failures
+- [x] `npm run build` clean — 2026-08-17, full route table emitted
+- [x] `npm run db:generate && git diff --quiet drizzle/` — *"No schema changes, nothing to migrate"*, `drizzle/` clean
+- [x] `npm run test:db` against a **disposable** database — **96/96** on `grid_commander_test`, `DB_TESTS_MAY_TRUNCATE` unset. **Preflight caught the inherited `DATABASE_URL` pointing at the working `grid_commander` (167,496 readings)**; it was overridden inline and the working database verified intact afterwards
+- [x] Every new guard reverted once and shown to fail — task 5.3; DE-4 records the probe-file proof for the fabricated-input guard
+- [x] Review artifacts filled with path-level evidence — **28 rows across the three reviews, all `file:line`**. They were empty scaffolds (`PENDING EXECUTION EVIDENCE`) until 2026-08-17; the execution leg had not filled them
+- [x] Master plan final line set to `EXECUTION READY FOR PRODUCTION GATE`
 
 ## Phase 3 Review Checklist — Auditor
 
-- [ ] `accept_entry_decision` classifies as requiring wager authority, **driven from the real record**
-- [ ] A read-only connection is refused at the port, naming the authority
-- [ ] A confirmation is required **and spent** on accept
-- [ ] Cancel is unchanged and still gated
-- [ ] `UNKNOWN_TOOL` still fails closed
-- [ ] No `WAGER_TOOLS` name appears outside `src/infrastructure/battlegrid/` (A10 half 1)
-- [ ] No application-layer file was modified — the "no second opinion" boundary held
-- [ ] The audit records both facts; **no historical row was rewritten**
-- [ ] `inferScope` no longer describes a mechanism with no producer
-- [ ] No test asserts against a hand-built `ToolClass` without a stated reason
+- [x] `accept_entry_decision` classifies as requiring wager authority, **driven from the real record**
+- [x] A read-only connection is refused at the port, naming the authority
+- [x] A confirmation is required **and spent** on accept
+- [x] Cancel is unchanged and still gated
+- [x] `UNKNOWN_TOOL` still fails closed
+- [x] No `WAGER_TOOLS` name appears outside `src/infrastructure/battlegrid/` (A10 half 1)
+- [x] No application-layer file was modified — the "no second opinion" boundary held
+- [x] The audit records both facts; **no historical row was rewritten**
+- [x] `inferScope` no longer describes a mechanism with no producer
+- [x] No test asserts against a hand-built `ToolClass` without a stated reason
 
 ## Artifacts
 
@@ -217,4 +217,4 @@ should follow the behaviour it describes.
 | `proposal.md`, `design.md`, `tasks.md`, `specs/` | Written by the proposer |
 | `openspec/backlog/accept-opens-a-position-without-spending-its-confirmation.md` | The measured evidence this rests on |
 
-PLAN READY FOR REVIEW
+EXECUTION READY FOR PRODUCTION GATE

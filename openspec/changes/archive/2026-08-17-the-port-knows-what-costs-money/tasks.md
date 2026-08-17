@@ -107,20 +107,35 @@
 
 ## 7. Live
 
-- [ ] 7.1 **Read-only first.** Re-probe the surface and confirm the five
+- [x] 7.1 **Read-only first.** Re-probe the surface and confirm the five
       money-affecting annotations still read as recorded. The count has held still
       while semantics moved twice before (#198, #301).
-- [ ] 7.2 **BLOCKED ON THE OPERATOR.** With authority and by name at the moment:
+      **Done 2026-08-17 against v20.0.0** — all five still `destructiveHint: false`.
+      See DE-7.
+- [x] 7.2 **BLOCKED ON THE OPERATOR.** With authority and by name at the moment:
       accept one real decision through the product and confirm from the audit that
       the row now states the consequence, and that the confirmation was spent.
       Nothing in section 7.2 runs without that.
-- [ ] 7.3 Confirm a read-only connection is refused at the **port** — the scenario
+      **Done 2026-08-17 11:46:59Z** — SHORT ETH accepted through the product on
+      Fibonacci. Audit row states `destructive: true` against the platform's
+      `platform_destructive_hint: false`; confirmation token consumed at the same
+      second. Position LIVE, order 518162354909. See DE-8.
+- [x] 7.3 Confirm a read-only connection is refused at the **port** — the scenario
       that is vacuous today.
+      **Done 2026-08-17** — live, the *surface* refuses first and renders no accept
+      control at all, so the port is never reached through the UI. No audit row was
+      written. The port's own refusal remains proven offline in
+      `tests/capability/money-tools.test.ts`. See DE-9 for why that split matters.
 
 ## 8. Close out
 
 - [x] 8.1 Delete the section 0 tests. They pinned a defect that no longer exists.
-- [ ] 8.2 `#340` updated with what was measured, and closed only if the sweep in
+- [x] 8.2 `#340` updated with what was measured, and closed only if the sweep in
       1.4 is complete.
+      **Done 2026-08-17** — measurements posted as
+      `issues/340#issuecomment-5315770524`. 1.4's sweep is complete, so closure is
+      permitted, but the issue is deliberately left **OPEN**: closure belongs to
+      `/archive`, after the production gate. No closing verb appears near the issue
+      number in that comment — a negated one auto-closed #340 once already.
 - [x] 8.3 Re-pin any surface manifest whose source files moved.
 - [x] 8.4 Journal entry.

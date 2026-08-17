@@ -1,5 +1,74 @@
 # Journal
 
+## 2026-08-17 (archive) — the port knows what costs money, proven on live money
+
+**Did**: closed section 7 of `the-port-knows-what-costs-money` live, took the
+production gate to **PASS**, archived the change, closed **#340**. Moved the whole
+product onto Docker to build the rig. Filed **#346**, **#347**; added live evidence to
+**#336**, **#304**, **#306**.
+
+**The defect was re-measured at v20.0.0 before it was fixed against.** BattleGrid had
+moved v19.1.0 → v20.0.0 with the tool count **still 114** — the third time. All five
+money-affecting tools still annotate `destructiveHint: false`, so this was current
+behaviour, not history (DE-7).
+
+**Two accepts through the product, on a live account.** The audit now states both
+claims as separate facts:
+
+```
+11:46:59  accept_entry_decision  destructive=true   platform_hint=false
+11:49:06  accept_entry_decision  destructive=true   platform_hint=false
+19:28:33  accept_entry_decision  destructive=false  platform_hint=NULL   <- before
+```
+
+Confirmations spent at the same second, tokens hash-bound to their decision ids. That
+third row is the change's thesis: **the two eras are distinguishable because nothing
+was rewritten** — 0005 is one `ADD COLUMN`, nullable, no DEFAULT, no UPDATE. 3,332 of
+3,690 rows still carry a NULL claim.
+
+**7.3 got the weaker result, and the log says so.** The surface refuses a read-only
+connection and renders no accept control, so the port is never reached through the UI.
+`beginGuardedCall`'s refusal stays proven offline. DE-9 records the gap rather than
+claiming the stronger result.
+
+**State**: **0 active changes** · `validate --all` 0 errors / 15 warnings · `mirror`
+clean · 28 open backlog items, 4 blocked · 208 archived changes. Docker stack serving
+on :3000, database on 5433. Two live positions open on Fibonacci (ETH SHORT, SOL
+SHORT) — the operator's.
+
+**Next**: commit and raise the PR for this branch, then **#346** (commit the compose
+file as a `lite` change) — it holds three fixes that cost an afternoon each.
+
+**Watch out**:
+- **The session opened in the wrong worktree.** `/board` described a branch at `main`
+  with none of the work; the change lived in a *differently named* worktree
+  (`github-issues-triage-169fc7`). The board is per-checkout and says nothing about
+  it. `git worktree list` and `git branch -vv` before believing any count.
+- **The product's key and the MCP connector were different BattleGrid accounts** —
+  `ANBUJEFF` (5 agents, $4.20) vs `Fibonacci` (Undertow/Vanguard/Breakwater, $63).
+  An agent menu was offered from the wrong one. `get_account_state` through the
+  product's own key is the only way to know who it acts as.
+- **`postgres:18` moved `PGDATA` to `/var/lib/postgresql/18/docker`.** Mounting the
+  old `/var/lib/postgresql/data` looks right, mounts cleanly, and writes the database
+  into the container layer where the first recreate destroys it.
+- **A stale image passes its own schema gate.** `check-schema.mjs` compares the
+  database against *the journal that build carries* — so an 18-day-old image was
+  confidently correct about a schema two migrations behind. Version gates prove
+  internal consistency, never currency.
+- **`test:db` was one command from the live database again.** The inherited
+  `DATABASE_URL` pointed at `grid_commander` (167,496 readings). Caught by preflight.
+  `assertDisposable` is a backstop, not a plan — override the URL inline, every time.
+- **`apply_strategy_plan` wants `rules` = the plan's `explicitRuleOverrides`**, not the
+  84 inherited rules. Sending all 84 returns a bare `INTERNAL_ERROR` naming nothing.
+  Plan tokens live five minutes: compile and apply in one call.
+- **The execution leg handed over with all three review artifacts empty** and the plan
+  marked `PLAN READY FOR REVIEW` — the identical PG-001 as the previous full-track
+  change. Two in a row. The executor's Phase 2 list is not optional.
+- **The operator's shell is PowerShell 5.1 (no `&&`) and their `bash` is WSL** (no
+  `/c/...` paths). Commands handed over must match the shell they will be pasted into.
+- **BattleGrid throws transient 502s**, and a naive client reports them as a parse
+  failure — blaming your own code for an upstream outage.
+
 ## 2026-08-17 (close-out) — two changes landed, one is one operator-click from done
 
 **Did**: archived `the-approval-can-be-answered` (**#101 closed**, on a live

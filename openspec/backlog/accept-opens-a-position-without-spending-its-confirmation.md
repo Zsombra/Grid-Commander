@@ -2,7 +2,7 @@
 id: accept-opens-a-position-without-spending-its-confirmation
 title: The confirmation gate is keyed to the platform's destructive hint, so the one write that commits money skips it
 type: bug
-status: in-progress
+status: done
 priority: p2
 created: 2026-08-17
 updated: 2026-08-17
@@ -249,3 +249,25 @@ Keying the confirmation to consequence was half of it. The change must give the
 port a source of truth for **which operations commit funds**, and key both the
 scope check and the confirmation requirement to it. Fixing one alone leaves the
 other inert, because they are both missing the same fact.
+
+## Settled — 2026-08-17
+
+`the-port-knows-what-costs-money` archived; production gate **PASS**, 0 open
+violations. The gate is no longer keyed to BattleGrid's annotation.
+
+**Proven on a live account, not a green suite.** Two accepts through the product:
+
+```
+11:46:59  accept_entry_decision  destructive=true   platform_destructive_hint=false
+11:49:06  accept_entry_decision  destructive=true   platform_destructive_hint=false
+19:28:33  accept_entry_decision  destructive=false  platform_destructive_hint=NULL   <- before
+```
+
+Both confirmations were spent at the same second as their audit row, with the token
+target hash-bound to its decision id. The third row is the pre-change era, preserved
+untouched: migration 0005 is one `ADD COLUMN`, nullable, no DEFAULT, no UPDATE.
+
+The platform still annotates a position-opening write as `destructiveHint: false` —
+re-probed at **v20.0.0** on the same day, and unchanged. This item described current
+behaviour, not a historical bug.
+

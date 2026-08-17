@@ -5,7 +5,7 @@ type: bug
 status: open
 priority: p3
 created: 2026-08-16
-updated: 2026-08-16
+updated: 2026-08-17
 change: ""
 capability: agent-understanding
 github: "336"
@@ -120,3 +120,20 @@ own auto-execution.
 `openUnrealizedPnlUsd: 0` against a live `-0.0042` is the sharper of the two: the
 position is four minutes old, `pricingStatus: LIVE`, and the same call prices its
 margin correctly.
+
+## Confirmed live at v20.0.0 — 2026-08-17
+
+Measured on **Fibonacci / Vanguard** with **two open positions** (ETH SHORT, SOL
+SHORT) — the exact condition under which `0` is not a possible answer. Same agent,
+same moment, two tools:
+
+| | `get_agent_budget` | `list_user_active_positions` |
+|---|---|---|
+| unrealized P&L | **`openUnrealizedPnlUsd: 0`** | `unrealizedPnlUsd: 0.05689` (ETH +0.0316, SOL +0.0252) |
+| account equity | **`accountEquityUsd: 0`** | account funded, `marginedUsd: 24.90` across 6 positions |
+
+**Not a coincidental zero.** The same `get_agent_budget` payload prices
+`capitalAtRiskUsd: 10.15`, `headroomUsd: 34.85` and all four gauges correctly. The
+call knows about the positions; two of its fields simply do not report them.
+
+Still open, and now reproducible on demand rather than only observed once.

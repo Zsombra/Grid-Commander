@@ -185,6 +185,76 @@ one. The auditor reads this for decision-log parity.
 
 ---
 
+## DE-7 — EXECUTION: the premise re-measured at v20.0.0, and it holds
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Evidence, task 7.1 |
+| Decision | The five money-affecting annotations are **unchanged at v20.0.0**. The change's evidence base stands |
+| Impacted files | none — read-only probe |
+| Reason | BattleGrid was found serving **v20.0.0** while every record here says v19.1.0, and the tool count is **114 in both** — the third time a version has moved with the count still. Probed live: `accept_entry_decision`, `close_agent_position`, `submit_market_grid`, `submit_agent_grid` and `random_submit_market_grid` all still carry `destructiveHint: false`. `close_agent_position` also carries `openWorldHint: true`; the other four are false on all four hints. **So the inversion this change is built on survived a major version** — a position-opening write still declares itself non-destructive, and Assumption 1 is now measured rather than assumed |
+| Approved by | Executor, on a live probe against the deployed server |
+| Next action | Task 7.2. **Separately**: this probe covered the five annotations 7.1 asks for and nothing else. v19 moved 34 **output** schemas under an unchanged count and unchanged inputs (#198, #301); a full re-probe with `capture_mcp_dump.py` plus `diff_output_schemas.py` is still owed at v20 and is not part of this change |
+
+---
+
+## DE-8 — EXECUTION: the accept went through the product, and the audit disagrees with the platform
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Evidence, task 7.2 — the operator's gate |
+| Decision | **PD-6's hazard is closed by measurement.** A money-committing write travelled the product's own call path, both gates fired, and the audit row states the consequence |
+| Impacted files | none — live measurement against BattleGrid v20.0.0 |
+| Reason | Rig: the whole product moved onto Docker (postgres:18 container, app built from this branch, migration 0005 applied), pointed at the **Fibonacci** account. Vanguard set to `APPROVAL_REQUIRED` with `minTradeConviction` 0.55 → 0.30 and rebound to a disposable fork with every gate at its floor, so a decision would park rather than auto-execute. Measured on the accept of `16b1e2ae-c4ba-482a-82d4-71f45565cf8c` (SHORT ETH) at **11:46:59.225Z**: <br>• audit row `tool=accept_entry_decision`, `outcome=succeeded`, `actor=user` <br>• **`destructive = true`** — this product's judgement <br>• **`platform_destructive_hint = false`** — BattleGrid's own claim, recorded not obeyed <br>• confirmation token `consumed_at = 11:46:59`, target bound to that decision id by hash, consequence text *"Opens a real position: SHORT ETH, staking 12% of the agent's available funds"* <br>• position LIVE: order `518162354909`, fill 1906.9, qty 0.0113, fee 0.015082 <br>**This is the first row in 3,613 where the two claims disagree**, and it is the row the change exists to produce |
+| Approved by | Operator, who accepted the decision through the product by name |
+| Next action | 7.3, then 8.2. **Restore is owed**: rebind Vanguard to Cannae rev 3, restore `FULL_EXECUTION` / 0.55, archive the fork `c0e8bf3a-2dc0-4d7b-896d-72e51dd4dc8d`. The ETH position is live and unmanaged by this change |
+
+---
+
+## DE-9 — EXECUTION: two layers refuse, and only one of them was reachable live
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **EXECUTION** |
+| Type | Evidence, task 7.3 — with a scope caveat stated rather than glossed |
+| Decision | 7.3 is satisfied by two independent refusals, but they were proven by **different means**, and the task's wording ("refused at the port") is only half-covered live |
+| Impacted files | none — live measurement, `.env` scope flipped and restored |
+| Reason | `BATTLEGRID_KEY_SCOPES` was narrowed to `mcp:read`, the app recreated, and a real PENDING decision (SHORT XRP) opened through the product. The **surface** refuses before the port is reached: it renders **no accept control at all** and says *"Answering needs authority this connection does not hold … cancelling as well as accepting, because BattleGrid requires it for both."* So the live run exercised the presentation guard, **not** `beginGuardedCall`. Reaching the port live would mean POSTing a Next.js server action past its own UI, which is not a path the product offers and not a scenario an operator can reach. The port's refusal is proven offline in `money-tools.test.ts`, driving the real `buildClassificationMap` and the real `beginGuardedCall` (task 4.1, proven non-vacuous under 5.3) |
+| Approved by | Executor, recording the gap rather than claiming the stronger result |
+| Next action | The audit assertion **did** hold end to end: `accept_entry_decision` rows stayed at 3, `outcome='refused'` rows at 0 — a refusal is not an attempt, at either layer. If a future change makes the port reachable while the surface still offers the control, this task should be re-run |
+
+---
+
+## DE-10 — AUDIT: the gate passes, and the one violation was the handover itself
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-08-17 |
+| Phase | **AUDIT** — production gate, Mode A |
+| Type | Gate decision |
+| Decision | **PASS.** Zero open violations. One MAJOR handoff violation (PG-001) found and fixed before the gate ran |
+| Impacted files | `plan/production-gate.md` (created), `plan/master-plan.md`, the three review artifacts |
+| Reason | Evidence window resolved to `86ee8fa..7dc7f5e`, 9 commits, 13 production files, all within the planned inventory. All 10 Phase 3 checklist rules verified **independently by grep against the code** rather than read from the artifacts. All 7 quality gates pass, including the suite at the documented 2732/2738 baseline and `test:db` 96/96 on a disposable database. **PG-001**: the execution leg handed over with all three review artifacts still reading `PENDING EXECUTION EVIDENCE`, 28 blank rows, and the plan's final line still `PLAN READY FOR REVIEW` — the identical finding `the-approval-can-be-answered` recorded as *its* PG-001, now twice in a row. Nothing in the built work failed |
+| Approved by | Auditor |
+| Next action | `/archive`, which closes #340. **Not** gate violations but recorded in the tracker: `docker-compose.yml` is untracked and belongs in its own `lite` change; 7.3's live half exercised the surface rather than the port (DE-9); two live positions remain the operator's; the Docker database copy has already diverged from native |
+
+### The near-miss the gate should be remembered for
+
+`test:db` truncates, and the shell's inherited `DATABASE_URL` pointed at
+**`grid_commander` — the working database, 167,496 signal readings BattleGrid cannot
+re-serve**. Preflight caught it, the URL was overridden inline, and the working
+database was verified intact afterwards. `assertDisposable` would have refused on the
+name, but a name check is a backstop rather than a plan. This is precisely the
+configuration that once destroyed an unrebuildable record while every test passed —
+and it was one `npm run test:db` away from being live again.
+
+---
+
 ## Scope boundaries
 
 **In**: the classification, the two port gates, the audit's content, the tests
