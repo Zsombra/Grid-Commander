@@ -35,12 +35,21 @@ import { defaultCatalog } from '../support/agent-fakes.js';
  */
 
 interface Surface {
-  tools: Array<{ name: string; input_constants?: Record<string, unknown[]> }>;
+  tools: Array<{ 
+    name: string; 
+    input_constants?: Record<string, unknown[]>;
+    input_accepts?: Record<string, { properties: string[], closed: boolean }>;
+    input_required_paths?: string[];
+  }>;
 }
 
 const surface = JSON.parse(readFileSync('docs/battlegrid-mcp-surface.json', 'utf8')) as Surface;
 const constantsFor = (tool: string): Record<string, unknown[]> =>
   surface.tools.find((t) => t.name === tool)?.input_constants ?? {};
+const acceptsFor = (tool: string) =>
+  surface.tools.find((t) => t.name === tool)?.input_accepts ?? {};
+const requiredPathsFor = (tool: string) =>
+  surface.tools.find((t) => t.name === tool)?.input_required_paths ?? [];
 
 /**
  * Every leaf of a payload, as `dotted.path → value`.
@@ -51,7 +60,9 @@ const constantsFor = (tool: string): Record<string, unknown[]> =>
 function leaves(node: unknown, path = ''): Array<[string, unknown]> {
   if (Array.isArray(node)) return node.flatMap((v) => leaves(v, `${path}[]`));
   if (typeof node === 'object' && node !== null) {
-    return Object.entries(node).flatMap(([k, v]) => leaves(v, path ? `${path}.${k}` : k));
+    const entries = Object.entries(node);
+    if (entries.length === 0) return [[path, node]];
+    return entries.flatMap(([k, v]) => leaves(v, path ? `${path}.${k}` : k));
   }
   return [[path, node]];
 }
@@ -114,6 +125,66 @@ describe('the record carries what the platform permits', () => {
   });
 });
 
+/** Helper to walk an object structure and find all closed paths with their unaccepted keys */
+function findUnacceptedKeys(
+  node: unknown,
+  accepts: Record<string, { properties: string[]; closed: boolean }>,
+  path = '',
+  skipPaths: string[] = []
+): string[] {
+  if (skipPaths.includes(path)) return [];
+  if (Array.isArray(node)) {
+    return node.flatMap(v => findUnacceptedKeys(v, accepts, `${path}[]`, skipPaths));
+  }
+  if (typeof node === 'object' && node !== null) {
+    const unaccepted: string[] = [];
+    const schema = accepts[path];
+    
+    if (schema && schema.closed) {
+      for (const k of Object.keys(node)) {
+        if (!schema.properties.includes(k)) {
+          unaccepted.push(path ? `${path}.${k}` : k);
+        }
+      }
+    }
+    
+    for (const [k, v] of Object.entries(node)) {
+      unaccepted.push(...findUnacceptedKeys(v, accepts, path ? `${path}.${k}` : k, skipPaths));
+    }
+    return unaccepted;
+  }
+  return [];
+}
+
+/** Helper to check if a payload contains all nested required paths */
+function findMissingRequiredPaths(
+  node: unknown,
+  requiredPaths: string[]
+): string[] {
+  const presentPaths = new Set(leaves(node).map(([p]) => p));
+  // A path is present if there's a leaf exactly at it, OR if it's a prefix for some leaf (e.g. required object).
+  // For checking required objects, if a required path is 'tradingConfig', and 'tradingConfig.tradingMode' exists, then 'tradingConfig' is satisfied.
+  return requiredPaths.filter(req => {
+    for (const p of presentPaths) {
+      if (p === req || p.startsWith(`${req}.`) || p.startsWith(`${req}[`)) return false;
+    }
+    return true;
+  });
+}
+
+function compilePayload() {
+  return {
+    request: {
+      kind: 'UPDATE',
+      agentId: 'a1',
+      sourceStrategyId: 's1',
+      expectedRevision: 1,
+      patch: {},
+      plan: { something_from_server: true }
+    }
+  };
+}
+
 describe('every value the product sends is one the platform accepts', () => {
   for (const [label, brain] of [
     ['a preset brain', PRESET],
@@ -127,6 +198,13 @@ describe('every value the product sends is one the platform accepts', () => {
         .map(([path, value]) => `${path}=${JSON.stringify(value)}`);
 
       expect(wrong, 'the platform rejects these outright').toEqual([]);
+      
+      const payload = createPayload(brain);
+      const unaccepted = findUnacceptedKeys(payload, acceptsFor('create_intelligence_agent'));
+      expect(unaccepted, 'payload contains keys not accepted by the closed schema').toEqual([]);
+      
+      const missing = findMissingRequiredPaths(payload, requiredPathsFor('create_intelligence_agent'));
+      expect(missing, 'payload is missing required nested paths').toEqual([]);
     });
   }
 
@@ -152,6 +230,19 @@ describe('every value the product sends is one the platform accepts', () => {
         'tradingConfig.positionManagement.positionManagementPreset',
       ]),
     );
+  });
+
+  it('compile_strategy_plan — request shape matches structural requirements', () => {
+    const payload = compilePayload();
+    // plan and patch are generated elsewhere or empty objects; we skip verifying structure inside 'request.plan'
+    // since it's a server round-trip object we pass through.
+    const unaccepted = findUnacceptedKeys(payload, acceptsFor('compile_strategy_plan'), '', ['request.plan', 'request.patch']);
+    expect(unaccepted, 'compile payload contains unaccepted keys').toEqual([]);
+    
+    // Check required nested paths
+    const required = requiredPathsFor('compile_strategy_plan');
+    const missing = findMissingRequiredPaths(payload, required);
+    expect(missing, 'compile payload missing required nested paths').toEqual([]);
   });
 });
 

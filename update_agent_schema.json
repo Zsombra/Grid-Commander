@@ -1,0 +1,1106 @@
+{
+  "name": "update_intelligence_agent",
+  "title": "Update Intelligence Agent",
+  "description": "Update an existing private intelligence agent: display name, brain (model/behavior or preset), and trading configuration. Supply at least one mutable field. A complete tradingConfig is optional for non-config updates. Requires expectedRevision from the latest read for optimistic concurrency; SYSTEM agents are immutable. Strategy REBINDING is not part of this command \u2014 use rebind_intelligence_agent, which is separately confirmed.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "agentId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Intelligence agent UUID to update"
+      },
+      "expectedRevision": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Current agent revision (from the latest read). The update is rejected with a CONFLICT error if the stored revision has advanced."
+      },
+      "displayName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80,
+        "description": "New display name"
+      },
+      "behavior": {
+        "type": "object",
+        "properties": {
+          "risk": {
+            "type": "string",
+            "enum": [
+              "CONSERVATIVE",
+              "MODERATE",
+              "AGGRESSIVE"
+            ],
+            "description": "Risk tolerance"
+          },
+          "outlook": {
+            "type": "string",
+            "enum": [
+              "OPTIMIST",
+              "REALIST",
+              "PESSIMIST"
+            ],
+            "description": "Market outlook \u2014 optimist / realist / pessimist"
+          },
+          "conviction": {
+            "type": "string",
+            "enum": [
+              "CAUTIOUS",
+              "MEASURED",
+              "BOLD"
+            ],
+            "description": "Signal confidence threshold"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Non-empty partial behavior profile update"
+      },
+      "modelId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "description": "New LLM model ID"
+      },
+      "brainPreset": {
+        "type": "string",
+        "enum": [
+          "MONTGOMERY",
+          "KESSELRING",
+          "CHUIKOV",
+          "EISENHOWER",
+          "ZHUKOV",
+          "NIMITZ",
+          "BRADLEY",
+          "ROMMEL",
+          "PATTON",
+          "YAMAMOTO",
+          "CUSTOM"
+        ],
+        "description": "Named BRAIN preset (MONTGOMERY/KESSELRING/CHUIKOV/EISENHOWER/ZHUKOV/NIMITZ/BRADLEY/ROMMEL/PATTON/YAMAMOTO) \u2014 replaces modelId + behavior when supplied. Editing model/soul directly persists CUSTOM."
+      },
+      "tradingConfig": {
+        "type": "object",
+        "properties": {
+          "tradingMode": {
+            "type": "string",
+            "enum": [
+              "OFF",
+              "APPROVAL_REQUIRED",
+              "FULL_EXECUTION"
+            ],
+            "description": "OFF = no signals, APPROVAL_REQUIRED = evaluate + require manual accept, FULL_EXECUTION = auto-execute \u2014 required when tradingConfig is provided"
+          },
+          "minAllocationUsd": {
+            "type": "number",
+            "maximum": 99999999.99,
+            "description": "Minimum order size in USD (registry-bound) \u2014 required when tradingConfig is provided"
+          },
+          "maxDailyTrades": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Maximum trades per day (1-registry maximum) \u2014 required when tradingConfig is provided"
+          },
+          "balanceThresholdUsd": {
+            "type": "number",
+            "maximum": 99999999.99,
+            "description": "Minimum wallet equity to allow trading (registry-bound) \u2014 required when tradingConfig is provided"
+          },
+          "maxLeverage": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Maximum leverage multiplier (registry-bound \u00d7 20x HL ceiling) \u2014 required when tradingConfig is provided"
+          },
+          "maxSlippageBps": {
+            "type": "integer",
+            "description": "Max entry slippage in bps (registry-bound). Integer \u2014 required when tradingConfig is provided"
+          },
+          "maxConcurrentExposureUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999999999.99,
+            "description": "Ceiling on capital simultaneously at risk, USD (0 = unset)"
+          },
+          "maxCumulativeDrawdownUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999999999.99,
+            "description": "Cumulative realized-loss stop, USD (0 = no stop)"
+          },
+          "maxDailyLossUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999999999.99,
+            "description": "Per-UTC-day realized-loss stop, USD (0 = no daily limit)"
+          },
+          "signalTimeoutMinutes": {
+            "type": "number",
+            "enum": [
+              5,
+              10,
+              15
+            ],
+            "description": "Signal approval window in minutes (5, 10, or 15) \u2014 APPROVAL_REQUIRED mode \u2014 required when tradingConfig is provided"
+          },
+          "maxEntryDeviationAtrMultiple": {
+            "type": "number",
+            "description": "Max entry price deviation as ATR multiple (registry-bound) \u2014 required when tradingConfig is provided"
+          },
+          "minTradeConviction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Agent-level trade conviction base 0-1 \u2014 the default bar a deployment inherits; required when tradingConfig is provided"
+          },
+          "gridMinConfidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Agent-level grid confidence base 0-1 \u2014 the default bar a deployment slot inherits; required when tradingConfig is provided"
+          },
+          "positionSizePresets": {
+            "type": "object",
+            "properties": {
+              "sizingStrategy": {
+                "type": "string",
+                "enum": [
+                  "MANUAL",
+                  "VOLATILITY_AUTO"
+                ],
+                "description": "Position sizing strategy: MANUAL uses preset percentages, VOLATILITY_AUTO adjusts based on ATR"
+              },
+              "smallPct": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 100,
+                "description": "Small position size as percentage of balance (0.5-100)"
+              },
+              "mediumPct": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 100,
+                "description": "Medium position size as percentage of balance (0.5-100)"
+              },
+              "largePct": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 100,
+                "description": "Large position size as percentage of balance (0.5-100)"
+              }
+            },
+            "required": [
+              "sizingStrategy",
+              "smallPct",
+              "mediumPct",
+              "largePct"
+            ],
+            "additionalProperties": false,
+            "description": "Position sizing presets with monotonic ordering constraint \u2014 required when tradingConfig is provided"
+          },
+          "positionManagement": {
+            "type": "object",
+            "properties": {
+              "positionManagementPreset": {
+                "type": "string",
+                "enum": [
+                  "COLT",
+                  "WEBLEY",
+                  "BERETTA",
+                  "LUGER",
+                  "WALTHER",
+                  "CUSTOM"
+                ],
+                "description": "Position management preset: COLT (patient/wide), BERETTA (balanced), LUGER (aggressive/tight), WALTHER (hair-trigger/max-tight), CUSTOM (manual) \u2014 required when positionManagement is provided"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "breakEvenEnabled": {
+                "type": "boolean"
+              },
+              "breakEvenTriggerR": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 2
+              },
+              "trailingEnabled": {
+                "type": "boolean"
+              },
+              "trailingGivebackPct": {
+                "type": "number",
+                "minimum": 25,
+                "maximum": 55
+              },
+              "trailingBufferPct": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 1
+              },
+              "timeDecayEnabled": {
+                "type": "boolean"
+              },
+              "timeDecayGracePeriodMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "timeDecayIntervalMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 480
+              },
+              "timeDecayTightenPct": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 50
+              },
+              "timeDecayMaxTightenPct": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "timeDecayStaleThresholdTpProgressPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "positionManagementPreset",
+              "enabled",
+              "breakEvenEnabled",
+              "breakEvenTriggerR",
+              "trailingEnabled",
+              "trailingGivebackPct",
+              "trailingBufferPct",
+              "timeDecayEnabled",
+              "timeDecayGracePeriodMinutes",
+              "timeDecayIntervalMinutes",
+              "timeDecayTightenPct",
+              "timeDecayMaxTightenPct",
+              "timeDecayStaleThresholdTpProgressPct"
+            ],
+            "additionalProperties": false,
+            "description": "Position management configuration for post-entry protection adjustments"
+          }
+        },
+        "required": [
+          "tradingMode",
+          "minAllocationUsd",
+          "maxDailyTrades",
+          "balanceThresholdUsd",
+          "maxLeverage",
+          "maxSlippageBps",
+          "maxConcurrentExposureUsd",
+          "maxCumulativeDrawdownUsd",
+          "maxDailyLossUsd",
+          "signalTimeoutMinutes",
+          "maxEntryDeviationAtrMultiple",
+          "minTradeConviction",
+          "gridMinConfidence",
+          "positionSizePresets",
+          "positionManagement"
+        ],
+        "additionalProperties": false,
+        "description": "Optional complete trading configuration. When provided, every field in THIS schema is required. This schema is narrower than the tradingConfig an agent read returns: strategyTimeframe and regimeTimeframe are read-only (bind derives the regime rung from the strategy main candle) and are rejected as unknown keys, so do not echo a read config back unchanged. Omit it for a non-config update."
+      }
+    },
+    "required": [
+      "agentId",
+      "expectedRevision"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "execution": {
+    "taskSupport": "forbidden"
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "agent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "SYSTEM",
+              "PRIVATE"
+            ]
+          },
+          "systemKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isSystemDefault": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "object",
+            "properties": {
+              "canEdit": {
+                "type": "boolean"
+              },
+              "canDelete": {
+                "type": "boolean"
+              },
+              "canArchive": {
+                "type": "boolean"
+              },
+              "canEditOverlay": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "canEdit",
+              "canDelete",
+              "canArchive",
+              "canEditOverlay"
+            ],
+            "additionalProperties": false
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "behavior": {
+            "type": "object",
+            "properties": {
+              "risk": {
+                "type": "string",
+                "enum": [
+                  "CONSERVATIVE",
+                  "MODERATE",
+                  "AGGRESSIVE"
+                ]
+              },
+              "outlook": {
+                "type": "string",
+                "enum": [
+                  "OPTIMIST",
+                  "REALIST",
+                  "PESSIMIST"
+                ]
+              },
+              "conviction": {
+                "type": "string",
+                "enum": [
+                  "CAUTIOUS",
+                  "MEASURED",
+                  "BOLD"
+                ]
+              }
+            },
+            "required": [
+              "risk",
+              "outlook",
+              "conviction"
+            ],
+            "additionalProperties": false
+          },
+          "contextSources": {
+            "type": "object",
+            "properties": {
+              "includePriceAction": {
+                "type": "boolean"
+              },
+              "includeSubTimeframe": {
+                "type": "boolean"
+              },
+              "includeRsi": {
+                "type": "boolean"
+              },
+              "includeMacd": {
+                "type": "boolean"
+              },
+              "includeVolume": {
+                "type": "boolean"
+              },
+              "includeVolatility": {
+                "type": "boolean"
+              },
+              "includeBollingerBands": {
+                "type": "boolean"
+              },
+              "includeMovingAverages": {
+                "type": "boolean"
+              },
+              "includeStochastic": {
+                "type": "boolean"
+              },
+              "includeFundingRates": {
+                "type": "boolean"
+              },
+              "includeOpenInterest": {
+                "type": "boolean"
+              },
+              "includeRelativeStrength": {
+                "type": "boolean"
+              },
+              "includeSupportResistance": {
+                "type": "boolean"
+              },
+              "includeTrendStrength": {
+                "type": "boolean"
+              },
+              "includeMfi": {
+                "type": "boolean"
+              },
+              "includeHigherTimeframe": {
+                "type": "boolean"
+              },
+              "includeRegimeContext": {
+                "type": "boolean"
+              },
+              "includeStructureZones": {
+                "type": "boolean"
+              },
+              "includeCrowdIntelligence": {
+                "type": "boolean"
+              },
+              "includeCvd": {
+                "type": "boolean"
+              },
+              "includeCvdCrowdConvergence": {
+                "type": "boolean"
+              },
+              "includeMtfConfluence": {
+                "type": "boolean"
+              },
+              "includePerpSpotFlow": {
+                "type": "boolean"
+              },
+              "includeMarketBreadth": {
+                "type": "boolean"
+              },
+              "includeReferencePairs": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "includePriceAction",
+              "includeSubTimeframe",
+              "includeRsi",
+              "includeMacd",
+              "includeVolume",
+              "includeVolatility",
+              "includeBollingerBands",
+              "includeMovingAverages",
+              "includeStochastic",
+              "includeFundingRates",
+              "includeOpenInterest",
+              "includeRelativeStrength",
+              "includeSupportResistance",
+              "includeTrendStrength",
+              "includeMfi",
+              "includeHigherTimeframe",
+              "includeRegimeContext",
+              "includeStructureZones",
+              "includeCrowdIntelligence",
+              "includeCvd",
+              "includeCvdCrowdConvergence",
+              "includeMtfConfluence",
+              "includePerpSpotFlow",
+              "includeMarketBreadth",
+              "includeReferencePairs"
+            ],
+            "additionalProperties": false
+          },
+          "overlayText": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "performance": {
+            "type": "object",
+            "properties": {
+              "gameStats": {
+                "type": "object",
+                "properties": {
+                  "gamesPlayed": {
+                    "type": "number"
+                  },
+                  "winRate": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "winRatePercent": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "avgAccuracy": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "avgAccuracyPercent": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "gameEarnings": {
+                    "type": "number"
+                  },
+                  "earningsSparkline": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "timestamp": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "timestamp",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "gamesPlayed",
+                  "winRate",
+                  "winRatePercent",
+                  "avgAccuracy",
+                  "avgAccuracyPercent",
+                  "gameEarnings",
+                  "earningsSparkline"
+                ],
+                "additionalProperties": false
+              },
+              "tradeStats": {
+                "type": "object",
+                "properties": {
+                  "trades": {
+                    "type": "number"
+                  },
+                  "open": {
+                    "type": "number"
+                  },
+                  "winLoss": {
+                    "type": "object",
+                    "properties": {
+                      "wins": {
+                        "type": "number"
+                      },
+                      "losses": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "wins",
+                      "losses"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "avgPnl": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "pnlSparkline": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/properties/agent/properties/performance/properties/gameStats/properties/earningsSparkline/items"
+                    }
+                  }
+                },
+                "required": [
+                  "trades",
+                  "open",
+                  "winLoss",
+                  "avgPnl",
+                  "pnlSparkline"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "gameStats",
+              "tradeStats"
+            ],
+            "additionalProperties": false
+          },
+          "hasActiveAssignments": {
+            "type": "boolean"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "modelDisplayName": {
+            "type": "string"
+          },
+          "modelImageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "OPENROUTER",
+                  "OPENAI",
+                  "ANTHROPIC",
+                  "GEMINI"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "last24hCostUsd": {
+            "type": "number"
+          },
+          "activeGameCount": {
+            "type": "number"
+          },
+          "tradingConfig": {
+            "type": "object",
+            "properties": {
+              "tradingMode": {
+                "type": "string",
+                "enum": [
+                  "OFF",
+                  "APPROVAL_REQUIRED",
+                  "FULL_EXECUTION"
+                ]
+              },
+              "minAllocationUsd": {
+                "type": "number"
+              },
+              "maxDailyTrades": {
+                "type": "number"
+              },
+              "balanceThresholdUsd": {
+                "type": "number"
+              },
+              "maxLeverage": {
+                "type": "number"
+              },
+              "maxSlippageBps": {
+                "type": "number"
+              },
+              "maxConcurrentExposureUsd": {
+                "type": "number"
+              },
+              "maxCumulativeDrawdownUsd": {
+                "type": "number"
+              },
+              "maxDailyLossUsd": {
+                "type": "number"
+              },
+              "minTradeConviction": {
+                "type": "number"
+              },
+              "gridMinConfidence": {
+                "type": "number"
+              },
+              "signalTimeoutMinutes": {
+                "type": "number",
+                "enum": [
+                  5,
+                  10,
+                  15
+                ]
+              },
+              "maxEntryDeviationAtrMultiple": {
+                "type": "number"
+              },
+              "positionSizePresets": {
+                "type": "object",
+                "properties": {
+                  "sizingStrategy": {
+                    "type": "string",
+                    "enum": [
+                      "MANUAL",
+                      "VOLATILITY_AUTO"
+                    ]
+                  },
+                  "smallPct": {
+                    "type": "number"
+                  },
+                  "mediumPct": {
+                    "type": "number"
+                  },
+                  "largePct": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "sizingStrategy",
+                  "smallPct",
+                  "mediumPct",
+                  "largePct"
+                ],
+                "additionalProperties": false
+              },
+              "positionManagement": {
+                "type": "object",
+                "properties": {
+                  "positionManagementPreset": {
+                    "type": "string",
+                    "enum": [
+                      "COLT",
+                      "WEBLEY",
+                      "BERETTA",
+                      "LUGER",
+                      "WALTHER",
+                      "CUSTOM"
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "breakEvenEnabled": {
+                    "type": "boolean"
+                  },
+                  "breakEvenTriggerR": {
+                    "type": "number"
+                  },
+                  "trailingEnabled": {
+                    "type": "boolean"
+                  },
+                  "trailingGivebackPct": {
+                    "type": "number"
+                  },
+                  "trailingBufferPct": {
+                    "type": "number"
+                  },
+                  "timeDecayEnabled": {
+                    "type": "boolean"
+                  },
+                  "timeDecayGracePeriodMinutes": {
+                    "type": "number"
+                  },
+                  "timeDecayIntervalMinutes": {
+                    "type": "number"
+                  },
+                  "timeDecayTightenPct": {
+                    "type": "number"
+                  },
+                  "timeDecayMaxTightenPct": {
+                    "type": "number"
+                  },
+                  "timeDecayStaleThresholdTpProgressPct": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "positionManagementPreset",
+                  "enabled",
+                  "breakEvenEnabled",
+                  "breakEvenTriggerR",
+                  "trailingEnabled",
+                  "trailingGivebackPct",
+                  "trailingBufferPct",
+                  "timeDecayEnabled",
+                  "timeDecayGracePeriodMinutes",
+                  "timeDecayIntervalMinutes",
+                  "timeDecayTightenPct",
+                  "timeDecayMaxTightenPct",
+                  "timeDecayStaleThresholdTpProgressPct"
+                ],
+                "additionalProperties": false
+              },
+              "strategyTimeframe": {
+                "type": "string",
+                "enum": [
+                  "1m",
+                  "3m",
+                  "5m",
+                  "15m",
+                  "30m",
+                  "1h",
+                  "2h",
+                  "4h",
+                  "8h",
+                  "12h",
+                  "1d",
+                  "3d",
+                  "1w"
+                ]
+              },
+              "regimeTimeframe": {
+                "$ref": "#/properties/agent/properties/tradingConfig/properties/strategyTimeframe"
+              }
+            },
+            "required": [
+              "tradingMode",
+              "minAllocationUsd",
+              "maxDailyTrades",
+              "balanceThresholdUsd",
+              "maxLeverage",
+              "maxSlippageBps",
+              "maxConcurrentExposureUsd",
+              "maxCumulativeDrawdownUsd",
+              "maxDailyLossUsd",
+              "minTradeConviction",
+              "gridMinConfidence",
+              "signalTimeoutMinutes",
+              "maxEntryDeviationAtrMultiple",
+              "positionSizePresets",
+              "positionManagement",
+              "strategyTimeframe",
+              "regimeTimeframe"
+            ],
+            "additionalProperties": false
+          },
+          "strategyId": {
+            "type": "string"
+          },
+          "strategyRevision": {
+            "type": "number"
+          },
+          "strategyName": {
+            "type": "string"
+          },
+          "bindingState": {
+            "type": "string",
+            "enum": [
+              "BOUND",
+              "SYNCING",
+              "ORPHANED"
+            ]
+          },
+          "brainPreset": {
+            "type": "string",
+            "enum": [
+              "MONTGOMERY",
+              "KESSELRING",
+              "CHUIKOV",
+              "EISENHOWER",
+              "ZHUKOV",
+              "NIMITZ",
+              "BRADLEY",
+              "ROMMEL",
+              "PATTON",
+              "YAMAMOTO",
+              "CUSTOM"
+            ]
+          },
+          "revision": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "scope",
+          "systemKey",
+          "isSystemDefault",
+          "capabilities",
+          "displayName",
+          "status",
+          "behavior",
+          "contextSources",
+          "overlayText",
+          "createdAt",
+          "updatedAt",
+          "performance",
+          "hasActiveAssignments",
+          "modelId",
+          "modelDisplayName",
+          "modelImageUrl",
+          "provider",
+          "avatarUrl",
+          "last24hCostUsd",
+          "activeGameCount",
+          "tradingConfig",
+          "strategyId",
+          "strategyRevision",
+          "strategyName",
+          "bindingState",
+          "brainPreset",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "feasibilityAdvisory": {
+        "type": "object",
+        "properties": {
+          "minStopLossAtrMultiple": {
+            "type": "number"
+          },
+          "maxStopLossPct": {
+            "type": "number"
+          },
+          "minRiskRewardRatio": {
+            "type": "number"
+          },
+          "coins": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "coinTicker": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "ATR_UNAVAILABLE"
+                    }
+                  },
+                  "required": [
+                    "coinTicker",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "coinTicker": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "FEASIBLE",
+                        "STRUCTURAL_ONLY"
+                      ]
+                    },
+                    "atrPct": {
+                      "type": "number"
+                    },
+                    "reachableMinPct": {
+                      "type": "number"
+                    },
+                    "reachableMaxPct": {
+                      "type": "number"
+                    },
+                    "requestedMinAtrMultiple": {
+                      "type": "number"
+                    },
+                    "requestedMinPct": {
+                      "type": "number"
+                    },
+                    "requestedMaxPct": {
+                      "type": "number"
+                    },
+                    "responsibleBound": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "MIN_STOP_LOSS_PCT",
+                            "MAX_STOP_LOSS_PCT"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "shortfallPct": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "coinTicker",
+                    "status",
+                    "atrPct",
+                    "reachableMinPct",
+                    "reachableMaxPct",
+                    "requestedMinAtrMultiple",
+                    "requestedMinPct",
+                    "requestedMaxPct",
+                    "responsibleBound",
+                    "shortfallPct"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number"
+              },
+              "evaluated": {
+                "type": "number"
+              },
+              "buildable": {
+                "type": "number"
+              },
+              "volatilityUnavailable": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "total",
+              "evaluated",
+              "buildable",
+              "volatilityUnavailable"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "minStopLossAtrMultiple",
+          "maxStopLossPct",
+          "minRiskRewardRatio",
+          "coins",
+          "counts"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "agent"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

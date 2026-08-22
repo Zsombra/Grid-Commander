@@ -147,6 +147,32 @@ export function moneyAnswers(formData: FormData): Record<string, unknown> {
   };
 }
 
+/**
+ * Extracts the 14 position management fields and the preset label from the form.
+ */
+export function positionManagementAnswers(formData: FormData): Record<string, unknown> {
+  const preset = optionalText(formData, 'positionManagementPreset');
+  if (!preset) return {};
+  
+  return {
+    positionManagementPreset: preset,
+    enabled: formData.get('enabled') === 'on',
+    breakEvenEnabled: formData.get('breakEvenEnabled') === 'on',
+    breakEvenTriggerTpProgressPct: Number(formData.get('breakEvenTriggerTpProgressPct')),
+    trailingEnabled: formData.get('trailingEnabled') === 'on',
+    trailingType: optionalText(formData, 'trailingType'),
+    trailingAtrMultiple: Number(formData.get('trailingAtrMultiple')),
+    trailingFixedPct: Number(formData.get('trailingFixedPct')),
+    trailingBufferPct: Number(formData.get('trailingBufferPct')),
+    timeDecayEnabled: formData.get('timeDecayEnabled') === 'on',
+    timeDecayGracePeriodMinutes: Number(formData.get('timeDecayGracePeriodMinutes')),
+    timeDecayIntervalMinutes: Number(formData.get('timeDecayIntervalMinutes')),
+    timeDecayTightenPct: Number(formData.get('timeDecayTightenPct')),
+    timeDecayMaxTightenPct: Number(formData.get('timeDecayMaxTightenPct')),
+    timeDecayStaleThresholdTpProgressPct: Number(formData.get('timeDecayStaleThresholdTpProgressPct')),
+  };
+}
+
 function money(formData: FormData, name: string): Record<string, number> {
   const raw = optionalText(formData, name);
   if (!raw) return {};

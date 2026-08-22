@@ -394,6 +394,6 @@ describe('what was issued is what can be spent', () => {
       // ever accepted again, the binding would be back to naming the strategy.
       'strategy:s1',
     );
-    expect(spent, 'the strategy alone must not authorise a plan').toBeNull();
+    expect(spent, 'the strategy alone must not authorise a plan').toEqual({ kind: 'rejected', reason: 'mismatched' });
   });
 });

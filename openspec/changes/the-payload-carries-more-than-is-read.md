@@ -2,7 +2,7 @@
 id: the-payload-carries-more-than-is-read
 title: The agent payload carries six more fields nothing reads
 type: question
-status: open
+status: done
 priority: p3
 created: 2026-07-29
 updated: 2026-08-16

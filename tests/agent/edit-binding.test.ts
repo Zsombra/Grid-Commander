@@ -111,7 +111,7 @@ describe('the change performed is the change described', () => {
     );
 
     expect(result.kind, 'an honest edit must succeed').toBe('updated');
-    expect(spent, 'the token the proposal issued must be spendable by the apply').not.toBeNull();
+    expect(spent?.kind, 'the token the proposal issued must be spendable by the apply').toBe('consumed');
     expect(h.port.calls.filter((c) => c.op === 'update')).toHaveLength(1);
   });
 
@@ -124,7 +124,7 @@ describe('the change performed is the change described', () => {
       { changes: {}, tradingConfigChanges: { maxDailyLossUsd: 25000 } },
     );
 
-    expect(spent, 'a token for $25 must not authorise $25,000').toBeNull();
+    expect(spent, 'a token for $25 must not authorise $25,000').toEqual({ kind: 'rejected', reason: 'mismatched' });
     expect(boundTo, 'the write bound the amount it was about to send').toMatch(/^agent:a1#/);
   });
 
@@ -196,7 +196,7 @@ describe('the change performed is the change described', () => {
       { displayName: 'Vol II' },
       { changes: { displayName: 'Something else entirely' } },
     );
-    expect(spent).toBeNull();
+    expect(spent).toEqual({ kind: 'rejected', reason: 'mismatched' });
   });
 
   it('gives two proposals for one agent two different authorisations', async () => {
@@ -237,7 +237,7 @@ describe('the change performed is the change described', () => {
     );
 
     expect(result.kind).toBe('updated');
-    expect(spent, 'one typed field agreed to, twenty sent').not.toBeNull();
+    expect(spent?.kind, 'one typed field agreed to, twenty sent').toBe('consumed');
     const sent = h.port.agents.get('a1')?.tradingConfig?.fields ?? {};
     expect(Object.keys(sent).length, 'the wire carries the whole config').toBeGreaterThan(1);
     expect(sent['maxDailyLossUsd']).toBe(40);
@@ -250,14 +250,14 @@ describe('the change performed is the change described', () => {
       { displayName: 'Vol II' },
       { changes: { displayName: 'Vol II' } },
     );
-    expect(spent).not.toBeNull();
+    expect(spent?.kind).toBe('consumed');
     const again = await h.confirmations.consume(
-      spent?.token ?? '',
+      spent?.kind === 'consumed' ? spent.token.token : '',
       who.userId,
       'update_intelligence_agent',
       boundTo ?? '',
     );
-    expect(again, 'single use survives the binding change').toBeNull();
+    expect(again, 'single use survives the binding change').toEqual({ kind: 'rejected', reason: 'consumed' });
   });
 });
 
